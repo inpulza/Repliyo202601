@@ -1,11 +1,13 @@
 export type MessageStatus = 'unread' | 'drafting' | 'ready_for_review' | 'approved' | 'sent';
-export type Platform = 'instagram' | 'tiktok' | 'facebook';
+export type Platform = 'instagram' | 'tiktok' | 'facebook' | 'linkedin';
+export type MessageType = 'dm' | 'comment';
 export type Tone = 'formal' | 'casual' | 'funny' | 'empathetic';
 
 export interface Message {
   id: string;
   clientId: string;
   platform: Platform;
+  type: MessageType;
   author: string;
   content: string;
   timestamp: string;
@@ -69,6 +71,7 @@ export const MOCK_MESSAGES: Message[] = [
     id: 'm1',
     clientId: 'c1',
     platform: 'instagram',
+    type: 'dm',
     author: '@foodie_jane',
     content: 'Are you open late tonight? Craving a burger!',
     timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
@@ -78,6 +81,7 @@ export const MOCK_MESSAGES: Message[] = [
     id: 'm2',
     clientId: 'c1',
     platform: 'facebook',
+    type: 'comment',
     author: 'John Smith',
     content: 'The fries were cold yesterday. Not happy.',
     timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
@@ -87,6 +91,7 @@ export const MOCK_MESSAGES: Message[] = [
     id: 'm3',
     clientId: 'c1',
     platform: 'tiktok',
+    type: 'comment',
     author: '@burger_lover99',
     content: 'This new spicy burger is FIRE! 🔥🔥🔥',
     timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
@@ -97,6 +102,7 @@ export const MOCK_MESSAGES: Message[] = [
     id: 'm4',
     clientId: 'c1',
     platform: 'instagram',
+    type: 'dm',
     author: '@health_nut',
     content: 'Do you have gluten free buns?',
     timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
@@ -107,18 +113,32 @@ export const MOCK_MESSAGES: Message[] = [
     id: 'm5',
     clientId: 'c1',
     platform: 'facebook',
+    type: 'comment',
     author: 'Sarah Connor',
     content: 'Is the terminator promotion still running?',
     timestamp: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString(),
     status: 'sent',
     draftResponse: 'Hasta la vista, baby! (Yes, until Friday)',
   },
+  // New LinkedIn Message for diversity
+  {
+    id: 'm11',
+    clientId: 'c1',
+    platform: 'linkedin',
+    type: 'dm',
+    author: 'Business Weekly',
+    content: 'We would like to feature your franchise in our next issue.',
+    timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
+    status: 'unread',
+  },
+
 
   // Client 2 - Urban Threads
   {
     id: 'm6',
     clientId: 'c2',
     platform: 'instagram',
+    type: 'comment',
     author: '@fashionista_x',
     content: 'When is the summer collection dropping?',
     timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
@@ -128,6 +148,7 @@ export const MOCK_MESSAGES: Message[] = [
     id: 'm7',
     clientId: 'c2',
     platform: 'tiktok',
+    type: 'comment',
     author: '@trendsetter',
     content: 'Can I style this jacket with jeans?',
     timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
@@ -138,6 +159,7 @@ export const MOCK_MESSAGES: Message[] = [
     id: 'm8',
     clientId: 'c2',
     platform: 'facebook',
+    type: 'dm',
     author: 'MomShopper',
     content: 'Do you have kids sizes?',
     timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
@@ -148,7 +170,8 @@ export const MOCK_MESSAGES: Message[] = [
   {
     id: 'm9',
     clientId: 'c3',
-    platform: 'facebook',
+    platform: 'linkedin',
+    type: 'dm',
     author: 'CTO_Dave',
     content: 'API seems down, getting 500 errors.',
     timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
@@ -158,6 +181,7 @@ export const MOCK_MESSAGES: Message[] = [
     id: 'm10',
     clientId: 'c3',
     platform: 'instagram',
+    type: 'dm',
     author: '@startuplife',
     content: 'Love the new dashboard design!',
     timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),

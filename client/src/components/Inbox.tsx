@@ -10,33 +10,42 @@ import {
   Search,
   Filter,
   MoreVertical,
-  User
+  User,
+  MessageCircle,
+  MessageSquare,
+  Instagram,
+  Facebook,
+  Linkedin,
+  Twitter // Used as placeholder for generic or other socials if needed
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from 'date-fns';
-import { Message, MessageStatus } from '@/lib/mockData';
+import { Message, MessageStatus, Platform, MessageType } from '@/lib/mockData';
 import { motion, AnimatePresence } from "framer-motion";
 
 export function Inbox() {
   const { messages, activeClientId, approveMessage, refreshFeed } = useNexus();
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<Platform | 'all'>('all');
   
   const clientMessages = messages
     .filter(m => m.clientId === activeClientId)
+    .filter(m => activeFilter === 'all' || m.platform === activeFilter)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   // Auto-select first message if none selected
   useEffect(() => {
-    if (clientMessages.length > 0 && !selectedMessageId) {
+    if (clientMessages.length > 0 && !clientMessages.find(m => m.id === selectedMessageId)) {
       setSelectedMessageId(clientMessages[0].id);
     }
-  }, [activeClientId, clientMessages, selectedMessageId]);
+  }, [activeClientId, activeFilter, clientMessages, selectedMessageId]);
 
-  const selectedMessage = clientMessages.find(m => m.id === selectedMessageId);
+  const selectedMessage = messages.find(m => m.id === selectedMessageId);
 
   return (
     <div className="h-full flex bg-background overflow-hidden">
@@ -49,14 +58,11 @@ export function Inbox() {
              <Button variant="ghost" size="icon" onClick={refreshFeed} className="h-8 w-8 text-muted-foreground">
                 <RefreshCw className="h-4 w-4" />
              </Button>
-             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
-                <Filter className="h-4 w-4" />
-             </Button>
           </div>
         </div>
         
-        {/* Search */}
-        <div className="p-3 border-b bg-white shrink-0">
+        {/* Search & Filters */}
+        <div className="p-3 border-b bg-white shrink-0 space-y-3">
            <div className="relative">
              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
              <Input 
@@ -64,58 +70,96 @@ export function Inbox() {
                className="pl-9 bg-gray-50 border-transparent focus:bg-white focus:border-gray-200 transition-all rounded-lg" 
              />
            </div>
+           
+           {/* Filter Tabs */}
+           <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+              <FilterButton 
+                active={activeFilter === 'all'} 
+                onClick={() => setActiveFilter('all')}
+                label="All" 
+              />
+              <FilterButton 
+                active={activeFilter === 'instagram'} 
+                onClick={() => setActiveFilter('instagram')}
+                label="Instagram"
+                icon={<Instagram className="h-3 w-3" />}
+              />
+              <FilterButton 
+                active={activeFilter === 'tiktok'} 
+                onClick={() => setActiveFilter('tiktok')}
+                label="TikTok"
+                icon={<span className="text-[10px] font-bold">TT</span>} // Custom text icon for TikTok
+              />
+              <FilterButton 
+                active={activeFilter === 'facebook'} 
+                onClick={() => setActiveFilter('facebook')}
+                label="Facebook"
+                icon={<Facebook className="h-3 w-3" />}
+              />
+              <FilterButton 
+                active={activeFilter === 'linkedin'} 
+                onClick={() => setActiveFilter('linkedin')}
+                label="LinkedIn"
+                icon={<Linkedin className="h-3 w-3" />}
+              />
+           </div>
         </div>
 
         {/* List */}
         <ScrollArea className="flex-1">
           <div className="flex flex-col">
             <AnimatePresence mode="popLayout">
-              {clientMessages.map((msg) => (
-                <motion.button
-                  layout
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                  key={msg.id}
-                  onClick={() => setSelectedMessageId(msg.id)}
-                  className={cn(
-                    "flex flex-col gap-1 p-4 text-left border-b border-gray-100 hover:bg-gray-100/80 transition-colors relative group",
-                    selectedMessageId === msg.id && "bg-white shadow-[inset_3px_0_0_0_var(--color-primary)] z-10"
-                  )}
-                >
-                  <div className="flex items-center justify-between w-full mb-1">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-6 w-6">
-                         <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-bold">
-                            {msg.author.substring(0,2).toUpperCase()}
-                         </AvatarFallback>
-                      </Avatar>
-                      <span className={cn("text-sm font-medium truncate", msg.status === 'unread' ? "text-foreground" : "text-muted-foreground")}>
-                        {msg.author}
+              {clientMessages.length === 0 ? (
+                 <div className="p-8 text-center text-muted-foreground text-sm">
+                    No messages found for this filter.
+                 </div>
+              ) : (
+                clientMessages.map((msg) => (
+                  <motion.button
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    key={msg.id}
+                    onClick={() => setSelectedMessageId(msg.id)}
+                    className={cn(
+                      "flex flex-col gap-1 p-4 text-left border-b border-gray-100 hover:bg-gray-100/80 transition-colors relative group",
+                      selectedMessageId === msg.id && "bg-white shadow-[inset_3px_0_0_0_var(--color-primary)] z-10"
+                    )}
+                  >
+                    <div className="flex items-center justify-between w-full mb-1">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                          <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-bold">
+                              {msg.author.substring(0,2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className={cn("text-sm font-medium truncate", msg.status === 'unread' ? "text-foreground" : "text-muted-foreground")}>
+                          {msg.author}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">
+                        {formatDistanceToNow(new Date(msg.timestamp), { addSuffix: false })}
                       </span>
                     </div>
-                    <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">
-                      {formatDistanceToNow(new Date(msg.timestamp), { addSuffix: false })}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-start">
-                    <p className={cn("text-sm line-clamp-2 leading-relaxed pr-2", msg.status === 'unread' ? "text-foreground font-medium" : "text-muted-foreground")}>
-                      {msg.content}
-                    </p>
-                    {msg.status === 'unread' && (
-                       <div className="h-2 w-2 bg-blue-500 rounded-full shrink-0 mt-1.5" />
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center gap-2 mt-2">
-                     <Badge variant="outline" className="text-[10px] h-5 px-1.5 py-0 font-normal uppercase tracking-wider text-muted-foreground border-gray-200">
-                       {msg.platform}
-                     </Badge>
-                     <StatusDot status={msg.status} />
-                  </div>
-                </motion.button>
-              ))}
+                    <div className="flex justify-between items-start">
+                      <p className={cn("text-sm line-clamp-2 leading-relaxed pr-2", msg.status === 'unread' ? "text-foreground font-medium" : "text-muted-foreground")}>
+                        {msg.content}
+                      </p>
+                      {msg.status === 'unread' && (
+                        <div className="h-2 w-2 bg-blue-500 rounded-full shrink-0 mt-1.5" />
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-2 mt-3">
+                      <PlatformBadge platform={msg.platform} />
+                      <TypeBadge type={msg.type} />
+                      <StatusDot status={msg.status} />
+                    </div>
+                  </motion.button>
+                ))
+              )}
             </AnimatePresence>
           </div>
         </ScrollArea>
@@ -136,9 +180,12 @@ export function Inbox() {
                  <div>
                     <h2 className="font-semibold text-sm flex items-center gap-2">
                        {selectedMessage.author} 
-                       <span className="text-muted-foreground font-normal">via {selectedMessage.platform}</span>
+                       <PlatformIcon platform={selectedMessage.platform} className="h-3 w-3 text-muted-foreground" />
                     </h2>
-                    <p className="text-xs text-muted-foreground">Customer since 2024</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <TypeBadge type={selectedMessage.type} />
+                      <span className="text-xs text-muted-foreground">via {selectedMessage.platform}</span>
+                    </div>
                  </div>
                </div>
                <Button variant="ghost" size="icon" className="text-muted-foreground">
@@ -272,6 +319,63 @@ export function Inbox() {
         )}
       </div>
     </div>
+  );
+}
+
+function FilterButton({ active, onClick, label, icon }: { active: boolean, onClick: () => void, label: string, icon?: React.ReactNode }) {
+  return (
+    <button 
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border shrink-0",
+        active 
+          ? "bg-gray-900 text-white border-gray-900" 
+          : "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+      )}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+function PlatformIcon({ platform, className }: { platform: Platform, className?: string }) {
+  switch(platform) {
+    case 'instagram': return <Instagram className={className} />;
+    case 'facebook': return <Facebook className={className} />;
+    case 'linkedin': return <Linkedin className={className} />;
+    case 'tiktok': return <span className={cn("font-bold text-[10px]", className)}>TT</span>;
+    default: return <MessageSquare className={className} />;
+  }
+}
+
+function PlatformBadge({ platform }: { platform: Platform }) {
+  const styles = {
+    instagram: "text-pink-600 border-pink-200 bg-pink-50",
+    facebook: "text-blue-600 border-blue-200 bg-blue-50",
+    linkedin: "text-blue-700 border-blue-200 bg-blue-50",
+    tiktok: "text-black border-gray-200 bg-gray-100",
+  };
+
+  return (
+    <Badge variant="outline" className={cn("text-[10px] h-5 px-1.5 py-0 font-medium uppercase tracking-wider border gap-1", styles[platform])}>
+      <PlatformIcon platform={platform} className="h-3 w-3" />
+      {platform}
+    </Badge>
+  );
+}
+
+function TypeBadge({ type }: { type: MessageType }) {
+  return (
+    <Badge variant="outline" className={cn(
+      "text-[10px] h-5 px-1.5 py-0 font-medium uppercase tracking-wider border gap-1",
+      type === 'dm' 
+        ? "text-purple-600 border-purple-200 bg-purple-50" 
+        : "text-orange-600 border-orange-200 bg-orange-50"
+    )}>
+      {type === 'dm' ? <MessageCircle className="h-3 w-3" /> : <MessageSquare className="h-3 w-3" />}
+      {type === 'dm' ? 'Direct' : 'Comment'}
+    </Badge>
   );
 }
 
