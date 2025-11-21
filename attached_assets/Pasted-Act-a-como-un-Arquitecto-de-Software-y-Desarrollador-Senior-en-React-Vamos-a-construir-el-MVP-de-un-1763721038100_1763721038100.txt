@@ -1,0 +1,57 @@
+Actúa como un Arquitecto de Software y Desarrollador Senior en React.
+Vamos a construir el MVP de una aplicación SaaS llamada "NexusFlow" para agencias de marketing.
+
+Objetivo de esta fase:
+Crear la ESTRUCTURA FUNCIONAL, la lógica de estado y los componentes base. No te preocupes por un diseño visual pulido todavía, céntrate en que la navegación y los datos fluyan correctamente.
+
+Stack Técnico:
+
+React + Vite
+
+Tailwind CSS (básico para layout)
+
+Lucide React (iconos)
+
+Estado local complejo (usando Context o Hooks personalizados)
+
+Requerimientos Funcionales (La Lógica):
+
+Arquitectura Multi-Cliente (Core):
+
+La app debe manejar múltiples "Entornos de Cliente" (Workspaces).
+
+Debe existir un Global State que sepa qué cliente está activo actualmente.
+
+Al cambiar de cliente (ej. de "Restaurante" a "Tienda Ropa"), toda la data del Inbox y Configuración debe cambiar instantáneamente.
+
+Módulo Inbox (Lógica de Negocio):
+
+Feed Unificado: Debe recibir un array de mensajes simulados (Instagram, TikTok, Facebook) mezclados cronológicamente.
+
+Estado del Mensaje: Cada mensaje debe tener un estado: unread -> drafting (IA pensando) -> ready_for_review (IA terminó) -> approved (Humano aceptó) -> sent.
+
+Simulación de Agente IA: Implementa una función asíncrona falsa (setTimeout) que simule que el Agente está "escribiendo" un borrador de respuesta para los mensajes nuevos.
+
+Módulo "Cerebro del Agente" (Settings):
+
+Un formulario funcional para guardar la configuración de cada cliente.
+
+Campos necesarios: "Nombre del Agente", "Tono de voz" (select: Formal, Divertido, etc.), "Contexto de Negocio" (textarea).
+
+Estos datos deben persistir en el estado al cambiar de cliente.
+
+Datos de Prueba (Mock Data):
+
+Genera un archivo data.js robusto.
+
+Crea 3 clientes distintos.
+
+Cada cliente debe tener al menos 5-10 mensajes de diferentes redes sociales con fechas y estados variados.
+
+Instrucciones de Salida:
+
+Genera el código React modularizado (Sidebar.jsx, Inbox.jsx, AgentSettings.jsx).
+
+Asegúrate de que el cambio de cliente funcione perfectamente (que no se mezclen los mensajes del Cliente A con el B).
+
+Implementa la lógica de "Aprobar" mensaje: al hacer clic, el mensaje debe desaparecer de "Pendientes" y pasar a "Enviados".
