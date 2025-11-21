@@ -1,0 +1,46 @@
+Ahora que la lógica funcional y la estructura de datos están listas, actúa como un Diseñador de Producto Experto en UI/UX.
+Vamos a aplicar una capa de diseño visual de alto nivel ("Look & Feel") a la aplicación "NexusFlow" existente.
+
+Referencias Visuales (Estrella del Norte):
+Quiero una fusión estética de Linear (minimalismo, bordes finos), Intercom (layout de mensajería) y Raycast (modales y menús flotantes).
+
+Instrucciones de Estilizado (Refactorización Visual):
+
+Layout Global (Estilo Linear):
+
+Implementa un Sidebar oscuro y minimalista a la izquierda para el selector de clientes.
+
+Usa una tipografía Sans-Serif moderna (Inter o system-ui).
+
+Elimina sombras pesadas (box-shadow grandes) y reemplázalas por bordes sutiles (border-gray-200 o border-white/10).
+
+Fondo general de la app: Blanco puro o gris muy tenue (bg-gray-50) para dar sensación de limpieza.
+
+El Inbox (Estilo Intercom):
+
+Lista de mensajes: Haz que los ítems de la lista tengan un estado hover elegante y un estado active (seleccionado) con un borde izquierdo de acento o fondo sutil.
+
+Área de Chat:
+
+Las burbujas de chat deben ser modernas.
+
+Tarjeta de Sugerencia de IA: Este es el elemento más importante. Diseña la caja donde aparece el borrador de la IA con un estilo distintivo (ej. un gradiente sutil de fondo, icono de "brillos" mágico, bordes color índigo/violeta).
+
+Botones de acción ("Aprobar", "Editar"): Hazlos prominentes pero elegantes (ej. botón negro sólido para la acción principal, gris ghost para la secundaria).
+
+Animaciones y "Delight" (Framer Motion):
+
+Añade transiciones suaves (AnimatePresence) al cambiar de cliente. El contenido no debe aparecer de golpe, debe hacer un sutil fade-in.
+
+Cuando se aprueba un mensaje, haz que se deslice hacia fuera o tenga una animación de "check" satisfactoria.
+
+Componentes de Configuración (Estilo Raycast):
+
+Rediseña el formulario del "Cerebro del Agente". No uses inputs estándar del navegador.
+
+Crea inputs personalizados con bordes focus:ring suaves.
+
+Usa "Toggle Switches" modernos en lugar de checkboxes.
+
+Tarea:
+Reescribe los componentes existentes aplicando estas clases de Tailwind y librerías de animación para transformar el prototipo funcional en una experiencia de usuario de clase mundial.

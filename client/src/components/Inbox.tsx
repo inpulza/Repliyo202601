@@ -1,191 +1,286 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNexus } from '@/context/NexusContext';
 import { cn } from '@/lib/utils';
 import { 
   Check, 
-  Clock, 
   Send, 
-  MessageSquare, 
   RefreshCw,
-  MoreHorizontal,
   Sparkles,
-  Loader2
+  Loader2,
+  Search,
+  Filter,
+  MoreVertical,
+  User
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatDistanceToNow } from 'date-fns';
 import { Message, MessageStatus } from '@/lib/mockData';
+import { motion, AnimatePresence } from "framer-motion";
 
 export function Inbox() {
   const { messages, activeClientId, approveMessage, refreshFeed } = useNexus();
+  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   
   const clientMessages = messages
     .filter(m => m.clientId === activeClientId)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-  const pendingMessages = clientMessages.filter(m => ['unread', 'drafting', 'ready_for_review'].includes(m.status));
-  const completedMessages = clientMessages.filter(m => ['approved', 'sent'].includes(m.status));
+  // Auto-select first message if none selected
+  useEffect(() => {
+    if (clientMessages.length > 0 && !selectedMessageId) {
+      setSelectedMessageId(clientMessages[0].id);
+    }
+  }, [activeClientId, clientMessages, selectedMessageId]);
+
+  const selectedMessage = clientMessages.find(m => m.id === selectedMessageId);
 
   return (
-    <div className="h-full flex flex-col bg-muted/30">
-      <header className="h-16 border-b bg-background px-6 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-semibold tracking-tight">Unified Inbox</h1>
-          <Badge variant="secondary" className="ml-2">
-            {pendingMessages.length} Pending
-          </Badge>
+    <div className="h-full flex bg-background overflow-hidden">
+      {/* LEFT: Message List (Intercom Style) */}
+      <div className="w-[380px] border-r flex flex-col bg-gray-50/50">
+        {/* Header */}
+        <div className="h-16 border-b px-4 flex items-center justify-between bg-white shrink-0">
+          <h1 className="font-semibold text-lg tracking-tight">Inbox</h1>
+          <div className="flex gap-2">
+             <Button variant="ghost" size="icon" onClick={refreshFeed} className="h-8 w-8 text-muted-foreground">
+                <RefreshCw className="h-4 w-4" />
+             </Button>
+             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                <Filter className="h-4 w-4" />
+             </Button>
+          </div>
         </div>
-        <Button variant="outline" size="sm" onClick={refreshFeed} className="gap-2">
-          <RefreshCw className="h-4 w-4" />
-          Sync Feed
-        </Button>
-      </header>
+        
+        {/* Search */}
+        <div className="p-3 border-b bg-white shrink-0">
+           <div className="relative">
+             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+             <Input 
+               placeholder="Search messages..." 
+               className="pl-9 bg-gray-50 border-transparent focus:bg-white focus:border-gray-200 transition-all rounded-lg" 
+             />
+           </div>
+        </div>
 
-      <div className="flex-1 overflow-hidden p-6">
-        <Tabs defaultValue="pending" className="h-full flex flex-col">
-          <TabsList className="w-[400px] mb-4">
-            <TabsTrigger value="pending" className="flex-1">Needs Attention</TabsTrigger>
-            <TabsTrigger value="completed" className="flex-1">History</TabsTrigger>
-          </TabsList>
+        {/* List */}
+        <ScrollArea className="flex-1">
+          <div className="flex flex-col">
+            <AnimatePresence mode="popLayout">
+              {clientMessages.map((msg) => (
+                <motion.button
+                  layout
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  key={msg.id}
+                  onClick={() => setSelectedMessageId(msg.id)}
+                  className={cn(
+                    "flex flex-col gap-1 p-4 text-left border-b border-gray-100 hover:bg-gray-100/80 transition-colors relative group",
+                    selectedMessageId === msg.id && "bg-white shadow-[inset_3px_0_0_0_var(--color-primary)] z-10"
+                  )}
+                >
+                  <div className="flex items-center justify-between w-full mb-1">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-6 w-6">
+                         <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-bold">
+                            {msg.author.substring(0,2).toUpperCase()}
+                         </AvatarFallback>
+                      </Avatar>
+                      <span className={cn("text-sm font-medium truncate", msg.status === 'unread' ? "text-foreground" : "text-muted-foreground")}>
+                        {msg.author}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">
+                      {formatDistanceToNow(new Date(msg.timestamp), { addSuffix: false })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-start">
+                    <p className={cn("text-sm line-clamp-2 leading-relaxed pr-2", msg.status === 'unread' ? "text-foreground font-medium" : "text-muted-foreground")}>
+                      {msg.content}
+                    </p>
+                    {msg.status === 'unread' && (
+                       <div className="h-2 w-2 bg-blue-500 rounded-full shrink-0 mt-1.5" />
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center gap-2 mt-2">
+                     <Badge variant="outline" className="text-[10px] h-5 px-1.5 py-0 font-normal uppercase tracking-wider text-muted-foreground border-gray-200">
+                       {msg.platform}
+                     </Badge>
+                     <StatusDot status={msg.status} />
+                  </div>
+                </motion.button>
+              ))}
+            </AnimatePresence>
+          </div>
+        </ScrollArea>
+      </div>
 
-          <ScrollArea className="flex-1 pr-4 -mr-4">
-            <TabsContent value="pending" className="space-y-4 mt-0">
-              {pendingMessages.length === 0 ? (
-                <div className="h-[400px] flex flex-col items-center justify-center text-muted-foreground">
-                  <Check className="h-12 w-12 mb-4 text-green-500/50" />
-                  <p className="text-lg font-medium">All caught up!</p>
-                  <p className="text-sm">No pending messages for this client.</p>
-                </div>
-              ) : (
-                pendingMessages.map(msg => (
-                  <MessageCard key={msg.id} message={msg} onApprove={() => approveMessage(msg.id)} />
-                ))
-              )}
-            </TabsContent>
+      {/* RIGHT: Chat Area (Detail View) */}
+      <div className="flex-1 flex flex-col bg-white relative">
+        {selectedMessage ? (
+          <>
+            {/* Chat Header */}
+            <header className="h-16 border-b px-6 flex items-center justify-between shrink-0 bg-white/80 backdrop-blur-sm z-20">
+               <div className="flex items-center gap-3">
+                 <Avatar className="h-10 w-10 ring-2 ring-offset-2 ring-gray-100">
+                   <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold">
+                      {selectedMessage.author.substring(0,2).toUpperCase()}
+                   </AvatarFallback>
+                 </Avatar>
+                 <div>
+                    <h2 className="font-semibold text-sm flex items-center gap-2">
+                       {selectedMessage.author} 
+                       <span className="text-muted-foreground font-normal">via {selectedMessage.platform}</span>
+                    </h2>
+                    <p className="text-xs text-muted-foreground">Customer since 2024</p>
+                 </div>
+               </div>
+               <Button variant="ghost" size="icon" className="text-muted-foreground">
+                  <MoreVertical className="h-5 w-5" />
+               </Button>
+            </header>
 
-            <TabsContent value="completed" className="space-y-4 mt-0">
-               {completedMessages.length === 0 ? (
-                <div className="h-[400px] flex flex-col items-center justify-center text-muted-foreground">
-                  <MessageSquare className="h-12 w-12 mb-4 opacity-20" />
-                  <p>No message history yet.</p>
-                </div>
-              ) : (
-                completedMessages.map(msg => (
-                  <MessageCard key={msg.id} message={msg} isHistory />
-                ))
-              )}
-            </TabsContent>
-          </ScrollArea>
-        </Tabs>
+            {/* Chat Content */}
+            <ScrollArea className="flex-1 p-8 bg-gray-50/30">
+               <div className="max-w-3xl mx-auto space-y-8">
+                  {/* User Message */}
+                  <div className="flex gap-4">
+                     <Avatar className="h-8 w-8 mt-1">
+                        <AvatarFallback className="bg-gray-200 text-gray-600"><User className="h-4 w-4" /></AvatarFallback>
+                     </Avatar>
+                     <div className="flex flex-col gap-1 max-w-[80%]">
+                        <div className="bg-white border p-4 rounded-2xl rounded-tl-none shadow-sm text-sm leading-relaxed text-gray-800">
+                           {selectedMessage.content}
+                        </div>
+                        <span className="text-xs text-muted-foreground ml-1">
+                           {formatDistanceToNow(new Date(selectedMessage.timestamp), { addSuffix: true })}
+                        </span>
+                     </div>
+                  </div>
+
+                  {/* AI Suggestion / Response Area */}
+                  <AnimatePresence mode="wait">
+                    {selectedMessage.status !== 'sent' && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="relative"
+                      >
+                        <div className="absolute -left-10 top-0 flex flex-col items-center gap-1">
+                           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-200">
+                              {selectedMessage.status === 'drafting' ? (
+                                <Loader2 className="h-4 w-4 text-white animate-spin" />
+                              ) : (
+                                <Sparkles className="h-4 w-4 text-white" />
+                              )}
+                           </div>
+                           <div className="w-0.5 h-full bg-indigo-100 absolute top-8 -z-10" />
+                        </div>
+
+                        <div className={cn(
+                           "ml-4 rounded-xl border overflow-hidden transition-all duration-500",
+                           selectedMessage.status === 'drafting' 
+                              ? "bg-white border-indigo-100 shadow-sm h-24 flex items-center px-6"
+                              : "bg-white border-indigo-200 shadow-[0_0_30px_-10px_rgba(99,102,241,0.2)] ring-1 ring-indigo-50"
+                        )}>
+                           {selectedMessage.status === 'drafting' ? (
+                              <div className="flex items-center gap-3 text-indigo-600 animate-pulse">
+                                 <span className="text-sm font-medium">Agent is drafting a response...</span>
+                              </div>
+                           ) : selectedMessage.draftResponse ? (
+                              <div className="p-0">
+                                 <div className="bg-gradient-to-r from-indigo-50/50 to-violet-50/50 p-3 border-b border-indigo-50 flex items-center justify-between">
+                                    <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider flex items-center gap-1.5">
+                                       <Sparkles className="h-3 w-3" /> AI Suggestion
+                                    </span>
+                                    <Badge variant="secondary" className="bg-white/80 text-indigo-700 border-indigo-100 text-[10px] hover:bg-white">
+                                       Confidence: 98%
+                                    </Badge>
+                                 </div>
+                                 <div className="p-4">
+                                    <textarea 
+                                       className="w-full bg-transparent border-none p-0 text-sm text-gray-800 resize-none focus:outline-none min-h-[80px] leading-relaxed"
+                                       defaultValue={selectedMessage.draftResponse}
+                                    />
+                                 </div>
+                                 <div className="bg-gray-50 p-3 flex items-center justify-between border-t">
+                                    <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-foreground h-8">
+                                       Discard
+                                    </Button>
+                                    <div className="flex items-center gap-2">
+                                       <Button variant="outline" size="sm" className="h-8 text-xs bg-white">
+                                          Edit Response
+                                       </Button>
+                                       <Button 
+                                          size="sm" 
+                                          className="h-8 text-xs bg-black hover:bg-gray-800 text-white shadow-none gap-1.5 px-4 transition-all"
+                                          onClick={() => approveMessage(selectedMessage.id)}
+                                       >
+                                          <Check className="h-3.5 w-3.5" />
+                                          Approve & Send
+                                       </Button>
+                                    </div>
+                                 </div>
+                              </div>
+                           ) : (
+                              <div className="p-6 text-center text-muted-foreground text-sm">
+                                 Waiting for agent...
+                              </div>
+                           )}
+                        </div>
+                      </motion.div>
+                    )}
+                    
+                    {selectedMessage.status === 'sent' && (
+                       <motion.div 
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="flex gap-4 ml-4"
+                       >
+                          <Avatar className="h-8 w-8 mt-1">
+                             <AvatarFallback className="bg-indigo-600 text-white">AI</AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col gap-1 max-w-[80%]">
+                             <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-2xl rounded-tl-none text-sm leading-relaxed text-indigo-900">
+                                {selectedMessage.draftResponse}
+                             </div>
+                             <span className="text-xs text-muted-foreground ml-1 flex items-center gap-1">
+                                <Check className="h-3 w-3" /> Sent just now
+                             </span>
+                          </div>
+                       </motion.div>
+                    )}
+                  </AnimatePresence>
+               </div>
+            </ScrollArea>
+          </>
+        ) : (
+           <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
+              <div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                 <Send className="h-8 w-8 text-gray-400" />
+              </div>
+              <p className="text-lg font-medium text-gray-900">Select a conversation</p>
+              <p className="text-sm max-w-xs text-center mt-1">Choose a message from the list to view details and manage AI responses.</p>
+           </div>
+        )}
       </div>
     </div>
   );
 }
 
-function MessageCard({ message, onApprove, isHistory = false }: { message: Message; onApprove?: () => void; isHistory?: boolean }) {
-  return (
-    <Card className={cn(
-      "overflow-hidden transition-all duration-200 border-l-4",
-      message.status === 'unread' && "border-l-blue-500",
-      message.status === 'drafting' && "border-l-yellow-500",
-      message.status === 'ready_for_review' && "border-l-green-500 shadow-md",
-      (message.status === 'approved' || message.status === 'sent') && "border-l-slate-200 opacity-75 hover:opacity-100"
-    )}>
-      <CardHeader className="p-4 pb-3 flex flex-row items-start gap-4 space-y-0">
-        <Avatar className="mt-1 h-10 w-10 border">
-          <AvatarFallback className="bg-slate-100 text-slate-600 font-bold">
-            {message.author.substring(1,3).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-sm">{message.author}</span>
-              <span className="text-xs text-muted-foreground font-normal">via {message.platform}</span>
-            </div>
-            <span className="text-xs text-muted-foreground">
-              {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
-            </span>
-          </div>
-          <p className="text-sm text-slate-800 leading-relaxed">
-            {message.content}
-          </p>
-        </div>
-      </CardHeader>
-
-      {/* Agent Section */}
-      <div className="bg-slate-50/50 border-t p-4">
-        <div className="flex items-start gap-3">
-          <div className={cn(
-            "h-8 w-8 rounded-full flex items-center justify-center shrink-0",
-            message.status === 'drafting' ? "bg-yellow-100 text-yellow-600 animate-pulse" : 
-            message.status === 'ready_for_review' ? "bg-green-100 text-green-600" :
-            "bg-slate-100 text-slate-500"
-          )}>
-            <Sparkles className="h-4 w-4" />
-          </div>
-
-          <div className="flex-1">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                {message.status === 'drafting' ? 'AI Agent Drafting...' : 'Suggested Response'}
-              </span>
-              <StatusBadge status={message.status} />
-            </div>
-
-            {message.status === 'drafting' ? (
-              <div className="h-6 w-3/4 bg-slate-200/50 rounded animate-pulse" />
-            ) : message.draftResponse ? (
-              <div className="relative group">
-                <textarea 
-                  readOnly={isHistory}
-                  className="w-full bg-white border rounded-md p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[80px]"
-                  defaultValue={message.draftResponse}
-                />
-                {!isHistory && message.status === 'ready_for_review' && (
-                  <div className="mt-3 flex items-center justify-end gap-2">
-                    <Button variant="outline" size="sm" className="text-xs h-8">
-                      Edit
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      className="text-xs h-8 bg-green-600 hover:bg-green-700 text-white gap-2"
-                      onClick={onApprove}
-                    >
-                      <Check className="h-3.5 w-3.5" />
-                      Approve & Send
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ) : (
-               <div className="text-xs text-muted-foreground italic">Waiting for agent...</div>
-            )}
-          </div>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-function StatusBadge({ status }: { status: MessageStatus }) {
-  switch (status) {
-    case 'unread':
-      return <Badge variant="outline" className="text-xs font-normal">New</Badge>;
-    case 'drafting':
-      return <Badge variant="secondary" className="text-xs font-normal bg-yellow-50 text-yellow-700 border-yellow-200 gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Thinking</Badge>;
-    case 'ready_for_review':
-      return <Badge variant="default" className="text-xs font-normal bg-green-600 hover:bg-green-600">Review Ready</Badge>;
-    case 'approved':
-      return <Badge variant="secondary" className="text-xs font-normal">Approved</Badge>;
-    case 'sent':
-      return <Badge variant="secondary" className="text-xs font-normal gap-1 text-slate-500"><Check className="h-3 w-3" /> Sent</Badge>;
-    default:
-      return null;
-  }
+function StatusDot({ status }: { status: MessageStatus }) {
+   switch(status) {
+      case 'unread': return null;
+      case 'drafting': return <span className="text-[10px] text-amber-600 font-medium flex items-center gap-1"><Loader2 className="h-2 w-2 animate-spin" /> Drafting</span>;
+      case 'ready_for_review': return <span className="text-[10px] text-indigo-600 font-medium flex items-center gap-1">● Needs Review</span>;
+      case 'approved': return <span className="text-[10px] text-green-600 font-medium flex items-center gap-1">✓ Approved</span>;
+      case 'sent': return <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1">✓ Sent</span>;
+   }
 }

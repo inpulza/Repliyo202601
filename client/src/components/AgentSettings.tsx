@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -24,7 +25,8 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Save, Bot } from 'lucide-react';
+import { Save, Bot, Zap, Sparkles, ArrowRight } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const formSchema = z.object({
   agentName: z.string().min(2, {
@@ -34,6 +36,7 @@ const formSchema = z.object({
   businessContext: z.string().min(10, {
     message: "Context must be at least 10 characters.",
   }),
+  autoDraft: z.boolean().default(true),
 });
 
 export function AgentSettings() {
@@ -45,6 +48,7 @@ export function AgentSettings() {
       agentName: '',
       tone: 'formal',
       businessContext: '',
+      autoDraft: true,
     },
   });
 
@@ -55,59 +59,66 @@ export function AgentSettings() {
         agentName: activeClient.settings.agentName,
         tone: activeClient.settings.tone,
         businessContext: activeClient.settings.businessContext,
+        autoDraft: true, // Mock field for UI
       });
     }
   }, [activeClient, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     if (activeClient) {
-      updateClientSettings(activeClient.id, values);
+      updateClientSettings(activeClient.id, {
+         agentName: values.agentName,
+         tone: values.tone,
+         businessContext: values.businessContext
+      });
     }
   }
 
   if (!activeClient) return null;
 
   return (
-    <div className="h-full flex flex-col bg-muted/30">
-      <header className="h-16 border-b bg-background px-6 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-semibold tracking-tight">Agent Configuration</h1>
-        </div>
-      </header>
+    <div className="h-full flex flex-col bg-white overflow-y-auto">
+      {/* Header */}
+      <div className="py-10 px-8 max-w-4xl mx-auto w-full">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 mb-2">Settings</h1>
+          <p className="text-muted-foreground text-lg mb-8">Manage your AI agent's personality and knowledge base.</p>
+        </motion.div>
 
-      <div className="flex-1 p-6 max-w-3xl mx-auto w-full">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-4 mb-2">
-               <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                 <Bot className="h-7 w-7 text-primary" />
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            
+            {/* Section 1: Identity */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="space-y-6"
+            >
+               <div className="flex items-center gap-2 pb-2 border-b">
+                  <Bot className="h-5 w-5 text-primary" />
+                  <h2 className="font-semibold text-lg">Agent Identity</h2>
                </div>
-               <div>
-                  <CardTitle>Brain Configuration: {activeClient.name}</CardTitle>
-                  <CardDescription>
-                    Customize how the AI represents this specific brand.
-                  </CardDescription>
-               </div>
-            </div>
-          </CardHeader>
-          <Separator />
-          <CardContent className="pt-6">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <FormField
                     control={form.control}
                     name="agentName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Agent Identity Name</FormLabel>
+                        <FormLabel className="text-gray-700 font-medium">Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. SupportBot" {...field} />
+                          <Input 
+                            placeholder="e.g. SupportBot" 
+                            {...field} 
+                            className="bg-gray-50 border-gray-200 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all h-11"
+                          />
                         </FormControl>
-                        <FormDescription>
-                          Internal name for this agent instance.
-                        </FormDescription>
+                        <FormDescription>The name users will see in chat.</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -118,10 +129,10 @@ export function AgentSettings() {
                     name="tone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Voice & Tone</FormLabel>
+                        <FormLabel className="text-gray-700 font-medium">Tone of Voice</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="bg-gray-50 border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary h-11">
                               <SelectValue placeholder="Select a tone" />
                             </SelectTrigger>
                           </FormControl>
@@ -132,46 +143,95 @@ export function AgentSettings() {
                             <SelectItem value="empathetic">Empathetic & Supportive</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>
-                          Determines the personality of generated responses.
-                        </FormDescription>
+                        <FormDescription>Defines the personality for responses.</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                </div>
+               </div>
+            </motion.div>
 
-                <FormField
+            {/* Section 2: Capabilities */}
+            <motion.div 
+               initial={{ opacity: 0, y: 20 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ duration: 0.4, delay: 0.2 }}
+               className="space-y-6"
+            >
+               <div className="flex items-center gap-2 pb-2 border-b mt-8">
+                  <Zap className="h-5 w-5 text-amber-500" />
+                  <h2 className="font-semibold text-lg">Automation</h2>
+               </div>
+
+               <FormField
+                  control={form.control}
+                  name="autoDraft"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm bg-gray-50/50">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Auto-Draft Responses</FormLabel>
+                        <FormDescription>
+                          Automatically generate draft responses for new incoming messages.
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+            </motion.div>
+
+            {/* Section 3: Knowledge */}
+            <motion.div 
+               initial={{ opacity: 0, y: 20 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ duration: 0.4, delay: 0.3 }}
+               className="space-y-6"
+            >
+               <div className="flex items-center gap-2 pb-2 border-b mt-8">
+                  <Sparkles className="h-5 w-5 text-indigo-500" />
+                  <h2 className="font-semibold text-lg">Knowledge Base</h2>
+               </div>
+
+               <FormField
                   control={form.control}
                   name="businessContext"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Business Context & Knowledge Base</FormLabel>
+                      <FormLabel className="text-gray-700 font-medium">Business Context</FormLabel>
                       <FormControl>
                         <Textarea 
                           placeholder="Describe the business, key policies, and what the agent should know..." 
-                          className="min-h-[200px] font-mono text-sm"
+                          className="min-h-[200px] font-mono text-sm bg-gray-50 border-gray-200 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all p-4 leading-relaxed"
                           {...field} 
                         />
                       </FormControl>
                       <FormDescription>
-                        Provide context about the business (e.g., "We sell organic coffee", "No refunds after 30 days").
+                        The AI uses this context to ground its responses in reality.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+            </motion.div>
 
-                <div className="flex justify-end">
-                  <Button type="submit" size="lg" className="gap-2">
-                    <Save className="h-4 w-4" />
-                    Save Configuration
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
+            <motion.div 
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               transition={{ delay: 0.5 }}
+               className="flex justify-end pt-6"
+            >
+              <Button type="submit" size="lg" className="gap-2 bg-black hover:bg-gray-800 text-white rounded-full px-8 h-12 shadow-lg shadow-gray-200">
+                Save Changes
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </motion.div>
+          </form>
+        </Form>
       </div>
     </div>
   );
