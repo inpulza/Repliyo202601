@@ -51,6 +51,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { Platform, MessageType, Urgency, Intent, Sentiment, Message, MessageStatus } from '@/lib/mockData';
 import { motion, AnimatePresence } from "framer-motion";
+import { getCharacterLimit } from '@/utils/platformLimits';
 
 
 // --- Helper: Platform Styles ---
@@ -526,14 +527,47 @@ export function Inbox() {
                                        Confidence: 98%
                                     </Badge>
                                  </div>
-                                 <div className="p-4">
+                                 <div className="p-4 relative">
                                     {isEditing ? (
-                                       <textarea 
-                                          className="w-full bg-white border border-indigo-200 rounded-md p-3 text-sm text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[120px] leading-relaxed"
-                                          value={selectedMessage.draftResponse}
-                                          onChange={(e) => updateMessageDraft(selectedMessage.id, e.target.value)}
-                                          autoFocus
-                                       />
+                                       <>
+                                          <textarea 
+                                             className={cn(
+                                                 "w-full bg-white border rounded-md p-3 text-sm text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[120px] leading-relaxed pb-6",
+                                                 (selectedMessage.draftResponse?.length || 0) > getCharacterLimit(selectedMessage.platform, selectedMessage.type) 
+                                                     ? "border-red-500 focus:ring-red-500/20" 
+                                                     : "border-indigo-200"
+                                             )}
+                                             value={selectedMessage.draftResponse}
+                                             onChange={(e) => updateMessageDraft(selectedMessage.id, e.target.value)}
+                                             autoFocus
+                                          />
+                                          {/* Character Counter */}
+                                          <div className="absolute bottom-6 right-6 pointer-events-none">
+                                              {(() => {
+                                                  const count = selectedMessage.draftResponse?.length || 0;
+                                                  const limit = getCharacterLimit(selectedMessage.platform, selectedMessage.type);
+                                                  const isOver = count > limit;
+                                                  const isWarning = count > limit * 0.9 && !isOver;
+                                                  
+                                                  return (
+                                                      <span className={cn(
+                                                          "text-xs font-medium transition-colors bg-white/80 px-1.5 py-0.5 rounded backdrop-blur-sm",
+                                                          isOver ? "text-red-600 font-bold" : 
+                                                          isWarning ? "text-amber-600" : "text-gray-400"
+                                                      )}>
+                                                          {isOver ? (
+                                                              <span className="flex items-center gap-1">
+                                                                  {count} / {limit}
+                                                                  <span className="text-red-600">(-{count - limit})</span>
+                                                              </span>
+                                                          ) : (
+                                                              `${count} / ${limit}`
+                                                          )}
+                                                      </span>
+                                                  );
+                                              })()}
+                                          </div>
+                                       </>
                                     ) : (
                                        <div className="w-full bg-transparent border-none p-0 text-sm text-gray-800 min-h-[80px] leading-relaxed whitespace-pre-wrap">
                                           {selectedMessage.draftResponse}
@@ -563,8 +597,9 @@ export function Inbox() {
                                        </Button>
                                        <Button 
                                           size="sm" 
-                                          className="h-8 text-xs bg-black hover:bg-gray-800 text-white shadow-none gap-1.5 px-4 transition-all"
+                                          className="h-8 text-xs bg-black hover:bg-gray-800 text-white shadow-none gap-1.5 px-4 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                           onClick={() => approveMessage(selectedMessage.id)}
+                                          disabled={(selectedMessage.draftResponse?.length || 0) > getCharacterLimit(selectedMessage.platform, selectedMessage.type)}
                                        >
                                           <Check className="h-3.5 w-3.5" />
                                           Approve & Send
