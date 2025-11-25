@@ -833,7 +833,7 @@ function MessageCard({ message, isSelected, onClick, onOpenCRM }: { message: Mes
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-0.5">
+                    <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-1.5 min-w-0">
                             <span className={cn("text-sm font-bold truncate text-gray-900", message.status === 'unread' && "")}>
                                 {message.author}
@@ -858,7 +858,7 @@ function MessageCard({ message, isSelected, onClick, onOpenCRM }: { message: Mes
                         </div>
                     </div>
                     
-                    <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                    <div className="flex items-center gap-1.5 mb-2.5 flex-wrap">
                         {message.urgency === 'high' && (
                             <Badge variant="outline" className="text-[10px] font-medium h-5 px-1.5 text-red-600 bg-red-50 border-red-100 gap-1">
                                 <Flame className="h-3 w-3 fill-red-600" /> High
@@ -884,7 +884,7 @@ function MessageCard({ message, isSelected, onClick, onOpenCRM }: { message: Mes
                         {message.content}
                     </p>
                     
-                    <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-50">
+                    <div className="flex items-center justify-between mt-4 pt-2 border-t border-gray-50">
                         {/* CRM Sync Status Indicator (Moved Here) */}
                         {message.crmData ? (
                             <div className="flex items-center gap-1.5" title={`Synced with ${message.crmData.crmType}`}>
