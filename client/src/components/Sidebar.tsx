@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNexus } from '@/context/NexusContext';
 import { cn } from '@/lib/utils';
 import { 
@@ -9,7 +9,8 @@ import {
   LogOut, 
   Sparkles,
   Command,
-  Search
+  Search,
+  PlusCircle
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -21,14 +22,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Link, useLocation } from 'wouter';
+import { ClientManager } from './ClientManager';
 
 export function Sidebar() {
   const { activeClient, clients, setActiveClientId } = useNexus();
   const [location] = useLocation();
+  const [isClientManagerOpen, setIsClientManagerOpen] = useState(false);
 
   return (
     <div className="h-screen w-[260px] bg-[#1C1C1F] text-gray-400 flex flex-col border-r border-[#2C2C2E] shrink-0 transition-all duration-300">
+      <ClientManager open={isClientManagerOpen} onOpenChange={setIsClientManagerOpen} />
+      
       {/* Header / Branding */}
       <div className="p-5 flex items-center gap-3">
         <div className="h-8 w-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-900/20">
@@ -60,6 +66,7 @@ export function Sidebar() {
           <DropdownMenuContent className="w-56 bg-[#252528] border-[#3A3A3C] text-gray-300" align="start">
             <DropdownMenuLabel className="text-xs text-gray-500 uppercase tracking-wider">Switch Workspace</DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-[#3A3A3C]" />
+            <ScrollArea className="max-h-[200px]">
             {clients.map((client) => (
               <DropdownMenuItem 
                 key={client.id}
@@ -76,6 +83,15 @@ export function Sidebar() {
                 )}
               </DropdownMenuItem>
             ))}
+            </ScrollArea>
+            <DropdownMenuSeparator className="bg-[#3A3A3C]" />
+            <DropdownMenuItem 
+              className="gap-2 cursor-pointer text-indigo-400 hover:text-indigo-300 focus:text-indigo-300 focus:bg-indigo-500/10"
+              onClick={() => setIsClientManagerOpen(true)}
+            >
+              <PlusCircle className="h-4 w-4" />
+              <span className="text-sm">Add Client</span>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

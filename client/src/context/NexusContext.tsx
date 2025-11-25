@@ -11,6 +11,11 @@ interface NexusContextType {
   updateClientSettings: (clientId: string, settings: ClientSettings) => void;
   approveMessage: (messageId: string) => void;
   refreshFeed: () => void;
+  addClient: (client: Client) => void;
+  metricoolBrands: any[];
+  isLoadingMetricool: boolean;
+  fetchMetricoolBrands: () => Promise<void>;
+  importMetricoolBrand: (brandId: string) => void;
 }
 
 const NexusContext = createContext<NexusContextType | undefined>(undefined);
@@ -19,9 +24,80 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
   const [activeClientId, setActiveClientId] = useState<string>(MOCK_CLIENTS[0].id);
   const [clients, setClients] = useState<Client[]>(MOCK_CLIENTS);
   const [messages, setMessages] = useState<Message[]>(MOCK_MESSAGES);
+  const [metricoolBrands, setMetricoolBrands] = useState<any[]>([]);
+  const [isLoadingMetricool, setIsLoadingMetricool] = useState(false);
 
   // Derived state for easier access
   const activeClient = clients.find(c => c.id === activeClientId);
+
+  // Mock function to add a client manually
+  const addClient = (client: Client) => {
+    setClients(prev => [...prev, client]);
+    setActiveClientId(client.id);
+    toast({
+      title: "Client Added",
+      description: `${client.name} has been added to your workspace.`,
+    });
+  };
+
+  // Mock function to fetch brands from "Metricool"
+  const fetchMetricoolBrands = async () => {
+    setIsLoadingMetricool(true);
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    const mockBrands = [
+      { id: 'mb1', name: 'Nike Official', industry: 'Retail', avatar: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=100&h=100&fit=crop' },
+      { id: 'mb2', name: 'Starbucks Coffee', industry: 'Food & Bev', avatar: 'https://images.unsplash.com/photo-1512428559087-560fa5ce7d87?w=100&h=100&fit=crop' },
+      { id: 'mb3', name: 'Spotify', industry: 'Tech', avatar: 'https://images.unsplash.com/photo-1614680376573-df3480f0c6ff?w=100&h=100&fit=crop' },
+      { id: 'mb4', name: 'Local Bakery', industry: 'Small Business', avatar: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=100&h=100&fit=crop' },
+    ];
+    
+    setMetricoolBrands(mockBrands);
+    setIsLoadingMetricool(false);
+  };
+
+  const importMetricoolBrand = (brandId: string) => {
+    const brandToImport = metricoolBrands.find(b => b.id === brandId);
+    if (!brandToImport) return;
+
+    // Check if already exists
+    if (clients.some(c => c.name === brandToImport.name)) {
+       toast({
+        title: "Already Connected",
+        description: "This brand is already in your workspace.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const newClient: Client = {
+      id: `imported_${brandToImport.id}`,
+      name: brandToImport.name,
+      industry: brandToImport.industry,
+      avatar: brandToImport.avatar,
+      settings: {
+        agentName: `${brandToImport.name.split(' ')[0]}Bot`,
+        tone: 'casual',
+        businessContext: `Official account for ${brandToImport.name}.`,
+      }
+    };
+
+    addClient(newClient);
+    
+    // Simulate fetching historical messages
+    toast({
+      title: "Importing Data",
+      description: "Fetching recent DMs and comments from Metricool...",
+    });
+
+    setTimeout(() => {
+       toast({
+        title: "Sync Complete",
+        description: "Messages loaded successfully.",
+      });
+    }, 2000);
+  };
 
   // Simulate Agent "Drafting" Logic
   useEffect(() => {
@@ -96,7 +172,12 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
       setActiveClientId,
       updateClientSettings,
       approveMessage,
-      refreshFeed
+      refreshFeed,
+      addClient,
+      metricoolBrands,
+      isLoadingMetricool,
+      fetchMetricoolBrands,
+      importMetricoolBrand
     }}>
       {children}
     </NexusContext.Provider>
