@@ -1,0 +1,86 @@
+# Feature Spec: Módulo de Integración CRM (UI/UX)
+
+**Objetivo:** Diseñar la interfaz para conectar CRMs externos (HubSpot, Salesforce, Pipedrive) y visualizar/editar datos del cliente directamente desde el Inbox.
+**Estado:** Fase de Diseño y Prototipado (UI Mockup).
+
+---
+
+## 1. Lógica de Diseño y Navegación
+
+Vamos a introducir un patrón de diseño de **"Contexto Lateral"**.
+
+* **Configuración:** La gestión de la conexión se hará en el área de Settings existente.
+* **Visualización:** La información del CRM vivirá en una **Cuarta Columna (Panel Lateral Derecho)** dentro de la vista "Smart Inbox". Este panel debe ser colapsable para no saturar la pantalla si no se necesita.
+
+---
+
+## 2. Especificación UI: Configuración de Integraciones
+
+Dentro de la vista actual de **"Settings/Connections"** (o creando una nueva pestaña en esa vista), añade una sección llamada **"Integrations Marketplace"**.
+
+**Componente: `IntegrationsList.tsx`**
+Debe mostrar una rejilla de tarjetas con las herramientas disponibles.
+
+**Diseño de la Tarjeta de Integración:**
+* **Logo:** (HubSpot, Salesforce, Pipedrive, Zoho).
+* **Nombre y Descripción Corta:** Ej. "Sincroniza contactos y deals".
+* **Estado:**
+    * *Desconectado:* Botón "Connect" (Gris/Azul).
+    * *Conectado:* Indicador verde "Active" y botón "Configure/Disconnect".
+
+*Para el prototipo, simula que **HubSpot** está "Conectado" y los demás "Desconectados".*
+
+---
+
+## 3. Especificación UI: El Panel CRM (Inbox Context Sidebar)
+
+Esta es la pieza clave de UX. Se ubica a la derecha del todo en la vista "Smart Inbox".
+
+**Componente: `CRMContextPanel.tsx`**
+
+**Ubicación:** Derecha de la Columna C (Detalle del Chat).
+**Ancho:** Fijo (~300px), borde izquierdo separador.
+**Contenido (Mock Data):**
+
+Al seleccionar una conversación, este panel muestra los datos del usuario simulando que vienen del CRM:
+
+1.  **Header del Perfil:**
+    * Enlace: "Ver en HubSpot" (Icono de enlace externo).
+2.  **Sección: Contact Info (Editable):**
+    * Email (con icono de sobre).
+    * Teléfono (con icono de llamada).
+    * Empresa (con icono de edificio).
+3.  **Sección: Deals / Oportunidades:**
+    * *Card de Deal:*
+        * Nombre: "Licencia Enterprise 2024".
+        * Valor: "$5,000".
+        * Stage (Etapa): Badge de color (ej. "Negociación").
+    * *Botón:* "+ Crear Deal".
+4.  **Sección: Notas:**
+    * Lista de notas recientes dejadas por otros agentes.
+
+---
+
+## 4. Actualización del Modelo de Datos (Mock Data)
+
+Necesitamos extender nuestros datos falsos para incluir esta información de CRM.
+
+**Archivo: `src/data/mockCRM.ts`** (o extender `mockInbox.ts`)
+
+```typescript
+export interface CRMContact {
+  crmId: string;
+  crmType: 'hubspot' | 'salesforce' | 'pipedrive';
+  email: string;
+  phone: string;
+  company: string;
+  dealValue: number;
+  dealStage: 'New' | 'Discovery' | 'Negotiation' | 'Closed Won';
+  lastNote: string;
+  profileUrl: string; // Link al CRM real
+}
+
+// Extensión de la interfaz de Mensaje para vincularlo
+export interface SmartMessageWithCRM extends SmartMessage {
+    crmData?: CRMContact; // Opcional, porque no todos los chats tienen CRM
+}
