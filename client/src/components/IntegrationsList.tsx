@@ -264,7 +264,7 @@ const INTEGRATIONS: Integration[] = [
     id: 'stripe',
     name: 'Stripe',
     description: 'Financial infrastructure platform for the internet.',
-    logo: 'https://logo.clearbit.com/stripe.com',
+    logo: '/logos/stripe.png',
     category: 'finance',
     config: [
         {
