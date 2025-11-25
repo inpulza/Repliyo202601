@@ -1,5 +1,5 @@
 export type MessageStatus = 'unread' | 'drafting' | 'ready_for_review' | 'approved' | 'sent';
-export type Platform = 'instagram' | 'tiktok' | 'facebook' | 'linkedin';
+export type Platform = 'instagram' | 'tiktok' | 'facebook' | 'linkedin' | 'youtube';
 export type MessageType = 'dm' | 'comment';
 export type Tone = 'formal' | 'casual' | 'funny' | 'empathetic';
 
@@ -129,6 +129,17 @@ export const MOCK_MESSAGES: Message[] = [
     author: 'Business Weekly',
     content: 'We would like to feature your franchise in our next issue.',
     timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
+    status: 'unread',
+  },
+  // YouTube Message
+  {
+    id: 'm12',
+    clientId: 'c1',
+    platform: 'youtube',
+    type: 'comment',
+    author: 'BurgerReviewer2000',
+    content: 'Review of the new spicy burger is up on my channel! Check it out.',
+    timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
     status: 'unread',
   },
 

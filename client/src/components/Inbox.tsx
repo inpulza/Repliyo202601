@@ -13,11 +13,9 @@ import {
   User,
   MessageCircle,
   MessageSquare,
-  Instagram,
-  Facebook,
-  Linkedin,
-  Twitter // Used as placeholder for generic or other socials if needed
+  LayoutGrid // Icon for "All"
 } from 'lucide-react';
+import { FaInstagram, FaFacebook, FaLinkedin, FaTiktok, FaYoutube } from 'react-icons/fa';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -72,35 +70,42 @@ export function Inbox() {
            </div>
            
            {/* Filter Tabs */}
-           <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+           <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar items-center">
               <FilterButton 
                 active={activeFilter === 'all'} 
                 onClick={() => setActiveFilter('all')}
                 label="All" 
+                icon={<LayoutGrid className="h-4 w-4" />}
               />
               <FilterButton 
                 active={activeFilter === 'instagram'} 
                 onClick={() => setActiveFilter('instagram')}
                 label="Instagram"
-                icon={<Instagram className="h-3 w-3" />}
+                icon={<FaInstagram className="h-4 w-4" />}
               />
               <FilterButton 
                 active={activeFilter === 'tiktok'} 
                 onClick={() => setActiveFilter('tiktok')}
                 label="TikTok"
-                icon={<span className="text-[10px] font-bold">TT</span>} // Custom text icon for TikTok
+                icon={<FaTiktok className="h-4 w-4" />}
               />
               <FilterButton 
                 active={activeFilter === 'facebook'} 
                 onClick={() => setActiveFilter('facebook')}
                 label="Facebook"
-                icon={<Facebook className="h-3 w-3" />}
+                icon={<FaFacebook className="h-4 w-4" />}
               />
               <FilterButton 
                 active={activeFilter === 'linkedin'} 
                 onClick={() => setActiveFilter('linkedin')}
                 label="LinkedIn"
-                icon={<Linkedin className="h-3 w-3" />}
+                icon={<FaLinkedin className="h-4 w-4" />}
+              />
+               <FilterButton 
+                active={activeFilter === 'youtube'} 
+                onClick={() => setActiveFilter('youtube')}
+                label="YouTube"
+                icon={<FaYoutube className="h-4 w-4" />}
               />
            </div>
         </div>
@@ -326,25 +331,26 @@ function FilterButton({ active, onClick, label, icon }: { active: boolean, onCli
   return (
     <button 
       onClick={onClick}
+      title={label}
       className={cn(
-        "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border shrink-0",
+        "flex items-center justify-center h-8 w-8 rounded-full text-xs font-medium transition-all border shrink-0",
         active 
           ? "bg-gray-900 text-white border-gray-900" 
           : "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50"
       )}
     >
       {icon}
-      {label}
     </button>
   );
 }
 
 function PlatformIcon({ platform, className }: { platform: Platform, className?: string }) {
   switch(platform) {
-    case 'instagram': return <Instagram className={className} />;
-    case 'facebook': return <Facebook className={className} />;
-    case 'linkedin': return <Linkedin className={className} />;
-    case 'tiktok': return <span className={cn("font-bold text-[10px]", className)}>TT</span>;
+    case 'instagram': return <FaInstagram className={className} />;
+    case 'facebook': return <FaFacebook className={className} />;
+    case 'linkedin': return <FaLinkedin className={className} />;
+    case 'tiktok': return <FaTiktok className={className} />;
+    case 'youtube': return <FaYoutube className={className} />;
     default: return <MessageSquare className={className} />;
   }
 }
@@ -355,6 +361,7 @@ function PlatformBadge({ platform }: { platform: Platform }) {
     facebook: "text-blue-600 border-blue-200 bg-blue-50",
     linkedin: "text-blue-700 border-blue-200 bg-blue-50",
     tiktok: "text-black border-gray-200 bg-gray-100",
+    youtube: "text-red-600 border-red-200 bg-red-50",
   };
 
   return (
