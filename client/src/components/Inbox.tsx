@@ -40,8 +40,9 @@ import { Platform, MessageType, Urgency, Intent, Sentiment, Message, MessageStat
 import { motion, AnimatePresence } from "framer-motion";
 
 export function Inbox() {
-  const { messages, activeClientId, approveMessage, refreshFeed } = useNexus();
+  const { messages, activeClientId, approveMessage, updateMessageDraft, refreshFeed } = useNexus();
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
   
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -76,6 +77,11 @@ export function Inbox() {
       setSelectedMessageId(filteredMessages[0].id);
     }
   }, [filteredMessages, selectedMessageId]);
+
+  // Reset editing state when selecting a new message
+  useEffect(() => {
+    setIsEditing(false);
+  }, [selectedMessageId]);
 
   const selectedMessage = messages.find(m => m.id === selectedMessageId);
 
@@ -335,18 +341,34 @@ export function Inbox() {
                                     </Badge>
                                  </div>
                                  <div className="p-4">
-                                    <textarea 
-                                       className="w-full bg-transparent border-none p-0 text-sm text-gray-800 resize-none focus:outline-none min-h-[80px] leading-relaxed"
-                                       defaultValue={selectedMessage.draftResponse}
-                                    />
+                                    {isEditing ? (
+                                       <textarea 
+                                          className="w-full bg-white border border-indigo-200 rounded-md p-3 text-sm text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[120px] leading-relaxed"
+                                          value={selectedMessage.draftResponse}
+                                          onChange={(e) => updateMessageDraft(selectedMessage.id, e.target.value)}
+                                          autoFocus
+                                       />
+                                    ) : (
+                                       <div className="w-full bg-transparent border-none p-0 text-sm text-gray-800 min-h-[80px] leading-relaxed whitespace-pre-wrap">
+                                          {selectedMessage.draftResponse}
+                                       </div>
+                                    )}
                                  </div>
                                  <div className="bg-gray-50 p-3 flex items-center justify-between border-t">
                                     <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-foreground h-8">
                                        Discard
                                     </Button>
                                     <div className="flex items-center gap-2">
-                                       <Button variant="outline" size="sm" className="h-8 text-xs bg-white">
-                                          Edit Response
+                                       <Button 
+                                          variant="outline" 
+                                          size="sm" 
+                                          className={cn(
+                                             "h-8 text-xs bg-white",
+                                             isEditing && "bg-indigo-50 text-indigo-700 border-indigo-200"
+                                          )}
+                                          onClick={() => setIsEditing(!isEditing)}
+                                       >
+                                          {isEditing ? "Save Draft" : "Edit Response"}
                                        </Button>
                                        <Button 
                                           size="sm" 

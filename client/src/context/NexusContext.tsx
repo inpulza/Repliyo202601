@@ -9,6 +9,7 @@ interface NexusContextType {
   messages: Message[];
   setActiveClientId: (id: string) => void;
   updateClientSettings: (clientId: string, settings: ClientSettings) => void;
+  updateMessageDraft: (messageId: string, draft: string) => void;
   approveMessage: (messageId: string) => void;
   refreshFeed: () => void;
   addClient: (client: Client) => void;
@@ -141,6 +142,12 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  const updateMessageDraft = (messageId: string, draft: string) => {
+    setMessages(prev => prev.map(m => 
+      m.id === messageId ? { ...m, draftResponse: draft } : m
+    ));
+  };
+
   const approveMessage = (messageId: string) => {
     setMessages(prev => prev.map(m => 
       m.id === messageId ? { ...m, status: 'approved' } : m
@@ -171,6 +178,7 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
       messages,
       setActiveClientId,
       updateClientSettings,
+      updateMessageDraft,
       approveMessage,
       refreshFeed,
       addClient,
