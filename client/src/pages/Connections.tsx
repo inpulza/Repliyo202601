@@ -96,12 +96,12 @@ export function Connections() {
         name: 'Facebook & Instagram',
         description: 'Connect pages and business accounts',
         icon: (
-            <div className="flex -space-x-2">
-                <div className="bg-white rounded-full p-1 shadow-sm z-10">
-                    <FaFacebook className="h-6 w-6 text-blue-600" />
+            <div className="flex -space-x-2 items-center">
+                <div className="bg-white rounded-full p-1 shadow-sm z-10 border border-gray-100">
+                    <FaFacebook className="h-5 w-5 text-blue-600" />
                 </div>
-                <div className="bg-white rounded-full p-1 shadow-sm">
-                    <FaInstagram className="h-6 w-6 text-pink-600" />
+                <div className="bg-white rounded-full p-1 shadow-sm border border-gray-100">
+                    <FaInstagram className="h-5 w-5 text-pink-600" />
                 </div>
             </div>
         ),
@@ -187,7 +187,11 @@ export function Connections() {
                 <CardContent className="flex flex-col p-3 gap-1.5 h-24 justify-between">
                     <div className="flex items-start justify-between w-full">
                          <div className="shrink-0 p-1.5 bg-gray-50 rounded-lg group-hover:scale-105 transition-transform duration-300">
-                            {React.cloneElement(platform.icon as React.ReactElement<any>, { className: "h-5 w-5" })}
+                            {/* If the icon is a React Element, clone it but ONLY if it's NOT the custom meta icon which is a div */}
+                            {React.isValidElement(platform.icon) && platform.icon.type !== 'div' 
+                                ? React.cloneElement(platform.icon as React.ReactElement<any>, { className: "h-5 w-5" })
+                                : platform.icon
+                            }
                         </div>
                          {platform.badge && (
                              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 bg-yellow-50 text-yellow-700 border-yellow-100/50">
