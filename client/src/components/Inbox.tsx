@@ -382,6 +382,7 @@ export function Inbox() {
                     message={msg} 
                     isSelected={selectedMessageId === msg.id} 
                     onClick={() => setSelectedMessageId(msg.id)} 
+                    onOpenCRM={() => setIsCRMOpen(true)}
                   />
                 ))
               )}
@@ -656,7 +657,7 @@ export function Inbox() {
 
 // --- Sub-Components ---
 
-function MessageCard({ message, isSelected, onClick }: { message: Message, isSelected: boolean, onClick: () => void }) {
+function MessageCard({ message, isSelected, onClick, onOpenCRM }: { message: Message, isSelected: boolean, onClick: () => void, onOpenCRM?: () => void }) {
     return (
         <motion.button
             layout
@@ -751,7 +752,15 @@ function MessageCard({ message, isSelected, onClick }: { message: Message, isSel
                                 </span>
                             </div>
                         ) : (
-                            <div className="flex items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity cursor-pointer group/add" title="Not Synced - Click to Create">
+                            <div 
+                                className="flex items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity cursor-pointer group/add" 
+                                title="Not Synced - Click to Create"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onClick();
+                                    onOpenCRM?.();
+                                }}
+                            >
                                 <div className="h-5 w-5 rounded-full border border-dashed border-gray-400 flex items-center justify-center shrink-0 bg-gray-50 group-hover/add:border-indigo-500 group-hover/add:bg-indigo-50 transition-colors">
                                     <span className="text-[10px] text-gray-500 font-bold group-hover/add:text-indigo-600">+</span>
                                 </div>
