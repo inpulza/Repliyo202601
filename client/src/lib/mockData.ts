@@ -1,7 +1,7 @@
 
 export type MessageStatus = 'unread' | 'drafting' | 'ready_for_review' | 'approved' | 'sent';
 export type Platform = 'instagram' | 'tiktok' | 'facebook' | 'linkedin' | 'youtube' | 'google-business' | 'whatsapp';
-export type MessageType = 'dm' | 'comment';
+export type MessageType = 'dm' | 'comment' | 'review';
 export type Tone = 'formal' | 'casual' | 'funny' | 'empathetic';
 export type Urgency = 'high' | 'medium' | 'low';
 export type Intent = 'sales' | 'support' | 'complaint' | 'general';
@@ -198,7 +198,7 @@ export const MOCK_MESSAGES: Message[] = [
     id: 'm7',
     clientId: 'c1',
     platform: 'google-business',
-    type: 'comment',
+    type: 'review',
     author: 'Local Guide Level 6',
     content: 'Great place, but parking is a nightmare during lunch hours.',
     timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago

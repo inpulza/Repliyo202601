@@ -368,6 +368,7 @@ export function Inbox() {
                       <SelectItem value="all">All Types</SelectItem>
                       <SelectItem value="dm">Direct Message</SelectItem>
                       <SelectItem value="comment">Comment</SelectItem>
+                      <SelectItem value="review">Review</SelectItem>
                   </SelectContent>
               </Select>
            </div>
@@ -416,7 +417,11 @@ export function Inbox() {
                         <div className="flex items-center gap-2 mt-1">
                              <SentimentIndicator sentiment={selectedMessage.sentiment} showLabel />
                              <span className="text-gray-300 text-[10px]">|</span>
-                             <span className="text-xs text-muted-foreground">{selectedMessage.type === 'dm' ? 'Direct Message' : 'Comment'}</span>
+                             <span className="text-xs text-muted-foreground">
+                                {selectedMessage.type === 'dm' && 'Direct Message'}
+                                {selectedMessage.type === 'comment' && 'Comment'}
+                                {selectedMessage.type === 'review' && 'Review'}
+                             </span>
                              
                              {selectedMessage.sourceUrl && (
                                 <>
@@ -484,7 +489,9 @@ export function Inbox() {
                                "text-[9px] font-bold uppercase tracking-wide ml-1",
                                getPlatformStyles(selectedMessage.platform).commentBadge
                            )}>
-                               {selectedMessage.type === 'comment' ? 'Public Comment' : 'Direct Message'}
+                               {selectedMessage.type === 'comment' && 'Public Comment'}
+                               {selectedMessage.type === 'review' && 'Public Review'}
+                               {selectedMessage.type === 'dm' && 'Direct Message'}
                            </span>
                         </div>
                         <div className={cn(
@@ -784,7 +791,9 @@ function MessageCard({ message, isSelected, onClick, onOpenCRM }: { message: Mes
                         )}
                         <IntentBadge intent={message.intent} />
                         <Badge variant="outline" className="text-[10px] font-normal h-5 px-1.5 text-gray-500 border-gray-200">
-                            {message.type === 'dm' ? 'DM' : 'Comment'}
+                            {message.type === 'dm' && 'DM'}
+                            {message.type === 'comment' && 'Comment'}
+                            {message.type === 'review' && 'Review'}
                         </Badge>
                     </div>
 
