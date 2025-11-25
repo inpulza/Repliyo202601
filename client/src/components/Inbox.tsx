@@ -34,6 +34,7 @@ import {
   ExternalLink,
   ArrowLeft,
   Info,
+  ChevronDown,
 } from 'lucide-react';
 import { FaInstagram, FaFacebook, FaLinkedin, FaTiktok, FaYoutube, FaWhatsapp } from 'react-icons/fa';
 import { GoogleBusinessIcon } from './GoogleBusinessIcon';
@@ -432,7 +433,9 @@ export function Inbox() {
                             {selectedMessage.author}
                             <PlatformBadge platform={selectedMessage.platform} size="sm" />
                         </h2>
-                        <div className="flex items-center gap-2 mt-1">
+                        
+                        {/* Desktop Metadata */}
+                        <div className="hidden md:flex items-center gap-2 mt-1">
                              <SentimentIndicator sentiment={selectedMessage.sentiment} showLabel />
                              <span className="text-gray-300 text-[10px]">|</span>
                              <span className="text-xs text-muted-foreground">
@@ -455,6 +458,52 @@ export function Inbox() {
                                     </a>
                                 </>
                              )}
+                        </div>
+
+                        {/* Mobile Metadata - Collapsed */}
+                        <div className="flex md:hidden items-center gap-2 mt-1">
+                             <SentimentIndicator sentiment={selectedMessage.sentiment} />
+                             <span className="text-gray-300 text-[10px]">|</span>
+                             
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-5 px-1.5 text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-gray-100 gap-1 -ml-1 rounded-full">
+                                        Message Details <ChevronDown className="h-3 w-3" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start" className="w-56">
+                                    <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                                        Message Information
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuItem className="gap-2">
+                                        <SentimentIndicator sentiment={selectedMessage.sentiment} showLabel />
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem>
+                                        <MessageCircle className="h-3.5 w-3.5 mr-2 text-gray-500" />
+                                        <span className="text-xs">
+                                            {selectedMessage.type === 'dm' && 'Direct Message'}
+                                            {selectedMessage.type === 'comment' && 'Public Comment'}
+                                            {selectedMessage.type === 'review' && 'Review'}
+                                        </span>
+                                    </DropdownMenuItem>
+                                    {selectedMessage.sourceUrl && (
+                                        <>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem asChild>
+                                                <a 
+                                                    href={selectedMessage.sourceUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-2 text-indigo-600 cursor-pointer"
+                                                >
+                                                    <ExternalLink className="h-3.5 w-3.5" />
+                                                    <span className="text-xs font-medium">View Original Context</span>
+                                                </a>
+                                            </DropdownMenuItem>
+                                        </>
+                                    )}
+                                </DropdownMenuContent>
+                             </DropdownMenu>
                         </div>
                     </div>
                  </div>
