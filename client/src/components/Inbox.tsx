@@ -496,121 +496,143 @@ export function Inbox() {
                      </div>
                   </div>
 
-                  {/* AI Suggestion / Response Area (RESTORED) */}
+                  {/* AI Suggestion / Response Area (Modernized) */}
                   <AnimatePresence mode="wait">
                     {selectedMessage.status !== 'sent' && (
                       <motion.div 
-                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                        initial={{ opacity: 0, y: 10, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10 }}
-                        className="relative"
+                        className="relative mt-4"
                       >
-                        <div className={cn(
-                           "rounded-xl border overflow-hidden transition-all duration-500",
-                           selectedMessage.status === 'drafting' 
-                              ? "bg-white border-indigo-100 shadow-sm h-24 flex items-center px-6"
-                              : "bg-white border-indigo-200 shadow-[0_0_30px_-10px_rgba(99,102,241,0.2)] ring-1 ring-indigo-50"
-                        )}>
-                           {selectedMessage.status === 'drafting' ? (
-                              <div className="flex items-center gap-3 text-indigo-600 animate-pulse">
-                                 <span className="text-sm font-medium">Agent is drafting a response...</span>
-                              </div>
-                           ) : selectedMessage.draftResponse ? (
-                              <div className="p-0">
-                                 <div className="bg-gradient-to-r from-indigo-50/50 to-violet-50/50 p-3 border-b border-indigo-50 flex items-center justify-between">
-                                    <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider flex items-center gap-1.5">
-                                       <Brain className="h-3 w-3" /> AI Suggestion
-                                    </span>
-                                    <Badge variant="secondary" className="bg-white/80 text-indigo-700 border-indigo-100 text-[10px] hover:bg-white">
-                                       Confidence: 98%
-                                    </Badge>
-                                 </div>
-                                 <div className="p-4 relative">
-                                    {isEditing ? (
-                                       <>
+                        {selectedMessage.status === 'drafting' ? (
+                           <div className="rounded-2xl bg-white border border-indigo-100 p-6 shadow-sm flex items-center gap-4 animate-pulse">
+                               <div className="h-10 w-10 rounded-full bg-indigo-50 flex items-center justify-center">
+                                   <Sparkles className="h-5 w-5 text-indigo-400 animate-spin-slow" />
+                               </div>
+                               <div className="space-y-2 flex-1">
+                                   <div className="h-4 bg-indigo-50 rounded w-1/3"></div>
+                                   <div className="h-3 bg-gray-50 rounded w-2/3"></div>
+                               </div>
+                           </div>
+                        ) : selectedMessage.draftResponse ? (
+                           <div className="group relative">
+                               {/* Modern Card Container */}
+                               <div className={cn(
+                                   "rounded-2xl bg-white border shadow-sm transition-all overflow-hidden",
+                                   (selectedMessage.draftResponse?.length || 0) > getCharacterLimit(selectedMessage.platform, selectedMessage.type)
+                                       ? "border-red-200 shadow-red-500/5 ring-1 ring-red-100"
+                                       : "border-indigo-100 shadow-indigo-500/5 hover:shadow-indigo-500/10"
+                               )}>
+                                   
+                                   {/* Header Area */}
+                                   <div className="px-5 py-3 flex items-center justify-between border-b border-gray-50 bg-gray-50/30">
+                                       <div className="flex items-center gap-2">
+                                           <div className="h-6 w-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm">
+                                               <Sparkles className="h-3 w-3 text-white" />
+                                           </div>
+                                           <span className="text-xs font-bold text-gray-700">AI Suggestion</span>
+                                       </div>
+                                       <div className="flex items-center gap-2">
+                                           <Badge variant="outline" className="bg-white text-[10px] font-medium text-gray-500 border-gray-200 h-5">
+                                               98% match
+                                           </Badge>
+                                       </div>
+                                   </div>
+
+                                   {/* Content Area */}
+                                   <div className="p-5 relative">
+                                       {isEditing ? (
                                           <textarea 
                                              className={cn(
-                                                 "w-full bg-white border rounded-md p-3 text-sm text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[120px] leading-relaxed pb-6",
-                                                 (selectedMessage.draftResponse?.length || 0) > getCharacterLimit(selectedMessage.platform, selectedMessage.type) 
-                                                     ? "border-red-500 focus:ring-red-500/20" 
-                                                     : "border-indigo-200"
+                                                 "w-full bg-transparent border-none p-0 text-sm text-gray-800 resize-none focus:outline-none min-h-[100px] leading-relaxed placeholder:text-gray-300",
                                              )}
+                                             placeholder="Type your response..."
                                              value={selectedMessage.draftResponse}
                                              onChange={(e) => updateMessageDraft(selectedMessage.id, e.target.value)}
                                              autoFocus
                                           />
-                                          {/* Character Counter */}
-                                          <div className="absolute bottom-6 right-6 pointer-events-none">
-                                              {(() => {
-                                                  const count = selectedMessage.draftResponse?.length || 0;
-                                                  const limit = getCharacterLimit(selectedMessage.platform, selectedMessage.type);
-                                                  const isOver = count > limit;
-                                                  const isWarning = count > limit * 0.9 && !isOver;
-                                                  
-                                                  return (
-                                                      <span className={cn(
-                                                          "text-xs font-medium transition-colors bg-white/80 px-1.5 py-0.5 rounded backdrop-blur-sm",
-                                                          isOver ? "text-red-600 font-bold" : 
-                                                          isWarning ? "text-amber-600" : "text-gray-400"
-                                                      )}>
-                                                          {isOver ? (
-                                                              <span className="flex items-center gap-1">
-                                                                  {count} / {limit}
-                                                                  <span className="text-red-600">(-{count - limit})</span>
-                                                              </span>
-                                                          ) : (
-                                                              `${count} / ${limit}`
-                                                          )}
-                                                      </span>
-                                                  );
-                                              })()}
+                                       ) : (
+                                          <div className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap min-h-[60px]">
+                                             {selectedMessage.draftResponse}
                                           </div>
-                                       </>
-                                    ) : (
-                                       <div className="w-full bg-transparent border-none p-0 text-sm text-gray-800 min-h-[80px] leading-relaxed whitespace-pre-wrap">
-                                          {selectedMessage.draftResponse}
+                                       )}
+
+                                       {/* Character Counter (Always Visible) */}
+                                       <div className="flex justify-end mt-4">
+                                          {(() => {
+                                              const count = selectedMessage.draftResponse?.length || 0;
+                                              const limit = getCharacterLimit(selectedMessage.platform, selectedMessage.type);
+                                              const isOver = count > limit;
+                                              const isWarning = count > limit * 0.9 && !isOver;
+                                              
+                                              return (
+                                                  <div className={cn(
+                                                      "text-[10px] font-medium px-2 py-1 rounded-full transition-colors flex items-center gap-1.5 border",
+                                                      isOver ? "bg-red-50 text-red-600 border-red-100" : 
+                                                      isWarning ? "bg-amber-50 text-amber-600 border-amber-100" : 
+                                                      "bg-gray-50 text-gray-400 border-gray-100"
+                                                  )}>
+                                                      <span>{count} / {limit}</span>
+                                                      {isOver && (
+                                                          <span className="font-bold border-l border-red-200 pl-1.5 ml-0.5">
+                                                              -{count - limit}
+                                                          </span>
+                                                      )}
+                                                  </div>
+                                              );
+                                          })()}
                                        </div>
-                                    )}
-                                 </div>
-                                 <div className="bg-gray-50 p-3 flex items-center justify-between border-t">
-                                    <Button 
-                                        variant="ghost" 
-                                        size="sm" 
-                                        className="text-xs text-muted-foreground hover:text-red-600 hover:bg-red-50 h-8"
-                                        onClick={() => updateMessageDraft(selectedMessage.id, "")}
-                                    >
-                                       Discard
-                                    </Button>
-                                    <div className="flex items-center gap-2">
+                                   </div>
+
+                                   {/* Action Footer */}
+                                   <div className="px-4 py-3 bg-gray-50 flex items-center justify-between gap-3 border-t border-gray-100">
                                        <Button 
-                                          variant="outline" 
-                                          size="sm" 
-                                          className={cn(
-                                             "h-8 text-xs bg-white",
-                                             isEditing && "bg-indigo-50 text-indigo-700 border-indigo-200"
-                                          )}
-                                          onClick={() => setIsEditing(!isEditing)}
+                                           variant="ghost" 
+                                           size="sm" 
+                                           className="text-gray-400 hover:text-gray-600 hover:bg-gray-200/50 h-8 w-8 p-0 rounded-full"
+                                           title="Discard"
+                                           onClick={() => updateMessageDraft(selectedMessage.id, "")}
                                        >
-                                          {isEditing ? "Save Draft" : "Edit Response"}
+                                          <RefreshCw className="h-3.5 w-3.5" />
                                        </Button>
-                                       <Button 
-                                          size="sm" 
-                                          className="h-8 text-xs bg-black hover:bg-gray-800 text-white shadow-none gap-1.5 px-4 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                          onClick={() => approveMessage(selectedMessage.id)}
-                                          disabled={(selectedMessage.draftResponse?.length || 0) > getCharacterLimit(selectedMessage.platform, selectedMessage.type)}
-                                       >
-                                          <Check className="h-3.5 w-3.5" />
-                                          Approve & Send
-                                       </Button>
-                                    </div>
-                                 </div>
-                              </div>
-                           ) : (
-                              <div className="p-6 text-center text-muted-foreground text-sm">
-                                 Waiting for agent...
-                              </div>
-                           )}
-                        </div>
+
+                                       <div className="flex items-center gap-2">
+                                          <Button 
+                                             variant="ghost" 
+                                             size="sm" 
+                                             className={cn(
+                                                "h-8 text-xs font-medium px-3",
+                                                isEditing ? "bg-indigo-50 text-indigo-600" : "text-gray-600 hover:bg-white hover:shadow-sm"
+                                             )}
+                                             onClick={() => setIsEditing(!isEditing)}
+                                          >
+                                             {isEditing ? "Done Editing" : "Edit Response"}
+                                          </Button>
+                                          
+                                          <Button 
+                                             size="sm" 
+                                             className={cn(
+                                                "h-8 text-xs font-medium px-4 shadow-sm transition-all",
+                                                (selectedMessage.draftResponse?.length || 0) > getCharacterLimit(selectedMessage.platform, selectedMessage.type)
+                                                    ? "bg-gray-100 text-gray-400 cursor-not-allowed hover:bg-gray-100"
+                                                    : "bg-indigo-600 hover:bg-indigo-700 text-white hover:shadow-md hover:shadow-indigo-500/20"
+                                             )}
+                                             onClick={() => approveMessage(selectedMessage.id)}
+                                             disabled={(selectedMessage.draftResponse?.length || 0) > getCharacterLimit(selectedMessage.platform, selectedMessage.type)}
+                                          >
+                                             <Send className="h-3 w-3 mr-1.5" />
+                                             Approve & Send
+                                          </Button>
+                                       </div>
+                                   </div>
+                               </div>
+                           </div>
+                        ) : (
+                           <div className="p-6 text-center text-muted-foreground text-sm">
+                              Waiting for agent...
+                           </div>
+                        )}
                       </motion.div>
                     )}
                     
