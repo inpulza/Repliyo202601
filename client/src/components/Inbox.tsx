@@ -3,6 +3,14 @@ import { useNexus } from '@/context/NexusContext';
 import { cn } from '@/lib/utils';
 import { CRMContextPanel } from './CRMContextPanel';
 import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { 
   Search,
   Flame,
   MoreVertical,
@@ -420,15 +428,28 @@ export function Inbox() {
                         </div>
                     </div>
                  </div>
-                 <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => setIsCRMOpen(!isCRMOpen)} 
-                    className={cn("text-gray-400 hover:text-gray-600", isCRMOpen && "bg-gray-100 text-gray-600")}
-                    title="Toggle CRM Panel"
-                 >
-                    <MoreVertical className="h-5 w-5" />
-                 </Button>
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className={cn("text-gray-400 hover:text-gray-600", isCRMOpen && "bg-gray-100 text-gray-600")}
+                            title="More options"
+                        >
+                            <MoreVertical className="h-5 w-5" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setIsCRMOpen(!isCRMOpen)}>
+                            {isCRMOpen ? "Hide CRM Panel" : "Show CRM Panel"}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem>Mute Conversation</DropdownMenuItem>
+                        <DropdownMenuItem>Mark as Unread</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-red-600">Block Contact</DropdownMenuItem>
+                    </DropdownMenuContent>
+                 </DropdownMenu>
                </div>
             </header>
 

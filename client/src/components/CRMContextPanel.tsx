@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CRMContact } from '@/lib/mockData';
 import { 
   Building2, 
@@ -10,7 +10,9 @@ import {
   StickyNote, 
   Plus,
   X,
-  ChevronsRight
+  ChevronsRight,
+  Check,
+  Loader2
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +21,18 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 interface CRMContextPanelProps {
   contact?: CRMContact;
@@ -42,6 +56,23 @@ const DealStageBadge = ({ stage }: { stage: CRMContact['dealStage'] }) => {
 };
 
 export function CRMContextPanel({ contact, isOpen, onClose }: CRMContextPanelProps) {
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleCreateContact = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setIsCreateDialogOpen(false);
+      toast.success("Contact created in CRM", {
+        description: "The contact has been successfully synced."
+      });
+    }, 1500);
+  };
+
   if (!isOpen) return null;
 
   if (!contact) {
@@ -74,10 +105,56 @@ export function CRMContextPanel({ contact, isOpen, onClose }: CRMContextPanelPro
                 This contact is not synchronized with your CRM yet. Capture this opportunity!
              </p>
              
-             <Button className="w-full bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all hover:scale-[1.02] active:scale-[0.98]">
-                <Plus className="h-4 w-4 mr-2" />
-                Create Contact in CRM
-             </Button>
+             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="w-full bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Contact in CRM
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Create New Contact</DialogTitle>
+                    <DialogDescription>
+                      Add this prospect to your CRM. Fill in the details below.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleCreateContact}>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="name" className="text-right">
+                          Name
+                        </Label>
+                        <Input id="name" defaultValue="Alex Johnson" className="col-span-3" />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="email" className="text-right">
+                          Email
+                        </Label>
+                        <Input id="email" defaultValue="alex@example.com" className="col-span-3" />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="company" className="text-right">
+                          Company
+                        </Label>
+                        <Input id="company" defaultValue="Acme Inc." className="col-span-3" />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Creating...
+                          </>
+                        ) : (
+                          "Create Contact"
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+             </Dialog>
 
              <p className="text-[10px] text-gray-400 mt-6">
                 Syncs with HubSpot, Salesforce & more
