@@ -161,56 +161,56 @@ const getPlatformStyles = (platform: Platform) => {
                 container: "bg-[#efeae2]/60", // WhatsApp wallpaper vibe
                 bubble: "bg-[#e7fce3] border-[#dcf8c6] text-gray-900", // WhatsApp light green bubble
                 badge: "bg-[#dcf8c6] text-green-800 border-green-200",
-                commentBadge: "bg-green-100 text-green-800 border-green-200"
+                commentBadge: "text-green-600"
             };
         case 'facebook':
             return {
                 container: "bg-[#f0f2f5]", // Facebook light gray/blue background
                 bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
                 badge: "bg-blue-100 text-blue-700 border-blue-200",
-                commentBadge: "bg-blue-100 text-blue-700 border-blue-200"
+                commentBadge: "text-blue-600"
             };
         case 'instagram':
             return {
                 container: "bg-gradient-to-br from-pink-50/50 via-white to-purple-50/50", // Subtle gradient
                 bubble: "bg-white border-gray-100 text-gray-900 shadow-sm",
                 badge: "bg-pink-100 text-pink-700 border-pink-200",
-                commentBadge: "bg-pink-100 text-pink-700 border-pink-200"
+                commentBadge: "text-pink-600"
             };
         case 'linkedin':
             return {
                 container: "bg-[#f3f6f8]", // LinkedIn light gray background
                 bubble: "bg-white border-gray-200 text-slate-800 shadow-sm",
                 badge: "bg-slate-100 text-slate-700 border-slate-200",
-                commentBadge: "bg-slate-100 text-slate-700 border-slate-200"
+                commentBadge: "text-slate-600"
             };
         case 'youtube':
             return {
                 container: "bg-red-50/20", // Very subtle red tint
                 bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
                 badge: "bg-red-100 text-red-700 border-red-200",
-                commentBadge: "bg-red-100 text-red-700 border-red-200"
+                commentBadge: "text-red-600"
             };
         case 'tiktok':
             return {
                 container: "bg-gray-50",
                 bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
                 badge: "bg-gray-200 text-gray-800 border-gray-300",
-                commentBadge: "bg-gray-200 text-gray-800 border-gray-300"
+                commentBadge: "text-gray-800"
             };
         case 'google-business':
             return {
                 container: "bg-blue-50/20",
                 bubble: "bg-white border-blue-100 text-gray-900 shadow-sm",
                 badge: "bg-blue-100 text-blue-700 border-blue-200",
-                commentBadge: "bg-blue-100 text-blue-700 border-blue-200"
+                commentBadge: "text-blue-600"
             };
         default:
             return {
                 container: "bg-indigo-50/30",
                 bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
                 badge: "bg-gray-100 text-gray-700 border-gray-200",
-                commentBadge: "bg-gray-100 text-gray-700 border-gray-200"
+                commentBadge: "text-gray-600"
             };
     }
 };
@@ -538,7 +538,7 @@ export function Inbox() {
                             <span className="text-[10px] text-muted-foreground">{new Date(selectedMessage.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                             {selectedMessage.type === 'comment' && (
                                <span className={cn(
-                                   "text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wide ml-1",
+                                   "text-[9px] font-bold uppercase tracking-wide ml-1",
                                    getPlatformStyles(selectedMessage.platform).commentBadge
                                )}>
                                    Public Comment
