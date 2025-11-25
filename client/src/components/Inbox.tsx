@@ -19,6 +19,8 @@ import {
   LayoutGrid,
   Filter,
   Brain,
+  Banknote,
+  Inbox as InboxIcon,
 } from 'lucide-react';
 import { FaInstagram, FaFacebook, FaLinkedin, FaTiktok, FaYoutube } from 'react-icons/fa';
 import { Button } from "@/components/ui/button";
@@ -60,48 +62,81 @@ function QuickStatsWidget({
     const pendingCount = messages.filter(m => m.status === 'unread').length;
 
     return (
-        <div className="grid grid-cols-3 gap-2 px-3 py-3 bg-white border-b">
+        <div className="grid grid-cols-3 gap-3 px-4 py-4 bg-gray-50/50 border-b">
+            {/* Critical Button */}
             <button 
                 onClick={onCriticalClick}
                 className={cn(
-                    "flex flex-col items-center justify-center p-2 rounded-lg border transition-all",
+                    "relative flex flex-col items-center justify-center h-20 rounded-2xl border shadow-sm transition-all",
                     activeFilters.fireMode 
-                        ? "bg-red-50 border-red-200 ring-1 ring-red-200" 
-                        : "bg-white border-gray-100 hover:border-red-100 hover:bg-red-50/50"
+                        ? "bg-white border-red-200 ring-2 ring-red-100" 
+                        : "bg-white border-gray-200 hover:border-red-200 hover:shadow-md"
                 )}
             >
-                <div className="flex items-center gap-1 text-red-600 mb-1">
-                    <Flame className="h-3.5 w-3.5 fill-red-600" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Critical</span>
+                <div className={cn(
+                    "h-8 w-8 rounded-full flex items-center justify-center mb-1.5 transition-colors",
+                    activeFilters.fireMode ? "bg-red-50" : "bg-gray-50"
+                )}>
+                    <Flame className={cn("h-4 w-4", activeFilters.fireMode ? "fill-red-500 text-red-500" : "text-gray-500")} />
                 </div>
-                <span className="text-xl font-bold text-gray-900">{criticalCount}</span>
+                <span className={cn("text-[10px] font-semibold uppercase tracking-wide", activeFilters.fireMode ? "text-red-600" : "text-gray-500")}>
+                    Critical
+                </span>
+                
+                {/* Notification Badge */}
+                {criticalCount > 0 && (
+                    <div className="absolute top-1.5 right-1.5 bg-red-500 text-white text-[10px] font-bold h-5 min-w-[20px] flex items-center justify-center rounded-full px-1 shadow-sm ring-2 ring-white">
+                        {criticalCount}
+                    </div>
+                )}
             </button>
 
+            {/* Opportunities Button */}
             <button 
                 onClick={onOpportunitiesClick}
                 className={cn(
-                    "flex flex-col items-center justify-center p-2 rounded-lg border transition-all",
+                    "relative flex flex-col items-center justify-center h-20 rounded-2xl border shadow-sm transition-all",
                     activeFilters.intent === 'sales'
-                        ? "bg-green-50 border-green-200 ring-1 ring-green-200"
-                        : "bg-white border-gray-100 hover:border-green-100 hover:bg-green-50/50"
+                        ? "bg-white border-emerald-200 ring-2 ring-emerald-100"
+                        : "bg-white border-gray-200 hover:border-emerald-200 hover:shadow-md"
                 )}
             >
-                <div className="flex items-center gap-1 text-emerald-600 mb-1">
-                    <span className="text-xs">💰</span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Sales</span>
+                 <div className={cn(
+                    "h-8 w-8 rounded-full flex items-center justify-center mb-1.5 transition-colors",
+                    activeFilters.intent === 'sales' ? "bg-emerald-50" : "bg-gray-50"
+                )}>
+                    <Banknote className={cn("h-4 w-4", activeFilters.intent === 'sales' ? "text-emerald-600" : "text-gray-500")} />
                 </div>
-                <span className="text-xl font-bold text-gray-900">{opportunityCount}</span>
+                <span className={cn("text-[10px] font-semibold uppercase tracking-wide", activeFilters.intent === 'sales' ? "text-emerald-600" : "text-gray-500")}>
+                    Sales
+                </span>
+
+                 {/* Notification Badge */}
+                 {opportunityCount > 0 && (
+                    <div className="absolute top-1.5 right-1.5 bg-emerald-500 text-white text-[10px] font-bold h-5 min-w-[20px] flex items-center justify-center rounded-full px-1 shadow-sm ring-2 ring-white">
+                        {opportunityCount}
+                    </div>
+                )}
             </button>
 
+            {/* Pending Button */}
             <button 
                 onClick={onPendingClick}
-                className="flex flex-col items-center justify-center p-2 rounded-lg border bg-white border-gray-100 hover:border-blue-100 hover:bg-blue-50/50 transition-all"
+                className="relative flex flex-col items-center justify-center h-20 rounded-2xl border border-gray-200 bg-white shadow-sm hover:border-blue-200 hover:shadow-md transition-all"
             >
-                <div className="flex items-center gap-1 text-blue-600 mb-1">
-                    <span className="text-xs">📥</span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Pending</span>
+                 <div className="h-8 w-8 rounded-full bg-gray-50 flex items-center justify-center mb-1.5">
+                    <InboxIcon className="h-4 w-4 text-gray-500" />
                 </div>
-                <span className="text-xl font-bold text-gray-900">{pendingCount}</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                    Pending
+                </span>
+
+                {/* Notification Badge */}
+                {pendingCount > 0 && (
+                    <div className="absolute top-1.5 right-1.5 bg-blue-500 text-white text-[10px] font-bold h-5 min-w-[20px] flex items-center justify-center rounded-full px-1 shadow-sm ring-2 ring-white">
+                        {pendingCount}
+                    </div>
+                )}
             </button>
         </div>
     );
