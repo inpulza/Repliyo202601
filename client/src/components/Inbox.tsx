@@ -751,10 +751,13 @@ function MessageCard({ message, isSelected, onClick }: { message: Message, isSel
                                 </span>
                             </div>
                         ) : (
-                            <div className="flex items-center gap-1.5 opacity-50 hover:opacity-100 transition-opacity" title="Not Synced - Click to Create">
-                                <div className="h-5 w-5 rounded-full border border-dashed border-gray-300 flex items-center justify-center shrink-0 bg-gray-50">
-                                    <span className="text-[10px] text-gray-400 font-bold">+</span>
+                            <div className="flex items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity cursor-pointer group/add" title="Not Synced - Click to Create">
+                                <div className="h-5 w-5 rounded-full border border-dashed border-gray-400 flex items-center justify-center shrink-0 bg-gray-50 group-hover/add:border-indigo-500 group-hover/add:bg-indigo-50 transition-colors">
+                                    <span className="text-[10px] text-gray-500 font-bold group-hover/add:text-indigo-600">+</span>
                                 </div>
+                                <span className="text-[10px] font-medium text-gray-500 group-hover/add:text-indigo-600 transition-colors">
+                                    Add to CRM
+                                </span>
                             </div>
                         )}
 
