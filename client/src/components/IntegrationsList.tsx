@@ -379,11 +379,11 @@ export function IntegrationsList() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-1">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-                <PlugZap className="h-5 w-5 text-indigo-500" />
-                Integrations Marketplace
-            </h2>
-            <p className="text-sm text-muted-foreground">Connect your favorite tools to enhance your workflow.</p>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                <PlugZap className="h-6 w-6 text-indigo-500" />
+                Integrations
+            </h1>
+            <p className="text-muted-foreground">Connect your favorite tools to enhance your workflow.</p>
         </div>
         <div className="relative w-full sm:w-64">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
