@@ -507,7 +507,7 @@ export function Inbox() {
 
             {/* Chat Content */}
             <div className={cn("flex-1 relative flex flex-col overflow-hidden", selectedMessage ? getPlatformStyles(selectedMessage.platform).container : "bg-indigo-50/30")}>
-                <ScrollArea className="flex-1 p-8">
+                <ScrollArea className="flex-1 p-4 md:p-8">
                    <div className="max-w-3xl mx-auto space-y-8 pb-32">
                   {/* Date Separator */}
                   <div className="flex justify-center">
@@ -710,7 +710,7 @@ export function Inbox() {
             </ScrollArea>
 
             {/* Floating AI Analysis Card */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-3xl z-30">
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[95%] md:w-[90%] max-w-3xl z-30">
                 <motion.div 
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}

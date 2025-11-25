@@ -4,7 +4,7 @@ import { BottomNav } from './BottomNav';
 
 export function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background">
+    <div className="flex h-[100dvh] w-full overflow-hidden bg-background">
       <div className="hidden md:flex h-full shrink-0">
         <Sidebar />
       </div>
