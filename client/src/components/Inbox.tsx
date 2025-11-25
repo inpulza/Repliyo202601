@@ -153,6 +153,68 @@ function QuickStatsWidget({
     );
 }
 
+// --- Helper: Platform Styles ---
+const getPlatformStyles = (platform: Platform) => {
+    switch (platform) {
+        case 'whatsapp':
+            return {
+                container: "bg-[#efeae2]/60", // WhatsApp wallpaper vibe
+                bubble: "bg-[#e7fce3] border-[#dcf8c6] text-gray-900", // WhatsApp light green bubble
+                badge: "bg-[#dcf8c6] text-green-800 border-green-200",
+                commentBadge: "bg-green-100 text-green-800 border-green-200"
+            };
+        case 'facebook':
+            return {
+                container: "bg-blue-50/30",
+                bubble: "bg-blue-50 border-blue-100 text-gray-900",
+                badge: "bg-blue-100 text-blue-700 border-blue-200",
+                commentBadge: "bg-blue-100 text-blue-700 border-blue-200"
+            };
+        case 'instagram':
+            return {
+                container: "bg-pink-50/20",
+                bubble: "bg-fuchsia-50/40 border-pink-100 text-gray-900",
+                badge: "bg-pink-100 text-pink-700 border-pink-200",
+                commentBadge: "bg-pink-100 text-pink-700 border-pink-200"
+            };
+        case 'linkedin':
+            return {
+                container: "bg-slate-50/40",
+                bubble: "bg-slate-50 border-slate-200 text-slate-800",
+                badge: "bg-slate-100 text-slate-700 border-slate-200",
+                commentBadge: "bg-slate-100 text-slate-700 border-slate-200"
+            };
+        case 'youtube':
+            return {
+                container: "bg-red-50/10",
+                bubble: "bg-red-50/20 border-red-100 text-gray-900",
+                badge: "bg-red-100 text-red-700 border-red-200",
+                commentBadge: "bg-red-100 text-red-700 border-red-200"
+            };
+        case 'tiktok':
+            return {
+                container: "bg-gray-50/30",
+                bubble: "bg-gray-100 border-gray-200 text-gray-900",
+                badge: "bg-gray-200 text-gray-800 border-gray-300",
+                commentBadge: "bg-gray-200 text-gray-800 border-gray-300"
+            };
+        case 'google-business':
+            return {
+                container: "bg-blue-50/20",
+                bubble: "bg-white border-blue-100 text-gray-900",
+                badge: "bg-blue-100 text-blue-700 border-blue-200",
+                commentBadge: "bg-blue-100 text-blue-700 border-blue-200"
+            };
+        default:
+            return {
+                container: "bg-indigo-50/30",
+                bubble: "bg-white border-gray-200 text-gray-900",
+                badge: "bg-gray-100 text-gray-700 border-gray-200",
+                commentBadge: "bg-gray-100 text-gray-700 border-gray-200"
+            };
+    }
+};
+
 export function Inbox() {
   const { messages, activeClientId, approveMessage, updateMessageDraft, refreshFeed } = useNexus();
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
@@ -455,7 +517,7 @@ export function Inbox() {
             </header>
 
             {/* Chat Content */}
-            <div className="flex-1 relative flex flex-col bg-indigo-50/30 overflow-hidden">
+            <div className={cn("flex-1 relative flex flex-col overflow-hidden", selectedMessage ? getPlatformStyles(selectedMessage.platform).container : "bg-indigo-50/30")}>
                 <ScrollArea className="flex-1 p-8">
                    <div className="max-w-3xl mx-auto space-y-8 pb-32">
                   {/* Date Separator */}
@@ -476,13 +538,14 @@ export function Inbox() {
                             <span className="text-[10px] text-muted-foreground">{new Date(selectedMessage.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                         </div>
                         <div className={cn(
-                            "p-4 rounded-2xl text-sm leading-relaxed shadow-sm relative",
-                            selectedMessage.type === 'dm' 
-                                ? "bg-white border border-gray-200 text-gray-800 rounded-tl-none" // DM Style
-                                : "bg-blue-50/50 border border-blue-100 text-blue-900 rounded-tl-none" // Comment Style (Public)
+                            "p-4 rounded-2xl text-sm leading-relaxed shadow-sm relative rounded-tl-none",
+                            getPlatformStyles(selectedMessage.platform).bubble
                         )}>
                            {selectedMessage.type === 'comment' && (
-                               <div className="absolute -top-3 right-3 bg-blue-100 text-blue-700 text-[9px] font-bold px-1.5 py-0.5 rounded border border-blue-200 uppercase tracking-wide">
+                               <div className={cn(
+                                   "absolute -top-3 right-3 text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wide",
+                                   getPlatformStyles(selectedMessage.platform).commentBadge
+                               )}>
                                    Public Comment
                                </div>
                            )}
