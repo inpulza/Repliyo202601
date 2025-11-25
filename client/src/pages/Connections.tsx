@@ -8,7 +8,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { IntegrationsList } from "@/components/IntegrationsList";
 
 export function Connections() {
   const { 
@@ -170,8 +169,6 @@ export function Connections() {
           </CardContent>
         </Card>
       </div>
-
-      <IntegrationsList />
     </div>
   );
 }

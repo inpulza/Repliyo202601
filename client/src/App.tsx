@@ -10,6 +10,7 @@ import { Inbox } from "@/components/Inbox";
 import { AgentSettings } from "@/components/AgentSettings";
 
 import { Connections } from "@/pages/Connections";
+import { IntegrationsPage } from "@/pages/Integrations";
 
 function Router() {
   return (
@@ -17,6 +18,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Inbox} />
         <Route path="/connections" component={Connections} />
+        <Route path="/integrations" component={IntegrationsPage} />
         <Route path="/settings" component={AgentSettings} />
         <Route component={NotFound} />
       </Switch>

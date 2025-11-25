@@ -135,6 +135,21 @@ export function Sidebar() {
           </Button>
         </Link>
 
+        <Link href="/integrations">
+          <Button 
+            variant="ghost" 
+            className={cn(
+              "w-full justify-start gap-3 h-9 px-3 text-sm font-medium transition-all rounded-lg", 
+              location === "/integrations" 
+                ? "bg-white/10 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]" 
+                : "hover:bg-white/5 hover:text-gray-200"
+            )}
+          >
+            <Command className="h-4 w-4" />
+            Integrations
+          </Button>
+        </Link>
+
         <Link href="/settings">
           <Button 
             variant="ghost" 
