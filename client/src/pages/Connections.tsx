@@ -184,19 +184,31 @@ export function Connections() {
                 )}
                 onClick={() => handleConnectMock(platform.name)}
             >
-                <CardContent className="flex flex-row items-center p-3 gap-3 h-16">
-                    <div className="shrink-0 p-1.5 bg-gray-50 rounded-lg group-hover:scale-105 transition-transform duration-300">
-                        {React.cloneElement(platform.icon as React.ReactElement<any>, { className: "h-5 w-5" })}
+                <CardContent className="flex flex-col p-3 gap-1.5 h-24 justify-between">
+                    <div className="flex items-start justify-between w-full">
+                         <div className="shrink-0 p-1.5 bg-gray-50 rounded-lg group-hover:scale-105 transition-transform duration-300">
+                            {React.cloneElement(platform.icon as React.ReactElement<any>, { className: "h-5 w-5" })}
+                        </div>
+                         {platform.badge && (
+                             <Badge variant="secondary" className="text-[9px] h-4 px-1.5 bg-yellow-50 text-yellow-700 border-yellow-100/50">
+                                 {platform.badge}
+                             </Badge>
+                         )}
                     </div>
-                    <div className="flex flex-col min-w-0">
+                   
+                    <div className="flex flex-col min-w-0 mt-1">
                         <div className="flex items-center gap-1.5">
                             <span className="font-medium text-xs text-gray-900 truncate">{platform.name}</span>
                         </div>
-                        <span className="text-[10px] text-indigo-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity -ml-1 translate-y-1 group-hover:translate-y-0 duration-200 flex items-center">
-                           Connect <ExternalLink className="h-2.5 w-2.5 ml-1" />
-                        </span>
+                         <p className="text-[10px] text-muted-foreground leading-tight line-clamp-2 mt-0.5">
+                            {platform.description}
+                        </p>
                     </div>
                 </CardContent>
+                
+                <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-2 group-hover:translate-y-0">
+                     <ExternalLink className="h-3 w-3 text-indigo-400" />
+                </div>
             </Card>
           ))}
         </div>
