@@ -449,9 +449,9 @@ export function IntegrationsList() {
               const isConnected = connectedState[integration.id];
               
               return (
-              <Card key={integration.id} className="flex flex-col group hover:border-indigo-200 transition-all">
+              <Card key={integration.id} className="flex flex-col group border border-border bg-card shadow-none hover:border-primary/50 transition-all">
                 <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                   <div className="h-14 w-14 relative flex items-center justify-center bg-white rounded-xl p-2 border shadow-sm shrink-0">
+                   <div className="h-14 w-14 relative flex items-center justify-center bg-muted/10 rounded-xl p-2 border border-transparent group-hover:border-border/50 transition-colors shrink-0">
                        <img 
                             src={integration.logo} 
                             alt={integration.name} 
@@ -459,27 +459,27 @@ export function IntegrationsList() {
                             onError={(e) => {
                                 // Fallback if image fails
                                 (e.target as HTMLImageElement).style.display = 'none';
-                                (e.target as HTMLImageElement).parentElement!.innerHTML = `<span class="text-[10px] font-bold text-gray-400">${integration.name.substring(0,2)}</span>`;
+                                (e.target as HTMLImageElement).parentElement!.innerHTML = `<span class="text-[10px] font-bold text-muted-foreground">${integration.name.substring(0,2)}</span>`;
                             }}
                         />
                    </div>
                    <div className="flex flex-col items-end gap-1">
                        {isConnected ? (
-                           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1">
-                               <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200 text-[10px] font-medium">
+                               <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_4px_rgba(34,197,94,0.4)]" />
                                Active
-                           </Badge>
+                           </div>
                        ) : (
-                           <Badge variant="outline" className="bg-gray-50 text-gray-500 border-gray-200">
-                               disconnected
-                           </Badge>
+                           <div className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border text-[10px] font-medium">
+                               Disconnected
+                           </div>
                        )}
                    </div>
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col pt-3">
                   <div className="mb-4">
-                      <CardTitle className="text-base mb-1">{integration.name}</CardTitle>
-                      <CardDescription className="text-xs line-clamp-2 h-8">{integration.description}</CardDescription>
+                      <CardTitle className="text-base mb-1 font-semibold text-foreground">{integration.name}</CardTitle>
+                      <CardDescription className="text-xs line-clamp-2 h-8 text-muted-foreground leading-relaxed">{integration.description}</CardDescription>
                   </div>
                   
                   <div className="mt-auto pt-2">
@@ -488,7 +488,7 @@ export function IntegrationsList() {
                               <Button 
                                 size="sm" 
                                 variant="outline" 
-                                className="w-full border-gray-200 hover:bg-gray-50 text-xs h-8"
+                                className="w-full border-border hover:bg-muted hover:text-foreground text-xs h-8 shadow-none"
                                 onClick={() => handleConnectClick(integration)}
                               >
                                   Configure
@@ -496,7 +496,7 @@ export function IntegrationsList() {
                               <Button 
                                 size="sm" 
                                 variant="ghost" 
-                                className="w-auto text-red-500 hover:text-red-600 hover:bg-red-50 text-xs h-8 px-2"
+                                className="w-auto text-destructive hover:text-destructive hover:bg-destructive/10 text-xs h-8 px-2"
                                 onClick={() => handleDisconnect(integration.id)}
                               >
                                   Disconnect
@@ -505,7 +505,8 @@ export function IntegrationsList() {
                       ) : (
                           <Button 
                             size="sm" 
-                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs h-8"
+                            variant="outline"
+                            className="w-full border-border hover:border-primary hover:text-primary hover:bg-primary/5 text-xs h-8 shadow-none transition-all"
                             onClick={() => handleConnectClick(integration)}
                           >
                             Connect
