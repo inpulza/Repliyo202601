@@ -209,29 +209,29 @@ export function Connections() {
             {accounts.map((account) => {
               const capabilities = account.capabilities as any;
               return (
-                <Card key={account.id} className="group border-border bg-card transition-colors hover:border-primary/50">
+                <Card key={account.id} className="group border border-border bg-card shadow-none transition-colors hover:border-primary/50">
                   <CardContent className="p-5">
-                    <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3">
                         <div className="relative">
-                          <Avatar className="h-12 w-12 border border-border">
+                          <Avatar className="h-10 w-10 border-0">
                             <AvatarImage src={account.avatarUrl} />
-                            <AvatarFallback className="bg-primary/5 text-primary font-semibold rounded-md">
+                            <AvatarFallback className="bg-primary/5 text-primary font-semibold">
                               {account.accountName.substring(0, 2)}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="absolute -bottom-1 -right-1 bg-background rounded-md p-1 border border-border">
+                          <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5 ring-2 ring-background">
                             {getPlatformIcon(account.platform, "h-3.5 w-3.5")}
                           </div>
                         </div>
                         <div>
-                          <h3 className="font-semibold text-sm text-foreground">{account.accountName}</h3>
+                          <h3 className="font-medium text-sm text-foreground">{account.accountName}</h3>
                           <p className="text-xs text-muted-foreground capitalize">{getPlatformName(account.platform)}</p>
                         </div>
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 text-muted-foreground hover:text-foreground">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity">
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -249,13 +249,20 @@ export function Connections() {
                       </DropdownMenu>
                     </div>
                     
-                    <div className="flex flex-wrap gap-1.5">
-                       <div className="inline-flex items-center text-[10px] font-medium text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-md">
-                          <div className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5 animate-pulse" />
+                    <div className="flex items-center gap-3 text-[11px] font-medium pl-1">
+                       <div className="flex items-center text-green-600">
+                          <div className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2 animate-pulse shadow-[0_0_6px_rgba(34,197,94,0.4)]" />
                           Connected
                        </div>
-                       {capabilities.dms && <div className="inline-flex items-center text-[10px] font-medium text-muted-foreground bg-muted border border-border px-2 py-0.5 rounded-md">Messages</div>}
-                       {capabilities.comments && <div className="inline-flex items-center text-[10px] font-medium text-muted-foreground bg-muted border border-border px-2 py-0.5 rounded-md">Comments</div>}
+                       
+                       {(capabilities.dms || capabilities.comments) && (
+                         <div className="w-1 h-1 rounded-full bg-border" />
+                       )}
+
+                       <div className="flex gap-3 text-muted-foreground">
+                         {capabilities.dms && <span>Messages</span>}
+                         {capabilities.comments && <span>Comments</span>}
+                       </div>
                     </div>
                   </CardContent>
                 </Card>
