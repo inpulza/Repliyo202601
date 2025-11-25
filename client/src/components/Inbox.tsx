@@ -131,7 +131,7 @@ export function Inbox() {
   const [platformFilter, setPlatformFilter] = useState<Platform | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<MessageType | 'all'>('all');
   const [fireMode, setFireMode] = useState(false);
-  const [isCRMOpen, setIsCRMOpen] = useState(true);
+  const [isCRMOpen, setIsCRMOpen] = useState(!isMobile);
 
   // Filter Logic
   const filteredMessages = messages
