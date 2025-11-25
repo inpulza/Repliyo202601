@@ -161,12 +161,14 @@ export function Inbox() {
   const opportunityCount = clientMessages.filter(m => m.intent === 'sales').length;
   const pendingCount = clientMessages.filter(m => m.status === 'unread').length;
 
-  // Auto-select first message
+  // Auto-select first message (Desktop Only)
   useEffect(() => {
+    if (isMobile) return; // Don't auto-select on mobile
+    
     if (filteredMessages.length > 0 && !filteredMessages.find(m => m.id === selectedMessageId)) {
       setSelectedMessageId(filteredMessages[0].id);
     }
-  }, [filteredMessages, selectedMessageId]);
+  }, [filteredMessages, selectedMessageId, isMobile]);
 
   // Reset editing state when selecting a new message
   useEffect(() => {
