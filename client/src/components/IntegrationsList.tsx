@@ -27,7 +27,7 @@ export interface Integration {
   name: string;
   description: string;
   logo: string;
-  category: 'crm' | 'productivity' | 'database';
+  category: 'crm' | 'productivity' | 'database' | 'messaging' | 'automation';
   config: IntegrationConfig[];
 }
 
@@ -105,6 +105,78 @@ const INTEGRATIONS: Integration[] = [
     ]
   },
   {
+    id: 'evolution-api',
+    name: 'Evolution API',
+    description: 'Open-source WhatsApp integration for automated messaging.',
+    logo: 'https://avatars.githubusercontent.com/u/140392331?s=200&v=4',
+    category: 'messaging',
+    config: [
+        {
+            fieldLabel: "API Key",
+            placeholder: "evolution_...",
+            helpText: "Your Global API Key from Evolution API Manager.",
+            type: "password"
+        },
+        {
+            fieldLabel: "Base URL",
+            placeholder: "https://api.your-domain.com",
+            helpText: "The URL where your Evolution API instance is hosted.",
+            type: "text"
+        }
+    ]
+  },
+  {
+    id: 'n8n',
+    name: 'n8n',
+    description: 'Workflow automation tool for technical people.',
+    logo: 'https://logo.clearbit.com/n8n.io',
+    category: 'automation',
+    config: [
+        {
+            fieldLabel: "API Key",
+            placeholder: "n8n_api_...",
+            helpText: "Settings > API > Create API Key.",
+            type: "password"
+        },
+        {
+            fieldLabel: "Instance URL",
+            placeholder: "https://n8n.your-domain.com",
+            helpText: "The URL of your n8n instance.",
+            type: "text"
+        }
+    ]
+  },
+  {
+    id: 'zapier',
+    name: 'Zapier',
+    description: 'Automate workflows by connecting your apps.',
+    logo: 'https://logo.clearbit.com/zapier.com',
+    category: 'automation',
+    config: [
+        {
+            fieldLabel: "API Key",
+            placeholder: "zap_...",
+            helpText: "Found in My Apps > Connect a new account.",
+            type: "password"
+        }
+    ]
+  },
+  {
+    id: 'slack',
+    name: 'Slack',
+    description: 'Team communication and notifications.',
+    logo: 'https://logo.clearbit.com/slack.com',
+    category: 'messaging',
+    config: [
+        {
+            fieldLabel: "Bot User OAuth Token",
+            placeholder: "xoxb-...",
+            helpText: "OAuth & Permissions > Bot User OAuth Token.",
+            type: "password"
+        }
+    ]
+  },
+  {
     id: 'monday',
     name: 'Monday.com',
     description: 'Work OS to manage your team projects and tasks.',
@@ -151,6 +223,21 @@ const INTEGRATIONS: Integration[] = [
             fieldLabel: "Base ID",
             placeholder: "app...",
             helpText: "The ID of the Airtable Base you want to connect.",
+            type: "text"
+        }
+    ]
+  },
+  {
+    id: 'google-sheets',
+    name: 'Google Sheets',
+    description: 'Spreadsheets for data analysis and collaboration.',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Google_Sheets_logo_%282014-2020%29.svg/512px-Google_Sheets_logo_%282014-2020%29.svg.png',
+    category: 'database',
+    config: [
+        {
+            fieldLabel: "Spreadsheet ID",
+            placeholder: "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+            helpText: "Found in the URL of your Google Sheet.",
             type: "text"
         }
     ]
