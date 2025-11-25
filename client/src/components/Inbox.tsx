@@ -663,22 +663,6 @@ function MessageCard({ message, isSelected, onClick }: { message: Message, isSel
                             <span className={cn("text-sm font-bold truncate text-gray-900", message.status === 'unread' && "")}>
                                 {message.author}
                             </span>
-                            {/* CRM Sync Status Indicator */}
-                            {message.crmData ? (
-                                <div className="flex items-center justify-center h-4 w-4 rounded-full bg-gray-50 border shrink-0" title="Synced with CRM">
-                                    {message.crmData.crmType === 'hubspot' && <img src="/logos/hubspot.png" className="h-2.5 w-2.5 object-contain" />}
-                                    {message.crmData.crmType === 'salesforce' && <img src="https://logo.clearbit.com/salesforce.com" className="h-2.5 w-2.5 object-contain" />}
-                                    {message.crmData.crmType === 'pipedrive' && <img src="/logos/pipedrive.webp" className="h-2.5 w-2.5 object-contain" />}
-                                    {message.crmData.crmType === 'zoho' && <img src="/logos/zoho.png" className="h-2.5 w-2.5 object-contain" />}
-                                    {message.crmData.crmType === 'monday' && <img src="https://logo.clearbit.com/monday.com" className="h-2.5 w-2.5 object-contain" />}
-                                    {message.crmData.crmType === 'notion' && <img src="https://logo.clearbit.com/notion.so" className="h-2.5 w-2.5 object-contain" />}
-                                    {message.crmData.crmType === 'airtable' && <img src="https://logo.clearbit.com/airtable.com" className="h-2.5 w-2.5 object-contain" />}
-                                </div>
-                            ) : (
-                                <div className="h-4 w-4 rounded-full border border-dashed border-gray-300 flex items-center justify-center shrink-0" title="Not Synced - Click to Create">
-                                    <span className="text-[8px] text-gray-400 font-bold">+</span>
-                                </div>
-                            )}
                         </div>
                         <div className="flex items-center gap-1">
                            {message.sourceUrl && (
@@ -723,7 +707,31 @@ function MessageCard({ message, isSelected, onClick }: { message: Message, isSel
                         {message.content}
                     </p>
                     
-                    <div className="flex items-center justify-end mt-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-50">
+                        {/* CRM Sync Status Indicator (Moved Here) */}
+                        {message.crmData ? (
+                            <div className="flex items-center gap-1.5" title={`Synced with ${message.crmData.crmType}`}>
+                                <div className="flex items-center justify-center h-5 w-5 rounded-full bg-white border shadow-sm shrink-0">
+                                    {message.crmData.crmType === 'hubspot' && <img src="/logos/hubspot.png" className="h-3.5 w-3.5 object-contain" />}
+                                    {message.crmData.crmType === 'salesforce' && <img src="https://logo.clearbit.com/salesforce.com" className="h-3.5 w-3.5 object-contain" />}
+                                    {message.crmData.crmType === 'pipedrive' && <img src="/logos/pipedrive.webp" className="h-3.5 w-3.5 object-contain" />}
+                                    {message.crmData.crmType === 'zoho' && <img src="/logos/zoho.png" className="h-3.5 w-3.5 object-contain" />}
+                                    {message.crmData.crmType === 'monday' && <img src="https://logo.clearbit.com/monday.com" className="h-3.5 w-3.5 object-contain" />}
+                                    {message.crmData.crmType === 'notion' && <img src="https://logo.clearbit.com/notion.so" className="h-3.5 w-3.5 object-contain" />}
+                                    {message.crmData.crmType === 'airtable' && <img src="https://logo.clearbit.com/airtable.com" className="h-3.5 w-3.5 object-contain" />}
+                                </div>
+                                <span className="text-[10px] font-medium text-gray-500 capitalize hidden group-hover:block transition-all">
+                                    {message.crmData.crmType}
+                                </span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-1.5 opacity-50 hover:opacity-100 transition-opacity" title="Not Synced - Click to Create">
+                                <div className="h-5 w-5 rounded-full border border-dashed border-gray-300 flex items-center justify-center shrink-0 bg-gray-50">
+                                    <span className="text-[10px] text-gray-400 font-bold">+</span>
+                                </div>
+                            </div>
+                        )}
+
                         <SentimentIndicator sentiment={message.sentiment} />
                     </div>
                 </div>
