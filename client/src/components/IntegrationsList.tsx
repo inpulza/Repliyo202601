@@ -268,7 +268,12 @@ export function IntegrationsList() {
               <div className="mt-auto pt-2">
                   {isConnected ? (
                       <div className="flex gap-2">
-                          <Button size="sm" variant="outline" className="w-full border-gray-200 hover:bg-gray-50 text-xs h-8">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="w-full border-gray-200 hover:bg-gray-50 text-xs h-8"
+                            onClick={() => handleConnectClick(integration)}
+                          >
                               Configure
                           </Button>
                           <Button 

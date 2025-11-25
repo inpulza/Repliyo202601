@@ -534,7 +534,12 @@ export function Inbox() {
                                     )}
                                  </div>
                                  <div className="bg-gray-50 p-3 flex items-center justify-between border-t">
-                                    <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-foreground h-8">
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="text-xs text-muted-foreground hover:text-red-600 hover:bg-red-50 h-8"
+                                        onClick={() => updateMessageDraft(selectedMessage.id, "")}
+                                    >
                                        Discard
                                     </Button>
                                     <div className="flex items-center gap-2">

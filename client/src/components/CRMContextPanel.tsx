@@ -58,6 +58,8 @@ const DealStageBadge = ({ stage }: { stage: CRMContact['dealStage'] }) => {
 export function CRMContextPanel({ contact, isOpen, onClose }: CRMContextPanelProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAddDealOpen, setIsAddDealOpen] = useState(false);
+  const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
 
   const handleCreateContact = (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,6 +73,26 @@ export function CRMContextPanel({ contact, isOpen, onClose }: CRMContextPanelPro
         description: "The contact has been successfully synced."
       });
     }, 1500);
+  };
+
+  const handleAddDeal = (e: React.FormEvent) => {
+      e.preventDefault();
+      setIsSubmitting(true);
+      setTimeout(() => {
+          setIsSubmitting(false);
+          setIsAddDealOpen(false);
+          toast.success("Deal Created", { description: "New deal added to pipeline." });
+      }, 1000);
+  };
+
+  const handleAddNote = (e: React.FormEvent) => {
+      e.preventDefault();
+      setIsSubmitting(true);
+      setTimeout(() => {
+          setIsSubmitting(false);
+          setIsAddNoteOpen(false);
+          toast.success("Note Added", { description: "Note saved to contact timeline." });
+      }, 1000);
   };
 
   if (!isOpen) return null;
@@ -238,9 +260,38 @@ export function CRMContextPanel({ contact, isOpen, onClose }: CRMContextPanelPro
             <div className="space-y-3">
                 <div className="flex items-center justify-between">
                     <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Active Deals</h4>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full hover:bg-indigo-50 hover:text-indigo-600">
-                        <Plus className="h-3 w-3" />
-                    </Button>
+                    <Dialog open={isAddDealOpen} onOpenChange={setIsAddDealOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full hover:bg-indigo-50 hover:text-indigo-600">
+                                <Plus className="h-3 w-3" />
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Add New Deal</DialogTitle>
+                                <DialogDescription>Create a new opportunity for this contact.</DialogDescription>
+                            </DialogHeader>
+                            <form onSubmit={handleAddDeal} className="space-y-4 py-2">
+                                <div className="space-y-2">
+                                    <Label>Deal Name</Label>
+                                    <Input placeholder="e.g. Enterprise License Q4" defaultValue="New Opportunity" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Value ($)</Label>
+                                    <Input type="number" placeholder="0.00" defaultValue="5000" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Stage</Label>
+                                    <Input defaultValue="Discovery" disabled className="bg-gray-50" />
+                                </div>
+                                <DialogFooter>
+                                    <Button type="submit" disabled={isSubmitting}>
+                                        {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Deal"}
+                                    </Button>
+                                </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
                 </div>
 
                 <Card className="shadow-sm border-l-4 border-l-indigo-500 overflow-hidden">
@@ -263,9 +314,34 @@ export function CRMContextPanel({ contact, isOpen, onClose }: CRMContextPanelPro
             <div className="space-y-3">
                 <div className="flex items-center justify-between">
                     <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Recent Notes</h4>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full hover:bg-indigo-50 hover:text-indigo-600">
-                        <Plus className="h-3 w-3" />
-                    </Button>
+                    <Dialog open={isAddNoteOpen} onOpenChange={setIsAddNoteOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full hover:bg-indigo-50 hover:text-indigo-600">
+                                <Plus className="h-3 w-3" />
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Add Note</DialogTitle>
+                                <DialogDescription>Log a call, meeting, or thought.</DialogDescription>
+                            </DialogHeader>
+                            <form onSubmit={handleAddNote} className="space-y-4 py-2">
+                                <div className="space-y-2">
+                                    <Label>Note Content</Label>
+                                    <textarea 
+                                        className="w-full min-h-[100px] rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                        placeholder="Type your note here..."
+                                        defaultValue="Spoke with the client, they are interested in the Q4 plan."
+                                    />
+                                </div>
+                                <DialogFooter>
+                                    <Button type="submit" disabled={isSubmitting}>
+                                        {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Note"}
+                                    </Button>
+                                </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
                 </div>
 
                 <div className="bg-yellow-50/50 border border-yellow-100 rounded-lg p-3 relative">

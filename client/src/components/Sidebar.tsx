@@ -168,15 +168,35 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="p-4 border-t border-[#2C2C2E]">
-        <div className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group">
-          <Avatar className="h-8 w-8 ring-2 ring-white/5 group-hover:ring-white/10 transition-all">
-            <AvatarFallback className="bg-gray-700 text-gray-300">US</AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col overflow-hidden">
-            <span className="text-sm font-medium text-gray-200 group-hover:text-white transition-colors">User Account</span>
-            <span className="text-xs text-gray-600 truncate">user@agency.com</span>
-          </div>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <div className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group select-none">
+              <Avatar className="h-8 w-8 ring-2 ring-white/5 group-hover:ring-white/10 transition-all">
+                <AvatarFallback className="bg-gray-700 text-gray-300">US</AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col overflow-hidden">
+                <span className="text-sm font-medium text-gray-200 group-hover:text-white transition-colors">User Account</span>
+                <span className="text-xs text-gray-600 truncate">user@agency.com</span>
+              </div>
+              <ChevronsUpDown className="h-4 w-4 text-gray-600 ml-auto group-hover:text-gray-400 transition-colors" />
+            </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56 bg-[#252528] border-[#3A3A3C] text-gray-300" align="start" side="top">
+            <DropdownMenuLabel className="text-xs text-gray-500 uppercase tracking-wider">My Account</DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-[#3A3A3C]" />
+            <DropdownMenuItem className="gap-2 cursor-pointer focus:bg-white/10 focus:text-white">
+              <span className="text-sm">Profile Settings</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="gap-2 cursor-pointer focus:bg-white/10 focus:text-white">
+              <span className="text-sm">Billing & Usage</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-[#3A3A3C]" />
+            <DropdownMenuItem className="gap-2 cursor-pointer text-red-400 focus:text-red-300 focus:bg-red-500/10">
+              <LogOut className="h-4 w-4" />
+              <span className="text-sm">Log Out</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );
