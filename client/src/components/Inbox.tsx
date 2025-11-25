@@ -417,7 +417,7 @@ export function Inbox() {
         {selectedMessage ? (
           <>
             {/* Chat Header - AI Summary */}
-            <header className="h-auto min-h-[64px] border-b px-4 md:px-6 py-3 flex flex-col justify-center shrink-0 bg-white z-20 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+            <header className="h-auto min-h-[64px] md:min-h-[80px] border-b px-4 md:px-6 py-3 md:py-4 flex flex-col justify-center shrink-0 bg-white z-20 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
                <div className="flex items-center justify-between gap-3">
                  <div className="flex items-center gap-3 overflow-hidden flex-1">
                     {isMobile && (
@@ -436,7 +436,7 @@ export function Inbox() {
                         </h2>
                         
                         {/* Row 2: Info */}
-                        <div className="flex items-center gap-1.5 mt-0.5">
+                        <div className="flex items-center gap-1.5 mt-0.5 md:mt-1.5">
                              {/* Platform Badge - Unified location */}
                              <PlatformBadge platform={selectedMessage.platform} size="sm" />
                              
