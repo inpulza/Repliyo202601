@@ -22,7 +22,7 @@ import {
   Banknote,
   Inbox as InboxIcon,
 } from 'lucide-react';
-import { FaInstagram, FaFacebook, FaLinkedin, FaTiktok, FaYoutube } from 'react-icons/fa';
+import { FaInstagram, FaFacebook, FaLinkedin, FaTiktok, FaYoutube, FaWhatsapp, FaGoogle } from 'react-icons/fa';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -302,6 +302,22 @@ export function Inbox() {
                 icon={<FaYoutube className="h-3.5 w-3.5" />}
                 activeColorClass="bg-red-600"
                 hoverColorClass="hover:text-red-600 hover:border-red-200 hover:bg-red-50"
+              />
+              <FilterButton 
+                active={platformFilter === 'google-business'} 
+                onClick={() => setPlatformFilter('google-business')}
+                label="Google Business"
+                icon={<FaGoogle className="h-3.5 w-3.5" />}
+                activeColorClass="bg-blue-500"
+                hoverColorClass="hover:text-blue-500 hover:border-blue-200 hover:bg-blue-50"
+              />
+              <FilterButton 
+                active={platformFilter === 'whatsapp'} 
+                onClick={() => setPlatformFilter('whatsapp')}
+                label="WhatsApp"
+                icon={<FaWhatsapp className="h-3.5 w-3.5" />}
+                activeColorClass="bg-green-500"
+                hoverColorClass="hover:text-green-500 hover:border-green-200 hover:bg-green-50"
               />
            </div>
 
@@ -718,6 +734,8 @@ function PlatformIcon({ platform, className }: { platform: Platform, className?:
     case 'linkedin': return <FaLinkedin className={cn("text-[#0077b5]", className)} />;
     case 'tiktok': return <FaTiktok className={cn("text-black", className)} />;
     case 'youtube': return <FaYoutube className={cn("text-red-600", className)} />;
+    case 'google-business': return <FaGoogle className={cn("text-blue-500", className)} />;
+    case 'whatsapp': return <FaWhatsapp className={cn("text-green-500", className)} />;
     default: return <MessageSquare className={className} />;
   }
 }

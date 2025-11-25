@@ -1,6 +1,6 @@
 
 export type MessageStatus = 'unread' | 'drafting' | 'ready_for_review' | 'approved' | 'sent';
-export type Platform = 'instagram' | 'tiktok' | 'facebook' | 'linkedin' | 'youtube';
+export type Platform = 'instagram' | 'tiktok' | 'facebook' | 'linkedin' | 'youtube' | 'google-business' | 'whatsapp';
 export type MessageType = 'dm' | 'comment';
 export type Tone = 'formal' | 'casual' | 'funny' | 'empathetic';
 export type Urgency = 'high' | 'medium' | 'low';
@@ -143,5 +143,35 @@ export const MOCK_MESSAGES: Message[] = [
     intent: 'complaint',
     sentiment: 'negative',
     aiSummary: 'Minor complaint about ambiance/volume.',
+  },
+  // 7. Google Business Review
+  {
+    id: 'm7',
+    clientId: 'c1',
+    platform: 'google-business',
+    type: 'comment',
+    author: 'Local Guide Level 6',
+    content: 'Great place, but parking is a nightmare during lunch hours.',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
+    status: 'unread',
+    urgency: 'medium',
+    intent: 'complaint',
+    sentiment: 'neutral',
+    aiSummary: 'Feedback about parking availability.',
+  },
+  // 8. WhatsApp Message
+  {
+    id: 'm8',
+    clientId: 'c1',
+    platform: 'whatsapp',
+    type: 'dm',
+    author: '+1 555-0123',
+    content: 'Hi, can I place an order for pickup via WhatsApp?',
+    timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString(), // 10 mins ago
+    status: 'unread',
+    urgency: 'high',
+    intent: 'sales',
+    sentiment: 'positive',
+    aiSummary: 'Direct order inquiry via WhatsApp.',
   }
 ];
