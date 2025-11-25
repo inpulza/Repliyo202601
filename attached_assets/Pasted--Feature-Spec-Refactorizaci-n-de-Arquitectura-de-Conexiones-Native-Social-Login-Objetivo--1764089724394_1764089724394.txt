@@ -1,0 +1,95 @@
+# Feature Spec: Refactorización de Arquitectura de Conexiones (Native Social Login)
+
+**Objetivo:** Transformar la pantalla de "Connections" para gestionar conexiones directas a redes sociales (OAuth nativo) y migrar la lógica de Metricool a la nueva sección de "Integrations".
+
+**Estado:** Diseño y Reestructuración de UI.
+
+---
+
+## 1. Migración de Funcionalidad: Metricool
+
+**Cambio Estratégico:** Metricool ya no es el motor principal, sino una integración de terceros (como un CRM).
+
+**Instrucciones:**
+1.  **Mover Componente:** Toma todo el código y la lógica que creaste para la verificación de Metricool (input de token, validación de marcas, etc.).
+2.  **Nueva Ubicación:** Muévelo a la pestaña o vista de **"Integrations"** (donde pusimos los CRMs).
+3.  **Diseño:**
+    * Crea una tarjeta similar a la de HubSpot llamada **"Metricool Import"**.
+    * Al hacer clic en "Conectar" o "Configurar", abre un modal o panel donde aparece la UI de verificación que ya construiste (Input Token + Lista de Marcas).
+    * **Lógica:** Si el usuario conecta Metricool, importamos sus datos. Si no, usamos las conexiones nativas.
+
+---
+
+## 2. Rediseño de Vista: "Social Connections" (Nueva Home de Configuración)
+
+La vista principal de configuración (`ConnectionsView`) ahora se llamará **"Social Accounts"**. Aquí el usuario conecta directamente sus perfiles.
+
+### 2.1. Layout de la Pantalla
+Debe parecerse a un panel de control de identidad.
+
+**Sección A: "Connect New Profile" (Grid de Botones OAuth)**
+Muestra tarjetas para añadir nuevas cuentas. Cada tarjeta debe tener el logo de la red y un botón "Connect".
+
+* **Facebook / Instagram:**
+    * *Botón:* "Continue with Facebook".
+    * *Nota UI:* Unifica ambos, ya que la API de Graph maneja ambos.
+* **TikTok:**
+    * *Botón:* "Connect TikTok Business".
+    * *Badge:* "Comments Only" (Debido a restricciones de API).
+* **YouTube:**
+    * *Botón:* "Sign in with Google".
+    * *Badge:* "Comments Only".
+* **LinkedIn:**
+    * *Botón:* "Connect LinkedIn Page".
+
+**Sección B: "Active Connections" (Lista de Cuentas Conectadas)**
+Una lista donde aparecen las cuentas una vez "conectadas" (simulado por ahora).
+
+* **Diseño de Fila:**
+    * Avatar de la cuenta (ej. Logo de la empresa en esa red).
+    * Nombre de la cuenta (ej. "Inpulza Marketing").
+    * Icono de la red (ej. Instagram).
+    * **Status:** ✅ Active.
+    * **Permisos:** Badges pequeños mostrando qué leemos (ej. "DMs + Comments" o solo "Comments").
+    * **Acción:** Botón "Disconnect" o "Re-auth".
+
+---
+
+## 3. Actualización del Modelo de Datos (Mock Data)
+
+Necesitamos simular que tenemos cuentas nativas conectadas, no solo marcas de Metricool.
+
+**Archivo: `src/data/mockConnections.ts`**
+
+```typescript
+export interface SocialAccount {
+  id: string;
+  platform: 'facebook' | 'instagram' | 'tiktok' | 'youtube' | 'linkedin';
+  accountName: string;
+  avatarUrl: string;
+  status: 'active' | 'expired' | 'connecting';
+  capabilities: {
+    comments: boolean;
+    dms: boolean;
+  };
+}
+
+// Datos de ejemplo para visualizar la UI
+export const mockSocialAccounts: SocialAccount[] = [
+  {
+    id: 'acc_1',
+    platform: 'instagram',
+    accountName: 'Fortress Wellness',
+    avatarUrl: '...', 
+    status: 'active',
+    capabilities: { comments: true, dms: true }
+  },
+  {
+    id: 'acc_2',
+    platform: 'tiktok',
+    accountName: 'Dr. Joel',
+    avatarUrl: '...',
+    status: 'active',
+    capabilities: { comments: true, dms: false } // TikTok API limit
+  }
+];
