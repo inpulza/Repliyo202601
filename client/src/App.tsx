@@ -9,11 +9,14 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Inbox } from "@/components/Inbox";
 import { AgentSettings } from "@/components/AgentSettings";
 
+import { Connections } from "@/pages/Connections";
+
 function Router() {
   return (
     <DashboardLayout>
       <Switch>
         <Route path="/" component={Inbox} />
+        <Route path="/connections" component={Connections} />
         <Route path="/settings" component={AgentSettings} />
         <Route component={NotFound} />
       </Switch>

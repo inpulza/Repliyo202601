@@ -1,0 +1,106 @@
+# PRD: Diseño UI/UX - Smart Inbox Unificado con IA (Fase de Prototipado)
+
+**Versión:** 1.0 - Design Phase
+**Autor:** Director de Proyecto
+**Estado:** Prototipado de Interfaz (Mock Data)
+**Objetivo:** Crear la estructura visual y la experiencia de usuario del Inbox Unificado, integrando visualmente los metadatos de IA (Intención, Urgencia, Sentimiento).
+
+---
+
+## 1. Contexto y Restricciones Técnicas (MUY IMPORTANTE)
+
+**⚠️ INSTRUCCIÓN CRÍTICA: PRESERVACIÓN DEL CÓDIGO EXISTENTE**
+Actualmente, la aplicación funciona como un "Verificador de Conexiones API". **NO elimines ni sobrescribas ninguna funcionalidad existente.**
+
+**Estrategia de Integración:**
+1.  **Navegación:** Crea una barra de navegación lateral (Sidebar) o un menú superior que permita navegar entre dos vistas:
+    * Vista 1: **"Configuración / Conexiones"** (Lo que ya has construido).
+    * Vista 2: **"Smart Inbox"** (La nueva vista que vas a construir ahora).
+2.  **Modularidad:** Construye la nueva vista del Inbox en nuevos componentes (ej. `InboxPage.tsx`, `MessageList.tsx`, `MessageCard.tsx`) sin tocar la lógica de los componentes de conexión existentes.
+
+---
+
+## 2. Definición del Layout General
+
+La vista "Smart Inbox" debe seguir un diseño estándar de 3 columnas para maximizar la eficiencia del operador.
+
+### Estructura Visual:
+1.  **Columna 1 (Navegación - Ancho Fijo Estrecho):**
+    * Iconos para cambiar de módulo (Inbox, Conexiones, Analytics).
+2.  **Columna 2 (Lista de Mensajes - Ancho Fijo Medio):**
+    * Es el corazón de este PRD. Contiene la barra de filtros y la lista de conversaciones.
+3.  **Columna 3 (Detalle del Chat - Ancho Flexible Restante):**
+    * Muestra la conversación seleccionada y el área de respuesta.
+
+---
+
+## 3. Especificaciones UI: El Sistema de Señales de IA (Columna 2)
+
+El objetivo es que el usuario sepa qué mensajes son importantes sin tener que leerlos, basándose en tres indicadores visuales derivados de la IA.
+
+### 3.1. Tarjeta de Mensaje (Message Card Component)
+Cada tarjeta en la lista debe mostrar la siguiente información visual:
+
+**A. Datos Básicos:**
+* **Avatar:** Imagen circular del usuario.
+* **Icono de Red Social:** (Facebook, Instagram, etc.) superpuesto pequeño en la esquina del avatar.
+* **Nombre:** Negrita.
+* **Snippet:** Primera línea de texto del mensaje (gris, truncado).
+* **Tiempo:** "Hace 5m" (esquina superior derecha).
+
+**B. Indicadores de IA (Nuevos Elementos):**
+
+1.  **Indicador de Urgencia (Visual Priority):**
+    * *Concepto:* Una barra vertical de color en el borde izquierdo de la tarjeta (width: 4px).
+    * **🔴 Urgencia Alta (3):** Borde Rojo Sólido. (Prioridad máxima).
+    * **🟡 Urgencia Media (2):** Borde Amarillo/Naranja.
+    * **⚪ Urgencia Baja (1):** Borde Transparente o Gris muy claro.
+
+2.  **Badge de Intención (Intent Label):**
+    * *Concepto:* Una etiqueta tipo "chip" debajo del nombre o fecha.
+    * *Estilo:* Fondo pastel con texto oscuro (ej. Tailwind `bg-blue-100 text-blue-800`).
+    * **Categorías:** `Venta`, `Soporte`, `Queja`, `Pregunta`, `Spam`.
+
+3.  **Icono de Sentimiento (Sentiment Icon):**
+    * *Concepto:* Un pequeño indicador emocional al lado del Badge de Intención.
+    * **😠 Negativo:** Icono rojo o cara molesta.
+    * **😐 Neutro:** Icono gris o cara neutra.
+    * **🙂 Positivo:** Icono verde o cara feliz.
+
+---
+
+## 4. Especificaciones UI: Barra de Control y Filtros
+
+Ubicada en la parte superior de la Columna 2 (Lista de Mensajes). Debe permitir "jugar" con los datos de la IA.
+
+**Componentes Requeridos:**
+1.  **Toggle "Focus Mode" (Solo Urgentes):** Un switch que, al activarse, oculta visualmente cualquier mensaje que no tenga Urgencia Alta o Media.
+2.  **Filtro de Intención:** Un dropdown simple para filtrar por: "Todos", "Ventas", "Soporte", "Quejas".
+
+---
+
+## 5. Estrategia de Datos (Mock Data)
+
+Como estamos en fase de diseño, no conectaremos la IA real todavía. Debes crear un archivo de datos falsos (`mockMessages.ts`) que simule la respuesta que la IA nos daría en el futuro.
+
+**Estructura de Datos Requerida (TypeScript Interface):**
+
+```typescript
+export type IntentType = 'sales' | 'support' | 'complaint' | 'general';
+export type UrgencyLevel = 1 | 2 | 3; // 1: Baja, 3: Crítica
+export type SentimentType = 'positive' | 'neutral' | 'negative';
+
+export interface SmartMessage {
+  id: string;
+  customerName: string;
+  avatarUrl: string;
+  platform: 'facebook' | 'instagram' | 'tiktok' | 'youtube';
+  previewText: string;
+  timestamp: string;
+  // Metadatos de IA
+  aiAnalysis: {
+    intent: IntentType;
+    urgency: UrgencyLevel;
+    sentiment: SentimentType;
+  };
+}

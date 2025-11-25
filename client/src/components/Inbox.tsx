@@ -52,7 +52,7 @@ export function Inbox() {
   const filteredMessages = messages
     .filter(m => m.clientId === activeClientId)
     .filter(m => {
-      if (fireMode && m.urgency !== 'high') return false;
+      if (fireMode && (m.urgency !== 'high' && m.urgency !== 'medium')) return false;
       if (intentFilter !== 'all' && m.intent !== intentFilter) return false;
       if (platformFilter !== 'all' && m.platform !== platformFilter) return false;
       if (searchQuery && !m.content.toLowerCase().includes(searchQuery.toLowerCase()) && !m.author.toLowerCase().includes(searchQuery.toLowerCase())) return false;
@@ -110,7 +110,7 @@ export function Inbox() {
                 />
             </div>
             
-            <div className={cn("flex items-center gap-2 shrink-0 px-3 py-1.5 rounded-md border shadow-sm transition-colors", fireMode ? "bg-red-50 border-red-200" : "bg-white border-gray-200")} title="Fire Mode: Show High Urgency Only">
+            <div className={cn("flex items-center gap-2 shrink-0 px-3 py-1.5 rounded-md border shadow-sm transition-colors", fireMode ? "bg-red-50 border-red-200" : "bg-white border-gray-200")} title="Fire Mode: Show High & Medium Urgency">
                 <Switch 
                     id="fire-mode" 
                     checked={fireMode} 
