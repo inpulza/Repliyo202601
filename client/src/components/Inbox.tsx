@@ -62,20 +62,20 @@ function QuickStatsWidget({
     const pendingCount = messages.filter(m => m.status === 'unread').length;
 
     return (
-        <div className="grid grid-cols-3 gap-3 px-4 py-4 bg-gray-50/50 border-b">
+        <div className="grid grid-cols-3 gap-2 px-4 py-3 bg-gray-50/30 border-b">
             {/* Critical Button */}
             <button 
                 onClick={onCriticalClick}
                 className={cn(
-                    "relative flex flex-col items-center justify-center h-20 rounded-2xl border shadow-sm transition-all",
+                    "relative flex flex-col items-center justify-center py-2 rounded-xl transition-all",
                     activeFilters.fireMode 
-                        ? "bg-white border-red-200 ring-2 ring-red-100" 
-                        : "bg-white border-gray-200 hover:border-red-200 hover:shadow-md"
+                        ? "bg-red-50" 
+                        : "hover:bg-gray-100"
                 )}
             >
                 <div className={cn(
-                    "h-8 w-8 rounded-full flex items-center justify-center mb-1.5 transition-colors",
-                    activeFilters.fireMode ? "bg-red-50" : "bg-gray-50"
+                    "h-8 w-8 rounded-full flex items-center justify-center mb-1 transition-colors",
+                    activeFilters.fireMode ? "bg-white shadow-sm" : "bg-gray-100"
                 )}>
                     <Flame className={cn("h-4 w-4", activeFilters.fireMode ? "fill-red-500 text-red-500" : "text-gray-500")} />
                 </div>
@@ -85,7 +85,7 @@ function QuickStatsWidget({
                 
                 {/* Notification Badge */}
                 {criticalCount > 0 && (
-                    <div className="absolute top-1.5 right-1.5 bg-red-500 text-white text-[10px] font-bold h-5 min-w-[20px] flex items-center justify-center rounded-full px-1 shadow-sm ring-2 ring-white">
+                    <div className="absolute top-1 right-4 bg-red-500 text-white text-[10px] font-bold h-4 min-w-[16px] flex items-center justify-center rounded-full px-1 shadow-sm ring-2 ring-white">
                         {criticalCount}
                     </div>
                 )}
@@ -95,15 +95,15 @@ function QuickStatsWidget({
             <button 
                 onClick={onOpportunitiesClick}
                 className={cn(
-                    "relative flex flex-col items-center justify-center h-20 rounded-2xl border shadow-sm transition-all",
+                    "relative flex flex-col items-center justify-center py-2 rounded-xl transition-all",
                     activeFilters.intent === 'sales'
-                        ? "bg-white border-emerald-200 ring-2 ring-emerald-100"
-                        : "bg-white border-gray-200 hover:border-emerald-200 hover:shadow-md"
+                        ? "bg-emerald-50"
+                        : "hover:bg-gray-100"
                 )}
             >
                  <div className={cn(
-                    "h-8 w-8 rounded-full flex items-center justify-center mb-1.5 transition-colors",
-                    activeFilters.intent === 'sales' ? "bg-emerald-50" : "bg-gray-50"
+                    "h-8 w-8 rounded-full flex items-center justify-center mb-1 transition-colors",
+                    activeFilters.intent === 'sales' ? "bg-white shadow-sm" : "bg-gray-100"
                 )}>
                     <Banknote className={cn("h-4 w-4", activeFilters.intent === 'sales' ? "text-emerald-600" : "text-gray-500")} />
                 </div>
@@ -113,7 +113,7 @@ function QuickStatsWidget({
 
                  {/* Notification Badge */}
                  {opportunityCount > 0 && (
-                    <div className="absolute top-1.5 right-1.5 bg-emerald-500 text-white text-[10px] font-bold h-5 min-w-[20px] flex items-center justify-center rounded-full px-1 shadow-sm ring-2 ring-white">
+                    <div className="absolute top-1 right-4 bg-emerald-500 text-white text-[10px] font-bold h-4 min-w-[16px] flex items-center justify-center rounded-full px-1 shadow-sm ring-2 ring-white">
                         {opportunityCount}
                     </div>
                 )}
@@ -122,9 +122,9 @@ function QuickStatsWidget({
             {/* Pending Button */}
             <button 
                 onClick={onPendingClick}
-                className="relative flex flex-col items-center justify-center h-20 rounded-2xl border border-gray-200 bg-white shadow-sm hover:border-blue-200 hover:shadow-md transition-all"
+                className="relative flex flex-col items-center justify-center py-2 rounded-xl transition-all hover:bg-gray-100"
             >
-                 <div className="h-8 w-8 rounded-full bg-gray-50 flex items-center justify-center mb-1.5">
+                 <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center mb-1">
                     <InboxIcon className="h-4 w-4 text-gray-500" />
                 </div>
                 <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
@@ -133,7 +133,7 @@ function QuickStatsWidget({
 
                 {/* Notification Badge */}
                 {pendingCount > 0 && (
-                    <div className="absolute top-1.5 right-1.5 bg-blue-500 text-white text-[10px] font-bold h-5 min-w-[20px] flex items-center justify-center rounded-full px-1 shadow-sm ring-2 ring-white">
+                    <div className="absolute top-1 right-4 bg-blue-500 text-white text-[10px] font-bold h-4 min-w-[16px] flex items-center justify-center rounded-full px-1 shadow-sm ring-2 ring-white">
                         {pendingCount}
                     </div>
                 )}
