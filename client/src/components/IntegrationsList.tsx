@@ -36,7 +36,7 @@ const INTEGRATIONS: Integration[] = [
     id: 'hubspot',
     name: 'HubSpot',
     description: 'Sync contacts, deals, and track email activity.',
-    logo: 'https://logo.clearbit.com/hubspot.com',
+    logo: 'https://static-00.iconduck.com/assets.00/hubspot-icon-1024x1024-u580762s.png',
     category: 'crm',
     config: [
         {
@@ -72,7 +72,7 @@ const INTEGRATIONS: Integration[] = [
     id: 'pipedrive',
     name: 'Pipedrive',
     description: 'Visual sales pipeline management integration.',
-    logo: 'https://logo.clearbit.com/pipedrive.com',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Pipedrive_Logo.svg/512px-Pipedrive_Logo.svg.png',
     category: 'crm',
     config: [
         {
@@ -87,7 +87,7 @@ const INTEGRATIONS: Integration[] = [
     id: 'zoho',
     name: 'Zoho CRM',
     description: 'Manage your customer relationships seamlessly.',
-    logo: 'https://logo.clearbit.com/zoho.com',
+    logo: 'https://companieslogo.com/img/orig/ZOHO-b20d2073.png',
     category: 'crm',
     config: [
         {
