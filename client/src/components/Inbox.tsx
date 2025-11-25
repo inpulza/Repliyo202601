@@ -480,14 +480,12 @@ export function Inbox() {
                         <div className="flex items-baseline gap-2 mb-1">
                             <span className="text-sm font-medium text-gray-900">{selectedMessage.author}</span>
                             <span className="text-[10px] text-muted-foreground">{new Date(selectedMessage.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                            {selectedMessage.type === 'comment' && (
-                               <span className={cn(
-                                   "text-[9px] font-bold uppercase tracking-wide ml-1",
-                                   getPlatformStyles(selectedMessage.platform).commentBadge
-                               )}>
-                                   Public Comment
-                               </span>
-                           )}
+                           <span className={cn(
+                               "text-[9px] font-bold uppercase tracking-wide ml-1",
+                               getPlatformStyles(selectedMessage.platform).commentBadge
+                           )}>
+                               {selectedMessage.type === 'comment' ? 'Public Comment' : 'Direct Message'}
+                           </span>
                         </div>
                         <div className={cn(
                             "p-4 rounded-2xl text-sm leading-relaxed shadow-sm relative rounded-tl-none",
