@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNexus } from '@/context/NexusContext';
 import { cn } from '@/lib/utils';
+import { CRMContextPanel } from './CRMContextPanel';
 import { 
   Search,
   Flame,
@@ -155,6 +156,7 @@ export function Inbox() {
   const [platformFilter, setPlatformFilter] = useState<Platform | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<MessageType | 'all'>('all');
   const [fireMode, setFireMode] = useState(false);
+  const [isCRMOpen, setIsCRMOpen] = useState(true);
 
   // Filter Logic
   const filteredMessages = messages
@@ -418,7 +420,13 @@ export function Inbox() {
                         </div>
                     </div>
                  </div>
-                 <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600">
+                 <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => setIsCRMOpen(!isCRMOpen)} 
+                    className={cn("text-gray-400 hover:text-gray-600", isCRMOpen && "bg-gray-100 text-gray-600")}
+                    title="Toggle CRM Panel"
+                 >
                     <MoreVertical className="h-5 w-5" />
                  </Button>
                </div>
@@ -598,6 +606,13 @@ export function Inbox() {
            </div>
         )}
       </div>
+
+      {/* COLUMN 4: CRM Context Panel */}
+      <CRMContextPanel 
+          contact={selectedMessage?.crmData}
+          isOpen={isCRMOpen}
+          onClose={() => setIsCRMOpen(false)}
+      />
     </div>
   );
 }

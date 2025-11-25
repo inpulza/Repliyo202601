@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { IntegrationsList } from "@/components/IntegrationsList";
 
 export function Connections() {
   const { 
@@ -25,7 +26,7 @@ export function Connections() {
         <p className="text-muted-foreground mt-1">Administra la conexión con Metricool y tus marcas activas.</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 mb-8">
         {/* Left Column: API Configuration */}
         <div className="space-y-6">
           <Card>
@@ -169,6 +170,8 @@ export function Connections() {
           </CardContent>
         </Card>
       </div>
+
+      <IntegrationsList />
     </div>
   );
 }

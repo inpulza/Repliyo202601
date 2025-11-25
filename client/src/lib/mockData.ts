@@ -27,6 +27,19 @@ export interface Message {
   // Context Fields
   sourceUrl?: string;
   contextType?: 'post' | 'reel' | 'story' | 'dm' | 'ad';
+  crmData?: CRMContact;
+}
+
+export interface CRMContact {
+  crmId: string;
+  crmType: 'hubspot' | 'salesforce' | 'pipedrive' | 'zoho';
+  email: string;
+  phone: string;
+  company: string;
+  dealValue: number;
+  dealStage: 'New' | 'Discovery' | 'Negotiation' | 'Closed Won';
+  lastNote: string;
+  profileUrl: string;
 }
 
 export interface ClientSettings {
@@ -89,7 +102,18 @@ export const MOCK_MESSAGES: Message[] = [
     intent: 'sales',
     sentiment: 'positive',
     aiSummary: 'Potential lead inquiring about catering pricing for an event.',
-    contextType: 'dm'
+    contextType: 'dm',
+    crmData: {
+      crmId: 'hs_12345',
+      crmType: 'hubspot',
+      email: 'sophie@events.com',
+      phone: '+1 (555) 987-6543',
+      company: 'Sophie Events LLC',
+      dealValue: 2500,
+      dealStage: 'Discovery',
+      lastNote: 'Interested in catering for 20 people. Sent initial menu.',
+      profileUrl: 'https://app.hubspot.com/contacts/12345'
+    }
   },
   // 3. Neutral/General (YouTube)
   {
@@ -122,7 +146,18 @@ export const MOCK_MESSAGES: Message[] = [
     intent: 'support',
     sentiment: 'neutral',
     aiSummary: 'Vendor follow-up regarding invoice status.',
-    contextType: 'dm'
+    contextType: 'dm',
+    crmData: {
+      crmId: 'hs_67890',
+      crmType: 'hubspot',
+      email: 'accounts@supplierinc.com',
+      phone: '+1 (555) 111-2222',
+      company: 'Supplier Inc.',
+      dealValue: 10000,
+      dealStage: 'Closed Won',
+      lastNote: 'Invoice #4455 sent. Waiting for payment.',
+      profileUrl: 'https://app.hubspot.com/contacts/67890'
+    }
   },
   // 5. Positive Feedback (TikTok)
   {
