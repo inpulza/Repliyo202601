@@ -280,11 +280,11 @@ export function Connections() {
             <Card 
                 key={platform.id} 
                 className={cn(
-                    "group relative overflow-hidden border-border bg-card hover:border-primary/50 transition-all duration-200",
+                    "group relative overflow-hidden border-border bg-card hover:border-primary/50 transition-all duration-200 flex flex-col h-full",
                     isConnecting === platform.name ? "ring-2 ring-primary ring-offset-2" : ""
                 )}
             >
-                <CardContent className="p-6 flex flex-col items-center text-center gap-4">
+                <CardContent className="p-6 flex flex-col items-center text-center gap-4 flex-1">
                     <div className={cn("p-4 rounded-xl transition-colors", platform.color)}>
                         {platform.icon}
                     </div>
@@ -304,7 +304,7 @@ export function Connections() {
                     </div>
                 </CardContent>
                 
-                <CardFooter className="p-4 pt-0 bg-muted/20 mt-auto border-t border-border group-hover:bg-muted/40 transition-colors">
+                <CardFooter className="p-3 bg-muted/20 border-t border-border group-hover:bg-muted/40 transition-colors mt-auto">
                     <Button 
                         variant="ghost" 
                         className="w-full hover:bg-background hover:text-primary border border-transparent hover:border-border transition-all duration-200"
