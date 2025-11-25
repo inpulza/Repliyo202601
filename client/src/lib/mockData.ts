@@ -1,7 +1,11 @@
+
 export type MessageStatus = 'unread' | 'drafting' | 'ready_for_review' | 'approved' | 'sent';
 export type Platform = 'instagram' | 'tiktok' | 'facebook' | 'linkedin' | 'youtube';
 export type MessageType = 'dm' | 'comment';
 export type Tone = 'formal' | 'casual' | 'funny' | 'empathetic';
+export type Urgency = 'high' | 'medium' | 'low';
+export type Intent = 'sales' | 'support' | 'complaint' | 'general';
+export type Sentiment = 'positive' | 'neutral' | 'negative';
 
 export interface Message {
   id: string;
@@ -13,6 +17,12 @@ export interface Message {
   timestamp: string;
   status: MessageStatus;
   draftResponse?: string;
+  
+  // AI Fields
+  urgency: Urgency;
+  intent: Intent;
+  sentiment: Sentiment;
+  aiSummary?: string;
 }
 
 export interface ClientSettings {
@@ -38,165 +48,100 @@ export const MOCK_CLIENTS: Client[] = [
     settings: {
       agentName: 'BurgerBuddy',
       tone: 'funny',
-      businessContext: 'We are a local franchise of a major burger chain. We value quick service, humor, and community engagement. Ignore complaints about corporate policy, focus on local food quality.',
-    },
-  },
-  {
-    id: 'c2',
-    name: 'Urban Threads',
-    industry: 'Fashion Retail',
-    avatar: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=100&h=100&fit=crop',
-    settings: {
-      agentName: 'StyleAssistant',
-      tone: 'casual',
-      businessContext: 'Trendy boutique clothing store for young adults. Focus on style tips, new arrivals, and inclusive fashion. Be helpful and trendy.',
-    },
-  },
-  {
-    id: 'c3',
-    name: 'TechNova Solutions',
-    industry: 'B2B SaaS',
-    avatar: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=100&h=100&fit=crop',
-    settings: {
-      agentName: 'NovaSupport',
-      tone: 'formal',
-      businessContext: 'Enterprise software solutions for data analytics. Responses should be professional, concise, and technically accurate. Direct support issues to the ticket system.',
+      businessContext: 'We are a local franchise of a major burger chain.',
     },
   },
 ];
 
 export const MOCK_MESSAGES: Message[] = [
-  // Client 1 - Burger King Local
+  // 1. Complaint Urgent (Facebook)
   {
     id: 'm1',
     clientId: 'c1',
-    platform: 'instagram',
-    type: 'dm',
-    author: '@foodie_jane',
-    content: 'Are you open late tonight? Craving a burger!',
-    timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
+    platform: 'facebook',
+    type: 'comment',
+    author: 'AngryCustomer88',
+    content: 'I waited 45 minutes for my order and it was COLD! This is unacceptable service. I want a refund immediately.',
+    timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), // 5 mins ago
     status: 'unread',
+    urgency: 'high',
+    intent: 'complaint',
+    sentiment: 'negative',
+    aiSummary: 'Customer is angry about wait time and cold food. Demanding refund.',
   },
+  // 2. Lead (Instagram)
   {
     id: 'm2',
     clientId: 'c1',
-    platform: 'facebook',
-    type: 'comment',
-    author: 'John Smith',
-    content: 'The fries were cold yesterday. Not happy.',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-    status: 'drafting',
+    platform: 'instagram',
+    type: 'dm',
+    author: '@burger_fan_sophie',
+    content: 'Hey! Do you guys do catering for birthday parties? Looking for prices for about 20 people.',
+    timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(), // 15 mins ago
+    status: 'unread',
+    urgency: 'medium',
+    intent: 'sales',
+    sentiment: 'positive',
+    aiSummary: 'Potential lead inquiring about catering pricing for an event.',
   },
+  // 3. Neutral/General (YouTube)
   {
     id: 'm3',
     clientId: 'c1',
-    platform: 'tiktok',
+    platform: 'youtube',
     type: 'comment',
-    author: '@burger_lover99',
-    content: 'This new spicy burger is FIRE! 🔥🔥🔥',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
-    status: 'ready_for_review',
-    draftResponse: 'Glad you loved it! 🔥 Come back soon for another round!',
+    author: 'RandomViewer',
+    content: 'First view! cool video.',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(), // 1 hour ago
+    status: 'unread',
+    urgency: 'low',
+    intent: 'general',
+    sentiment: 'neutral',
+    aiSummary: 'General engagement comment.',
   },
+  // 4. Support (LinkedIn)
   {
     id: 'm4',
     clientId: 'c1',
-    platform: 'instagram',
+    platform: 'linkedin',
     type: 'dm',
-    author: '@health_nut',
-    content: 'Do you have gluten free buns?',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-    status: 'approved',
-    draftResponse: 'Yes! We offer lettuce wraps and GF buns upon request.',
+    author: 'Supplier Inc.',
+    content: 'Hello, just checking if you received the invoice for the last shipment of buns?',
+    timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(), // 2 hours ago
+    status: 'unread',
+    urgency: 'medium',
+    intent: 'support',
+    sentiment: 'neutral',
+    aiSummary: 'Vendor follow-up regarding invoice status.',
   },
+  // 5. Positive Feedback (TikTok)
   {
     id: 'm5',
     clientId: 'c1',
-    platform: 'facebook',
-    type: 'comment',
-    author: 'Sarah Connor',
-    content: 'Is the terminator promotion still running?',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString(),
-    status: 'sent',
-    draftResponse: 'Hasta la vista, baby! (Yes, until Friday)',
-  },
-  // New LinkedIn Message for diversity
-  {
-    id: 'm11',
-    clientId: 'c1',
-    platform: 'linkedin',
-    type: 'dm',
-    author: 'Business Weekly',
-    content: 'We would like to feature your franchise in our next issue.',
-    timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
-    status: 'unread',
-  },
-  // YouTube Message
-  {
-    id: 'm12',
-    clientId: 'c1',
-    platform: 'youtube',
-    type: 'comment',
-    author: 'BurgerReviewer2000',
-    content: 'Review of the new spicy burger is up on my channel! Check it out.',
-    timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-    status: 'unread',
-  },
-
-
-  // Client 2 - Urban Threads
-  {
-    id: 'm6',
-    clientId: 'c2',
-    platform: 'instagram',
-    type: 'comment',
-    author: '@fashionista_x',
-    content: 'When is the summer collection dropping?',
-    timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-    status: 'unread',
-  },
-  {
-    id: 'm7',
-    clientId: 'c2',
     platform: 'tiktok',
     type: 'comment',
-    author: '@trendsetter',
-    content: 'Can I style this jacket with jeans?',
-    timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-    status: 'ready_for_review',
-    draftResponse: 'Absolutely! It looks great with distressed denim and white sneakers.',
-  },
-  {
-    id: 'm8',
-    clientId: 'c2',
-    platform: 'facebook',
-    type: 'dm',
-    author: 'MomShopper',
-    content: 'Do you have kids sizes?',
-    timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+    author: '@spicy_lover',
+    content: 'Omg the new spicy sauce is EVERYTHING 🔥 Need to buy a bottle!',
+    timestamp: new Date(Date.now() - 1000 * 60 * 180).toISOString(), // 3 hours ago
     status: 'unread',
+    urgency: 'medium',
+    intent: 'sales',
+    sentiment: 'positive',
+    aiSummary: 'Strong positive product feedback, potential upsell opportunity.',
   },
-
-  // Client 3 - TechNova
+  // 6. Low Urgency Complaint (Instagram)
   {
-    id: 'm9',
-    clientId: 'c3',
-    platform: 'linkedin',
-    type: 'dm',
-    author: 'CTO_Dave',
-    content: 'API seems down, getting 500 errors.',
-    timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-    status: 'unread',
-  },
-  {
-    id: 'm10',
-    clientId: 'c3',
+    id: 'm6',
+    clientId: 'c1',
     platform: 'instagram',
-    type: 'dm',
-    author: '@startuplife',
-    content: 'Love the new dashboard design!',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-    status: 'ready_for_review',
-    draftResponse: 'Thank you! Our design team worked hard on the new UX.',
-  },
+    type: 'comment',
+    author: '@picky_eater',
+    content: 'The music was a bit loud yesterday.',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
+    status: 'unread',
+    urgency: 'low',
+    intent: 'complaint',
+    sentiment: 'negative',
+    aiSummary: 'Minor complaint about ambiance/volume.',
+  }
 ];

@@ -2,18 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useNexus } from '@/context/NexusContext';
 import { cn } from '@/lib/utils';
 import { 
-  Check, 
-  Send, 
-  RefreshCw,
-  Sparkles,
-  Loader2,
   Search,
-  Filter,
+  Flame,
   MoreVertical,
   User,
+  Smile,
+  Meh,
+  Frown,
+  Send,
+  Sparkles,
   MessageCircle,
-  MessageSquare,
-  LayoutGrid // Icon for "All"
+  MessageSquare
 } from 'lucide-react';
 import { FaInstagram, FaFacebook, FaLinkedin, FaTiktok, FaYoutube } from 'react-icons/fa';
 import { Button } from "@/components/ui/button";
@@ -21,158 +20,130 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatDistanceToNow } from 'date-fns';
-import { Message, MessageStatus, Platform, MessageType } from '@/lib/mockData';
+import { Platform, MessageType, Urgency, Intent, Sentiment, Message } from '@/lib/mockData';
 import { motion, AnimatePresence } from "framer-motion";
 
 export function Inbox() {
-  const { messages, activeClientId, approveMessage, refreshFeed } = useNexus();
+  const { messages, activeClientId } = useNexus();
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<Platform | 'all'>('all');
   
-  const clientMessages = messages
-    .filter(m => m.clientId === activeClientId)
-    .filter(m => activeFilter === 'all' || m.platform === activeFilter)
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  // Filters
+  const [searchQuery, setSearchQuery] = useState("");
+  const [intentFilter, setIntentFilter] = useState<Intent | 'all'>('all');
+  const [fireMode, setFireMode] = useState(false);
 
-  // Auto-select first message if none selected
+  // Filter Logic
+  const filteredMessages = messages
+    .filter(m => m.clientId === activeClientId)
+    .filter(m => {
+      if (fireMode && m.urgency !== 'high') return false;
+      if (intentFilter !== 'all' && m.intent !== intentFilter) return false;
+      if (searchQuery && !m.content.toLowerCase().includes(searchQuery.toLowerCase()) && !m.author.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      return true;
+    })
+    .sort((a, b) => {
+       // Sort by urgency first if Fire Mode is on, otherwise by date
+       if (fireMode) {
+           const urgencyScore = { high: 3, medium: 2, low: 1 };
+           if (urgencyScore[a.urgency] !== urgencyScore[b.urgency]) {
+               return urgencyScore[b.urgency] - urgencyScore[a.urgency];
+           }
+       }
+       return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+    });
+
+  // Auto-select first message
   useEffect(() => {
-    if (clientMessages.length > 0 && !clientMessages.find(m => m.id === selectedMessageId)) {
-      setSelectedMessageId(clientMessages[0].id);
+    if (filteredMessages.length > 0 && !filteredMessages.find(m => m.id === selectedMessageId)) {
+      setSelectedMessageId(filteredMessages[0].id);
     }
-  }, [activeClientId, activeFilter, clientMessages, selectedMessageId]);
+  }, [filteredMessages, selectedMessageId]);
 
   const selectedMessage = messages.find(m => m.id === selectedMessageId);
 
   return (
     <div className="h-full flex bg-background overflow-hidden">
-      {/* LEFT: Message List (Intercom Style) */}
-      <div className="w-[380px] border-r flex flex-col bg-gray-50/50">
-        {/* Header */}
-        <div className="h-16 border-b px-4 flex items-center justify-between bg-white shrink-0">
-          <h1 className="font-semibold text-lg tracking-tight">Inbox</h1>
-          <div className="flex gap-2">
-             <Button variant="ghost" size="icon" onClick={refreshFeed} className="h-8 w-8 text-muted-foreground">
-                <RefreshCw className="h-4 w-4" />
-             </Button>
+      {/* COLUMN 2: Message List */}
+      <div className="w-[400px] border-r flex flex-col bg-white relative z-10 shadow-sm">
+        
+        {/* Header / Title */}
+        <div className="h-16 border-b px-6 flex items-center justify-between shrink-0">
+          <h1 className="font-bold text-xl tracking-tight text-gray-900">Inbox</h1>
+          <div className="flex items-center gap-2">
+             <Badge variant="outline" className="font-normal text-gray-500">
+               {filteredMessages.length} messages
+             </Badge>
           </div>
         </div>
-        
-        {/* Search & Filters */}
-        <div className="p-3 border-b bg-white shrink-0 space-y-3">
-           <div className="relative">
-             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-             <Input 
-               placeholder="Search messages..." 
-               className="pl-9 bg-gray-50 border-transparent focus:bg-white focus:border-gray-200 transition-all rounded-lg" 
-             />
-           </div>
-           
-           {/* Filter Tabs */}
-           <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar items-center">
-              <FilterButton 
-                active={activeFilter === 'all'} 
-                onClick={() => setActiveFilter('all')}
-                label="All" 
-                icon={<LayoutGrid className="h-4 w-4" />}
-              />
-              <FilterButton 
-                active={activeFilter === 'instagram'} 
-                onClick={() => setActiveFilter('instagram')}
-                label="Instagram"
-                icon={<FaInstagram className="h-4 w-4" />}
-                activeColorClass="bg-pink-600"
-                hoverColorClass="hover:text-pink-600 hover:border-pink-200 hover:bg-pink-50"
-              />
-              <FilterButton 
-                active={activeFilter === 'tiktok'} 
-                onClick={() => setActiveFilter('tiktok')}
-                label="TikTok"
-                icon={<FaTiktok className="h-4 w-4" />}
-                activeColorClass="bg-black"
-                hoverColorClass="hover:text-black hover:border-gray-300 hover:bg-gray-100"
-              />
-              <FilterButton 
-                active={activeFilter === 'facebook'} 
-                onClick={() => setActiveFilter('facebook')}
-                label="Facebook"
-                icon={<FaFacebook className="h-4 w-4" />}
-                activeColorClass="bg-blue-600"
-                hoverColorClass="hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50"
-              />
-              <FilterButton 
-                active={activeFilter === 'linkedin'} 
-                onClick={() => setActiveFilter('linkedin')}
-                label="LinkedIn"
-                icon={<FaLinkedin className="h-4 w-4" />}
-                activeColorClass="bg-[#0077b5]"
-                hoverColorClass="hover:text-[#0077b5] hover:border-[#0077b5]/30 hover:bg-[#0077b5]/10"
-              />
-               <FilterButton 
-                active={activeFilter === 'youtube'} 
-                onClick={() => setActiveFilter('youtube')}
-                label="YouTube"
-                icon={<FaYoutube className="h-4 w-4" />}
-                activeColorClass="bg-red-600"
-                hoverColorClass="hover:text-red-600 hover:border-red-200 hover:bg-red-50"
-              />
-           </div>
+
+        {/* Filter Bar (The "Playground" for AI) */}
+        <div className="p-4 border-b space-y-4 bg-gray-50/50">
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input 
+              placeholder="Search..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 bg-white border-gray-200 focus:ring-offset-0" 
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex-1">
+                <Select value={intentFilter} onValueChange={(val: any) => setIntentFilter(val)}>
+                <SelectTrigger className="w-full bg-white border-gray-200 h-9 text-sm">
+                    <SelectValue placeholder="Filter by Intent" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Intents</SelectItem>
+                    <SelectItem value="sales">Sales / Leads</SelectItem>
+                    <SelectItem value="support">Support</SelectItem>
+                    <SelectItem value="complaint">Complaints</SelectItem>
+                    <SelectItem value="general">General</SelectItem>
+                </SelectContent>
+                </Select>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 bg-white px-3 py-1.5 rounded-md border border-gray-200 shadow-sm" title="Fire Mode: Show High Urgency Only">
+                <Switch 
+                    id="fire-mode" 
+                    checked={fireMode} 
+                    onCheckedChange={setFireMode} 
+                    className="data-[state=checked]:bg-red-500 scale-90"
+                />
+                <Label htmlFor="fire-mode" className={cn("text-xs font-semibold cursor-pointer select-none", fireMode ? "text-red-600" : "text-gray-500")}>
+                    <span className="flex items-center gap-1">Fire Mode <Flame className={cn("h-3.5 w-3.5", fireMode && "fill-red-500")} /></span>
+                </Label>
+            </div>
+          </div>
         </div>
 
-        {/* List */}
-        <ScrollArea className="flex-1">
-          <div className="flex flex-col">
+        {/* Messages List */}
+        <ScrollArea className="flex-1 bg-gray-50/30">
+          <div className="flex flex-col p-2 gap-2">
             <AnimatePresence mode="popLayout">
-              {clientMessages.length === 0 ? (
+              {filteredMessages.length === 0 ? (
                  <div className="p-8 text-center text-muted-foreground text-sm">
-                    No messages found for this filter.
+                    No messages match your filters.
                  </div>
               ) : (
-                clientMessages.map((msg) => (
-                  <motion.button
-                    layout
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                    key={msg.id}
-                    onClick={() => setSelectedMessageId(msg.id)}
-                    className={cn(
-                      "flex flex-col gap-1 p-4 text-left border-b border-gray-100 hover:bg-gray-100/80 transition-colors relative group",
-                      selectedMessageId === msg.id && "bg-white shadow-[inset_3px_0_0_0_var(--color-primary)] z-10"
-                    )}
-                  >
-                    <div className="flex items-center justify-between w-full mb-1">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6">
-                          <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-bold">
-                              {msg.author.substring(0,2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className={cn("text-sm font-medium truncate", msg.status === 'unread' ? "text-foreground" : "text-muted-foreground")}>
-                          {msg.author}
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">
-                        {formatDistanceToNow(new Date(msg.timestamp), { addSuffix: false })}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-start">
-                      <p className={cn("text-sm line-clamp-2 leading-relaxed pr-2", msg.status === 'unread' ? "text-foreground font-medium" : "text-muted-foreground")}>
-                        {msg.content}
-                      </p>
-                      {msg.status === 'unread' && (
-                        <div className="h-2 w-2 bg-blue-500 rounded-full shrink-0 mt-1.5" />
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center gap-2 mt-3">
-                      <PlatformBadge platform={msg.platform} />
-                      <TypeBadge type={msg.type} />
-                      <StatusDot status={msg.status} />
-                    </div>
-                  </motion.button>
+                filteredMessages.map((msg) => (
+                  <MessageCard 
+                    key={msg.id} 
+                    message={msg} 
+                    isSelected={selectedMessageId === msg.id} 
+                    onClick={() => setSelectedMessageId(msg.id)} 
+                  />
                 ))
               )}
             </AnimatePresence>
@@ -180,156 +151,113 @@ export function Inbox() {
         </ScrollArea>
       </div>
 
-      {/* RIGHT: Chat Area (Detail View) */}
-      <div className="flex-1 flex flex-col bg-white relative">
+      {/* COLUMN 3: Chat Detail */}
+      <div className="flex-1 flex flex-col bg-white relative min-w-0">
         {selectedMessage ? (
           <>
-            {/* Chat Header */}
-            <header className="h-16 border-b px-6 flex items-center justify-between shrink-0 bg-white/80 backdrop-blur-sm z-20">
-               <div className="flex items-center gap-3">
-                 <Avatar className="h-10 w-10 ring-2 ring-offset-2 ring-gray-100">
-                   <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold">
-                      {selectedMessage.author.substring(0,2).toUpperCase()}
-                   </AvatarFallback>
-                 </Avatar>
-                 <div>
-                    <h2 className="font-semibold text-sm flex items-center gap-2">
-                       {selectedMessage.author} 
-                       <PlatformIcon platform={selectedMessage.platform} className="h-3 w-3 text-muted-foreground" />
-                    </h2>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <TypeBadge type={selectedMessage.type} />
-                      <span className="text-xs text-muted-foreground">via {selectedMessage.platform}</span>
+            {/* Chat Header - AI Summary */}
+            <header className="h-auto min-h-[64px] border-b px-6 py-4 flex flex-col justify-center shrink-0 bg-white z-20 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+               <div className="flex items-start justify-between gap-4">
+                 <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10 ring-2 ring-offset-2 ring-gray-50">
+                        <AvatarFallback className="bg-gray-100 font-bold text-gray-600">{selectedMessage.author.substring(0,2).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                        <h2 className="font-bold text-gray-900 flex items-center gap-2">
+                            {selectedMessage.author}
+                            <PlatformBadge platform={selectedMessage.platform} size="sm" />
+                        </h2>
+                        <div className="flex items-center gap-2 mt-1">
+                             <SentimentIndicator sentiment={selectedMessage.sentiment} showLabel />
+                             <span className="text-gray-300 text-[10px]">|</span>
+                             <span className="text-xs text-muted-foreground">{selectedMessage.type === 'dm' ? 'Direct Message' : 'Comment'}</span>
+                        </div>
                     </div>
                  </div>
+                 <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600">
+                    <MoreVertical className="h-5 w-5" />
+                 </Button>
                </div>
-               <Button variant="ghost" size="icon" className="text-muted-foreground">
-                  <MoreVertical className="h-5 w-5" />
-               </Button>
+
+               {/* AI Summary Box */}
+               <div className="mt-4 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg p-3 border border-indigo-100 flex items-start gap-3">
+                  <div className="bg-indigo-100 p-1.5 rounded-md shrink-0">
+                      <Sparkles className="h-4 w-4 text-indigo-600" />
+                  </div>
+                  <div className="text-sm text-indigo-900 leading-snug">
+                      <span className="font-semibold text-indigo-700">AI Analysis:</span> {selectedMessage.aiSummary || "Analyzing conversation context..."}
+                      <div className="flex items-center gap-2 mt-2">
+                          <span className="text-xs font-medium text-indigo-600 uppercase tracking-wider">Urgency Level:</span>
+                          <UrgencyBadge urgency={selectedMessage.urgency} />
+                      </div>
+                  </div>
+               </div>
             </header>
 
             {/* Chat Content */}
             <ScrollArea className="flex-1 p-8 bg-gray-50/30">
-               <div className="max-w-3xl mx-auto space-y-8">
-                  {/* User Message */}
-                  <div className="flex gap-4">
-                     <Avatar className="h-8 w-8 mt-1">
-                        <AvatarFallback className="bg-gray-200 text-gray-600"><User className="h-4 w-4" /></AvatarFallback>
-                     </Avatar>
-                     <div className="flex flex-col gap-1 max-w-[80%]">
-                        <div className="bg-white border p-4 rounded-2xl rounded-tl-none shadow-sm text-sm leading-relaxed text-gray-800">
-                           {selectedMessage.content}
-                        </div>
-                        <span className="text-xs text-muted-foreground ml-1">
-                           {formatDistanceToNow(new Date(selectedMessage.timestamp), { addSuffix: true })}
-                        </span>
-                     </div>
+               <div className="max-w-3xl mx-auto space-y-6">
+                  {/* Date Separator */}
+                  <div className="flex justify-center">
+                      <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
+                          {new Date(selectedMessage.timestamp).toLocaleDateString()}
+                      </span>
                   </div>
 
-                  {/* AI Suggestion / Response Area */}
-                  <AnimatePresence mode="wait">
-                    {selectedMessage.status !== 'sent' && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        className="relative"
-                      >
-                        <div className="absolute -left-10 top-0 flex flex-col items-center gap-1">
-                           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-200">
-                              {selectedMessage.status === 'drafting' ? (
-                                <Loader2 className="h-4 w-4 text-white animate-spin" />
-                              ) : (
-                                <Sparkles className="h-4 w-4 text-white" />
-                              )}
-                           </div>
-                           <div className="w-0.5 h-full bg-indigo-100 absolute top-8 -z-10" />
+                  {/* The Message Bubble */}
+                  <div className="flex gap-4 group">
+                     <Avatar className="h-8 w-8 mt-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                        <AvatarFallback className="bg-gray-200 text-gray-500"><User className="h-4 w-4" /></AvatarFallback>
+                     </Avatar>
+                     <div className="flex flex-col gap-1 max-w-[85%]">
+                        <div className="flex items-baseline gap-2 mb-1">
+                            <span className="text-sm font-medium text-gray-900">{selectedMessage.author}</span>
+                            <span className="text-[10px] text-muted-foreground">{new Date(selectedMessage.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                         </div>
-
                         <div className={cn(
-                           "ml-4 rounded-xl border overflow-hidden transition-all duration-500",
-                           selectedMessage.status === 'drafting' 
-                              ? "bg-white border-indigo-100 shadow-sm h-24 flex items-center px-6"
-                              : "bg-white border-indigo-200 shadow-[0_0_30px_-10px_rgba(99,102,241,0.2)] ring-1 ring-indigo-50"
+                            "p-4 rounded-2xl text-sm leading-relaxed shadow-sm relative",
+                            selectedMessage.type === 'dm' 
+                                ? "bg-white border border-gray-200 text-gray-800 rounded-tl-none" // DM Style
+                                : "bg-blue-50/50 border border-blue-100 text-blue-900 rounded-tl-none" // Comment Style (Public)
                         )}>
-                           {selectedMessage.status === 'drafting' ? (
-                              <div className="flex items-center gap-3 text-indigo-600 animate-pulse">
-                                 <span className="text-sm font-medium">Agent is drafting a response...</span>
-                              </div>
-                           ) : selectedMessage.draftResponse ? (
-                              <div className="p-0">
-                                 <div className="bg-gradient-to-r from-indigo-50/50 to-violet-50/50 p-3 border-b border-indigo-50 flex items-center justify-between">
-                                    <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider flex items-center gap-1.5">
-                                       <Sparkles className="h-3 w-3" /> AI Suggestion
-                                    </span>
-                                    <Badge variant="secondary" className="bg-white/80 text-indigo-700 border-indigo-100 text-[10px] hover:bg-white">
-                                       Confidence: 98%
-                                    </Badge>
-                                 </div>
-                                 <div className="p-4">
-                                    <textarea 
-                                       className="w-full bg-transparent border-none p-0 text-sm text-gray-800 resize-none focus:outline-none min-h-[80px] leading-relaxed"
-                                       defaultValue={selectedMessage.draftResponse}
-                                    />
-                                 </div>
-                                 <div className="bg-gray-50 p-3 flex items-center justify-between border-t">
-                                    <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-foreground h-8">
-                                       Discard
-                                    </Button>
-                                    <div className="flex items-center gap-2">
-                                       <Button variant="outline" size="sm" className="h-8 text-xs bg-white">
-                                          Edit Response
-                                       </Button>
-                                       <Button 
-                                          size="sm" 
-                                          className="h-8 text-xs bg-black hover:bg-gray-800 text-white shadow-none gap-1.5 px-4 transition-all"
-                                          onClick={() => approveMessage(selectedMessage.id)}
-                                       >
-                                          <Check className="h-3.5 w-3.5" />
-                                          Approve & Send
-                                       </Button>
-                                    </div>
-                                 </div>
-                              </div>
-                           ) : (
-                              <div className="p-6 text-center text-muted-foreground text-sm">
-                                 Waiting for agent...
-                              </div>
+                           {selectedMessage.type === 'comment' && (
+                               <div className="absolute -top-3 right-3 bg-blue-100 text-blue-700 text-[9px] font-bold px-1.5 py-0.5 rounded border border-blue-200 uppercase tracking-wide">
+                                   Public Comment
+                               </div>
                            )}
+                           {selectedMessage.content}
                         </div>
-                      </motion.div>
-                    )}
-                    
-                    {selectedMessage.status === 'sent' && (
-                       <motion.div 
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          className="flex gap-4 ml-4"
-                       >
-                          <Avatar className="h-8 w-8 mt-1">
-                             <AvatarFallback className="bg-indigo-600 text-white">AI</AvatarFallback>
-                          </Avatar>
-                          <div className="flex flex-col gap-1 max-w-[80%]">
-                             <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-2xl rounded-tl-none text-sm leading-relaxed text-indigo-900">
-                                {selectedMessage.draftResponse}
-                             </div>
-                             <span className="text-xs text-muted-foreground ml-1 flex items-center gap-1">
-                                <Check className="h-3 w-3" /> Sent just now
-                             </span>
-                          </div>
-                       </motion.div>
-                    )}
-                  </AnimatePresence>
+                     </div>
+                  </div>
                </div>
             </ScrollArea>
+
+            {/* Composer (Mock) */}
+            <div className="p-4 border-t bg-white">
+               <div className="relative rounded-xl border shadow-sm overflow-hidden focus-within:ring-1 focus-within:ring-indigo-500 focus-within:border-indigo-500 transition-all">
+                   <textarea 
+                      className="w-full min-h-[80px] p-3 resize-none text-sm focus:outline-none"
+                      placeholder="Type a reply..."
+                   />
+                   <div className="bg-gray-50 p-2 flex items-center justify-between border-t border-gray-100">
+                       <div className="flex gap-1">
+                           {/* Toolbar icons would go here */}
+                       </div>
+                       <Button size="sm" className="h-8 gap-2">
+                           Send <Send className="h-3.5 w-3.5" />
+                       </Button>
+                   </div>
+               </div>
+            </div>
+
           </>
         ) : (
-           <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
-              <div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                 <Send className="h-8 w-8 text-gray-400" />
+           <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground bg-gray-50/30">
+              <div className="h-24 w-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                 <MessageSquare className="h-10 w-10 text-gray-300" />
               </div>
-              <p className="text-lg font-medium text-gray-900">Select a conversation</p>
-              <p className="text-sm max-w-xs text-center mt-1">Choose a message from the list to view details and manage AI responses.</p>
+              <p className="text-xl font-semibold text-gray-900">No conversation selected</p>
+              <p className="text-sm text-gray-500 mt-2">Select a message from the list to view details.</p>
            </div>
         )}
       </div>
@@ -337,69 +265,144 @@ export function Inbox() {
   );
 }
 
-function FilterButton({ active, onClick, label, icon, activeColorClass, hoverColorClass }: { active: boolean, onClick: () => void, label: string, icon?: React.ReactNode, activeColorClass?: string, hoverColorClass?: string }) {
-  return (
-    <button 
-      onClick={onClick}
-      title={label}
-      className={cn(
-        "flex items-center justify-center h-8 w-8 rounded-full text-xs font-medium transition-all border shrink-0",
-        active 
-          ? cn("text-white border-transparent shadow-sm", activeColorClass || "bg-gray-900") 
-          : cn("bg-white text-gray-500 border-gray-200", hoverColorClass || "hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900")
-      )}
-    >
-      {icon}
-    </button>
-  );
+// --- Sub-Components ---
+
+function MessageCard({ message, isSelected, onClick }: { message: Message, isSelected: boolean, onClick: () => void }) {
+    // Urgency Color Bar
+    const urgencyColor: Record<Urgency, string> = {
+        high: "bg-red-500",
+        medium: "bg-yellow-400",
+        low: "bg-transparent group-hover:bg-gray-200"
+    };
+
+    return (
+        <motion.button
+            layout
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            onClick={onClick}
+            className={cn(
+                "w-full text-left bg-white rounded-lg border border-gray-100 hover:border-gray-300 hover:shadow-md transition-all duration-200 relative overflow-hidden group pl-3 py-3 pr-3",
+                isSelected && "ring-2 ring-indigo-500 ring-offset-1 border-transparent shadow-md z-10"
+            )}
+        >
+            {/* Urgency Indicator Bar */}
+            <div className={cn("absolute left-0 top-0 bottom-0 w-[4px]", urgencyColor[message.urgency])} />
+
+            <div className="flex items-start gap-3">
+                {/* Avatar & Icon */}
+                <div className="relative shrink-0">
+                    <Avatar className="h-10 w-10 border border-gray-100">
+                        <AvatarFallback className="text-xs font-bold text-gray-600 bg-gray-100">
+                            {message.author.substring(0,2).toUpperCase()}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
+                        <PlatformIcon platform={message.platform} className="h-4 w-4" />
+                    </div>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-0.5">
+                        <span className={cn("text-sm font-bold truncate text-gray-900", message.status === 'unread' && "")}>
+                            {message.author}
+                        </span>
+                        <span className="text-[10px] text-gray-400 whitespace-nowrap shrink-0 ml-2">
+                            {formatDistanceToNow(new Date(message.timestamp), { addSuffix: false }).replace('about ', '')}
+                        </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                        <IntentBadge intent={message.intent} />
+                    </div>
+
+                    <p className={cn(
+                        "text-sm line-clamp-2 leading-relaxed text-gray-600", 
+                        message.status === 'unread' ? "font-medium text-gray-900" : ""
+                    )}>
+                        {message.content}
+                    </p>
+                    
+                    <div className="flex items-center justify-end mt-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                        <SentimentIndicator sentiment={message.sentiment} />
+                    </div>
+                </div>
+            </div>
+        </motion.button>
+    );
+}
+
+function IntentBadge({ intent }: { intent: Intent }) {
+    const styles = {
+        sales: "bg-green-100 text-green-800 border-green-200",
+        support: "bg-blue-100 text-blue-800 border-blue-200",
+        complaint: "bg-red-100 text-red-800 border-red-200",
+        general: "bg-gray-100 text-gray-700 border-gray-200",
+    };
+
+    const labels = {
+        sales: "Potential Sale",
+        support: "Support",
+        complaint: "Complaint",
+        general: "General",
+    };
+
+    return (
+        <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium border", styles[intent])}>
+            {labels[intent]}
+        </span>
+    );
+}
+
+function UrgencyBadge({ urgency }: { urgency: Urgency }) {
+    const styles = {
+        high: "text-red-600 bg-red-50 border-red-100",
+        medium: "text-yellow-700 bg-yellow-50 border-yellow-100",
+        low: "text-gray-600 bg-gray-50 border-gray-100",
+    };
+
+    return (
+        <Badge variant="outline" className={cn("ml-2 border capitalize shadow-none", styles[urgency])}>
+            {urgency}
+        </Badge>
+    );
+}
+
+function SentimentIndicator({ sentiment, showLabel }: { sentiment: Sentiment, showLabel?: boolean }) {
+    const config = {
+        positive: { icon: Smile, color: "text-green-500", label: "Positive" },
+        neutral: { icon: Meh, color: "text-gray-400", label: "Neutral" },
+        negative: { icon: Frown, color: "text-red-500", label: "Negative" },
+    };
+
+    const { icon: Icon, color, label } = config[sentiment];
+
+    return (
+        <div className={cn("flex items-center gap-1", color)} title={`Sentiment: ${label}`}>
+            <Icon className="h-4 w-4" />
+            {showLabel && <span className="text-xs font-medium">{label}</span>}
+        </div>
+    );
 }
 
 function PlatformIcon({ platform, className }: { platform: Platform, className?: string }) {
   switch(platform) {
-    case 'instagram': return <FaInstagram className={className} />;
-    case 'facebook': return <FaFacebook className={className} />;
-    case 'linkedin': return <FaLinkedin className={className} />;
-    case 'tiktok': return <FaTiktok className={className} />;
-    case 'youtube': return <FaYoutube className={className} />;
+    case 'instagram': return <FaInstagram className={cn("text-pink-600", className)} />;
+    case 'facebook': return <FaFacebook className={cn("text-blue-600", className)} />;
+    case 'linkedin': return <FaLinkedin className={cn("text-[#0077b5]", className)} />;
+    case 'tiktok': return <FaTiktok className={cn("text-black", className)} />;
+    case 'youtube': return <FaYoutube className={cn("text-red-600", className)} />;
     default: return <MessageSquare className={className} />;
   }
 }
 
-function PlatformBadge({ platform }: { platform: Platform }) {
-  const styles = {
-    instagram: "text-pink-600 border-pink-200 bg-pink-50",
-    facebook: "text-blue-600 border-blue-200 bg-blue-50",
-    linkedin: "text-blue-700 border-blue-200 bg-blue-50",
-    tiktok: "text-black border-gray-200 bg-gray-100",
-    youtube: "text-red-600 border-red-200 bg-red-50",
-  };
-
-  return (
-    <Badge variant="outline" title={platform} className={cn("h-5 w-5 p-0 flex items-center justify-center border shrink-0", styles[platform])}>
-      <PlatformIcon platform={platform} className="h-3 w-3" />
-    </Badge>
-  );
-}
-
-function TypeBadge({ type }: { type: MessageType }) {
-  return (
-    <Badge variant="outline" title={type === 'dm' ? 'Direct Message' : 'Comment'} className={cn(
-      "h-5 w-5 p-0 flex items-center justify-center border shrink-0",
-      type === 'dm' 
-        ? "text-purple-600 border-purple-200 bg-purple-50" 
-        : "text-orange-600 border-orange-200 bg-orange-50"
-    )}>
-      {type === 'dm' ? <MessageCircle className="h-3 w-3" /> : <MessageSquare className="h-3 w-3" />}
-    </Badge>
-  );
-}
-
-function StatusDot({ status }: { status: MessageStatus }) {
-   switch(status) {
-      case 'unread': return null;
-      case 'drafting': return <span className="text-[10px] text-amber-600 font-medium flex items-center gap-1"><Loader2 className="h-2 w-2 animate-spin" /> Drafting</span>;
-      case 'ready_for_review': return <span className="text-[10px] text-indigo-600 font-medium flex items-center gap-1">● Needs Review</span>;
-      case 'approved': return <span className="text-[10px] text-green-600 font-medium flex items-center gap-1">✓ Approved</span>;
-      case 'sent': return <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1">✓ Sent</span>;
-   }
+function PlatformBadge({ platform, size = 'default' }: { platform: Platform, size?: 'sm' | 'default' }) {
+    return (
+        <Badge variant="secondary" className="bg-gray-100 text-gray-600 hover:bg-gray-200 gap-1">
+            <PlatformIcon platform={platform} className="h-3 w-3" />
+            <span className="capitalize">{platform}</span>
+        </Badge>
+    )
 }
