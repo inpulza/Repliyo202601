@@ -12,9 +12,10 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { Check, ExternalLink, PlugZap, Loader2, AlertCircle, Lock, Search, Filter } from "lucide-react";
+import { Check, ExternalLink, PlugZap, Loader2, AlertCircle, Lock, Search, Filter, BarChart3 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { MetricoolConnection } from "@/components/MetricoolConnection";
 
 export interface IntegrationConfig {
     fieldLabel: string;
@@ -35,6 +36,14 @@ export interface Integration {
 }
 
 const INTEGRATIONS: Integration[] = [
+  {
+    id: 'metricool',
+    name: 'Metricool Import',
+    description: 'Import your brands and data from Metricool.',
+    logo: 'https://yt3.googleusercontent.com/ytc/AIdro_m7sWj1v5gKjZ8wJ52e3w_tM_l2j3k2w_k_w_k=s900-c-k-c0x00ffffff-no-rj',
+    category: 'marketing',
+    config: [] // Custom UI
+  },
   {
     id: 'hubspot',
     name: 'HubSpot',
@@ -520,55 +529,64 @@ export function IntegrationsList() {
                 Connect {selectedIntegration?.name}
             </DialogTitle>
             <DialogDescription>
-                Enter your API credentials to enable the integration.
+                {selectedIntegration?.id === 'metricool' 
+                    ? "Enter your Metricool credentials to import your brands."
+                    : "Enter your API credentials to enable the integration."
+                }
             </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-4 py-4">
-                {selectedIntegration?.config.map((field, idx) => (
-                    <div key={idx} className="space-y-2">
-                        <Label htmlFor={`field-${idx}`}>{field.fieldLabel}</Label>
-                        <Input 
-                            id={`field-${idx}`} 
-                            type={field.type || 'text'}
-                            placeholder={field.placeholder}
-                            value={formValues[field.fieldLabel] || ''}
-                            onChange={(e) => handleInputChange(field.fieldLabel, e.target.value)}
-                            className="font-mono text-xs"
-                        />
-                        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                           {field.helpText}
-                        </p>
+            {selectedIntegration?.id === 'metricool' ? (
+                <MetricoolConnection onClose={() => setIsDialogOpen(false)} />
+            ) : (
+                <>
+                    <div className="space-y-4 py-4">
+                        {selectedIntegration?.config.map((field, idx) => (
+                            <div key={idx} className="space-y-2">
+                                <Label htmlFor={`field-${idx}`}>{field.fieldLabel}</Label>
+                                <Input 
+                                    id={`field-${idx}`} 
+                                    type={field.type || 'text'}
+                                    placeholder={field.placeholder}
+                                    value={formValues[field.fieldLabel] || ''}
+                                    onChange={(e) => handleInputChange(field.fieldLabel, e.target.value)}
+                                    className="font-mono text-xs"
+                                />
+                                <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                {field.helpText}
+                                </p>
+                            </div>
+                        ))}
+                        
+                        <div className="bg-blue-50 p-3 rounded-md border border-blue-100 mt-2">
+                            <p className="text-[10px] text-blue-700 flex items-start gap-2">
+                                <Lock className="h-3 w-3 mt-0.5 shrink-0" />
+                                Your credentials are encrypted using AES-256 and stored securely in our vault. We never share your keys.
+                            </p>
+                        </div>
                     </div>
-                ))}
-                
-                <div className="bg-blue-50 p-3 rounded-md border border-blue-100 mt-2">
-                    <p className="text-[10px] text-blue-700 flex items-start gap-2">
-                        <Lock className="h-3 w-3 mt-0.5 shrink-0" />
-                        Your credentials are encrypted using AES-256 and stored securely in our vault. We never share your keys.
-                    </p>
-                </div>
-            </div>
 
-            <DialogFooter className="sm:justify-between flex-row items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={() => setIsDialogOpen(false)}>
-                    Cancel
-                </Button>
-                <Button 
-                    size="sm" 
-                    onClick={handleConfirmConnect} 
-                    disabled={!isFormValid || isConnecting}
-                    className="bg-indigo-600 hover:bg-indigo-700"
-                >
-                    {isConnecting ? (
-                        <>
-                            <Loader2 className="h-3 w-3 mr-2 animate-spin" /> Connecting...
-                        </>
-                    ) : (
-                        "Connect Integration"
-                    )}
-                </Button>
-            </DialogFooter>
+                    <DialogFooter className="sm:justify-between flex-row items-center gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => setIsDialogOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button 
+                            size="sm" 
+                            onClick={handleConfirmConnect} 
+                            disabled={!isFormValid || isConnecting}
+                            className="bg-indigo-600 hover:bg-indigo-700"
+                        >
+                            {isConnecting ? (
+                                <>
+                                    <Loader2 className="h-3 w-3 mr-2 animate-spin" /> Connecting...
+                                </>
+                            ) : (
+                                "Connect Integration"
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </>
+            )}
         </DialogContent>
       </Dialog>
     </div>
