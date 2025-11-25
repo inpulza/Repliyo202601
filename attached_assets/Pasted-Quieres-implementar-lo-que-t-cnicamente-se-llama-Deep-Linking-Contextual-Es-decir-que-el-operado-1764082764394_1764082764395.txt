@@ -1,0 +1,71 @@
+Quieres implementar lo que técnicamente se llama "Deep Linking Contextual". Es decir, que el operador no tenga que adivinar de qué video o foto están hablando, sino que tenga un "túnel directo" (un enlace) a la fuente original.
+
+Aquí tienes el bloque de Markdown específico para esta funcionalidad. Está redactado para que el Agente entienda que esto se añade a la tarjeta de mensaje (MessageCard) y a la vista de detalle (ChatDetail) que definimos en el paso anterior.
+
+Markdown
+
+# Feature Spec: Enlaces de Contexto Social (Deep Linking)
+
+**Objetivo:** Permitir al usuario acceder con un solo clic a la publicación, video o hilo original en la plataforma nativa (Instagram, Facebook, TikTok, etc.) desde donde se generó el mensaje o comentario.
+
+**Justificación:** El operador necesita ver el "post original" para entender el contexto de un comentario (ej. si alguien comenta "¡Precio!", el operador necesita ver de qué producto es la foto).
+
+---
+
+## 1. Actualización del Modelo de Datos (Mock Data)
+
+Necesitamos que nuestros datos simulados incluyan la URL de origen.
+
+**Instrucción:**
+Actualiza la interfaz `SmartMessage` en `src/data/mockInbox.ts` para incluir dos nuevos campos:
+
+```typescript
+export interface SmartMessage {
+  // ... campos existentes (id, customerName, etc.)
+  
+  // NUEVOS CAMPOS:
+  sourceUrl?: string; // URL directa al post/comentario en la red social
+  contextType: 'post' | 'reel' | 'story' | 'dm' | 'ad'; // Para mostrar el icono adecuado
+}
+Tarea: Actualiza los datos dummy (mockMessages) para que incluyan URLs reales o de prueba (ej. https://instagram.com/p/xyz...) y tipos de contexto variados.
+
+2. Integración UI: Tarjeta de Mensaje (Columna B)
+En el componente MessageCard, debemos integrar un acceso directo sutil pero accesible.
+
+Ubicación: Esquina superior derecha de la tarjeta, o al lado del indicador de tiempo ("hace 5m").
+
+Diseño del Elemento:
+
+Icono: Utiliza un icono de "Enlace Externo" (ej. ExternalLink de Lucide-React o FontAwesome) o el icono de la red social correspondiente.
+
+Comportamiento:
+
+Debe ser un enlace <a> con target="_blank" (abrir en nueva pestaña).
+
+Hover: Al pasar el ratón, debe mostrar un Tooltip nativo o simple: "Ver en [Instagram/Facebook/etc]".
+
+Estilo: Discreto (color grisáceo), que se vuelva del color de la marca al hacer hover (ej. Rosa para Instagram, Azul para Facebook).
+
+Prevención de Propagación: Asegúrate de que al hacer clic en este icono NO se abra el chat en la aplicación (evitar onClick del padre), sino que solo se abra la URL externa.
+
+3. Integración UI: Cabecera del Chat (Columna C)
+Cuando el usuario abre la conversación, el contexto debe ser aún más evidente.
+
+Ubicación: En el Header de la vista de detalle del chat (junto al nombre del usuario o el análisis de IA).
+
+Diseño del Elemento:
+
+Botón o enlace de texto + icono: [Icono] Ver Publicación Original.
+
+Diferenciación Visual:
+
+Si contextType === 'dm', el enlace podría no ser necesario o llevar al perfil del usuario.
+
+Si contextType === 'post' o 'reel', el enlace es obligatorio.
+
+4. Resultado Esperado
+En la lista de mensajes, veo un pequeño icono de "salida" en cada tarjeta.
+
+Si hago clic en ese icono en un mensaje de Instagram, se abre una nueva pestaña del navegador cargando instagram.com/... directamente en la foto comentada.
+
+Esto no interfiere con la selección del mensaje para leerlo dentro de nuestra app.

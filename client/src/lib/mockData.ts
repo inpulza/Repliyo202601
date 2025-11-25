@@ -23,6 +23,10 @@ export interface Message {
   intent: Intent;
   sentiment: Sentiment;
   aiSummary?: string;
+
+  // Context Fields
+  sourceUrl?: string;
+  contextType?: 'post' | 'reel' | 'story' | 'dm' | 'ad';
 }
 
 export interface ClientSettings {
@@ -68,6 +72,8 @@ export const MOCK_MESSAGES: Message[] = [
     intent: 'complaint',
     sentiment: 'negative',
     aiSummary: 'Customer is angry about wait time and cold food. Demanding refund.',
+    sourceUrl: 'https://facebook.com/post/123',
+    contextType: 'post'
   },
   // 2. Lead (Instagram)
   {
@@ -83,6 +89,7 @@ export const MOCK_MESSAGES: Message[] = [
     intent: 'sales',
     sentiment: 'positive',
     aiSummary: 'Potential lead inquiring about catering pricing for an event.',
+    contextType: 'dm'
   },
   // 3. Neutral/General (YouTube)
   {
@@ -98,6 +105,8 @@ export const MOCK_MESSAGES: Message[] = [
     intent: 'general',
     sentiment: 'neutral',
     aiSummary: 'General engagement comment.',
+    sourceUrl: 'https://youtube.com/watch?v=video123&lc=comment456',
+    contextType: 'post'
   },
   // 4. Support (LinkedIn)
   {
@@ -113,6 +122,7 @@ export const MOCK_MESSAGES: Message[] = [
     intent: 'support',
     sentiment: 'neutral',
     aiSummary: 'Vendor follow-up regarding invoice status.',
+    contextType: 'dm'
   },
   // 5. Positive Feedback (TikTok)
   {
@@ -128,6 +138,8 @@ export const MOCK_MESSAGES: Message[] = [
     intent: 'sales',
     sentiment: 'positive',
     aiSummary: 'Strong positive product feedback, potential upsell opportunity.',
+    sourceUrl: 'https://tiktok.com/@user/video/789',
+    contextType: 'post'
   },
   // 6. Low Urgency Complaint (Instagram)
   {
@@ -143,6 +155,8 @@ export const MOCK_MESSAGES: Message[] = [
     intent: 'complaint',
     sentiment: 'negative',
     aiSummary: 'Minor complaint about ambiance/volume.',
+    sourceUrl: 'https://instagram.com/p/post321',
+    contextType: 'post'
   },
   // 7. Google Business Review
   {
@@ -158,6 +172,8 @@ export const MOCK_MESSAGES: Message[] = [
     intent: 'complaint',
     sentiment: 'neutral',
     aiSummary: 'Feedback about parking availability.',
+    sourceUrl: 'https://goo.gl/maps/review123',
+    contextType: 'post'
   },
   // 8. WhatsApp Message
   {
@@ -173,5 +189,6 @@ export const MOCK_MESSAGES: Message[] = [
     intent: 'sales',
     sentiment: 'positive',
     aiSummary: 'Direct order inquiry via WhatsApp.',
+    contextType: 'dm'
   }
 ];

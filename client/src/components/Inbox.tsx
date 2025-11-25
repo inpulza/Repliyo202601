@@ -21,6 +21,7 @@ import {
   Brain,
   Banknote,
   Inbox as InboxIcon,
+  ExternalLink,
 } from 'lucide-react';
 import { FaInstagram, FaFacebook, FaLinkedin, FaTiktok, FaYoutube, FaWhatsapp } from 'react-icons/fa';
 import { GoogleBusinessIcon } from './GoogleBusinessIcon';
@@ -399,6 +400,21 @@ export function Inbox() {
                              <SentimentIndicator sentiment={selectedMessage.sentiment} showLabel />
                              <span className="text-gray-300 text-[10px]">|</span>
                              <span className="text-xs text-muted-foreground">{selectedMessage.type === 'dm' ? 'Direct Message' : 'Comment'}</span>
+                             
+                             {selectedMessage.sourceUrl && (
+                                <>
+                                    <span className="text-gray-300 text-[10px]">|</span>
+                                    <a 
+                                        href={selectedMessage.sourceUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1 font-medium"
+                                    >
+                                        <ExternalLink className="h-3 w-3" />
+                                        View Original {selectedMessage.contextType === 'post' ? 'Post' : 'Context'}
+                                    </a>
+                                </>
+                             )}
                         </div>
                     </div>
                  </div>
@@ -620,9 +636,23 @@ function MessageCard({ message, isSelected, onClick }: { message: Message, isSel
                         <span className={cn("text-sm font-bold truncate text-gray-900", message.status === 'unread' && "")}>
                             {message.author}
                         </span>
-                        <span className="text-[10px] text-gray-400 whitespace-nowrap shrink-0 ml-2">
-                            {formatDistanceToNow(new Date(message.timestamp), { addSuffix: false }).replace('about ', '')}
-                        </span>
+                        <div className="flex items-center gap-1">
+                           {message.sourceUrl && (
+                               <a 
+                                   href={message.sourceUrl}
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   onClick={(e) => e.stopPropagation()}
+                                   className="text-gray-400 hover:text-indigo-600 p-0.5 rounded hover:bg-indigo-50 transition-colors"
+                                   title={`View on ${message.platform}`}
+                               >
+                                   <ExternalLink className="h-3 w-3" />
+                               </a>
+                           )}
+                           <span className="text-[10px] text-gray-400 whitespace-nowrap shrink-0 ml-1">
+                                {formatDistanceToNow(new Date(message.timestamp), { addSuffix: false }).replace('about ', '')}
+                           </span>
+                        </div>
                     </div>
                     
                     <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
