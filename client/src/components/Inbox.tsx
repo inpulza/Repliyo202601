@@ -17,7 +17,8 @@ import {
   RefreshCw,
   Loader2,
   LayoutGrid,
-  Filter
+  Filter,
+  Brain,
 } from 'lucide-react';
 import { FaInstagram, FaFacebook, FaLinkedin, FaTiktok, FaYoutube } from 'react-icons/fa';
 import { Button } from "@/components/ui/button";
@@ -245,7 +246,7 @@ export function Inbox() {
                {/* AI Summary Box */}
                <div className="mt-4 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg p-3 border border-indigo-100 flex items-start gap-3">
                   <div className="bg-indigo-100 p-1.5 rounded-md shrink-0">
-                      <Sparkles className="h-4 w-4 text-indigo-600" />
+                      <Brain className="h-4 w-4 text-indigo-600" />
                   </div>
                   <div className="text-sm text-indigo-900 leading-snug flex-1">
                       <span className="font-semibold text-indigo-700">AI Analysis:</span> {selectedMessage.aiSummary || "Analyzing conversation context..."}
