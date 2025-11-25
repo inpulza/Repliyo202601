@@ -469,12 +469,7 @@ export function IntegrationsList() {
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col pt-3">
                   <div className="mb-4">
-                      <div className="flex items-center justify-between mb-1">
-                          <CardTitle className="text-base">{integration.name}</CardTitle>
-                          <span className="text-[10px] font-medium px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full uppercase tracking-wider">
-                              {integration.category}
-                          </span>
-                      </div>
+                      <CardTitle className="text-base mb-1">{integration.name}</CardTitle>
                       <CardDescription className="text-xs line-clamp-2 h-8">{integration.description}</CardDescription>
                   </div>
                   
