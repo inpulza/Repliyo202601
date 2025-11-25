@@ -19,10 +19,6 @@ const LIMITS = {
     comment: 10000,
     dm: 0, // N/A
   },
-  twitter: { // Assuming 'twitter' might be used, though spec says 'Twitter (X)'
-    comment: 280,
-    dm: 10000,
-  },
   linkedin: {
     comment: 1250,
     dm: 20000,
