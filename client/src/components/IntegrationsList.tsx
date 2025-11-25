@@ -249,7 +249,7 @@ const INTEGRATIONS: Integration[] = [
     id: 'mailchimp',
     name: 'Mailchimp',
     description: 'Email marketing and automations platform.',
-    logo: 'https://logo.clearbit.com/mailchimp.com',
+    logo: '/logos/mailchimp.jpg',
     category: 'marketing',
     config: [
         {
