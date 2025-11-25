@@ -455,7 +455,7 @@ export function Inbox() {
             </header>
 
             {/* Chat Content */}
-            <div className="flex-1 relative flex flex-col bg-gray-50/30 overflow-hidden">
+            <div className="flex-1 relative flex flex-col bg-indigo-50/30 overflow-hidden">
                 <ScrollArea className="flex-1 p-8">
                    <div className="max-w-3xl mx-auto space-y-8 pb-32">
                   {/* Date Separator */}
