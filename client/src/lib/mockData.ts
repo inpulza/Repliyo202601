@@ -32,7 +32,7 @@ export interface Message {
 
 export interface CRMContact {
   crmId: string;
-  crmType: 'hubspot' | 'salesforce' | 'pipedrive' | 'zoho';
+  crmType: 'hubspot' | 'salesforce' | 'pipedrive' | 'zoho' | 'monday' | 'notion' | 'airtable';
   email: string;
   phone: string;
   company: string;
