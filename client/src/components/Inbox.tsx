@@ -368,7 +368,7 @@ export function Inbox() {
         </div>
 
         {/* Messages List */}
-        <ScrollArea className="flex-1 bg-gray-100">
+        <ScrollArea className="flex-1 bg-gray-200/70">
           <div className="flex flex-col p-2 gap-2">
             <AnimatePresence mode="popLayout">
               {filteredMessages.length === 0 ? (
