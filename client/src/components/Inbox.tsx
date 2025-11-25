@@ -519,27 +519,7 @@ export function Inbox() {
 
                  {/* Right Actions */}
                  <div className="flex items-center gap-1 shrink-0">
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className={cn("text-gray-400 hover:text-gray-600 hidden md:flex", isCRMOpen && "bg-gray-100 text-gray-600")}
-                        onClick={() => setIsCRMOpen(!isCRMOpen)}
-                        title="Toggle CRM Panel"
-                    >
-                        <Info className="h-5 w-5" />
-                    </Button>
-                    {isMobile && (
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="text-gray-400 hover:text-gray-600"
-                            onClick={() => setIsCRMOpen(true)}
-                            title="Show Details"
-                        >
-                            <Info className="h-5 w-5" />
-                        </Button>
-                    )}
-                 <DropdownMenu>
+                    <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button 
                             variant="ghost" 
