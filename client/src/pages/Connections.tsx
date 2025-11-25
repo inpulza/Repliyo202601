@@ -24,9 +24,9 @@ import {
   FaLinkedin,
   FaWhatsapp,
   FaPinterest,
-  FaGoogle,
   FaXTwitter
 } from "react-icons/fa6";
+import { GoogleBusinessIcon } from "@/components/GoogleBusinessIcon";
 import { mockSocialAccounts, SocialAccount } from '@/data/mockConnections';
 import { toast } from "@/hooks/use-toast";
 import {
@@ -75,7 +75,7 @@ export function Connections() {
       case 'youtube': return <FaYoutube className={cn(size, "text-red-600")} />;
       case 'linkedin': return <FaLinkedin className={cn(size, "text-blue-700")} />;
       case 'whatsapp': return <FaWhatsapp className={cn(size, "text-green-500")} />;
-      case 'google-business': return <FaGoogle className={cn(size, "text-blue-500")} />;
+      case 'google-business': return <GoogleBusinessIcon className={cn(size, "text-blue-500")} />;
       case 'pinterest': return <FaPinterest className={cn(size, "text-red-500")} />;
       case 'twitter': return <FaXTwitter className={cn(size, "text-black")} />;
       default: return <div className={cn(size, "bg-gray-200 rounded-full")} />;
@@ -111,7 +111,7 @@ export function Connections() {
         id: 'google',
         name: 'Google Business',
         description: 'Manage reviews and Q&A',
-        icon: <FaGoogle className="h-8 w-8 text-blue-500" />,
+        icon: <GoogleBusinessIcon className="h-8 w-8 text-blue-500" />,
         badge: null
     },
     {
