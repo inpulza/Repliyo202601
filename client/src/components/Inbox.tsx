@@ -620,12 +620,6 @@ export function Inbox() {
 // --- Sub-Components ---
 
 function MessageCard({ message, isSelected, onClick }: { message: Message, isSelected: boolean, onClick: () => void }) {
-    const urgencyColors = {
-        high: "border-l-red-500",
-        medium: "border-l-amber-500",
-        low: "border-l-gray-200"
-    };
-
     return (
         <motion.button
             layout
@@ -634,8 +628,7 @@ function MessageCard({ message, isSelected, onClick }: { message: Message, isSel
             exit={{ opacity: 0, scale: 0.95 }}
             onClick={onClick}
             className={cn(
-                "w-full text-left bg-white rounded-lg border border-gray-100 hover:border-gray-300 hover:shadow-md transition-all duration-200 relative overflow-hidden group pl-3 py-3 pr-3 border-l-[4px]",
-                urgencyColors[message.urgency],
+                "w-full text-left bg-white rounded-lg border border-gray-100 hover:border-gray-300 hover:shadow-md transition-all duration-200 relative overflow-hidden group pl-3 py-3 pr-3",
                 isSelected && "ring-2 ring-indigo-500 ring-offset-1 border-transparent shadow-md z-10"
             )}
         >
@@ -696,6 +689,16 @@ function MessageCard({ message, isSelected, onClick }: { message: Message, isSel
                     </div>
                     
                     <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                        {message.urgency === 'high' && (
+                            <Badge variant="outline" className="text-[10px] font-medium h-5 px-1.5 text-red-600 bg-red-50 border-red-100 gap-1">
+                                <Flame className="h-3 w-3 fill-red-600" /> High
+                            </Badge>
+                        )}
+                        {message.urgency === 'medium' && (
+                            <Badge variant="outline" className="text-[10px] font-medium h-5 px-1.5 text-amber-600 bg-amber-50 border-amber-100">
+                                Medium
+                            </Badge>
+                        )}
                         <IntentBadge intent={message.intent} />
                         <Badge variant="outline" className="text-[10px] font-normal h-5 px-1.5 text-gray-500 border-gray-200">
                             {message.type === 'dm' ? 'DM' : 'Comment'}
