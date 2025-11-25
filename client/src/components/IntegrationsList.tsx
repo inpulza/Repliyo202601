@@ -36,7 +36,7 @@ const INTEGRATIONS: Integration[] = [
     id: 'hubspot',
     name: 'HubSpot',
     description: 'Sync contacts, deals, and track email activity.',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/HubSpot_Logo.svg/512px-HubSpot_Logo.svg.png',
+    logo: 'https://logo.clearbit.com/hubspot.com',
     category: 'crm',
     config: [
         {
@@ -51,7 +51,7 @@ const INTEGRATIONS: Integration[] = [
     id: 'salesforce',
     name: 'Salesforce',
     description: 'Connect your sales team with your support inbox.',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Salesforce.com_logo.svg/512px-Salesforce.com_logo.svg.png',
+    logo: 'https://logo.clearbit.com/salesforce.com',
     category: 'crm',
     config: [
         {
@@ -72,7 +72,7 @@ const INTEGRATIONS: Integration[] = [
     id: 'pipedrive',
     name: 'Pipedrive',
     description: 'Visual sales pipeline management integration.',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Pipedrive_Logo.svg/512px-Pipedrive_Logo.svg.png',
+    logo: 'https://logo.clearbit.com/pipedrive.com',
     category: 'crm',
     config: [
         {
@@ -87,7 +87,7 @@ const INTEGRATIONS: Integration[] = [
     id: 'zoho',
     name: 'Zoho CRM',
     description: 'Manage your customer relationships seamlessly.',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Zoho-logo.png/512px-Zoho-logo.png',
+    logo: 'https://logo.clearbit.com/zoho.com',
     category: 'crm',
     config: [
         {
@@ -108,7 +108,7 @@ const INTEGRATIONS: Integration[] = [
     id: 'monday',
     name: 'Monday.com',
     description: 'Work OS to manage your team projects and tasks.',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/Monday_logo.svg/512px-Monday_logo.svg.png',
+    logo: 'https://logo.clearbit.com/monday.com',
     category: 'productivity',
     config: [
         {
@@ -123,7 +123,7 @@ const INTEGRATIONS: Integration[] = [
     id: 'notion',
     name: 'Notion',
     description: 'All-in-one workspace for notes, docs, and databases.',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Notion-logo.svg/512px-Notion-logo.svg.png',
+    logo: 'https://logo.clearbit.com/notion.so',
     category: 'productivity',
     config: [
         {
@@ -138,7 +138,7 @@ const INTEGRATIONS: Integration[] = [
     id: 'airtable',
     name: 'Airtable',
     description: 'Low-code platform for building collaborative apps.',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Airtable_Logo.svg/512px-Airtable_Logo.svg.png',
+    logo: 'https://logo.clearbit.com/airtable.com',
     category: 'database',
     config: [
         {
@@ -236,7 +236,7 @@ export function IntegrationsList() {
           return (
           <Card key={integration.id} className="flex flex-col group hover:border-indigo-200 transition-all">
             <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-               <div className="h-10 w-10 relative flex items-center justify-center bg-gray-50 rounded-lg p-1.5 border">
+               <div className="h-14 w-14 relative flex items-center justify-center bg-white rounded-xl p-2 border shadow-sm shrink-0">
                    <img 
                         src={integration.logo} 
                         alt={integration.name} 
