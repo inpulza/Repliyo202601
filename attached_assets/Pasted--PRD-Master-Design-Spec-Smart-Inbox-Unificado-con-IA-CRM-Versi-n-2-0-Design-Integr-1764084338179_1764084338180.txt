@@ -1,0 +1,128 @@
+# PRD: Master Design Spec - Smart Inbox Unificado con IA & CRM
+
+**Versión:** 2.0 - Design & Integration Phase
+**Autor:** Director de Proyecto
+**Estado:** Prototipado de Interfaz (Mock Data)
+**Objetivo:** Diseñar e integrar la interfaz completa del "Smart Inbox", incluyendo navegación global, visualización de IA, enlaces contextuales y gestión de CRM.
+
+---
+
+## 1. Estrategia de Arquitectura (CRÍTICO: LEER PRIMERO)
+
+**⚠️ INSTRUCCIÓN SUPREMA: PRESERVACIÓN DEL CÓDIGO ACTUAL**
+
+Actualmente, la aplicación funciona como un "Verificador de Conexiones API". **Esta funcionalidad debe mantenerse intacta y funcional.**
+
+**Tu misión es INTEGRAR, no reemplazar.**
+Vamos a transformar la aplicación en una suite de herramientas con navegación lateral.
+
+1.  **Nuevo Componente `AppLayout`:** Crea un contenedor principal ("App Shell") que tenga una **Barra Lateral (Sidebar)** de navegación a la izquierda (ancho fijo ~64px o expandible).
+2.  **Gestión de Vistas:**
+    * Mueve el contenido actual (`App.tsx`) a una vista llamada **`views/ConnectionsView.tsx`**.
+    * Crea una nueva vista vacía llamada **`views/InboxView.tsx`**.
+3.  **Navegación:** El Sidebar debe tener botones/iconos para alternar entre:
+    * 🔌 **Conexiones** (Vista actual).
+    * 💬 **Smart Inbox** (Nueva vista).
+
+---
+
+## 2. Definición del Layout "Smart Inbox"
+
+Esta vista (`InboxView`) debe seguir un diseño profesional de **4 zonas** (Layout tipo Front/Slack).
+
+* **Zona A (Marcas):** Columna estrecha vertical. Muestra avatares de las marcas conectadas.
+* **Zona B (Lista de Mensajes):** Ancho fijo (~350-400px). Contiene filtros, resumen y la lista de tarjetas.
+* **Zona C (Detalle del Chat):** Ancho flexible (ocupa el resto). Muestra la conversación.
+* **Zona D (Contexto CRM):** Panel lateral derecho colapsable (~300px). Muestra datos del cliente.
+
+---
+
+## 3. Especificación UI: Zona B (Lista de Mensajes)
+
+Esta columna es el centro operativo. Debe contener, de arriba a abajo:
+
+### 3.1. Panel de Resumen (Quick Stats Widget)
+Sticky Header. Muestra contadores resumen basados en datos simulados de IA.
+* **🚨 Críticos:** (Rojo) Suma de mensajes con `urgency === 3`.
+* **💰 Oportunidades:** (Verde) Suma de mensajes con `intent === 'sales'`.
+* **📥 Pendientes:** (Gris) Total mensajes no leídos.
+
+### 3.2. Tarjeta de Mensaje (AI & CRM Enhanced Card)
+Cada tarjeta en la lista debe visualizar los siguientes metadatos:
+
+**A. Indicadores de IA (Prioridad Visual):**
+* **Barra de Urgencia:** Borde izquierdo sólido (4px).
+    * 🔴 Alta (3) | 🟡 Media (2) | ⚪ Baja (1).
+* **Badge de Intención:** Etiqueta pequeña (Chip).
+    * `Venta` (Verde), `Soporte` (Azul), `Queja` (Rojo), `General` (Gris).
+* **Sentimiento:** Icono emocional (😠, 😐, 🙂).
+
+**B. Indicador de CRM (Sync Status):**
+Ubicado junto al nombre del usuario.
+* **✅ Sincronizado:** Icono del CRM (ej. HubSpot) a color (Naranja/Azul). Tooltip: "Cliente registrado".
+* **⚪ No Sincronizado:** Icono gris o usuario con símbolo `+`. Tooltip: "Nuevo Lead. Click para crear".
+
+**C. Deep Linking (Contexto Social):**
+Ubicado en la esquina superior derecha de la tarjeta.
+* **Icono:** "External Link" o logo de la red social.
+* **Acción:** Abre `sourceUrl` en una nueva pestaña (va directo al post original en Instagram/Facebook).
+
+---
+
+## 4. Especificación UI: Zona D (Panel CRM)
+
+Panel lateral derecho. Muestra el contexto del cliente seleccionado.
+
+**Comportamiento Dinámico:**
+1.  **Si `crmSyncStatus === 'synced'`:**
+    * Muestra ficha del cliente: Nombre, Email, Teléfono, Empresa.
+    * Muestra Deals/Oportunidades activas con su valor ($).
+    * Botón "Ver en [HubSpot/Salesforce]".
+2.  **Si `crmSyncStatus === 'not_synced'`:**
+    * Muestra un "Empty State" atractivo.
+    * Icono grande de "Nuevo Prospecto".
+    * Botón primario (CTA): **"Crear Contacto en CRM"**.
+
+---
+
+## 5. Estrategia de Datos (Mock Data Strategy)
+
+Crea un archivo `src/data/mockInbox.ts` con la siguiente estructura extendida y genera al menos **5 mensajes variados** que cubran todos los casos (Urgente+NoCRM, Venta+CRM, Queja+Urgente, etc.).
+
+```typescript
+export type IntentType = 'sales' | 'support' | 'complaint' | 'general';
+export type UrgencyLevel = 1 | 2 | 3;
+export type SentimentType = 'positive' | 'neutral' | 'negative';
+export type CrmStatus = 'synced' | 'not_synced';
+
+export interface CRMData {
+  crmId: string;
+  email: string;
+  dealValue?: string;
+  stage?: string;
+  crmUrl: string; // Link al perfil en HubSpot/Salesforce
+}
+
+export interface SmartMessage {
+  id: string;
+  customerName: string;
+  avatarUrl: string;
+  platform: 'facebook' | 'instagram' | 'tiktok' | 'youtube';
+  previewText: string;
+  timestamp: string;
+  
+  // 1. Deep Linking
+  sourceUrl: string; // URL al post original
+  contextType: 'post' | 'dm' | 'comment';
+
+  // 2. Metadatos IA
+  aiAnalysis: {
+    intent: IntentType;
+    urgency: UrgencyLevel;
+    sentiment: SentimentType;
+  };
+
+  // 3. Estado CRM
+  crmStatus: CrmStatus;
+  crmData?: CRMData; // Solo si crmStatus === 'synced'
+}

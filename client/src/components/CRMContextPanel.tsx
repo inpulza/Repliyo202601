@@ -46,24 +46,42 @@ export function CRMContextPanel({ contact, isOpen, onClose }: CRMContextPanelPro
 
   if (!contact) {
     return (
-       <div className="w-[300px] border-l bg-gray-50/50 flex flex-col h-full shrink-0 transition-all duration-300 ease-in-out">
-          <div className="p-4 border-b flex items-center justify-between bg-white">
+       <div className="w-[320px] border-l bg-gray-50/30 flex flex-col h-full shrink-0 transition-all duration-300 ease-in-out relative overflow-hidden">
+          {/* Header */}
+          <div className="h-16 border-b px-4 flex items-center justify-between shrink-0 bg-white/80 backdrop-blur-sm z-10">
              <span className="text-sm font-semibold text-gray-500 flex items-center gap-2">
                 <Briefcase className="h-4 w-4" /> CRM Context
              </span>
-             <Button variant="ghost" size="icon" onClick={onClose} className="h-6 w-6">
-                <ChevronsRight className="h-4 w-4 text-gray-400" />
+             <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 hover:bg-gray-100 text-gray-500">
+                <X className="h-4 w-4" />
              </Button>
           </div>
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
-             <div className="bg-gray-100 p-3 rounded-full mb-3">
-                <Briefcase className="h-6 w-6 text-gray-400" />
+
+          {/* Empty State Content */}
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center relative z-0">
+             {/* Decorative background elements */}
+             <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-indigo-100/50 rounded-full blur-3xl -z-10" />
+             
+             <div className="bg-white p-4 rounded-2xl shadow-lg mb-6 ring-1 ring-gray-100 relative group">
+                <div className="absolute -top-2 -right-2 bg-red-500 h-4 w-4 rounded-full border-2 border-white animate-pulse" />
+                <div className="bg-indigo-50 p-3 rounded-xl">
+                    <Plus className="h-8 w-8 text-indigo-600" />
+                </div>
              </div>
-             <p className="text-sm font-medium text-gray-900">No CRM Data Found</p>
-             <p className="text-xs mt-1 text-gray-500">This contact is not linked to any CRM record.</p>
-             <Button size="sm" variant="outline" className="mt-4 text-xs h-8">
-                Create Contact
+             
+             <h3 className="text-lg font-bold text-gray-900 mb-2">New Prospect</h3>
+             <p className="text-sm text-muted-foreground mb-8 leading-relaxed max-w-[240px]">
+                This contact is not synchronized with your CRM yet. Capture this opportunity!
+             </p>
+             
+             <Button className="w-full bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Contact in CRM
              </Button>
+
+             <p className="text-[10px] text-gray-400 mt-6">
+                Syncs with HubSpot, Salesforce & more
+             </p>
           </div>
        </div>
     );

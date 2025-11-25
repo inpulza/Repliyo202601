@@ -620,6 +620,12 @@ export function Inbox() {
 // --- Sub-Components ---
 
 function MessageCard({ message, isSelected, onClick }: { message: Message, isSelected: boolean, onClick: () => void }) {
+    const urgencyColors = {
+        high: "border-l-red-500",
+        medium: "border-l-amber-500",
+        low: "border-l-gray-200"
+    };
+
     return (
         <motion.button
             layout
@@ -628,7 +634,8 @@ function MessageCard({ message, isSelected, onClick }: { message: Message, isSel
             exit={{ opacity: 0, scale: 0.95 }}
             onClick={onClick}
             className={cn(
-                "w-full text-left bg-white rounded-lg border border-gray-100 hover:border-gray-300 hover:shadow-md transition-all duration-200 relative overflow-hidden group pl-3 py-3 pr-3",
+                "w-full text-left bg-white rounded-lg border border-gray-100 hover:border-gray-300 hover:shadow-md transition-all duration-200 relative overflow-hidden group pl-3 py-3 pr-3 border-l-[4px]",
+                urgencyColors[message.urgency],
                 isSelected && "ring-2 ring-indigo-500 ring-offset-1 border-transparent shadow-md z-10"
             )}
         >
@@ -648,9 +655,27 @@ function MessageCard({ message, isSelected, onClick }: { message: Message, isSel
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-0.5">
-                        <span className={cn("text-sm font-bold truncate text-gray-900", message.status === 'unread' && "")}>
-                            {message.author}
-                        </span>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                            <span className={cn("text-sm font-bold truncate text-gray-900", message.status === 'unread' && "")}>
+                                {message.author}
+                            </span>
+                            {/* CRM Sync Status Indicator */}
+                            {message.crmData ? (
+                                <div className="flex items-center justify-center h-4 w-4 rounded-full bg-gray-50 border shrink-0" title="Synced with CRM">
+                                    {message.crmData.crmType === 'hubspot' && <img src="/logos/hubspot.png" className="h-2.5 w-2.5 object-contain" />}
+                                    {message.crmData.crmType === 'salesforce' && <img src="https://logo.clearbit.com/salesforce.com" className="h-2.5 w-2.5 object-contain" />}
+                                    {message.crmData.crmType === 'pipedrive' && <img src="/logos/pipedrive.webp" className="h-2.5 w-2.5 object-contain" />}
+                                    {message.crmData.crmType === 'zoho' && <img src="/logos/zoho.png" className="h-2.5 w-2.5 object-contain" />}
+                                    {message.crmData.crmType === 'monday' && <img src="https://logo.clearbit.com/monday.com" className="h-2.5 w-2.5 object-contain" />}
+                                    {message.crmData.crmType === 'notion' && <img src="https://logo.clearbit.com/notion.so" className="h-2.5 w-2.5 object-contain" />}
+                                    {message.crmData.crmType === 'airtable' && <img src="https://logo.clearbit.com/airtable.com" className="h-2.5 w-2.5 object-contain" />}
+                                </div>
+                            ) : (
+                                <div className="h-4 w-4 rounded-full border border-dashed border-gray-300 flex items-center justify-center shrink-0" title="Not Synced - Click to Create">
+                                    <span className="text-[8px] text-gray-400 font-bold">+</span>
+                                </div>
+                            )}
+                        </div>
                         <div className="flex items-center gap-1">
                            {message.sourceUrl && (
                                <a 
@@ -671,16 +696,6 @@ function MessageCard({ message, isSelected, onClick }: { message: Message, isSel
                     </div>
                     
                     <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                        {message.urgency === 'high' && (
-                            <Badge variant="outline" className="text-[10px] font-medium h-5 px-1.5 text-red-600 bg-red-50 border-red-100 gap-1">
-                                <Flame className="h-3 w-3 fill-red-600" /> High
-                            </Badge>
-                        )}
-                        {message.urgency === 'medium' && (
-                            <Badge variant="outline" className="text-[10px] font-medium h-5 px-1.5 text-amber-600 bg-amber-50 border-amber-100">
-                                Medium
-                            </Badge>
-                        )}
                         <IntentBadge intent={message.intent} />
                         <Badge variant="outline" className="text-[10px] font-normal h-5 px-1.5 text-gray-500 border-gray-200">
                             {message.type === 'dm' ? 'DM' : 'Comment'}

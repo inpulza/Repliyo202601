@@ -225,5 +225,21 @@ export const MOCK_MESSAGES: Message[] = [
     sentiment: 'positive',
     aiSummary: 'Direct order inquiry via WhatsApp.',
     contextType: 'dm'
+  },
+  // 9. High Urgency Support (Not Synced)
+  {
+    id: 'm9',
+    clientId: 'c1',
+    platform: 'facebook',
+    type: 'dm',
+    author: 'Mark Zuckerberg',
+    content: 'We have a serious issue with the enterprise contract. Call me ASAP.',
+    timestamp: new Date(Date.now() - 1000 * 60 * 2).toISOString(), // 2 mins ago
+    status: 'unread',
+    urgency: 'high',
+    intent: 'support',
+    sentiment: 'negative',
+    aiSummary: 'Critical enterprise issue reported by high-profile user.',
+    contextType: 'dm'
   }
 ];
