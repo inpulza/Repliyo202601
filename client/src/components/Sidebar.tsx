@@ -38,7 +38,7 @@ export function Sidebar() {
       {/* Header / Branding */}
       <div className="p-5 flex items-center gap-3">
         <div className="h-8 w-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-900/20">
-          <Sparkles className="h-4 w-4 text-white" />
+          <Command className="h-4 w-4 text-white" />
         </div>
         <span className="font-bold text-base text-white tracking-tight">NexusFlow</span>
       </div>

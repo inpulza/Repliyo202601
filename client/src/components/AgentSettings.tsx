@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Save, Bot, Zap, Sparkles, ArrowRight } from 'lucide-react';
+import { Save, Bot, Zap, BookOpen, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const formSchema = z.object({
@@ -193,7 +193,7 @@ export function AgentSettings() {
                className="space-y-6"
             >
                <div className="flex items-center gap-2 pb-2 border-b mt-8">
-                  <Sparkles className="h-5 w-5 text-indigo-500" />
+                  <BookOpen className="h-5 w-5 text-indigo-500" />
                   <h2 className="font-semibold text-lg">Knowledge Base</h2>
                </div>
 

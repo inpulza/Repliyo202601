@@ -508,7 +508,7 @@ export function Inbox() {
                         {selectedMessage.status === 'drafting' ? (
                            <div className="rounded-2xl bg-white border border-indigo-100 p-6 shadow-sm flex items-center gap-4 animate-pulse">
                                <div className="h-10 w-10 rounded-full bg-indigo-50 flex items-center justify-center">
-                                   <Sparkles className="h-5 w-5 text-indigo-400 animate-spin-slow" />
+                                   <Brain className="h-5 w-5 text-indigo-400" />
                                </div>
                                <div className="space-y-2 flex-1">
                                    <div className="h-4 bg-indigo-50 rounded w-1/3"></div>
@@ -529,7 +529,7 @@ export function Inbox() {
                                    <div className="px-5 py-3 flex items-center justify-between border-b border-gray-50 bg-gray-50/30">
                                        <div className="flex items-center gap-2">
                                            <div className="h-6 w-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm">
-                                               <Sparkles className="h-3 w-3 text-white" />
+                                               <Brain className="h-3 w-3 text-white" />
                                            </div>
                                            <span className="text-xs font-bold text-gray-700">AI Suggestion</span>
                                        </div>
