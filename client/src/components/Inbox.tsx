@@ -82,30 +82,40 @@ export function Inbox() {
                 onClick={() => setActiveFilter('instagram')}
                 label="Instagram"
                 icon={<FaInstagram className="h-4 w-4" />}
+                activeColorClass="bg-pink-600"
+                hoverColorClass="hover:text-pink-600 hover:border-pink-200 hover:bg-pink-50"
               />
               <FilterButton 
                 active={activeFilter === 'tiktok'} 
                 onClick={() => setActiveFilter('tiktok')}
                 label="TikTok"
                 icon={<FaTiktok className="h-4 w-4" />}
+                activeColorClass="bg-black"
+                hoverColorClass="hover:text-black hover:border-gray-300 hover:bg-gray-100"
               />
               <FilterButton 
                 active={activeFilter === 'facebook'} 
                 onClick={() => setActiveFilter('facebook')}
                 label="Facebook"
                 icon={<FaFacebook className="h-4 w-4" />}
+                activeColorClass="bg-blue-600"
+                hoverColorClass="hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50"
               />
               <FilterButton 
                 active={activeFilter === 'linkedin'} 
                 onClick={() => setActiveFilter('linkedin')}
                 label="LinkedIn"
                 icon={<FaLinkedin className="h-4 w-4" />}
+                activeColorClass="bg-[#0077b5]"
+                hoverColorClass="hover:text-[#0077b5] hover:border-[#0077b5]/30 hover:bg-[#0077b5]/10"
               />
                <FilterButton 
                 active={activeFilter === 'youtube'} 
                 onClick={() => setActiveFilter('youtube')}
                 label="YouTube"
                 icon={<FaYoutube className="h-4 w-4" />}
+                activeColorClass="bg-red-600"
+                hoverColorClass="hover:text-red-600 hover:border-red-200 hover:bg-red-50"
               />
            </div>
         </div>
@@ -327,7 +337,7 @@ export function Inbox() {
   );
 }
 
-function FilterButton({ active, onClick, label, icon }: { active: boolean, onClick: () => void, label: string, icon?: React.ReactNode }) {
+function FilterButton({ active, onClick, label, icon, activeColorClass, hoverColorClass }: { active: boolean, onClick: () => void, label: string, icon?: React.ReactNode, activeColorClass?: string, hoverColorClass?: string }) {
   return (
     <button 
       onClick={onClick}
@@ -335,8 +345,8 @@ function FilterButton({ active, onClick, label, icon }: { active: boolean, onCli
       className={cn(
         "flex items-center justify-center h-8 w-8 rounded-full text-xs font-medium transition-all border shrink-0",
         active 
-          ? "bg-gray-900 text-white border-gray-900" 
-          : "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+          ? cn("text-white border-transparent shadow-sm", activeColorClass || "bg-gray-900") 
+          : cn("bg-white text-gray-500 border-gray-200", hoverColorClass || "hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900")
       )}
     >
       {icon}
@@ -365,23 +375,21 @@ function PlatformBadge({ platform }: { platform: Platform }) {
   };
 
   return (
-    <Badge variant="outline" className={cn("text-[10px] h-5 px-1.5 py-0 font-medium uppercase tracking-wider border gap-1", styles[platform])}>
+    <Badge variant="outline" title={platform} className={cn("h-5 w-5 p-0 flex items-center justify-center border shrink-0", styles[platform])}>
       <PlatformIcon platform={platform} className="h-3 w-3" />
-      {platform}
     </Badge>
   );
 }
 
 function TypeBadge({ type }: { type: MessageType }) {
   return (
-    <Badge variant="outline" className={cn(
-      "text-[10px] h-5 px-1.5 py-0 font-medium uppercase tracking-wider border gap-1",
+    <Badge variant="outline" title={type === 'dm' ? 'Direct Message' : 'Comment'} className={cn(
+      "h-5 w-5 p-0 flex items-center justify-center border shrink-0",
       type === 'dm' 
         ? "text-purple-600 border-purple-200 bg-purple-50" 
         : "text-orange-600 border-orange-200 bg-orange-50"
     )}>
       {type === 'dm' ? <MessageCircle className="h-3 w-3" /> : <MessageSquare className="h-3 w-3" />}
-      {type === 'dm' ? 'Direct' : 'Comment'}
     </Badge>
   );
 }
