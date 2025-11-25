@@ -946,8 +946,9 @@ function FilterButton({ active, onClick, label, icon, activeColorClass, hoverCol
     <button 
       onClick={onClick}
       title={label}
+      type="button"
       className={cn(
-        "flex items-center justify-center h-8 w-8 rounded-full text-xs font-medium transition-all border shrink-0",
+        "flex items-center justify-center h-10 w-10 rounded-full text-xs font-medium transition-all border shrink-0 touch-manipulation",
         active 
           ? cn("text-white border-transparent shadow-sm", activeColorClass || "bg-gray-900") 
           : cn("bg-white text-gray-500 border-gray-200", hoverColorClass || "hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900")
