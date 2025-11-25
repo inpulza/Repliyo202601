@@ -431,16 +431,38 @@ export function Inbox() {
                  </Button>
                </div>
 
-               {/* AI Summary Box */}
-               <div className="mt-4 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg p-3 border border-indigo-100 flex items-start gap-3">
-                  <div className="bg-indigo-100 p-1.5 rounded-md shrink-0">
-                      <Brain className="h-4 w-4 text-indigo-600" />
-                  </div>
-                  <div className="text-sm text-indigo-900 leading-snug flex-1">
-                      <span className="font-semibold text-indigo-700">AI Analysis:</span> {selectedMessage.aiSummary || "Analyzing conversation context..."}
-                      <div className="flex items-center gap-2 mt-2">
-                          <span className="text-xs font-medium text-indigo-600 uppercase tracking-wider">Urgency Level:</span>
-                          <UrgencyBadge urgency={selectedMessage.urgency} />
+               {/* AI Summary - Clean Minimal Version */}
+               <div className="mt-4 group relative">
+                  <div className={cn(
+                      "absolute left-0 top-0 bottom-0 w-1 rounded-full transition-colors",
+                      selectedMessage.urgency === 'high' ? "bg-red-500" : 
+                      selectedMessage.urgency === 'medium' ? "bg-amber-500" : "bg-indigo-500"
+                  )} />
+                  
+                  <div className="pl-4 py-1">
+                      <div className="flex items-start gap-3">
+                          <div className={cn(
+                              "mt-0.5 p-1 rounded-md shrink-0",
+                              selectedMessage.urgency === 'high' ? "bg-red-50 text-red-600" : 
+                              selectedMessage.urgency === 'medium' ? "bg-amber-50 text-amber-600" : "bg-indigo-50 text-indigo-600"
+                          )}>
+                              <Sparkles className="h-3.5 w-3.5" />
+                          </div>
+                          <div className="space-y-1.5">
+                              <p className="text-sm text-gray-600 leading-relaxed">
+                                  <span className="font-semibold text-gray-900">AI Analysis:</span> {selectedMessage.aiSummary || "Analyzing conversation context..."}
+                              </p>
+                              
+                              <div className="flex items-center gap-3">
+                                  <div className={cn(
+                                      "text-[10px] font-medium px-1.5 py-0.5 rounded border uppercase tracking-wide",
+                                      selectedMessage.urgency === 'high' ? "bg-red-50 text-red-700 border-red-100" : 
+                                      selectedMessage.urgency === 'medium' ? "bg-amber-50 text-amber-700 border-amber-100" : "bg-gray-50 text-gray-600 border-gray-200"
+                                  )}>
+                                      {selectedMessage.urgency} Priority
+                                  </div>
+                              </div>
+                          </div>
                       </div>
                   </div>
                </div>
