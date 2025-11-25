@@ -12,7 +12,12 @@ import {
   Send,
   Sparkles,
   MessageCircle,
-  MessageSquare
+  MessageSquare,
+  Check,
+  RefreshCw,
+  Loader2,
+  LayoutGrid,
+  Filter
 } from 'lucide-react';
 import { FaInstagram, FaFacebook, FaLinkedin, FaTiktok, FaYoutube } from 'react-icons/fa';
 import { Button } from "@/components/ui/button";
@@ -30,16 +35,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatDistanceToNow } from 'date-fns';
-import { Platform, MessageType, Urgency, Intent, Sentiment, Message } from '@/lib/mockData';
+import { Platform, MessageType, Urgency, Intent, Sentiment, Message, MessageStatus } from '@/lib/mockData';
 import { motion, AnimatePresence } from "framer-motion";
 
 export function Inbox() {
-  const { messages, activeClientId } = useNexus();
+  const { messages, activeClientId, approveMessage, refreshFeed } = useNexus();
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [intentFilter, setIntentFilter] = useState<Intent | 'all'>('all');
+  const [platformFilter, setPlatformFilter] = useState<Platform | 'all'>('all');
   const [fireMode, setFireMode] = useState(false);
 
   // Filter Logic
@@ -48,6 +54,7 @@ export function Inbox() {
     .filter(m => {
       if (fireMode && m.urgency !== 'high') return false;
       if (intentFilter !== 'all' && m.intent !== intentFilter) return false;
+      if (platformFilter !== 'all' && m.platform !== platformFilter) return false;
       if (searchQuery && !m.content.toLowerCase().includes(searchQuery.toLowerCase()) && !m.author.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
     })
@@ -77,32 +84,102 @@ export function Inbox() {
       <div className="w-[400px] border-r flex flex-col bg-white relative z-10 shadow-sm">
         
         {/* Header / Title */}
-        <div className="h-16 border-b px-6 flex items-center justify-between shrink-0">
+        <div className="h-16 border-b px-4 flex items-center justify-between shrink-0 bg-white">
           <h1 className="font-bold text-xl tracking-tight text-gray-900">Inbox</h1>
           <div className="flex items-center gap-2">
+             <Button variant="ghost" size="icon" onClick={refreshFeed} className="h-8 w-8 text-muted-foreground">
+                <RefreshCw className="h-4 w-4" />
+             </Button>
              <Badge variant="outline" className="font-normal text-gray-500">
-               {filteredMessages.length} messages
+               {filteredMessages.length}
              </Badge>
           </div>
         </div>
 
         {/* Filter Bar (The "Playground" for AI) */}
-        <div className="p-4 border-b space-y-4 bg-gray-50/50">
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 bg-white border-gray-200 focus:ring-offset-0" 
-            />
+        <div className="p-3 border-b space-y-3 bg-gray-50/50">
+          {/* Row 1: Search & Fire Mode */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input 
+                placeholder="Search..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 bg-white border-gray-200 focus:ring-offset-0 h-9" 
+                />
+            </div>
+            
+            <div className={cn("flex items-center gap-2 shrink-0 px-3 py-1.5 rounded-md border shadow-sm transition-colors", fireMode ? "bg-red-50 border-red-200" : "bg-white border-gray-200")} title="Fire Mode: Show High Urgency Only">
+                <Switch 
+                    id="fire-mode" 
+                    checked={fireMode} 
+                    onCheckedChange={setFireMode} 
+                    className="data-[state=checked]:bg-red-500 scale-75 origin-right"
+                />
+                <Label htmlFor="fire-mode" className={cn("text-xs font-bold cursor-pointer select-none flex items-center gap-1", fireMode ? "text-red-600" : "text-gray-500")}>
+                    <Flame className={cn("h-3.5 w-3.5", fireMode && "fill-red-500")} />
+                </Label>
+            </div>
           </div>
 
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex-1">
-                <Select value={intentFilter} onValueChange={(val: any) => setIntentFilter(val)}>
-                <SelectTrigger className="w-full bg-white border-gray-200 h-9 text-sm">
-                    <SelectValue placeholder="Filter by Intent" />
+          {/* Row 2: Platform Filters (Horizontal Scroll) */}
+          <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar items-center">
+              <FilterButton 
+                active={platformFilter === 'all'} 
+                onClick={() => setPlatformFilter('all')}
+                label="All" 
+                icon={<LayoutGrid className="h-3.5 w-3.5" />}
+              />
+              <FilterButton 
+                active={platformFilter === 'instagram'} 
+                onClick={() => setPlatformFilter('instagram')}
+                label="Instagram"
+                icon={<FaInstagram className="h-3.5 w-3.5" />}
+                activeColorClass="bg-pink-600"
+                hoverColorClass="hover:text-pink-600 hover:border-pink-200 hover:bg-pink-50"
+              />
+              <FilterButton 
+                active={platformFilter === 'tiktok'} 
+                onClick={() => setPlatformFilter('tiktok')}
+                label="TikTok"
+                icon={<FaTiktok className="h-3.5 w-3.5" />}
+                activeColorClass="bg-black"
+                hoverColorClass="hover:text-black hover:border-gray-300 hover:bg-gray-100"
+              />
+              <FilterButton 
+                active={platformFilter === 'facebook'} 
+                onClick={() => setPlatformFilter('facebook')}
+                label="Facebook"
+                icon={<FaFacebook className="h-3.5 w-3.5" />}
+                activeColorClass="bg-blue-600"
+                hoverColorClass="hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50"
+              />
+              <FilterButton 
+                active={platformFilter === 'linkedin'} 
+                onClick={() => setPlatformFilter('linkedin')}
+                label="LinkedIn"
+                icon={<FaLinkedin className="h-3.5 w-3.5" />}
+                activeColorClass="bg-[#0077b5]"
+                hoverColorClass="hover:text-[#0077b5] hover:border-[#0077b5]/30 hover:bg-[#0077b5]/10"
+              />
+               <FilterButton 
+                active={platformFilter === 'youtube'} 
+                onClick={() => setPlatformFilter('youtube')}
+                label="YouTube"
+                icon={<FaYoutube className="h-3.5 w-3.5" />}
+                activeColorClass="bg-red-600"
+                hoverColorClass="hover:text-red-600 hover:border-red-200 hover:bg-red-50"
+              />
+           </div>
+
+           {/* Row 3: Intent Filter (Optional, maybe better as a pill row? sticking to select for now based on PRD) */}
+           <Select value={intentFilter} onValueChange={(val: any) => setIntentFilter(val)}>
+                <SelectTrigger className="w-full bg-white border-gray-200 h-8 text-xs">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                        <Filter className="h-3 w-3" />
+                        <SelectValue placeholder="Filter by Intent" />
+                    </div>
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">All Intents</SelectItem>
@@ -111,21 +188,7 @@ export function Inbox() {
                     <SelectItem value="complaint">Complaints</SelectItem>
                     <SelectItem value="general">General</SelectItem>
                 </SelectContent>
-                </Select>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0 bg-white px-3 py-1.5 rounded-md border border-gray-200 shadow-sm" title="Fire Mode: Show High Urgency Only">
-                <Switch 
-                    id="fire-mode" 
-                    checked={fireMode} 
-                    onCheckedChange={setFireMode} 
-                    className="data-[state=checked]:bg-red-500 scale-90"
-                />
-                <Label htmlFor="fire-mode" className={cn("text-xs font-semibold cursor-pointer select-none", fireMode ? "text-red-600" : "text-gray-500")}>
-                    <span className="flex items-center gap-1">Fire Mode <Flame className={cn("h-3.5 w-3.5", fireMode && "fill-red-500")} /></span>
-                </Label>
-            </div>
-          </div>
+            </Select>
         </div>
 
         {/* Messages List */}
@@ -184,7 +247,7 @@ export function Inbox() {
                   <div className="bg-indigo-100 p-1.5 rounded-md shrink-0">
                       <Sparkles className="h-4 w-4 text-indigo-600" />
                   </div>
-                  <div className="text-sm text-indigo-900 leading-snug">
+                  <div className="text-sm text-indigo-900 leading-snug flex-1">
                       <span className="font-semibold text-indigo-700">AI Analysis:</span> {selectedMessage.aiSummary || "Analyzing conversation context..."}
                       <div className="flex items-center gap-2 mt-2">
                           <span className="text-xs font-medium text-indigo-600 uppercase tracking-wider">Urgency Level:</span>
@@ -196,7 +259,7 @@ export function Inbox() {
 
             {/* Chat Content */}
             <ScrollArea className="flex-1 p-8 bg-gray-50/30">
-               <div className="max-w-3xl mx-auto space-y-6">
+               <div className="max-w-3xl mx-auto space-y-8">
                   {/* Date Separator */}
                   <div className="flex justify-center">
                       <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
@@ -229,27 +292,104 @@ export function Inbox() {
                         </div>
                      </div>
                   </div>
+
+                  {/* AI Suggestion / Response Area (RESTORED) */}
+                  <AnimatePresence mode="wait">
+                    {selectedMessage.status !== 'sent' && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="relative pl-12"
+                      >
+                        <div className="absolute left-0 top-0 flex flex-col items-center gap-1">
+                           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-200">
+                              {selectedMessage.status === 'drafting' ? (
+                                <Loader2 className="h-4 w-4 text-white animate-spin" />
+                              ) : (
+                                <Sparkles className="h-4 w-4 text-white" />
+                              )}
+                           </div>
+                           <div className="w-0.5 h-full bg-indigo-100 absolute top-8 -z-10" />
+                        </div>
+
+                        <div className={cn(
+                           "rounded-xl border overflow-hidden transition-all duration-500",
+                           selectedMessage.status === 'drafting' 
+                              ? "bg-white border-indigo-100 shadow-sm h-24 flex items-center px-6"
+                              : "bg-white border-indigo-200 shadow-[0_0_30px_-10px_rgba(99,102,241,0.2)] ring-1 ring-indigo-50"
+                        )}>
+                           {selectedMessage.status === 'drafting' ? (
+                              <div className="flex items-center gap-3 text-indigo-600 animate-pulse">
+                                 <span className="text-sm font-medium">Agent is drafting a response...</span>
+                              </div>
+                           ) : selectedMessage.draftResponse ? (
+                              <div className="p-0">
+                                 <div className="bg-gradient-to-r from-indigo-50/50 to-violet-50/50 p-3 border-b border-indigo-50 flex items-center justify-between">
+                                    <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider flex items-center gap-1.5">
+                                       <Sparkles className="h-3 w-3" /> AI Suggestion
+                                    </span>
+                                    <Badge variant="secondary" className="bg-white/80 text-indigo-700 border-indigo-100 text-[10px] hover:bg-white">
+                                       Confidence: 98%
+                                    </Badge>
+                                 </div>
+                                 <div className="p-4">
+                                    <textarea 
+                                       className="w-full bg-transparent border-none p-0 text-sm text-gray-800 resize-none focus:outline-none min-h-[80px] leading-relaxed"
+                                       defaultValue={selectedMessage.draftResponse}
+                                    />
+                                 </div>
+                                 <div className="bg-gray-50 p-3 flex items-center justify-between border-t">
+                                    <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-foreground h-8">
+                                       Discard
+                                    </Button>
+                                    <div className="flex items-center gap-2">
+                                       <Button variant="outline" size="sm" className="h-8 text-xs bg-white">
+                                          Edit Response
+                                       </Button>
+                                       <Button 
+                                          size="sm" 
+                                          className="h-8 text-xs bg-black hover:bg-gray-800 text-white shadow-none gap-1.5 px-4 transition-all"
+                                          onClick={() => approveMessage(selectedMessage.id)}
+                                       >
+                                          <Check className="h-3.5 w-3.5" />
+                                          Approve & Send
+                                       </Button>
+                                    </div>
+                                 </div>
+                              </div>
+                           ) : (
+                              <div className="p-6 text-center text-muted-foreground text-sm">
+                                 Waiting for agent...
+                              </div>
+                           )}
+                        </div>
+                      </motion.div>
+                    )}
+                    
+                    {selectedMessage.status === 'sent' && (
+                       <motion.div 
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="flex gap-4 ml-0"
+                       >
+                          <Avatar className="h-8 w-8 mt-1">
+                             <AvatarFallback className="bg-indigo-600 text-white">AI</AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col gap-1 max-w-[80%]">
+                             <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-2xl rounded-tl-none text-sm leading-relaxed text-indigo-900">
+                                {selectedMessage.draftResponse}
+                             </div>
+                             <span className="text-xs text-muted-foreground ml-1 flex items-center gap-1">
+                                <Check className="h-3 w-3" /> Sent just now
+                             </span>
+                          </div>
+                       </motion.div>
+                    )}
+                  </AnimatePresence>
+
                </div>
             </ScrollArea>
-
-            {/* Composer (Mock) */}
-            <div className="p-4 border-t bg-white">
-               <div className="relative rounded-xl border shadow-sm overflow-hidden focus-within:ring-1 focus-within:ring-indigo-500 focus-within:border-indigo-500 transition-all">
-                   <textarea 
-                      className="w-full min-h-[80px] p-3 resize-none text-sm focus:outline-none"
-                      placeholder="Type a reply..."
-                   />
-                   <div className="bg-gray-50 p-2 flex items-center justify-between border-t border-gray-100">
-                       <div className="flex gap-1">
-                           {/* Toolbar icons would go here */}
-                       </div>
-                       <Button size="sm" className="h-8 gap-2">
-                           Send <Send className="h-3.5 w-3.5" />
-                       </Button>
-                   </div>
-               </div>
-            </div>
-
           </>
         ) : (
            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground bg-gray-50/30">
@@ -385,6 +525,23 @@ function SentimentIndicator({ sentiment, showLabel }: { sentiment: Sentiment, sh
             {showLabel && <span className="text-xs font-medium">{label}</span>}
         </div>
     );
+}
+
+function FilterButton({ active, onClick, label, icon, activeColorClass, hoverColorClass }: { active: boolean, onClick: () => void, label: string, icon?: React.ReactNode, activeColorClass?: string, hoverColorClass?: string }) {
+  return (
+    <button 
+      onClick={onClick}
+      title={label}
+      className={cn(
+        "flex items-center justify-center h-8 w-8 rounded-full text-xs font-medium transition-all border shrink-0",
+        active 
+          ? cn("text-white border-transparent shadow-sm", activeColorClass || "bg-gray-900") 
+          : cn("bg-white text-gray-500 border-gray-200", hoverColorClass || "hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900")
+      )}
+    >
+      {icon}
+    </button>
+  );
 }
 
 function PlatformIcon({ platform, className }: { platform: Platform, className?: string }) {
