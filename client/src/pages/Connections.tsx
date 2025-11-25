@@ -96,9 +96,10 @@ export function Connections() {
         description: 'Connect pages and business accounts',
         color: 'bg-[#1877F2]/10 text-[#1877F2]',
         icon: (
-            <div className="flex items-center justify-center w-full h-full relative">
-                <FaFacebook className="h-6 w-6 text-[#1877F2] absolute -left-1" />
-                <FaInstagram className="h-6 w-6 text-[#E4405F] absolute left-3 bg-white rounded-full border-2 border-white" />
+            <div className="flex items-center justify-center gap-2">
+                <FaFacebook className="h-6 w-6 text-[#1877F2]" />
+                <div className="w-px h-4 bg-current opacity-20" />
+                <FaInstagram className="h-6 w-6 text-[#E4405F]" />
             </div>
         ),
         badge: 'Popular'
@@ -198,9 +199,9 @@ export function Connections() {
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               Active Connections
-              <Badge variant="secondary" className="rounded-full px-2.5 py-0.5 text-xs font-medium">
+              <span className="ml-2 text-sm font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-md">
                 {accounts.length}
-              </Badge>
+              </span>
             </h2>
           </div>
 
@@ -208,18 +209,18 @@ export function Connections() {
             {accounts.map((account) => {
               const capabilities = account.capabilities as any;
               return (
-                <Card key={account.id} className="group hover:shadow-md transition-all duration-300 border-muted/60 bg-card">
+                <Card key={account.id} className="group border-border bg-card transition-colors hover:border-primary/50">
                   <CardContent className="p-5">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="relative">
-                          <Avatar className="h-12 w-12 border-2 border-background shadow-sm">
+                          <Avatar className="h-12 w-12 border border-border">
                             <AvatarImage src={account.avatarUrl} />
-                            <AvatarFallback className="bg-primary/5 text-primary font-semibold">
+                            <AvatarFallback className="bg-primary/5 text-primary font-semibold rounded-md">
                               {account.accountName.substring(0, 2)}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-1 shadow-sm ring-1 ring-muted">
+                          <div className="absolute -bottom-1 -right-1 bg-background rounded-md p-1 border border-border">
                             {getPlatformIcon(account.platform, "h-3.5 w-3.5")}
                           </div>
                         </div>
@@ -249,12 +250,12 @@ export function Connections() {
                     </div>
                     
                     <div className="flex flex-wrap gap-1.5">
-                       <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200 px-2 py-0.5">
+                       <div className="inline-flex items-center text-[10px] font-medium text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-md">
                           <div className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5 animate-pulse" />
                           Connected
-                       </Badge>
-                       {capabilities.dms && <Badge variant="secondary" className="text-[10px]">Messages</Badge>}
-                       {capabilities.comments && <Badge variant="secondary" className="text-[10px]">Comments</Badge>}
+                       </div>
+                       {capabilities.dms && <div className="inline-flex items-center text-[10px] font-medium text-muted-foreground bg-muted border border-border px-2 py-0.5 rounded-md">Messages</div>}
+                       {capabilities.comments && <div className="inline-flex items-center text-[10px] font-medium text-muted-foreground bg-muted border border-border px-2 py-0.5 rounded-md">Comments</div>}
                     </div>
                   </CardContent>
                 </Card>
@@ -279,12 +280,12 @@ export function Connections() {
             <Card 
                 key={platform.id} 
                 className={cn(
-                    "group relative overflow-hidden border-muted/60 hover:border-primary/20 hover:shadow-lg transition-all duration-300 bg-card",
+                    "group relative overflow-hidden border-border bg-card hover:border-primary/50 transition-all duration-200",
                     isConnecting === platform.name ? "ring-2 ring-primary ring-offset-2" : ""
                 )}
             >
                 <CardContent className="p-6 flex flex-col items-center text-center gap-4">
-                    <div className={cn("p-4 rounded-2xl transition-transform duration-300 group-hover:scale-110", platform.color)}>
+                    <div className={cn("p-4 rounded-xl transition-colors", platform.color)}>
                         {platform.icon}
                     </div>
                     
@@ -292,9 +293,9 @@ export function Connections() {
                         <div className="flex items-center justify-center gap-2">
                             <h3 className="font-semibold text-foreground">{platform.name}</h3>
                             {platform.badge && (
-                                <Badge variant="secondary" className="text-[10px] px-1.5 h-5 bg-primary/10 text-primary border-primary/20">
+                                <span className="text-[10px] font-medium px-1.5 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded-md">
                                     {platform.badge}
-                                </Badge>
+                                </span>
                             )}
                         </div>
                         <p className="text-sm text-muted-foreground leading-relaxed">
@@ -303,10 +304,10 @@ export function Connections() {
                     </div>
                 </CardContent>
                 
-                <CardFooter className="p-4 pt-0 bg-muted/30 mt-auto border-t border-muted/50 group-hover:bg-muted/50 transition-colors">
+                <CardFooter className="p-4 pt-0 bg-muted/20 mt-auto border-t border-border group-hover:bg-muted/40 transition-colors">
                     <Button 
                         variant="ghost" 
-                        className="w-full group-hover:bg-background group-hover:text-primary group-hover:shadow-sm transition-all duration-300"
+                        className="w-full hover:bg-background hover:text-primary border border-transparent hover:border-border transition-all duration-200"
                         onClick={() => handleConnectMock(platform.name)}
                     >
                         <Plus className="h-4 w-4 mr-2" />
