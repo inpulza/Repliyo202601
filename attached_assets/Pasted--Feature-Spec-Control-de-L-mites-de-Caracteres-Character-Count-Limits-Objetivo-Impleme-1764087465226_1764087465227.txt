@@ -1,0 +1,75 @@
+# Feature Spec: Control de Límites de Caracteres (Character Count & Limits)
+
+**Objetivo:** Implementar un sistema de validación en tiempo real en la caja de respuesta (Input Area) que informe al usuario sobre el uso de caracteres y bloquee el envío si excede los límites nativos de cada plataforma.
+
+**Estado:** Integración en la Zona C (Detalle del Chat).
+
+---
+
+## 1. Investigación de Límites (Reference Data)
+
+El agente debe utilizar la siguiente tabla de límites como "Fuente de la Verdad" para la configuración de la validación.
+
+*Nota: Se usan límites seguros ("Safe Limits") para garantizar la entrega, ya que algunas plataformas varían según tipo de cuenta.*
+
+| Plataforma | Tipo: Comentario (Público) | Tipo: DM (Privado) |
+| :--- | :--- | :--- |
+| **Instagram** | **2,200** caracteres | 1,000 caracteres |
+| **Facebook** | **8,000** caracteres | 20,000+ (Virtualmente ilimitado) |
+| **TikTok** | **4,000** caracteres | 4,000 caracteres |
+| **YouTube** | **10,000** caracteres | N/A (No aplica) |
+| **Twitter (X)** | **280** caracteres | 10,000 caracteres |
+| **LinkedIn** | **1,250** caracteres | 20,000+ |
+
+---
+
+## 2. Estrategia de Datos (Logic)
+
+Crea un objeto de configuración o un `util/validators.ts` para gestionar estos límites dinámicamente.
+
+**Lógica Requerida:**
+1.  Detectar la `platform` del mensaje seleccionado (ej. 'instagram').
+2.  Detectar el `contextType` (ej. 'comment' o 'dm').
+3.  Seleccionar el `maxChars` correspondiente de la tabla anterior.
+
+---
+
+## 3. Especificación UI/UX: Caja de Respuesta (Reply Input)
+
+En el componente del área de texto (donde el usuario escribe la respuesta), integra los siguientes elementos visuales:
+
+### A. El Contador (The Counter)
+Ubicado en la esquina inferior derecha del cuadro de texto.
+
+**Comportamiento Visual:**
+* **Estado Normal (0% - 89%):**
+    * Texto gris suave.
+    * Formato: `actual / límite` (ej. `140 / 2200`).
+* **Estado Advertencia (90% - 99%):**
+    * Texto color **Naranja/Ámbar**.
+    * Aparece un pequeño círculo de progreso o el texto se vuelve más notorio.
+* **Estado Error (100% +):**
+    * Texto color **Rojo Intenso**.
+    * Muestra el exceso: `-15` (negrita).
+    * Borde del `textarea` se vuelve rojo.
+
+### B. Bloqueo de Acción
+* Si `caracteres > límite`: El botón "Enviar" (Send) debe deshabilitarse (`disabled`) y reducir su opacidad (50%).
+
+---
+
+## 4. Instrucciones Paso a Paso para el Agente
+
+1.  **Crear Utilidad de Validación:**
+    * Crea `src/utils/platformLimits.ts`.
+    * Exporta una función `getCharacterLimit(platform, type)` que devuelva el número correcto.
+2.  **Actualizar Componente `ChatInput` (o `ReplyBox`):**
+    * Añade un estado local `charCount`.
+    * Implementa la lógica que consulta `getCharacterLimit` basándose en el mensaje activo actualmente.
+3.  **Implementar Feedback Visual:**
+    * Añade el contador numérico visualmente en la UI.
+    * Implementa las clases CSS condicionales para cambiar el color a Naranja/Rojo según la longitud.
+    * Bloquea el botón de envío si hay exceso.
+
+**Resultado Esperado:**
+Si estoy respondiendo a un comentario de Twitter (X), el contador debe marcar error si paso de 280 caracteres y no dejarme enviar. Si cambio a un DM de Instagram, el límite se ajusta automáticamente a 1000.
