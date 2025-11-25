@@ -1,0 +1,105 @@
+# PRD: Adaptación Responsive (Tablet & Mobile) - Metricool Unified Inbox
+
+**Objetivo:** Transformar la aplicación web actual (Desktop-first) en una experiencia totalmente responsive, garantizando la usabilidad en Tablets (iPad) y Móviles (iPhone/Android) sin perder funcionalidad.
+
+**Estado:** Refactorización de UI / CSS.
+**Principio Core:** "Progressive Disclosure" (Revelación Progresiva). En pantallas pequeñas, mostramos solo lo esencial y ocultamos los detalles (CRM, Menús) detrás de botones o gestos.
+
+---
+
+## 1. Estrategia de Layout por Breakpoints
+
+El Agente debe implementar un sistema de rejilla fluido (CSS Grid / Flexbox) que cambie drásticamente según el ancho de la pantalla.
+
+### A. Desktop (> 1024px) - *Estado Actual*
+* **Layout:** 4 Zonas visibles simultáneamente.
+* **Navegación:** Sidebar Izquierdo Fijo.
+* **Comportamiento:** Todo expandido.
+
+### B. Tablet (768px - 1024px) - *Modo Híbrido*
+* **Layout:** 2 o 3 Zonas visibles.
+* **Adaptaciones:**
+    * **Sidebar (Nav):** Se reduce a solo iconos (sin texto) o se convierte en un "Rail" delgado.
+    * **Panel CRM (Zona D):** Se oculta por defecto. Se abre como un **"Overlay" (Superposición)** o Drawer al pulsar un botón "Info" en el chat.
+    * **Lista de Marcas:** Se fusiona visualmente con la lista de mensajes o se convierte en un selector horizontal arriba.
+
+### C. Mobile (< 768px) - *Modo Pila (Stack)*
+* **Layout:** **1 Zona visible a la vez.**
+* **Navegación:** El usuario "entra y sale" de las pantallas.
+    * *Nivel 1:* Lista de Mensajes.
+    * *Nivel 2:* Detalle del Chat (ocupa 100% pantalla).
+    * *Nivel 3:* CRM / Detalles (Modal o Bottom Sheet).
+* **Menú Principal:** El Sidebar izquierdo desaparece y se convierte en una **Bottom Navigation Bar** (Barra inferior fija) o un Menú Hamburguesa, para facilitar el uso con el pulgar.
+
+---
+
+## 2. Especificaciones UI/UX: Adaptación Móvil
+
+### 2.1. Navegación Principal (Mobile)
+El sidebar izquierdo actual ocupa demasiado espacio.
+* **Solución:** Implementar una **Bottom Tab Bar** (Barra de pestañas inferior) fija.
+* **Ítems:**
+    1.  **Inbox** (Icono Mensaje).
+    2.  **Cuentas/Integraciones** (Icono Red Social).
+    3.  **Configuración** (Icono Engranaje).
+* **Comportamiento:** Al pulsar, cambia la vista principal.
+
+### 2.2. La Lista de Mensajes (Inbox List)
+En móvil, el espacio horizontal es oro.
+* **Panel de Resumen (Quick Stats):**
+    * Ya no caben 3 contadores expandidos.
+    * **Adaptación:** Convertir en un carrusel horizontal (scrollable) o reducir a círculos pequeños con el número dentro.
+* **Tarjetas de Mensaje:**
+    * El borde de urgencia (4px) se mantiene.
+    * El **Badge de Intención** y el **Icono de Sentimiento** deben moverse: quizás a una segunda línea debajo del nombre para no saturar la cabecera.
+    * **Tap Target:** Asegurar que la tarjeta completa sea clicable (min-height: 60px).
+
+### 2.3. La Vista de Chat (Conversation Detail)
+Cuando el usuario toca un mensaje, la lista desaparece y el chat ocupa toda la pantalla.
+* **Header:**
+    * Debe incluir un botón **"< Atrás"** (Back) a la izquierda para volver a la lista.
+    * A la derecha, añadir un botón **icono "Info" (ℹ️)**. Este botón es el "gatillo" para abrir el CRM.
+* **Input de Respuesta:**
+    * Debe fijarse al teclado virtual cuando este se abre (evitar que el teclado tape lo que escribes).
+    * El contador de caracteres debe ser pequeño y absoluto en la esquina del input.
+
+### 2.4. El Panel CRM (Contexto)
+En móvil no hay espacio a la derecha.
+* **Solución:** Convertir el Panel CRM en un **Bottom Sheet (Panel Deslizante Inferior)** o un **Drawer (Cajón lateral)** que sale de la derecha y ocupa el 85% de la pantalla.
+* **Acceso:** Se activa solo al pulsar el icono "Info" en el header del chat.
+* **Contenido:** El mismo que en Desktop, pero en una sola columna scrollable.
+
+---
+
+## 3. Instrucciones Técnicas para el Agente
+
+**Prompt de Implementación:**
+
+> "Actúa como un Experto en Responsive Web Design.
+> Tu tarea es refactorizar el CSS/Layout actual utilizando **Media Queries** y **Container Queries** (si usas Tailwind, usa los prefijos `md:`, `lg:`, `hidden`, `block`).
+>
+> **Requisitos Específicos:**
+> 1.  **Navegación:**
+>     * En Desktop (`lg`): Sidebar lateral visible.
+>     * En Mobile (`base`): Ocultar Sidebar y mostrar una `BottomNavigationBar` fija abajo.
+>
+> 2.  **Gestión de Vistas (Mobile State):**
+>     * En Desktop: Muestra Lista y Chat lado a lado (Grid).
+>     * En Mobile: Necesitas un estado local (ej. `selectedConversation`).
+>         * Si `selectedConversation` es `null`: Muestra la Lista (ancho 100%).
+>         * Si `selectedConversation` tiene valor: Muestra el Chat (ancho 100%) y oculta la lista.
+>         * Añade un botón "Back" en el chat que setee `selectedConversation = null`.
+>
+> 3.  **CRM Panel:**
+>     * En Desktop (`xl`): Columna fija a la derecha.
+>     * En Tablet/Mobile: `position: fixed`, `z-index: 50`, oculto por defecto. Crear un toggle para mostrarlo como un 'Drawer' deslizante.
+>
+> 4.  **Tipografía y Botones:**
+>     * Ajusta los tamaños de fuente en móvil (ej. `text-sm` en lugar de `text-base` para cuerpos).
+>     * Aumenta las áreas de toque (padding) en botones para dedos (min 44px).
+>
+> **Objetivo:** Quiero poder abrir la app en mi teléfono, navegar por la lista de mensajes con el pulgar, entrar en uno, ver el chat a pantalla completa y abrir los datos del CRM deslizando un panel, sin que nada se rompa o se vea pequeño."
+
+---
+
+## 4. Referencias Visuales (Layouts)
