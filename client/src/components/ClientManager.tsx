@@ -71,11 +71,31 @@ export function ClientManager({ open, onOpenChange }: ClientManagerProps) {
           </TabsList>
 
           <TabsContent value="metricool" className="mt-4 space-y-4">
-            <div className="bg-[#252528] p-4 rounded-lg border border-[#3A3A3C]">
-              <div className="flex items-center justify-between mb-4">
+            <div className="bg-[#252528] p-4 rounded-lg border border-[#3A3A3C] space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="api-token" className="text-gray-300">Metricool User Token</Label>
+                <Input 
+                  id="api-token" 
+                  type="password"
+                  placeholder="Paste your X-Mc-Auth token here" 
+                  className="bg-[#1C1C1F] border-[#3A3A3C] text-white placeholder:text-gray-600 focus-visible:ring-indigo-500 font-mono text-xs"
+                />
+                <p className="text-[10px] text-gray-500">Found in Account Settings → API</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="user-id" className="text-gray-300">User ID</Label>
+                <Input 
+                  id="user-id" 
+                  placeholder="e.g. 1234567" 
+                  className="bg-[#1C1C1F] border-[#3A3A3C] text-white placeholder:text-gray-600 focus-visible:ring-indigo-500 font-mono text-xs"
+                />
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-[#3A3A3C]">
                 <div>
-                  <h3 className="font-medium text-white">Metricool Integration</h3>
-                  <p className="text-xs text-gray-400">Connect your Metricool account to import brands.</p>
+                  <h3 className="font-medium text-white text-sm">Available Brands</h3>
+                  <p className="text-[10px] text-gray-400">Click fetch to list brands from your account.</p>
                 </div>
                 <Button 
                   variant="outline" 
@@ -89,11 +109,11 @@ export function ClientManager({ open, onOpenChange }: ClientManagerProps) {
                   ) : (
                     <RefreshCw className="h-3.5 w-3.5 mr-2" />
                   )}
-                  {metricoolBrands.length > 0 ? 'Refresh Brands' : 'Fetch Brands'}
+                  {metricoolBrands.length > 0 ? 'Refresh List' : 'Fetch Brands'}
                 </Button>
               </div>
 
-              <ScrollArea className="h-[200px] pr-4">
+              <ScrollArea className="h-[160px] pr-4">
                 {isLoadingMetricool && metricoolBrands.length === 0 ? (
                    <div className="flex flex-col items-center justify-center h-32 text-gray-500">
                       <Loader2 className="h-8 w-8 mb-2 animate-spin opacity-50" />
