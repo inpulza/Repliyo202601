@@ -417,97 +417,108 @@ export function Inbox() {
         {selectedMessage ? (
           <>
             {/* Chat Header - AI Summary */}
-            <header className="h-auto min-h-[64px] border-b px-6 py-4 flex flex-col justify-center shrink-0 bg-white z-20 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
-               <div className="flex items-start justify-between gap-4">
-                 <div className="flex items-center gap-3">
+            <header className="h-auto min-h-[64px] border-b px-4 md:px-6 py-3 flex flex-col justify-center shrink-0 bg-white z-20 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+               <div className="flex items-center justify-between gap-3">
+                 <div className="flex items-center gap-3 overflow-hidden flex-1">
                     {isMobile && (
-                        <Button variant="ghost" size="icon" className="-ml-2 mr-1 h-8 w-8" onClick={() => setSelectedMessageId(null)}>
+                        <Button variant="ghost" size="icon" className="-ml-2 mr-0 h-8 w-8 shrink-0" onClick={() => setSelectedMessageId(null)}>
                             <ArrowLeft className="h-5 w-5" />
                         </Button>
                     )}
-                    <Avatar className="h-10 w-10 ring-2 ring-offset-2 ring-gray-50">
+                    <Avatar className="h-10 w-10 ring-2 ring-offset-2 ring-gray-50 shrink-0">
                         <AvatarFallback className="bg-gray-100 font-bold text-gray-600">{selectedMessage.author.substring(0,2).toUpperCase()}</AvatarFallback>
                     </Avatar>
-                    <div>
-                        <h2 className="font-bold text-gray-900 flex items-center gap-2">
+                    
+                    <div className="min-w-0 flex-1">
+                        {/* Row 1: Name */}
+                        <h2 className="font-bold text-gray-900 truncate text-sm md:text-base leading-tight">
                             {selectedMessage.author}
-                            <PlatformBadge platform={selectedMessage.platform} size="sm" />
                         </h2>
                         
-                        {/* Desktop Metadata */}
-                        <div className="hidden md:flex items-center gap-2 mt-1">
-                             <SentimentIndicator sentiment={selectedMessage.sentiment} showLabel />
-                             <span className="text-gray-300 text-[10px]">|</span>
-                             <span className="text-xs text-muted-foreground">
-                                {selectedMessage.type === 'dm' && 'Direct Message'}
-                                {selectedMessage.type === 'comment' && 'Comment'}
-                                {selectedMessage.type === 'review' && 'Review'}
-                             </span>
+                        {/* Row 2: Info */}
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                             {/* Platform Badge - Unified location */}
+                             <PlatformBadge platform={selectedMessage.platform} size="sm" />
                              
-                             {selectedMessage.sourceUrl && (
-                                <>
-                                    <span className="text-gray-300 text-[10px]">|</span>
-                                    <a 
-                                        href={selectedMessage.sourceUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1 font-medium"
-                                    >
-                                        <ExternalLink className="h-3 w-3" />
-                                        View Original {selectedMessage.contextType === 'post' ? 'Post' : 'Context'}
-                                    </a>
-                                </>
-                             )}
-                        </div>
+                             <span className="text-gray-300 text-[10px] hidden md:inline">|</span>
 
-                        {/* Mobile Metadata - Collapsed */}
-                        <div className="flex md:hidden items-center gap-2 mt-1">
-                             <SentimentIndicator sentiment={selectedMessage.sentiment} />
-                             <span className="text-gray-300 text-[10px]">|</span>
-                             
-                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-5 px-1.5 text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-gray-100 gap-1 -ml-1 rounded-full">
-                                        Message Details <ChevronDown className="h-3 w-3" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="start" className="w-56">
-                                    <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                                        Message Information
-                                    </DropdownMenuLabel>
-                                    <DropdownMenuItem className="gap-2">
-                                        <SentimentIndicator sentiment={selectedMessage.sentiment} showLabel />
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                        <MessageCircle className="h-3.5 w-3.5 mr-2 text-gray-500" />
-                                        <span className="text-xs">
-                                            {selectedMessage.type === 'dm' && 'Direct Message'}
-                                            {selectedMessage.type === 'comment' && 'Public Comment'}
-                                            {selectedMessage.type === 'review' && 'Review'}
-                                        </span>
-                                    </DropdownMenuItem>
-                                    {selectedMessage.sourceUrl && (
-                                        <>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem asChild>
-                                                <a 
-                                                    href={selectedMessage.sourceUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center gap-2 text-indigo-600 cursor-pointer"
-                                                >
-                                                    <ExternalLink className="h-3.5 w-3.5" />
-                                                    <span className="text-xs font-medium">View Original Context</span>
-                                                </a>
-                                            </DropdownMenuItem>
-                                        </>
-                                    )}
-                                </DropdownMenuContent>
-                             </DropdownMenu>
+                             {/* Desktop Metadata */}
+                             <div className="hidden md:flex items-center gap-2">
+                                <SentimentIndicator sentiment={selectedMessage.sentiment} showLabel />
+                                <span className="text-gray-300 text-[10px]">|</span>
+                                <span className="text-xs text-muted-foreground">
+                                   {selectedMessage.type === 'dm' && 'Direct Message'}
+                                   {selectedMessage.type === 'comment' && 'Comment'}
+                                   {selectedMessage.type === 'review' && 'Review'}
+                                </span>
+                                
+                                {selectedMessage.sourceUrl && (
+                                   <>
+                                       <span className="text-gray-300 text-[10px]">|</span>
+                                       <a 
+                                           href={selectedMessage.sourceUrl}
+                                           target="_blank"
+                                           rel="noopener noreferrer"
+                                           className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1 font-medium"
+                                       >
+                                           <ExternalLink className="h-3 w-3" />
+                                           View Original {selectedMessage.contextType === 'post' ? 'Post' : 'Context'}
+                                       </a>
+                                   </>
+                                )}
+                             </div>
+
+                             {/* Mobile Metadata */}
+                             <div className="flex md:hidden items-center gap-1.5">
+                                <span className="text-gray-300 text-[10px]">|</span>
+                                <SentimentIndicator sentiment={selectedMessage.sentiment} />
+                                
+                                <DropdownMenu>
+                                   <DropdownMenuTrigger asChild>
+                                       <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-gray-400 hover:text-foreground hover:bg-gray-100 rounded-full ml-0.5">
+                                           <ChevronDown className="h-3.5 w-3.5" />
+                                       </Button>
+                                   </DropdownMenuTrigger>
+                                   <DropdownMenuContent align="start" className="w-56">
+                                       <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                                           Message Information
+                                       </DropdownMenuLabel>
+                                       <DropdownMenuItem className="gap-2">
+                                           <SentimentIndicator sentiment={selectedMessage.sentiment} showLabel />
+                                       </DropdownMenuItem>
+                                       <DropdownMenuItem>
+                                           <MessageCircle className="h-3.5 w-3.5 mr-2 text-gray-500" />
+                                           <span className="text-xs">
+                                               {selectedMessage.type === 'dm' && 'Direct Message'}
+                                               {selectedMessage.type === 'comment' && 'Public Comment'}
+                                               {selectedMessage.type === 'review' && 'Review'}
+                                           </span>
+                                       </DropdownMenuItem>
+                                       {selectedMessage.sourceUrl && (
+                                           <>
+                                               <DropdownMenuSeparator />
+                                               <DropdownMenuItem asChild>
+                                                   <a 
+                                                       href={selectedMessage.sourceUrl}
+                                                       target="_blank"
+                                                       rel="noopener noreferrer"
+                                                       className="flex items-center gap-2 text-indigo-600 cursor-pointer"
+                                                   >
+                                                       <ExternalLink className="h-3.5 w-3.5" />
+                                                       <span className="text-xs font-medium">View Original Context</span>
+                                                   </a>
+                                               </DropdownMenuItem>
+                                           </>
+                                       )}
+                                   </DropdownMenuContent>
+                                </DropdownMenu>
+                             </div>
                         </div>
                     </div>
                  </div>
-                 <div className="flex items-center gap-1">
+
+                 {/* Right Actions */}
+                 <div className="flex items-center gap-1 shrink-0">
                     <Button 
                         variant="ghost" 
                         size="icon" 
