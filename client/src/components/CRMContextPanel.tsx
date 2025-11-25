@@ -74,13 +74,13 @@ export function CRMContextPanel({ contact, isOpen, onClose }: CRMContextPanelPro
       {/* Header */}
       <div className="h-16 border-b px-4 flex items-center justify-between shrink-0 bg-white">
         <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-            {contact.crmType === 'hubspot' && <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/HubSpot_Logo.svg/512px-HubSpot_Logo.svg.png" alt="HubSpot" className="h-4 w-auto object-contain" />}
-            {contact.crmType === 'salesforce' && <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Salesforce.com_logo.svg/512px-Salesforce.com_logo.svg.png" alt="Salesforce" className="h-4 w-auto object-contain" />}
-            {contact.crmType === 'pipedrive' && <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Pipedrive_Logo.svg/512px-Pipedrive_Logo.svg.png" alt="Pipedrive" className="h-4 w-auto object-contain" />}
-            {contact.crmType === 'zoho' && <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Zoho-logo.png/512px-Zoho-logo.png" alt="Zoho" className="h-4 w-auto object-contain" />}
-            {contact.crmType === 'monday' && <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/Monday_logo.svg/512px-Monday_logo.svg.png" alt="Monday" className="h-4 w-auto object-contain" />}
-            {contact.crmType === 'notion' && <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Notion-logo.svg/512px-Notion-logo.svg.png" alt="Notion" className="h-4 w-auto object-contain" />}
-            {contact.crmType === 'airtable' && <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Airtable_Logo.svg/512px-Airtable_Logo.svg.png" alt="Airtable" className="h-4 w-auto object-contain" />}
+            {contact.crmType === 'hubspot' && <img src="/logos/hubspot.png" alt="HubSpot" className="h-4 w-auto object-contain" />}
+            {contact.crmType === 'salesforce' && <img src="https://logo.clearbit.com/salesforce.com" alt="Salesforce" className="h-4 w-auto object-contain" />}
+            {contact.crmType === 'pipedrive' && <img src="/logos/pipedrive.webp" alt="Pipedrive" className="h-4 w-auto object-contain" />}
+            {contact.crmType === 'zoho' && <img src="/logos/zoho.png" alt="Zoho" className="h-4 w-auto object-contain" />}
+            {contact.crmType === 'monday' && <img src="https://logo.clearbit.com/monday.com" alt="Monday" className="h-4 w-auto object-contain" />}
+            {contact.crmType === 'notion' && <img src="https://logo.clearbit.com/notion.so" alt="Notion" className="h-4 w-auto object-contain" />}
+            {contact.crmType === 'airtable' && <img src="https://logo.clearbit.com/airtable.com" alt="Airtable" className="h-4 w-auto object-contain" />}
             
             <span className="capitalize">Profile</span>
         </div>
