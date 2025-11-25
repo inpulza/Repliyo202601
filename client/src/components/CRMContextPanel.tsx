@@ -294,7 +294,7 @@ function CRMPanelContent({ contact, onClose, className }: { contact?: CRMContact
                     </Dialog>
                 </div>
 
-                <Card className="shadow-sm border-l-4 border-l-indigo-500 overflow-hidden">
+                <Card className="shadow-sm overflow-hidden">
                     <CardContent className="p-3">
                         <div className="flex justify-between items-start mb-2">
                             <h5 className="text-sm font-semibold text-gray-900 leading-tight">Enterprise License 2024</h5>
