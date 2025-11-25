@@ -720,7 +720,7 @@ function MessageCard({ message, isSelected, onClick }: { message: Message, isSel
                                     {message.crmData.crmType === 'notion' && <img src="https://logo.clearbit.com/notion.so" className="h-3.5 w-3.5 object-contain" />}
                                     {message.crmData.crmType === 'airtable' && <img src="https://logo.clearbit.com/airtable.com" className="h-3.5 w-3.5 object-contain" />}
                                 </div>
-                                <span className="text-[10px] font-medium text-gray-500 capitalize hidden group-hover:block transition-all">
+                                <span className="text-[10px] font-medium text-gray-500 capitalize">
                                     {message.crmData.crmType}
                                 </span>
                             </div>
