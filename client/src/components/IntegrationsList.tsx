@@ -40,7 +40,7 @@ const INTEGRATIONS: Integration[] = [
     id: 'metricool',
     name: 'Metricool Import',
     description: 'Import your brands and data from Metricool.',
-    logo: 'https://yt3.googleusercontent.com/ytc/AIdro_m7sWj1v5gKjZ8wJ52e3w_tM_l2j3k2w_k_w_k=s900-c-k-c0x00ffffff-no-rj',
+    logo: '/logos/metricool.jpg',
     category: 'marketing',
     config: [] // Custom UI
   },
