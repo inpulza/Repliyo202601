@@ -48,6 +48,7 @@ export function Inbox() {
   const [searchQuery, setSearchQuery] = useState("");
   const [intentFilter, setIntentFilter] = useState<Intent | 'all'>('all');
   const [platformFilter, setPlatformFilter] = useState<Platform | 'all'>('all');
+  const [typeFilter, setTypeFilter] = useState<MessageType | 'all'>('all');
   const [fireMode, setFireMode] = useState(false);
 
   // Filter Logic
@@ -57,6 +58,7 @@ export function Inbox() {
       if (fireMode && (m.urgency !== 'high' && m.urgency !== 'medium')) return false;
       if (intentFilter !== 'all' && m.intent !== intentFilter) return false;
       if (platformFilter !== 'all' && m.platform !== platformFilter) return false;
+      if (typeFilter !== 'all' && m.type !== typeFilter) return false;
       if (searchQuery && !m.content.toLowerCase().includes(searchQuery.toLowerCase()) && !m.author.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
     })
@@ -180,22 +182,38 @@ export function Inbox() {
               />
            </div>
 
-           {/* Row 3: Intent Filter (Optional, maybe better as a pill row? sticking to select for now based on PRD) */}
-           <Select value={intentFilter} onValueChange={(val: any) => setIntentFilter(val)}>
-                <SelectTrigger className="w-full bg-white border-gray-200 h-8 text-xs">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                        <Filter className="h-3 w-3" />
-                        <SelectValue placeholder="Filter by Intent" />
-                    </div>
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">All Intents</SelectItem>
-                    <SelectItem value="sales">Sales / Leads</SelectItem>
-                    <SelectItem value="support">Support</SelectItem>
-                    <SelectItem value="complaint">Complaints</SelectItem>
-                    <SelectItem value="general">General</SelectItem>
-                </SelectContent>
-            </Select>
+           {/* Row 3: Intent Filter & Type Filter */}
+           <div className="flex gap-2">
+             <Select value={intentFilter} onValueChange={(val: any) => setIntentFilter(val)}>
+                  <SelectTrigger className="flex-1 bg-white border-gray-200 h-8 text-xs">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                          <Filter className="h-3 w-3" />
+                          <SelectValue placeholder="Filter by Intent" />
+                      </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="all">All Intents</SelectItem>
+                      <SelectItem value="sales">Sales / Leads</SelectItem>
+                      <SelectItem value="support">Support</SelectItem>
+                      <SelectItem value="complaint">Complaints</SelectItem>
+                      <SelectItem value="general">General</SelectItem>
+                  </SelectContent>
+              </Select>
+
+              <Select value={typeFilter} onValueChange={(val: any) => setTypeFilter(val)}>
+                  <SelectTrigger className="w-[130px] bg-white border-gray-200 h-8 text-xs">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                          <MessageCircle className="h-3 w-3" />
+                          <SelectValue placeholder="Type" />
+                      </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="dm">Direct Message</SelectItem>
+                      <SelectItem value="comment">Comment</SelectItem>
+                  </SelectContent>
+              </Select>
+           </div>
         </div>
 
         {/* Messages List */}
@@ -479,6 +497,9 @@ function MessageCard({ message, isSelected, onClick }: { message: Message, isSel
                     
                     <div className="flex items-center gap-1.5 mb-1.5">
                         <IntentBadge intent={message.intent} />
+                        <Badge variant="outline" className="text-[10px] font-normal h-5 px-1.5 text-gray-500 border-gray-200">
+                            {message.type === 'dm' ? 'DM' : 'Comment'}
+                        </Badge>
                     </div>
 
                     <p className={cn(
