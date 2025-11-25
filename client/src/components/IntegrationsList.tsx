@@ -12,8 +12,15 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { Check, ExternalLink, PlugZap, Loader2, AlertCircle } from "lucide-react";
+import { Check, ExternalLink, PlugZap, Loader2, AlertCircle, Lock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+
+export interface IntegrationConfig {
+    fieldLabel: string;
+    placeholder: string;
+    helpText: string;
+    type?: 'text' | 'password';
+}
 
 export interface Integration {
   id: string;
@@ -21,6 +28,7 @@ export interface Integration {
   description: string;
   logo: string;
   category: 'crm' | 'productivity' | 'database';
+  config: IntegrationConfig[];
 }
 
 const INTEGRATIONS: Integration[] = [
@@ -29,49 +37,123 @@ const INTEGRATIONS: Integration[] = [
     name: 'HubSpot',
     description: 'Sync contacts, deals, and track email activity.',
     logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/HubSpot_Logo.svg/512px-HubSpot_Logo.svg.png',
-    category: 'crm'
+    category: 'crm',
+    config: [
+        {
+            fieldLabel: "Private App Access Token",
+            placeholder: "pat-na1-...",
+            helpText: "Go to Settings > Integrations > Private Apps to generate a token.",
+            type: "password"
+        }
+    ]
   },
   {
     id: 'salesforce',
     name: 'Salesforce',
     description: 'Connect your sales team with your support inbox.',
     logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Salesforce.com_logo.svg/512px-Salesforce.com_logo.svg.png',
-    category: 'crm'
+    category: 'crm',
+    config: [
+        {
+            fieldLabel: "Consumer Key",
+            placeholder: "3MVG9...",
+            helpText: "Found in Setup > App Manager > Your Connected App.",
+            type: "text"
+        },
+        {
+            fieldLabel: "Consumer Secret",
+            placeholder: "...",
+            helpText: "Found in Setup > App Manager > Your Connected App.",
+            type: "password"
+        }
+    ]
   },
   {
     id: 'pipedrive',
     name: 'Pipedrive',
     description: 'Visual sales pipeline management integration.',
     logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Pipedrive_Logo.svg/512px-Pipedrive_Logo.svg.png',
-    category: 'crm'
+    category: 'crm',
+    config: [
+        {
+            fieldLabel: "Personal API Token",
+            placeholder: "b4a5c6...",
+            helpText: "Go to Settings > Personal Preferences > API to find your token.",
+            type: "password"
+        }
+    ]
   },
   {
     id: 'zoho',
     name: 'Zoho CRM',
     description: 'Manage your customer relationships seamlessly.',
     logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Zoho-logo.png/512px-Zoho-logo.png',
-    category: 'crm'
+    category: 'crm',
+    config: [
+        {
+            fieldLabel: "Client ID",
+            placeholder: "1000.xxxx",
+            helpText: "From Zoho Developer Console.",
+            type: "text"
+        },
+        {
+            fieldLabel: "Client Secret",
+            placeholder: "xxxx",
+            helpText: "From Zoho Developer Console.",
+            type: "password"
+        }
+    ]
   },
   {
     id: 'monday',
     name: 'Monday.com',
     description: 'Work OS to manage your team projects and tasks.',
     logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/Monday_logo.svg/512px-Monday_logo.svg.png',
-    category: 'productivity'
+    category: 'productivity',
+    config: [
+        {
+            fieldLabel: "API Token",
+            placeholder: "eyJhb...",
+            helpText: "Go to Admin > API to generate a new token.",
+            type: "password"
+        }
+    ]
   },
   {
     id: 'notion',
     name: 'Notion',
     description: 'All-in-one workspace for notes, docs, and databases.',
     logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Notion-logo.svg/512px-Notion-logo.svg.png',
-    category: 'productivity'
+    category: 'productivity',
+    config: [
+        {
+            fieldLabel: "Internal Integration Token",
+            placeholder: "secret_...",
+            helpText: "Create a new integration at notion.so/my-integrations.",
+            type: "password"
+        }
+    ]
   },
   {
     id: 'airtable',
     name: 'Airtable',
     description: 'Low-code platform for building collaborative apps.',
     logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Airtable_Logo.svg/512px-Airtable_Logo.svg.png',
-    category: 'database'
+    category: 'database',
+    config: [
+        {
+            fieldLabel: "Personal Access Token",
+            placeholder: "pat...",
+            helpText: "Create a token with 'data.records:read' scope.",
+            type: "password"
+        },
+        {
+            fieldLabel: "Base ID",
+            placeholder: "app...",
+            helpText: "The ID of the Airtable Base you want to connect.",
+            type: "text"
+        }
+    ]
   }
 ];
 
@@ -84,11 +166,13 @@ export function IntegrationsList() {
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [apiKey, setApiKey] = useState("");
+  
+  // Dynamic form state
+  const [formValues, setFormValues] = useState<Record<string, string>>({});
 
   const handleConnectClick = (integration: Integration) => {
       setSelectedIntegration(integration);
-      setApiKey("");
+      setFormValues({}); // Reset form
       setIsDialogOpen(true);
   };
 
@@ -124,6 +208,16 @@ export function IntegrationsList() {
         variant: "destructive"
     });
   };
+
+  const handleInputChange = (label: string, value: string) => {
+      setFormValues(prev => ({
+          ...prev,
+          [label]: value
+      }));
+  };
+
+  // Check if all required fields are filled
+  const isFormValid = selectedIntegration?.config.every(field => formValues[field.fieldLabel]?.length > 0);
 
   return (
     <div className="space-y-6">
@@ -217,30 +311,39 @@ export function IntegrationsList() {
             </DialogHeader>
             
             <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                    <Label htmlFor="api-key">API Key / Access Token</Label>
-                    <Input 
-                        id="api-key" 
-                        placeholder={`Paste your ${selectedIntegration?.name} API Key`}
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
-                        className="font-mono text-xs"
-                    />
-                    <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" />
-                        Your credentials are encrypted and stored securely.
+                {selectedIntegration?.config.map((field, idx) => (
+                    <div key={idx} className="space-y-2">
+                        <Label htmlFor={`field-${idx}`}>{field.fieldLabel}</Label>
+                        <Input 
+                            id={`field-${idx}`} 
+                            type={field.type || 'text'}
+                            placeholder={field.placeholder}
+                            value={formValues[field.fieldLabel] || ''}
+                            onChange={(e) => handleInputChange(field.fieldLabel, e.target.value)}
+                            className="font-mono text-xs"
+                        />
+                        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                           {field.helpText}
+                        </p>
+                    </div>
+                ))}
+                
+                <div className="bg-blue-50 p-3 rounded-md border border-blue-100 mt-2">
+                    <p className="text-[10px] text-blue-700 flex items-start gap-2">
+                        <Lock className="h-3 w-3 mt-0.5 shrink-0" />
+                        Your credentials are encrypted using AES-256 and stored securely in our vault. We never share your keys.
                     </p>
                 </div>
             </div>
 
-            <DialogFooter className="sm:justify-between flex-row items-center">
+            <DialogFooter className="sm:justify-between flex-row items-center gap-2">
                 <Button variant="ghost" size="sm" onClick={() => setIsDialogOpen(false)}>
                     Cancel
                 </Button>
                 <Button 
                     size="sm" 
                     onClick={handleConfirmConnect} 
-                    disabled={!apiKey || isConnecting}
+                    disabled={!isFormValid || isConnecting}
                     className="bg-indigo-600 hover:bg-indigo-700"
                 >
                     {isConnecting ? (
