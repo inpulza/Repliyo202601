@@ -165,50 +165,50 @@ const getPlatformStyles = (platform: Platform) => {
             };
         case 'facebook':
             return {
-                container: "bg-blue-50/30",
-                bubble: "bg-blue-50 border-blue-100 text-gray-900",
+                container: "bg-[#f0f2f5]", // Facebook light gray/blue background
+                bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
                 badge: "bg-blue-100 text-blue-700 border-blue-200",
                 commentBadge: "bg-blue-100 text-blue-700 border-blue-200"
             };
         case 'instagram':
             return {
-                container: "bg-pink-50/20",
-                bubble: "bg-fuchsia-50/40 border-pink-100 text-gray-900",
+                container: "bg-gradient-to-br from-pink-50/50 via-white to-purple-50/50", // Subtle gradient
+                bubble: "bg-white border-gray-100 text-gray-900 shadow-sm",
                 badge: "bg-pink-100 text-pink-700 border-pink-200",
                 commentBadge: "bg-pink-100 text-pink-700 border-pink-200"
             };
         case 'linkedin':
             return {
-                container: "bg-slate-50/40",
-                bubble: "bg-slate-50 border-slate-200 text-slate-800",
+                container: "bg-[#f3f6f8]", // LinkedIn light gray background
+                bubble: "bg-white border-gray-200 text-slate-800 shadow-sm",
                 badge: "bg-slate-100 text-slate-700 border-slate-200",
                 commentBadge: "bg-slate-100 text-slate-700 border-slate-200"
             };
         case 'youtube':
             return {
-                container: "bg-red-50/10",
-                bubble: "bg-red-50/20 border-red-100 text-gray-900",
+                container: "bg-red-50/20", // Very subtle red tint
+                bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
                 badge: "bg-red-100 text-red-700 border-red-200",
                 commentBadge: "bg-red-100 text-red-700 border-red-200"
             };
         case 'tiktok':
             return {
-                container: "bg-gray-50/30",
-                bubble: "bg-gray-100 border-gray-200 text-gray-900",
+                container: "bg-gray-50",
+                bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
                 badge: "bg-gray-200 text-gray-800 border-gray-300",
                 commentBadge: "bg-gray-200 text-gray-800 border-gray-300"
             };
         case 'google-business':
             return {
                 container: "bg-blue-50/20",
-                bubble: "bg-white border-blue-100 text-gray-900",
+                bubble: "bg-white border-blue-100 text-gray-900 shadow-sm",
                 badge: "bg-blue-100 text-blue-700 border-blue-200",
                 commentBadge: "bg-blue-100 text-blue-700 border-blue-200"
             };
         default:
             return {
                 container: "bg-indigo-50/30",
-                bubble: "bg-white border-gray-200 text-gray-900",
+                bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
                 badge: "bg-gray-100 text-gray-700 border-gray-200",
                 commentBadge: "bg-gray-100 text-gray-700 border-gray-200"
             };
