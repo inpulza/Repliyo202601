@@ -430,41 +430,12 @@ export function Inbox() {
                     <MoreVertical className="h-5 w-5" />
                  </Button>
                </div>
-
-               {/* AI Summary - Clean Minimal Version */}
-               <div className="mt-4 group relative">
-                  <div className="py-1">
-                      <div className="flex items-start gap-3">
-                          <div className={cn(
-                              "mt-0.5 p-1 rounded-md shrink-0",
-                              selectedMessage.urgency === 'high' ? "bg-red-50 text-red-600" : 
-                              selectedMessage.urgency === 'medium' ? "bg-amber-50 text-amber-600" : "bg-indigo-50 text-indigo-600"
-                          )}>
-                              <Brain className="h-3.5 w-3.5" />
-                          </div>
-                          <div className="space-y-1.5">
-                              <p className="text-sm text-gray-600 leading-relaxed">
-                                  <span className="font-semibold text-gray-900">AI Analysis:</span> {selectedMessage.aiSummary || "Analyzing conversation context..."}
-                              </p>
-                              
-                              <div className="flex items-center gap-3">
-                                  <div className={cn(
-                                      "text-[10px] font-medium px-1.5 py-0.5 rounded border uppercase tracking-wide",
-                                      selectedMessage.urgency === 'high' ? "bg-red-50 text-red-700 border-red-100" : 
-                                      selectedMessage.urgency === 'medium' ? "bg-amber-50 text-amber-700 border-amber-100" : "bg-gray-50 text-gray-600 border-gray-200"
-                                  )}>
-                                      {selectedMessage.urgency} Priority
-                                  </div>
-                              </div>
-                          </div>
-                      </div>
-                  </div>
-               </div>
             </header>
 
             {/* Chat Content */}
-            <ScrollArea className="flex-1 p-8 bg-gray-50/30">
-               <div className="max-w-3xl mx-auto space-y-8">
+            <div className="flex-1 relative flex flex-col bg-gray-50/30 overflow-hidden">
+                <ScrollArea className="flex-1 p-8">
+                   <div className="max-w-3xl mx-auto space-y-8 pb-32">
                   {/* Date Separator */}
                   <div className="flex justify-center">
                       <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
@@ -598,8 +569,43 @@ export function Inbox() {
                     )}
                   </AnimatePresence>
 
+                  {/* Spacer to prevent content from being hidden behind the floating card */}
+                  <div className="h-24"></div>
                </div>
             </ScrollArea>
+
+            {/* Floating AI Analysis Card */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-3xl z-30">
+                <motion.div 
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    className="bg-white rounded-xl border border-gray-200 shadow-lg p-4 flex items-start gap-4"
+                >
+                    <div className={cn(
+                        "p-2 rounded-lg shrink-0",
+                        selectedMessage.urgency === 'high' ? "bg-red-50 text-red-600" : 
+                        selectedMessage.urgency === 'medium' ? "bg-amber-50 text-amber-600" : "bg-indigo-50 text-indigo-600"
+                    )}>
+                        <Brain className="h-5 w-5" />
+                    </div>
+                    <div className="space-y-1 flex-1">
+                        <div className="flex items-center justify-between">
+                            <span className="font-semibold text-gray-900 text-sm">AI Analysis</span>
+                            <div className={cn(
+                                "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide",
+                                selectedMessage.urgency === 'high' ? "bg-red-100 text-red-700" : 
+                                selectedMessage.urgency === 'medium' ? "bg-amber-100 text-amber-700" : "bg-indigo-100 text-indigo-700"
+                            )}>
+                                {selectedMessage.urgency} Priority
+                            </div>
+                        </div>
+                        <p className="text-sm text-gray-600 leading-relaxed">
+                            {selectedMessage.aiSummary || "Analyzing conversation context..."}
+                        </p>
+                    </div>
+                </motion.div>
+            </div>
+            </div>
           </>
         ) : (
            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground bg-gray-50/30">
