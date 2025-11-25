@@ -433,20 +433,14 @@ export function Inbox() {
 
                {/* AI Summary - Clean Minimal Version */}
                <div className="mt-4 group relative">
-                  <div className={cn(
-                      "absolute left-0 top-0 bottom-0 w-1 rounded-full transition-colors",
-                      selectedMessage.urgency === 'high' ? "bg-red-500" : 
-                      selectedMessage.urgency === 'medium' ? "bg-amber-500" : "bg-indigo-500"
-                  )} />
-                  
-                  <div className="pl-4 py-1">
+                  <div className="py-1">
                       <div className="flex items-start gap-3">
                           <div className={cn(
                               "mt-0.5 p-1 rounded-md shrink-0",
                               selectedMessage.urgency === 'high' ? "bg-red-50 text-red-600" : 
                               selectedMessage.urgency === 'medium' ? "bg-amber-50 text-amber-600" : "bg-indigo-50 text-indigo-600"
                           )}>
-                              <Sparkles className="h-3.5 w-3.5" />
+                              <Brain className="h-3.5 w-3.5" />
                           </div>
                           <div className="space-y-1.5">
                               <p className="text-sm text-gray-600 leading-relaxed">
@@ -511,19 +505,8 @@ export function Inbox() {
                         initial={{ opacity: 0, y: 20, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10 }}
-                        className="relative pl-12"
+                        className="relative"
                       >
-                        <div className="absolute left-0 top-0 flex flex-col items-center gap-1">
-                           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-200">
-                              {selectedMessage.status === 'drafting' ? (
-                                <Loader2 className="h-4 w-4 text-white animate-spin" />
-                              ) : (
-                                <Sparkles className="h-4 w-4 text-white" />
-                              )}
-                           </div>
-                           <div className="w-0.5 h-full bg-indigo-100 absolute top-8 -z-10" />
-                        </div>
-
                         <div className={cn(
                            "rounded-xl border overflow-hidden transition-all duration-500",
                            selectedMessage.status === 'drafting' 
@@ -538,7 +521,7 @@ export function Inbox() {
                               <div className="p-0">
                                  <div className="bg-gradient-to-r from-indigo-50/50 to-violet-50/50 p-3 border-b border-indigo-50 flex items-center justify-between">
                                     <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider flex items-center gap-1.5">
-                                       <Sparkles className="h-3 w-3" /> AI Suggestion
+                                       <Brain className="h-3 w-3" /> AI Suggestion
                                     </span>
                                     <Badge variant="secondary" className="bg-white/80 text-indigo-700 border-indigo-100 text-[10px] hover:bg-white">
                                        Confidence: 98%
