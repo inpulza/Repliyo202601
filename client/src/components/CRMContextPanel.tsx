@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CRMContact } from '@/lib/mockData';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   Building2, 
   Mail, 
@@ -10,8 +11,6 @@ import {
   StickyNote, 
   Plus,
   X,
-  ChevronsRight,
-  Check,
   Loader2
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -19,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -33,6 +32,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import {
+  Drawer,
+  DrawerContent,
+} from "@/components/ui/drawer";
 
 interface CRMContextPanelProps {
   contact?: CRMContact;
@@ -55,7 +58,7 @@ const DealStageBadge = ({ stage }: { stage: CRMContact['dealStage'] }) => {
   );
 };
 
-export function CRMContextPanel({ contact, isOpen, onClose }: CRMContextPanelProps) {
+function CRMPanelContent({ contact, onClose, className }: { contact?: CRMContact, onClose: () => void, className?: string }) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAddDealOpen, setIsAddDealOpen] = useState(false);
@@ -65,7 +68,6 @@ export function CRMContextPanel({ contact, isOpen, onClose }: CRMContextPanelPro
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate API call
     setTimeout(() => {
       setIsSubmitting(false);
       setIsCreateDialogOpen(false);
@@ -95,11 +97,9 @@ export function CRMContextPanel({ contact, isOpen, onClose }: CRMContextPanelPro
       }, 1000);
   };
 
-  if (!isOpen) return null;
-
   if (!contact) {
     return (
-       <div className="w-[320px] border-l bg-gray-50/30 flex flex-col h-full shrink-0 transition-all duration-300 ease-in-out relative overflow-hidden">
+       <div className={cn("flex flex-col h-full transition-all duration-300 ease-in-out relative overflow-hidden", className)}>
           {/* Header */}
           <div className="h-16 border-b px-4 flex items-center justify-between shrink-0 bg-white/80 backdrop-blur-sm z-10">
              <span className="text-sm font-semibold text-gray-500 flex items-center gap-2">
@@ -187,7 +187,7 @@ export function CRMContextPanel({ contact, isOpen, onClose }: CRMContextPanelPro
   }
 
   return (
-    <div className="w-[320px] border-l bg-white flex flex-col h-full shrink-0 shadow-xl z-30 transition-all duration-300 ease-in-out">
+    <div className={cn("flex flex-col h-full transition-all duration-300 ease-in-out", className)}>
       {/* Header */}
       <div className="h-16 border-b px-4 flex items-center justify-between shrink-0 bg-white">
         <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
@@ -354,6 +354,33 @@ export function CRMContextPanel({ contact, isOpen, onClose }: CRMContextPanelPro
             </div>
         </div>
       </ScrollArea>
+    </div>
+  );
+}
+
+export function CRMContextPanel({ contact, isOpen, onClose }: CRMContextPanelProps) {
+  const isMobile = useIsMobile();
+
+  if (!isOpen && !isMobile) return null;
+
+  if (isMobile) {
+    return (
+      <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DrawerContent className="h-[85vh] outline-none">
+           <div className="h-full overflow-hidden flex flex-col bg-white rounded-t-[10px]">
+              <CRMPanelContent contact={contact} onClose={onClose} className={!contact ? "bg-gray-50/30" : "bg-white"} />
+           </div>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  return (
+    <div className={cn(
+        "w-[320px] border-l flex flex-col h-full shrink-0 shadow-xl z-30 transition-all duration-300 ease-in-out",
+        !contact ? "bg-gray-50/30" : "bg-white"
+    )}>
+       <CRMPanelContent contact={contact} onClose={onClose} className={!contact ? "bg-transparent" : "bg-white"} />
     </div>
   );
 }

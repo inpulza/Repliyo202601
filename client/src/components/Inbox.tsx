@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNexus } from '@/context/NexusContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { CRMContextPanel } from './CRMContextPanel';
 import { 
@@ -31,6 +32,8 @@ import {
   Banknote,
   Inbox as InboxIcon,
   ExternalLink,
+  ArrowLeft,
+  Info,
 } from 'lucide-react';
 import { FaInstagram, FaFacebook, FaLinkedin, FaTiktok, FaYoutube, FaWhatsapp } from 'react-icons/fa';
 import { GoogleBusinessIcon } from './GoogleBusinessIcon';
@@ -118,6 +121,7 @@ const getPlatformStyles = (platform: Platform) => {
 
 export function Inbox() {
   const { messages, activeClientId, approveMessage, updateMessageDraft, refreshFeed } = useNexus();
+  const isMobile = useIsMobile();
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   
@@ -172,9 +176,13 @@ export function Inbox() {
   const selectedMessage = messages.find(m => m.id === selectedMessageId);
 
   return (
-    <div className="h-full flex bg-background overflow-hidden">
+    <div className="h-full flex bg-background overflow-hidden relative">
       {/* COLUMN 2: Message List */}
-      <div className="w-[400px] border-r flex flex-col bg-white relative z-10 shadow-sm">
+      <div className={cn(
+          "w-[400px] border-r flex flex-col bg-white relative z-10 shadow-sm",
+          isMobile ? "w-full" : "",
+          isMobile && selectedMessageId ? "hidden" : "flex"
+      )}>
         
         {/* Header / Title */}
         <div className="h-16 border-b px-4 flex items-center justify-between shrink-0 bg-white">
@@ -399,13 +407,21 @@ export function Inbox() {
       </div>
 
       {/* COLUMN 3: Chat Detail */}
-      <div className="flex-1 flex flex-col bg-white relative min-w-0">
+      <div className={cn(
+        "flex-1 flex flex-col bg-white relative min-w-0",
+        isMobile && !selectedMessageId ? "hidden" : "flex"
+      )}>
         {selectedMessage ? (
           <>
             {/* Chat Header - AI Summary */}
             <header className="h-auto min-h-[64px] border-b px-6 py-4 flex flex-col justify-center shrink-0 bg-white z-20 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
                <div className="flex items-start justify-between gap-4">
                  <div className="flex items-center gap-3">
+                    {isMobile && (
+                        <Button variant="ghost" size="icon" className="-ml-2 mr-1 h-8 w-8" onClick={() => setSelectedMessageId(null)}>
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                    )}
                     <Avatar className="h-10 w-10 ring-2 ring-offset-2 ring-gray-50">
                         <AvatarFallback className="bg-gray-100 font-bold text-gray-600">{selectedMessage.author.substring(0,2).toUpperCase()}</AvatarFallback>
                     </Avatar>
@@ -440,6 +456,27 @@ export function Inbox() {
                         </div>
                     </div>
                  </div>
+                 <div className="flex items-center gap-1">
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className={cn("text-gray-400 hover:text-gray-600 hidden md:flex", isCRMOpen && "bg-gray-100 text-gray-600")}
+                        onClick={() => setIsCRMOpen(!isCRMOpen)}
+                        title="Toggle CRM Panel"
+                    >
+                        <Info className="h-5 w-5" />
+                    </Button>
+                    {isMobile && (
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-gray-400 hover:text-gray-600"
+                            onClick={() => setIsCRMOpen(true)}
+                            title="Show Details"
+                        >
+                            <Info className="h-5 w-5" />
+                        </Button>
+                    )}
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button 
@@ -462,6 +499,7 @@ export function Inbox() {
                         <DropdownMenuItem className="text-red-600">Block Contact</DropdownMenuItem>
                     </DropdownMenuContent>
                  </DropdownMenu>
+                 </div>
                </div>
             </header>
 
