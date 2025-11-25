@@ -53,103 +53,6 @@ import { Platform, MessageType, Urgency, Intent, Sentiment, Message, MessageStat
 import { motion, AnimatePresence } from "framer-motion";
 
 
-// --- New Sub-Component: Quick Stats Widget ---
-function QuickStatsWidget({ 
-    messages, 
-    onCriticalClick, 
-    onOpportunitiesClick,
-    onPendingClick,
-    activeFilters 
-}: { 
-    messages: Message[], 
-    onCriticalClick: () => void, 
-    onOpportunitiesClick: () => void,
-    onPendingClick: () => void,
-    activeFilters: { fireMode: boolean, intent: Intent | 'all' }
-}) {
-    
-    const criticalCount = messages.filter(m => m.urgency === 'high').length;
-    const opportunityCount = messages.filter(m => m.intent === 'sales').length;
-    const pendingCount = messages.filter(m => m.status === 'unread').length;
-
-    return (
-        <div className="grid grid-cols-3 gap-2 px-4 py-3 bg-gray-50/30 border-b">
-            {/* Critical Button */}
-            <button 
-                onClick={onCriticalClick}
-                className={cn(
-                    "relative flex flex-col items-center justify-center py-2 rounded-xl transition-all",
-                    activeFilters.fireMode 
-                        ? "bg-red-50" 
-                        : "hover:bg-gray-100"
-                )}
-            >
-                <div className={cn(
-                    "relative h-8 w-8 rounded-full flex items-center justify-center mb-1 transition-colors",
-                    activeFilters.fireMode ? "bg-white shadow-sm" : "bg-gray-100"
-                )}>
-                    <Flame className={cn("h-4 w-4", activeFilters.fireMode ? "fill-red-500 text-red-500" : "text-gray-500")} />
-                    {/* Notification Badge */}
-                    {criticalCount > 0 && (
-                        <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-4 min-w-[16px] flex items-center justify-center rounded-full px-1 shadow-sm ring-2 ring-white z-10">
-                            {criticalCount}
-                        </div>
-                    )}
-                </div>
-                <span className={cn("text-[10px] font-semibold uppercase tracking-wide", activeFilters.fireMode ? "text-red-600" : "text-gray-500")}>
-                    Critical
-                </span>
-            </button>
-
-            {/* Opportunities Button */}
-            <button 
-                onClick={onOpportunitiesClick}
-                className={cn(
-                    "relative flex flex-col items-center justify-center py-2 rounded-xl transition-all",
-                    activeFilters.intent === 'sales'
-                        ? "bg-emerald-50"
-                        : "hover:bg-gray-100"
-                )}
-            >
-                 <div className={cn(
-                    "relative h-8 w-8 rounded-full flex items-center justify-center mb-1 transition-colors",
-                    activeFilters.intent === 'sales' ? "bg-white shadow-sm" : "bg-gray-100"
-                )}>
-                    <Banknote className={cn("h-4 w-4", activeFilters.intent === 'sales' ? "text-emerald-600" : "text-gray-500")} />
-                    {/* Notification Badge */}
-                    {opportunityCount > 0 && (
-                        <div className="absolute -top-1 -right-1 bg-emerald-500 text-white text-[10px] font-bold h-4 min-w-[16px] flex items-center justify-center rounded-full px-1 shadow-sm ring-2 ring-white z-10">
-                            {opportunityCount}
-                        </div>
-                    )}
-                </div>
-                <span className={cn("text-[10px] font-semibold uppercase tracking-wide", activeFilters.intent === 'sales' ? "text-emerald-600" : "text-gray-500")}>
-                    Sales
-                </span>
-            </button>
-
-            {/* Pending Button */}
-            <button 
-                onClick={onPendingClick}
-                className="relative flex flex-col items-center justify-center py-2 rounded-xl transition-all hover:bg-gray-100"
-            >
-                 <div className="relative h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center mb-1">
-                    <InboxIcon className="h-4 w-4 text-gray-500" />
-                    {/* Notification Badge */}
-                    {pendingCount > 0 && (
-                        <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] font-bold h-4 min-w-[16px] flex items-center justify-center rounded-full px-1 shadow-sm ring-2 ring-white z-10">
-                            {pendingCount}
-                        </div>
-                    )}
-                </div>
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-                    Pending
-                </span>
-            </button>
-        </div>
-    );
-}
-
 // --- Helper: Platform Styles ---
 const getPlatformStyles = (platform: Platform) => {
     switch (platform) {
@@ -247,6 +150,12 @@ export function Inbox() {
        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
     });
 
+  // Calculate Stats for Header
+  const clientMessages = messages.filter(m => m.clientId === activeClientId);
+  const criticalCount = clientMessages.filter(m => m.urgency === 'high').length;
+  const opportunityCount = clientMessages.filter(m => m.intent === 'sales').length;
+  const pendingCount = clientMessages.filter(m => m.status === 'unread').length;
+
   // Auto-select first message
   useEffect(() => {
     if (filteredMessages.length > 0 && !filteredMessages.find(m => m.id === selectedMessageId)) {
@@ -268,39 +177,76 @@ export function Inbox() {
         
         {/* Header / Title */}
         <div className="h-16 border-b px-4 flex items-center justify-between shrink-0 bg-white">
-          <h1 className="font-bold text-xl tracking-tight text-gray-900">Inbox</h1>
-          <div className="flex items-center gap-2">
-             <Button variant="ghost" size="icon" onClick={refreshFeed} className="h-8 w-8 text-muted-foreground">
-                <RefreshCw className="h-4 w-4" />
-             </Button>
-             <Badge variant="outline" className="font-normal text-gray-500">
-               {filteredMessages.length}
-             </Badge>
+          <div className="flex items-center gap-3">
+            <h1 className="font-bold text-xl tracking-tight text-gray-900">Inbox</h1>
+            <Button variant="ghost" size="icon" onClick={refreshFeed} className="h-8 w-8 text-muted-foreground">
+               <RefreshCw className="h-4 w-4" />
+            </Button>
+            <Badge variant="outline" className="font-normal text-gray-500">
+              {filteredMessages.length}
+            </Badge>
+          </div>
+          
+          {/* Integrated Quick Stats (Moved from Widget) */}
+          <div className="flex items-center gap-1">
+                {/* Critical Button */}
+                <button 
+                    onClick={() => setFireMode(!fireMode)}
+                    className={cn(
+                        "relative h-8 w-8 flex items-center justify-center rounded-full transition-all",
+                        fireMode ? "bg-red-100 text-red-600" : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                    )}
+                    title="Critical Messages"
+                >
+                    <Flame className={cn("h-4 w-4", fireMode && "fill-red-600")} />
+                    {criticalCount > 0 && (
+                        <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold h-3.5 min-w-[14px] flex items-center justify-center rounded-full px-0.5 shadow-sm ring-2 ring-white z-10">
+                            {criticalCount}
+                        </div>
+                    )}
+                </button>
+
+                {/* Opportunities Button */}
+                <button 
+                    onClick={() => setIntentFilter(intentFilter === 'sales' ? 'all' : 'sales')}
+                    className={cn(
+                        "relative h-8 w-8 flex items-center justify-center rounded-full transition-all",
+                        intentFilter === 'sales' ? "bg-emerald-100 text-emerald-600" : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                    )}
+                    title="Sales Opportunities"
+                >
+                    <Banknote className="h-4 w-4" />
+                    {opportunityCount > 0 && (
+                        <div className="absolute -top-1 -right-1 bg-emerald-500 text-white text-[9px] font-bold h-3.5 min-w-[14px] flex items-center justify-center rounded-full px-0.5 shadow-sm ring-2 ring-white z-10">
+                            {opportunityCount}
+                        </div>
+                    )}
+                </button>
+
+                {/* Pending Button */}
+                <button 
+                    onClick={() => {
+                        setFireMode(false);
+                        setIntentFilter('all');
+                        setPlatformFilter('all');
+                        setSearchQuery('');
+                    }}
+                    className="relative h-8 w-8 flex items-center justify-center rounded-full transition-all text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                    title="Show All Pending"
+                >
+                    <InboxIcon className="h-4 w-4" />
+                    {pendingCount > 0 && (
+                        <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-[9px] font-bold h-3.5 min-w-[14px] flex items-center justify-center rounded-full px-0.5 shadow-sm ring-2 ring-white z-10">
+                            {pendingCount}
+                        </div>
+                    )}
+                </button>
           </div>
         </div>
 
-        {/* Quick Stats Widget */}
-        <QuickStatsWidget 
-            messages={messages.filter(m => m.clientId === activeClientId)}
-            onCriticalClick={() => setFireMode(!fireMode)}
-            onOpportunitiesClick={() => setIntentFilter(intentFilter === 'sales' ? 'all' : 'sales')}
-            onPendingClick={() => {
-                // Optional: Maybe add a status filter later, for now just logs or does nothing specific visual filter-wise
-                // Or we could implement a status filter. 
-                // The spec says "Total de mensajes no leídos", but doesn't explicitly say "Click to filter unread", 
-                // but "Acción" is implied for the others. Let's make it clear just search/reset.
-                // Actually spec says just "Lógica: Total...". Doesn't explicitly demand action like the others.
-                // Let's just reset filters on this one for "Show all pending" vibe or similar.
-                setFireMode(false);
-                setIntentFilter('all');
-                setPlatformFilter('all');
-                setSearchQuery('');
-            }}
-            activeFilters={{ fireMode, intent: intentFilter }}
-        />
-
         {/* Filter Bar (The "Playground" for AI) */}
         <div className="p-3 border-b space-y-3 bg-gray-50/50">
+
           {/* Row 1: Search & Fire Mode */}
           <div className="flex gap-2">
             <div className="relative flex-1">
