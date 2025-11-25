@@ -1,0 +1,117 @@
+El objetivo de este PRD es darle instrucciones claras al Agente (o diseñador UI) para que cree wireframes de alta fidelidad o esqueletos visuales (HTML/CSS dummy). No queremos lógica de base de datos todavía; queremos ver cómo se siente usar la herramienta y cómo la IA ayuda visualmente al operador.
+
+Aquí tienes el documento maestro para la fase de diseño.
+
+PRD: Diseño y UX - Metricool AI Unified Inbox (Fase 1)
+Versión: 1.0 - Design Phase Autor: Project Director Estado: En Diseño / Prototipado Objetivo: Definir la interfaz visual y la experiencia de usuario para el Inbox Unificado, con énfasis crítico en la visualización de datos de IA (Intención, Urgencia, Sentimiento).
+
+1. Principios de Diseño
+Claridad sobre Estética: El usuario maneja cientos de mensajes. La interfaz debe ser limpia, con mucho "aire" (espacio en blanco) para evitar fatiga visual.
+
+IA como Copiloto Visual: La IA no debe ser intrusiva. Debe manifestarse a través de señales visuales sutiles (colores, iconos, badges) que permitan escanear la lista de mensajes en segundos.
+
+Layout de 3 Columnas: Usaremos el estándar de la industria (tipo Slack/WhatsApp Web/Front) para reducir la curva de aprendizaje.
+
+Columna 1: Navegación/Marcas.
+
+Columna 2: Lista de Mensajes (El foco de este PRD).
+
+Columna 3: Detalle de Conversación (Chat).
+
+2. Definición de la Interfaz: La "Inbox List" (Columna 2)
+Esta es la parte más crítica. Aquí es donde el operador decide qué mensaje abrir basándose en la clasificación de la IA.
+
+2.1. La Tarjeta de Mensaje (Message Card)
+Cada fila en la lista de mensajes debe contener la siguiente anatomía visual:
+
+Avatar: Foto del usuario (circular).
+
+Icono de Red Social: Pequeño icono superpuesto al avatar (ej. logo de Instagram) para saber el origen.
+
+Nombre y Tiempo: Nombre del cliente (Negrita) y tiempo relativo (ej. "hace 5m") (Gris).
+
+Snippet del Mensaje: Primera línea del mensaje (truncado).
+
+Indicadores de IA (Los nuevos elementos):
+
+Sistema Visual de IA:
+Indicador de Urgencia (Semáforo):
+
+Diseño: Una barra vertical delgada (3-4px) en el borde izquierdo de la tarjeta.
+
+🔴 Alta (3): Rojo sólido.
+
+🟡 Media (2): Naranja/Amarillo.
+
+⚪ Baja (1): Invisible o Gris muy claro.
+
+Badges de Intención (Etiquetas):
+
+Diseño: "Píldoras" (Chips) pequeñas debajo del nombre o al lado de la fecha. Texto pequeño, fondo pastel.
+
+🟢 Venta/Lead: Fondo verde claro, texto verde oscuro.
+
+🔵 Soporte: Fondo azul claro, texto azul oscuro.
+
+🔴 Queja: Fondo rojo claro, texto rojo oscuro.
+
+⚪ Otro/General: Fondo gris.
+
+Sentimiento (Micro-Icono):
+
+Diseño: Un pequeño emoji o icono al final de la tarjeta.
+
+😠 (Negativo), 😐 (Neutro), 🙂 (Positivo).
+
+3. Definición de la Interfaz: La Barra de Control (Filter Bar)
+Situada justo encima de la Lista de Mensajes (Columna 2). Debe permitir al usuario "jugar" con la IA.
+
+Componentes:
+
+Buscador Universal: Texto libre.
+
+Dropdown "Filtrar por Intención":
+
+Opciones: "Todos", "Ventas Potenciales", "Soporte", "Quejas".
+
+Toggle "Modo Fuego" (Urgencia):
+
+Un switch o botón que diga: "Solo Urgentes 🔥". Al activarlo, desaparecen los mensajes de urgencia baja/media.
+
+4. Definición de la Interfaz: Detalle del Chat (Columna 3)
+Cuando se hace clic en una tarjeta, se abre el chat.
+
+Header del Chat:
+
+Debe mostrar un resumen de la IA más detallado.
+
+Ejemplo: "Análisis IA: El cliente parece molesto por un retraso en el envío (Queja). Urgencia Alta."
+
+Cuerpo del Chat:
+
+Burbujas de mensaje estándar.
+
+Diferenciación clara entre "Mensaje Privado (DM)" y "Comentario Público". Quizás un fondo ligeramente distinto para comentarios públicos para recordar al agente que su respuesta será pública.
+
+5. Instrucciones para el Agente (Fase Diseño)
+Rol: Eres un Diseñador UI/UX Experto y Desarrollador Frontend.
+
+Tarea: Generar una maqueta funcional en HTML/CSS (o React estático) que represente el Inbox Unificado. NO conectes ninguna API real todavía. Usa datos falsos (dummy data) para demostrar cómo se ve la clasificación de la IA.
+
+Requisitos Específicos de la Maqueta:
+
+Crea un archivo JSON local con 5 o 6 mensajes falsos variados.
+
+Mensaje 1: Una queja urgente de Facebook (Debe tener borde rojo y badge "Queja").
+
+Mensaje 2: Un lead de Instagram preguntando precios (Debe tener borde amarillo y badge "Venta").
+
+Mensaje 3: Un comentario de YouTube neutro (Sin borde, badge "General").
+
+Implementa el Layout de 3 Columnas.
+
+Implementa la Message Card con los estilos visuales descritos en el punto 2.1 (Barra de urgencia, Badges de colores).
+
+Haz que la Barra de Filtros sea visualmente clara (aunque no funcione la lógica aún, quiero ver los botones).
+
+Entregable: Quiero ver la pantalla principal del Inbox donde pueda apreciar visualmente cómo la IA ayuda a priorizar mensajes de un vistazo.
