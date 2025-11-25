@@ -108,7 +108,7 @@ const INTEGRATIONS: Integration[] = [
     id: 'evolution-api',
     name: 'Evolution API',
     description: 'Open-source WhatsApp integration for automated messaging.',
-    logo: 'https://avatars.githubusercontent.com/u/140392331?s=200&v=4',
+    logo: '/logos/evolution-api.png',
     category: 'messaging',
     config: [
         {
@@ -150,7 +150,7 @@ const INTEGRATIONS: Integration[] = [
     id: 'zapier',
     name: 'Zapier',
     description: 'Automate workflows by connecting your apps.',
-    logo: 'https://logo.clearbit.com/zapier.com',
+    logo: '/logos/zapier.png',
     category: 'automation',
     config: [
         {
@@ -165,7 +165,7 @@ const INTEGRATIONS: Integration[] = [
     id: 'slack',
     name: 'Slack',
     description: 'Team communication and notifications.',
-    logo: 'https://logo.clearbit.com/slack.com',
+    logo: '/logos/slack.png',
     category: 'messaging',
     config: [
         {
