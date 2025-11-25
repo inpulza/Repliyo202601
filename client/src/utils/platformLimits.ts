@@ -12,7 +12,7 @@ const LIMITS = {
     dm: 20000, // Virtualmente ilimitado
   },
   tiktok: {
-    comment: 4000,
+    comment: 150,
     dm: 4000,
   },
   youtube: {
