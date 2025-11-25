@@ -129,7 +129,7 @@ const INTEGRATIONS: Integration[] = [
     id: 'n8n',
     name: 'n8n',
     description: 'Workflow automation tool for technical people.',
-    logo: 'https://logo.clearbit.com/n8n.io',
+    logo: '/logos/n8n.png',
     category: 'automation',
     config: [
         {
