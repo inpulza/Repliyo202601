@@ -1,0 +1,61 @@
+Esta es la funcionalidad core nueva.
+
+### 3.1. Panel de Resumen (Quick Stats Widget)
+**Ubicación:** Parte superior de la Columna B (Sticky Header).
+**Comportamiento:** Muestra contadores resumen basados en los metadatos de IA (usando Mock Data por ahora).
+
+* **Contador 1: Críticos 🔥**
+    * **Color:** Rojo.
+    * **Lógica:** Suma de mensajes con `urgency === 3`.
+    * **Acción:** Al hacer clic, filtra la lista para mostrar solo urgentes.
+* **Contador 2: Oportunidades 💰**
+    * **Color:** Verde.
+    * **Lógica:** Suma de mensajes con `intent === 'sales'`.
+    * **Acción:** Al hacer clic, filtra por ventas.
+* **Contador 3: Pendientes 📥**
+    * **Color:** Gris/Azul.
+    * **Lógica:** Total de mensajes no leídos.
+
+### 3.2. Tarjeta de Mensaje (AI Enhanced Card)
+Cada ítem en la lista debe visualizar los siguientes metadatos de IA:
+
+* **Indicador de Urgencia (Visual Priority):**
+    * Barra vertical sólida (4px) en el borde izquierdo de la tarjeta.
+    * 🔴 **Alta (3):** Rojo.
+    * 🟡 **Media (2):** Naranja.
+    * ⚪ **Baja (1):** Transparente/Gris.
+
+* **Badge de Intención (Intent Label):**
+    * Etiqueta tipo "chip" debajo del nombre del usuario.
+    * **Estilos:**
+        * `Venta`: Fondo Verde Pastel, Texto Verde Oscuro.
+        * `Soporte`: Fondo Azul Pastel, Texto Azul Oscuro.
+        * `Queja`: Fondo Rojo Pastel, Texto Rojo Oscuro.
+        * `General`: Fondo Gris.
+
+* **Icono de Sentimiento:**
+    * Pequeño emoji o icono al lado del Badge de Intención.
+    * **Estados:** 😠 (Negativo), 😐 (Neutro), 🙂 (Positivo).
+
+---
+
+## 4. Datos Simulados (Mock Data Strategy)
+
+Para construir esta UI sin backend real todavía, crea un archivo `src/data/mockInbox.ts` con la siguiente estructura y al menos 5 mensajes variados:
+
+```typescript
+export interface SmartMessage {
+  id: string;
+  customerName: string;
+  avatarUrl: string; // URL de placeholder
+  platform: 'facebook' | 'instagram' | 'tiktok' | 'youtube';
+  previewText: string;
+  timestamp: string;
+  brandId: string;
+  // Metadatos de IA
+  aiAnalysis: {
+    intent: 'sales' | 'support' | 'complaint' | 'general';
+    urgency: 1 | 2 | 3;
+    sentiment: 'positive' | 'neutral' | 'negative';
+  };
+}

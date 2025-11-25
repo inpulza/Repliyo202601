@@ -39,6 +39,74 @@ import { formatDistanceToNow } from 'date-fns';
 import { Platform, MessageType, Urgency, Intent, Sentiment, Message, MessageStatus } from '@/lib/mockData';
 import { motion, AnimatePresence } from "framer-motion";
 
+
+// --- New Sub-Component: Quick Stats Widget ---
+function QuickStatsWidget({ 
+    messages, 
+    onCriticalClick, 
+    onOpportunitiesClick,
+    onPendingClick,
+    activeFilters 
+}: { 
+    messages: Message[], 
+    onCriticalClick: () => void, 
+    onOpportunitiesClick: () => void,
+    onPendingClick: () => void,
+    activeFilters: { fireMode: boolean, intent: Intent | 'all' }
+}) {
+    
+    const criticalCount = messages.filter(m => m.urgency === 'high').length;
+    const opportunityCount = messages.filter(m => m.intent === 'sales').length;
+    const pendingCount = messages.filter(m => m.status === 'unread').length;
+
+    return (
+        <div className="grid grid-cols-3 gap-2 px-3 py-3 bg-white border-b">
+            <button 
+                onClick={onCriticalClick}
+                className={cn(
+                    "flex flex-col items-center justify-center p-2 rounded-lg border transition-all",
+                    activeFilters.fireMode 
+                        ? "bg-red-50 border-red-200 ring-1 ring-red-200" 
+                        : "bg-white border-gray-100 hover:border-red-100 hover:bg-red-50/50"
+                )}
+            >
+                <div className="flex items-center gap-1 text-red-600 mb-1">
+                    <Flame className="h-3.5 w-3.5 fill-red-600" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Critical</span>
+                </div>
+                <span className="text-xl font-bold text-gray-900">{criticalCount}</span>
+            </button>
+
+            <button 
+                onClick={onOpportunitiesClick}
+                className={cn(
+                    "flex flex-col items-center justify-center p-2 rounded-lg border transition-all",
+                    activeFilters.intent === 'sales'
+                        ? "bg-green-50 border-green-200 ring-1 ring-green-200"
+                        : "bg-white border-gray-100 hover:border-green-100 hover:bg-green-50/50"
+                )}
+            >
+                <div className="flex items-center gap-1 text-emerald-600 mb-1">
+                    <span className="text-xs">💰</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Sales</span>
+                </div>
+                <span className="text-xl font-bold text-gray-900">{opportunityCount}</span>
+            </button>
+
+            <button 
+                onClick={onPendingClick}
+                className="flex flex-col items-center justify-center p-2 rounded-lg border bg-white border-gray-100 hover:border-blue-100 hover:bg-blue-50/50 transition-all"
+            >
+                <div className="flex items-center gap-1 text-blue-600 mb-1">
+                    <span className="text-xs">📥</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Pending</span>
+                </div>
+                <span className="text-xl font-bold text-gray-900">{pendingCount}</span>
+            </button>
+        </div>
+    );
+}
+
 export function Inbox() {
   const { messages, activeClientId, approveMessage, updateMessageDraft, refreshFeed } = useNexus();
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
@@ -104,6 +172,26 @@ export function Inbox() {
              </Badge>
           </div>
         </div>
+
+        {/* Quick Stats Widget */}
+        <QuickStatsWidget 
+            messages={messages.filter(m => m.clientId === activeClientId)}
+            onCriticalClick={() => setFireMode(!fireMode)}
+            onOpportunitiesClick={() => setIntentFilter(intentFilter === 'sales' ? 'all' : 'sales')}
+            onPendingClick={() => {
+                // Optional: Maybe add a status filter later, for now just logs or does nothing specific visual filter-wise
+                // Or we could implement a status filter. 
+                // The spec says "Total de mensajes no leídos", but doesn't explicitly say "Click to filter unread", 
+                // but "Acción" is implied for the others. Let's make it clear just search/reset.
+                // Actually spec says just "Lógica: Total...". Doesn't explicitly demand action like the others.
+                // Let's just reset filters on this one for "Show all pending" vibe or similar.
+                setFireMode(false);
+                setIntentFilter('all');
+                setPlatformFilter('all');
+                setSearchQuery('');
+            }}
+            activeFilters={{ fireMode, intent: intentFilter }}
+        />
 
         {/* Filter Bar (The "Playground" for AI) */}
         <div className="p-3 border-b space-y-3 bg-gray-50/50">
