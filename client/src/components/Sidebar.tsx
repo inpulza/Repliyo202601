@@ -26,11 +26,37 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Link, useLocation } from 'wouter';
 import { ClientManager } from './ClientManager';
+import { useToast } from '@/hooks/use-toast';
 
 export function Sidebar() {
   const { activeClient, clients, setActiveClientId } = useNexus();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [isClientManagerOpen, setIsClientManagerOpen] = useState(false);
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Sesión Cerrada",
+          description: "Has cerrado sesión exitosamente.",
+        });
+        setLocation('/login');
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo cerrar la sesión.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="h-screen w-[260px] bg-[#EEF2F6] text-gray-600 flex flex-col border-r border-gray-200 shrink-0 transition-all duration-300">
@@ -208,9 +234,13 @@ export function Sidebar() {
               <span className="text-sm">Billing & Usage</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-gray-100" />
-            <DropdownMenuItem className="gap-2 cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50">
+            <DropdownMenuItem 
+              className="gap-2 cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50"
+              onClick={handleLogout}
+              data-testid="button-logout"
+            >
               <LogOut className="h-4 w-4" />
-              <span className="text-sm">Log Out</span>
+              <span className="text-sm">Cerrar Sesión</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
