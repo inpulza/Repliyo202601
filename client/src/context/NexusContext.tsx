@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
 import { api } from '@/lib/api';
 import type { Client, Message } from '@shared/schema';
+import { useAuth } from './AuthContext';
 
 interface ClientSettings {
   agentName: string;
@@ -33,6 +34,7 @@ const NexusContext = createContext<NexusContextType | undefined>(undefined);
 
 export const NexusProvider = ({ children }: { children: ReactNode }) => {
   const queryClient = useQueryClient();
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [activeClientId, setActiveClientId] = useState<string | null>(null);
   const [metricoolBrands, setMetricoolBrands] = useState<any[]>([]);
   const [isLoadingMetricool, setIsLoadingMetricool] = useState(false);
@@ -40,6 +42,7 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
   const { data: clients = [], isLoading: isLoadingClients } = useQuery({
     queryKey: ['clients'],
     queryFn: api.clients.getAll,
+    enabled: isAuthenticated && !isAuthLoading,
   });
 
   const { data: messages = [], isLoading: isLoadingMessages } = useQuery({
@@ -50,10 +53,20 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
 
   // Auto-select first client when loaded
   React.useEffect(() => {
-    if (!activeClientId && clients.length > 0 && !isLoadingClients) {
+    console.log('[NexusContext] Effect triggered:', {
+      isAuthenticated,
+      isAuthLoading,
+      hasActiveClientId: !!activeClientId,
+      clientsLength: clients.length,
+      isLoadingClients,
+      firstClientId: clients[0]?.id
+    });
+    
+    if (isAuthenticated && !isAuthLoading && !activeClientId && clients.length > 0 && !isLoadingClients) {
+      console.log('[NexusContext] Auto-selecting first client:', clients[0].id);
       setActiveClientId(clients[0].id);
     }
-  }, [clients, activeClientId, isLoadingClients]);
+  }, [isAuthenticated, isAuthLoading, clients.length, activeClientId, isLoadingClients]);
 
   const activeClient = React.useMemo(
     () => clients.find(c => c.id === activeClientId),
