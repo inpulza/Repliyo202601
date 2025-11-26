@@ -437,7 +437,7 @@ export function Inbox() {
 
       {/* COLUMN 3: Chat Detail */}
       <div className={cn(
-        "flex-1 flex flex-col bg-white relative min-w-0",
+        "flex-1 flex flex-col bg-white relative min-w-0 z-0",
         isMobile && !selectedMessageId ? "hidden" : "flex"
       )}>
         {selectedMessage ? (
