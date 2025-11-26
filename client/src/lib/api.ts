@@ -11,6 +11,12 @@ interface MetricoolBrand {
   blogId: string;
 }
 
+interface ImportBrandPayload extends MetricoolBrand {
+  agentName?: string;
+  tone?: string;
+  businessContext?: string;
+}
+
 // Adapter function to convert DB message to frontend format
 function adaptMessage(dbMsg: Message): Message & {
   platform: Platform;
@@ -70,7 +76,7 @@ export const api = {
       return res.json();
     },
 
-    importBrand: async (brand: MetricoolBrand): Promise<Brand> => {
+    importBrand: async (brand: ImportBrandPayload): Promise<Brand> => {
       const res = await fetch(`${API_BASE}/brands/import`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
