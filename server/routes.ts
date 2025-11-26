@@ -439,15 +439,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         for (const msg of conv.messages) {
           try {
+            let author = 'Unknown';
+            let authorAvatar = null;
+            let content = msg.message || msg.text || '';
+            let timestamp = msg.created_time || msg.publicationDateTime || msg.timestamp || Date.now();
+
+            // Instagram, LinkedIn, and TikTok use participants array
+            if (conv.provider === 'INSTAGRAM' || conv.provider === 'LINKEDIN' || conv.provider === 'TIKTOKBUSINESS') {
+              const fromId = msg.from;
+              const participants = conv.participants || [];
+              const fromParticipant = participants.find((p: any) => p.id === fromId);
+              
+              author = fromParticipant?.name || `Unknown ${conv.provider} User`;
+              authorAvatar = fromParticipant?.imageProfileUrl || null;
+            } else {
+              // Generic fallback for other providers
+              author = msg.from?.name || msg.sender?.name || 'Unknown';
+              authorAvatar = msg.from?.picture || msg.sender?.picture || null;
+            }
+
             await storage.upsertMessage({
               brandId: brand.id,
               metricoolId: `conv_${conv.id}_${msg.id || msg.timestamp}`,
               platform: conv.provider.toLowerCase(),
               type: 'conversation',
-              author: msg.from?.name || msg.sender?.name || 'Unknown',
-              authorAvatar: msg.from?.picture || msg.sender?.picture || null,
-              content: msg.message || msg.text || '',
-              timestamp: new Date(msg.created_time || msg.timestamp || Date.now()),
+              author,
+              authorAvatar,
+              content,
+              timestamp: new Date(timestamp),
               status: 'unread',
               rawData: { conversation: conv, message: msg },
             });
