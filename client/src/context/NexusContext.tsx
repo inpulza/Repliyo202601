@@ -53,17 +53,7 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
 
   // Auto-select first client when loaded
   React.useEffect(() => {
-    console.log('[NexusContext] Effect triggered:', {
-      isAuthenticated,
-      isAuthLoading,
-      hasActiveClientId: !!activeClientId,
-      clientsLength: clients.length,
-      isLoadingClients,
-      firstClientId: clients[0]?.id
-    });
-    
     if (isAuthenticated && !isAuthLoading && !activeClientId && clients.length > 0 && !isLoadingClients) {
-      console.log('[NexusContext] Auto-selecting first client:', clients[0].id);
       setActiveClientId(clients[0].id);
     }
   }, [isAuthenticated, isAuthLoading, clients.length, activeClientId, isLoadingClients]);
