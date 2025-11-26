@@ -316,6 +316,7 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 - ✅ Tabla `clients` renombrada a `brands` exitosamente
 - ✅ Login/logout implementado y funcionando
 - ✅ Bug de nombres de marcas corregido (usar field `label` no `name`)
+- ✅ **AuthGuard implementado**: Rutas protegidas con redirección automática a /login
 - Importante: Un usuario de Metricool puede tener múltiples brands (blogIds)
 - **Creación de Admins**: Solo manual en base de datos (por seguridad)
   ```sql
@@ -323,4 +324,8 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
   VALUES (gen_random_uuid(), 'admin@example.com', 'hashed_password', 'Admin Name', 'admin', NULL);
   ```
 - **Arquitectura Multi-tenant**: Cada cliente (client user) está asociado a una única brand
-- **Seguridad**: Todas las rutas API están protegidas con autenticación y validación de roles
+- **Seguridad**: 
+  - Todas las rutas API están protegidas con autenticación y validación de roles
+  - AuthContext verifica sesión al cargar la app (`/api/auth/me`)
+  - DashboardLayout redirige automáticamente a /login si no hay sesión válida
+  - Logout destruye sesión en servidor y redirige a login
