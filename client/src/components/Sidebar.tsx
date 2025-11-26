@@ -10,7 +10,8 @@ import {
   Sparkles,
   Command,
   Search,
-  PlusCircle
+  PlusCircle,
+  BarChart3
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -104,6 +105,21 @@ export function Sidebar() {
            </p>
         </div>
         
+        <Link href="/overview">
+          <Button 
+            variant="ghost" 
+            className={cn(
+              "w-full justify-start gap-3 h-9 px-3 text-sm font-medium transition-all rounded-lg", 
+              location === "/overview" 
+                ? "bg-white text-gray-900 shadow-sm border border-gray-200" 
+                : "hover:bg-black/5 hover:text-gray-900 text-gray-600"
+            )}
+          >
+            <BarChart3 className="h-4 w-4" />
+            Overview
+          </Button>
+        </Link>
+
         <Link href="/">
           <Button 
             variant="ghost" 

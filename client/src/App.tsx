@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import { NexusProvider } from "@/context/NexusContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Inbox } from "@/components/Inbox";
+import { Overview } from "@/pages/Overview";
 import { AgentSettings } from "@/components/AgentSettings";
 
 import { Connections } from "@/pages/Connections";
@@ -17,6 +18,7 @@ function Router() {
     <DashboardLayout>
       <Switch>
         <Route path="/" component={Inbox} />
+        <Route path="/overview" component={Overview} />
         <Route path="/connections" component={Connections} />
         <Route path="/integrations" component={IntegrationsPage} />
         <Route path="/settings" component={AgentSettings} />
