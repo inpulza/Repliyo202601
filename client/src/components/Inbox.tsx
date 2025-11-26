@@ -187,7 +187,7 @@ export function Inbox() {
     
     setIsSyncing(true);
     try {
-      const { default: api } = await import('@/lib/api');
+      const { api } = await import('@/lib/api');
       await api.metricool.syncBrand(activeClientId);
       await refreshFeed();
     } catch (error: any) {
