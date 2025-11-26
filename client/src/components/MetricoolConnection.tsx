@@ -76,18 +76,18 @@ export function MetricoolConnection({ onClose }: MetricoolConnectionProps) {
           ) : metricoolBrands.length > 0 ? (
             <div className="space-y-2">
               {metricoolBrands.map((brand) => {
-                const isAdded = clients.some(c => c.name === brand.name);
+                const isAdded = clients.some(c => c.metricoolBlogId === brand.blogId);
                 return (
-                  <div key={brand.id} className="flex items-center justify-between p-3 bg-white rounded-lg border hover:border-indigo-200 transition-all shadow-sm">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8 border">
-                        <AvatarImage src={brand.avatar} />
+                  <div key={brand.blogId} className="flex items-center justify-between p-3 bg-white rounded-lg border hover:border-indigo-200 transition-all shadow-sm">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <Avatar className="h-8 w-8 border flex-shrink-0">
+                        <AvatarImage src={brand.avatar || undefined} />
                         <AvatarFallback>{brand.name.substring(0, 2)}</AvatarFallback>
                       </Avatar>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{brand.name}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-foreground truncate">{brand.name}</p>
                         <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                          <Building2 className="h-3 w-3" /> {brand.industry}
+                          <Building2 className="h-3 w-3" /> blogId: {brand.blogId}
                         </p>
                       </div>
                     </div>
@@ -97,11 +97,11 @@ export function MetricoolConnection({ onClose }: MetricoolConnectionProps) {
                       className={`h-7 text-xs ${isAdded ? "text-green-600 bg-green-50 hover:text-green-700 hover:bg-green-100" : ""}`}
                       onClick={() => {
                           if (!isAdded) {
-                              importMetricoolBrand(brand.id);
+                              importMetricoolBrand(brand.blogId);
                           }
                       }}
                       disabled={isAdded}
-                      data-testid={`button-import-brand-${brand.id}`}
+                      data-testid={`button-import-brand-${brand.blogId}`}
                     >
                       {isAdded ? (
                         <><Check className="h-3 w-3 mr-1" /> Conectado</>

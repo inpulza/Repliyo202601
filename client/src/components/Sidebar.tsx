@@ -65,7 +65,7 @@ export function Sidebar() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56 bg-white border-gray-200 text-gray-700 shadow-xl" align="start">
-            <DropdownMenuLabel className="text-xs text-gray-500 uppercase tracking-wider">Switch Workspace</DropdownMenuLabel>
+            <DropdownMenuLabel className="text-xs text-gray-500 uppercase tracking-wider">Cambiar Marca</DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-gray-100" />
             <ScrollArea className="max-h-[200px]">
             {clients.map((client) => (
@@ -89,9 +89,10 @@ export function Sidebar() {
             <DropdownMenuItem 
               className="gap-2 cursor-pointer text-indigo-600 hover:text-indigo-700 focus:text-indigo-700 focus:bg-indigo-50"
               onClick={() => setIsClientManagerOpen(true)}
+              data-testid="button-add-client-sidebar"
             >
               <PlusCircle className="h-4 w-4" />
-              <span className="text-sm">Add Client</span>
+              <span className="text-sm">Agregar Marca</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

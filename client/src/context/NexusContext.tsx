@@ -103,7 +103,7 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const importMetricoolBrand = async (brandId: string) => {
-    const brandToImport = metricoolBrands.find(b => b.id === brandId);
+    const brandToImport = metricoolBrands.find(b => b.blogId === brandId || b.id === brandId);
     if (!brandToImport) return;
 
     if (clients.some(c => c.metricoolBlogId === brandToImport.blogId)) {
