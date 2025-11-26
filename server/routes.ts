@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertBrandSchema, insertUserSchema, insertMessageSchema, updateMessageSchema } from "@shared/schema";
-import { hashPassword, verifyPassword, sanitizeUser, type AuthenticatedUser } from "./auth";
+import { hashPassword, verifyPassword, sanitizeUser, sanitizeBrand, type AuthenticatedUser } from "./auth";
 import { MetricoolService } from "./services/metricool";
 import { z } from "zod";
 
@@ -141,17 +141,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/auth/me", requireAuth, (req, res) => {
     res.json(req.user);
   });
+
+  app.get("/api/metricool/brands", requireAuth, async (req, res) => {
+    try {
+      if (req.user!.role !== 'admin') {
+        return res.status(403).json({ error: "Only admins can fetch Metricool brands" });
+      }
+
+      const userToken = process.env.METRICOOL_USER_TOKEN;
+      const userId = process.env.METRICOOL_USER_ID;
+
+      if (!userToken || !userId) {
+        return res.status(500).json({ 
+          error: "Metricool credentials not configured on server. Please set METRICOOL_USER_TOKEN and METRICOOL_USER_ID environment variables." 
+        });
+      }
+
+      const metricool = new MetricoolService({ userToken, userId });
+      const metricoolBrands = await metricool.getBrands();
+
+      const formattedBrands = metricoolBrands.map(brand => ({
+        id: brand.blogId,
+        name: brand.name,
+        industry: 'Social Media',
+        avatar: brand.avatar || null,
+        blogId: brand.blogId,
+      }));
+
+      res.json(formattedBrands);
+    } catch (error: any) {
+      console.error('Error fetching Metricool brands:', error);
+      res.status(500).json({ error: `Failed to fetch Metricool brands: ${error.message}` });
+    }
+  });
+
+  app.post("/api/brands/import", requireAuth, async (req, res) => {
+    try {
+      if (req.user!.role !== 'admin') {
+        return res.status(403).json({ error: "Only admins can import brands" });
+      }
+
+      const { name, industry, avatar, blogId, agentName, tone, businessContext } = req.body;
+
+      if (!name || !blogId) {
+        return res.status(400).json({ error: "name and blogId are required" });
+      }
+
+      const userToken = process.env.METRICOOL_USER_TOKEN;
+      const userId = process.env.METRICOOL_USER_ID;
+
+      if (!userToken || !userId) {
+        return res.status(500).json({ 
+          error: "Metricool credentials not configured on server" 
+        });
+      }
+
+      const existingBrand = await storage.getBrandByBlogId(blogId);
+      if (existingBrand) {
+        return res.status(409).json({ 
+          error: "Brand already exists",
+          brand: sanitizeBrand(existingBrand)
+        });
+      }
+
+      const brand = await storage.createBrand({
+        name,
+        industry: industry || null,
+        avatar: avatar || null,
+        metricoolToken: userToken,
+        metricoolUserId: userId,
+        metricoolBlogId: blogId,
+        agentName: agentName || `${name}Bot`,
+        tone: tone || 'professional',
+        businessContext: businessContext || null,
+      });
+
+      res.status(201).json(sanitizeBrand(brand));
+    } catch (error: any) {
+      console.error('Error importing brand:', error);
+      res.status(500).json({ error: `Failed to import brand: ${error.message}` });
+    }
+  });
   
   app.get("/api/brands", requireAuth, async (req, res) => {
     try {
       if (req.user!.role === 'admin') {
         const brands = await storage.getBrands();
-        return res.json(brands);
+        return res.json(brands.map(sanitizeBrand));
       }
       
       if (req.user!.brandId) {
         const brand = await storage.getBrand(req.user!.brandId);
-        return res.json(brand ? [brand] : []);
+        return res.json(brand ? [sanitizeBrand(brand)] : []);
       }
       
       res.json([]);
@@ -170,7 +251,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!brand) {
         return res.status(404).json({ error: "Brand not found" });
       }
-      res.json(brand);
+      res.json(sanitizeBrand(brand));
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch brand" });
     }
@@ -184,7 +265,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const validatedData = insertBrandSchema.parse(req.body);
       const brand = await storage.createBrand(validatedData);
-      res.status(201).json(brand);
+      res.status(201).json(sanitizeBrand(brand));
     } catch (error) {
       res.status(400).json({ error: "Invalid brand data" });
     }

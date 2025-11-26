@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import type { User } from "@shared/schema";
+import type { User, Brand } from "@shared/schema";
 
 const SALT_ROUNDS = 10;
 
@@ -27,4 +27,14 @@ export interface AuthenticatedUser extends User {
 export function sanitizeUser(user: User): AuthenticatedUser {
   const { password, ...sanitizedUser } = user;
   return sanitizedUser;
+}
+
+export interface SanitizedBrand extends Omit<Brand, 'metricoolToken' | 'metricoolUserId'> {
+  metricoolToken?: never;
+  metricoolUserId?: never;
+}
+
+export function sanitizeBrand(brand: Brand): SanitizedBrand {
+  const { metricoolToken, metricoolUserId, ...sanitizedBrand } = brand;
+  return sanitizedBrand;
 }
