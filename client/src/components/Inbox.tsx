@@ -814,8 +814,8 @@ function MessageCard({ message, isSelected, onClick, onOpenCRM }: { message: Mes
             exit={{ opacity: 0, scale: 0.95 }}
             onClick={onClick}
             className={cn(
-                "w-full text-left bg-white rounded-lg border border-gray-100 hover:border-gray-300 hover:shadow-md transition-all duration-200 relative overflow-hidden group pl-3 py-3 pr-3",
-                isSelected && "ring-1 ring-indigo-500 ring-offset-1 border-transparent shadow-md z-10"
+                "w-full text-left bg-white rounded-lg border border-gray-100 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 relative overflow-hidden group pl-3 py-3 pr-3",
+                isSelected && "ring-1 ring-indigo-500 ring-offset-1 border-transparent bg-gray-50 z-10"
             )}
         >
             <div className="flex items-start gap-3">
