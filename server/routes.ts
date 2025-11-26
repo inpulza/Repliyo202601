@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertBrandSchema, insertUserSchema, insertMessageSchema, updateMessageSchema } from "@shared/schema";
 import { hashPassword, verifyPassword, sanitizeUser, type AuthenticatedUser } from "./auth";
+import { MetricoolService } from "./services/metricool";
 import { z } from "zod";
 
 declare global {
@@ -320,6 +321,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete message" });
+    }
+  });
+
+  app.post("/api/sync-brand/:brandId", requireAuth, async (req, res) => {
+    try {
+      const { brandId } = req.params;
+      
+      if (req.user!.role === 'client' && brandId !== req.user!.brandId) {
+        return res.status(403).json({ error: "Access denied to this brand" });
+      }
+
+      const brand = await storage.getBrand(brandId);
+      if (!brand) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+
+      if (!brand.metricoolToken || !brand.metricoolUserId || !brand.metricoolBlogId) {
+        return res.status(400).json({ error: "Brand not properly configured with Metricool credentials" });
+      }
+
+      console.log(`🔄 Starting sync for brand: ${brand.name} (${brand.metricoolBlogId})`);
+
+      const metricool = new MetricoolService({
+        userToken: brand.metricoolToken,
+        userId: brand.metricoolUserId,
+      });
+
+      const { conversations, comments } = await metricool.getAllInboxData(brand.metricoolBlogId);
+
+      let conversationsCount = 0;
+      let commentsCount = 0;
+
+      for (const conv of conversations) {
+        if (!conv.messages || conv.messages.length === 0) continue;
+
+        for (const msg of conv.messages) {
+          try {
+            await storage.upsertMessage({
+              brandId: brand.id,
+              metricoolId: `conv_${conv.id}_${msg.id || msg.timestamp}`,
+              platform: conv.provider.toLowerCase(),
+              type: 'conversation',
+              author: msg.from?.name || msg.sender?.name || 'Unknown',
+              authorAvatar: msg.from?.picture || msg.sender?.picture || null,
+              content: msg.message || msg.text || '',
+              timestamp: new Date(msg.created_time || msg.timestamp || Date.now()),
+              status: 'unread',
+              rawData: { conversation: conv, message: msg },
+            });
+            conversationsCount++;
+          } catch (error: any) {
+            console.error(`Error upserting conversation message:`, error.message);
+          }
+        }
+      }
+
+      for (const comment of comments) {
+        try {
+          await storage.upsertMessage({
+            brandId: brand.id,
+            metricoolId: comment.id,
+            platform: comment.provider.toLowerCase(),
+            type: 'comment',
+            author: comment.author,
+            authorAvatar: comment.authorAvatar || null,
+            content: comment.content,
+            timestamp: new Date(comment.timestamp),
+            status: 'unread',
+            sourceUrl: comment.postUrl || null,
+            rawData: comment.rawData || comment,
+          });
+          commentsCount++;
+        } catch (error: any) {
+          console.error(`Error upserting comment:`, error.message);
+        }
+      }
+
+      console.log(`✅ Sync completed: ${conversationsCount} conversation messages, ${commentsCount} comments`);
+
+      res.json({
+        success: true,
+        stats: {
+          conversationsProcessed: conversations.length,
+          conversationMessages: conversationsCount,
+          commentsProcessed: comments.length,
+          totalMessages: conversationsCount + commentsCount,
+        },
+      });
+    } catch (error: any) {
+      console.error('Error syncing brand:', error);
+      res.status(500).json({ error: `Sync failed: ${error.message}` });
     }
   });
 

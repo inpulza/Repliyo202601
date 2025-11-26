@@ -19,6 +19,7 @@ export interface IStorage {
   getMessage(id: string): Promise<Message | undefined>;
   getMessageByMetricoolId(metricoolId: string, brandId: string): Promise<Message | undefined>;
   createMessage(message: InsertMessage): Promise<Message>;
+  upsertMessage(message: InsertMessage): Promise<Message>;
   updateMessage(id: string, updates: UpdateMessage): Promise<Message | undefined>;
   deleteMessage(id: string): Promise<void>;
 }
@@ -112,6 +113,21 @@ export class DatabaseStorage implements IStorage {
       .values(insertMessage)
       .returning();
     return message;
+  }
+
+  async upsertMessage(insertMessage: InsertMessage): Promise<Message> {
+    if (!insertMessage.metricoolId) {
+      return this.createMessage(insertMessage);
+    }
+
+    const existing = await this.getMessageByMetricoolId(insertMessage.metricoolId, insertMessage.brandId);
+    
+    if (existing) {
+      const updated = await this.updateMessage(existing.id, insertMessage);
+      return updated!;
+    }
+
+    return this.createMessage(insertMessage);
   }
 
   async updateMessage(id: string, updates: UpdateMessage): Promise<Message | undefined> {
