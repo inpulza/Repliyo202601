@@ -109,8 +109,8 @@ export class MetricoolService {
 
       return response.map((brand: any) => ({
         blogId: String(brand.id || brand.blogId || brand.blog_id),
-        name: brand.name || brand.title || 'Unknown Brand',
-        avatar: brand.avatar || brand.image || brand.logo,
+        name: brand.label || brand.name || brand.title || 'Unknown Brand',
+        avatar: brand.picture || brand.avatar || brand.image || brand.logo,
         url: brand.url || brand.website,
       }));
     } catch (error) {
