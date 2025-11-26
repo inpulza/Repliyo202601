@@ -1,7 +1,7 @@
 # Sistema de Gestión de Inbox Social Media con Metricool
 
 ## Overview
-This project is a social media message management system that integrates with Metricool to centralize and manage DMs and comments for multiple brands/companies. It allows admin users and clients to organize their social interactions efficiently. The system aims to streamline social media communication, providing a unified inbox for various platforms.
+This project is a social media message management system that integrates with Metricool to centralize and manage DMs and comments from multiple brands/companies. It allows admin users and clients to organize their social interactions efficiently. The system aims to streamline social media management, offering a centralized platform for communication, with ambitions to expand features for advanced user interaction and automation.
 
 ## User Preferences
 ### Idioma
@@ -14,41 +14,47 @@ This project is a social media message management system that integrates with Me
 - Trabajar fase por fase (no adelantarse)
 
 ## System Architecture
-The system is built as a full-stack application with a clear separation of concerns.
+The system is built on a robust, scalable architecture designed to handle social media interactions across various platforms.
 
 ### UI/UX Decisions
-- **Frontend Framework**: React with TypeScript and Vite.
-- **Routing**: Wouter for client-side navigation.
-- **UI Components**: Radix UI for accessible and customizable components, styled with Tailwind CSS.
-- **Design Approach**: Emphasis on a clean, functional interface with clear information hierarchy. Avatars, author names, content, and timestamps are prominently displayed in the inbox view.
+- Uses Radix UI and Tailwind CSS for a modern, responsive user interface.
+- UI simplifies Metricool brand connection, hiding token/userId inputs for security.
+- Features toast notifications for user feedback and clear loading states.
+- The main inbox displays messages with author avatars, names, content, and platform filters.
 
 ### Technical Implementations
-- **Database Schema**: PostgreSQL with Drizzle ORM, defining `brands`, `users`, and `messages` tables. `brands` store Metricool-specific details like `metricoolToken` and `blogId`. `users` have `role` ('admin', 'client') and are linked to `brands`. `messages` include `rawData` (jsonb) for storing full Metricool responses, `authorAvatar`, and `metricoolId` to prevent duplicates.
-- **Authentication**: `express-session` and `bcrypt` for secure login/logout. Admin users can create other users, but admin creation is restricted to manual database entry.
-- **Authorization**: `requireAuth` middleware protects authenticated routes. `filterByBrand()` automatically filters data for client users based on their `brandId`, ensuring data isolation. Admins have full access to all data.
-- **Metricool Integration**: `MetricoolService` handles communication with the Metricool API using `X-Mc-Auth` header and `userId`, `blogId` parameters. It fetches conversations (DMs) and comments from various social media providers.
-- **Data Synchronization**: An upsert mechanism is implemented (`upsertMessage()`) to prevent duplicate messages based on `metricoolId` while updating existing ones. The system maps Metricool's conversation and comment structures to its internal `messages` schema.
-- **API Client**: A robust API client (`client/src/lib/api.ts`) for frontend interaction with backend endpoints, including fetching brands, importing, and syncing.
-- **Error Handling & Feedback**: Toasts in Spanish provide user feedback for actions like importing or syncing.
+- **Frontend**: React + TypeScript + Vite + Wouter for routing.
+- **Backend**: Node.js + Express + TypeScript.
+- **Database**: PostgreSQL (Neon) with Drizzle ORM for schema definition and Zod for validation.
+- **Authentication**: `express-session` and `bcrypt` for secure login/logout. Supports 'admin' and 'client' roles with distinct access levels. Registration is restricted, and client users are tied to a specific brand.
+- **Metricool Connector (`MetricoolService`)**: Handles all interactions with the Metricool API, including authentication, fetching brands, conversations, and comments across various social media providers.
+- **Data Synchronization**: An upsert mechanism (`upsertMessage()`) ensures efficient storage of Metricool data, preventing duplicates and preserving full `rawData` JSON for future use.
+- **API Client**: Provides a streamlined interface for frontend-backend communication, including fetching Metricool brands, importing, and syncing brand data.
 
 ### Feature Specifications
-- **Multi-brand Support**: Each client user is associated with a single brand, while admins can manage multiple brands.
-- **Role-Based Access Control**: Differentiates between 'admin' and 'client' roles with distinct access levels.
-- **Message Filtering**: Frontend inbox allows filtering messages by platform.
-- **Secure Credential Handling**: Metricool API credentials are stored server-side (e.g., in environment variables or secrets) and are not exposed to the frontend.
+- **Role-Based Access Control**: Admins have full access to all data, while clients only see data related to their assigned brand.
+- **Multi-brand Support**: A single Metricool user can manage multiple brands (`blogId`).
+- **Secure Data Handling**: No Metricool credentials are exposed to the frontend. All sensitive operations are handled server-side.
+- **Message Data Structure**: Stores messages with platform, type (conversation/comment), author, content, timestamp, status, and an optional `rawData` field for the original Metricool payload. Includes fields for `authorAvatar` and `metricoolId` for unique identification.
+- **Automatic Filtering**: Data is automatically filtered by `brandId` for client users.
+- **Supported Providers (Metricool Integration)**: Facebook, Instagram, TikTok, YouTube, LinkedIn, Google (GMB).
 
 ### System Design Choices
-- **Multi-tenant Architecture**: Designed to securely isolate data for different brands/clients.
-- **Iterative Development**: Focus on completing features phase by phase (e.g., database & auth, then Metricool integration, then frontend display, then automation).
-- **Security First**: All API routes are protected with authentication and role-based validation. AuthContext ensures session validity, and protected routes redirect to login if no valid session exists.
+- **Database Schema**: `brands`, `users`, and `messages` tables are designed to support multi-tenancy and efficient data retrieval.
+  - `brands` table stores Metricool-specific credentials (`metricoolToken`, `blogId`, `userId`).
+  - `users` table links users to brands, enforcing role-based access.
+  - `messages` table stores all social media interactions, linked to a specific brand.
+- **Middleware**: `requireAuth` and `filterByBrand` ensure security and data isolation.
+- **Scalability**: Designed to support approximately 25 client users and 1-2 admins, with plans for automatic synchronization every 130 seconds.
+- **Error Handling**: Robust error handling is implemented, especially for Metricool API interactions.
 
 ## External Dependencies
-- **Metricool API**: Primary external service for fetching social media DMs and comments.
+- **Metricool API**: Core integration for fetching social media DMs and comments.
   - Base URL: `https://app.metricool.com/api`
-  - Authentication: `X-Mc-Auth` header, `userId`, `blogId` parameters.
+  - Authentication: `X-Mc-Auth` header with `userToken`, `userId`, and `blogId` parameters.
   - Key Endpoints: `/api/admin/simpleProfiles`, `/api/v2/inbox/conversations`, `/api/v2/inbox/post-comments`.
 - **PostgreSQL (Neon)**: Relational database for persistent storage.
 - **Drizzle ORM**: TypeScript ORM for interacting with PostgreSQL.
-- **Zod**: Schema declaration and validation library for data integrity.
-- **express-session**: Middleware for managing user sessions.
-- **bcrypt**: Library for hashing passwords.
+- **Zod**: Schema validation library.
+- **Radix UI**: Unstyled component library for building accessible UI components.
+- **Tailwind CSS**: Utility-first CSS framework for styling.
