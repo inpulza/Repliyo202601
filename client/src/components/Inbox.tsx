@@ -126,6 +126,7 @@ export function Inbox() {
   const isMobile = useIsMobile();
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -181,6 +182,21 @@ export function Inbox() {
 
   const selectedMessage = messages.find(m => m.id === selectedMessageId);
 
+  const handleSyncData = async () => {
+    if (!activeClientId || isSyncing) return;
+    
+    setIsSyncing(true);
+    try {
+      const { default: api } = await import('@/lib/api');
+      await api.metricool.syncBrand(activeClientId);
+      await refreshFeed();
+    } catch (error: any) {
+      console.error('Sync error:', error);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   return (
     <div className="h-full flex bg-background overflow-hidden relative">
       {/* COLUMN 2: Message List */}
@@ -194,8 +210,15 @@ export function Inbox() {
         <div className="h-16 border-b px-4 flex items-center justify-between shrink-0 bg-white">
           <div className="flex items-center gap-3">
             <h1 className="font-bold text-xl tracking-tight text-gray-900">Inbox</h1>
-            <Button variant="ghost" size="icon" onClick={refreshFeed} className="h-8 w-8 text-muted-foreground">
-               <RefreshCw className="h-4 w-4" />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handleSyncData} 
+              disabled={isSyncing}
+              className="h-8 w-8 text-muted-foreground"
+              data-testid="button-sync"
+            >
+               <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
             </Button>
             <Badge variant="outline" className="font-normal text-gray-500">
               {filteredMessages.length}
