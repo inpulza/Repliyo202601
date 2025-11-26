@@ -82,20 +82,86 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchMetricoolBrands = async () => {
     setIsLoadingMetricool(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    const mockBrands = [
-      { id: 'mb1', name: 'Nike Official', industry: 'Retail', avatar: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=100&h=100&fit=crop' },
-      { id: 'mb2', name: 'Starbucks Coffee', industry: 'Food & Bev', avatar: 'https://images.unsplash.com/photo-1512428559087-560fa5ce7d87?w=100&h=100&fit=crop' },
-      { id: 'mb3', name: 'Spotify', industry: 'Tech', avatar: 'https://images.unsplash.com/photo-1614680376573-df3480f0c6ff?w=100&h=100&fit=crop' },
-      { id: 'mb4', name: 'Local Bakery', industry: 'Small Business', avatar: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=100&h=100&fit=crop' },
-    ];
-    
-    setMetricoolBrands(mockBrands);
-    setIsLoadingMetricool(false);
+    try {
+      const brands = await api.metricool.getBrands();
+      setMetricoolBrands(brands);
+      toast({
+        title: "Marcas Cargadas",
+        description: `Se encontraron ${brands.length} marca(s) en Metricool.`,
+      });
+    } catch (error: any) {
+      console.error('Error fetching Metricool brands:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudieron cargar las marcas de Metricool.",
+        variant: "destructive"
+      });
+      setMetricoolBrands([]);
+    } finally {
+      setIsLoadingMetricool(false);
+    }
   };
 
-  const importMetricoolBrand = (brandId: string) => {
+  const importMetricoolBrand = async (brandId: string) => {
+    const brandToImport = metricoolBrands.find(b => b.id === brandId);
+    if (!brandToImport) return;
+
+    if (clients.some(c => c.metricoolBlogId === brandToImport.blogId)) {
+       toast({
+        title: "Ya Conectado",
+        description: "Esta marca ya está en tu workspace.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      toast({
+        title: "Importando Marca",
+        description: "Guardando marca en la base de datos...",
+      });
+
+      const importedBrand = await api.metricool.importBrand({
+        ...brandToImport,
+        agentName: `${brandToImport.name.split(' ')[0]}Bot`,
+        tone: 'casual',
+        businessContext: `Official account for ${brandToImport.name}.`,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+
+      toast({
+        title: "Marca Importada",
+        description: `${importedBrand.name} ha sido agregado correctamente.`,
+      });
+
+      toast({
+        title: "Sincronizando Mensajes",
+        description: "Descargando DMs y comentarios de Metricool...",
+      });
+
+      await api.metricool.syncBrand(importedBrand.id);
+
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+      
+      toast({
+        title: "¡Sincronización Completada!",
+        description: "Los mensajes de Metricool han sido importados.",
+      });
+
+      setActiveClientId(importedBrand.id);
+
+    } catch (error: any) {
+      console.error('Error importing brand:', error);
+      toast({
+        title: "Error al Importar",
+        description: error.message || "No se pudo importar la marca.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deprecatedImportMetricoolBrandOld = (brandId: string) => {
     const brandToImport = metricoolBrands.find(b => b.id === brandId);
     if (!brandToImport) return;
 

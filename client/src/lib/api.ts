@@ -1,7 +1,15 @@
-import type { Client, Message } from '@shared/schema';
+import type { Client, Message, Brand } from '@shared/schema';
 import type { Platform, MessageType, Urgency, Intent, Sentiment, MessageStatus, CRMContact } from '@/lib/types';
 
 const API_BASE = '/api';
+
+interface MetricoolBrand {
+  id: string;
+  name: string;
+  industry: string;
+  avatar: string | null;
+  blogId: string;
+}
 
 // Adapter function to convert DB message to frontend format
 function adaptMessage(dbMsg: Message): Message & {
@@ -30,24 +38,60 @@ function adaptMessage(dbMsg: Message): Message & {
 export const api = {
   clients: {
     getAll: async (): Promise<Client[]> => {
-      const res = await fetch(`${API_BASE}/clients`);
+      const res = await fetch(`${API_BASE}/brands`);
       if (!res.ok) throw new Error('Failed to fetch clients');
       return res.json();
     },
     
     getById: async (id: string): Promise<Client> => {
-      const res = await fetch(`${API_BASE}/clients/${id}`);
+      const res = await fetch(`${API_BASE}/brands/${id}`);
       if (!res.ok) throw new Error('Failed to fetch client');
       return res.json();
     },
     
     create: async (data: Omit<Client, 'id' | 'createdAt'>): Promise<Client> => {
-      const res = await fetch(`${API_BASE}/clients`, {
+      const res = await fetch(`${API_BASE}/brands`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error('Failed to create client');
+      return res.json();
+    },
+  },
+
+  metricool: {
+    getBrands: async (): Promise<MetricoolBrand[]> => {
+      const res = await fetch(`${API_BASE}/metricool/brands`);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to fetch Metricool brands');
+      }
+      return res.json();
+    },
+
+    importBrand: async (brand: MetricoolBrand): Promise<Brand> => {
+      const res = await fetch(`${API_BASE}/brands/import`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(brand),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to import brand');
+      }
+      return res.json();
+    },
+
+    syncBrand: async (brandId: string): Promise<{ success: boolean; stats: any }> => {
+      const res = await fetch(`${API_BASE}/sync-brand/${brandId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to sync brand');
+      }
       return res.json();
     },
   },

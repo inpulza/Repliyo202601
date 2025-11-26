@@ -26,38 +26,31 @@ export function MetricoolConnection({ onClose }: MetricoolConnectionProps) {
   return (
     <div className="space-y-6 py-2">
       <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="api-token">Metricool User Token (X-Mc-Auth)</Label>
-          <Input 
-            id="api-token" 
-            type="password" 
-            placeholder="Paste your token here..." 
-            className="font-mono text-xs"
-            defaultValue="************************"
-          />
-          <p className="text-[10px] text-muted-foreground">Este token permite leer los mensajes de tus marcas conectadas.</p>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="user-id">User ID</Label>
-          <Input 
-            id="user-id" 
-            placeholder="12345678" 
-            defaultValue="2938471"
-          />
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <div className="flex items-start gap-3">
+            <ShieldCheck className="h-5 w-5 text-blue-600 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="text-sm font-medium text-blue-900 mb-1">Conexión Segura Configurada</h4>
+              <p className="text-xs text-blue-700">
+                Las credenciales de Metricool están almacenadas de forma segura en el servidor. 
+                Haz clic en el botón para cargar tus marcas.
+              </p>
+            </div>
+          </div>
         </div>
 
         <Button 
           className="w-full bg-indigo-600 hover:bg-indigo-700"
           onClick={fetchMetricoolBrands}
           disabled={isLoadingMetricool}
+          data-testid="button-fetch-metricool-brands"
         >
           {isLoadingMetricool ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
           ) : (
-            <ShieldCheck className="h-4 w-4 mr-2" />
+            <RefreshCw className="h-4 w-4 mr-2" />
           )}
-          Verificar y Cargar Marcas
+          Cargar Marcas desde Metricool
         </Button>
       </div>
 
@@ -105,10 +98,10 @@ export function MetricoolConnection({ onClose }: MetricoolConnectionProps) {
                       onClick={() => {
                           if (!isAdded) {
                               importMetricoolBrand(brand.id);
-                              // Optional: close modal or keep open for more
                           }
                       }}
                       disabled={isAdded}
+                      data-testid={`button-import-brand-${brand.id}`}
                     >
                       {isAdded ? (
                         <><Check className="h-3 w-3 mr-1" /> Conectado</>

@@ -95,6 +95,9 @@ export const updateMessageSchema = insertMessageSchema.partial();
 
 export type InsertBrand = z.infer<typeof insertBrandSchema>;
 export type Brand = typeof brands.$inferSelect;
+
+export type Client = Brand;
+export type InsertClient = InsertBrand;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
