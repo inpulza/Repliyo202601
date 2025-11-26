@@ -1,0 +1,74 @@
+Resumen de Endpoints de API y Autenticación con Metricool
+Sistema de Autenticación
+La autenticación con la API de Metricool se realiza mediante un token que se incluye en el encabezado HTTP X-Mc-Auth. Este token es fundamental para todas las peticiones y debe estar presente en cada llamada a la API.
+
+// Así se configura el token de autenticación
+metricoolApi.defaults.headers.common['X-Mc-Auth'] = token;
+URL Base de la API
+Todas las peticiones se realizan a la siguiente URL base:
+
+https://app.metricool.com/api
+Endpoints Principales por Funcionalidad
+1. Gestión de Marcas (Brands)
+Propósito	Endpoint	Método	Parámetros
+Obtener marcas autorizadas	/admin/profiles-auth	GET	Ninguno
+Obtener perfiles simples	/admin/simpleProfiles	GET	Ninguno
+
+2. Mensajes y Conversaciones
+
+Red Social	Endpoint	Parámetros Requeridos
+Facebook	/v2/inbox/conversations	provider: "FACEBOOK", blogId: [ID de marca], userId: [ID usuario]
+Instagram (Personal)	/v2/inbox/conversations	provider: "INSTAGRAM", blogId: [ID de marca], userId: [ID usuario]
+Instagram (Business)	/v2/inbox/conversations	provider: "INSTAGRAMBUSINESS", blogId: [ID de marca], userId: [ID usuario]
+TikTok	/v2/inbox/conversations	provider: "TIKTOKBUSINESS", blogId: [ID de marca], userId: [ID usuario]
+YouTube	/v2/inbox/conversations	provider: "YOUTUBE", blogId: [ID de marca], userId: [ID usuario]
+LinkedIn	/v2/inbox/conversations	provider: "LINKEDIN", blogId: [ID de marca], userId: [ID usuario]
+
+3. Comentarios en Publicaciones
+
+Red Social	Endpoint	Parámetros Requeridos
+Facebook	/v2/inbox/post-comments	provider: "FACEBOOK", blogId: [ID de marca], userId: [ID usuario]
+Instagram	/v2/inbox/post-comments	provider: "INSTAGRAM", blogId: [ID de marca], userId: [ID usuario]
+TikTok	/v2/inbox/post-comments	provider: "TIKTOKBUSINESS", blogId: [ID de marca], userId: [ID usuario]
+YouTube	/v2/inbox/post-comments	provider: "YOUTUBE", blogId: [ID de marca], userId: [ID usuario]
+Twitter	/v2/inbox/post-comments	provider: "TWITTER", blogId: [ID de marca], userId: [ID usuario]
+
+4. Verificación de Autorizaciones
+
+Tipo	Endpoint	Parámetros
+Verificar Conversaciones	/v2/inbox/conversations/authorizations	provider, blogId, userId
+Verificar Comentarios	/v2/inbox/post-comments/authorizations	provider, blogId, userId
+5. Imágenes y Avatares
+Propósito	Endpoint	Parámetros
+Obtener imagen/avatar	/v2/inbox/conversations/fetch-image	provider, target
+Mapeo de Nombres de Proveedores
+Es importante destacar que hay una normalización de nombres de proveedores. La API espera los siguientes valores específicos:
+
+instagram → INSTAGRAM
+instagrambusiness → INSTAGRAMBUSINESS
+twitter → TWITTER
+facebook → FACEBOOK
+gmb → GMB
+tiktok → TIKTOKBUSINESS
+tiktokbusiness → TIKTOKBUSINESS
+youtube → YOUTUBE
+linkedin → LINKEDIN
+Headers Especiales
+Además del header de autenticación, algunas peticiones usan headers adicionales:
+
+// Header específico para operaciones relacionadas con marcas
+headers['X-Brand-Id'] = `${brandId}`;
+Casos Especiales
+En el código hay configuraciones específicas para ciertas marcas:
+
+Marca 4075873 (BO Trust): Tiene configuraciones especiales para Facebook, Instagram, TikTok y YouTube
+Marca 3270206 (Fortress): Tiene configuración especial para Instagram
+Marca 4074962 (Inpulza): Tiene parámetros estándar pero se usa en múltiples plataformas
+Estructura de Parámetros Típica
+// Ejemplo de parámetros para obtener conversaciones
+const params = { 
+  provider: "FACEBOOK",  // Proveedor normalizado
+  blogId: 4075873,       // ID de la marca
+  userId: 2603584,       // ID del usuario propietario
+  status: "ALL"          // Estado (opcional, para filtrar)
+};

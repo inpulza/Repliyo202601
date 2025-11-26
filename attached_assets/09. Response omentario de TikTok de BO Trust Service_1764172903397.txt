@@ -1,0 +1,67 @@
+{
+  "id": "7497300199593954606_7499669327431222062",
+  "self": "_000K1GyozZ-5j8nLRwX71pLEz07AkMwiQRV",
+  "provider": "TIKTOKBUSINESS",
+  "status": "READ",
+  "creationDate": "2025-05-02T04:27:54+0200",
+  "lastUpdateTime": "2025-05-02T15:30:51+0200",
+  "lastReadTime": "2025-05-02T15:25:18+0200",
+  "participants": [
+    {
+      "id": "8bf8b047f7bb8a0ce7c7dbb424d63e89435f4b71d6c708818cdcefbe9f59d01b",
+      "name": "botrustuser123",
+      "imageProfileUrl": "https://p16-common-sign-va.tiktokcdn-us.com/tos-maliva-avt-0068/0a3c45f2e9c5671b0c2cc3f35c5af98a~tplv-tiktokx-cropcenter:168:168.jpeg"
+    }
+  ],
+  "root": {
+    "element": {
+      "id": "7497300199593954606",
+      "owner": {
+        "id": "_000K1GyozZ-5j8nLRwX71pLEz07AkMwiQRV",
+        "name": "BO Trust Service",
+        "imageProfileUrl": "https://p16-common-sign-va.tiktokcdn-us.com/tos-maliva-avt-0068/7b3c1e9c13d47b4efe0c5c11137efe3f~tplv-tiktokx-cropcenter:168:168.jpeg"
+      },
+      "link": "https://www.tiktok.com/@botrust.service/video/7497300199593954606",
+      "text": "La historia real de esta pareja y cómo puedes revisar el estado de tu reembolso si está tardando demasiado. ✅ Aprenderás: Qué es el formulario 1095-A y por qué es obligatorio Cómo revisar tu reembolso en la web oficial del IRS Cuándo presentar una enmienda si el IRS retiene tu devolución Qué errores evitar al usar el seguro del Marketplace (Obamacare) 📩 ¿Tu reembolso también está en pausa? Comenta \"obamacare\" y te mandamos la web para revisarlo.",
+      "mediaUrls": [
+        "https://static.metricool.com/tkvideocovers/202504/4075873-7497300199593954606.jpeg"
+      ],
+      "commentCount": 318,
+      "reactionCount": null,
+      "properties": {}
+    },
+    "id": "7497300199593954606_7499669327431222062",
+    "creationDate": "2025-05-02T04:27:54+0200",
+    "owner": "8bf8b047f7bb8a0ce7c7dbb424d63e89435f4b71d6c708818cdcefbe9f59d01b",
+    "text": "Obama care",
+    "properties": {
+      "liked": true
+    },
+    "comments": [
+      {
+        "parentId": "7499669327431222062",
+        "id": "7497300199593954606_7499871122449482526",
+        "creationDate": "2025-05-02T15:30:51+0200",
+        "owner": "_000K1GyozZ-5j8nLRwX71pLEz07AkMwiQRV",
+        "text": "Puede consultarlo por cualquiera de estas vías\rAplicación: IRS2Go\rweb: https://www.irs.gov/refunds\rteléfono: 1-800-829-1040"
+      }
+    ]
+  }
+}
+
+
+
+
+
+Las principales diferencias entre la llamada para BO Trust y la de Fortress son:
+
+El blogId es distinto - este es el identificador único para cada marca en Metricool
+El contenido está relacionado con temas financieros/impuestos en lugar de bienestar/salud
+
+Sin embargo, la estructura de datos es idéntica:
+
+Información del comentario principal
+Datos del usuario comentador
+Metadatos del video original
+Respuestas al comentario (si las hay)
+Es importante notar que mientras el blogId cambia para cada marca, el userId y userToken son los mismos, ya que ambas marcas pertenecen a la misma cuenta de Metricool.

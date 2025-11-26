@@ -1,0 +1,68 @@
+ejemplos reales de cómo se ven las respuestas de cada red social para Fortress Wellness Center:
+
+1. Comentario de TikTok de Fortress
+{
+  "id": "7495763702470151470_7505038622505190199",
+  "self": "_000FTj0xpRZRVxvhK9a2h_Id2qWe7dejKdQ",
+  "provider": "TIKTOKBUSINESS",
+  "status": "READ",
+  "creationDate": "2025-05-16T15:43:21+0200",
+  "lastUpdateTime": "2025-05-16T15:53:19+0200",
+  "lastReadTime": "2025-05-16T18:55:38+0200",
+  "participants": [
+    {
+      "id": "a37f952cb7771d818dbbc04da430dd8a9641218d312e445e9c84a3846aa549b5",
+      "name": "Yunaisy SC",
+      "imageProfileUrl": "https://p16-common-sign-va.tiktokcdn-us.com/tos-maliva-avt-0068/9c61d4e9a6c06c5d081474d73daaad1c~tplv-tiktokx-cropcenter:168:168.jpeg"
+    }
+  ],
+  "root": {
+    "element": {
+      "id": "7495763702470151470",
+      "owner": {
+        "id": "_000FTj0xpRZRVxvhK9a2h_Id2qWe7dejKdQ",
+        "name": "Dr. Joel H | Fortress Wellness"
+      },
+      "link": "https://www.tiktok.com/@dr.joelhm/video/7495763702470151470",
+      "text": "Replying to @Yunaisy SC en este vídeo, explicamos por qué la ashwagandha es un suplemento muy bueno para los síntomas de la menopausia y la perimenopausia",
+      "mediaUrls": ["https://static.metricool.com/tkvideocovers/202504/3270206-7495763702470151470.jpeg"],
+      "commentCount": 155,
+      "reactionCount": null
+    },
+    "id": "7495763702470151470_7505038622505190199",
+    "creationDate": "2025-05-16T15:43:21+0200",
+    "owner": "a37f952cb7771d818dbbc04da430dd8a9641218d312e445e9c84a3846aa549b5",
+    "text": "yo tengo ansiedad, insomnio, con depresión unos calorones tengo de todo 😭",
+    "comments": [
+      {
+        "parentId": "7505038622505190199",
+        "id": "7495763702470151470_7504438618124485422",
+        "creationDate": "2025-05-16T15:53:19+0200",
+        "owner": "_000FTj0xpRZRVxvhK9a2h_Id2qWe7dejKdQ",
+        "text": "Amiga, esos síntomas pueden deberse a cambios hormonales. No estás sola, consulta a tu médico para un abordaje completo. Ánimo 💛"
+      }
+    ]
+  }
+}
+
+
+
+Como puedes ver, cada plataforma tiene su propia estructura pero comparten elementos comunes:
+
+TikTok: Usa el proveedor TIKTOKBUSINESS y sus comentarios incluyen el formato videoId_commentId para identificar comentarios específicos.
+
+Instagram: Usa el proveedor INSTAGRAM y tiene estructuras diferentes para comentarios y DMs. Los comentarios aparecen bajo la propiedad root mientras que los DMs tienen una lista de messages.
+
+Facebook: Usa el proveedor FACEBOOKBUSINESS y requiere el parámetro recipient al responder a mensajes directos.
+
+YouTube: Usa el proveedor YOUTUBE y la estructura es similar a los comentarios de otras plataformas.
+
+Cada respuesta contiene información importante como:
+
+IDs únicos para identificar la conversación
+Información del remitente (userId, username)
+Contenido del mensaje
+Timestamps de creación y lectura
+Enlaces a las publicaciones originales
+Metadatos específicos de cada plataforma
+

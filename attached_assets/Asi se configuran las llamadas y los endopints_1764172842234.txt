@@ -1,0 +1,132 @@
+## Llamadas a la API de Metricool: Conversaciones y Comentarios
+
+A continuación se detallan las llamadas reales a la API de Metricool que maneja el repositorio, separadas en métodos `GET` y `POST` para conversaciones y comentarios. Se citan las secciones de código/PRD donde se definen o documentan estas estructuras.
+
+---
+
+### 1. Endpoints `GET` de Metricool
+
+#### **Verificar autorización para conversaciones**
+
+* **Ruta:** `GET /v2/inbox/conversations/authorizations`
+* **Parámetros:** `provider` y `blogId` (opcional `userId`)
+* **Definición en código:**
+    ```ts
+    let endpoint = `/v2/inbox/conversations/authorizations`;
+    const params: Record<string, any> = {
+      provider: normalizedProvider,
+      blogId: brandId
+    };
+    ```
+* **Documentación del PRD:** (Sección relevante en el PRD)
+
+#### **Verificar autorización para comentarios**
+
+* **Ruta:** `GET /v2/inbox/post-comments/authorizations`
+* **Parámetros:** `provider` y `blogId` (opcional `userId`)
+* **Definición en código:**
+    ```ts
+    let endpoint = `/v2/inbox/post-comments/authorizations`;
+    const params: Record<string, any> = {
+      provider: normalizedProvider,
+      blogId: brandId
+    };
+    ```
+* **Documentación del PRD:** (Sección relevante en el PRD)
+
+#### **Obtener conversaciones**
+
+* **Ruta:** `GET /v2/inbox/conversations`
+* **Parámetros generales:** `provider`, `blogId`, `status=ALL`, `limit` (y opcional `userId`)
+* **Definición en código (caso general, tras manejar casos especiales):**
+    ```ts
+    const endpoint = `/v2/inbox/conversations`;
+    const params: Record<string, any> = {
+      provider: normalizedProvider,
+      blogId: brandId,
+      status: "ALL",
+      limit
+    };
+    ```
+* **Documentación del PRD:** (Explica la estructura y ejemplo de curl)
+
+#### **Obtener comentarios**
+
+* **Ruta:** `GET /v2/inbox/post-comments`
+* **Parámetros generales:** `provider`, `blogId`, `limit` (y opcional `userId`)
+* **Definición en código (parte normal, tras los casos especiales):**
+    ```ts
+    const endpoint = `/v2/inbox/post-comments`;
+    const params: Record<string, any> = {
+      provider: normalizedProvider,
+      blogId: brandId,
+      limit
+    };
+    ```
+* **Documentación del PRD:** (Sección relevante en el PRD)
+
+#### **Obtener imagen de un participante**
+
+* **Ruta:** `GET /v2/inbox/conversations/fetch-image`
+* **Parámetros:** `provider` y `target`
+* **Definición en código:**
+    ```ts
+    const response = await metricoolApi.get(`/v2/inbox/conversations/fetch-image`, {
+      params: { provider, target },
+      responseType: 'arraybuffer'
+    });
+    ```
+* **Documentación del PRD:** (Sección relevante en el PRD)
+
+---
+
+### 2. Endpoints `POST` de Metricool
+
+#### **Enviar respuesta a un comentario (Facebook, Instagram, TikTok, etc.)**
+
+* **Ruta:** `POST /v2/inbox/post-comments`
+* **Cuerpo esperado:**
+    ```json
+    {
+      "provider": "TIKTOKBUSINESS",
+      "objectId": "<id_post_o_comentario>",
+      "text": "<mensaje>",
+      "attachment": ""      // opcional
+    }
+    ```
+* **Ejemplo de llamada en el backend (TikTok):**
+    ```ts
+    const response = await metricoolApi.post('/v2/inbox/post-comments', requestData);
+    ```
+* **Otro ejemplo (pruebas generales):**
+    ```ts
+    const response = await metricoolApi.post('/v2/inbox/post-comments', requestData);
+    ```
+* **Aclaración del PRD:** El PRD aclara la estructura de esta petición y el uso del campo `objectId`.
+
+#### **Enviar un mensaje directo (Instagram DM)**
+
+* **Ruta:** `POST /v2/inbox/conversations?userId=<userId>&blogId=<brandId>`
+* **Cuerpo esperado:**
+    ```json
+    {
+      "provider": "INSTAGRAM",
+      "conversationId": "<id_conversacion>",
+      "recipient": "<id_destinatario>",
+      "text": "<mensaje>",
+      "attachment": null
+    }
+    ```
+* **Implementación en el backend:**
+    ```ts
+    const url = `https://app.metricool.com/api/v2/inbox/conversations?userId=${userId}&blogId=${brandId}`;
+    const curlCommand = `curl --location '${url}' \\
+      --header 'Content-Type: application/json' \\
+      --header 'Accept: application/json' \\
+      --header 'X-Mc-Auth: ${token}' \\
+      --data '${JSON.stringify(requestData)}'`;
+    ```
+
+---
+
+Estas son las estructuras principales de las llamadas `GET` y `POST` a Metricool que el proyecto utiliza para manejar conversaciones y comentarios. Cada llamada requiere el encabezado `X-Mc-Auth` con el token de Metricool, y algunas añaden parámetros `blogId` y `userId` según la marca (brand) o usuario específico.
