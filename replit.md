@@ -4,11 +4,13 @@
 Sistema de gestión de mensajes de redes sociales que se integra con Metricool para centralizar y gestionar DMs y comentarios de múltiples marcas/empresas. El sistema permite a usuarios admin y clientes gestionar sus interacciones sociales de forma organizada.
 
 ## Estado Actual
-- **Fase Actual**: ✅ Fase 3 COMPLETADA - Sistema Completo Funcionando
+- **Fase Actual**: 🔄 FASE 4 EN PROGRESO - Refinamiento de Sincronización y UI
 - **Última Actualización**: 26 de Noviembre 2025
-- **Frontend**: ✅ Conectado con backend real, flujo completo probado end-to-end
-- **Backend**: ✅ Sistema completo de sincronización con Metricool API implementado y probado
-- **Testing**: ✅ Test e2e exitoso: 15 marcas cargadas, 277 mensajes sincronizados (185 conversations + 92 comments)
+- **Login/Logout**: ✅ Completamente funcional (página de login creada, logout en sidebar)
+- **Sistema de Roles**: ✅ Admin vs Client funcionando correctamente
+- **Marca de Prueba**: ✅ Impulsa conectada (blogId: 4074962)
+- **Sincronización**: ⚠️ Parcial - 2 comentarios de LinkedIn con datos incompletos
+- **Próximo Paso**: Mejorar mapeo de datos de Metricool API y visualización en UI
 
 ---
 
@@ -243,29 +245,80 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 
 ---
 
-## Sistema Funcionando - Próximas Mejoras
-✅ **TODAS LAS FASES COMPLETADAS**
+## FASE 4: Refinamiento de Sincronización y Visualización 🔄 EN PROGRESO
 
-**Fases implementadas:**
-1. ✅ Fase 1: Arquitectura de Datos & Autenticación multi-tenant
-2. ✅ Fase 2: Integración con Metricool API + Sincronización
-3. ✅ Fase 3: Frontend conectado con backend real
+### Estado Actual de la Sincronización:
+**Marca de Prueba:** Impulsa (blogId: 4074962)
 
-**Mejoras futuras sugeridas:**
-1. 🔄 Implementar sincronización automática (cada 130 segundos)
-2. 🔄 Agregar endpoint `POST /api/inbox/reply` para responder mensajes
-3. 🔄 Mejorar filtros del inbox para mostrar mensajes correctamente
-4. 🔄 Agregar página de configuración de usuario
-5. 🔄 Implementar sistema de notificaciones en tiempo real
-6. 🔄 Mejorar manejo de errores de Metricool API (TikTok, Google)
-7. 🔄 Agregar tests unitarios para MetricoolService
-8. 🔄 Implementar rate limiting para API endpoints
+**Resultados Actuales:**
+- ✅ 2 comentarios de LinkedIn sincronizados
+- ❌ Datos incompletos: author="Unknown", content vacío
+- ❌ Instagram conversations: Error 500 de API Metricool
+- ❌ TikTok: Error de nombre de provider (debe ser 'TIKTOKBUSINESS')
+- ❌ Google: Error de nombre de provider (debe ser 'GMB')
+
+### Tareas Pendientes FASE 4:
+
+**Prioridad ALTA (Hacer primero):**
+1. 🔴 **Mejorar mapeo de datos Metricool → Messages**
+   - Revisar estructura real de respuesta de API
+   - Mapear correctamente: author, authorAvatar, content, timestamp
+   - Verificar que rawData se guarde completo
+   
+2. 🔴 **Corregir nombres de providers**
+   - 'tiktok' → 'TIKTOKBUSINESS'
+   - 'google' → 'GMB'
+   - Revisar documentación de Metricool para nombres correctos
+   
+3. 🔴 **Depurar error Instagram 500**
+   - Verificar si es problema de permisos o de la marca Impulsa
+   - Probar con otra marca si es necesario
+
+4. 🔴 **Conectar UI con datos reales**
+   - Verificar que Inbox.tsx muestre los mensajes correctamente
+   - Mapear todos los campos necesarios (avatar, nombre, contenido, fecha)
+   - Probar filtros por red social (Instagram, LinkedIn, etc.)
+
+**Prioridad MEDIA (Después de ALTA):**
+5. 🟡 Implementar sincronización automática (cada 130 segundos)
+6. 🟡 Agregar endpoint `POST /api/inbox/reply` para responder mensajes
+7. 🟡 Mejorar filtros del inbox para mostrar mensajes correctamente
+
+**Prioridad BAJA (Futuro):**
+8. ⚪ Agregar página de configuración de usuario
+9. ⚪ Implementar sistema de notificaciones en tiempo real
+10. ⚪ Agregar tests unitarios para MetricoolService
+11. ⚪ Implementar rate limiting para API endpoints
 
 ---
 
 ## Notas de Desarrollo
+
+### Usuarios Actuales:
+- **Admin:** admin@test.com / admin123 (role: admin, brandId: null)
+- **System Admin:** admin@system.com (role: admin, brandId: null)
+
+### Marcas Conectadas:
+- **Impulsa:** ID=72307812-2edb-43a6-884b-e19f1a9cf200, blogId=4074962
+
+### Problemas Conocidos:
+1. **Mapeo incompleto de Metricool API:**
+   - Comentarios de LinkedIn tienen author="Unknown" y content vacío
+   - Necesita revisión de estructura real de respuesta JSON
+   
+2. **Errores de API Metricool:**
+   - Instagram: Error 500 (puede ser problema de permisos de la marca)
+   - TikTok: Nombre incorrecto ('tiktok' vs 'TIKTOKBUSINESS')
+   - Google: Nombre incorrecto ('google' vs 'GMB')
+
+3. **UI no conectada completamente:**
+   - Inbox.tsx necesita verificación de mapeo de datos
+   - Filtros por red social pendientes de prueba
+
+### Recordatorios Técnicos:
 - ✅ Tabla `clients` renombrada a `brands` exitosamente
-- Los errores TypeScript en Inbox.tsx se resolverán en Fase 3 al conectar con backend real
+- ✅ Login/logout implementado y funcionando
+- ✅ Bug de nombres de marcas corregido (usar field `label` no `name`)
 - Importante: Un usuario de Metricool puede tener múltiples brands (blogIds)
 - **Creación de Admins**: Solo manual en base de datos (por seguridad)
   ```sql
