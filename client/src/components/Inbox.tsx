@@ -41,7 +41,7 @@ import { GoogleBusinessIcon } from './GoogleBusinessIcon';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -429,6 +429,7 @@ export function Inbox() {
                         </Button>
                     )}
                     <Avatar className="h-10 w-10 ring-2 ring-offset-2 ring-gray-50 shrink-0">
+                        <AvatarImage src={selectedMessage.authorAvatar || undefined} alt={selectedMessage.author} />
                         <AvatarFallback className="bg-gray-100 font-bold text-gray-600">{selectedMessage.author.substring(0,2).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     
@@ -562,6 +563,7 @@ export function Inbox() {
                   {/* The Message Bubble */}
                   <div className="flex gap-4 group">
                      <Avatar className="h-8 w-8 mt-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                        <AvatarImage src={selectedMessage.authorAvatar || undefined} alt={selectedMessage.author} />
                         <AvatarFallback className="bg-gray-200 text-gray-500"><User className="h-4 w-4" /></AvatarFallback>
                      </Avatar>
                      <div className="flex flex-col gap-1 max-w-[85%]">
@@ -825,6 +827,7 @@ function MessageCard({ message, isSelected, onClick, onOpenCRM }: { message: Mes
                 {/* Avatar & Icon */}
                 <div className="relative shrink-0">
                     <Avatar className="h-10 w-10 border border-gray-100">
+                        <AvatarImage src={message.authorAvatar || undefined} alt={message.author} />
                         <AvatarFallback className="text-xs font-bold text-gray-600 bg-gray-100">
                             {message.author.substring(0,2).toUpperCase()}
                         </AvatarFallback>
