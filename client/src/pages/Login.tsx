@@ -6,10 +6,12 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Command, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
 
 export function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { refreshAuth } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -38,6 +40,8 @@ export function Login() {
         description: `Sesión iniciada como ${user.name}`,
       });
 
+      // Refresh auth state before navigating
+      await refreshAuth();
       setLocation('/');
     } catch (error: any) {
       console.error('Login error:', error);
