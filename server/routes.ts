@@ -29,6 +29,20 @@ const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
   next();
 };
 
+// Normalize provider names to match frontend types
+function normalizePlatform(provider: string): string {
+  const normalized = provider.toLowerCase();
+  const platformMap: Record<string, string> = {
+    'tiktokbusiness': 'tiktok',
+    'gmb': 'google-business',
+    'google_business': 'google-business',
+  };
+  return platformMap[normalized] || normalized;
+}
+
+// We keep 'conversation' and 'comment' in DB (matches schema)
+// Frontend will convert 'conversation' -> 'dm' when displaying
+
 const filterByBrand = (brandIdParam?: string) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
@@ -461,7 +475,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             await storage.upsertMessage({
               brandId: brand.id,
               metricoolId: `conv_${conv.id}_${msg.id || msg.timestamp}`,
-              platform: conv.provider.toLowerCase(),
+              platform: normalizePlatform(conv.provider),
               type: 'conversation',
               author,
               authorAvatar,
@@ -482,7 +496,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.upsertMessage({
             brandId: brand.id,
             metricoolId: comment.id,
-            platform: comment.provider.toLowerCase(),
+            platform: normalizePlatform(comment.provider),
             type: 'comment',
             author: comment.author,
             authorAvatar: comment.authorAvatar || null,

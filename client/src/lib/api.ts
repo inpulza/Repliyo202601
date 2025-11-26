@@ -28,10 +28,13 @@ function adaptMessage(dbMsg: Message): Message & {
   timestamp: Date;
   crmData?: CRMContact;
 } {
+  // Convert 'conversation' to 'dm' for frontend display
+  const messageType: MessageType = dbMsg.type === 'conversation' ? 'dm' : (dbMsg.type as MessageType);
+  
   return {
     ...dbMsg,
     platform: dbMsg.platform as Platform,
-    type: dbMsg.type as MessageType,
+    type: messageType,
     urgency: dbMsg.urgency as Urgency,
     intent: dbMsg.intent as Intent,
     sentiment: dbMsg.sentiment as Sentiment,
