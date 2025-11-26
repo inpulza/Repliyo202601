@@ -137,7 +137,7 @@ export function Inbox() {
 
   // Filter Logic
   const filteredMessages = messages
-    .filter(m => m.clientId === activeClientId)
+    .filter(m => m.brandId === activeClientId)
     .filter(m => {
       if (fireMode && (m.urgency !== 'high' && m.urgency !== 'medium')) return false;
       if (intentFilter !== 'all' && m.intent !== intentFilter) return false;
@@ -150,15 +150,17 @@ export function Inbox() {
        // Sort by urgency first if Fire Mode is on, otherwise by date
        if (fireMode) {
            const urgencyScore: Record<string, number> = { high: 3, medium: 2, low: 1 };
-           if (urgencyScore[a.urgency] !== urgencyScore[b.urgency]) {
-               return urgencyScore[b.urgency] - urgencyScore[a.urgency];
+           const aScore = urgencyScore[a.urgency || 'low'] || 1;
+           const bScore = urgencyScore[b.urgency || 'low'] || 1;
+           if (aScore !== bScore) {
+               return bScore - aScore;
            }
        }
        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
     });
 
   // Calculate Stats for Header
-  const clientMessages = messages.filter(m => m.clientId === activeClientId);
+  const clientMessages = messages.filter(m => m.brandId === activeClientId);
   const criticalCount = clientMessages.filter(m => m.urgency === 'high').length;
   const opportunityCount = clientMessages.filter(m => m.intent === 'sales').length;
   const pendingCount = clientMessages.filter(m => m.status === 'unread').length;
@@ -439,13 +441,13 @@ export function Inbox() {
                         {/* Row 2: Info */}
                         <div className="flex items-center gap-1.5 mt-0.5 md:mt-1.5">
                              {/* Platform Badge - Unified location */}
-                             <PlatformBadge platform={selectedMessage.platform} size="sm" />
+                             <PlatformBadge platform={(selectedMessage.platform || 'instagram') as Platform} size="sm" />
                              
                              <span className="text-gray-300 text-[10px] hidden md:inline">|</span>
 
                              {/* Desktop Metadata */}
                              <div className="hidden md:flex items-center gap-2">
-                                <SentimentIndicator sentiment={selectedMessage.sentiment} showLabel />
+                                <SentimentIndicator sentiment={(selectedMessage.sentiment || 'neutral') as Sentiment} showLabel />
                                 <span className="text-gray-300 text-[10px]">|</span>
                                 <span className="text-xs text-muted-foreground">
                                    {selectedMessage.type === 'dm' && 'Direct Message'}
@@ -472,7 +474,7 @@ export function Inbox() {
                              {/* Mobile Metadata */}
                              <div className="flex md:hidden items-center gap-1.5">
                                 <span className="text-gray-300 text-[10px]">|</span>
-                                <SentimentIndicator sentiment={selectedMessage.sentiment} />
+                                <SentimentIndicator sentiment={(selectedMessage.sentiment || 'neutral') as Sentiment} />
                                 
                                 <DropdownMenu>
                                    <DropdownMenuTrigger asChild>
@@ -485,7 +487,7 @@ export function Inbox() {
                                            Message Information
                                        </DropdownMenuLabel>
                                        <DropdownMenuItem className="gap-2">
-                                           <SentimentIndicator sentiment={selectedMessage.sentiment} showLabel />
+                                           <SentimentIndicator sentiment={(selectedMessage.sentiment || 'neutral') as Sentiment} showLabel />
                                        </DropdownMenuItem>
                                        <DropdownMenuItem>
                                            <MessageCircle className="h-3.5 w-3.5 mr-2 text-gray-500" />
@@ -547,7 +549,7 @@ export function Inbox() {
             </header>
 
             {/* Chat Content */}
-            <div className={cn("flex-1 relative flex flex-col overflow-hidden", selectedMessage ? getPlatformStyles(selectedMessage.platform).container : "bg-indigo-50/30")}>
+            <div className={cn("flex-1 relative flex flex-col overflow-hidden", selectedMessage ? getPlatformStyles((selectedMessage.platform || 'instagram') as Platform).container : "bg-indigo-50/30")}>
                 <ScrollArea className="flex-1 p-4 md:p-8">
                    <div className="max-w-3xl mx-auto space-y-8 pb-32">
                   {/* Date Separator */}
@@ -568,7 +570,7 @@ export function Inbox() {
                             <span className="text-[10px] text-muted-foreground">{new Date(selectedMessage.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                            <span className={cn(
                                "text-[9px] font-bold uppercase tracking-wide ml-1",
-                               getPlatformStyles(selectedMessage.platform).commentBadge
+                               getPlatformStyles((selectedMessage.platform || 'instagram') as Platform).commentBadge
                            )}>
                                {selectedMessage.type === 'comment' && 'Public Comment'}
                                {selectedMessage.type === 'review' && 'Public Review'}
@@ -577,7 +579,7 @@ export function Inbox() {
                         </div>
                         <div className={cn(
                             "p-4 rounded-2xl text-sm leading-relaxed shadow-sm relative rounded-tl-none",
-                            getPlatformStyles(selectedMessage.platform).bubble
+                            getPlatformStyles((selectedMessage.platform || 'instagram') as Platform).bubble
                         )}>
                            {selectedMessage.content}
                         </div>
@@ -608,7 +610,7 @@ export function Inbox() {
                                {/* Modern Card Container */}
                                <div className={cn(
                                    "rounded-2xl bg-white border shadow-sm transition-all overflow-hidden",
-                                   (selectedMessage.draftResponse?.length || 0) > getCharacterLimit(selectedMessage.platform, selectedMessage.type)
+                                   (selectedMessage.draftResponse?.length || 0) > getCharacterLimit((selectedMessage.platform || 'instagram') as Platform, (selectedMessage.type || 'comment') as MessageType)
                                        ? "border-red-200 shadow-red-500/5 ring-1 ring-red-100"
                                        : "border-indigo-100 shadow-indigo-500/5 hover:shadow-indigo-500/10"
                                )}>
@@ -650,7 +652,7 @@ export function Inbox() {
                                        <div className="flex justify-end mt-4">
                                           {(() => {
                                               const count = selectedMessage.draftResponse?.length || 0;
-                                              const limit = getCharacterLimit(selectedMessage.platform, selectedMessage.type);
+                                              const limit = getCharacterLimit((selectedMessage.platform || 'instagram') as Platform, (selectedMessage.type || 'comment') as MessageType);
                                               const isOver = count > limit;
                                               const isWarning = count > limit * 0.9 && !isOver;
                                               
@@ -702,12 +704,12 @@ export function Inbox() {
                                              size="sm" 
                                              className={cn(
                                                 "h-8 text-xs font-medium px-4 shadow-sm transition-all",
-                                                (selectedMessage.draftResponse?.length || 0) > getCharacterLimit(selectedMessage.platform, selectedMessage.type)
+                                                (selectedMessage.draftResponse?.length || 0) > getCharacterLimit((selectedMessage.platform || 'instagram') as Platform, (selectedMessage.type || 'comment') as MessageType)
                                                     ? "bg-gray-100 text-gray-400 cursor-not-allowed hover:bg-gray-100"
                                                     : "bg-indigo-600 hover:bg-indigo-700 text-white hover:shadow-md hover:shadow-indigo-500/20"
                                              )}
                                              onClick={() => approveMessage(selectedMessage.id)}
-                                             disabled={(selectedMessage.draftResponse?.length || 0) > getCharacterLimit(selectedMessage.platform, selectedMessage.type)}
+                                             disabled={(selectedMessage.draftResponse?.length || 0) > getCharacterLimit((selectedMessage.platform || 'instagram') as Platform, (selectedMessage.type || 'comment') as MessageType)}
                                           >
                                              <Send className="h-3 w-3 mr-1.5" />
                                              Approve & Send
@@ -796,7 +798,7 @@ export function Inbox() {
 
       {/* COLUMN 4: CRM Context Panel */}
       <CRMContextPanel 
-          contact={selectedMessage?.crmData}
+          contact={selectedMessage?.crmData as CRMContact | undefined}
           isOpen={isCRMOpen}
           onClose={() => setIsCRMOpen(false)}
       />
@@ -828,7 +830,7 @@ function MessageCard({ message, isSelected, onClick, onOpenCRM }: { message: Mes
                         </AvatarFallback>
                     </Avatar>
                     <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
-                        <PlatformIcon platform={message.platform} className="h-4 w-4" />
+                        <PlatformIcon platform={(message.platform || 'instagram') as Platform} className="h-4 w-4" />
                     </div>
                 </div>
 
@@ -870,7 +872,7 @@ function MessageCard({ message, isSelected, onClick, onOpenCRM }: { message: Mes
                                 Medium
                             </Badge>
                         )}
-                        <IntentBadge intent={message.intent} />
+                        <IntentBadge intent={(message.intent || 'general') as Intent} />
                         <Badge variant="outline" className="text-[10px] font-normal h-5 px-1.5 text-gray-500 border-gray-200">
                             {message.type === 'dm' && 'DM'}
                             {message.type === 'comment' && 'Comment'}
@@ -887,19 +889,19 @@ function MessageCard({ message, isSelected, onClick, onOpenCRM }: { message: Mes
                     
                     <div className="flex items-center justify-between mt-4 pt-2 border-t border-gray-50">
                         {/* CRM Sync Status Indicator (Moved Here) */}
-                        {message.crmData ? (
-                            <div className="flex items-center gap-1.5" title={`Synced with ${message.crmData.crmType}`}>
+                        {message.crmData && (message.crmData as CRMContact).crmType ? (
+                            <div className="flex items-center gap-1.5" title={`Synced with ${(message.crmData as CRMContact).crmType}`}>
                                 <div className="flex items-center justify-center h-5 w-5 rounded-full bg-white border shadow-sm shrink-0">
-                                    {message.crmData.crmType === 'hubspot' && <img src="/logos/hubspot.png" className="h-3.5 w-3.5 object-contain" />}
-                                    {message.crmData.crmType === 'salesforce' && <img src="https://logo.clearbit.com/salesforce.com" className="h-3.5 w-3.5 object-contain" />}
-                                    {message.crmData.crmType === 'pipedrive' && <img src="/logos/pipedrive.webp" className="h-3.5 w-3.5 object-contain" />}
-                                    {message.crmData.crmType === 'zoho' && <img src="/logos/zoho.png" className="h-3.5 w-3.5 object-contain" />}
-                                    {message.crmData.crmType === 'monday' && <img src="https://logo.clearbit.com/monday.com" className="h-3.5 w-3.5 object-contain" />}
-                                    {message.crmData.crmType === 'notion' && <img src="https://logo.clearbit.com/notion.so" className="h-3.5 w-3.5 object-contain" />}
-                                    {message.crmData.crmType === 'airtable' && <img src="https://logo.clearbit.com/airtable.com" className="h-3.5 w-3.5 object-contain" />}
+                                    {(message.crmData as CRMContact).crmType === 'hubspot' && <img src="/logos/hubspot.png" className="h-3.5 w-3.5 object-contain" />}
+                                    {(message.crmData as CRMContact).crmType === 'salesforce' && <img src="https://logo.clearbit.com/salesforce.com" className="h-3.5 w-3.5 object-contain" />}
+                                    {(message.crmData as CRMContact).crmType === 'pipedrive' && <img src="/logos/pipedrive.webp" className="h-3.5 w-3.5 object-contain" />}
+                                    {(message.crmData as CRMContact).crmType === 'zoho' && <img src="/logos/zoho.png" className="h-3.5 w-3.5 object-contain" />}
+                                    {(message.crmData as CRMContact).crmType === 'monday' && <img src="https://logo.clearbit.com/monday.com" className="h-3.5 w-3.5 object-contain" />}
+                                    {(message.crmData as CRMContact).crmType === 'notion' && <img src="https://logo.clearbit.com/notion.so" className="h-3.5 w-3.5 object-contain" />}
+                                    {(message.crmData as CRMContact).crmType === 'airtable' && <img src="https://logo.clearbit.com/airtable.com" className="h-3.5 w-3.5 object-contain" />}
                                 </div>
                                 <span className="text-[10px] font-medium text-gray-500 capitalize">
-                                    {message.crmData.crmType}
+                                    {(message.crmData as CRMContact).crmType}
                                 </span>
                             </div>
                         ) : (
@@ -921,7 +923,7 @@ function MessageCard({ message, isSelected, onClick, onOpenCRM }: { message: Mes
                             </div>
                         )}
 
-                        <SentimentIndicator sentiment={message.sentiment} />
+                        <SentimentIndicator sentiment={(message.sentiment || 'neutral') as Sentiment} />
                     </div>
                 </div>
             </div>

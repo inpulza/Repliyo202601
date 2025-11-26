@@ -16,6 +16,7 @@ interface MetricoolConversation {
   participants: any[];
   messages: any[];
   lastUpdate: string;
+  rawData?: any;
 }
 
 interface MetricoolComment {
@@ -28,9 +29,10 @@ interface MetricoolComment {
   content: string;
   timestamp: string;
   replies?: any[];
+  rawData?: any;
 }
 
-export const SUPPORTED_PROVIDERS = ['facebook', 'instagram', 'tiktok', 'google', 'twitter', 'linkedin', 'youtube'] as const;
+export const SUPPORTED_PROVIDERS = ['facebook', 'instagram', 'TIKTOKBUSINESS', 'GMB', 'twitter', 'linkedin', 'youtube'] as const;
 export type SocialProvider = typeof SUPPORTED_PROVIDERS[number];
 
 export class MetricoolService {
@@ -46,7 +48,7 @@ export class MetricoolService {
     const allComments: MetricoolComment[] = [];
 
     const conversationProviders: SocialProvider[] = ['instagram', 'facebook'];
-    const commentProviders: SocialProvider[] = ['instagram', 'facebook', 'tiktok', 'youtube', 'linkedin', 'google'];
+    const commentProviders: SocialProvider[] = ['instagram', 'facebook', 'TIKTOKBUSINESS', 'youtube', 'linkedin', 'GMB'];
 
     for (const provider of conversationProviders) {
       try {
@@ -163,18 +165,44 @@ export class MetricoolService {
 
       const comments = Array.isArray(response) ? response : (response.data || response.comments || []);
 
-      return comments.map((comment: any) => ({
-        id: String(comment.id || comment.commentId),
-        provider: comment.provider || comment.network || 'unknown',
-        postId: String(comment.postId || comment.post_id || ''),
-        postUrl: comment.postUrl || comment.post_url || comment.permalink,
-        author: comment.author || comment.user || comment.from?.name || 'Unknown',
-        authorAvatar: comment.authorAvatar || comment.author_avatar || comment.from?.picture,
-        content: comment.message || comment.text || comment.content || '',
-        timestamp: comment.created_time || comment.timestamp || new Date().toISOString(),
-        replies: comment.replies || [],
-        rawData: comment,
-      }));
+      return comments.map((comment: any) => {
+        let author = 'Unknown';
+        let authorAvatar = null;
+        let content = '';
+        let timestamp = new Date().toISOString();
+        let postUrl = null;
+
+        if (comment.provider === 'LINKEDIN') {
+          const ownerId = comment.root?.owner;
+          const participants = comment.participants || [];
+          const ownerParticipant = participants.find((p: any) => p.id === ownerId);
+          
+          author = ownerParticipant?.name || 'Unknown LinkedIn User';
+          authorAvatar = ownerParticipant?.imageProfileUrl || null;
+          content = comment.root?.text || '';
+          timestamp = comment.root?.creationDate || comment.creationDate || timestamp;
+          postUrl = comment.root?.element?.link || null;
+        } else {
+          author = comment.author || comment.user || comment.from?.name || comment.sender?.name || 'Unknown';
+          authorAvatar = comment.authorAvatar || comment.author_avatar || comment.from?.picture || comment.sender?.picture || null;
+          content = comment.message || comment.text || comment.content || '';
+          timestamp = comment.created_time || comment.timestamp || comment.creationDate || timestamp;
+          postUrl = comment.postUrl || comment.post_url || comment.permalink || null;
+        }
+
+        return {
+          id: String(comment.id || comment.commentId),
+          provider: comment.provider || comment.network || 'unknown',
+          postId: String(comment.postId || comment.post_id || comment.root?.element?.id || ''),
+          postUrl,
+          author,
+          authorAvatar,
+          content,
+          timestamp,
+          replies: comment.replies || comment.comments || [],
+          rawData: comment,
+        };
+      });
     } catch (error) {
       console.error(`Error fetching comments for blogId ${blogId}:`, error);
       throw error;
