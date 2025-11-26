@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Save, Bot, Zap, BookOpen, ArrowRight } from 'lucide-react';
+import { Save, Bot, Zap, BookOpen, ArrowRight, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const formSchema = z.object({
@@ -40,7 +40,7 @@ const formSchema = z.object({
 });
 
 export function AgentSettings() {
-  const { activeClient, updateClientSettings } = useNexus();
+  const { activeClient, updateClientSettings, isLoadingClients } = useNexus();
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -56,13 +56,32 @@ export function AgentSettings() {
   useEffect(() => {
     if (activeClient) {
       form.reset({
-        agentName: activeClient.settings.agentName,
-        tone: activeClient.settings.tone,
-        businessContext: activeClient.settings.businessContext,
+        agentName: activeClient.agentName || '',
+        tone: (activeClient.tone || 'formal') as 'formal' | 'casual' | 'funny' | 'empathetic',
+        businessContext: activeClient.businessContext || '',
         autoDraft: true, // Mock field for UI
       });
     }
   }, [activeClient, form]);
+
+  if (isLoadingClients) {
+    return (
+      <div className="h-full flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+          <p className="text-sm text-muted-foreground">Cargando configuración...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!activeClient) {
+    return (
+      <div className="h-full flex items-center justify-center bg-background">
+        <p className="text-sm text-muted-foreground">No hay marca seleccionada</p>
+      </div>
+    );
+  }
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     if (activeClient) {

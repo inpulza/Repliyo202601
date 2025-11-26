@@ -9,7 +9,8 @@ import {
     Smile, 
     Users,
     MoreHorizontal,
-    Calendar
+    Calendar,
+    Loader2
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { 
@@ -35,7 +36,18 @@ const data = [
 ];
 
 export function Overview() {
-  const { activeClient } = useNexus();
+  const { activeClient, isLoadingClients } = useNexus();
+
+  if (isLoadingClients) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-50/50">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+          <p className="text-sm text-muted-foreground">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col bg-gray-50/50 overflow-y-auto">

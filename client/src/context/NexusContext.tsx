@@ -48,13 +48,17 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
     enabled: !!activeClientId,
   });
 
+  // Auto-select first client when loaded
   React.useEffect(() => {
-    if (!activeClientId && clients.length > 0) {
+    if (!activeClientId && clients.length > 0 && !isLoadingClients) {
       setActiveClientId(clients[0].id);
     }
-  }, [clients, activeClientId]);
+  }, [clients, activeClientId, isLoadingClients]);
 
-  const activeClient = clients.find(c => c.id === activeClientId);
+  const activeClient = React.useMemo(
+    () => clients.find(c => c.id === activeClientId),
+    [clients, activeClientId]
+  );
 
   const createClientMutation = useMutation({
     mutationFn: api.clients.create,
