@@ -47,19 +47,31 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 
 ---
 
-### FASE 2: El Servicio de Conexión (Metricool Connector) (PENDIENTE)
+### FASE 2: El Servicio de Conexión (Metricool Connector) 🔄 EN PROGRESO
 **Objetivo:** Enseñar al backend a "hablar" con Metricool.
 
-#### Tareas:
-1. **Crear `MetricoolService`:**
-   - Configurar clase/módulo que acepte `metricoolToken` y tenga métodos para llamar endpoints
+#### Implementación Completada:
+1. ✅ **`MetricoolService` creado** (`server/services/metricool.ts`):
+   - Autenticación con X-Mc-Auth header
+   - Método `getBrands()` - Obtiene marcas del usuario
+   - Método `getConversations(blogId, provider)` - DMs de Instagram/Facebook
+   - Método `getComments(blogId, provider)` - Comentarios de todas las redes
+   - Método `getAllInboxData(blogId)` - Obtiene todo de todas las redes
    
-2. **Integrar Endpoints de Metricool:**
-   - Implementar `getBrands(token)` usando `/api/admin/simpleProfiles`
-   - Implementar `getConversations(token, provider)` usando `/api/v2/inbox/conversations`
-   - Implementar `getComments(token, provider)` usando `/api/v2/inbox/post-comments`
+2. ✅ **Endpoints de Metricool integrados:**
+   - `/api/admin/simpleProfiles` → Devuelve 15 marcas
+   - `/api/v2/inbox/conversations` → Devuelve conversaciones (probado: 25 conversations)
+   - `/api/v2/inbox/post-comments` → Listo para comentarios
+   - Providers soportados: facebook, instagram, tiktok, youtube, linkedin, google
 
-3. **Lógica de Sincronización (Sync):**
+3. ✅ **Schema actualizado:**
+   - Campo `rawData` (jsonb) en tabla `messages` para guardar JSON completo
+   - Campo `authorAvatar` para foto de perfil
+   - Campo `metricoolId` (unique) para evitar duplicados
+   - Campos opcionales: urgency, intent, sentiment
+
+#### Pendiente:
+4. ⏳ **Lógica de Sincronización (Sync):**
    - Crear endpoint `POST /api/sync-brand/:brandId`
    - Al llamarlo, el backend debe:
      1. Buscar el token de la marca en la DB
@@ -67,9 +79,10 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
      3. Guardarlos ("Upsert") en base de datos local asociados a ese `brandId`
 
 **Prueba de éxito Fase 2:**
-- Poner un Token real en la DB
-- Disparar el Sync
-- Ver que la tabla `messages` se llena con datos reales de Metricool
+- ✅ Token guardado en Secrets
+- ✅ Conexión con API verificada
+- ⏳ Disparar el Sync
+- ⏳ Ver que la tabla `messages` se llena con datos reales de Metricool
 
 ---
 
@@ -196,7 +209,12 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 1. ✅ Crear replit.md con toda la información
 2. ✅ Implementar Fase 1 completa
 3. ✅ Testing de seguridad multi-tenant
-4. ⏳ **SIGUIENTE: Fase 2 - Integración con Metricool API**
+4. 🔄 **EN PROGRESO: Fase 2 - Integración con Metricool API**
+   - ✅ Schema actualizado con campo `rawData` (jsonb)
+   - ✅ MetricoolService creado y probado
+   - ✅ Conexión exitosa: 15 marcas detectadas, 25 conversaciones de prueba
+   - ⏳ Crear endpoint de sincronización
+   - ⏳ Conectar frontend con API real
 5. ⏳ Fase 3: Conectar frontend con backend real
 
 ---
