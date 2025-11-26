@@ -172,12 +172,12 @@ export class MetricoolService {
         let timestamp = new Date().toISOString();
         let postUrl = null;
 
-        if (comment.provider === 'LINKEDIN') {
+        if (comment.provider === 'LINKEDIN' || comment.provider === 'TIKTOKBUSINESS') {
           const ownerId = comment.root?.owner;
           const participants = comment.participants || [];
           const ownerParticipant = participants.find((p: any) => p.id === ownerId);
           
-          author = ownerParticipant?.name || 'Unknown LinkedIn User';
+          author = ownerParticipant?.name || `Unknown ${comment.provider} User`;
           authorAvatar = ownerParticipant?.imageProfileUrl || null;
           content = comment.root?.text || '';
           timestamp = comment.root?.creationDate || comment.creationDate || timestamp;
