@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNexus } from '@/context/NexusContext';
+import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 import { 
   LayoutDashboard, 
@@ -30,32 +31,17 @@ import { useToast } from '@/hooks/use-toast';
 
 export function Sidebar() {
   const { activeClient, clients, setActiveClientId } = useNexus();
+  const { logout } = useAuth();
   const [location, setLocation] = useLocation();
   const [isClientManagerOpen, setIsClientManagerOpen] = useState(false);
   const { toast } = useToast();
 
   const handleLogout = async () => {
-    try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Sesión Cerrada",
-          description: "Has cerrado sesión exitosamente.",
-        });
-        setLocation('/login');
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo cerrar la sesión.",
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: "Sesión Cerrada",
+      description: "Has cerrado sesión exitosamente.",
+    });
+    await logout();
   };
 
   return (
