@@ -54,8 +54,8 @@ export function Sidebar() {
             >
               <div className="flex items-center gap-3 text-left min-w-0">
                 <Avatar className="h-6 w-6 rounded-md ring-1 ring-black/5">
-                  <AvatarImage src={activeClient?.avatar} />
-                  <AvatarFallback className="rounded-md bg-gray-200 text-gray-600 text-[10px]">{activeClient?.name.substring(0,2)}</AvatarFallback>
+                  <AvatarImage src={activeClient?.avatar || undefined} />
+                  <AvatarFallback className="rounded-md bg-gray-200 text-gray-600 text-[10px]">{activeClient?.name.substring(0,2) || 'C'}</AvatarFallback>
                 </Avatar>
                 <span className="text-sm font-medium truncate text-gray-700 group-hover:text-gray-900 transition-colors">
                   {activeClient?.name}
@@ -75,8 +75,8 @@ export function Sidebar() {
                 className="gap-2 cursor-pointer focus:bg-gray-50 focus:text-gray-900"
               >
                 <Avatar className="h-5 w-5 rounded-sm">
-                  <AvatarImage src={client.avatar} />
-                  <AvatarFallback className="text-[10px] bg-gray-100 text-gray-600">{client.name.substring(0,2)}</AvatarFallback>
+                  <AvatarImage src={client.avatar || undefined} />
+                  <AvatarFallback className="text-[10px] bg-gray-100 text-gray-600">{client.name.substring(0,2) || 'C'}</AvatarFallback>
                 </Avatar>
                 <span className="truncate text-sm">{client.name}</span>
                 {activeClient?.id === client.id && (

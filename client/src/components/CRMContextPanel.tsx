@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CRMContact } from '@/lib/mockData';
+import { CRMContact } from '@/lib/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   Building2, 

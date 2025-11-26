@@ -53,7 +53,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatDistanceToNow } from 'date-fns';
-import { Platform, MessageType, Urgency, Intent, Sentiment, Message, MessageStatus } from '@/lib/mockData';
+import { Platform, MessageType, Urgency, Intent, Sentiment, MessageStatus, CRMContact } from '@/lib/types';
+import type { Message } from '@shared/schema';
 import { motion, AnimatePresence } from "framer-motion";
 import { getCharacterLimit } from '@/utils/platformLimits';
 
@@ -148,7 +149,7 @@ export function Inbox() {
     .sort((a, b) => {
        // Sort by urgency first if Fire Mode is on, otherwise by date
        if (fireMode) {
-           const urgencyScore = { high: 3, medium: 2, low: 1 };
+           const urgencyScore: Record<string, number> = { high: 3, medium: 2, low: 1 };
            if (urgencyScore[a.urgency] !== urgencyScore[b.urgency]) {
                return urgencyScore[b.urgency] - urgencyScore[a.urgency];
            }

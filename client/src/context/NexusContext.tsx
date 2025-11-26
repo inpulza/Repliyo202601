@@ -1,18 +1,28 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Client, Message, ClientSettings, MOCK_CLIENTS, MOCK_MESSAGES, MessageStatus } from '@/lib/mockData';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
+import { api } from '@/lib/api';
+import type { Client, Message } from '@shared/schema';
+
+interface ClientSettings {
+  agentName: string;
+  tone: string;
+  businessContext: string;
+}
 
 interface NexusContextType {
-  activeClientId: string;
+  activeClientId: string | null;
   activeClient: Client | undefined;
   clients: Client[];
   messages: Message[];
+  isLoadingClients: boolean;
+  isLoadingMessages: boolean;
   setActiveClientId: (id: string) => void;
   updateClientSettings: (clientId: string, settings: ClientSettings) => void;
   updateMessageDraft: (messageId: string, draft: string) => void;
   approveMessage: (messageId: string) => void;
   refreshFeed: () => void;
-  addClient: (client: Client) => void;
+  addClient: (client: Omit<Client, 'id' | 'createdAt'>) => void;
   metricoolBrands: any[];
   isLoadingMetricool: boolean;
   fetchMetricoolBrands: () => Promise<void>;
@@ -22,29 +32,56 @@ interface NexusContextType {
 const NexusContext = createContext<NexusContextType | undefined>(undefined);
 
 export const NexusProvider = ({ children }: { children: ReactNode }) => {
-  const [activeClientId, setActiveClientId] = useState<string>(MOCK_CLIENTS[0].id);
-  const [clients, setClients] = useState<Client[]>(MOCK_CLIENTS);
-  const [messages, setMessages] = useState<Message[]>(MOCK_MESSAGES);
+  const queryClient = useQueryClient();
+  const [activeClientId, setActiveClientId] = useState<string | null>(null);
   const [metricoolBrands, setMetricoolBrands] = useState<any[]>([]);
   const [isLoadingMetricool, setIsLoadingMetricool] = useState(false);
 
-  // Derived state for easier access
+  const { data: clients = [], isLoading: isLoadingClients } = useQuery({
+    queryKey: ['clients'],
+    queryFn: api.clients.getAll,
+  });
+
+  const { data: messages = [], isLoading: isLoadingMessages } = useQuery({
+    queryKey: ['messages', activeClientId],
+    queryFn: () => api.messages.getAll(activeClientId || undefined),
+    enabled: !!activeClientId,
+  });
+
+  React.useEffect(() => {
+    if (!activeClientId && clients.length > 0) {
+      setActiveClientId(clients[0].id);
+    }
+  }, [clients, activeClientId]);
+
   const activeClient = clients.find(c => c.id === activeClientId);
 
-  // Mock function to add a client manually
-  const addClient = (client: Client) => {
-    setClients(prev => [...prev, client]);
-    setActiveClientId(client.id);
-    toast({
-      title: "Client Added",
-      description: `${client.name} has been added to your workspace.`,
-    });
+  const createClientMutation = useMutation({
+    mutationFn: api.clients.create,
+    onSuccess: (newClient) => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      setActiveClientId(newClient.id);
+      toast({
+        title: "Client Added",
+        description: `${newClient.name} has been added to your workspace.`,
+      });
+    },
+  });
+
+  const updateMessageMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Message> }) =>
+      api.messages.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+    },
+  });
+
+  const addClient = (client: Omit<Client, 'id' | 'createdAt'>) => {
+    createClientMutation.mutate(client);
   };
 
-  // Mock function to fetch brands from "Metricool"
   const fetchMetricoolBrands = async () => {
     setIsLoadingMetricool(true);
-    // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1500));
     
     const mockBrands = [
@@ -62,7 +99,6 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
     const brandToImport = metricoolBrands.find(b => b.id === brandId);
     if (!brandToImport) return;
 
-    // Check if already exists
     if (clients.some(c => c.name === brandToImport.name)) {
        toast({
         title: "Already Connected",
@@ -72,21 +108,15 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    const newClient: Client = {
-      id: `imported_${brandToImport.id}`,
+    addClient({
       name: brandToImport.name,
       industry: brandToImport.industry,
       avatar: brandToImport.avatar,
-      settings: {
-        agentName: `${brandToImport.name.split(' ')[0]}Bot`,
-        tone: 'casual',
-        businessContext: `Official account for ${brandToImport.name}.`,
-      }
-    };
-
-    addClient(newClient);
+      agentName: `${brandToImport.name.split(' ')[0]}Bot`,
+      tone: 'casual',
+      businessContext: `Official account for ${brandToImport.name}.`,
+    });
     
-    // Simulate fetching historical messages
     toast({
       title: "Importing Data",
       description: "Fetching recent DMs and comments from Metricool...",
@@ -100,42 +130,7 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
     }, 2000);
   };
 
-  // Simulate Agent "Drafting" Logic
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setMessages(currentMessages => {
-        // Find an unread message to start "thinking" about
-        const unreadMsg = currentMessages.find(m => m.status === 'unread');
-        
-        if (unreadMsg && Math.random() > 0.6) { // 40% chance to start drafting per tick
-          return currentMessages.map(m => 
-            m.id === unreadMsg.id ? { ...m, status: 'drafting' } : m
-          );
-        }
-
-        // Find a drafting message to finish
-        const draftingMsg = currentMessages.find(m => m.status === 'drafting');
-        if (draftingMsg && Math.random() > 0.5) {
-          // Generate a mock response based on tone (simple mock)
-          const client = clients.find(c => c.id === draftingMsg.clientId);
-          const response = `[${client?.settings.tone}] Here is a generated response for: "${draftingMsg.content}"`;
-          
-          return currentMessages.map(m => 
-            m.id === draftingMsg.id ? { ...m, status: 'ready_for_review', draftResponse: response } : m
-          );
-        }
-
-        return currentMessages;
-      });
-    }, 3000); // Check every 3 seconds
-
-    return () => clearInterval(interval);
-  }, [clients]);
-
   const updateClientSettings = (clientId: string, newSettings: ClientSettings) => {
-    setClients(prev => prev.map(c => 
-      c.id === clientId ? { ...c, settings: newSettings } : c
-    ));
     toast({
       title: "Settings Saved",
       description: `Updated agent configuration for ${clients.find(c => c.id === clientId)?.name}`,
@@ -143,21 +138,23 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateMessageDraft = (messageId: string, draft: string) => {
-    setMessages(prev => prev.map(m => 
-      m.id === messageId ? { ...m, draftResponse: draft } : m
-    ));
+    updateMessageMutation.mutate({
+      id: messageId,
+      data: { draftResponse: draft }
+    });
   };
 
   const approveMessage = (messageId: string) => {
-    setMessages(prev => prev.map(m => 
-      m.id === messageId ? { ...m, status: 'approved' } : m
-    ));
+    updateMessageMutation.mutate({
+      id: messageId,
+      data: { status: 'approved' }
+    });
     
-    // Simulate sending after a short delay
     setTimeout(() => {
-      setMessages(prev => prev.map(m => 
-        m.id === messageId ? { ...m, status: 'sent' } : m
-      ));
+      updateMessageMutation.mutate({
+        id: messageId,
+        data: { status: 'sent' }
+      });
       toast({
         title: "Message Sent",
         description: "Response has been published to the platform.",
@@ -166,7 +163,7 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refreshFeed = () => {
-    // Logic to fetch new messages would go here
+    queryClient.invalidateQueries({ queryKey: ['messages'] });
     toast({ title: "Feed Refreshed", description: "Checking for new messages..." });
   };
 
@@ -176,6 +173,8 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
       activeClient,
       clients,
       messages,
+      isLoadingClients,
+      isLoadingMessages,
       setActiveClientId,
       updateClientSettings,
       updateMessageDraft,
