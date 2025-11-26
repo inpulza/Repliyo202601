@@ -1,0 +1,51 @@
+📋 Contexto del Proyecto - Sistema de Gestión de Inbox Social Media
+Estado Actual: Fase 4 completada. Sistema funcional con autenticación, sincronización y visualización de mensajes.
+
+✅ Lo que ya funciona:
+Login/Autenticación: Completamente funcional sin bugs
+Marca conectada: "Impulsa" (blogId: 4074962) con credenciales de Metricool configuradas
+LinkedIn funcionando: 2 comentarios sincronizados y mostrándose correctamente en el UI con avatares
+Arquitectura preparada: El código YA soporta múltiples providers (Instagram, Facebook, TikTok, YouTube, Google Business, etc.)
+📁 Archivos Clave:
+server/services/metricool.ts: Servicio que se conecta a la API de Metricool
+server/routes.ts: Endpoint POST /api/sync-brand/:brandId que sincroniza mensajes
+client/src/components/Inbox.tsx: UI que muestra los mensajes con filtros por plataforma
+🎯 Objetivo Ahora:
+Cargar y mapear comentarios de TikTok Business en la interfaz.
+
+Contexto Técnico:
+El provider se llama 'TIKTOKBUSINESS' en la API de Metricool (no 'tiktok')
+Ya está en la constante SUPPORTED_PROVIDERS del código
+El método getAllInboxData() en MetricoolService ya itera sobre TikTok
+La UI ya tiene estilos y filtro para TikTok
+Lo que necesito que hagas:
+Verificar que el mapeo de datos de TikTok sea correcto en metricool.ts:
+
+Autor extraído correctamente
+Avatar (si existe)
+Contenido del comentario
+Timestamp
+Guardar rawData completo
+Probar sincronización:
+
+Login como admin@test.com
+Hacer click en "Sync Data" para la marca Impulsa
+Verificar que se carguen comentarios de TikTok (si los hay)
+Verificar en la UI:
+
+Los comentarios de TikTok deben aparecer en Smart Inbox
+Filtro de plataforma debe incluir TikTok
+Badges, avatares y contenido deben mostrarse correctamente
+Seguir el mismo patrón visual que LinkedIn
+Si no hay comentarios de TikTok en Impulsa:
+
+Revisar logs del servidor para confirmar qué providers sí tienen datos
+Informarme qué plataformas tienen mensajes disponibles
+Podemos probar con la siguiente plataforma que tenga datos
+📝 Notas Importantes:
+El archivo replit.md tiene TODO el historial documentado
+NO cambiar el diseño UI sin consultar
+Mantener mismo formato de mapeo que LinkedIn (línea 175-184 en metricool.ts)
+TikTok comments usan estructura similar a LinkedIn en la API de Metricool
+⚠️ Recordatorio:
+Algunos providers pueden devolver arrays vacíos si la marca no tiene esa red conectada - esto es normal. Solo necesitamos mapear correctamente los que SÍ tengan datos.
