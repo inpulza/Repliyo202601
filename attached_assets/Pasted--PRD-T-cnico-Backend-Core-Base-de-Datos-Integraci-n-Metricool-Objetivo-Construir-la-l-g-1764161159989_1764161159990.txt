@@ -1,0 +1,54 @@
+# PRD Técnico: Backend Core, Base de Datos & Integración Metricool
+
+**Objetivo:** Construir la lógica del servidor, la estructura de la base de datos con roles de usuario (Admin vs Cliente) y la sincronización de mensajes desde Metricool.
+
+## Fase 1: Arquitectura de Datos & Autenticación (Los Cimientos)
+**Objetivo:** Que existan usuarios y que cada uno vea solo lo suyo.
+
+1.  **Database Schema (PostgreSQL recomendado):**
+    * Crea la tabla `Brands` (almacena el Token de Metricool y nombre de la empresa).
+    * Crea la tabla `Users` con columna `role` ('admin', 'client') y `brand_id` (Foreign Key).
+    * Crea la tabla `Conversations` y `Messages` con `brand_id` obligatorio.
+2.  **Middleware de Autenticación:**
+    * Implementa Login (JWT o Session).
+    * **Middleware de Seguridad:** Crea una función que proteja las rutas.
+        * Si `User.role === 'admin'`: Acceso total.
+        * Si `User.role === 'client'`: Forzar filtro `WHERE brand_id = User.brand_id` en todas las consultas.
+
+**Prueba de éxito Fase 1:**
+* Crear 2 usuarios de marcas diferentes.
+* Loguearse con Usuario A y verificar que NO puede ver datos creados manualmente para la Marca B.
+
+---
+
+## Fase 2: El Servicio de Conexión (Metricool Connector)
+**Objetivo:** Enseñar al backend a "hablar" con Metricool.
+
+1.  **Crear `MetricoolService`:**
+    * Configura una clase o módulo que acepte un `metricool_token` y tenga métodos para llamar a los endpoints.
+2.  **Integrar Endpoints (Documentación adjunta abajo):**
+    * Implementa método `getBrands(token)` usando el endpoint `/api/admin/simpleProfiles`.
+    * Implementa método `getConversations(token, provider)` usando `/api/v2/inbox/conversations`.
+    * Implementa método `getComments(token, provider)` usando `/api/v2/inbox/post-comments`.
+3.  **Lógica de Sincronización (Sync):**
+    * Crea un endpoint `POST /api/sync-brand/:brandId`.
+    * Al llamarlo, el backend debe:
+        1.  Buscar el token de la marca en la DB.
+        2.  Llamar a Metricool y bajar los últimos mensajes.
+        3.  Guardarlos ("Upsert") en tu base de datos local asociados a ese `brand_id`.
+
+**Prueba de éxito Fase 2:**
+* Poner un Token real en la DB.
+* Disparar el Sync.
+* Ver que la tabla `Messages` de tu base de datos se llena mágicamente con los datos reales de Metricool.
+
+---
+
+## Fase 3: Exponer Datos al Frontend
+**Objetivo:** Que el diseño UI que hicimos muestre datos reales.
+
+1.  **API Endpoints para el Cliente:**
+    * `GET /api/inbox`: Devuelve mensajes de la DB (filtrados por la marca del usuario logueado).
+    * `POST /api/inbox/reply`: (Futuro) Para responder.
+
+---
