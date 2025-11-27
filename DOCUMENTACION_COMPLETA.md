@@ -4,12 +4,12 @@
 Sistema de gestión de mensajes de redes sociales que se integra con Metricool para centralizar y gestionar DMs y comentarios de múltiples marcas/empresas. El sistema permite a usuarios admin y clientes gestionar sus interacciones sociales de forma organizada.
 
 ## Estado Actual
-- **Fase Actual**: ✅ FASE 4 COMPLETADA - Refinamiento de Sincronización y UI
-- **Última Actualización**: 26 de Noviembre 2025
+- **Fase Actual**: ✅ FASE 4.5 COMPLETADA - Mapeo Completo de Redes Sociales
+- **Última Actualización**: 27 de Noviembre 2025
 - **Login/Logout**: ✅ Completamente funcional (página de login creada, logout en sidebar)
 - **Sistema de Roles**: ✅ Admin vs Client funcionando correctamente
 - **Marca de Prueba**: ✅ Impulsa conectada (blogId: 4074962)
-- **Sincronización**: ✅ Funcionando correctamente - 2 mensajes de LinkedIn con datos completos
+- **Sincronización**: ✅ Funcionando correctamente - 145 mensajes (Instagram, LinkedIn, TikTok)
 - **UI**: ✅ Inbox muestra mensajes con avatares, nombres, contenido y filtros funcionando
 - **Próximo Paso**: Implementar sincronización automática cada 130 segundos
 
@@ -358,3 +358,117 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 ### Próximos Pasos:
 - Fase 5: Sincronización automática cada 130 segundos
 - Cargar TikTok Business y otras plataformas
+
+---
+
+## FASE 4.5: Mapeo Completo de Redes Sociales ✅ COMPLETADA - 27 Noviembre 2025
+
+### Objetivo:
+Mapear correctamente TODOS los datos de cada red social (Instagram, LinkedIn, TikTok, Facebook, YouTube, GMB) para que los filtros funcionen y los datos se muestren correctamente en la UI.
+
+### Problemas Detectados y Solucionados:
+
+#### 1. Mapeo de Instagram (141 mensajes)
+**Problema:** Todos los mensajes mostraban author="Unknown" y sin avatar.
+
+**Solución Implementada:**
+- **Comentarios**: Agregado Instagram al mapeo específico de `participants[]` en `server/services/metricool.ts` (línea 178)
+- **Conversaciones (DMs)**: Implementado mapeo específico en `server/routes.ts` (líneas 450-462) que busca el autor en `participants[]` usando el ID del campo `from`
+
+**Resultado:**
+- ✅ 26 comentarios con 17 autores únicos correctamente identificados
+- ✅ 115 DMs con 11 autores únicos correctamente identificados
+
+#### 2. Avatares de Instagram
+**Hallazgo:** La API de Metricool NO provee URLs de avatares para Instagram.
+
+**Evidencia (llamada real a la API):**
+```json
+// Instagram Comments
+"participants": [{ "id": "albertgarcia34", "name": "albertgarcia34" }]
+// ❌ No hay campo imageProfileUrl
+
+// Instagram DMs  
+"participants": [
+  { "id": "17841459810424420", "name": "inpulza", "imageProfileUrl": "" },
+  { "id": "1290065599109801", "name": "bo_trust_service" }
+]
+// ❌ Campo vacío o inexistente
+```
+
+**Comparación con otras plataformas:**
+- ✅ LinkedIn: `imageProfileUrl: "https://media.licdn.com/..."` - Funciona
+- ✅ TikTok: `imageProfileUrl: "https://p19-common-sign-useastred.tiktokcdn-eu.com/..."` - Funciona
+- ❌ Instagram: Sin avatares disponibles (limitación de Metricool/Instagram API)
+
+#### 3. Normalización de Platform
+**Problema:** Los nombres de plataformas en la DB no coincidían con los tipos del frontend.
+
+**Solución:** Función `normalizePlatform()` en `server/routes.ts`:
+```typescript
+function normalizePlatform(provider: string): string {
+  const platformMap: Record<string, string> = {
+    'tiktokbusiness': 'tiktok',
+    'gmb': 'google-business',
+    'google_business': 'google-business',
+  };
+  return platformMap[normalized] || normalized;
+}
+```
+
+**Resultado:**
+- `TIKTOKBUSINESS` → `tiktok` ✅
+- `GMB` → `google-business` ✅
+
+#### 4. Normalización de MessageType
+**Problema:** El backend guardaba `type: 'conversation'` pero el frontend esperaba `type: 'dm'`.
+
+**Solución (sin romper el schema):**
+- Backend mantiene valores del schema: `'conversation'` y `'comment'`
+- Frontend convierte en el adaptador `adaptMessage()` en `client/src/lib/api.ts`:
+```typescript
+const messageType: MessageType = dbMsg.type === 'conversation' ? 'dm' : (dbMsg.type as MessageType);
+```
+
+**Resultado:**
+- DB almacena: `'conversation'`, `'comment'` ✅ (respeta schema)
+- UI muestra: `'dm'`, `'comment'` ✅ (filtros funcionan)
+
+#### 5. Filtros de UI
+**Problema:** Los filtros de plataforma (bolitas) y tipo (All Types) no filtraban.
+
+**Causa:** Valores de DB no coincidían con valores esperados en frontend.
+
+**Solución:** Con las normalizaciones anteriores, los filtros ahora funcionan correctamente:
+- Filtro de plataformas: Instagram, TikTok, LinkedIn, Facebook, YouTube, Google Business ✅
+- Filtro de tipo: DM, Comment, Review ✅
+
+#### 6. Z-Index de Columnas del Inbox
+**Problema:** Las tarjetas de mensajes se metían detrás de la sección del chat.
+
+**Solución:** Agregado `z-0` a la columna del chat en `client/src/components/Inbox.tsx`:
+```typescript
+// Columna 2 (Lista de mensajes): z-10
+// Columna 3 (Chat Detail): z-0 (agregado)
+```
+
+### Datos Finales Sincronizados (Marca Impulsa):
+
+| Plataforma | Tipo | Total | Autores Únicos | Avatares |
+|------------|------|-------|----------------|----------|
+| Instagram | Comment | 26 | 17 | ❌ (API no provee) |
+| Instagram | DM | 115 | 11 | ❌ (API no provee) |
+| LinkedIn | Comment | 2 | 2 | ✅ |
+| TikTok | Comment | 2 | 2 | ✅ |
+| **TOTAL** | | **145** | | |
+
+### Archivos Modificados:
+- `server/routes.ts` - Funciones de normalización + mapeo de conversaciones
+- `server/services/metricool.ts` - Mapeo de comentarios para Instagram
+- `client/src/lib/api.ts` - Adaptador con conversión conversation→dm
+- `client/src/components/Inbox.tsx` - Z-index de columnas
+
+### Próximos Pasos:
+- Fase 5: Sincronización automática cada 130 segundos
+- Monitorear cuando haya datos de Facebook, YouTube o GMB para ajustar mapeos si es necesario
+- Considerar fallback visual para avatares faltantes de Instagram
