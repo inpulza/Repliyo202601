@@ -166,6 +166,23 @@ export function Inbox() {
   const opportunityCount = clientMessages.filter(m => m.intent === 'sales').length;
   const pendingCount = clientMessages.filter(m => m.status === 'unread').length;
 
+  // Calculate thread messages for the selected message
+  const threadMessages = React.useMemo(() => {
+    if (!selectedMessageId) return [];
+    
+    const selectedMsg = messages.find(m => m.id === selectedMessageId);
+    if (!selectedMsg || !selectedMsg.threadId) {
+      return selectedMsg ? [selectedMsg] : [];
+    }
+    
+    // Get all messages in the same thread
+    const thread = messages
+      .filter(m => m.threadId === selectedMsg.threadId)
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    
+    return thread;
+  }, [selectedMessageId, messages]);
+
   // Auto-select first message (Desktop Only)
   useEffect(() => {
     if (isMobile) return; // Don't auto-select on mobile
@@ -576,6 +593,18 @@ export function Inbox() {
             <div className={cn("flex-1 relative flex flex-col overflow-hidden", selectedMessage ? getPlatformStyles((selectedMessage.platform || 'instagram') as Platform).container : "bg-indigo-50/30")}>
                 <ScrollArea className="flex-1 p-4 md:p-8">
                    <div className="max-w-3xl mx-auto space-y-8 pb-32">
+                  {/* Thread Header - Show if multiple messages in thread */}
+                  {threadMessages.length > 1 && (
+                    <div className="flex items-center justify-center gap-2 mb-4">
+                      <div className="h-px flex-1 bg-gray-200" />
+                      <span className="text-[10px] font-medium text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200 flex items-center gap-1.5">
+                        <MessageCircle className="h-3 w-3" />
+                        Thread · {threadMessages.length} messages
+                      </span>
+                      <div className="h-px flex-1 bg-gray-200" />
+                    </div>
+                  )}
+
                   {/* Date Separator */}
                   <div className="flex justify-center">
                       <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
@@ -583,33 +612,56 @@ export function Inbox() {
                       </span>
                   </div>
 
-                  {/* The Message Bubble */}
-                  <div className="flex gap-4 group">
-                     <Avatar className="h-8 w-8 mt-1 opacity-80 group-hover:opacity-100 transition-opacity">
-                        <AvatarImage src={selectedMessage.authorAvatar || undefined} alt={selectedMessage.author} />
-                        <AvatarFallback className="bg-gray-200 text-gray-500"><User className="h-4 w-4" /></AvatarFallback>
-                     </Avatar>
-                     <div className="flex flex-col gap-1 max-w-[85%]">
-                        <div className="flex items-baseline gap-2 mb-1">
-                            <span className="text-sm font-medium text-gray-900">{selectedMessage.author}</span>
-                            <span className="text-[10px] text-muted-foreground">{new Date(selectedMessage.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                           <span className={cn(
-                               "text-[9px] font-bold uppercase tracking-wide ml-1",
-                               getPlatformStyles((selectedMessage.platform || 'instagram') as Platform).commentBadge
-                           )}>
-                               {selectedMessage.type === 'comment' && 'Public Comment'}
-                               {selectedMessage.type === 'review' && 'Public Review'}
-                               {selectedMessage.type === 'dm' && 'Direct Message'}
-                           </span>
-                        </div>
-                        <div className={cn(
-                            "p-4 rounded-2xl text-sm leading-relaxed shadow-sm relative rounded-tl-none",
-                            getPlatformStyles((selectedMessage.platform || 'instagram') as Platform).bubble
-                        )}>
-                           {selectedMessage.content}
-                        </div>
-                     </div>
-                  </div>
+                  {/* Render all messages in the thread */}
+                  {threadMessages.map((msg, index) => {
+                    const isReply = !!msg.parentMessageId;
+                    const isSelected = msg.id === selectedMessageId;
+                    
+                    return (
+                      <div 
+                        key={msg.id} 
+                        className={cn(
+                          "flex gap-4 group transition-all",
+                          isReply && "ml-12 border-l-2 border-indigo-200 pl-4",
+                          isSelected && "ring-2 ring-indigo-100 ring-offset-2 rounded-xl"
+                        )}
+                      >
+                         <Avatar className={cn(
+                           "mt-1 opacity-80 group-hover:opacity-100 transition-opacity",
+                           isReply ? "h-6 w-6" : "h-8 w-8"
+                         )}>
+                            <AvatarImage src={msg.authorAvatar || undefined} alt={msg.author} />
+                            <AvatarFallback className="bg-gray-200 text-gray-500"><User className={isReply ? "h-3 w-3" : "h-4 w-4"} /></AvatarFallback>
+                         </Avatar>
+                         <div className="flex flex-col gap-1 max-w-[85%]">
+                            <div className="flex items-baseline gap-2 mb-1 flex-wrap">
+                                <span className={cn("font-medium text-gray-900", isReply ? "text-xs" : "text-sm")}>{msg.author}</span>
+                                <span className="text-[10px] text-muted-foreground">{new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                               {isReply && (
+                                 <span className="text-[9px] font-medium text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded">
+                                   Reply
+                                 </span>
+                               )}
+                               <span className={cn(
+                                   "text-[9px] font-bold uppercase tracking-wide ml-1",
+                                   getPlatformStyles((msg.platform || 'instagram') as Platform).commentBadge
+                               )}>
+                                   {msg.type === 'comment' && 'Public Comment'}
+                                   {msg.type === 'review' && 'Public Review'}
+                                   {msg.type === 'dm' && 'Direct Message'}
+                               </span>
+                            </div>
+                            <div className={cn(
+                                "p-4 rounded-2xl text-sm leading-relaxed shadow-sm relative rounded-tl-none",
+                                getPlatformStyles((msg.platform || 'instagram') as Platform).bubble,
+                                isReply && "bg-indigo-50/50 border-indigo-100"
+                            )}>
+                               {msg.content}
+                            </div>
+                         </div>
+                      </div>
+                    );
+                  })}
 
                   {/* AI Suggestion / Response Area (Modernized) */}
                   <AnimatePresence mode="wait">

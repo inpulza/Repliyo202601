@@ -27,6 +27,8 @@ function adaptMessage(dbMsg: Message): Message & {
   status: MessageStatus;
   timestamp: Date;
   crmData?: CRMContact;
+  threadId?: string | null;
+  parentMessageId?: string | null;
 } {
   // Convert 'conversation' to 'dm' for frontend display
   const messageType: MessageType = dbMsg.type === 'conversation' ? 'dm' : (dbMsg.type as MessageType);
@@ -41,6 +43,8 @@ function adaptMessage(dbMsg: Message): Message & {
     status: dbMsg.status as MessageStatus,
     timestamp: new Date(dbMsg.timestamp),
     crmData: dbMsg.crmData as CRMContact | undefined,
+    threadId: dbMsg.threadId || null,
+    parentMessageId: dbMsg.parentMessageId || null,
   };
 }
 
