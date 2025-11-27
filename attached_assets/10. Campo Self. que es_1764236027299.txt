@@ -1,0 +1,16 @@
+El campo "self" en la respuesta de la API de Metricool representa el ID único del propietario de la cuenta en esa plataforma específica (en este caso, TikTok).
+
+Para aclarar:
+
+Fortress Wellness Center SÍ tiene su propio ID "self" en TikTok, que es: _000FTj0xpRZRVxvhK9a2h_Id2qWe7dejKdQ
+BO Trust Service también tiene su propio ID "self", que es: _000K1GyozZ-5j8nLRwX71pLEz07AkMwiQRV
+Ambas marcas tienen su propio identificador único. Estos IDs son diferentes porque representan cuentas distintas de TikTok:
+
+El "self" de Fortress corresponde a la cuenta @dr.joelhm en TikTok
+El "self" de BO Trust corresponde a la cuenta @botrust.service en TikTok
+Cuando la API de Metricool devuelve datos, incluye este campo "self" para que sepas a qué cuenta pertenece el comentario que estás viendo. Esto es fundamental para identificar correctamente si un comentario fue dirigido a Fortress o a BO Trust.
+
+Estos IDs son generados por TikTok y Metricool simplemente los transmite en su respuesta. Son importantes porque permiten distinguir:
+
+Qué cuenta está recibiendo el comentario
+Qué comentarios son de los visitantes vs. respuestas de la propia marca

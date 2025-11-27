@@ -1,0 +1,79 @@
+RESUMEN PARA NUEVO AGENTE - Sistema Inbox Social Media
+Proyecto
+Sistema de gestión de inbox para redes sociales que se integra con Metricool API para centralizar DMs y comentarios de múltiples plataformas (Instagram, Facebook, TikTok, LinkedIn, YouTube, Google Business).
+
+Estado Actual
+✅ Completado: Instagram (141 msgs), LinkedIn (2 msgs), TikTok (2 msgs) = 145 mensajes totales
+🎯 Pendiente: Mapear datos de Facebook
+Arquitectura de Sincronización
+1. Backend - Conexión con Metricool:
+
+Archivo: server/services/metricool.ts
+
+Autenticación: Header X-Mc-Auth: {METRICOOL_USER_TOKEN}
+Parámetros: userId (env var), blogId (de la marca)
+Endpoints:
+/api/v2/inbox/conversations → DMs (Facebook, Instagram)
+/api/v2/inbox/post-comments → Comentarios públicos
+2. Backend - Mapeo de datos:
+
+Archivo: server/routes.ts (líneas ~420-520)
+
+Función normalizePlatform(): Convierte nombres de providers (ej: TIKTOKBUSINESS→tiktok)
+Para cada plataforma, extrae datos del JSON de Metricool y los mapea a nuestra estructura:
+author → Nombre del usuario
+authorAvatar → URL de foto de perfil
+content → Texto del mensaje/comentario
+timestamp → Fecha/hora
+sourceUrl → Link al post original
+rawData → JSON completo guardado para debugging
+3. Frontend - Adaptador:
+
+Archivo: client/src/lib/api.ts
+
+Función adaptMessage(): Convierte type: 'conversation' → 'dm' para el UI
+Mantiene compatibilidad entre schema de DB y tipos del frontend
+Estructura de Datos en DB (shared/schema.ts)
+messages: {
+  id, brandId, platform, type ('conversation'|'comment'),
+  author, authorAvatar, content, timestamp, status,
+  metricoolId (único), sourceUrl, rawData (jsonb)
+}
+
+Patrón de Mapeo (ya implementado para Instagram/LinkedIn/TikTok)
+El JSON de Metricool viene con estructuras diferentes por plataforma. Ejemplo de cómo se mapea:
+
+// Para comentarios con participants[]
+if (['linkedin', 'tiktok', 'instagram'].includes(provider)) {
+  const participant = item.participants?.[0];
+  author = participant?.name || 'Unknown';
+  authorAvatar = participant?.imageProfileUrl || '';
+}
+// Para DMs de Instagram (participants[] + from field)
+const fromId = conv.from;
+const sender = conv.participants?.find(p => p.id === fromId);
+author = sender?.name || 'Unknown';
+
+TAREA PENDIENTE: Mapear Facebook
+El usuario te pasará un documento JSON con ejemplos de cómo vienen los datos de Facebook desde Metricool. Necesitas:
+
+Analizar la estructura JSON de Facebook (conversations y comments)
+Identificar los campos equivalentes:
+¿Dónde está el nombre del autor?
+¿Dónde está el avatar URL?
+¿Dónde está el contenido del mensaje?
+¿Dónde está el timestamp?
+¿Dónde está la URL del post/video original?
+Implementar el mapeo en server/routes.ts y/o server/services/metricool.ts
+Probar la sincronización con una marca que tenga Facebook conectado
+Archivos Clave
+server/services/metricool.ts - Servicio de conexión con API Metricool
+server/routes.ts - Endpoint de sincronización y mapeo de datos
+client/src/lib/api.ts - Adaptador frontend
+client/src/components/Inbox.tsx - UI del inbox (NO MODIFICAR DISEÑO)
+DOCUMENTACION_COMPLETA.md - Historial completo del proyecto
+Notas Importantes
+NO cambiar el diseño UI - está finalizado
+Los avatares de Instagram NO están disponibles (limitación de API)
+Comunicación en español
+Schema de DB usa 'conversation' y 'comment' (no 'dm')
