@@ -656,3 +656,162 @@ messages: {
 - ⏳ Respuestas anidadas (`root.comments[]`) pendiente de implementar
 - ⏳ Identificación de hilos pendiente
 - ⏳ Campo `self` disponible en rawData para uso futuro
+
+---
+
+## FASE 5: Sincronización Automática - 27 Noviembre 2025
+
+### Objetivo
+Implementar un sistema de polling bidireccional que sincronice automáticamente los mensajes de Metricool y los muestre en tiempo real en el frontend.
+
+### Arquitectura Acordada
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ BACKEND - SyncService (server/services/syncService.ts)          │
+│                                                                 │
+│ • Intervalo base: 2 minutos (120,000 ms)                       │
+│ • Procesa marcas EN SECUENCIA (no Promise.all)                  │
+│ • Delay de 1-2 seg entre cada marca (Jitter)                   │
+│ • Si error 429 → marca en "cooldown" 5 min (Backoff)           │
+│ • Singleton pattern (una sola instancia)                        │
+│ • Errores no detienen el servicio                              │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ FRONTEND - React Query                                          │
+│                                                                 │
+│ • refetchInterval: 30 seg (mensajes del inbox)                 │
+│ • refetchOnWindowFocus: true                                    │
+│ • Indicador visual de última sincronización                    │
+│ • Botón de sincronización manual (icono de flechas circulares) │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Decisiones Técnicas
+
+#### 1. Por qué Polling y no WebSockets
+- **Simplicidad**: No requiere infraestructura adicional
+- **APIs externas**: Metricool no ofrece webhooks/push notifications
+- **Suficiente para el caso de uso**: 2 minutos es aceptable para comentarios de redes sociales
+- **Menos puntos de fallo**: Sin conexiones persistentes que mantener
+
+#### 2. Intervalo de 2 Minutos (no 30 segundos)
+**Cálculo de cuotas:**
+- 30 seg = 2,880 llamadas/día/marca → Con 15 marcas = 43,200 llamadas/día ❌
+- 2 min = 720 llamadas/día/marca → Con 15 marcas = 10,800 llamadas/día ✅
+
+El intervalo de 2 minutos protege la cuota de API de Metricool.
+
+#### 3. Jitter (Desfase entre marcas)
+**Problema:** Si hay 15 marcas, no queremos 15 peticiones simultáneas.
+**Solución:** Procesar marcas secuencialmente con 1-2 segundos de delay entre cada una.
+
+#### 4. Exponential Backoff para Error 429
+**Problema:** Si Metricool devuelve 429 (rate limit), el sistema seguiría reintentando.
+**Solución:** Si una marca recibe 429, entra en "cooldown" de 5 minutos antes de reintentar.
+
+#### 5. Frontend con refetchOnWindowFocus
+**Beneficio:** Cuando el usuario vuelve a la pestaña, los datos se refrescan inmediatamente sin esperar el intervalo.
+
+### Componentes a Implementar
+
+#### Backend
+1. **`server/services/syncService.ts`** - Servicio singleton de sincronización
+   - `start()` - Inicia el intervalo
+   - `stop()` - Detiene el intervalo
+   - `syncAllBrands()` - Sincroniza todas las marcas secuencialmente
+   - `syncBrand(brandId)` - Sincroniza una marca específica
+   - Manejo de cooldown por marca
+
+2. **Inicialización en `server/index.ts`** - Arrancar SyncService al iniciar el servidor
+
+3. **Endpoint manual** - `POST /api/sync/trigger` para forzar sincronización
+
+#### Frontend
+1. **Actualizar React Query** (`client/src/lib/queryClient.ts`)
+   - `refetchOnWindowFocus: true`
+
+2. **Indicador de sincronización** en el Inbox
+   - Mostrar "Última actualización: hace X segundos"
+   - Botón circular con flechas para sincronización manual
+   - Animación mientras sincroniza
+
+3. **Hook `useSyncStatus`** para estado de sincronización
+
+### Elementos de UI
+
+**Indicador de sincronización (en header del Inbox):**
+- Icono: `RefreshCw` de Lucide (flechas circulares)
+- Estados:
+  - Idle: Icono estático + "Actualizado hace X seg"
+  - Syncing: Icono girando + "Sincronizando..."
+- Click: Dispara sincronización manual
+
+### Archivos a Modificar/Crear
+
+| Archivo | Acción | Descripción |
+|---------|--------|-------------|
+| `server/services/syncService.ts` | Crear | Servicio de sincronización automática |
+| `server/index.ts` | Modificar | Iniciar SyncService |
+| `server/routes.ts` | Modificar | Añadir endpoint de sync manual |
+| `client/src/lib/queryClient.ts` | Modificar | Activar refetchOnWindowFocus |
+| `client/src/components/Inbox.tsx` | Modificar | Añadir indicador y botón de sync |
+| `client/src/hooks/useSyncStatus.ts` | Crear | Hook para estado de sincronización |
+
+### Flujo de Datos
+
+```
+1. SyncService (cada 2 min)
+   ↓
+2. Para cada marca (secuencial, con delay):
+   ↓
+3. metricoolService.getAllInboxData(blogId)
+   ↓
+4. Upsert en DB (evita duplicados por metricoolId)
+   ↓
+5. Frontend (React Query refetch cada 30 seg)
+   ↓
+6. Usuario ve mensajes nuevos en el Inbox
+```
+
+### Futuro: Agente de OpenAI
+Esta arquitectura está preparada para integrar un agente de IA que:
+1. Detecte mensajes nuevos después de cada sync
+2. Genere respuestas automáticas
+3. Las marque como "listas para enviar"
+
+El agente se integrará en el paso 4 del flujo, después del upsert.
+
+### Estado de Implementación
+- ✅ SyncService backend (`server/services/syncService.ts`)
+- ✅ Endpoint de sync manual (`GET /api/sync/status`, `POST /api/sync/trigger`)
+- ✅ React Query configuración (`refetchOnWindowFocus: true`, `staleTime: 30000`)
+- ✅ UI de sincronización en Inbox (indicador de tiempo + botón RefreshCw)
+
+### Verificación de Funcionamiento (27 Nov 2025)
+
+**Logs del SyncService:**
+```
+[SyncService] Starting automatic sync service (interval: 2 minutes)
+[SyncService] Starting sync cycle...
+[SyncService] Found 1 brands to sync
+[SyncService] Syncing brand: Inpulza
+[SyncService] Brand Inpulza: saved 55 messages
+[SyncService] Sync cycle complete. Synced 1/1 brands
+```
+
+**Componentes creados:**
+1. `server/services/syncService.ts` - Servicio singleton con:
+   - Intervalo de 2 minutos
+   - Procesamiento secuencial con jitter de 2 segundos
+   - Backoff de 5 minutos para errores 429
+   
+2. Endpoints en `server/routes.ts`:
+   - `GET /api/sync/status` - Estado de sincronización
+   - `POST /api/sync/trigger` - Sincronización manual (solo admin)
+
+3. Frontend actualizado:
+   - `refetchOnWindowFocus: true` en queryClient
+   - Indicador de "hace Xs/Xm" junto al botón de sync
+   - Botón deshabilitado durante sincronización

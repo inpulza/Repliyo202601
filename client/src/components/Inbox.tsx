@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNexus } from '@/context/NexusContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -121,12 +122,36 @@ const getPlatformStyles = (platform: Platform) => {
     }
 };
 
+interface SyncStatus {
+  isRunning: boolean;
+  isSyncing: boolean;
+  lastSyncTime: string | null;
+  cooldownBrands: { brandId: string; cooldownUntil: string }[];
+}
+
 export function Inbox() {
   const { messages, activeClientId, activeClient, approveMessage, updateMessageDraft, refreshFeed } = useNexus();
   const isMobile = useIsMobile();
+  const queryClient = useQueryClient();
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  const { data: syncStatus } = useQuery<SyncStatus>({
+    queryKey: ['/api/sync/status'],
+    refetchInterval: 30000,
+  });
+
+  const getTimeSinceSync = () => {
+    if (!syncStatus?.lastSyncTime) return null;
+    const lastSync = new Date(syncStatus.lastSyncTime);
+    const now = new Date();
+    const diffSeconds = Math.floor((now.getTime() - lastSync.getTime()) / 1000);
+    
+    if (diffSeconds < 60) return `${diffSeconds}s`;
+    if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}m`;
+    return `${Math.floor(diffSeconds / 3600)}h`;
+  };
   
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -208,6 +233,7 @@ export function Inbox() {
       const { api } = await import('@/lib/api');
       await api.metricool.syncBrand(activeClientId);
       await refreshFeed();
+      queryClient.invalidateQueries({ queryKey: ['/api/sync/status'] });
     } catch (error: any) {
       console.error('Sync error:', error);
     } finally {
@@ -228,16 +254,24 @@ export function Inbox() {
         <div className="h-16 border-b px-4 flex items-center justify-between shrink-0 bg-white">
           <div className="flex items-center gap-3">
             <h1 className="font-bold text-xl tracking-tight text-gray-900">Inbox</h1>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={handleSyncData} 
-              disabled={isSyncing}
-              className="h-8 w-8 text-muted-foreground"
-              data-testid="button-sync"
-            >
-               <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handleSyncData} 
+                disabled={isSyncing || syncStatus?.isSyncing}
+                className="h-8 w-8 text-muted-foreground"
+                data-testid="button-sync"
+                title={syncStatus?.lastSyncTime ? `Última sync: ${new Date(syncStatus.lastSyncTime).toLocaleTimeString()}` : 'Sincronizar'}
+              >
+                <RefreshCw className={cn("h-4 w-4", (isSyncing || syncStatus?.isSyncing) && "animate-spin")} />
+              </Button>
+              {getTimeSinceSync() && (
+                <span className="text-xs text-muted-foreground" data-testid="text-sync-time">
+                  {getTimeSinceSync()}
+                </span>
+              )}
+            </div>
             <Badge variant="outline" className="font-normal text-gray-500">
               {filteredMessages.length}
             </Badge>

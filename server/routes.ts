@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { insertBrandSchema, insertUserSchema, insertMessageSchema, updateMessageSchema } from "@shared/schema";
 import { hashPassword, verifyPassword, sanitizeUser, sanitizeBrand, type AuthenticatedUser } from "./auth";
 import { MetricoolService } from "./services/metricool";
+import { syncService } from "./services/syncService";
 import { z } from "zod";
 
 declare global {
@@ -570,6 +571,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error syncing brand:', error);
       res.status(500).json({ error: `Sync failed: ${error.message}` });
+    }
+  });
+
+  app.get("/api/sync/status", requireAuth, async (req, res) => {
+    try {
+      const status = syncService.getStatus();
+      res.json({
+        isRunning: status.isRunning,
+        isSyncing: status.isSyncing,
+        lastSyncTime: status.lastSyncTime?.toISOString() || null,
+        cooldownBrands: status.cooldownBrands.map(cb => ({
+          brandId: cb.brandId,
+          cooldownUntil: cb.cooldownUntil.toISOString()
+        }))
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/sync/trigger", requireAuth, async (req, res) => {
+    try {
+      if (req.user!.role !== 'admin') {
+        return res.status(403).json({ error: "Only admins can trigger manual sync" });
+      }
+
+      const result = await syncService.triggerManualSync();
+      res.json({
+        success: result.success,
+        brandsSynced: result.brandsSynced,
+        errors: result.errors,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
   });
 

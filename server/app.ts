@@ -3,6 +3,7 @@ import { type Server } from "node:http";
 import express, { type Express, type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { registerRoutes } from "./routes";
+import { syncService } from "./services/syncService";
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -101,5 +102,9 @@ export default async function runApp(
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    syncService.start().catch(err => {
+      log(`[SyncService] Failed to start: ${err.message}`, "sync");
+    });
   });
 }
