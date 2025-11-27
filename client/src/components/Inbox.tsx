@@ -122,7 +122,7 @@ const getPlatformStyles = (platform: Platform) => {
 };
 
 export function Inbox() {
-  const { messages, activeClientId, approveMessage, updateMessageDraft, refreshFeed } = useNexus();
+  const { messages, activeClientId, activeClient, approveMessage, updateMessageDraft, refreshFeed } = useNexus();
   const isMobile = useIsMobile();
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -139,6 +139,7 @@ export function Inbox() {
   // Filter Logic
   const filteredMessages = messages
     .filter(m => m.brandId === activeClientId)
+    .filter(m => !m.parentMessageId) // Exclude nested replies from the list - they only show in threads
     .filter(m => {
       if (fireMode && (m.urgency !== 'high' && m.urgency !== 'medium')) return false;
       if (intentFilter !== 'all' && m.intent !== intentFilter) return false;
@@ -616,28 +617,45 @@ export function Inbox() {
                   {threadMessages.map((msg, index) => {
                     const isReply = !!msg.parentMessageId;
                     const isSelected = msg.id === selectedMessageId;
+                    const isOwner = activeClient && msg.author.toLowerCase() === activeClient.name.toLowerCase();
                     
                     return (
                       <div 
                         key={msg.id} 
                         className={cn(
                           "flex gap-4 group transition-all",
-                          isReply && "ml-12 border-l-2 border-indigo-200 pl-4",
+                          isReply && "ml-12 border-l-2 border-blue-200 pl-4",
+                          isOwner && "flex-row-reverse",
                           isSelected && "ring-2 ring-indigo-100 ring-offset-2 rounded-xl"
                         )}
                       >
                          <Avatar className={cn(
                            "mt-1 opacity-80 group-hover:opacity-100 transition-opacity",
-                           isReply ? "h-6 w-6" : "h-8 w-8"
+                           isReply ? "h-6 w-6" : "h-8 w-8",
+                           isOwner && "bg-blue-600"
                          )}>
                             <AvatarImage src={msg.authorAvatar || undefined} alt={msg.author} />
-                            <AvatarFallback className="bg-gray-200 text-gray-500"><User className={isReply ? "h-3 w-3" : "h-4 w-4"} /></AvatarFallback>
+                            <AvatarFallback className={cn(
+                              "text-gray-500",
+                              isOwner ? "bg-blue-600 text-white" : "bg-gray-200"
+                            )}>
+                              <User className={isReply ? "h-3 w-3" : "h-4 w-4"} />
+                            </AvatarFallback>
                          </Avatar>
-                         <div className="flex flex-col gap-1 max-w-[85%]">
-                            <div className="flex items-baseline gap-2 mb-1 flex-wrap">
-                                <span className={cn("font-medium text-gray-900", isReply ? "text-xs" : "text-sm")}>{msg.author}</span>
-                                <span className="text-[10px] text-muted-foreground">{new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                               {isReply && (
+                         <div className={cn("flex flex-col gap-1 max-w-[85%]", isOwner && "items-end")}>
+                            <div className={cn("flex items-baseline gap-2 mb-1 flex-wrap", isOwner && "flex-row-reverse")}>
+                                <span className={cn("font-medium", isReply ? "text-xs" : "text-sm", isOwner ? "text-blue-600" : "text-gray-900")}>
+                                  {msg.author}
+                                </span>
+                                <span className="text-[10px] text-muted-foreground">
+                                  {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                </span>
+                               {isOwner && (
+                                 <span className="text-[9px] font-medium text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                                   You
+                                 </span>
+                               )}
+                               {!isOwner && isReply && (
                                  <span className="text-[9px] font-medium text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded">
                                    Reply
                                  </span>
@@ -652,9 +670,13 @@ export function Inbox() {
                                </span>
                             </div>
                             <div className={cn(
-                                "p-4 rounded-2xl text-sm leading-relaxed shadow-sm relative rounded-tl-none",
-                                getPlatformStyles((msg.platform || 'instagram') as Platform).bubble,
-                                isReply && "bg-indigo-50/50 border-indigo-100"
+                                "p-4 rounded-2xl text-sm leading-relaxed shadow-sm relative",
+                                isOwner 
+                                  ? "bg-blue-600 text-white rounded-tr-none" 
+                                  : cn(
+                                      "rounded-tl-none",
+                                      getPlatformStyles((msg.platform || 'instagram') as Platform).bubble
+                                    )
                             )}>
                                {msg.content}
                             </div>
