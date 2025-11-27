@@ -183,6 +183,8 @@ export class DatabaseStorage implements IStorage {
     threadExternalId?: string | null
   ): Promise<Conversation | undefined> {
     if (socialPostId) {
+      // For comments: Group by POST only (all comments on a post = one conversation)
+      // This matches how social media works: one post = one discussion thread
       const [conversation] = await db
         .select()
         .from(conversations)
@@ -190,7 +192,6 @@ export class DatabaseStorage implements IStorage {
           and(
             eq(conversations.brandId, brandId),
             eq(conversations.platform, platform),
-            eq(conversations.customerId, customerId),
             eq(conversations.socialPostId, socialPostId)
           )
         );

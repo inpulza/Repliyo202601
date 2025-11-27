@@ -1103,11 +1103,74 @@ Ejemplo: "facebook_abc123_post789_user456"
 
 ### Estado de Implementación
 
-- ⏳ Fase 1: Crear nuevas tablas - PENDIENTE
-- ⏳ Fase 2: Modificar tabla messages - PENDIENTE
-- ⏳ Fase 3: Migración de datos - PENDIENTE
-- ⏳ Fase 4: Actualizar SyncService - PENDIENTE
-- ⏳ Fase 5: Actualizar Frontend - PENDIENTE
+- ✅ Fase 1: Crear nuevas tablas - COMPLETADA
+- ✅ Fase 2: Modificar tabla messages - COMPLETADA
+- ✅ Fase 3: Migración de datos - COMPLETADA (173 mensajes → 67 conversaciones)
+- ✅ Fase 4: Actualizar SyncService - COMPLETADA
+- ⏳ Fase 5: Actualizar Frontend - EN PROGRESO
 - ⏳ Fase 6: Limpieza - PENDIENTE
+
+---
+
+## FASE 6: Refactorización Frontend a Conversaciones (27 Nov 2025)
+
+### Cambios Realizados
+
+#### 1. NexusContext - Nuevo Estado de Conversaciones
+- Añadido estado `conversations` para lista de conversaciones
+- Añadido `activeConversation` para conversación seleccionada
+- Añadido `activeConversationMessages` para mensajes de la conversación activa
+- Función `setActiveConversation()` que carga mensajes on-demand
+- Estados de loading: `isLoadingConversations`, `isLoadingConversationMessages`
+
+#### 2. API Client - Nuevos Endpoints
+- `api.conversations.getAll(brandId)` - Lista conversaciones con posts
+- `api.conversations.getMessages(conversationId)` - Mensajes de una conversación
+- `api.conversations.markAsRead(conversationId)` - Marcar como leída
+
+#### 3. Nuevo Componente ConversationCard
+- Muestra: avatar del cliente, nombre, plataforma, tipo (DM/Comment)
+- Badge de mensajes no leídos
+- Preview del último mensaje
+- Link al post original (si aplica)
+
+#### 4. Inbox.tsx Refactorizado
+- Lista ahora muestra `ConversationCard` en lugar de `MessageCard`
+- Header del chat usa `activeConversation` para info del usuario
+- Thread messages cargados desde `activeConversationMessages`
+- Lógica de `activeDraftMessage` y `lastInboundMessage` separada
+- Verificaciones null-safe para `selectedMessage`
+
+### Bugs Corregidos en Esta Sesión
+- `selectedMessage` undefined cuando no hay mensajes
+- Fragment JSX no cerrado correctamente
+- Referencias a `selectedMessageId` obsoleto actualizadas
+- `filteredMessages` cambiado a `filteredConversations`
+
+### Problema Identificado: Agrupación de Comentarios por Post
+
+**Situación Actual:**
+- Cada hilo de comentarios (padre + respuestas) crea una conversación separada
+- Múltiples tarjetas para el mismo post
+
+**Comportamiento Esperado (según usuario):**
+- **Para Comentarios:** UNA conversación = UN POST
+  - Todos los comentarios de ese post van dentro de la misma tarjeta
+  - La tarjeta debería mostrar preview/miniatura del post
+  - Dentro se ven todos los comentarios (padres y respuestas)
+  
+- **Para DMs:** Modelo actual correcto
+  - UNA conversación = UN thread con una persona
+
+**Impacto:**
+- Tarjetas duplicadas o vacías
+- UX confusa
+- No refleja cómo funcionan las redes sociales
+
+### Próximos Pasos
+1. Modificar lógica de threading: agrupar por `social_post_id` para comentarios
+2. Actualizar SyncService para no crear conversaciones por cada threadExternalId en comentarios
+3. UI de tarjeta: mostrar miniatura del post en lugar de avatar para comentarios
+4. Dentro de la conversación: organizar comentarios padre/respuesta visualmente
 
 ---
