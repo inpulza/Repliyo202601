@@ -1,0 +1,136 @@
+Es el desafío clásico al construir un Inbox unificado: pasar de un modelo de "lista de notificaciones" (donde cada evento es una fila) a un modelo de "conversaciones" (donde los eventos se agrupan).
+
+Para que tu aplicación se sienta como WhatsApp (o Intercom/Front/Zendesk), debemos cambiar la arquitectura de datos. No podemos guardar "mensajes sueltos". Debemos guardar Conversaciones (Contenedores) y Mensajes (Contenido).
+
+Aquí tienes la Estructura Lógica y el PRD para refactorizar tu aplicación y resolver el caos de los hilos, especialmente en los comentarios.
+
+🧠 El Concepto Clave: "La Jerarquía de 3 Niveles"
+Para que el desarrollador de Replit lo entienda, debemos definir una jerarquía estricta. Un mensaje nunca "flota" solo; siempre pertenece a un contenedor.
+
+Nivel 1: El Activo (Contexto)
+
+En DM: Es la relación entre "Usuario" y "Marca".
+
+En Comentarios: Es el Post/Video específico.
+
+Nivel 2: El Hilo (Conversation/Thread) -> Esta es tu "Tarjeta" en la columna izquierda.
+
+Es el contenedor que agrupa el intercambio.
+
+Nivel 3: El Mensaje (Message) -> Esto es lo que se ve en la columna derecha.
+
+El texto individual, foto o respuesta.
+
+📝 PRD: Refactorización de Arquitectura de Conversaciones (Threading)
+Copia y pega estas instrucciones al Agente de Replit. Están diseñadas para reestructurar la Base de Datos y la lógica de ingestión.
+
+Markdown
+
+# Feature Spec: Arquitectura de Hilos y Agrupación de Conversaciones
+
+**Objetivo:** Refactorizar el backend para pasar de un modelo de "mensajes planos" a un modelo relacional de "Conversaciones y Mensajes", replicando la experiencia de UX de WhatsApp.
+
+**Problema Actual:** Cada nuevo mensaje o comentario crea una entrada separada en la UI.
+**Solución Esperada:** Los mensajes de un mismo contexto deben agruparse en un solo "Hilo" (Thread). Si llega un mensaje nuevo a un hilo existente, el hilo sube a la primera posición (Sort by Last Updated) sin duplicarse.
+
+---
+
+## 1. Nuevo Esquema de Base de Datos (Database Schema)
+
+Necesitamos separar el contenedor del contenido.
+
+### A. Tabla `Threads` (El Contenedor / La Tarjeta Izquierda)
+Representa una conversación única.
+* `id`: UUID (Primary Key).
+* `brand_id`: FK a la Marca.
+* `platform`: 'instagram', 'facebook', 'whatsapp', etc.
+* `type`: 'dm' | 'comment_thread'.
+* `external_id`: ID único para identificar el hilo en la plataforma externa.
+    * *Para DMs:* El ID del usuario externo (Sender ID).
+    * *Para Comentarios:* El ID del Post/Video + ID del Comentario Raíz (Root Comment ID).
+* `context_url`: Link al post original (si es comentario).
+* `customer_name`: Nombre del usuario principal.
+* `customer_avatar`: URL del avatar.
+* `last_message_preview`: Texto del último mensaje (para la vista previa).
+* `last_activity_at`: Timestamp (CRÍTICO: Usado para ordenar la lista. Se actualiza con cada mensaje nuevo).
+* `status`: 'open', 'closed', 'pending_ai'.
+
+### B. Tabla `Messages` (El Contenido / Columna Derecha)
+Representa los globos de texto individuales dentro de un hilo.
+* `id`: UUID.
+* `thread_id`: FK a la tabla `Threads`.
+* `external_id`: ID del mensaje en la plataforma (para evitar duplicados).
+* `direction`: 'inbound' (cliente) | 'outbound' (nosotros/AI).
+* `content`: Texto del mensaje.
+* `created_at`: Fecha de creación.
+
+---
+
+## 2. Lógica de Ingestión (The "Upsert" Logic)
+
+Esta es la parte más importante para el Backend (Node.js). Cuando el `SyncService` trae datos de Metricool/API, no debe simplemente "guardar". Debe seguir este algoritmo:
+
+**Algoritmo de Procesamiento de Mensajes Entrantes:**
+
+**Paso 1: Identificar la "Clave del Hilo" (Thread Key)**
+* **Caso DM:** `Key = Provider + BrandID + SenderID`.
+* **Caso Comentario:** `Key = Provider + BrandID + PostID + (RootCommentID O AuthorID)`.
+    * *Nota de Diseño:* Para comentarios, recomendamos agrupar por **Post + Usuario**. Es decir, si "Juan" comenta en el "Video A", todos los comentarios de Juan en ese video van al mismo hilo. Si "María" comenta en el "Video A", es otro hilo distinto pero asociado al mismo video.
+    * *Alternativa:* Agrupar TODO el post en un hilo (estilo Slack). *Decisión:* Para un Inbox de atención, agrupar por **Usuario dentro del Post** es lo mejor.
+
+**Paso 2: Buscar o Crear (Find or Create)**
+* Buscar en la tabla `Threads` si ya existe un registro con esa `Thread Key`.
+* **Si EXISTE:**
+    * Obtener el `thread_id`.
+    * Actualizar `last_activity_at` = `NOW()`.
+    * Actualizar `last_message_preview` = `nuevo contenido`.
+* **Si NO EXISTE:**
+    * Crear nuevo registro en `Threads`.
+    * Establecer `created_at` y `last_activity_at`.
+
+**Paso 3: Guardar Mensaje**
+* Guardar el mensaje en la tabla `Messages` vinculado al `thread_id` obtenido en el paso 2.
+* Asegurar Idempotencia: Si el `external_id` del mensaje ya existe en `Messages`, ignorarlo (no duplicar).
+
+---
+
+## 3. Especificaciones Frontend (React / Query)
+
+### A. La Lista de Conversaciones (Columna Izquierda)
+* **Query:** `SELECT * FROM Threads WHERE brand_id = X ORDER BY last_activity_at DESC`.
+* **Comportamiento Real-Time:**
+    * Cuando el polling detecta un cambio, si es un mensaje en un hilo existente, ese hilo debe moverse visualmente al tope de la lista (porque su `last_activity_at` cambió).
+    * No debe crearse una tarjeta nueva, solo actualizarse la existente (negrita si no leído, cambio de hora, cambio de preview).
+
+### B. El Detalle de Conversación (Columna Derecha)
+* **Query:** `SELECT * FROM Messages WHERE thread_id = Y ORDER BY created_at ASC`.
+* **Contexto Visual:**
+    * Si `Threads.type === 'comment_thread'`, mostrar en el header un componente "Context Card": *"Comentarios sobre el video: [Título del Video]"* con un link al post original (usando `context_url`).
+
+---
+
+## 4. Ejemplo Práctico (Caso de Uso)
+
+1.  **Situación:** Tienes un video en Instagram sobre "Zapatos Rojos".
+2.  **Evento 1:** El usuario `Carlos123` comenta: "¿Precio?".
+    * *Backend:* Crea Hilo A (Contexto: Video Zapatos, Usuario: Carlos). Crea Mensaje 1.
+    * *Frontend:* Aparece tarjeta "Carlos123" arriba con snippet "¿Precio?".
+3.  **Evento 2:** Tu IA responde: "$50 USD".
+    * *Backend:* Busca Hilo A. Añade Mensaje 2. Actualiza fecha.
+    * *Frontend:* Tarjeta "Carlos123" se mantiene, actualiza snippet a "$50 USD".
+4.  **Evento 3:** El usuario `Ana_G` comenta en el MISMO video: "Yo quiero unos".
+    * *Backend:* Busca Hilo para Ana + Video. No existe (es diferente a Carlos). Crea Hilo B.
+    * *Frontend:* Aparece nueva tarjeta "Ana_G" arriba de "Carlos123".
+5.  **Evento 4:** `Carlos123` responde a tu comentario: "¿Tienen envío?".
+    * *Backend:* Encuentra Hilo A. Añade Mensaje 3. Actualiza fecha.
+    * *Frontend:* Tarjeta "Carlos123" salta por encima de "Ana_G" y se pone primera.
+
+**Resultado:** Tienes orden, contexto y jerarquía. Exactamente como WhatsApp.
+💡 Consejo Extra para ti (El "Contexto" de los Comentarios)
+Para resolver tu duda específica sobre "¿A qué video pertenece ese comentario?":
+
+En la fase de diseño UI, cuando estés en la Columna Derecha (el chat) de un hilo de comentarios, dile al agente que agregue un "Sticky Header" (Cabecera fija) dentro del chat que diga:
+
+Contexto: Comentando en el post [ miniatura del video ] [ Link al post ]
+
+Así, tú o la IA sabrán que, aunque están hablando con "Carlos", el tema es el "Video de Zapatos". Esto resuelve el problema de la jerarquía visualmente sin complicar la base de datos más de lo necesario.
