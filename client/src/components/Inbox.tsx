@@ -99,7 +99,7 @@ const getPlatformStyles = (platform: Platform) => {
             return {
                 container: "bg-red-50/20", // Very subtle red tint
                 bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
-                replyBubble: "bg-[#FF0000] border-[#CC0000] text-white", // YouTube red for replies
+                replyBubble: "bg-red-500/90 border-red-400 text-white", // Softer YouTube red for replies
                 badge: "bg-red-100 text-red-700 border-red-200",
                 commentBadge: "text-red-600"
             };
