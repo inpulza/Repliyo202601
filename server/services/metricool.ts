@@ -172,7 +172,7 @@ export class MetricoolService {
         let timestamp = new Date().toISOString();
         let postUrl = null;
 
-        if (comment.provider === 'LINKEDIN' || comment.provider === 'TIKTOKBUSINESS' || comment.provider === 'INSTAGRAM') {
+        if (comment.provider === 'LINKEDIN' || comment.provider === 'TIKTOKBUSINESS' || comment.provider === 'INSTAGRAM' || comment.provider === 'FACEBOOK') {
           const ownerId = comment.root?.owner;
           const participants = comment.participants || [];
           const ownerParticipant = participants.find((p: any) => p.id === ownerId);

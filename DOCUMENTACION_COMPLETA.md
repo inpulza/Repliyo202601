@@ -470,5 +470,107 @@ const messageType: MessageType = dbMsg.type === 'conversation' ? 'dm' : (dbMsg.t
 
 ### Próximos Pasos:
 - Fase 5: Sincronización automática cada 130 segundos
-- Monitorear cuando haya datos de Facebook, YouTube o GMB para ajustar mapeos si es necesario
+- Monitorear cuando haya datos de YouTube o GMB para ajustar mapeos si es necesario
 - Considerar fallback visual para avatares faltantes de Instagram
+
+---
+
+## FASE 4.6: Mapeo de Facebook ✅ IMPLEMENTADA - 27 Noviembre 2025
+
+### Análisis de Estructura JSON de Comentarios de Facebook
+
+#### Estructura Principal de cada Comentario:
+
+```json
+{
+  "id": "122287862810232121_2432650170519580",     // ID único del comentario
+  "self": "266590203197538",                       // ID de la marca (owner)
+  "provider": "FACEBOOK",                          // Plataforma
+  "status": "PENDING",                             // Estado
+  "creationDate": "2025-11-27T01:31:26+0100",     // Fecha creación
+  "lastUpdateTime": "...",                         // Última actualización
+  "lastReadTime": "...",                           // Última lectura
+  
+  "participants": [                                // Array con info del autor
+    {
+      "id": "24494065186935185",                  // ID del usuario
+      "name": "Olga Garcia",                       // ⭐ NOMBRE del autor
+      "imageProfileUrl": "https://graph.facebook.com/..." // ⭐ AVATAR
+    }
+  ],
+  
+  "root": {
+    "element": {                                   // Info del POST original
+      "id": "266590203197538_122287...",          // ID del post
+      "owner": { "id": "266590203197538" },       // Dueño (la marca)
+      "link": "https://facebook.com/reel/...",    // ⭐ URL del POST
+      "text": "¿TIRAS LA YEMA...",                // Texto del post
+      "mediaUrls": [...],                          // Media del post
+      "commentCount": 1,                           // Número de comentarios
+      "properties": { "fbMediaProductType": "POST" }
+    },
+    
+    "id": "122287...2432650170519580",            // ID del comentario
+    "creationDate": "2025-11-27T01:31:26...",     // ⭐ TIMESTAMP del comentario
+    "owner": "24494065186935185",                  // ID del autor del comentario
+    "text": "❤️",                                  // ⭐ CONTENIDO del comentario
+    "mediaUrl": "",                                // Media adjunta
+    "properties": {
+      "permalink": "https://.../comment_id=..."    // Link directo
+    }
+  }
+}
+```
+
+#### Mapeo de Campos para el Sistema:
+
+| Dato Necesario | Ubicación en JSON de Facebook |
+|----------------|-------------------------------|
+| **ID único** | `item.id` |
+| **Nombre del autor** | `item.participants[0].name` |
+| **Avatar del autor** | `item.participants[0].imageProfileUrl` |
+| **Contenido del comentario** | `item.root.text` |
+| **Timestamp** | `item.root.creationDate` o `item.creationDate` |
+| **URL del post** | `item.root.element.link` |
+| **Permalink del comentario** | `item.root.properties.permalink` |
+| **ID de la marca** | `item.self` |
+| **ID del autor** | `item.root.owner` |
+
+### El Campo "self" - Explicación Importante
+
+El campo `"self"` es el **ID único de TU MARCA** en esa plataforma específica.
+
+**Propósito:**
+1. **Identificar a quién pertenece el comentario** - En sincronización multi-marca
+2. **Distinguir visitantes de la propia marca** - En hilos de conversación:
+   - Si `root.owner` = `self` → Es respuesta de TU marca
+   - Si `root.owner` ≠ `self` → Es comentario de un visitante
+3. **Evitar confusión en multi-marca** - Cada marca tiene un ID único
+
+**Ejemplos de IDs "self" por plataforma:**
+- **Facebook Fortress**: `"self": "266590203197538"`
+- **TikTok Fortress**: `"self": "_000FTj0xpRZRVxvhK9a2h_Id2qWe7dejKdQ"`
+- **TikTok BO Trust**: `"self": "_000K1GyozZ-5j8nLRwX71pLEz07AkMwiQRV"`
+
+### Implementación del Mapeo
+
+**Cambio requerido:** Agregar `'FACEBOOK'` a la condición de mapeo existente.
+
+**Archivo:** `server/services/metricool.ts` (línea 175)
+
+**Antes:**
+```typescript
+if (comment.provider === 'LINKEDIN' || comment.provider === 'TIKTOKBUSINESS' || comment.provider === 'INSTAGRAM')
+```
+
+**Después:**
+```typescript
+if (comment.provider === 'LINKEDIN' || comment.provider === 'TIKTOKBUSINESS' || comment.provider === 'INSTAGRAM' || comment.provider === 'FACEBOOK')
+```
+
+La estructura de Facebook es **idéntica** a LinkedIn/TikTok/Instagram:
+- Autor en `participants[0]` con `name` e `imageProfileUrl`
+- Contenido en `root.text`
+- Timestamp en `root.creationDate`
+- URL del post en `root.element.link`
+- Owner del comentario en `root.owner` (para matchear con participants)
