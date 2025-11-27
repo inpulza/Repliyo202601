@@ -1,0 +1,217 @@
+Revisa esto y dime si estás de acuerdo y si crees que es la opción más óptima.: ¿Te parece correcto? ¿Hay algo mejor? No sé, ¿cómo tú lo ves? 
+
+
+
+
+
+
+
+Cómo funciona el sistema de sincronización automática:
+
+
+
+La aplicación utiliza un sistema de "polling" (consulta periódica) en dos niveles que trabajan en conjunto. En el backend, existe un servicio de sincronización (SyncService) que se ejecuta automáticamente cada 30 segundos. Este servicio consulta la API de YouTube para obtener los comentarios más recientes de los videos monitoreados, compara los nuevos comentarios con los que ya existen en la base de datos, y guarda únicamente los que son nuevos. Además, procesa automáticamente las respuestas pendientes utilizando el asistente de OpenAI.
+
+
+
+En el frontend, la aplicación usa TanStack Query (React Query), una librería que permite configurar la opción refetchInterval en cada consulta. Esto significa que el navegador del usuario automáticamente vuelve a pedir los datos al servidor en intervalos específicos sin necesidad de recargar la página. Los hilos de videos se actualizan cada 30 segundos, los comentarios cada 10 segundos, y las respuestas manuales cada 5 segundos. También hay un componente visual de cuenta regresiva que muestra al usuario cuánto tiempo falta para la próxima sincronización.
+
+
+
+En resumen: el servidor consulta YouTube cada 30 segundos para traer datos nuevos, y el navegador consulta al servidor cada 10-30 segundos para mostrar esos datos actualizados al usuario. Todo esto ocurre en segundo plano sin que el usuario tenga que hacer nada, creando una experiencia de "tiempo real" donde los mensajes aparecen automáticamente conforme van llegando.
+
+
+
+Documentación Técnica: Sistema de Sincronización Automática
+
+1. Arquitectura General
+
+El sistema usa un patrón de polling bidireccional: el servidor consulta APIs externas periódicamente, y el cliente consulta al servidor periódicamente.
+
+
+
+2. Backend - Servicio de Sincronización (server/services/sync.ts)
+
+Tecnología: Node.js con setInterval
+
+
+
+// Clase singleton que maneja la sincronización
+
+class SyncService {
+
+  private isRunning = false;
+
+  private syncInterval: NodeJS.Timeout | null = null;
+
+  private readonly SYNC_INTERVAL_MS = 30 * 1000; // 30 segundos
+
+  async start() {
+
+    // Previene múltiples instancias
+
+    if (this.isRunning) return;
+
+    
+
+    this.isRunning = true;
+
+    
+
+    // Ejecuta sincronización inicial inmediatamente
+
+    await this.syncComments();
+
+    
+
+    // Configura el intervalo periódico
+
+    this.syncInterval = setInterval(async () => {
+
+      await this.syncComments();
+
+    }, this.SYNC_INTERVAL_MS);
+
+  }
+
+  stop() {
+
+    if (this.syncInterval) {
+
+      clearInterval(this.syncInterval);
+
+      this.syncInterval = null;
+
+    }
+
+    this.isRunning = false;
+
+  }
+
+}
+
+// Exporta una única instancia
+
+export const syncService = new SyncService();
+
+
+
+Flujo del método syncComments():
+
+
+
+Consulta la API de Metricool para obtener comentarios nuevos
+
+Compara cada comentario con la base de datos (por metricoolCommentId)
+
+Si es nuevo ? lo guarda y genera respuesta IA
+
+Actualiza el timestamp de última sincronización
+
+Los errores se capturan sin detener el servicio
+
+3. Frontend - TanStack Query (React Query v5)
+
+Tecnología: @tanstack/react-query con la opción refetchInterval
+
+
+
+// client/src/hooks/use-comments.ts
+
+import { useQuery } from "@tanstack/react-query";
+
+export function useComments(threadId: number | null) {
+
+  return useQuery<Comment[]>({
+
+    queryKey: [`/api/threads/${threadId}/comments`],
+
+    enabled: !!threadId,  // Solo ejecuta si hay threadId
+
+    refetchInterval: 10000, // 10 segundos
+
+  });
+
+}
+
+
+
+Configuración base del QueryClient (client/src/lib/queryClient.ts):
+
+
+
+export const queryClient = new QueryClient({
+
+  defaultOptions: {
+
+    queries: {
+
+      queryFn: getQueryFn({ on401: "throw" }), // Fetcher por defecto
+
+      refetchInterval: false,      // Desactivado por defecto
+
+      refetchOnWindowFocus: false, // No refresca al volver a la pestaña
+
+      staleTime: Infinity,         // Los datos no se consideran "viejos"
+
+      retry: false,                // No reintenta en errores
+
+    },
+
+  },
+
+});
+
+
+
+Intervalos configurados por componente:
+
+
+
+Hook/Componente Intervalo Propósito
+
+useThreads 30 seg Lista de videos
+
+useComments 10 seg Comentarios por hilo
+
+useAllComments 10 seg Todos los comentarios
+
+useManualResponses 5 seg Respuestas manuales
+
+SystemStatus 30 seg Estado del sistema
+
+4. Puntos Clave para Replicar
+
+Singleton Pattern: El servicio de sincronización debe ser una única instancia para evitar duplicados.
+
+
+
+Idempotencia: Cada comentario se verifica por ID único antes de procesarse (getCommentByMetricoolId).
+
+
+
+Error Handling: Los errores no detienen el servicio; se loguean y continúa.
+
+
+
+Estado de bandera: isRunning previene múltiples inicios del servicio.
+
+
+
+React Query gestiona el cache: Invalida automáticamente cuando refetchInterval dispara una nueva consulta.
+
+
+
+Sin WebSockets: Es polling simple HTTP, no conexiones persistentes. Más simple de implementar y mantener.
+
+
+
+5. Por qué Polling y no WebSockets
+
+Simplicidad: No requiere infraestructura adicional
+
+APIs externas: Metricool no ofrece webhooks/push, hay que consultar
+
+Suficiente para el caso de uso: 10-30 segundos es aceptable para comentarios de TikTok
+
+Menos puntos de fallo: Sin conexiones persistentes que mantener
