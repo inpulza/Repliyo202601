@@ -896,3 +896,218 @@ const platformCounts = React.useMemo(() => ({
 1. Verificar si Metricool requiere autenticación OAuth separada para YouTube
 2. Revisar respuesta del API para provider=youtube
 3. Confirmar que el blogId tiene YouTube conectado en Metricool
+
+---
+
+## FASE 6: Arquitectura de Hilos (Threading) - APROBADA
+
+### Fecha de Aprobación: 27 Noviembre 2025
+
+### Contexto y Justificación
+
+**Problema Actual:** Cada mensaje de Metricool se guarda como una entrada separada en la tabla `messages`. Esto causa:
+1. La lista del Inbox muestra mensajes individuales, no conversaciones agrupadas
+2. Si Carlos escribe 5 mensajes, aparecen 5 tarjetas separadas
+3. La IA no puede mantener contexto de conversación (amnesia)
+
+**Solución Aprobada:** Arquitectura de 4 tablas con agrupación por hilos tipo WhatsApp.
+
+### Por qué es CRÍTICO para la IA
+
+```
+SIN HILOS (problema):
+- IA recibe: "¿Tienen envío a Miami?"
+- IA responde: "¿Envío de qué? No tengo contexto"
+
+CON HILOS (solución):
+- IA recibe: [
+    {"role": "user", "content": "¿Cuánto cuestan los zapatos?"},
+    {"role": "assistant", "content": "$50"},
+    {"role": "user", "content": "¿Tienen envío a Miami?"}
+  ]
+- IA responde: "Sí, enviamos los zapatos rojos a Miami por $15"
+```
+
+**Conclusión:** Sin hilos, la IA no puede mantener conversaciones coherentes. OpenAI necesita el array completo de mensajes del hilo.
+
+### Arquitectura Híbrida de 4 Tablas (Aprobada)
+
+Se decidió usar una versión simplificada que elimina la tabla `SocialAccounts` (redundante con Metricool) pero mantiene `SocialPosts` para contexto y queries de IA.
+
+```
+Brands (ya existe)
+   └── SocialPosts (NUEVA - contexto de posts/videos)
+          └── Conversations (NUEVA - hilos/tarjetas)
+                 └── Messages (modificada - con conversation_id)
+```
+
+### Esquema de Base de Datos
+
+#### Tabla: `social_posts` (NUEVA)
+Guarda información del post/video original donde ocurren los comentarios.
+
+```typescript
+socialPosts = pgTable("social_posts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brandId: varchar("brand_id").notNull().references(() => brands.id),
+  platform: text("platform").notNull(), // instagram, facebook, tiktok, etc.
+  externalId: text("external_id").notNull(), // ID del post en la plataforma
+  permalink: text("permalink"), // URL al post original
+  thumbnailUrl: text("thumbnail_url"), // Miniatura del video/imagen
+  caption: text("caption"), // Texto del post
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// UNIQUE: Un post solo existe una vez por marca+plataforma
+UNIQUE(brand_id, platform, external_id)
+```
+
+**¿Por qué es importante?**
+- Si 1,000 personas comentan en el mismo video, los datos del video se guardan UNA vez
+- Si la URL de la miniatura caduca, se actualiza en UN solo lugar
+- Permite queries de IA: "Analiza todos los comentarios del Video de Zapatos"
+
+#### Tabla: `conversations` (NUEVA)
+Representa un hilo único entre la marca y un usuario específico.
+
+```typescript
+conversations = pgTable("conversations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brandId: varchar("brand_id").notNull().references(() => brands.id),
+  socialPostId: varchar("social_post_id").references(() => socialPosts.id), // NULL para DMs
+  platform: text("platform").notNull(),
+  type: text("type").notNull(), // 'dm' | 'comment'
+  customerId: text("customer_id").notNull(), // ID externo del usuario
+  customerName: text("customer_name"),
+  customerAvatar: text("customer_avatar"),
+  lastMessageAt: timestamp("last_message_at").notNull(),
+  lastMessagePreview: text("last_message_preview"),
+  status: text("status").notNull().default('open'), // open, closed
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// UNIQUE CONSTRAINTS (impiden duplicados a nivel de BD):
+// Para DMs: UNIQUE(brand_id, platform, customer_id) WHERE social_post_id IS NULL
+// Para Comentarios: UNIQUE(social_post_id, customer_id)
+```
+
+#### Tabla: `messages` (MODIFICADA)
+Se agrega `conversationId` para vincular al hilo.
+
+```typescript
+// Campos nuevos:
+conversationId: varchar("conversation_id").references(() => conversations.id),
+direction: text("direction"), // 'inbound' | 'outbound'
+
+// Campo existente threadId se mantiene temporalmente para compatibilidad
+// Se eliminará después de la migración
+```
+
+### Lógica de Agrupación (Thread Key)
+
+**Para DMs:**
+```
+Thread Key = platform + brand_id + sender_id
+Ejemplo: "instagram_abc123_user456"
+```
+
+**Para Comentarios:**
+```
+Thread Key = platform + brand_id + post_id + author_id
+Ejemplo: "facebook_abc123_post789_user456"
+```
+
+**Algoritmo de Ingestión:**
+```
+1. Llega mensaje nuevo de Metricool
+2. Calcular Thread Key
+3. ¿Existe conversation con esa key?
+   - SÍ: Usar conversation_id existente, actualizar last_message_at
+   - NO: Crear nueva conversation
+4. Si es comentario, verificar/crear SocialPost primero
+5. Guardar mensaje con conversation_id
+```
+
+### Arquitectura Multi-tenant (Separación por Marca)
+
+**Pregunta clave:** ¿Cómo se separan los datos entre usuarios/marcas?
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        USERS                                 │
+├─────────────────────────────────────────────────────────────┤
+│ Admin (role: 'admin')     → brandId: NULL   → VE TODO       │
+│ Cliente A (role: 'client') → brandId: ABC   → Solo ve ABC   │
+│ Cliente B (role: 'client') → brandId: XYZ   → Solo ve XYZ   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Cada tabla tiene `brand_id`:**
+| Tabla | Campo de separación |
+|-------|---------------------|
+| `brands` | `id` (es la marca misma) |
+| `social_posts` | `brand_id` |
+| `conversations` | `brand_id` |
+| `messages` | `brand_id` + `conversation_id` |
+
+**El middleware de seguridad filtra automáticamente:**
+- Si eres **admin** → Ves todas las marcas
+- Si eres **client** → Solo ves datos donde `brand_id = tu_brand_id`
+
+**Conclusión:** La refactorización de hilos es INTERNA a cada marca. No cambia la seguridad entre marcas. Un usuario de "Impulsa" nunca verá datos de "Fortress".
+
+### Plan de Implementación por Fases
+
+| Fase | Descripción | Tiempo Est. | Riesgo |
+|------|-------------|-------------|--------|
+| **1** | Crear tablas `social_posts` y `conversations` en schema | 1-2h | Bajo (tablas nuevas vacías) |
+| **2** | Agregar `conversationId` a `messages` (nullable) | 30min | Bajo (campo nullable) |
+| **3** | Script de migración de datos existentes | 2-3h | Medio (requiere backup) |
+| **4** | Actualizar SyncService con lógica de threading | 2-3h | Medio |
+| **5** | Actualizar Frontend (lista de conversations) | 2-3h | Medio |
+| **6** | Limpieza (eliminar campo `threadId` obsoleto) | 1h | Bajo |
+
+**Total estimado:** 10-14 horas
+
+### Migración de Datos Existentes
+
+**NO se borran datos.** El proceso es:
+
+```
+1. Leer cada mensaje existente de tabla `messages`
+   ↓
+2. Extraer del campo `rawData` la info del post original
+   (root.element.id, root.element.link, etc.)
+   ↓
+3. Crear registro en `social_posts` (si no existe)
+   ↓
+4. Crear registro en `conversations` (si no existe)
+   (agrupando por: platform + customer_id + post_id)
+   ↓
+5. Actualizar el mensaje con el nuevo `conversation_id`
+```
+
+**El campo `rawData` contiene todo el JSON original de Metricool**, lo que permite extraer cualquier dato necesario sin re-sincronizar.
+
+### Especificaciones UX
+
+**Columna Izquierda (Lista):**
+- Query: `SELECT * FROM conversations WHERE brand_id = X ORDER BY last_message_at DESC`
+- Muestra: Avatar, nombre, preview del último mensaje, timestamp
+- Badge de mensajes no leídos por hilo
+
+**Columna Centro (Detalle):**
+- Query: `SELECT * FROM messages WHERE conversation_id = Y ORDER BY created_at ASC`
+- Si es comentario: Header contextual con miniatura del post y link
+- Mensajes ordenados cronológicamente con diferenciación visual (inbound/outbound)
+
+### Estado de Implementación
+
+- ⏳ Fase 1: Crear nuevas tablas - PENDIENTE
+- ⏳ Fase 2: Modificar tabla messages - PENDIENTE
+- ⏳ Fase 3: Migración de datos - PENDIENTE
+- ⏳ Fase 4: Actualizar SyncService - PENDIENTE
+- ⏳ Fase 5: Actualizar Frontend - PENDIENTE
+- ⏳ Fase 6: Limpieza - PENDIENTE
+
+---
