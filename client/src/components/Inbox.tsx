@@ -846,7 +846,7 @@ function MessageCard({ message, isSelected, onClick, onOpenCRM }: { message: Mes
                 isSelected && "ring-1 ring-indigo-500 ring-offset-1 border-transparent bg-gray-50 z-10"
             )}
         >
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-3 min-w-0 max-w-full overflow-hidden">
                 {/* Avatar & Icon */}
                 <div className="relative shrink-0">
                     <Avatar className="h-10 w-10 border border-gray-100">
@@ -861,14 +861,14 @@ function MessageCard({ message, isSelected, onClick, onOpenCRM }: { message: Mes
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                            <span className={cn("text-sm font-bold truncate text-gray-900", message.status === 'unread' && "")}>
+                <div className="flex-1 min-w-0 max-w-full overflow-hidden">
+                    <div className="flex items-center justify-between mb-2 min-w-0 max-w-full">
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
+                            <span className={cn("text-sm font-bold truncate text-gray-900 max-w-full", message.status === 'unread' && "")}>
                                 {message.author}
                             </span>
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 shrink-0">
                            {message.sourceUrl && (
                                <a 
                                    href={message.sourceUrl}
