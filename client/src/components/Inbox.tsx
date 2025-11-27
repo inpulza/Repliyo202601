@@ -691,7 +691,7 @@ export function Inbox() {
                       {threadMessages.map((msg, index) => {
                         const isReply = !!msg.parentMessageId;
                         const isInbound = msg.direction === 'inbound';
-                    const isOwner = activeClient && msg.author.toLowerCase() === activeClient.name.toLowerCase();
+                        const isOutbound = msg.direction === 'outbound'; // Brand's own messages
                     
                     return (
                       <div 
@@ -699,7 +699,7 @@ export function Inbox() {
                         className={cn(
                           "flex gap-4 group transition-all",
                           isReply && "ml-8",
-                          isOwner && "ml-12"
+                          isOutbound && "ml-12"
                         )}
                       >
                          <Avatar className={cn(
@@ -708,7 +708,7 @@ export function Inbox() {
                          )}>
                             <AvatarImage src={msg.authorAvatar || undefined} alt={msg.author} />
                             <AvatarFallback className={cn(
-                              isOwner ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-500"
+                              isOutbound ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-500"
                             )}>
                               <User className={isReply ? "h-3 w-3" : "h-4 w-4"} />
                             </AvatarFallback>
@@ -733,7 +733,7 @@ export function Inbox() {
                             </div>
                             <div className={cn(
                                 "p-4 rounded-2xl text-sm leading-relaxed shadow-sm relative rounded-tl-none",
-                                isOwner 
+                                isOutbound 
                                   ? "bg-blue-600 text-white" 
                                   : isReply 
                                     ? getPlatformStyles((msg.platform || 'instagram') as Platform).replyBubble
