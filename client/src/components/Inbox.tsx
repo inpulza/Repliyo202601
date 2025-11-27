@@ -748,7 +748,7 @@ export function Inbox() {
 
                   {/* AI Suggestion / Response Area (Modernized) */}
                   <AnimatePresence mode="wait">
-                    {selectedMessage.status !== 'sent' && (
+                    {selectedMessage && selectedMessage.status !== 'sent' && (
                       <motion.div 
                         initial={{ opacity: 0, y: 10, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -886,7 +886,7 @@ export function Inbox() {
                       </motion.div>
                     )}
                     
-                    {selectedMessage.status === 'sent' && (
+                    {selectedMessage && selectedMessage.status === 'sent' && (
                        <motion.div 
                           initial={{ opacity: 0, scale: 0.9 }}
                           animate={{ opacity: 1, scale: 1 }}
@@ -914,37 +914,39 @@ export function Inbox() {
                </div>
             </ScrollArea>
 
-            {/* Floating AI Analysis Card */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[95%] md:w-[90%] max-w-3xl z-30">
-                <motion.div 
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    className="bg-white rounded-xl border border-gray-200 shadow-lg p-4 flex items-start gap-4"
-                >
-                    <div className={cn(
-                        "p-2 rounded-lg shrink-0",
-                        selectedMessage.urgency === 'high' ? "bg-red-50 text-red-600" : 
-                        selectedMessage.urgency === 'medium' ? "bg-amber-50 text-amber-600" : "bg-indigo-50 text-indigo-600"
-                    )}>
-                        <Brain className="h-5 w-5" />
-                    </div>
-                    <div className="space-y-1 flex-1">
-                        <div className="flex items-center justify-between">
-                            <span className="font-semibold text-gray-900 text-sm">AI Analysis</span>
-                            <div className={cn(
-                                "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide",
-                                selectedMessage.urgency === 'high' ? "bg-red-100 text-red-700" : 
-                                selectedMessage.urgency === 'medium' ? "bg-amber-100 text-amber-700" : "bg-indigo-100 text-indigo-700"
-                            )}>
-                                {selectedMessage.urgency} Priority
-                            </div>
-                        </div>
-                        <p className="text-sm text-gray-600 leading-relaxed">
-                            {selectedMessage.aiSummary || "Analyzing conversation context..."}
-                        </p>
-                    </div>
-                </motion.div>
-            </div>
+            {/* Floating AI Analysis Card - Only show when we have a message */}
+            {selectedMessage && (
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[95%] md:w-[90%] max-w-3xl z-30">
+                  <motion.div 
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      className="bg-white rounded-xl border border-gray-200 shadow-lg p-4 flex items-start gap-4"
+                  >
+                      <div className={cn(
+                          "p-2 rounded-lg shrink-0",
+                          selectedMessage.urgency === 'high' ? "bg-red-50 text-red-600" : 
+                          selectedMessage.urgency === 'medium' ? "bg-amber-50 text-amber-600" : "bg-indigo-50 text-indigo-600"
+                      )}>
+                          <Brain className="h-5 w-5" />
+                      </div>
+                      <div className="space-y-1 flex-1">
+                          <div className="flex items-center justify-between">
+                              <span className="font-semibold text-gray-900 text-sm">AI Analysis</span>
+                              <div className={cn(
+                                  "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide",
+                                  selectedMessage.urgency === 'high' ? "bg-red-100 text-red-700" : 
+                                  selectedMessage.urgency === 'medium' ? "bg-amber-100 text-amber-700" : "bg-indigo-100 text-indigo-700"
+                              )}>
+                                  {selectedMessage.urgency || 'low'} Priority
+                              </div>
+                          </div>
+                          <p className="text-sm text-gray-600 leading-relaxed">
+                              {selectedMessage.aiSummary || "Analyzing conversation context..."}
+                          </p>
+                      </div>
+                  </motion.div>
+              </div>
+            )}
             </div>
           </>
         ) : (
