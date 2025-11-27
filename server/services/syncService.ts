@@ -216,7 +216,19 @@ class SyncService {
         });
         savedCount++;
 
-        const nestedReplies = comment.replies || comment.rawData?.root?.comments || [];
+        const nestedReplies = (comment.replies && comment.replies.length > 0) ? comment.replies : (comment.rawData?.root?.comments || []);
+        
+        // Debug logging for YouTube nested comments
+        if (comment.provider === 'YOUTUBE' || comment.provider === 'youtube') {
+          console.log(`[SyncService] YouTube comment ${comment.id}:`);
+          console.log(`  - comment.replies: ${JSON.stringify(comment.replies?.length || 0)}`);
+          console.log(`  - rawData.root.comments: ${JSON.stringify(comment.rawData?.root?.comments?.length || 0)}`);
+          console.log(`  - nestedReplies total: ${nestedReplies.length}`);
+        }
+        
+        if (nestedReplies.length > 0) {
+          console.log(`[SyncService] Found ${nestedReplies.length} nested replies for comment ${comment.id} on ${comment.provider}`);
+        }
         for (const reply of nestedReplies) {
           try {
             const replyOwnerId = reply.owner;
