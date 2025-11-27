@@ -887,19 +887,19 @@ function MessageCard({ message, isSelected, onClick, onOpenCRM }: { message: Mes
                         </div>
                     </div>
                     
-                    <div className="flex items-center gap-1.5 mb-2.5 flex-wrap">
+                    <div className="flex items-center gap-1.5 mb-2.5 flex-wrap min-w-0 max-w-full">
                         {message.urgency === 'high' && (
-                            <Badge variant="outline" className="text-[10px] font-medium h-5 px-1.5 text-red-600 bg-red-50 border-red-100 gap-1">
+                            <Badge variant="outline" className="text-[10px] font-medium h-5 px-1.5 text-red-600 bg-red-50 border-red-100 gap-1 shrink-0">
                                 <Flame className="h-3 w-3 fill-red-600" /> High
                             </Badge>
                         )}
                         {message.urgency === 'medium' && (
-                            <Badge variant="outline" className="text-[10px] font-medium h-5 px-1.5 text-amber-600 bg-amber-50 border-amber-100">
+                            <Badge variant="outline" className="text-[10px] font-medium h-5 px-1.5 text-amber-600 bg-amber-50 border-amber-100 shrink-0">
                                 Medium
                             </Badge>
                         )}
                         <IntentBadge intent={(message.intent || 'general') as Intent} />
-                        <Badge variant="outline" className="text-[10px] font-normal h-5 px-1.5 text-gray-500 border-gray-200">
+                        <Badge variant="outline" className="text-[10px] font-normal h-5 px-1.5 text-gray-500 border-gray-200 shrink-0">
                             {message.type === 'dm' && 'DM'}
                             {message.type === 'comment' && 'Comment'}
                             {message.type === 'review' && 'Review'}
@@ -907,13 +907,13 @@ function MessageCard({ message, isSelected, onClick, onOpenCRM }: { message: Mes
                     </div>
 
                     <p className={cn(
-                        "text-sm line-clamp-2 leading-relaxed text-gray-600", 
+                        "text-sm line-clamp-2 leading-relaxed text-gray-600 min-w-0 max-w-full break-words", 
                         message.status === 'unread' ? "font-medium text-gray-900" : ""
                     )}>
                         {message.content}
                     </p>
                     
-                    <div className="flex items-center justify-between mt-4 pt-2 border-t border-gray-50">
+                    <div className="flex items-center justify-between mt-4 pt-2 border-t border-gray-50 min-w-0 max-w-full">
                         {/* CRM Sync Status Indicator (Moved Here) */}
                         {message.crmData && (message.crmData as CRMContact).crmType ? (
                             <div className="flex items-center gap-1.5" title={`Synced with ${(message.crmData as CRMContact).crmType}`}>
