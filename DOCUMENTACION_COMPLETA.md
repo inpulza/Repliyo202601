@@ -574,3 +574,85 @@ La estructura de Facebook es **idéntica** a LinkedIn/TikTok/Instagram:
 - Timestamp en `root.creationDate`
 - URL del post en `root.element.link`
 - Owner del comentario en `root.owner` (para matchear con participants)
+
+### Prueba Exitosa - 27 Noviembre 2025
+
+**Comentarios de Facebook sincronizados correctamente:**
+
+| # | Autor | Contenido | Post |
+|---|-------|-----------|------|
+| 1 | Fortress Wellness Center | "Pues los Asistentes de Voz con IA están revolucionando..." | reel/1301460770956236 |
+| 2 | Fortress Wellness Center | "Hola Mandy! Espectacular tu video" | reel/1301460770956236 |
+| 3 | Fortress Wellness Center | "Woow! Esa estrategia es ganadora no?" | reel/3867782363481680 |
+| 4 | Fortress Wellness Center | "Me parece una excelente información!" | reel/546874545095949 |
+
+**Datos verificados en DB:**
+- ✅ Autor: Fortress Wellness Center
+- ✅ Avatar: URL de graph.facebook.com
+- ✅ Contenido: Texto completo
+- ✅ Timestamp: Fecha correcta
+- ✅ Source URL: Links a los reels de Facebook
+
+---
+
+## Respuestas Anidadas (Hilos de Conversación) - Trabajo Futuro
+
+### Estructura Detectada
+
+En el Comentario 2 hay un hilo de conversación:
+1. **Fortress** (seguidor) comentó: "Hola Mandy! Espectacular tu video"
+2. **Impulsa** (dueño) respondió: "Muchas gracias por tu comentario..."
+
+**Estructura JSON de respuestas anidadas:**
+```json
+{
+  "root": {
+    "owner": "266590203197538",        // ID de quien comentó (Fortress)
+    "text": "Hola Mandy!...",          // Comentario principal
+    "comments": [                       // ⭐ Array de respuestas anidadas
+      {
+        "owner": "254142671114215",    // ID de quien respondió (Impulsa = self)
+        "text": "Muchas gracias...",   // Respuesta
+        "creationDate": "2025-11-27T10:49:43+0100"
+      }
+    ]
+  }
+}
+```
+
+### Identificación con campo `self`
+
+El campo `self` permite identificar quién es el dueño de la página vs. los seguidores:
+
+| Situación | Condición |
+|-----------|-----------|
+| Seguidor inició el hilo | `root.owner` ≠ `self` |
+| Marca inició el hilo | `root.owner` == `self` |
+| Seguidor respondió | `comments[i].owner` ≠ `self` |
+| Marca respondió | `comments[i].owner` == `self` |
+
+### Implementación Futura Sugerida
+
+Para soportar hilos de conversación completos:
+
+1. **Procesar `root.comments[]`** en el mapeo de comentarios
+2. **Agregar campo `parentId`** al schema de messages para relacionar respuestas
+3. **Agregar campo `threadId`** para agrupar conversaciones
+4. **Guardar `selfId`** de la marca para identificar respuestas propias
+
+```typescript
+// Schema propuesto para futuro:
+messages: {
+  ...campos_actuales,
+  parentId: text('parent_id'),      // ID del comentario padre (si es respuesta)
+  threadId: text('thread_id'),      // ID del hilo de conversación
+  isFromBrand: boolean,             // true si owner == self
+}
+```
+
+### Estado Actual
+
+- ✅ Comentarios principales de Facebook funcionando
+- ⏳ Respuestas anidadas (`root.comments[]`) pendiente de implementar
+- ⏳ Identificación de hilos pendiente
+- ⏳ Campo `self` disponible en rawData para uso futuro
