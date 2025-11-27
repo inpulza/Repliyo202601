@@ -1,0 +1,49 @@
+? En lo que coincido al 100%
+Arquitectura Backend -> DB -> Frontend: Es la correcta. Desacopla la velocidad de tu app (Frontend rápido) de la velocidad de Metricool (Backend lento).
+
+setInterval en Node.js: Al usar Replit (que mantiene el proceso vivo), esto es perfecto. No necesitas Cron Jobs externos ni serverless complexities.
+
+refetchOnWindowFocus: true: Vital. Si el usuario cambia de pestaña y vuelve, quiere ver lo nuevo YA. Esto es gratis (no consume API de Metricool, solo tu backend).
+
+?? Donde difiero (El Riesgo de los 30 Segundos)
+Claude dice: "30 segundos es viable". Yo digo: "30 segundos es agresivo para empezar".
+
+El problema matemático: Si tienes 15 clientes, y cada cliente tiene 3 redes sociales (IG, FB, TikTok), son 45 peticiones cada ciclo. Si lo haces cada 30 segundos: 45 * 2 * 60 * 24 = 129,600 peticiones al día. Metricool te va a bloquear (Rate Limit 429) casi seguro con ese volumen en un plan estándar o de API básica.
+
+Mi recomendación: Empieza con 2 minutos (120 segundos).
+
+¿Por qué? En redes sociales (comentarios), esperar 2 minutos es aceptable. No es un chat en vivo de soporte técnico.
+
+Beneficio: Reduces el consumo de API un 400% de golpe. Es mucho más seguro para empezar.
+
+??? Las 2 Instrucciones Técnicas que faltan (Vitales)
+Para que el código del Agente sea profesional, dile que añada estas dos lógicas al SyncService:
+
+1. "Jitter" (Desfase Aleatorio)
+Problema: Si tienes 15 marcas y el servidor arranca, el setInterval intentará actualizar las 15 marcas en el mismo milisegundo. Esto crea un "pico" de tráfico (Spike) que puede saturar la red o la CPU. Solución: No actualices todas a la vez. Añade un pequeño retraso aleatorio entre marcas.
+
+Instrucción: "Al procesar las marcas, no las llames en paralelo masivo (Promise.all de golpe). Procesa en secuencia o añade un delay de 1-2 segundos entre cada llamada a la API externa."
+
+2. "Exponential Backoff" (Manejo de Errores 429)
+Problema: Si Metricool te dice "Para, demasiadas peticiones" (Error 429), tu sistema actual volverá a preguntar en 30 segundos. Metricool te volverá a bloquear y te pondrá en una lista negra temporal. Solución: Si recibes un error 429, el sistema debe esperar el doble de tiempo antes de volver a intentar.
+
+Instrucción: "Si la API devuelve status 429, pausa la sincronización para esa marca específica durante 5 minutos antes de reintentar."
+
+?? Instrucciones Finales para el Agente (Copia y Pega esto)
+Dile al agente de Replit:
+
+"El análisis de arquitectura es correcto y aprobado. Procedemos con la estructura de Polling (setInterval en Backend + React Query en Frontend).
+
+Ajustes Críticos de Implementación:
+
+Intervalo Base: Configura el intervalo del Backend (SYNC_INTERVAL_MS) en 120,000 ms (2 minutos) inicialmente para proteger la cuota de API.
+
+Prevención de Picos (Jitter): Al iterar sobre las marcas para sincronizar, introduce un pequeño retraso secuencial (ej. 1 segundo) entre cada llamada a la API de Metricool para no enviar todas las peticiones en el mismo milisegundo.
+
+Manejo de Rate Limit (429): Implementa una lógica simple de 'Backoff': si una petición falla con error 429, omite esa marca en el siguiente ciclo de sincronización para dejar 'enfriar' la API.
+
+Frontend: Activa refetchOnWindowFocus: true en React Query.
+
+Procede a generar el código del SyncService con estas protecciones."
+
+Con esto, tienes un sistema profesional, seguro y escalable.
