@@ -124,97 +124,129 @@ class SyncService {
     let savedCount = 0;
 
     for (const conversation of inboxData.conversations) {
-      const rawConv = conversation as any;
-      const lastMessage = rawConv.messages?.[0];
-      if (!lastMessage) continue;
+      const conv = conversation as any;
+      if (!conv.messages || conv.messages.length === 0) continue;
 
-      let author = "Unknown";
-      let avatar = "";
-      const fromId = lastMessage.from;
+      for (const msg of conv.messages) {
+        try {
+          let author = 'Unknown';
+          let authorAvatar = null;
+          let content = msg.message || msg.text || '';
+          let timestamp = msg.created_time || msg.publicationDateTime || msg.timestamp || Date.now();
 
-      if (rawConv.participants) {
-        const participant = rawConv.participants.find((p: any) => p.id === fromId);
-        if (participant) {
-          author = participant.name || "Unknown";
-          avatar = participant.imageProfileUrl || "";
+          if (conv.provider === 'INSTAGRAM' || conv.provider === 'LINKEDIN' || conv.provider === 'TIKTOKBUSINESS') {
+            const fromId = msg.from;
+            const participants = conv.participants || [];
+            const fromParticipant = participants.find((p: any) => p.id === fromId);
+            
+            author = fromParticipant?.name || `Unknown ${conv.provider} User`;
+            authorAvatar = fromParticipant?.imageProfileUrl || null;
+          } else {
+            author = msg.from?.name || msg.sender?.name || 'Unknown';
+            authorAvatar = msg.from?.picture || msg.sender?.picture || null;
+          }
+
+          const messageData = {
+            brandId,
+            platform: this.normalizePlatform(conv.provider || "unknown"),
+            type: "conversation" as const,
+            author,
+            authorAvatar: authorAvatar || null,
+            content,
+            timestamp: new Date(timestamp),
+            status: "unread" as const,
+            urgency: null,
+            intent: null,
+            sentiment: null,
+            aiSummary: null,
+            draftResponse: null,
+            sourceUrl: null,
+            contextType: null,
+            crmData: null,
+            metricoolId: `conv_${conv.id}_${msg.id || msg.timestamp}`,
+            rawData: { conversation: conv, message: msg },
+            threadId: conv.id,
+            parentMessageId: null,
+          };
+
+          await storage.upsertMessage(messageData);
+          savedCount++;
+        } catch (error: any) {
+          console.error(`Error upserting conversation message:`, error.message);
         }
       }
-
-      const messageData = {
-        brandId,
-        platform: this.normalizePlatform(rawConv.provider || "unknown"),
-        type: "conversation" as const,
-        author,
-        authorAvatar: avatar || null,
-        content: lastMessage.text || "",
-        timestamp: new Date(lastMessage.createdTime || rawConv.creationDate || Date.now()),
-        status: "unread" as const,
-        urgency: null,
-        intent: null,
-        sentiment: null,
-        aiSummary: null,
-        draftResponse: null,
-        sourceUrl: null,
-        contextType: null,
-        crmData: null,
-        metricoolId: rawConv.id || null,
-        rawData: rawConv,
-      };
-
-      await storage.upsertMessage(messageData);
-      savedCount++;
     }
 
     for (const comment of inboxData.comments) {
-      const rawComment = comment as any;
-      let author = "Unknown";
-      let avatar = "";
-      let content = "";
-      let timestamp = new Date();
-      let sourceUrl = "";
-
-      if (rawComment.participants && rawComment.participants.length > 0) {
-        const ownerId = rawComment.root?.owner;
-        let participant = rawComment.participants[0];
+      try {
+        const threadId = comment.postId || comment.rawData?.root?.element?.id || null;
         
-        if (ownerId && rawComment.participants.length > 1) {
-          const found = rawComment.participants.find((p: any) => p.id === ownerId);
-          if (found) participant = found;
+        const savedComment = await storage.upsertMessage({
+          brandId,
+          metricoolId: comment.id,
+          platform: this.normalizePlatform(comment.provider),
+          type: "comment" as const,
+          author: comment.author,
+          authorAvatar: comment.authorAvatar || null,
+          content: comment.content,
+          timestamp: new Date(comment.timestamp),
+          status: "unread" as const,
+          sourceUrl: comment.postUrl || null,
+          rawData: comment.rawData || comment,
+          threadId: threadId,
+          parentMessageId: null,
+          urgency: null,
+          intent: null,
+          sentiment: null,
+          aiSummary: null,
+          draftResponse: null,
+          contextType: null,
+          crmData: null,
+        });
+        savedCount++;
+
+        const nestedReplies = comment.replies || comment.rawData?.root?.comments || [];
+        for (const reply of nestedReplies) {
+          try {
+            const replyOwnerId = reply.owner;
+            const participants = comment.rawData?.participants || [];
+            const replyAuthorParticipant = participants.find((p: any) => p.id === replyOwnerId);
+            
+            const replyAuthor = replyAuthorParticipant?.name || `Unknown Reply Author`;
+            const replyAvatar = replyAuthorParticipant?.imageProfileUrl || null;
+            const replyContent = reply.text || '';
+            const replyTimestamp = reply.creationDate || comment.timestamp;
+
+            await storage.upsertMessage({
+              brandId,
+              metricoolId: reply.id,
+              platform: this.normalizePlatform(comment.provider),
+              type: "comment" as const,
+              author: replyAuthor,
+              authorAvatar: replyAvatar,
+              content: replyContent,
+              timestamp: new Date(replyTimestamp),
+              status: "unread" as const,
+              sourceUrl: reply.properties?.permalink || comment.postUrl || null,
+              rawData: reply,
+              threadId: threadId,
+              parentMessageId: savedComment.id,
+              urgency: null,
+              intent: null,
+              sentiment: null,
+              aiSummary: null,
+              draftResponse: null,
+              contextType: null,
+              crmData: null,
+            });
+            savedCount++;
+          } catch (replyError: any) {
+            console.error(`Error upserting reply:`, replyError.message);
+          }
         }
-        
-        author = participant.name || "Unknown";
-        avatar = participant.imageProfileUrl || "";
+      } catch (error: any) {
+        console.error(`Error upserting comment:`, error.message);
       }
-
-      if (rawComment.root) {
-        content = rawComment.root.text || "";
-        timestamp = new Date(rawComment.root.creationDate || rawComment.creationDate || Date.now());
-        sourceUrl = rawComment.root.element?.link || rawComment.root.properties?.permalink || "";
-      }
-
-      const messageData = {
-        brandId,
-        platform: this.normalizePlatform(rawComment.provider || "unknown"),
-        type: "comment" as const,
-        author,
-        authorAvatar: avatar || null,
-        content,
-        timestamp,
-        status: "unread" as const,
-        urgency: null,
-        intent: null,
-        sentiment: null,
-        aiSummary: null,
-        draftResponse: null,
-        sourceUrl: sourceUrl || null,
-        contextType: null,
-        crmData: null,
-        metricoolId: rawComment.id || null,
-        rawData: rawComment,
-      };
-
-      await storage.upsertMessage(messageData);
-      savedCount++;
     }
 
     log(`[SyncService] Brand ${brandName}: saved ${savedCount} messages`, "sync");
