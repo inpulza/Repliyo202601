@@ -1,0 +1,1683 @@
+[
+  {
+    "data": [
+      {
+        "id": "122287862810232121_2432650170519580",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-27T01:31:26+0100",
+        "lastUpdateTime": "2025-11-27T01:31:26+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "24494065186935185",
+            "name": "Olga Garcia",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/24494065186935185/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122287862810232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/836209709051028/",
+            "text": "¿TIRAS LA YEMA DEL HUEVO? Es el peor error que le haces a tu corazón\n\nTe han mentido sobre el desayuno: llevas años tirando la yema del huevo a la basura pensando que cuidas tu corazón. ¡Es el peor error! El colesterol de los alimentos tiene muy poco impacto en el colesterol de tu sangre. De hecho, la yema tiene colina y vitaminas que tu hígado necesita para procesar las grasas. El verdadero enemigo de tus arterias no es el huevo, es el pan blanco, el jugo de naranja y el cereal azucarado con el que lo acompañas. ¡Deja de tenerle miedo a la grasa natural y empieza a temerle al azúcar procesado! Comerte dos huevos enteros es medicina para tu metabolismo.\n\n#huevo #colesterol #yema #desayuno #grasa #azúcar #arterias #metabolismo #medicina #mito",
+            "mediaUrls": [
+              "https://scontent-lhr8-2.xx.fbcdn.net/v/t15.5256-10/590238054_1276505914309999_409486007131565162_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=Sd6sMcaz6EQQ7kNvwEjOUpT&_nc_oc=AdnaGLNx1DddapN-OsqbjZlkiO5Xa0r0hPh6BsFdpFfIsNw1ldloXrOdo-AT08RNP30&_nc_zt=23&_nc_ht=scontent-lhr8-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQHqzR4wFqswdTE3gdPX5bQtnDKD1QgtGM3fPSJdzMCJLy5P8b6HheeFeU1c3l0HChMXhmGKsES8&oh=00_AfjbhRGekw1_RSZPj2JhYuYHBUcJvKEgndfpuOaK3xTrLg&oe=692DDB3A"
+            ],
+            "commentCount": 1,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122287862810232121_2432650170519580",
+          "creationDate": "2025-11-27T01:31:26+0100",
+          "owner": "24494065186935185",
+          "text": "❤️",
+          "mediaUrl": "",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/836209709051028/?comment_id=2432650170519580"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122287778108232121_836202649119885",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-26T13:29:21+0100",
+        "lastUpdateTime": "2025-11-26T13:29:21+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "32572736625707262",
+            "name": "Jorgelina Ramos Cumba",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/32572736625707262/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122287778108232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/1992116421359318/",
+            "text": "¿ES DOLOROSO CERRAR LA PUERTA? Es más doloroso quedarte donde ya no perteneces\n\nA veces hay que pasar la página y comenzar un nuevo camino. Cerrar una puerta o pasar la página implica tomar decisiones que pueden ser extremadamente dolorosas.\n\nSin embargo, es más importante pasar la página, vivir en salud mental y emprender hacia nuevos horizontes con nuevas perspectivas que quedarte en un lugar al cual ya no perteneces.\n\nPasar la página siempre te dará opciones: ya sea encontrar nuevas alternativas o, en el peor de los casos, un único camino que, aunque no sea placentero, debes tomar. Lo que no puedes permitir es que no se respeten tus principios o tus límites.\n\nSi no estás en el lugar correcto, es momento de sentarte y analizar. Tienes que cerrar esa puerta, tienes que dar el salto, porque allá afuera puede estar esperándote una mejor opción.\n\n#pasarlapagina #cerrarciclos #leydevida #saltodefe #saludmental #ponerlimites #doloroso #nuevoscomienzos #superacion #reflexion",
+            "mediaUrls": [
+              "https://scontent-lhr6-1.xx.fbcdn.net/v/t15.5256-10/591276288_1164516415829762_2179438097292065213_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=1YbGx_6fOyEQ7kNvwG-5YWk&_nc_oc=Adne2vp4qy6X4u4k1sK_PLoa-ZQ4NdVQZCNvSDfBbvWbJYeW_-tT8pPARtiEgXUdhsQ&_nc_zt=23&_nc_ht=scontent-lhr6-1.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQGTFJExt51vtQbqPra1AeesBvGLXUycNOb7rYvqgUWk4GPD4GdVll0kIA4XSk6XMxehZBmFQiDp&oh=00_AfhfCKHQwOJFcw4BoFiG6D86hCHSIOhUEORaBysye36jiw&oe=692DE633"
+            ],
+            "commentCount": 1,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122287778108232121_836202649119885",
+          "creationDate": "2025-11-26T13:29:21+0100",
+          "owner": "32572736625707262",
+          "text": "Gracias gracias ❤️",
+          "mediaUrl": "",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/1992116421359318/?comment_id=836202649119885"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122287694162232121_709987671725503",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-26T08:57:05+0100",
+        "lastUpdateTime": "2025-11-26T08:57:05+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "24472658092408071",
+            "name": "Zory Labrada Torres",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/24472658092408071/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122287694162232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/898281306196754/",
+            "text": "¿TOMAR SUPLEMENTOS ES PELIGROSO? 3 Errores que dañan tus riñones\n\nA esta edad, muchas personas recurren a suplementos sin guía médica, pensando que \"más es mejor\". ¡Cuidado! Esto puede ser peligroso. Sin un control preciso de las dosis, lo que crees que es natural puede volverse tóxico. Mezclar suplementos a ciegas puede sobrecargar tus riñones, anular el efecto de tus medicinas o empeorar una inflamación silenciosa, especialmente si ya tienes condiciones como diabetes o insuficiencia renal. No se trata de adivinar qué te falta. Se trata de saber exactamente qué necesita tu bioquímica mediante análisis clínicos serios.\n\n#suplementos #peligro #dosis #riñones #toxicidad #vitaminas #salud #medicina #mayoresde50 #inflamación",
+            "mediaUrls": [
+              "https://scontent-lhr6-2.xx.fbcdn.net/v/t15.5256-10/588619756_1208774517762099_7472835123177325050_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=fWpwMaVtXHYQ7kNvwFhONdn&_nc_oc=AdmMHvRyv64Y6CnANcnLIPF4lRvndDyOL9LJfL8D5WoFJNb6g0VgwdRNGdb0mqieFgA&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQGhVRaEEWfiygUc1g8YHrO3OaKqnmVqZqphwQkbqEfiGJ1OXruCLkV19cpawFFFPNtzgPJVq20M&oh=00_AfiWxb9URNgUMD_9DA_n0eCiVjDz_khRds-hVKp4ZDPFlA&oe=692E04E8"
+            ],
+            "commentCount": 8,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122287694162232121_709987671725503",
+          "creationDate": "2025-11-26T08:57:05+0100",
+          "owner": "24472658092408071",
+          "text": "Suplementos",
+          "mediaUrl": "",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/898281306196754/?comment_id=709987671725503"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122287694162232121_738712405224145",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-26T08:05:12+0100",
+        "lastUpdateTime": "2025-11-26T08:05:12+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "25405281935758752",
+            "name": "Daymi Rodríguez Vargas",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/25405281935758752/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122287694162232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/898281306196754/",
+            "text": "¿TOMAR SUPLEMENTOS ES PELIGROSO? 3 Errores que dañan tus riñones\n\nA esta edad, muchas personas recurren a suplementos sin guía médica, pensando que \"más es mejor\". ¡Cuidado! Esto puede ser peligroso. Sin un control preciso de las dosis, lo que crees que es natural puede volverse tóxico. Mezclar suplementos a ciegas puede sobrecargar tus riñones, anular el efecto de tus medicinas o empeorar una inflamación silenciosa, especialmente si ya tienes condiciones como diabetes o insuficiencia renal. No se trata de adivinar qué te falta. Se trata de saber exactamente qué necesita tu bioquímica mediante análisis clínicos serios.\n\n#suplementos #peligro #dosis #riñones #toxicidad #vitaminas #salud #medicina #mayoresde50 #inflamación",
+            "mediaUrls": [
+              "https://scontent-lhr6-2.xx.fbcdn.net/v/t15.5256-10/588619756_1208774517762099_7472835123177325050_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=fWpwMaVtXHYQ7kNvwFhONdn&_nc_oc=AdmMHvRyv64Y6CnANcnLIPF4lRvndDyOL9LJfL8D5WoFJNb6g0VgwdRNGdb0mqieFgA&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQGhVRaEEWfiygUc1g8YHrO3OaKqnmVqZqphwQkbqEfiGJ1OXruCLkV19cpawFFFPNtzgPJVq20M&oh=00_AfiWxb9URNgUMD_9DA_n0eCiVjDz_khRds-hVKp4ZDPFlA&oe=692E04E8"
+            ],
+            "commentCount": 8,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122287694162232121_738712405224145",
+          "creationDate": "2025-11-26T08:05:12+0100",
+          "owner": "25405281935758752",
+          "text": "Suplemento",
+          "mediaUrl": "",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/898281306196754/?comment_id=738712405224145"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122287694162232121_1934630200420502",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-26T19:10:04+0100",
+        "lastUpdateTime": "2025-11-26T19:10:04+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "32511328145181989",
+            "name": "Niurka de la Hoz",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/32511328145181989/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122287694162232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/898281306196754/",
+            "text": "¿TOMAR SUPLEMENTOS ES PELIGROSO? 3 Errores que dañan tus riñones\n\nA esta edad, muchas personas recurren a suplementos sin guía médica, pensando que \"más es mejor\". ¡Cuidado! Esto puede ser peligroso. Sin un control preciso de las dosis, lo que crees que es natural puede volverse tóxico. Mezclar suplementos a ciegas puede sobrecargar tus riñones, anular el efecto de tus medicinas o empeorar una inflamación silenciosa, especialmente si ya tienes condiciones como diabetes o insuficiencia renal. No se trata de adivinar qué te falta. Se trata de saber exactamente qué necesita tu bioquímica mediante análisis clínicos serios.\n\n#suplementos #peligro #dosis #riñones #toxicidad #vitaminas #salud #medicina #mayoresde50 #inflamación",
+            "mediaUrls": [
+              "https://scontent-lhr6-2.xx.fbcdn.net/v/t15.5256-10/588619756_1208774517762099_7472835123177325050_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=fWpwMaVtXHYQ7kNvwFhONdn&_nc_oc=AdmMHvRyv64Y6CnANcnLIPF4lRvndDyOL9LJfL8D5WoFJNb6g0VgwdRNGdb0mqieFgA&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQGhVRaEEWfiygUc1g8YHrO3OaKqnmVqZqphwQkbqEfiGJ1OXruCLkV19cpawFFFPNtzgPJVq20M&oh=00_AfiWxb9URNgUMD_9DA_n0eCiVjDz_khRds-hVKp4ZDPFlA&oe=692E04E8"
+            ],
+            "commentCount": 8,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122287694162232121_1934630200420502",
+          "creationDate": "2025-11-26T19:10:04+0100",
+          "owner": "32511328145181989",
+          "text": "Suplementos",
+          "mediaUrl": "",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/898281306196754/?comment_id=1934630200420502"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122287694162232121_2099793240955119",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-26T12:20:15+0100",
+        "lastUpdateTime": "2025-11-26T12:20:15+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "25654384954159699",
+            "name": "Ines Maris Quero Tito",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/25654384954159699/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122287694162232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/898281306196754/",
+            "text": "¿TOMAR SUPLEMENTOS ES PELIGROSO? 3 Errores que dañan tus riñones\n\nA esta edad, muchas personas recurren a suplementos sin guía médica, pensando que \"más es mejor\". ¡Cuidado! Esto puede ser peligroso. Sin un control preciso de las dosis, lo que crees que es natural puede volverse tóxico. Mezclar suplementos a ciegas puede sobrecargar tus riñones, anular el efecto de tus medicinas o empeorar una inflamación silenciosa, especialmente si ya tienes condiciones como diabetes o insuficiencia renal. No se trata de adivinar qué te falta. Se trata de saber exactamente qué necesita tu bioquímica mediante análisis clínicos serios.\n\n#suplementos #peligro #dosis #riñones #toxicidad #vitaminas #salud #medicina #mayoresde50 #inflamación",
+            "mediaUrls": [
+              "https://scontent-lhr6-2.xx.fbcdn.net/v/t15.5256-10/588619756_1208774517762099_7472835123177325050_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=fWpwMaVtXHYQ7kNvwFhONdn&_nc_oc=AdmMHvRyv64Y6CnANcnLIPF4lRvndDyOL9LJfL8D5WoFJNb6g0VgwdRNGdb0mqieFgA&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQGhVRaEEWfiygUc1g8YHrO3OaKqnmVqZqphwQkbqEfiGJ1OXruCLkV19cpawFFFPNtzgPJVq20M&oh=00_AfiWxb9URNgUMD_9DA_n0eCiVjDz_khRds-hVKp4ZDPFlA&oe=692E04E8"
+            ],
+            "commentCount": 8,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122287694162232121_2099793240955119",
+          "creationDate": "2025-11-26T12:20:15+0100",
+          "owner": "25654384954159699",
+          "text": "Suplementos.",
+          "mediaUrl": "",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/898281306196754/?comment_id=2099793240955119"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122287694162232121_1340384194045946",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-27T05:01:16+0100",
+        "lastUpdateTime": "2025-11-27T05:01:16+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "25511363345220540",
+            "name": "Soraya Chappotin",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/25511363345220540/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122287694162232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/898281306196754/",
+            "text": "¿TOMAR SUPLEMENTOS ES PELIGROSO? 3 Errores que dañan tus riñones\n\nA esta edad, muchas personas recurren a suplementos sin guía médica, pensando que \"más es mejor\". ¡Cuidado! Esto puede ser peligroso. Sin un control preciso de las dosis, lo que crees que es natural puede volverse tóxico. Mezclar suplementos a ciegas puede sobrecargar tus riñones, anular el efecto de tus medicinas o empeorar una inflamación silenciosa, especialmente si ya tienes condiciones como diabetes o insuficiencia renal. No se trata de adivinar qué te falta. Se trata de saber exactamente qué necesita tu bioquímica mediante análisis clínicos serios.\n\n#suplementos #peligro #dosis #riñones #toxicidad #vitaminas #salud #medicina #mayoresde50 #inflamación",
+            "mediaUrls": [
+              "https://scontent-lhr6-2.xx.fbcdn.net/v/t15.5256-10/588619756_1208774517762099_7472835123177325050_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=fWpwMaVtXHYQ7kNvwFhONdn&_nc_oc=AdmMHvRyv64Y6CnANcnLIPF4lRvndDyOL9LJfL8D5WoFJNb6g0VgwdRNGdb0mqieFgA&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQGhVRaEEWfiygUc1g8YHrO3OaKqnmVqZqphwQkbqEfiGJ1OXruCLkV19cpawFFFPNtzgPJVq20M&oh=00_AfiWxb9URNgUMD_9DA_n0eCiVjDz_khRds-hVKp4ZDPFlA&oe=692E04E8"
+            ],
+            "commentCount": 8,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122287694162232121_1340384194045946",
+          "creationDate": "2025-11-27T05:01:16+0100",
+          "owner": "25511363345220540",
+          "text": "Suplementos \nDesde Cuba \nGracias",
+          "mediaUrl": "",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/898281306196754/?comment_id=1340384194045946"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122287694162232121_844501801501566",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-26T15:17:47+0100",
+        "lastUpdateTime": "2025-11-26T15:17:47+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "32519140664367359",
+            "name": "Belkis Vallaadares",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/32519140664367359/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122287694162232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/898281306196754/",
+            "text": "¿TOMAR SUPLEMENTOS ES PELIGROSO? 3 Errores que dañan tus riñones\n\nA esta edad, muchas personas recurren a suplementos sin guía médica, pensando que \"más es mejor\". ¡Cuidado! Esto puede ser peligroso. Sin un control preciso de las dosis, lo que crees que es natural puede volverse tóxico. Mezclar suplementos a ciegas puede sobrecargar tus riñones, anular el efecto de tus medicinas o empeorar una inflamación silenciosa, especialmente si ya tienes condiciones como diabetes o insuficiencia renal. No se trata de adivinar qué te falta. Se trata de saber exactamente qué necesita tu bioquímica mediante análisis clínicos serios.\n\n#suplementos #peligro #dosis #riñones #toxicidad #vitaminas #salud #medicina #mayoresde50 #inflamación",
+            "mediaUrls": [
+              "https://scontent-lhr6-2.xx.fbcdn.net/v/t15.5256-10/588619756_1208774517762099_7472835123177325050_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=fWpwMaVtXHYQ7kNvwFhONdn&_nc_oc=AdmMHvRyv64Y6CnANcnLIPF4lRvndDyOL9LJfL8D5WoFJNb6g0VgwdRNGdb0mqieFgA&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQGhVRaEEWfiygUc1g8YHrO3OaKqnmVqZqphwQkbqEfiGJ1OXruCLkV19cpawFFFPNtzgPJVq20M&oh=00_AfiWxb9URNgUMD_9DA_n0eCiVjDz_khRds-hVKp4ZDPFlA&oe=692E04E8"
+            ],
+            "commentCount": 8,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122287694162232121_844501801501566",
+          "creationDate": "2025-11-26T15:17:47+0100",
+          "owner": "32519140664367359",
+          "text": "Suplementos",
+          "mediaUrl": "",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/898281306196754/?comment_id=844501801501566"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122287694162232121_653033291110205",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-26T08:56:33+0100",
+        "lastUpdateTime": "2025-11-26T08:56:33+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "24472658092408071",
+            "name": "Zory Labrada Torres",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/24472658092408071/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122287694162232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/898281306196754/",
+            "text": "¿TOMAR SUPLEMENTOS ES PELIGROSO? 3 Errores que dañan tus riñones\n\nA esta edad, muchas personas recurren a suplementos sin guía médica, pensando que \"más es mejor\". ¡Cuidado! Esto puede ser peligroso. Sin un control preciso de las dosis, lo que crees que es natural puede volverse tóxico. Mezclar suplementos a ciegas puede sobrecargar tus riñones, anular el efecto de tus medicinas o empeorar una inflamación silenciosa, especialmente si ya tienes condiciones como diabetes o insuficiencia renal. No se trata de adivinar qué te falta. Se trata de saber exactamente qué necesita tu bioquímica mediante análisis clínicos serios.\n\n#suplementos #peligro #dosis #riñones #toxicidad #vitaminas #salud #medicina #mayoresde50 #inflamación",
+            "mediaUrls": [
+              "https://scontent-lhr6-2.xx.fbcdn.net/v/t15.5256-10/588619756_1208774517762099_7472835123177325050_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=fWpwMaVtXHYQ7kNvwFhONdn&_nc_oc=AdmMHvRyv64Y6CnANcnLIPF4lRvndDyOL9LJfL8D5WoFJNb6g0VgwdRNGdb0mqieFgA&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQGhVRaEEWfiygUc1g8YHrO3OaKqnmVqZqphwQkbqEfiGJ1OXruCLkV19cpawFFFPNtzgPJVq20M&oh=00_AfiWxb9URNgUMD_9DA_n0eCiVjDz_khRds-hVKp4ZDPFlA&oe=692E04E8"
+            ],
+            "commentCount": 8,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122287694162232121_653033291110205",
+          "creationDate": "2025-11-26T08:56:33+0100",
+          "owner": "24472658092408071",
+          "text": "",
+          "mediaUrl": "https://scontent-lhr8-1.xx.fbcdn.net/v/t39.1997-6/93027172_222645632401274_7176243611145601024_n.png?_nc_cat=1&ccb=1-7&_nc_sid=23dd7b&_nc_ohc=KH2v5naBXm0Q7kNvwH2Ngro&_nc_oc=Adm98kVHcxQonpz1ozPhuC86AtF2lL_o4aLnLQ7J97MHKEZpsl7vijVZHSwegyNbZVM&_nc_zt=26&_nc_ht=scontent-lhr8-1.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQEq2lypobcqMRSBEfSc9nQpmsOLyAsg8JiIPCuKYk8GNFJMrU7CC_E4wloQK7lDkR2j0VBYlXZZ&oh=00_Afjv9qMvN-mOR8nuc8hRnxVlADpTZKL-U4NKPePWMeimEg&oe=692DF8AC",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/898281306196754/?comment_id=653033291110205"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122287694162232121_875051741633414",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-26T21:27:05+0100",
+        "lastUpdateTime": "2025-11-26T21:27:05+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "7986880464704271",
+            "name": "Norma Barbara Ruiz Dieguez",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/7986880464704271/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122287694162232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/898281306196754/",
+            "text": "¿TOMAR SUPLEMENTOS ES PELIGROSO? 3 Errores que dañan tus riñones\n\nA esta edad, muchas personas recurren a suplementos sin guía médica, pensando que \"más es mejor\". ¡Cuidado! Esto puede ser peligroso. Sin un control preciso de las dosis, lo que crees que es natural puede volverse tóxico. Mezclar suplementos a ciegas puede sobrecargar tus riñones, anular el efecto de tus medicinas o empeorar una inflamación silenciosa, especialmente si ya tienes condiciones como diabetes o insuficiencia renal. No se trata de adivinar qué te falta. Se trata de saber exactamente qué necesita tu bioquímica mediante análisis clínicos serios.\n\n#suplementos #peligro #dosis #riñones #toxicidad #vitaminas #salud #medicina #mayoresde50 #inflamación",
+            "mediaUrls": [
+              "https://scontent-lhr6-2.xx.fbcdn.net/v/t15.5256-10/588619756_1208774517762099_7472835123177325050_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=fWpwMaVtXHYQ7kNvwFhONdn&_nc_oc=AdmMHvRyv64Y6CnANcnLIPF4lRvndDyOL9LJfL8D5WoFJNb6g0VgwdRNGdb0mqieFgA&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQGhVRaEEWfiygUc1g8YHrO3OaKqnmVqZqphwQkbqEfiGJ1OXruCLkV19cpawFFFPNtzgPJVq20M&oh=00_AfiWxb9URNgUMD_9DA_n0eCiVjDz_khRds-hVKp4ZDPFlA&oe=692E04E8"
+            ],
+            "commentCount": 8,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122287694162232121_875051741633414",
+          "creationDate": "2025-11-26T21:27:05+0100",
+          "owner": "7986880464704271",
+          "text": "¡Hola Dr. Joel!. Gracias por demostrar la importancia de ingerir medicamentos sin consultar con el Dr que conoce el funcionamiento en cada persona.. ¡Gracias!",
+          "mediaUrl": "",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/898281306196754/?comment_id=875051741633414"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122287468742232121_2536719113371342",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-25T00:43:47+0100",
+        "lastUpdateTime": "2025-11-25T00:43:47+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "24960712956908112",
+            "name": "Dania Fernandez Cabezas",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/24960712956908112/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122287468742232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/810252538487002/",
+            "text": "¡ESTÁS ENVEJECIENDO RÁPIDO! 3 Errores que dañan tu reloj biológico\n\nAquí van 3 hábitos que le pasan factura a tu reloj biológico:\n\nDormir Tarde: Lo ideal es dormirte 3 horas antes de la medianoche, pues ese es el sueño reparador que realmente te rejuvenece. Tu cuerpo está diseñado biológicamente para descansar temprano.\n\nExceso de Azúcar: El azúcar no solo está en la mesa, está oculto en todo. Esto daña tus células, aumenta la oxidación y genera un envejecimiento prematuro.\n\nFalta de Agua: Es alarmante ver personas que no toman ni tres vasos de agua pura al día. Tu cuerpo necesita hidratación para funcionar y eliminar toxinas.\n\n#envejecer #azúcar #dormir #hidratación #antiedad #salud #toxinas #rejuvenecer #cuerpo #medicina",
+            "mediaUrls": [
+              "https://scontent-lhr8-1.xx.fbcdn.net/v/t15.5256-10/587063722_2348573675596380_2001307132505804223_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=90Ora67YPrwQ7kNvwErpXYx&_nc_oc=Adn4249uB9_R_MXH67Mzb3HrIBiL8RFntAILBYgUDm16jdbNKnzarx-sE5X4MyfEAas&_nc_zt=23&_nc_ht=scontent-lhr8-1.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQE8UODBc1_Dfb8ND8meu_wAQCJX3BYiwgYUbhkpbyiH6v1Ueh1C9b63kCSH5MJcS0uRaBNzmI2-&oh=00_AfgRz5_MPkrLhCsDhH8US_m1lMHxz9s0Ndcwch16o2ZXzw&oe=692DDDF8"
+            ],
+            "commentCount": 1,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122287468742232121_2536719113371342",
+          "creationDate": "2025-11-25T00:43:47+0100",
+          "owner": "24960712956908112",
+          "text": "Gracias Doctor los cubanos vamos bien dormimos temprano no consumimos azucar y tomamos mucha agua 🥺🤗",
+          "mediaUrl": "",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/810252538487002/?comment_id=2536719113371342"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122287330796232121_1530411434872110",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-24T17:27:44+0100",
+        "lastUpdateTime": "2025-11-24T17:27:44+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "26326702906977193",
+            "name": "Neyxi Muñoz",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/26326702906977193/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122287330796232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/2363803477356207/",
+            "text": "NO INTENTES SER BUENO CON TODOS Aprende a ser JUSTO (Es la mejor defensa)\n\nEsto me costó mucho entenderlo, pero es una realidad: la clave no es ser bueno, sino ser justo. Cuando intentas ser bueno con todo el mundo, te vas perdiendo a ti mismo, olvidas tus límites y permites que las personas dejen de apreciar tu valor y traten de pasar por encima de ti.\n\nSer todo bondad no es saludable ni para ti ni para la otra persona, porque la gente siempre luchará por sus propios intereses. Muy pocas personas se quitan de su sitio para dártelo a ti.\n\nPor eso, ser justo significa tomar la decisión correcta y más sensata, lo cual protege tus principios y prioridades. No es ser bueno, es ser justo.\n\n#justo #bueno #limites #justicia #bondad #leydevida #autocuidado #principios #prioridades #reflexión",
+            "mediaUrls": [
+              "https://scontent-lhr6-2.xx.fbcdn.net/v/t15.5256-10/588597540_1404375658070905_6733077552811214456_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=7Rx3WevVGXgQ7kNvwGTvQJG&_nc_oc=Adn4RhHsa8lbVm7NQaQgxFy50nBKHr32B-OnLxi9VrFlXWxEgQlT__jicUsAV6e8Na4&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQENODirHBbgsdapZcDfiQkzvHNqiwfUAO9p8X_sxUV0fvNIe5Pv3XU6-54fu9C0jH02SKjEpZKU&oh=00_Afj05FTNTOpS_LOGzqZw20QkN_N4mUO1TA2wNcfgVt92jQ&oe=692E01E9"
+            ],
+            "commentCount": 6,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122287330796232121_1530411434872110",
+          "creationDate": "2025-11-24T17:27:44+0100",
+          "owner": "26326702906977193",
+          "text": "Ser justo es  lo mejor porque bueno nunca te valoran",
+          "mediaUrl": "https://external-lhr8-1.xx.fbcdn.net/emg1/v/t13/5281902038236446462?url=https%3A%2F%2Fmedia0.giphy.com%2Fmedia%2Fv1.Y2lkPWJlMzAyMTE3ZGlybWxkejlxY3QzdTA1azhjNjIxN3hwNWltcjkwajBpM3RmOTh4eiZlcD12MV9naWZzJmN0PXM%2Fx9f2Ig7j1WjNo73NTm%2Fgiphy.gif&fb_obo=1&utld=giphy.com&stp=c0.5000x0.5000f_dst-emg0_p397x397_q75_tt6&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_oc=AdnrPfnsFc-7y2gmTUPnMS31q0fpSLEY8yeezDybrwTE2nqKnGPawaU4QtEd7SREa4M&ccb=13-1&oh=06_Q3-5Aa9MaLjCTxrRYr5KJGAtxTYURvdO7sO0mPxfKXPxXsTU&oe=692A00A1&_nc_sid=ef6713",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/2363803477356207/?comment_id=1530411434872110"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122287330796232121_1395847692177662",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-24T15:14:14+0100",
+        "lastUpdateTime": "2025-11-24T15:14:14+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "7335949793190467",
+            "name": "Evian Gonzalez",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/7335949793190467/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122287330796232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/2363803477356207/",
+            "text": "NO INTENTES SER BUENO CON TODOS Aprende a ser JUSTO (Es la mejor defensa)\n\nEsto me costó mucho entenderlo, pero es una realidad: la clave no es ser bueno, sino ser justo. Cuando intentas ser bueno con todo el mundo, te vas perdiendo a ti mismo, olvidas tus límites y permites que las personas dejen de apreciar tu valor y traten de pasar por encima de ti.\n\nSer todo bondad no es saludable ni para ti ni para la otra persona, porque la gente siempre luchará por sus propios intereses. Muy pocas personas se quitan de su sitio para dártelo a ti.\n\nPor eso, ser justo significa tomar la decisión correcta y más sensata, lo cual protege tus principios y prioridades. No es ser bueno, es ser justo.\n\n#justo #bueno #limites #justicia #bondad #leydevida #autocuidado #principios #prioridades #reflexión",
+            "mediaUrls": [
+              "https://scontent-lhr6-2.xx.fbcdn.net/v/t15.5256-10/588597540_1404375658070905_6733077552811214456_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=7Rx3WevVGXgQ7kNvwGTvQJG&_nc_oc=Adn4RhHsa8lbVm7NQaQgxFy50nBKHr32B-OnLxi9VrFlXWxEgQlT__jicUsAV6e8Na4&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQENODirHBbgsdapZcDfiQkzvHNqiwfUAO9p8X_sxUV0fvNIe5Pv3XU6-54fu9C0jH02SKjEpZKU&oh=00_Afj05FTNTOpS_LOGzqZw20QkN_N4mUO1TA2wNcfgVt92jQ&oe=692E01E9"
+            ],
+            "commentCount": 6,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122287330796232121_1395847692177662",
+          "creationDate": "2025-11-24T15:14:14+0100",
+          "owner": "7335949793190467",
+          "text": "",
+          "mediaUrl": "https://scontent-lhr8-1.xx.fbcdn.net/v/t39.1997-6/546644744_24763016379999001_5804887792839993644_n.webp?_nc_cat=108&ccb=1-7&_nc_sid=72b077&_nc_ohc=ei8NPoObc5IQ7kNvwGvsnbH&_nc_oc=AdlO3c7HxFbiar8WL76faJ7dgzX2k0dqqztbsENeQZiwGlTqtY2PuHPs1H4VYP-yai4&_nc_zt=26&_nc_ht=scontent-lhr8-1.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQEVtbtd8_M5Co_SUFonisEuhZud-DtEfiScYV1-iWHsmPHPrcXcsA6YZrQzeiotHQCTi7w5OrMX&oh=00_Afg58egRxQCjEhnmlwRaOfQXv_FHMq73hAUR7HgyXDWk9A&oe=692E0002",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/2363803477356207/?comment_id=1395847692177662"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122287330796232121_1861552951107360",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-24T16:01:43+0100",
+        "lastUpdateTime": "2025-11-24T16:01:43+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "7628443080582844",
+            "name": "Tania Mederos",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/7628443080582844/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122287330796232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/2363803477356207/",
+            "text": "NO INTENTES SER BUENO CON TODOS Aprende a ser JUSTO (Es la mejor defensa)\n\nEsto me costó mucho entenderlo, pero es una realidad: la clave no es ser bueno, sino ser justo. Cuando intentas ser bueno con todo el mundo, te vas perdiendo a ti mismo, olvidas tus límites y permites que las personas dejen de apreciar tu valor y traten de pasar por encima de ti.\n\nSer todo bondad no es saludable ni para ti ni para la otra persona, porque la gente siempre luchará por sus propios intereses. Muy pocas personas se quitan de su sitio para dártelo a ti.\n\nPor eso, ser justo significa tomar la decisión correcta y más sensata, lo cual protege tus principios y prioridades. No es ser bueno, es ser justo.\n\n#justo #bueno #limites #justicia #bondad #leydevida #autocuidado #principios #prioridades #reflexión",
+            "mediaUrls": [
+              "https://scontent-lhr6-2.xx.fbcdn.net/v/t15.5256-10/588597540_1404375658070905_6733077552811214456_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=7Rx3WevVGXgQ7kNvwGTvQJG&_nc_oc=Adn4RhHsa8lbVm7NQaQgxFy50nBKHr32B-OnLxi9VrFlXWxEgQlT__jicUsAV6e8Na4&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQENODirHBbgsdapZcDfiQkzvHNqiwfUAO9p8X_sxUV0fvNIe5Pv3XU6-54fu9C0jH02SKjEpZKU&oh=00_Afj05FTNTOpS_LOGzqZw20QkN_N4mUO1TA2wNcfgVt92jQ&oe=692E01E9"
+            ],
+            "commentCount": 6,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122287330796232121_1861552951107360",
+          "creationDate": "2025-11-24T16:01:43+0100",
+          "owner": "7628443080582844",
+          "text": "",
+          "mediaUrl": "https://external-lhr8-1.xx.fbcdn.net/emg1/v/t13/7295589250781130349?url=https%3A%2F%2Fmedia1.giphy.com%2Fmedia%2Fv1.Y2lkPWJlMzAyMTE3NXRycTV4eTgxbDE5cDJiYXA4Zjdubmh2aWp2bXIwY2Nva3djZ3RuayZlcD12MV9naWZzJmN0PXM%2Fns4A9POxtA3GU%2Fgiphy.gif&fb_obo=1&utld=giphy.com&stp=c0.5000x0.5000f_dst-emg0_p59x59_q75_tt6&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_oc=AdmxraBJ9dr5rgCgh3oxif01knNfxvafS0YwEQ3Uh3xxO6BER8YtlsEDjW0IRxfqDtc&ccb=13-1&oh=06_Q3-5ASJ2ioVYrO_mlctxNa-1D8datx7zrUKav8esuPJVNh-G&oe=692A0F2C&_nc_sid=ef6713",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/2363803477356207/?comment_id=1861552951107360"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122287330796232121_703027029113829",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-24T15:03:16+0100",
+        "lastUpdateTime": "2025-11-24T15:03:16+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "24992941400374580",
+            "name": "Guillermina Arias Sanchez",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/24992941400374580/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122287330796232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/2363803477356207/",
+            "text": "NO INTENTES SER BUENO CON TODOS Aprende a ser JUSTO (Es la mejor defensa)\n\nEsto me costó mucho entenderlo, pero es una realidad: la clave no es ser bueno, sino ser justo. Cuando intentas ser bueno con todo el mundo, te vas perdiendo a ti mismo, olvidas tus límites y permites que las personas dejen de apreciar tu valor y traten de pasar por encima de ti.\n\nSer todo bondad no es saludable ni para ti ni para la otra persona, porque la gente siempre luchará por sus propios intereses. Muy pocas personas se quitan de su sitio para dártelo a ti.\n\nPor eso, ser justo significa tomar la decisión correcta y más sensata, lo cual protege tus principios y prioridades. No es ser bueno, es ser justo.\n\n#justo #bueno #limites #justicia #bondad #leydevida #autocuidado #principios #prioridades #reflexión",
+            "mediaUrls": [
+              "https://scontent-lhr6-2.xx.fbcdn.net/v/t15.5256-10/588597540_1404375658070905_6733077552811214456_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=7Rx3WevVGXgQ7kNvwGTvQJG&_nc_oc=Adn4RhHsa8lbVm7NQaQgxFy50nBKHr32B-OnLxi9VrFlXWxEgQlT__jicUsAV6e8Na4&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQENODirHBbgsdapZcDfiQkzvHNqiwfUAO9p8X_sxUV0fvNIe5Pv3XU6-54fu9C0jH02SKjEpZKU&oh=00_Afj05FTNTOpS_LOGzqZw20QkN_N4mUO1TA2wNcfgVt92jQ&oe=692E01E9"
+            ],
+            "commentCount": 6,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122287330796232121_703027029113829",
+          "creationDate": "2025-11-24T15:03:16+0100",
+          "owner": "24992941400374580",
+          "text": "Es así mismo , mientras mejor eres, muchos no te valoran, pero si es claro que el que lo tiene que ver si lo ve y lo valora,ese es Dios,y te pondrá en el camino la gloria de Dios",
+          "mediaUrl": "",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/2363803477356207/?comment_id=703027029113829"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122287330796232121_1459435905158664",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-24T21:01:15+0100",
+        "lastUpdateTime": "2025-11-24T21:01:15+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "7135600799840763",
+            "name": "Rosely Estrda",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/7135600799840763/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122287330796232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/2363803477356207/",
+            "text": "NO INTENTES SER BUENO CON TODOS Aprende a ser JUSTO (Es la mejor defensa)\n\nEsto me costó mucho entenderlo, pero es una realidad: la clave no es ser bueno, sino ser justo. Cuando intentas ser bueno con todo el mundo, te vas perdiendo a ti mismo, olvidas tus límites y permites que las personas dejen de apreciar tu valor y traten de pasar por encima de ti.\n\nSer todo bondad no es saludable ni para ti ni para la otra persona, porque la gente siempre luchará por sus propios intereses. Muy pocas personas se quitan de su sitio para dártelo a ti.\n\nPor eso, ser justo significa tomar la decisión correcta y más sensata, lo cual protege tus principios y prioridades. No es ser bueno, es ser justo.\n\n#justo #bueno #limites #justicia #bondad #leydevida #autocuidado #principios #prioridades #reflexión",
+            "mediaUrls": [
+              "https://scontent-lhr6-2.xx.fbcdn.net/v/t15.5256-10/588597540_1404375658070905_6733077552811214456_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=7Rx3WevVGXgQ7kNvwGTvQJG&_nc_oc=Adn4RhHsa8lbVm7NQaQgxFy50nBKHr32B-OnLxi9VrFlXWxEgQlT__jicUsAV6e8Na4&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQENODirHBbgsdapZcDfiQkzvHNqiwfUAO9p8X_sxUV0fvNIe5Pv3XU6-54fu9C0jH02SKjEpZKU&oh=00_Afj05FTNTOpS_LOGzqZw20QkN_N4mUO1TA2wNcfgVt92jQ&oe=692E01E9"
+            ],
+            "commentCount": 6,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122287330796232121_1459435905158664",
+          "creationDate": "2025-11-24T21:01:15+0100",
+          "owner": "7135600799840763",
+          "text": "",
+          "mediaUrl": "https://scontent-lhr6-2.xx.fbcdn.net/v/t39.1997-6/548020842_24686423044380860_1743935625766974561_n.webp?_nc_cat=105&ccb=1-7&_nc_sid=72b077&_nc_ohc=LRl54lGkOIoQ7kNvwEsAhgD&_nc_oc=AdnbunQ_taLg4hsSSDbwHGgqor6Psl-NhHeKRO_URHIvPh6GBZhjI1wqayU8RMKgrmY&_nc_zt=26&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQEIrt8f46npnn92quTZewEdin3Wp2T2agVM_NVmFcVjpB34R9QogD2a7rBH5vG5HMkBWBbwpv6I&oh=00_AfgTO9CLZGmB0Y4ieuzmfGwLGJOVA5l_cFHzvg4CYvdjHA&oe=692DFB9C",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/2363803477356207/?comment_id=1459435905158664"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122287330796232121_819137674079784",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-24T15:08:48+0100",
+        "lastUpdateTime": "2025-11-24T15:08:48+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "24943814625262472",
+            "name": "Elsa Maria De Leon",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/24943814625262472/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122287330796232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/2363803477356207/",
+            "text": "NO INTENTES SER BUENO CON TODOS Aprende a ser JUSTO (Es la mejor defensa)\n\nEsto me costó mucho entenderlo, pero es una realidad: la clave no es ser bueno, sino ser justo. Cuando intentas ser bueno con todo el mundo, te vas perdiendo a ti mismo, olvidas tus límites y permites que las personas dejen de apreciar tu valor y traten de pasar por encima de ti.\n\nSer todo bondad no es saludable ni para ti ni para la otra persona, porque la gente siempre luchará por sus propios intereses. Muy pocas personas se quitan de su sitio para dártelo a ti.\n\nPor eso, ser justo significa tomar la decisión correcta y más sensata, lo cual protege tus principios y prioridades. No es ser bueno, es ser justo.\n\n#justo #bueno #limites #justicia #bondad #leydevida #autocuidado #principios #prioridades #reflexión",
+            "mediaUrls": [
+              "https://scontent-lhr6-2.xx.fbcdn.net/v/t15.5256-10/588597540_1404375658070905_6733077552811214456_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=7Rx3WevVGXgQ7kNvwGTvQJG&_nc_oc=Adn4RhHsa8lbVm7NQaQgxFy50nBKHr32B-OnLxi9VrFlXWxEgQlT__jicUsAV6e8Na4&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQENODirHBbgsdapZcDfiQkzvHNqiwfUAO9p8X_sxUV0fvNIe5Pv3XU6-54fu9C0jH02SKjEpZKU&oh=00_Afj05FTNTOpS_LOGzqZw20QkN_N4mUO1TA2wNcfgVt92jQ&oe=692E01E9"
+            ],
+            "commentCount": 6,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122287330796232121_819137674079784",
+          "creationDate": "2025-11-24T15:08:48+0100",
+          "owner": "24943814625262472",
+          "text": "",
+          "mediaUrl": "https://scontent-lhr8-1.xx.fbcdn.net/v/t39.1997-6/553194922_24473516628923653_1916909941983062566_n.webp?_nc_cat=111&ccb=1-7&_nc_sid=72b077&_nc_ohc=8WvDlpY9F_sQ7kNvwFov_QS&_nc_oc=AdmJfdVxnXhwvam5DOTbGHeAd_gOzUbVBNYtso5EfHbaN5eKe8WcdfCJAj_9wmkY4aA&_nc_zt=26&_nc_ht=scontent-lhr8-1.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQEwACjc9Wevf5prEZS7ia4Zwu75RWMaDi1rD7qntg9UIP5rM9PYKzO8sgcVOrXn4HODHGrk-gIz&oh=00_Afix_AD-ovGMMHi2-JlSqGImpXpp7gkCS1Dm4a32Z6YrFg&oe=692DEFBB",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/2363803477356207/?comment_id=819137674079784"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122287212806232121_1182872763777269",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-23T23:03:51+0100",
+        "lastUpdateTime": "2025-11-23T23:03:51+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "8238532892840702",
+            "name": "Rosa Iliana Visens",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/8238532892840702/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122287212806232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/1149248870748729/",
+            "text": "¿INSOMNIO Y ANSIEDAD? El suplemento natural para dormir mejor\n\nLa Vitamina B6 ayuda con el estado de ánimo, fatiga y ansiedad, y tiene una función cardioprotectora. La dosis recomendada es entre 50 a 100 mg diarios. Una fuente deliciosa es el garbanzo.\n\nPara el insomnio, un síntoma frecuente de la menopausia, se recomienda la Melatonina. Una dosis de 1 a 3 mg es suficiente para aliviarlo, tomada de 30 minutos a 1 hora antes de dormir. Las cerezas son una fuente natural de melatonina.\n\nMelatonina y Vitamina B6 para Insomnio y Ansiedad en Menopausia (Dosis y Fuentes Naturales)\n\n#b6 #melatonina #insomnio #ansiedad #fatiga #menopausia #dormir #garbanzo #suplementos #cerezas\n\nvitamina b6 menopausia, melatonina para insomnio, dosis melatonina, garbanzo b6, ansiedad menopausia, suplementos naturales, función cardioprotectora, cerezas, insomnio",
+            "mediaUrls": [
+              "https://scontent-lhr8-1.xx.fbcdn.net/v/t15.5256-10/586122674_828311513262378_6232239926653052876_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=DkattSnjZBAQ7kNvwHYmI1Z&_nc_oc=AdkkbB2Ak6Jvyo1iBbvqf8bHM7aaLgGt9UHpV3nEk5XvJHG770U1PAwynUuBvobjK5w&_nc_zt=23&_nc_ht=scontent-lhr8-1.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQE3Zsz9lm0r2T4t_g2akOIakbBqL5TmePytXG9Y5IzoJMqHWod8DD9W_LBis43CZWpI6BGwP3Ut&oh=00_Afjp_KoUyo-qQZRHjjkJPBpdRdKs9eex1v4TyKxacdIOfA&oe=692DDCA9"
+            ],
+            "commentCount": 1,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122287212806232121_1182872763777269",
+          "creationDate": "2025-11-23T23:03:51+0100",
+          "owner": "8238532892840702",
+          "text": "Muchas gracias por toda su información.",
+          "mediaUrl": "https://external-lhr8-1.xx.fbcdn.net/emg1/v/t13/15348191724992334273?url=https%3A%2F%2Fmedia4.giphy.com%2Fmedia%2Fv1.Y2lkPWJlMzAyMTE3ZGlybWxkejlxY3QzdTA1azhjNjIxN3hwNWltcjkwajBpM3RmOTh4eiZlcD12MV9naWZzJmN0PXM%2Fn0lnosk5JX8Dm%2Fgiphy.gif&fb_obo=1&utld=giphy.com&stp=c0.5000x0.5000f_dst-emg0_p200x200_q75_tt6&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_oc=AdlAjUAiUy15kfllKsQ-oASZnUhPRVYaV8BO8JGPq7GhIdVRaP4G6byJUCtxEwi-2So&ccb=13-1&oh=06_Q3-5Advoqj6kVjf1JHpkiY3u89RclDnLokDVAaJNIXP-eBeR&oe=6929EEE1&_nc_sid=ef6713",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/1149248870748729/?comment_id=1182872763777269"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122287001714232121_1356127919285421",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-23T04:28:37+0100",
+        "lastUpdateTime": "2025-11-23T04:28:37+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "8238532892840702",
+            "name": "Rosa Iliana Visens",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/8238532892840702/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122287001714232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/848146711722030/",
+            "text": "¿PROBLEMAS DE HUESOS EN LA MENOPAUSIA? Calcio + Vitamina D: La Dosis exacta\n\nEl Calcio es un suplemento clave para prevenir la pérdida ósea durante la menopausia. Se recomienda una dosis de 500 a 1000 mg diarios, la cual se puede dividir en la mañana y en la tarde. El Calcio siempre debe ir asociado con la Vitamina D, cuya dosis recomendada es entre 1000 a 2000 U.I. por día. Una fuente natural de Vitamina D es el aceite de hígado de bacalao, aunque puede ser una sustancia desagradable al paladar.\n\nCalcio y Vitamina D para Menopausia: Dosis Clave para Prevenir Osteoporosis\n\n#calcio #vitaminaD #huesos #osteoporosis #menopausia #dosis #suplementos #salud #vitamina #bacalao\n\ncalcio menopausia, dosis calcio, vitamina d dosis, prevenir osteoporosis, aceite de hígado de bacalao, salud ósea, unidades internacionales, pérdida ósea",
+            "mediaUrls": [
+              "https://scontent-lhr6-2.xx.fbcdn.net/v/t15.5256-10/584561577_1985744186158692_3825274963145750489_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=eagkuGNKMPwQ7kNvwF69fE6&_nc_oc=AdlntRA12PghInD6oU2JRWiDTatEVG6ybm_Xg0gNySLXKgEKym8aEjpxh6Cx1oQVZII&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQF24_-sR6MIdpkwdUTtm6PDq_dVg_O_u9JywuB_MBa1JytVNjgIVoj1DYKhefwRwfhIftLnYIIc&oh=00_AfjUbAl7tynR3Hl3ECEAz9EZds05Plx5wnJbCiOh3W0mKQ&oe=692DF7E7"
+            ],
+            "commentCount": 2,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122287001714232121_1356127919285421",
+          "creationDate": "2025-11-23T04:28:37+0100",
+          "owner": "8238532892840702",
+          "text": "En estos días lo estoy tomando con otros minerales.",
+          "mediaUrl": "https://external-lhr8-1.xx.fbcdn.net/emg1/v/t13/15348191724992334273?url=https%3A%2F%2Fmedia4.giphy.com%2Fmedia%2Fv1.Y2lkPWJlMzAyMTE3ZGlybWxkejlxY3QzdTA1azhjNjIxN3hwNWltcjkwajBpM3RmOTh4eiZlcD12MV9naWZzJmN0PXM%2Fn0lnosk5JX8Dm%2Fgiphy.gif&fb_obo=1&utld=giphy.com&stp=c0.5000x0.5000f_dst-emg0_p200x200_q75_tt6&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_oc=AdlAjUAiUy15kfllKsQ-oASZnUhPRVYaV8BO8JGPq7GhIdVRaP4G6byJUCtxEwi-2So&ccb=13-1&oh=06_Q3-5Advoqj6kVjf1JHpkiY3u89RclDnLokDVAaJNIXP-eBeR&oe=6929EEE1&_nc_sid=ef6713",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/848146711722030/?comment_id=1356127919285421"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122287001714232121_1884695996262859",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-23T10:29:52+0100",
+        "lastUpdateTime": "2025-11-23T10:29:52+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "7628443080582844",
+            "name": "Tania Mederos",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/7628443080582844/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122287001714232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/848146711722030/",
+            "text": "¿PROBLEMAS DE HUESOS EN LA MENOPAUSIA? Calcio + Vitamina D: La Dosis exacta\n\nEl Calcio es un suplemento clave para prevenir la pérdida ósea durante la menopausia. Se recomienda una dosis de 500 a 1000 mg diarios, la cual se puede dividir en la mañana y en la tarde. El Calcio siempre debe ir asociado con la Vitamina D, cuya dosis recomendada es entre 1000 a 2000 U.I. por día. Una fuente natural de Vitamina D es el aceite de hígado de bacalao, aunque puede ser una sustancia desagradable al paladar.\n\nCalcio y Vitamina D para Menopausia: Dosis Clave para Prevenir Osteoporosis\n\n#calcio #vitaminaD #huesos #osteoporosis #menopausia #dosis #suplementos #salud #vitamina #bacalao\n\ncalcio menopausia, dosis calcio, vitamina d dosis, prevenir osteoporosis, aceite de hígado de bacalao, salud ósea, unidades internacionales, pérdida ósea",
+            "mediaUrls": [
+              "https://scontent-lhr6-2.xx.fbcdn.net/v/t15.5256-10/584561577_1985744186158692_3825274963145750489_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=eagkuGNKMPwQ7kNvwF69fE6&_nc_oc=AdlntRA12PghInD6oU2JRWiDTatEVG6ybm_Xg0gNySLXKgEKym8aEjpxh6Cx1oQVZII&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQF24_-sR6MIdpkwdUTtm6PDq_dVg_O_u9JywuB_MBa1JytVNjgIVoj1DYKhefwRwfhIftLnYIIc&oh=00_AfjUbAl7tynR3Hl3ECEAz9EZds05Plx5wnJbCiOh3W0mKQ&oe=692DF7E7"
+            ],
+            "commentCount": 2,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122287001714232121_1884695996262859",
+          "creationDate": "2025-11-23T10:29:52+0100",
+          "owner": "7628443080582844",
+          "text": "",
+          "mediaUrl": "https://scontent-lhr8-1.xx.fbcdn.net/v/t39.1997-6/851541_1641020492791703_955702027_n.png?_nc_cat=1&ccb=1-7&_nc_sid=23dd7b&_nc_ohc=hDhQEqhqJVoQ7kNvwHWIQKp&_nc_oc=Adltay9qlHssMp9mfkkAdH8mGJ_KcYVEYCJ6C0rHpt-xwB6ZvOl6m0qMaXO24tS-Pt4&_nc_zt=26&_nc_ht=scontent-lhr8-1.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQHvOPo_v2DzBNujehKGwXZRnPG7v5sSvHkjyf5c_XaxkttkRhPklR2nUMQtj8WMKJUr7l1yqjTJ&oh=00_AfjPwoIHznHQ5ua2vNIYUzmmM09pxj5kgfQcwJSJp-JjSg&oe=692DDD13",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/848146711722030/?comment_id=1884695996262859"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122285882534232121_1513484293192168",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-18T03:26:52+0100",
+        "lastUpdateTime": "2025-11-18T03:26:52+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "28801179029480923",
+            "name": "Yipsi Jiménez",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/28801179029480923/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122285882534232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/1158409262558969/",
+            "text": "¿INTENTAS EXPLICAR TU TORMENTA? Nadie la va a entender (y no importa)\n\nPuedes invertir la vida entera tratando de explicarle a los demás la tormenta que atravesaste para llegar a donde estás, pero nadie lo va a entender.\n\nEl que tuvo que cargar ese peso, pelear esas batallas, sonreír cuando todo estaba en su contra y ponerse en pie cuando el universo te empujaba hacia abajo, fuiste tú. Solo tú conoces las noches de llanto y las millas extra que tuviste que caminar.\n\nPor eso, no malgastes tu tiempo tratando de explicarlo; no le darán la misma magnitud ni lo apreciarán como tú. Tú sufriste, tú peleaste, y ahora, el que se va a regocijar en grande en la victoria eres tú. Solo tú sabes el verdadero valor de tu camino.",
+            "mediaUrls": [
+              "https://scontent-lhr8-2.xx.fbcdn.net/v/t15.5256-10/585026642_841300921590186_8764407966220351103_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=brf6j0gZr7AQ7kNvwH06rCx&_nc_oc=AdmKJpgabBZod15eFldVn65xxaoIjX5WenDH3x9yH0seJBdqMtQmjRXy49k0PEqQhvo&_nc_zt=23&_nc_ht=scontent-lhr8-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQFFDrPFRdpLeNyK3eXAm1UPibBXdhV6A3uNyWxbwBMZQMpWnSWpi11WEfOtn9h_s_vxXwK7wrJq&oh=00_Afh7ppU6SJk58Sy29FUvkPzTlu8x52HCRPr9cnczY9OGfA&oe=692DE3D8"
+            ],
+            "commentCount": 1,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122285882534232121_1513484293192168",
+          "creationDate": "2025-11-18T03:26:52+0100",
+          "owner": "28801179029480923",
+          "text": "100% de acuerdo Dr.,una gran realidad. Gracias por sus consejos",
+          "mediaUrl": "",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/1158409262558969/?comment_id=1513484293192168"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122285520494232121_1344480683827318",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-25T02:14:37+0100",
+        "lastUpdateTime": "2025-11-25T02:14:37+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "25417686044524580",
+            "name": "Milagros Artze",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/25417686044524580/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122285520494232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/1372524030938935/",
+            "text": "EL PEOR ERROR QUE PUEDES COMETER Es pensar que siempre tendrás tiempo\n\nEn la vida podemos cometer muchos errores, y de hecho, son necesarios porque de ellos aprendemos. Pero hay un error que no deberías cometer: pensar que siempre vas a tener tiempo.\n\nEl tiempo es unidireccional, no se detiene, y no sabemos cuánto durará nuestra existencia. Si hoy fuera tu último día, ¿qué harías?. Seguramente hay llamadas que hacer, abrazos que dar, comidas que disfrutar y postres que comer.\n\nAunque hoy no sea tu último día, el momento de vivir es ahora. Ahora es cuando debes levantar ese teléfono, tocar esa puerta y compartir con tus seres queridos. No lo dejes para mañana. Disfruta a plenitud cada segundo.",
+            "mediaUrls": [
+              "https://scontent-lhr8-1.xx.fbcdn.net/v/t15.5256-10/583598023_1154390143012855_9164616936940149759_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=VPLwBpjsuSEQ7kNvwEx1m9V&_nc_oc=AdlrcBDccFRmXtbl_9Ae11dwJltZQWK-aGfJQ6Z1qG5gKS24C70SUk1AVTh1fW3yLcc&_nc_zt=23&_nc_ht=scontent-lhr8-1.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQHY1fqQ202rBxjGM9js6Maj7hW-pXjqNB4cw91eu-T4YAkfuLYv_hr_oJyJJqpzFVnXBARL4y53&oh=00_AfhCYb7BcOZImndSfwGANVdRNUcbbFyloghWtxnVvtVjpQ&oe=692DF468"
+            ],
+            "commentCount": 1,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122285520494232121_1344480683827318",
+          "creationDate": "2025-11-25T02:14:37+0100",
+          "owner": "25417686044524580",
+          "text": "Felicidades Doctor no sabes cuanto lo admiro soy la tia de Evian mis saludos",
+          "mediaUrl": "",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/1372524030938935/?comment_id=1344480683827318"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122285046410232121_821653157134594",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-13T15:24:02+0100",
+        "lastUpdateTime": "2025-11-13T15:24:02+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "24943814625262472",
+            "name": "Elsa Maria De Leon",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/24943814625262472/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122285046410232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/1043037121281623/",
+            "text": "¿TE DICEN QUE HAS \"CAMBIADO\" DESDE QUE EMIGRASTE? No es cambio, es transformación\n\nHace poco, un amigo inmigrante contaba que su familia le decía cuánto había \"cambiado\" desde que se fue de su país. Esto nos llevó a una reflexión: cuando emigras, no es que \"cambies\", es que te transformas.\n\nEsta transformación viene por muchas razones:\n\nLlegas solo: Tienes que valerte por ti mismo y sacar fuerzas de donde no las hay para resolverlo todo, porque no hay otra opción.\n\nLa nostalgia: Empiezas a extrañar las cosas simples que dabas por sentado: el \"¿ya comiste?\", el \"¿estás bien?\", o conversar en el patio con amigos tomando un café.\n\nEl reseteo: Emigrar te \"resetea\". Aparecen nuevas costumbres y nuevas personas, pero lo que más pesa es lo que permanece dentro de ti. Es en esa soledad y distancia donde comienzas a entender el verdadero valor de las cosas simples, que son las que en realidad importan.",
+            "mediaUrls": [
+              "https://scontent-lhr8-2.xx.fbcdn.net/v/t15.5256-10/581381745_2141321970028566_4326610726140894599_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=7s5LyIjJOaYQ7kNvwHQmt-8&_nc_oc=Adn4XVx5x7bq5pap2rlsL30Qj9Ba9B1JQsbodAspi6QwoAfZn9QxnWcBuOenJ768b1U&_nc_zt=23&_nc_ht=scontent-lhr8-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQFo_cgM0UI6RqOKvuaXLUmHhMX4P8BCYb56AhcATHVN03m3CNvlFoqH7lOxE9qdnnqc4gIq92U1&oh=00_Afih54Zpx4F6hqF1tqGNq2aOGjnmx81d--3kYLG8wfumrw&oe=692DEFE7"
+            ],
+            "commentCount": 4,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122285046410232121_821653157134594",
+          "creationDate": "2025-11-13T15:24:02+0100",
+          "owner": "24943814625262472",
+          "text": "",
+          "mediaUrl": "https://scontent-lhr6-2.xx.fbcdn.net/v/t39.1997-6/550579623_25547469738177006_186664280638600941_n.webp?_nc_cat=104&ccb=1-7&_nc_sid=72b077&_nc_ohc=CPjpBFRH314Q7kNvwGPa1CT&_nc_oc=Adlrju-qHo3b9EkWCw-gUhtsgGJLWKyz39Q3I8iGnSfnhJSGftXXsahEBgIpdPd6rUA&_nc_zt=26&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQFc5vkm3Uqaqai2d_X-ez24Qtd6_tsXiA0BC5E6jC3Hjfp_imiIgNy8lIbbdtJVNtnVlZEEWX0v&oh=00_Afjgb_A4KbEK4wiWoKKffVD68peVBnmmaDv7dRrwieIfeg&oe=692DFCA2",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/1043037121281623/?comment_id=821653157134594"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122285046410232121_1165530835173980",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-25T02:20:30+0100",
+        "lastUpdateTime": "2025-11-25T02:20:30+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "25417686044524580",
+            "name": "Milagros Artze",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/25417686044524580/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122285046410232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/1043037121281623/",
+            "text": "¿TE DICEN QUE HAS \"CAMBIADO\" DESDE QUE EMIGRASTE? No es cambio, es transformación\n\nHace poco, un amigo inmigrante contaba que su familia le decía cuánto había \"cambiado\" desde que se fue de su país. Esto nos llevó a una reflexión: cuando emigras, no es que \"cambies\", es que te transformas.\n\nEsta transformación viene por muchas razones:\n\nLlegas solo: Tienes que valerte por ti mismo y sacar fuerzas de donde no las hay para resolverlo todo, porque no hay otra opción.\n\nLa nostalgia: Empiezas a extrañar las cosas simples que dabas por sentado: el \"¿ya comiste?\", el \"¿estás bien?\", o conversar en el patio con amigos tomando un café.\n\nEl reseteo: Emigrar te \"resetea\". Aparecen nuevas costumbres y nuevas personas, pero lo que más pesa es lo que permanece dentro de ti. Es en esa soledad y distancia donde comienzas a entender el verdadero valor de las cosas simples, que son las que en realidad importan.",
+            "mediaUrls": [
+              "https://scontent-lhr8-2.xx.fbcdn.net/v/t15.5256-10/581381745_2141321970028566_4326610726140894599_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=7s5LyIjJOaYQ7kNvwHQmt-8&_nc_oc=Adn4XVx5x7bq5pap2rlsL30Qj9Ba9B1JQsbodAspi6QwoAfZn9QxnWcBuOenJ768b1U&_nc_zt=23&_nc_ht=scontent-lhr8-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQFo_cgM0UI6RqOKvuaXLUmHhMX4P8BCYb56AhcATHVN03m3CNvlFoqH7lOxE9qdnnqc4gIq92U1&oh=00_Afih54Zpx4F6hqF1tqGNq2aOGjnmx81d--3kYLG8wfumrw&oe=692DEFE7"
+            ],
+            "commentCount": 4,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122285046410232121_1165530835173980",
+          "creationDate": "2025-11-25T02:20:30+0100",
+          "owner": "25417686044524580",
+          "text": "Felicidades Doctor por ser una persona excepcional",
+          "mediaUrl": "",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/1043037121281623/?comment_id=1165530835173980"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122285046410232121_765575293173412",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-13T21:42:44+0100",
+        "lastUpdateTime": "2025-11-13T21:42:44+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "7585066394908733",
+            "name": "Arelys Rodriguez",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/7585066394908733/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122285046410232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/1043037121281623/",
+            "text": "¿TE DICEN QUE HAS \"CAMBIADO\" DESDE QUE EMIGRASTE? No es cambio, es transformación\n\nHace poco, un amigo inmigrante contaba que su familia le decía cuánto había \"cambiado\" desde que se fue de su país. Esto nos llevó a una reflexión: cuando emigras, no es que \"cambies\", es que te transformas.\n\nEsta transformación viene por muchas razones:\n\nLlegas solo: Tienes que valerte por ti mismo y sacar fuerzas de donde no las hay para resolverlo todo, porque no hay otra opción.\n\nLa nostalgia: Empiezas a extrañar las cosas simples que dabas por sentado: el \"¿ya comiste?\", el \"¿estás bien?\", o conversar en el patio con amigos tomando un café.\n\nEl reseteo: Emigrar te \"resetea\". Aparecen nuevas costumbres y nuevas personas, pero lo que más pesa es lo que permanece dentro de ti. Es en esa soledad y distancia donde comienzas a entender el verdadero valor de las cosas simples, que son las que en realidad importan.",
+            "mediaUrls": [
+              "https://scontent-lhr8-2.xx.fbcdn.net/v/t15.5256-10/581381745_2141321970028566_4326610726140894599_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=7s5LyIjJOaYQ7kNvwHQmt-8&_nc_oc=Adn4XVx5x7bq5pap2rlsL30Qj9Ba9B1JQsbodAspi6QwoAfZn9QxnWcBuOenJ768b1U&_nc_zt=23&_nc_ht=scontent-lhr8-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQFo_cgM0UI6RqOKvuaXLUmHhMX4P8BCYb56AhcATHVN03m3CNvlFoqH7lOxE9qdnnqc4gIq92U1&oh=00_Afih54Zpx4F6hqF1tqGNq2aOGjnmx81d--3kYLG8wfumrw&oe=692DEFE7"
+            ],
+            "commentCount": 4,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122285046410232121_765575293173412",
+          "creationDate": "2025-11-13T21:42:44+0100",
+          "owner": "7585066394908733",
+          "text": "",
+          "mediaUrl": "https://scontent-lhr8-2.xx.fbcdn.net/v/t42.4659-2/475744691_9071026459650455_8912376165773987803_n.mp4?_nc_cat=101&ccb=1-7&_nc_sid=a3d3d5&_nc_ohc=oxoHdwyu_H4Q7kNvwG3rfse&_nc_oc=Adk62eWgSXIjSQXb5ltgEiDflp8v8jdPrSGm_FbJzQOdyoYetkAiJUSlmsqWwZ4nvUY&_nc_zt=28&_nc_ht=scontent-lhr8-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQFQsV6VgujK_8XY-2QBixQ1TYJ6LBbOtMh2KweapJeRJABDSbitpQnI2aG4qYpd0AOHfhT0bEAD&oh=00_AfjHJu_I5-AnkhNzg7HpymXYefc5TdmXwZt4CTu2ZdLRZw&oe=6929DF33",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/1043037121281623/?comment_id=765575293173412"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122285046410232121_2293575617811537",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-13T15:38:41+0100",
+        "lastUpdateTime": "2025-11-13T15:38:41+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "8023956880949840",
+            "name": "Olga Borges",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/8023956880949840/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122285046410232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/1043037121281623/",
+            "text": "¿TE DICEN QUE HAS \"CAMBIADO\" DESDE QUE EMIGRASTE? No es cambio, es transformación\n\nHace poco, un amigo inmigrante contaba que su familia le decía cuánto había \"cambiado\" desde que se fue de su país. Esto nos llevó a una reflexión: cuando emigras, no es que \"cambies\", es que te transformas.\n\nEsta transformación viene por muchas razones:\n\nLlegas solo: Tienes que valerte por ti mismo y sacar fuerzas de donde no las hay para resolverlo todo, porque no hay otra opción.\n\nLa nostalgia: Empiezas a extrañar las cosas simples que dabas por sentado: el \"¿ya comiste?\", el \"¿estás bien?\", o conversar en el patio con amigos tomando un café.\n\nEl reseteo: Emigrar te \"resetea\". Aparecen nuevas costumbres y nuevas personas, pero lo que más pesa es lo que permanece dentro de ti. Es en esa soledad y distancia donde comienzas a entender el verdadero valor de las cosas simples, que son las que en realidad importan.",
+            "mediaUrls": [
+              "https://scontent-lhr8-2.xx.fbcdn.net/v/t15.5256-10/581381745_2141321970028566_4326610726140894599_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=7s5LyIjJOaYQ7kNvwHQmt-8&_nc_oc=Adn4XVx5x7bq5pap2rlsL30Qj9Ba9B1JQsbodAspi6QwoAfZn9QxnWcBuOenJ768b1U&_nc_zt=23&_nc_ht=scontent-lhr8-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQFo_cgM0UI6RqOKvuaXLUmHhMX4P8BCYb56AhcATHVN03m3CNvlFoqH7lOxE9qdnnqc4gIq92U1&oh=00_Afih54Zpx4F6hqF1tqGNq2aOGjnmx81d--3kYLG8wfumrw&oe=692DEFE7"
+            ],
+            "commentCount": 4,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122285046410232121_2293575617811537",
+          "creationDate": "2025-11-13T15:38:41+0100",
+          "owner": "8023956880949840",
+          "text": "",
+          "mediaUrl": "https://scontent-lhr8-2.xx.fbcdn.net/v/t39.1997-6/489758510_1020317320041339_7670392120822093577_n.webp?_nc_cat=103&ccb=1-7&_nc_sid=72b077&_nc_ohc=FhLA_FF-xQAQ7kNvwFwQOsY&_nc_oc=AdmIXNdy4gj7AnNHNZqc4UaPXhW5Yeub-btrD6dvMmYXFm-yMjHbrcuZk-b-2OmeayY&_nc_zt=26&_nc_ht=scontent-lhr8-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQHC1SfNoOhg04KKQbjYUU2ATQDHdFv9xGGJicFhHCN2-d-iC756c1lvscmNPdz_BC6QLwUFNpLy&oh=00_AfjcnqH1uPvf7VasAzVHz6qSvoVbVQD5zcaLqpBAssfTvg&oe=692DFAAE",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/1043037121281623/?comment_id=2293575617811537"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122284576868232121_1348665016151903",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-13T17:04:07+0100",
+        "lastUpdateTime": "2025-11-13T17:04:07+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "8423106774386532",
+            "name": "Miladys Migollo Alemán",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/8423106774386532/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122284576868232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/844668444921011/",
+            "text": "¿ATRAVESANDO UNA TORMENTA? Recuerda: nada es eterno, esto también pasará\n\nHasta las tormentas más intensas terminan disipándose. Debemos aplicar esto a nuestras vidas, recordando que ni la alegría es eterna, ni el dolor es interminable.\n\nPuede que ahora mismo estés viviendo una situación que te parece desastrosa, donde no ves la luz al final del túnel y piensas que nunca te sobrepondrás. Pero la realidad es que llegará el momento en que te darás cuenta de que ese episodio pasó.\n\nNo te aferres a vivir enfrascado en un dolor o una experiencia negativa. La clave es dejar que las cosas fluyan, que sigan su curso natural. Aunque ahora te parezca la situación más difícil, la experiencia demuestra que la solución, la tranquilidad y la paz mental siempre llegan. Nada es para siempre.",
+            "mediaUrls": [
+              "https://scontent-lhr6-2.xx.fbcdn.net/v/t15.5256-10/579183421_1144748047765393_936853191610766339_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=aHJmaxDHxVUQ7kNvwEI-64E&_nc_oc=AdmwzYNAz3qpuDRm5j3XiwvzYgWhuMRA5FND69voS037ngUN5ZAWSxLfBva8Y2Cxado&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQFEHRSWX8gLXGDzSD4Dur1-SHmyGIe_dyL176qGW2jcF_A2OjaRK-x5wLQcmhsRxC74xQy38Itx&oh=00_Afjejq2Kga6t8_37yokMdogG9nm7iz31PWznM0ydT_L47g&oe=692E04A5"
+            ],
+            "commentCount": 1,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122284576868232121_1348665016151903",
+          "creationDate": "2025-11-13T17:04:07+0100",
+          "owner": "8423106774386532",
+          "text": "Que te puedo decir",
+          "mediaUrl": "https://scontent-lhr6-2.xx.fbcdn.net/v/t39.1997-6/545653938_25281945241407117_1663690022082340250_n.webp?_nc_cat=104&ccb=1-7&_nc_sid=72b077&_nc_ohc=pq33_yeBlg4Q7kNvwFWWeNN&_nc_oc=AdnI_g7z76ewWfot6MV7ZbrR9Wu4_-qztkaEkEQwtustP3zZEIBvp8nZvAO1WqOS0zY&_nc_zt=26&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQHlVIcXK4_uLG05KSduzcwaRJ2Ps4PJCW56g_OxJx_c2MxvLWaBfTNrD97qxF7cu5Ua_sZqpKKm&oh=00_AfiUUTEjMrcx2gssZIEKbkCENX1rXfXab-qgDA0U75eptQ&oe=692DE4FE",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/844668444921011/?comment_id=1348665016151903"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122284371308232121_2065633847506920",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-10T16:54:31+0100",
+        "lastUpdateTime": "2025-11-10T16:54:31+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "7585066394908733",
+            "name": "Arelys Rodriguez",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/7585066394908733/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122284371308232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/1594017648628271/",
+            "text": "¿MIEDO A LAS CRÍTICAS? Hagas lo que hagas, siempre te van a criticar\n\n¿Por qué vives con tanto tormento? Recuerda que siempre te van a criticar. Te critican por lo que dices, por lo que no dices, por lo que haces, por lo que no haces, e incluso por lo que piensan que dijiste. ¡Siempre van a criticar!.\n\nA la larga, el único que sabe lo que pesan sus propios zapatos y el único que camina con ellos eres tú. Así que deja de preocuparte por las opiniones ajenas.\n\nVive tu vida, sé feliz, pon música, disfruta cada momento y sigue detrás de tus metas. No importa lo que digan o critiquen, no pierdas la vista de tu objetivo.",
+            "mediaUrls": [
+              "https://scontent-lhr6-1.xx.fbcdn.net/v/t15.5256-10/579401835_880574724398370_2958297003923718825_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=H9c_MWd6WC8Q7kNvwEABRef&_nc_oc=AdkH8c-cPbvYFA6qpMRDsiq113dkiRGaKU03a74a3DaZ35BQvQ1EHfTR2KUAtvpo1bk&_nc_zt=23&_nc_ht=scontent-lhr6-1.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQGvmhQ6USzveWhxq0RCw2GkUc5H8_6YfLKRCL-Lp4_EAlTzhbTHTe59CDZMLmYAJ7xoLZa98r8I&oh=00_AfiTDtylXzP7UUMEB30FIwvLdEKTG269xvDP4WHVpb2Q1A&oe=692DD4F4"
+            ],
+            "commentCount": 2,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122284371308232121_2065633847506920",
+          "creationDate": "2025-11-10T16:54:31+0100",
+          "owner": "7585066394908733",
+          "text": "",
+          "mediaUrl": "https://scontent-lhr8-1.xx.fbcdn.net/v/t39.1997-6/47614232_1846683475430536_3135922765756891136_n.png?_nc_cat=1&ccb=1-7&_nc_sid=23dd7b&_nc_ohc=YZI9sVcGSasQ7kNvwEQ5rKh&_nc_oc=AdkB608C6ElkuEwAaOz0kKjITkylZlqqAtN30DIuUfZu4rWvFY1ftvpiTB7erUaUcE8&_nc_zt=26&_nc_ht=scontent-lhr8-1.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQE05A3dTGvnc1akQx17lLBQvQ3D_o_ZQ_SFTfzdbAah041SHTRq1N9ofQCzs1bdmmikGb9ErKBH&oh=00_AfhOlmi7MqAtTxhgv7g55OmDQZhU863Ra1lrsDSrNlz1pg&oe=692DE223",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/1594017648628271/?comment_id=2065633847506920"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122284371308232121_1487324229214159",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-10T14:30:35+0100",
+        "lastUpdateTime": "2025-11-10T14:30:35+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "8238532892840702",
+            "name": "Rosa Iliana Visens",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/8238532892840702/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122284371308232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/1594017648628271/",
+            "text": "¿MIEDO A LAS CRÍTICAS? Hagas lo que hagas, siempre te van a criticar\n\n¿Por qué vives con tanto tormento? Recuerda que siempre te van a criticar. Te critican por lo que dices, por lo que no dices, por lo que haces, por lo que no haces, e incluso por lo que piensan que dijiste. ¡Siempre van a criticar!.\n\nA la larga, el único que sabe lo que pesan sus propios zapatos y el único que camina con ellos eres tú. Así que deja de preocuparte por las opiniones ajenas.\n\nVive tu vida, sé feliz, pon música, disfruta cada momento y sigue detrás de tus metas. No importa lo que digan o critiquen, no pierdas la vista de tu objetivo.",
+            "mediaUrls": [
+              "https://scontent-lhr6-1.xx.fbcdn.net/v/t15.5256-10/579401835_880574724398370_2958297003923718825_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=H9c_MWd6WC8Q7kNvwEABRef&_nc_oc=AdkH8c-cPbvYFA6qpMRDsiq113dkiRGaKU03a74a3DaZ35BQvQ1EHfTR2KUAtvpo1bk&_nc_zt=23&_nc_ht=scontent-lhr6-1.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQGvmhQ6USzveWhxq0RCw2GkUc5H8_6YfLKRCL-Lp4_EAlTzhbTHTe59CDZMLmYAJ7xoLZa98r8I&oh=00_AfiTDtylXzP7UUMEB30FIwvLdEKTG269xvDP4WHVpb2Q1A&oe=692DD4F4"
+            ],
+            "commentCount": 2,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122284371308232121_1487324229214159",
+          "creationDate": "2025-11-10T14:30:35+0100",
+          "owner": "8238532892840702",
+          "text": "",
+          "mediaUrl": "https://external-lhr8-1.xx.fbcdn.net/emg1/v/t13/3938932120518384619?url=https%3A%2F%2Fmedia3.giphy.com%2Fmedia%2Fv1.Y2lkPWJlMzAyMTE3bW9iaWw3Yzh2MHkwcTdtY2JuN25ka3NpNzVrMWc4cTBmbG1lZWRxYSZlcD12MV9naWZzJmN0PXM%2Fn0lnosk5JX8Dm%2Fgiphy.gif&fb_obo=1&utld=giphy.com&stp=c0.5000x0.5000f_dst-emg0_p200x200_q75_tt6&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_oc=AdlyiwrLwNZYPXlSqtA4DmD2D6Scj30NspCD_aBuO3VNlC-vC3in_D5HWwZwLHfag3g&ccb=13-1&oh=06_Q3-5AVDyd9lrggDQd2gjYqJv6atAwln56-Q8-aeOXk2GvIJk&oe=6929FBA4&_nc_sid=ef6713",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/1594017648628271/?comment_id=1487324229214159"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122283966200232121_1214116647289665",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-08T18:21:43+0100",
+        "lastUpdateTime": "2025-11-08T18:21:43+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "24943814625262472",
+            "name": "Elsa Maria De Leon",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/24943814625262472/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122283966200232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/712340721907902/",
+            "text": "¿CUÁNTOS AÑOS TIENES? La respuesta te sorprenderá: esos ya no los tienes\n\nAyer, un paciente me compartió una reflexión profunda. Cuando le dije mi edad, me respondió: \"Estás equivocado. Ese número son los años que ya no tienes. Ya los viviste, ya pasaron, no puedes hacer nada con ellos\".\n\nCuánta verdad hay en eso. Los años que \"tenemos\" son, en realidad, los que ya quedaron en el pasado. Lo que se hizo o se dejó de hacer, ya no se puede variar.\n\nLos años con los que realmente contamos son los que están de ahora en adelante. Lo difícil es que no sabemos cuántos son. No sabemos cuánto tiempo tenemos para disfrutar, cumplir proyectos o enmendar errores.\n\nAsí que la lección es clara: tu pasado ya quedó atrás. Son los años que te quedan por delante los que puedes usar para hacer ese cambio dramático que buscas y realizar tus aspiraciones.",
+            "mediaUrls": [
+              "https://scontent-lhr6-2.xx.fbcdn.net/v/t15.5256-10/578085815_1339962813793604_7782601482925038291_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=o1eGLGkGWSsQ7kNvwGmSOHA&_nc_oc=AdmWO6Xt66Gl5mN3FNhzGh76Epg8E8fORNzGoIn2NUQ6HfzgNk21UKwrkL3DffhYdw4&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQErrDh37MWaC51anJpbIn5gDTzmLh2qwdrjBmzswGQ97-lHOvrDCUCf3Vzw3Xuyzi5NebCpBWIl&oh=00_AfgLg9FD88W0BGpS35wlKOIVfepaOM9HHRuYC-8XaMLhAw&oe=692E005C"
+            ],
+            "commentCount": 3,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122283966200232121_1214116647289665",
+          "creationDate": "2025-11-08T18:21:43+0100",
+          "owner": "24943814625262472",
+          "text": "",
+          "mediaUrl": "https://scontent-lhr6-2.xx.fbcdn.net/v/t39.1997-6/552618271_1744173532934938_6943641272985736535_n.png?_nc_cat=105&ccb=1-7&_nc_sid=23dd7b&_nc_ohc=mhBhzdgvMUcQ7kNvwFaE7vy&_nc_oc=Adk4-kElyhbktMuaJk1Hfca6o2kxVA_J6JcBsMSvU969pURd3hfNO8-2NIwlxadsVio&_nc_zt=26&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQGTzndQ2kTjm_EoupLWD2RsjXaW8xCdeqwQDO5GYKu7mKMfBpJy60b4WGJ6UNwsTeGR0kMMu0Ih&oh=00_AfhjSQKxW2Vbftx55T84eipHL4H-ZjYZ5WSOJL6u0mmblg&oe=692DDD47",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/712340721907902/?comment_id=1214116647289665"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122283966200232121_3303166973163535",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-08T14:49:05+0100",
+        "lastUpdateTime": "2025-11-08T14:49:05+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "8238532892840702",
+            "name": "Rosa Iliana Visens",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/8238532892840702/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122283966200232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/712340721907902/",
+            "text": "¿CUÁNTOS AÑOS TIENES? La respuesta te sorprenderá: esos ya no los tienes\n\nAyer, un paciente me compartió una reflexión profunda. Cuando le dije mi edad, me respondió: \"Estás equivocado. Ese número son los años que ya no tienes. Ya los viviste, ya pasaron, no puedes hacer nada con ellos\".\n\nCuánta verdad hay en eso. Los años que \"tenemos\" son, en realidad, los que ya quedaron en el pasado. Lo que se hizo o se dejó de hacer, ya no se puede variar.\n\nLos años con los que realmente contamos son los que están de ahora en adelante. Lo difícil es que no sabemos cuántos son. No sabemos cuánto tiempo tenemos para disfrutar, cumplir proyectos o enmendar errores.\n\nAsí que la lección es clara: tu pasado ya quedó atrás. Son los años que te quedan por delante los que puedes usar para hacer ese cambio dramático que buscas y realizar tus aspiraciones.",
+            "mediaUrls": [
+              "https://scontent-lhr6-2.xx.fbcdn.net/v/t15.5256-10/578085815_1339962813793604_7782601482925038291_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=o1eGLGkGWSsQ7kNvwGmSOHA&_nc_oc=AdmWO6Xt66Gl5mN3FNhzGh76Epg8E8fORNzGoIn2NUQ6HfzgNk21UKwrkL3DffhYdw4&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQErrDh37MWaC51anJpbIn5gDTzmLh2qwdrjBmzswGQ97-lHOvrDCUCf3Vzw3Xuyzi5NebCpBWIl&oh=00_AfgLg9FD88W0BGpS35wlKOIVfepaOM9HHRuYC-8XaMLhAw&oe=692E005C"
+            ],
+            "commentCount": 3,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122283966200232121_3303166973163535",
+          "creationDate": "2025-11-08T14:49:05+0100",
+          "owner": "8238532892840702",
+          "text": "Muy cierto.",
+          "mediaUrl": "https://external-lhr8-1.xx.fbcdn.net/emg1/v/t13/3938932120518384619?url=https%3A%2F%2Fmedia3.giphy.com%2Fmedia%2Fv1.Y2lkPWJlMzAyMTE3bW9iaWw3Yzh2MHkwcTdtY2JuN25ka3NpNzVrMWc4cTBmbG1lZWRxYSZlcD12MV9naWZzJmN0PXM%2Fn0lnosk5JX8Dm%2Fgiphy.gif&fb_obo=1&utld=giphy.com&stp=c0.5000x0.5000f_dst-emg0_p200x200_q75_tt6&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_oc=AdlyiwrLwNZYPXlSqtA4DmD2D6Scj30NspCD_aBuO3VNlC-vC3in_D5HWwZwLHfag3g&ccb=13-1&oh=06_Q3-5AVDyd9lrggDQd2gjYqJv6atAwln56-Q8-aeOXk2GvIJk&oe=6929FBA4&_nc_sid=ef6713",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/712340721907902/?comment_id=3303166973163535"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122283966200232121_2018967698647258",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-08T17:52:31+0100",
+        "lastUpdateTime": "2025-11-08T17:52:31+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "32655015297417073",
+            "name": "Leticia Vicens",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/32655015297417073/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122283966200232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/712340721907902/",
+            "text": "¿CUÁNTOS AÑOS TIENES? La respuesta te sorprenderá: esos ya no los tienes\n\nAyer, un paciente me compartió una reflexión profunda. Cuando le dije mi edad, me respondió: \"Estás equivocado. Ese número son los años que ya no tienes. Ya los viviste, ya pasaron, no puedes hacer nada con ellos\".\n\nCuánta verdad hay en eso. Los años que \"tenemos\" son, en realidad, los que ya quedaron en el pasado. Lo que se hizo o se dejó de hacer, ya no se puede variar.\n\nLos años con los que realmente contamos son los que están de ahora en adelante. Lo difícil es que no sabemos cuántos son. No sabemos cuánto tiempo tenemos para disfrutar, cumplir proyectos o enmendar errores.\n\nAsí que la lección es clara: tu pasado ya quedó atrás. Son los años que te quedan por delante los que puedes usar para hacer ese cambio dramático que buscas y realizar tus aspiraciones.",
+            "mediaUrls": [
+              "https://scontent-lhr6-2.xx.fbcdn.net/v/t15.5256-10/578085815_1339962813793604_7782601482925038291_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=o1eGLGkGWSsQ7kNvwGmSOHA&_nc_oc=AdmWO6Xt66Gl5mN3FNhzGh76Epg8E8fORNzGoIn2NUQ6HfzgNk21UKwrkL3DffhYdw4&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQErrDh37MWaC51anJpbIn5gDTzmLh2qwdrjBmzswGQ97-lHOvrDCUCf3Vzw3Xuyzi5NebCpBWIl&oh=00_AfgLg9FD88W0BGpS35wlKOIVfepaOM9HHRuYC-8XaMLhAw&oe=692E005C"
+            ],
+            "commentCount": 3,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122283966200232121_2018967698647258",
+          "creationDate": "2025-11-08T17:52:31+0100",
+          "owner": "32655015297417073",
+          "text": "",
+          "mediaUrl": "https://scontent-lhr8-1.xx.fbcdn.net/v/t39.1997-6/83640226_953860661742958_8297483048391664602_n.png?_nc_cat=1&ccb=1-7&_nc_sid=23dd7b&_nc_ohc=13C4FLaX0bsQ7kNvwEEzPwv&_nc_oc=AdlfKKpRLOTaE2GlQaa_R7eDrKvtdIrgdfJAxL2YkwmEH_Lm6FIiVnXolQfCIOHXb-k&_nc_zt=26&_nc_ht=scontent-lhr8-1.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQHV3nqG-TVDuZbgEvcriLjBlcurclfvOuButtfygHSRzxMs02zJ6kOFNck8X8m78Ti1RojT2Yfe&oh=00_Afh30P6LoGPOMKjFcNUaFjGxMKUQhZ5W5bth2eyv4WhRag&oe=692DF4F7",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/712340721907902/?comment_id=2018967698647258"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122283235424232121_747271158377351",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-17T15:14:11+0100",
+        "lastUpdateTime": "2025-11-17T15:14:11+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "25404754125787247",
+            "name": "Gaby Martinez",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/25404754125787247/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122283235424232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/2182298045593141/",
+            "text": "¿Llegas al fin de semana deseando descansar y te recibe un dolor de cabeza pulsante que te arruina el día?. No es mala suerte, es un síndrome de abstinencia de cafeína.\n\nDurante la semana, tu cuerpo se acostumbra a recibir su dosis de café a una hora específica, digamos, a las 7 am. Cuando el sábado duermes hasta tarde y tomas tu café a las 10 am, para tu cerebro han pasado tres horas de retraso. Tus vasos sanguíneos, que la cafeína mantiene contraídos, se dilatan bruscamente, causando ese dolor de cabeza.\n\nLa solución es simple: el fin de semana, pon la alarma a tu hora habitual de entre semana. Levántate, tómate tu café y, si quieres, vuelve a la cama. Al mantener el horario de la cafeína, evitas la abstinencia y te regalas un fin de semana sin dolor.",
+            "mediaUrls": [
+              "https://scontent-lhr8-2.xx.fbcdn.net/v/t15.5256-10/575764129_2788076161539006_5529107608440128204_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=gMMVCxz-hb8Q7kNvwFW5Utr&_nc_oc=AdlrMhAkRgcIHzjqQXiIdrTMmSKXGixG-fPja7kO4ztCNwUtRdOHS5Luiw61LdRVse4&_nc_zt=23&_nc_ht=scontent-lhr8-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQFpOTVK2s0EsRoLR8frVWxVGeV8rtY50duJBEMUPzaWlk06CHB9QvJPhsz9FH--_4mAlapQKeBn&oh=00_AfiJ-9YQanuyxVtJJWqJOlKbw7UaHRr0tvtgE6afcDn9sA&oe=692DFA38"
+            ],
+            "commentCount": 1,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122283235424232121_747271158377351",
+          "creationDate": "2025-11-17T15:14:11+0100",
+          "owner": "25404754125787247",
+          "text": "",
+          "mediaUrl": "https://scontent-lhr8-1.xx.fbcdn.net/v/t39.1997-6/851541_1641020492791703_955702027_n.png?_nc_cat=1&ccb=1-7&_nc_sid=23dd7b&_nc_ohc=hDhQEqhqJVoQ7kNvwHWIQKp&_nc_oc=Adltay9qlHssMp9mfkkAdH8mGJ_KcYVEYCJ6C0rHpt-xwB6ZvOl6m0qMaXO24tS-Pt4&_nc_zt=26&_nc_ht=scontent-lhr8-1.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQHvOPo_v2DzBNujehKGwXZRnPG7v5sSvHkjyf5c_XaxkttkRhPklR2nUMQtj8WMKJUr7l1yqjTJ&oh=00_AfjPwoIHznHQ5ua2vNIYUzmmM09pxj5kgfQcwJSJp-JjSg&oe=692DDD13",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/2182298045593141/?comment_id=747271158377351"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122282944292232121_837005889030974",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-03T16:01:05+0100",
+        "lastUpdateTime": "2025-11-03T16:01:05+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "24943814625262472",
+            "name": "Elsa Maria De Leon",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/24943814625262472/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122282944292232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/3175524485961854/",
+            "text": "¿NO CONSIGUES LO QUE QUIERES? Escucha: La vida te está protegiendo\n\nCuando consigues lo que quieres, la vida te está compensando por tu esfuerzo y dedicación. Pero cuando no consigues lo que quieres, muchas veces la vida te está protegiendo.\n\nNos enfrascamos en nuestras metas y vemos un fracaso o un revés como algo negativo. Sin embargo, ese \"fracaso\" puede ser el comienzo de algo mucho mejor. Como dice una frase sabia: \"Cuando no consigues lo que quieres en la vida, has tenido un tremendo golpe de suerte\".\n\nEsos momentos son una vía de aprendizaje para encontrar alternativas y soluciones que ni siquiera habías imaginado.",
+            "mediaUrls": [
+              "https://scontent-lhr6-1.xx.fbcdn.net/v/t15.5256-10/576656592_24995719450049008_3442316211946676115_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=gjWU803n324Q7kNvwHFjiLm&_nc_oc=Adnq4xcnQRnzF_KA1fI6_L2PFtEdg3vMNnA7DtrWUpqtWknP3N3RTUSlVlhjd7DelGc&_nc_zt=23&_nc_ht=scontent-lhr6-1.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQGepQl7c8uH3eZm1AFLGglE5Od5Jd9APz600MsncP8IiwOTi-v79Agtv5X5sbIMf1nHeJ7HYk8e&oh=00_Afgz8eNhaDk7zhat_oYrDrOP8g2XfPsouEt6c1n9lkUDKg&oe=692DE972"
+            ],
+            "commentCount": 2,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122282944292232121_837005889030974",
+          "creationDate": "2025-11-03T16:01:05+0100",
+          "owner": "24943814625262472",
+          "text": "",
+          "mediaUrl": "https://scontent-lhr8-1.xx.fbcdn.net/v/t39.1997-6/550529579_792084800125328_7919897727182194953_n.png?_nc_cat=111&ccb=1-7&_nc_sid=23dd7b&_nc_ohc=4fziD2IMqGcQ7kNvwEYbdop&_nc_oc=AdntQOJMFjryYeKISuUW1jcfd_dUEisMvREgRY_yaMgoDlLoLrkIuopVApYjtE5T4bc&_nc_zt=26&_nc_ht=scontent-lhr8-1.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQEy4PIula3Az1GDup0V051nw5J1uJp6TGncixJwBvbPKYAjZqZ9cwCFwWaX1sBSXx3Bq-YNrzs7&oh=00_AfjzHhUYFfiYliit1uyYrtqTjCD643XZjBqYRnw5kWk35A&oe=692DF84C",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/3175524485961854/?comment_id=837005889030974"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122282944292232121_852592323941441",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-11-04T01:15:22+0100",
+        "lastUpdateTime": "2025-11-04T01:15:22+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "8023956880949840",
+            "name": "Olga Borges",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/8023956880949840/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122282944292232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/3175524485961854/",
+            "text": "¿NO CONSIGUES LO QUE QUIERES? Escucha: La vida te está protegiendo\n\nCuando consigues lo que quieres, la vida te está compensando por tu esfuerzo y dedicación. Pero cuando no consigues lo que quieres, muchas veces la vida te está protegiendo.\n\nNos enfrascamos en nuestras metas y vemos un fracaso o un revés como algo negativo. Sin embargo, ese \"fracaso\" puede ser el comienzo de algo mucho mejor. Como dice una frase sabia: \"Cuando no consigues lo que quieres en la vida, has tenido un tremendo golpe de suerte\".\n\nEsos momentos son una vía de aprendizaje para encontrar alternativas y soluciones que ni siquiera habías imaginado.",
+            "mediaUrls": [
+              "https://scontent-lhr6-1.xx.fbcdn.net/v/t15.5256-10/576656592_24995719450049008_3442316211946676115_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=gjWU803n324Q7kNvwHFjiLm&_nc_oc=Adnq4xcnQRnzF_KA1fI6_L2PFtEdg3vMNnA7DtrWUpqtWknP3N3RTUSlVlhjd7DelGc&_nc_zt=23&_nc_ht=scontent-lhr6-1.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQGepQl7c8uH3eZm1AFLGglE5Od5Jd9APz600MsncP8IiwOTi-v79Agtv5X5sbIMf1nHeJ7HYk8e&oh=00_Afgz8eNhaDk7zhat_oYrDrOP8g2XfPsouEt6c1n9lkUDKg&oe=692DE972"
+            ],
+            "commentCount": 2,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122282944292232121_852592323941441",
+          "creationDate": "2025-11-04T01:15:22+0100",
+          "owner": "8023956880949840",
+          "text": "",
+          "mediaUrl": "https://scontent-lhr6-2.xx.fbcdn.net/v/t39.1997-6/547283913_827895823003282_2243372453058610473_n.png?_nc_cat=104&ccb=1-7&_nc_sid=23dd7b&_nc_ohc=FfEPEHr68egQ7kNvwF459cL&_nc_oc=Adk-3glGHlnpBHQwZXvwNRxvQlKfW6BuRrgXozYGUQfJy6YDnL8WXBkx2sselGvdAl8&_nc_zt=26&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQGDFhjFhEpBkRGpL0M37oRMpVLTixr0OvvQ35HucSmTOeCLP3IciP7QBq8uQP9Lv2hqImML1f2T&oh=00_Afg_zxcG3ubAuIXQjE8pR0iQV57Dad1rdep9irKBFj62NQ&oe=692DFA82",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/3175524485961854/?comment_id=852592323941441"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122282172884232121_3144322515770694",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-10-31T16:39:24+0100",
+        "lastUpdateTime": "2025-10-31T16:39:24+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "32195067816805808",
+            "name": "Yaima Dominguez",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/32195067816805808/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122282172884232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/1535450581138809/",
+            "text": "Si sufres de acidez, deja de tomar antiácidos y asegúrate de terminar tu última comida tres horas antes de acostarte.\n\nEl problema a menudo no es cuánto ácido tienes, sino dónde está. Al acostarte con el estómago lleno, la presión de la comida y el ácido empujan la válvula que protege tu esófago, causando esa quemazón mientras duermes.\n\nLos antiácidos solo bajan el ácido, empeorando tu digestión a largo plazo, pero no arreglan el problema de raíz: la \"puerta\" que no cierra bien.\n\nAl cenar más temprano, le das tiempo a tu cuerpo para digerir y permites que la gravedad mantenga esa puerta cerrada y el ácido en su lugar. Es la solución más simple y poderosa para sanar tu esófago y dormir en paz.",
+            "mediaUrls": [
+              "https://scontent-lhr6-1.xx.fbcdn.net/v/t15.5256-10/568188693_1991678205012044_736995263558486000_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=WQ1F9rPAhu8Q7kNvwGWkcA1&_nc_oc=AdlGBuXFb0Xg3R7ryFPpsJE_rkxQbRGour66RYJcpxAvZUGJ7wd9dWvcpDj_R-OtR4w&_nc_zt=23&_nc_ht=scontent-lhr6-1.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQFOgJ2pDBGDxzBU8d_dG-XxYWzdWy9NLy-EBgvBeVgvVEwOBeuVFccU6Dqt7LUKbuAVtx-5Zemt&oh=00_AfifX9JNmgeA2cX_zC210M-7uzhPtGZ4ttU4UKvCkqIvyg&oe=692E009A"
+            ],
+            "commentCount": 1,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122282172884232121_3144322515770694",
+          "creationDate": "2025-10-31T16:39:24+0100",
+          "owner": "32195067816805808",
+          "text": "Medicina primaria",
+          "mediaUrl": "",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/1535450581138809/?comment_id=3144322515770694"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122281982828232121_1483105059634484",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-10-30T23:49:15+0100",
+        "lastUpdateTime": "2025-10-30T23:49:15+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "8273104106041622",
+            "name": "Ivelys Gutierrez",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/8273104106041622/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122281982828232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/1426428089482418/",
+            "text": "Si tomas café, espera al menos 90 minutos después de despertarte. ¿La razón? Tu cuerpo produce cortisol (la hormona del estrés) de forma natural al amanecer. Añadirle cafeína justo en ese momento crea un pico innecesario de presión y ansiedad.\n\nEste hábito te entrena para depender de un estímulo externo y te condena a un ciclo vicioso:\n\nTolerancia: Cada vez necesitas más café para el mismo efecto.\n\nEl \"Crash\": Sufres la caída brutal de energía a las 3 de la tarde, que es la factura que pagas por el \"préstamo\" de energía que pediste en la mañana.\n\nAntojos y Mal Sueño: Esa caída te hace buscar azúcar o más cafeína, saboteando tu tarde y afectando la calidad de tu sueño.\n\nEn lugar de café, haz esto en tus primeros 90 minutos: hidrátate con agua y, si puedes, exponte a la luz del sol por 10 minutos. Esto ajusta tu reloj biológico de forma natural y prepara a tu cuerpo para recibir la cafeína más tarde, cuando de verdad la necesitas.",
+            "mediaUrls": [
+              "https://scontent-lhr8-1.xx.fbcdn.net/v/t15.5256-10/567706283_717099324085605_3903658090086725334_n.jpg?_nc_cat=107&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=xLJ_Si6TkLYQ7kNvwH7PkQE&_nc_oc=AdmoKCGXHPigxsPB1HaMnPzt8dJUdCwni8ACOyQaKzoFwFDVwbt9yDVpsdYFuX73DUg&_nc_zt=23&_nc_ht=scontent-lhr8-1.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQHONYuIeg9eBpz0AmPRiaTddBj6nt_VraPlPakQ4GnaCG7BGcP1Bbo4qfkmUIWMhfvBOAG1bcgM&oh=00_AfiuLoHGtBokm_73YOlMLHglEE4zqbvxGj02y7IfD1pGiw&oe=692DE512"
+            ],
+            "commentCount": 3,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122281982828232121_1483105059634484",
+          "creationDate": "2025-10-30T23:49:15+0100",
+          "owner": "8273104106041622",
+          "text": "Lo intentaré, gracias por los buenos consejos!",
+          "mediaUrl": "",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/1426428089482418/?comment_id=1483105059634484"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122281982828232121_1961304887775499",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-10-30T00:45:54+0100",
+        "lastUpdateTime": "2025-10-30T00:45:54+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "7123510651032031",
+            "name": "Jo Mart",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/7123510651032031/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122281982828232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/1426428089482418/",
+            "text": "Si tomas café, espera al menos 90 minutos después de despertarte. ¿La razón? Tu cuerpo produce cortisol (la hormona del estrés) de forma natural al amanecer. Añadirle cafeína justo en ese momento crea un pico innecesario de presión y ansiedad.\n\nEste hábito te entrena para depender de un estímulo externo y te condena a un ciclo vicioso:\n\nTolerancia: Cada vez necesitas más café para el mismo efecto.\n\nEl \"Crash\": Sufres la caída brutal de energía a las 3 de la tarde, que es la factura que pagas por el \"préstamo\" de energía que pediste en la mañana.\n\nAntojos y Mal Sueño: Esa caída te hace buscar azúcar o más cafeína, saboteando tu tarde y afectando la calidad de tu sueño.\n\nEn lugar de café, haz esto en tus primeros 90 minutos: hidrátate con agua y, si puedes, exponte a la luz del sol por 10 minutos. Esto ajusta tu reloj biológico de forma natural y prepara a tu cuerpo para recibir la cafeína más tarde, cuando de verdad la necesitas.",
+            "mediaUrls": [
+              "https://scontent-lhr8-1.xx.fbcdn.net/v/t15.5256-10/567706283_717099324085605_3903658090086725334_n.jpg?_nc_cat=107&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=xLJ_Si6TkLYQ7kNvwH7PkQE&_nc_oc=AdmoKCGXHPigxsPB1HaMnPzt8dJUdCwni8ACOyQaKzoFwFDVwbt9yDVpsdYFuX73DUg&_nc_zt=23&_nc_ht=scontent-lhr8-1.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQHONYuIeg9eBpz0AmPRiaTddBj6nt_VraPlPakQ4GnaCG7BGcP1Bbo4qfkmUIWMhfvBOAG1bcgM&oh=00_AfiuLoHGtBokm_73YOlMLHglEE4zqbvxGj02y7IfD1pGiw&oe=692DE512"
+            ],
+            "commentCount": 3,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122281982828232121_1961304887775499",
+          "creationDate": "2025-10-30T00:45:54+0100",
+          "owner": "7123510651032031",
+          "text": "Gracias.  Lo.hacia siempre hasta hoy.",
+          "mediaUrl": "",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/1426428089482418/?comment_id=1961304887775499"
+          },
+          "comments": []
+        }
+      },
+      {
+        "id": "122281982828232121_1377550687337125",
+        "self": "266590203197538",
+        "provider": "FACEBOOK",
+        "status": "PENDING",
+        "creationDate": "2025-10-30T00:56:02+0100",
+        "lastUpdateTime": "2025-10-30T00:56:02+0100",
+        "lastReadTime": "2025-11-27T10:18:31+0100",
+        "participants": [
+          {
+            "id": "8238532892840702",
+            "name": "Rosa Iliana Visens",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/8238532892840702/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQJMLtmQ2bLLDqDTfU6lpbXpotZCYIZCIocqyeOHdQZCUVtFpshBS22YESxaQizCgpaJc9jnrovIeY5kDkaxArWqYy8ve9P77Pb04gOLxhVab2nRRi2Fb5MkEi3V0Ye7bbWHSsvvgEAzNkHn88U9hZARrZBeGfcY1IZCxo2RBf8ZBualMpZCZAJejjmVFhJKcZD&appsecret_proof=8fe7525b85f3d99119def22196fb47465921ebac52dce740aa4a01420167a01e&appsecret_time=1764235111"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "266590203197538_122281982828232121",
+            "owner": {
+              "id": "266590203197538"
+            },
+            "link": "https://www.facebook.com/reel/1426428089482418/",
+            "text": "Si tomas café, espera al menos 90 minutos después de despertarte. ¿La razón? Tu cuerpo produce cortisol (la hormona del estrés) de forma natural al amanecer. Añadirle cafeína justo en ese momento crea un pico innecesario de presión y ansiedad.\n\nEste hábito te entrena para depender de un estímulo externo y te condena a un ciclo vicioso:\n\nTolerancia: Cada vez necesitas más café para el mismo efecto.\n\nEl \"Crash\": Sufres la caída brutal de energía a las 3 de la tarde, que es la factura que pagas por el \"préstamo\" de energía que pediste en la mañana.\n\nAntojos y Mal Sueño: Esa caída te hace buscar azúcar o más cafeína, saboteando tu tarde y afectando la calidad de tu sueño.\n\nEn lugar de café, haz esto en tus primeros 90 minutos: hidrátate con agua y, si puedes, exponte a la luz del sol por 10 minutos. Esto ajusta tu reloj biológico de forma natural y prepara a tu cuerpo para recibir la cafeína más tarde, cuando de verdad la necesitas.",
+            "mediaUrls": [
+              "https://scontent-lhr8-1.xx.fbcdn.net/v/t15.5256-10/567706283_717099324085605_3903658090086725334_n.jpg?_nc_cat=107&ccb=1-7&_nc_sid=5fad0e&_nc_ohc=xLJ_Si6TkLYQ7kNvwH7PkQE&_nc_oc=AdmoKCGXHPigxsPB1HaMnPzt8dJUdCwni8ACOyQaKzoFwFDVwbt9yDVpsdYFuX73DUg&_nc_zt=23&_nc_ht=scontent-lhr8-1.xx&edm=AKK4YLsEAAAA&_nc_gid=iR0KoE7043vI6PFahvnm5g&_nc_tpa=Q5bMBQHONYuIeg9eBpz0AmPRiaTddBj6nt_VraPlPakQ4GnaCG7BGcP1Bbo4qfkmUIWMhfvBOAG1bcgM&oh=00_AfiuLoHGtBokm_73YOlMLHglEE4zqbvxGj02y7IfD1pGiw&oe=692DE512"
+            ],
+            "commentCount": 3,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122281982828232121_1377550687337125",
+          "creationDate": "2025-10-30T00:56:02+0100",
+          "owner": "8238532892840702",
+          "text": "Muchas gracias por la orientación.",
+          "mediaUrl": "",
+          "properties": {
+            "permalink": "https://www.facebook.com/reel/1426428089482418/?comment_id=1377550687337125"
+          },
+          "comments": []
+        }
+      }
+    ]
+  }
+]
