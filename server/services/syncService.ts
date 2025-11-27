@@ -132,7 +132,18 @@ class SyncService {
           let author = 'Unknown';
           let authorAvatar = null;
           let content = msg.message || msg.text || '';
-          let timestamp = msg.created_time || msg.publicationDateTime || msg.timestamp || Date.now();
+          
+          // Extract timestamp - prioritize publicationDateTime from the message
+          let timestamp: string | number = Date.now();
+          if (msg.publicationDateTime) {
+            timestamp = msg.publicationDateTime;
+          } else if (msg.created_time) {
+            timestamp = msg.created_time;
+          } else if (msg.timestamp) {
+            timestamp = msg.timestamp;
+          } else if (conv.rawData?.creationDate) {
+            timestamp = conv.rawData.creationDate;
+          }
 
           if (conv.provider === 'INSTAGRAM' || conv.provider === 'LINKEDIN' || conv.provider === 'TIKTOKBUSINESS') {
             const fromId = msg.from;
