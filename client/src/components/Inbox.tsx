@@ -413,7 +413,7 @@ export function Inbox() {
 
         {/* Messages List */}
         <ScrollArea className="flex-1 bg-gray-200/70">
-          <div className="flex flex-col p-2 gap-2 overflow-hidden w-full">
+          <div className="flex flex-col p-2 gap-2 w-full max-w-full min-w-0 overflow-hidden">
             <AnimatePresence mode="sync">
               {filteredMessages.length === 0 ? (
                  <div className="p-8 text-center text-muted-foreground text-sm">
