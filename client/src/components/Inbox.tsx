@@ -836,7 +836,6 @@ export function Inbox() {
 function MessageCard({ message, isSelected, onClick, onOpenCRM }: { message: Message, isSelected: boolean, onClick: () => void, onOpenCRM?: () => void }) {
     return (
         <motion.button
-            layout
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
