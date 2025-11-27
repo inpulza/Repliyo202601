@@ -32,7 +32,7 @@ interface MetricoolComment {
   rawData?: any;
 }
 
-export const SUPPORTED_PROVIDERS = ['facebook', 'instagram', 'TIKTOKBUSINESS', 'GMB', 'twitter', 'linkedin', 'youtube'] as const;
+export const SUPPORTED_PROVIDERS = ['FACEBOOK', 'instagram', 'TIKTOKBUSINESS', 'GMB', 'twitter', 'linkedin', 'youtube'] as const;
 export type SocialProvider = typeof SUPPORTED_PROVIDERS[number];
 
 export class MetricoolService {
@@ -47,8 +47,8 @@ export class MetricoolService {
     const allConversations: MetricoolConversation[] = [];
     const allComments: MetricoolComment[] = [];
 
-    const conversationProviders: SocialProvider[] = ['instagram', 'facebook'];
-    const commentProviders: SocialProvider[] = ['instagram', 'facebook', 'TIKTOKBUSINESS', 'youtube', 'linkedin', 'GMB'];
+    const conversationProviders: SocialProvider[] = ['instagram', 'FACEBOOK'];
+    const commentProviders: SocialProvider[] = ['instagram', 'FACEBOOK', 'TIKTOKBUSINESS', 'youtube', 'linkedin', 'GMB'];
 
     for (const provider of conversationProviders) {
       try {
