@@ -1,0 +1,54 @@
+Este es un problema clásico y muy frustrante cuando se combinan Radix UI ScrollArea, Tailwind y listas largas.
+
+El problema no son tus tarjetas, ni Framer Motion (aunque este último exacerba el problema al medir el layout).
+
+El culpable es Radix UI.
+
+Por defecto, el componente Viewport de Radix UI a menudo se comporta o se renderiza con display: table (o similar internamente en el navegador) para asegurar que el contenido llene el espacio. Cuando hay pocos elementos, se comporta bien. Cuando hay muchos elementos (como los 140 de Instagram), el navegador dice: "Hey, esto es una tabla gigante, necesito ensancharme para que quepa todo", ignorando el w-[400px] del padre.
+
+Aquí tienes exactamente qué decirle al agente (Claude) para que lo arregle de raíz.
+
+Prompt para el Agente (Copiar y Pegar)
+Asunto: Fix Critical Layout Bug in Radix ScrollArea with Large Lists
+
+Hola, he encontrado la causa raíz del problema de desbordamiento en las MessageCard. No es un problema de las tarjetas en sí, sino de la implementación del ScrollArea de Radix UI cuando renderiza listas largas.
+
+El Problema Técnico: El RadixScrollArea.Viewport a menudo aplica internamente un comportamiento de tipo display: table o no restringe el ancho de su hijo directo (content div), lo que causa que el contenedor se expanda a su ancho intrínseco (intrinsic width) cuando la lista es muy larga, ignorando el ancho fijo de 400px del contenedor padre (Inbox.tsx).
+
+La Solución: Debemos forzar al Viewport y a su hijo directo a comportarse como elementos de bloque con ancho restringido.
+
+Por favor, realiza las siguientes 2 modificaciones:
+
+1. Modificar client/src/components/ui/scroll-area.tsx: Busca el componente ScrollBar y Viewport. Asegúrate de pasar la clase w-full y forzar el comportamiento de bloque en el hijo.
+
+TypeScript
+
+// En el componente ScrollAreaPrimitive.Viewport:
+<ScrollAreaPrimitive.Viewport
+  className={cn(
+    "h-full w-full rounded-[inherit] [&>div]:!block", // <--- AGREGAR [&>div]:!block es CRÍTICO
+    className
+  )}
+  {...props}
+>
+  {children}
+</ScrollAreaPrimitive.Viewport>
+Explicación: [&>div]:!block fuerza al div contenedor interno de Radix a comportarse como un bloque normal, respetando los límites de ancho del padre.
+
+2. Modificar client/src/components/Inbox.tsx (Contenedor de la lista): En el div que envuelve tu lista mapeada (dentro del ScrollArea), asegura explícitamente el ancho máximo.
+
+TypeScript
+
+// Dentro del ScrollArea en Inbox.tsx:
+<ScrollArea className="h-full">
+  {/* Este es el div que es hijo directo del Viewport */}
+  <div className="flex flex-col w-full max-w-full min-w-0"> 
+     {/* ... tu AnimatePresence y map ... */}
+  </div>
+</ScrollArea>
+Resumen de la corrección: Al agregar [&>div]:!block en el componente base de la UI (scroll-area.tsx), eliminamos el comportamiento de expansión "tipo tabla" de Radix, obligando a las tarjetas a respetar el ancho de 400px definido en la columna principal, independientemente de si hay 4 o 140 elementos.
+
+¿Por qué esto funcionará? (Explicación para ti)
+CSS display: table vs block: Las tablas siempre intentan ser tan anchas como su contenido más ancho. Los bloques (block) respetan el ancho de su padre. Radix usa trucos de tablas para scrollbars personalizados. Al poner !block, le prohibimos expandirse.
+
+Scrollbars: Cuando aparece la barra de scroll (en listas largas), esta ocupa espacio (unos 15px). Si el diseño no es "fluido" (w-full), la tarjeta se empuja hacia afuera. Con este cambio, la tarjeta se encogerá esos 15px para dejar espacio a la barra de scroll en lugar de salirse del contenedor.
