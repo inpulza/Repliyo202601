@@ -48,6 +48,8 @@ export const messages = pgTable("messages", {
   contextType: text("context_type"),
   crmData: jsonb("crm_data"),
   rawData: jsonb("raw_data"),
+  threadId: text("thread_id"),
+  parentMessageId: varchar("parent_message_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
