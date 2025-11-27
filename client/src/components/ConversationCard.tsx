@@ -34,6 +34,56 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
   const isComment = conversation.type === 'comment';
   const isDM = conversation.type === 'dm';
 
+  const renderThumbnail = () => {
+    if (isComment) {
+      if (conversation.socialPost?.thumbnailUrl) {
+        return (
+          <div className="relative shrink-0">
+            <div className="h-10 w-10 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
+              <img 
+                src={conversation.socialPost.thumbnailUrl} 
+                alt="Post thumbnail"
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                  (e.target as HTMLImageElement).parentElement!.classList.add('flex', 'items-center', 'justify-center');
+                  (e.target as HTMLImageElement).parentElement!.innerHTML = '<span class="text-gray-400"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></span>';
+                }}
+              />
+            </div>
+            <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
+              <PlatformIcon platform={platform} className="h-4 w-4" />
+            </div>
+          </div>
+        );
+      }
+      return (
+        <div className="relative shrink-0">
+          <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 border border-gray-200 flex items-center justify-center">
+            <MessageSquare className="h-5 w-5 text-gray-400" />
+          </div>
+          <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
+            <PlatformIcon platform={platform} className="h-4 w-4" />
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="relative shrink-0">
+        <Avatar className="h-10 w-10 border border-gray-100">
+          <AvatarImage src={conversation.customerAvatar || undefined} alt={conversation.customerName || 'User'} />
+          <AvatarFallback className="text-xs font-bold text-gray-600 bg-gray-100">
+            {(conversation.customerName || 'U').substring(0, 2).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
+          <PlatformIcon platform={platform} className="h-4 w-4" />
+        </div>
+      </div>
+    );
+  };
+
   return (
     <motion.button
       initial={{ opacity: 0, y: 5 }}
@@ -47,17 +97,7 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
       )}
     >
       <div className="flex items-start gap-3 min-w-0 max-w-full overflow-hidden">
-        <div className="relative shrink-0">
-          <Avatar className="h-10 w-10 border border-gray-100">
-            <AvatarImage src={conversation.customerAvatar || undefined} alt={conversation.customerName || 'User'} />
-            <AvatarFallback className="text-xs font-bold text-gray-600 bg-gray-100">
-              {(conversation.customerName || 'U').substring(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
-            <PlatformIcon platform={platform} className="h-4 w-4" />
-          </div>
-        </div>
+        {renderThumbnail()}
 
         <div className="flex-1 min-w-0 max-w-full overflow-hidden">
           <div className="flex items-center justify-between mb-2 min-w-0 max-w-full">
@@ -66,7 +106,12 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
                 "text-sm font-bold truncate text-gray-900 max-w-full",
                 conversation.unreadCount && conversation.unreadCount > 0 && "text-gray-900"
               )}>
-                {conversation.customerName || 'Unknown User'}
+                {isComment 
+                  ? (conversation.socialPost?.caption 
+                      ? conversation.socialPost.caption.substring(0, 40) + (conversation.socialPost.caption.length > 40 ? '...' : '')
+                      : 'Post comments')
+                  : (conversation.customerName || 'Unknown User')
+                }
               </span>
               {conversation.unreadCount && conversation.unreadCount > 0 && (
                 <Badge 
@@ -109,11 +154,11 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
               {isComment && (
                 <>
                   <MessageSquare className="h-3 w-3 mr-1" />
-                  Comment
+                  Comments
                 </>
               )}
             </Badge>
-            {conversation.socialPost?.caption && (
+            {isDM && conversation.socialPost?.caption && (
               <span className="text-[10px] text-gray-400 truncate max-w-[150px]" title={conversation.socialPost.caption}>
                 on: {conversation.socialPost.caption.substring(0, 30)}...
               </span>
