@@ -374,7 +374,7 @@ export function Inbox() {
           </div>
 
           {/* Row 2: Platform Filters (Horizontal Scroll) */}
-          <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar items-center">
+          <div className="flex gap-1.5 overflow-x-auto pt-2 pb-1 no-scrollbar items-center">
               <FilterButton 
                 active={platformFilter === 'all'} 
                 onClick={() => setPlatformFilter('all')}
