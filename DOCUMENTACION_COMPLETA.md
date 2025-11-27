@@ -815,3 +815,84 @@ El agente se integrará en el paso 4 del flujo, después del upsert.
    - `refetchOnWindowFocus: true` en queryClient
    - Indicador de "hace Xs/Xm" junto al botón de sync
    - Botón deshabilitado durante sincronización
+
+---
+
+## Fase 5.1: Correcciones y Mejoras UI (27 Nov 2025)
+
+### Corrección de Timestamps
+**Problema:** Los mensajes mostraban la fecha de sincronización en lugar de la fecha real del mensaje.
+
+**Causa:** El código usaba `msg.created_time || msg.publicationDateTime || Date.now()` con operador `||`, que evaluaba incorrectamente cuando el primer campo era `undefined`.
+
+**Solución:** Cambiar a `if` explícitos en `server/services/syncService.ts`:
+```typescript
+let timestamp: string | number = Date.now();
+if (msg.publicationDateTime) {
+  timestamp = msg.publicationDateTime;
+} else if (msg.created_time) {
+  timestamp = msg.created_time;
+} else if (msg.timestamp) {
+  timestamp = msg.timestamp;
+} else if (conv.rawData?.creationDate) {
+  timestamp = conv.rawData.creationDate;
+}
+```
+
+**Campos de timestamp disponibles en JSON de Metricool:**
+- `publicationDateTime` - Fecha de publicación del mensaje individual
+- `creationDate` - Fecha de creación de la conversación/comentario
+- `lastUpdateTime` - Última actualización
+
+### Badges de Conteo por Plataforma
+Añadidos badges de notificación (círculo rojo) en cada botón de filtro de red social mostrando cuántos mensajes hay por plataforma.
+
+**Implementación:**
+1. Cálculo de conteos en `Inbox.tsx`:
+```typescript
+const platformCounts = React.useMemo(() => ({
+  instagram: clientMessages.filter(m => m.platform === 'instagram').length,
+  tiktok: clientMessages.filter(m => m.platform === 'tiktok').length,
+  // ... etc
+}), [clientMessages]);
+```
+
+2. Prop `count` en `FilterButton` component
+3. Badge renderizado con `ring-2 ring-white` para separación visual
+
+### Mensajes Vacíos de Instagram (is_unsupported)
+**Descubrimiento:** Algunos mensajes DM aparecen con globos vacíos.
+
+**Causa:** Instagram marca ciertos contenidos como `is_unsupported: true`:
+```json
+{
+  "text": "",
+  "properties": {"is_unsupported": true},
+  "attachments": []
+}
+```
+
+**Tipos de contenido no soportado:**
+- Stickers
+- Reacciones (likes, corazones)
+- GIFs
+- Mensajes de voz/audio
+- Imágenes/videos temporales expirados
+- Historias compartidas
+- Mensajes eliminados
+
+**Decisión:** Dejar como está - el usuario entiende que es contenido que Instagram no permite leer.
+
+---
+
+## Pendiente: Integración YouTube
+
+### Estado Actual
+- YouTube está en la lista de `commentProviders` en `metricool.ts`
+- Se hace llamada a `/v2/inbox/post-comments?provider=youtube`
+- Pero no se están recibiendo comentarios (posible falta de autenticación o configuración)
+
+### Próximos Pasos
+1. Verificar si Metricool requiere autenticación OAuth separada para YouTube
+2. Revisar respuesta del API para provider=youtube
+3. Confirmar que el blogId tiene YouTube conectado en Metricool
