@@ -1,0 +1,69 @@
+Es una arquitectura totalmente válida y muy pragmática para una primera versión (MVP) o una aplicación con una carga de usuarios controlada.
+
+Sin embargo, no es la opción "más óptima" en términos de eficiencia de recursos y escalabilidad a largo plazo.
+
+Aquí tienes mi análisis honesto: lo bueno, lo malo y cómo mejorarlo sin complicarte la vida ahora mismo.
+
+? Por qué SÍ estoy de acuerdo (Para tu fase actual)
+Simplicidad vs. Complejidad:
+
+Implementar WebSockets (Socket.io) o Webhooks requiere infraestructura más compleja (servidores de sockets dedicados, exponer endpoints públicos seguros, gestionar reconexiones).
+
+Tu enfoque de "Polling" (preguntar cada X segundos) es robusto y fácil de depurar. Si algo falla, simplemente se arregla en el siguiente "tick" del intervalo.
+
+React Query es una bestia:
+
+Usar refetchInterval es la forma estándar de simular tiempo real en React sin sockets. Maneja el caché, reintentos y estados de carga por ti. Es una decisión excelente de frontend.
+
+Independencia:
+
+Al no depender de que la red social te "avise" (Webhook), tú tienes el control de cuándo buscar datos.
+
+?? Los Riesgos (Lo que debes vigilar)
+Aquí es donde la arquitectura podría "doler" si no tienes cuidado:
+
+1. Cuotas de API (El problema más grave)
+Tu configuración: Consultas cada 30 segundos.
+
+Matemática: 2 llamadas/minuto * 60 minutos * 24 horas = 2,880 llamadas al día por cada marca.
+
+El Riesgo: Las APIs de YouTube, TikTok y Metricool tienen límites diarios (Quotas).
+
+Si tienes 10 clientes, son casi 30,000 llamadas al día. Podrías agotar tu cuota gratuita muy rápido o que Metricool te bloquee por "spamming" a su API.
+
+Solución rápida: Aumenta el intervalo a 2 o 5 minutos en lugar de 30 segundos, o implementa "Polling Adaptativo" (bajar la frecuencia por la noche).
+
+2. Entorno Serverless (Replit vs Vercel/NextJS)
+Tu código de Backend usa setInterval. Esto funciona perfecto si tienes un servidor Node.js corriendo 24/7 (como un servidor dedicado en Replit).
+
+Pero: Si en el futuro mueves esto a una arquitectura "Serverless" (como Vercel Functions o AWS Lambda), el setInterval no funcionará, porque esos servidores se "apagan" cuando no reciben peticiones.
+
+Solución futura: Usar Cron Jobs (tareas programadas externas) en lugar de setInterval interno.
+
+?? ¿Hay algo mejor? (El camino a la optimización)
+Si quieres que esto sea profesional y escalable, este sería el camino evolutivo:
+
+Nivel 1 (Lo que tienes ahora - MVP)
+Backend: setInterval cada 30s.
+
+Frontend: refetchInterval cada 10s.
+
+Veredicto: Déjalo así para lanzar. Funciona.
+
+Nivel 2 (Optimización de Costes - Recomendado a corto plazo)
+Backend: Implementa "Polling Inteligente".
+
+¿El usuario está conectado? -> Consulta cada 30s.
+
+¿Es de noche o fin de semana? -> Consulta cada 15 minutos.
+
+Frontend: Usa refetchOnWindowFocus: true.
+
+En tu código pusiste false. Te recomiendo true. Así, si el usuario cambia de pestaña y vuelve, los datos se actualizan instantáneamente sin esperar los 10 segundos.
+
+Nivel 3 (Arquitectura Ideal - Largo Plazo)
+Para cuando tengas muchos clientes y las cuotas de API sean un problema:
+
+Webhooks (Backend): En lugar de preguntar "¿hay algo nuevo?", configuras Metricool/Redes Sociales para que te envíen una notificación (Webhook) a tu servidor cuando llegue un comentario. Cero consumo de API innecesario.
+
+Server-Sent Events (SSE) (Frontend): En lugar de que React pregunte cada 10s, el servidor mantiene un canal abierto unidireccional y "empuja" el dato al navegador solo cuando llega. Es más ligero que WebSockets y perfecto para notificaciones.
