@@ -412,8 +412,8 @@ export function Inbox() {
         </div>
 
         {/* Messages List */}
-        <ScrollArea className="flex-1 bg-gray-200/70">
-          <div className="flex flex-col p-2 gap-2 overflow-hidden max-w-full">
+        <ScrollArea className="flex-1 bg-gray-200/70 [&>div]:!overflow-x-hidden">
+          <div className="flex flex-col p-2 gap-2 overflow-hidden w-full" style={{ maxWidth: '100%' }}>
             <AnimatePresence mode="popLayout">
               {filteredMessages.length === 0 ? (
                  <div className="p-8 text-center text-muted-foreground text-sm">
