@@ -67,6 +67,7 @@ const getPlatformStyles = (platform: Platform) => {
             return {
                 container: "bg-[#efeae2]/60", // WhatsApp wallpaper vibe
                 bubble: "bg-[#e7fce3] border-[#dcf8c6] text-gray-900", // WhatsApp light green bubble
+                replyBubble: "bg-[#25D366] border-[#128C7E] text-white", // WhatsApp green for replies
                 badge: "bg-[#dcf8c6] text-green-800 border-green-200",
                 commentBadge: "text-green-600"
             };
@@ -74,6 +75,7 @@ const getPlatformStyles = (platform: Platform) => {
             return {
                 container: "bg-[#f0f2f5]", // Facebook light gray/blue background
                 bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
+                replyBubble: "bg-[#1877F2] border-[#1565D8] text-white", // Facebook blue for replies
                 badge: "bg-blue-100 text-blue-700 border-blue-200",
                 commentBadge: "text-blue-600"
             };
@@ -81,6 +83,7 @@ const getPlatformStyles = (platform: Platform) => {
             return {
                 container: "bg-gradient-to-br from-pink-50/50 via-white to-purple-50/50", // Subtle gradient
                 bubble: "bg-white border-gray-100 text-gray-900 shadow-sm",
+                replyBubble: "bg-gradient-to-r from-[#833AB4] via-[#E1306C] to-[#F77737] border-pink-500 text-white", // Instagram gradient for replies
                 badge: "bg-pink-100 text-pink-700 border-pink-200",
                 commentBadge: "text-pink-600"
             };
@@ -88,6 +91,7 @@ const getPlatformStyles = (platform: Platform) => {
             return {
                 container: "bg-[#f3f6f8]", // LinkedIn light gray background
                 bubble: "bg-white border-gray-200 text-slate-800 shadow-sm",
+                replyBubble: "bg-[#0A66C2] border-[#004182] text-white", // LinkedIn blue for replies
                 badge: "bg-slate-100 text-slate-700 border-slate-200",
                 commentBadge: "text-slate-600"
             };
@@ -95,6 +99,7 @@ const getPlatformStyles = (platform: Platform) => {
             return {
                 container: "bg-red-50/20", // Very subtle red tint
                 bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
+                replyBubble: "bg-[#FF0000] border-[#CC0000] text-white", // YouTube red for replies
                 badge: "bg-red-100 text-red-700 border-red-200",
                 commentBadge: "text-red-600"
             };
@@ -102,6 +107,7 @@ const getPlatformStyles = (platform: Platform) => {
             return {
                 container: "bg-gray-50",
                 bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
+                replyBubble: "bg-[#121212] border-[#2F2F2F] text-white", // TikTok dark/black for replies
                 badge: "bg-gray-200 text-gray-800 border-gray-300",
                 commentBadge: "text-gray-800"
             };
@@ -109,6 +115,7 @@ const getPlatformStyles = (platform: Platform) => {
             return {
                 container: "bg-blue-50/20",
                 bubble: "bg-white border-blue-100 text-gray-900 shadow-sm",
+                replyBubble: "bg-[#4285F4] border-[#3367D6] text-white", // Google blue for replies
                 badge: "bg-blue-100 text-blue-700 border-blue-200",
                 commentBadge: "text-blue-600"
             };
@@ -116,6 +123,7 @@ const getPlatformStyles = (platform: Platform) => {
             return {
                 container: "bg-indigo-50/30",
                 bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
+                replyBubble: "bg-indigo-600 border-indigo-700 text-white", // Default indigo for replies
                 badge: "bg-gray-100 text-gray-700 border-gray-200",
                 commentBadge: "text-gray-600"
             };
@@ -713,7 +721,9 @@ export function Inbox() {
                                 "p-4 rounded-2xl text-sm leading-relaxed shadow-sm relative rounded-tl-none",
                                 isOwner 
                                   ? "bg-blue-600 text-white" 
-                                  : getPlatformStyles((msg.platform || 'instagram') as Platform).bubble
+                                  : isReply 
+                                    ? getPlatformStyles((msg.platform || 'instagram') as Platform).replyBubble
+                                    : getPlatformStyles((msg.platform || 'instagram') as Platform).bubble
                             )}>
                                {msg.content}
                             </div>
