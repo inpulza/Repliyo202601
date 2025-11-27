@@ -62,9 +62,10 @@ export class MetricoolService {
     for (const provider of commentProviders) {
       try {
         const comments = await this.getComments(blogId, provider);
+        console.log(`[Metricool] ${provider}: ${comments.length} comments found for brand ${blogId}`);
         allComments.push(...comments);
       } catch (error: any) {
-        console.log(`No comments for ${provider} on brand ${blogId}`);
+        console.log(`[Metricool] ERROR for ${provider} on brand ${blogId}: ${error.message}`);
       }
     }
 
