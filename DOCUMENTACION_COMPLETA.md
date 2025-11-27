@@ -4,14 +4,15 @@
 Sistema de gestión de mensajes de redes sociales que se integra con Metricool para centralizar y gestionar DMs y comentarios de múltiples marcas/empresas. El sistema permite a usuarios admin y clientes gestionar sus interacciones sociales de forma organizada.
 
 ## Estado Actual
-- **Fase Actual**: ✅ FASE 4.5 COMPLETADA - Mapeo Completo de Redes Sociales
+- **Fase Actual**: ✅ FASE 6.1 COMPLETADA - Agrupación de Conversaciones Corregida
 - **Última Actualización**: 27 de Noviembre 2025
 - **Login/Logout**: ✅ Completamente funcional (página de login creada, logout en sidebar)
 - **Sistema de Roles**: ✅ Admin vs Client funcionando correctamente
 - **Marca de Prueba**: ✅ Impulsa conectada (blogId: 4074962)
-- **Sincronización**: ✅ Funcionando correctamente - 145 mensajes (Instagram, LinkedIn, TikTok)
-- **UI**: ✅ Inbox muestra mensajes con avatares, nombres, contenido y filtros funcionando
-- **Próximo Paso**: Implementar sincronización automática cada 130 segundos
+- **Sincronización**: ✅ Automática cada 2 minutos - 172 mensajes totales
+- **Conversaciones**: ✅ 24 hilos de comentarios (uno por post) + 32 DMs
+- **UI**: ✅ ConversationCard con miniatura de post para comentarios
+- **Próximo Paso**: Organizar visualmente comentarios padre/respuesta dentro de conversación
 
 ---
 
@@ -1168,9 +1169,97 @@ Ejemplo: "facebook_abc123_post789_user456"
 - No refleja cómo funcionan las redes sociales
 
 ### Próximos Pasos
-1. Modificar lógica de threading: agrupar por `social_post_id` para comentarios
-2. Actualizar SyncService para no crear conversaciones por cada threadExternalId en comentarios
-3. UI de tarjeta: mostrar miniatura del post en lugar de avatar para comentarios
+1. ~~Modificar lógica de threading: agrupar por `social_post_id` para comentarios~~ ✅ COMPLETADO
+2. ~~Actualizar SyncService para no crear conversaciones por cada threadExternalId en comentarios~~ ✅ COMPLETADO
+3. ~~UI de tarjeta: mostrar miniatura del post en lugar de avatar para comentarios~~ ✅ COMPLETADO
 4. Dentro de la conversación: organizar comentarios padre/respuesta visualmente
+
+---
+
+## FASE 6.1: Corrección de Agrupación de Conversaciones (27 Nov 2025)
+
+### Problema Resuelto
+Las conversaciones de comentarios se agrupaban por `brandId + platform + customerId + socialPostId`, lo que creaba múltiples tarjetas para el mismo post (una por cada comentador). Esto no refleja cómo funcionan las redes sociales.
+
+### Cambios Implementados
+
+#### 1. Storage - `getConversationByKey()` Modificado
+**Archivo:** `server/storage.ts`
+
+**Antes:**
+```typescript
+// Comentarios agrupados por: brandId + platform + customerId + socialPostId
+```
+
+**Después:**
+```typescript
+// Comentarios agrupados por: brandId + platform + socialPostId (sin customerId)
+// Esto asegura UNA conversación por POST
+```
+
+**Lógica final:**
+- **Comentarios** (`socialPostId` presente): `brandId + platform + socialPostId`
+- **DMs con thread** (`threadExternalId` presente): `brandId + platform + threadExternalId`
+- **DMs sin thread** (fallback): `brandId + platform + customerId`
+
+#### 2. Migración SQL de Conversaciones Existentes
+```sql
+-- Resultado de la migración:
+-- 32 mensajes reasignados a conversaciones consolidadas
+-- 25 conversaciones duplicadas eliminadas
+-- 24 conversaciones de comentarios finales (= 24 posts únicos)
+```
+
+#### 3. ConversationCard - Nuevo Diseño para Comentarios
+**Archivo:** `client/src/components/ConversationCard.tsx`
+
+**Cambios:**
+- **Miniatura del post**: Para comentarios, muestra `socialPost.thumbnailUrl` en lugar del avatar del cliente
+- **Título del post**: Muestra el caption del post (truncado a 40 chars) en lugar del nombre del cliente
+- **Badge actualizado**: Cambiado de "Comment" a "Comments" (refleja múltiples comentadores)
+- **Fallback visual**: Si no hay thumbnail, muestra icono de comentarios en fondo gradiente
+
+**Código clave:**
+```tsx
+const renderThumbnail = () => {
+  if (isComment) {
+    if (conversation.socialPost?.thumbnailUrl) {
+      return <img src={thumbnailUrl} ... />;
+    }
+    return <MessageSquare icon fallback />;
+  }
+  return <Avatar for DMs />;
+};
+```
+
+### Verificación Final
+```
+| Tipo     | Conversaciones | Posts Únicos | Estado |
+|----------|----------------|--------------|--------|
+| comment  | 24             | 24           | ✅     |
+| dm       | 32             | N/A          | ✅     |
+```
+
+### Resumen de Arquitectura de Conversaciones
+
+```
+COMENTARIOS:
+┌─────────────────────────────────────────┐
+│  Post A (Instagram)                     │
+│  ├── Comentario de Usuario 1           │
+│  ├── Comentario de Usuario 2           │
+│  └── Comentario de Usuario 3           │
+│  = 1 CONVERSACIÓN                       │
+└─────────────────────────────────────────┘
+
+DMs:
+┌─────────────────────────────────────────┐
+│  Usuario X (thread abc123)              │
+│  ├── Mensaje entrante                   │
+│  ├── Respuesta de marca                 │
+│  └── Mensaje entrante                   │
+│  = 1 CONVERSACIÓN                       │
+└─────────────────────────────────────────┘
+```
 
 ---
