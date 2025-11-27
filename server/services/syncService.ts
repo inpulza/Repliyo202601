@@ -174,6 +174,11 @@ class SyncService {
 
           const direction = isFromBrand ? 'outbound' : 'inbound';
           const isInbound = !isFromBrand;
+          const metricoolId = `conv_${conv.id}_${msg.id || msg.timestamp}`;
+
+          // Check if message already exists BEFORE updating conversation unread count
+          const existingMessage = await storage.getMessageByMetricoolId(metricoolId, brandId);
+          const isNewMessage = !existingMessage;
 
           const conversationRecord = await storage.upsertConversation({
             brandId,
@@ -187,7 +192,7 @@ class SyncService {
             lastMessageAt: new Date(timestamp),
             lastMessagePreview: content.substring(0, 100),
             status: 'open',
-          }, isInbound);
+          }, isInbound && isNewMessage); // Only increment unread if NEW inbound message
 
           const messageData = {
             brandId,
@@ -208,7 +213,7 @@ class SyncService {
             sourceUrl: null,
             contextType: null,
             crmData: null,
-            metricoolId: `conv_${conv.id}_${msg.id || msg.timestamp}`,
+            metricoolId,
             rawData: { conversation: conv, message: msg },
             threadId: conv.id,
             parentMessageId: null,
@@ -255,6 +260,10 @@ class SyncService {
           customerAvatar = authorParticipant.imageProfileUrl || comment.authorAvatar || null;
         }
 
+        // Check if comment already exists BEFORE updating conversation unread count
+        const existingComment = await storage.getMessageByMetricoolId(comment.id, brandId);
+        const isNewComment = !existingComment;
+
         const conversationRecord = await storage.upsertConversation({
           brandId,
           socialPostId,
@@ -266,7 +275,7 @@ class SyncService {
           lastMessageAt: new Date(comment.timestamp),
           lastMessagePreview: comment.content.substring(0, 100),
           status: 'open',
-        }, true);
+        }, isNewComment); // Only increment unread if NEW comment
 
         const savedComment = await storage.upsertMessage({
           brandId,
@@ -305,6 +314,17 @@ class SyncService {
             const replyAvatar = replyAuthorParticipant?.imageProfileUrl || null;
             const replyContent = reply.text || '';
             const replyTimestamp = reply.creationDate || comment.timestamp;
+
+            // Check if reply already exists BEFORE incrementing
+            const existingReply = await storage.getMessageByMetricoolId(reply.id, brandId);
+            const isNewReply = !existingReply;
+            
+            // Update conversation unread count only if this is a NEW reply
+            if (isNewReply) {
+              await storage.updateConversation(conversationRecord.id, {
+                unreadCount: (conversationRecord.unreadCount || 0) + 1,
+              });
+            }
 
             await storage.upsertMessage({
               brandId,

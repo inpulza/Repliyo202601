@@ -241,7 +241,7 @@ export class DatabaseStorage implements IStorage {
     return conversation || undefined;
   }
 
-  async upsertConversation(insertConversation: InsertConversation, isInbound: boolean = true): Promise<Conversation> {
+  async upsertConversation(insertConversation: InsertConversation, shouldIncrementUnread: boolean = false): Promise<Conversation> {
     const existing = await this.getConversationByKey(
       insertConversation.brandId,
       insertConversation.platform,
@@ -251,23 +251,27 @@ export class DatabaseStorage implements IStorage {
     );
     
     if (existing) {
-      const newUnreadCount = isInbound 
-        ? (existing.unreadCount || 0) + 1 
-        : 0;
-      
-      const updated = await this.updateConversation(existing.id, {
+      // Only update unreadCount if we should increment (new inbound message)
+      const updates: any = {
         lastMessageAt: insertConversation.lastMessageAt,
         lastMessagePreview: insertConversation.lastMessagePreview,
         customerName: insertConversation.customerName || existing.customerName,
         customerAvatar: insertConversation.customerAvatar || existing.customerAvatar,
-        unreadCount: newUnreadCount,
-      });
+      };
+      
+      if (shouldIncrementUnread) {
+        updates.unreadCount = (existing.unreadCount || 0) + 1;
+      }
+      // If shouldIncrementUnread is false, we DON'T touch unreadCount at all
+      
+      const updated = await this.updateConversation(existing.id, updates);
       return updated!;
     }
 
+    // For new conversations, start with 1 unread if it's an inbound message
     return this.createConversation({
       ...insertConversation,
-      unreadCount: isInbound ? 1 : 0,
+      unreadCount: shouldIncrementUnread ? 1 : 0,
     });
   }
 
