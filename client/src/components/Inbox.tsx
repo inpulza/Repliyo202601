@@ -413,7 +413,7 @@ export function Inbox() {
 
         {/* Messages List */}
         <ScrollArea className="flex-1 bg-gray-200/70">
-          <div className="flex flex-col p-2 gap-2">
+          <div className="flex flex-col p-2 gap-2 overflow-hidden max-w-full">
             <AnimatePresence mode="popLayout">
               {filteredMessages.length === 0 ? (
                  <div className="p-8 text-center text-muted-foreground text-sm">
@@ -842,7 +842,7 @@ function MessageCard({ message, isSelected, onClick, onOpenCRM }: { message: Mes
             exit={{ opacity: 0, scale: 0.95 }}
             onClick={onClick}
             className={cn(
-                "w-full text-left bg-white rounded-lg border border-gray-100 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 relative overflow-hidden group pl-3 py-3 pr-3",
+                "w-full max-w-full text-left bg-white rounded-lg border border-gray-100 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 relative overflow-hidden group pl-3 py-3 pr-3",
                 isSelected && "ring-1 ring-indigo-500 ring-offset-1 border-transparent bg-gray-50 z-10"
             )}
         >
