@@ -187,10 +187,21 @@ export function Inbox() {
     });
 
   // Calculate Stats for Header
-  const clientMessages = messages.filter(m => m.brandId === activeClientId);
+  const clientMessages = messages.filter(m => m.brandId === activeClientId && !m.parentMessageId);
   const criticalCount = clientMessages.filter(m => m.urgency === 'high').length;
   const opportunityCount = clientMessages.filter(m => m.intent === 'sales').length;
   const pendingCount = clientMessages.filter(m => m.status === 'unread').length;
+
+  // Calculate message counts per platform
+  const platformCounts = React.useMemo(() => ({
+    instagram: clientMessages.filter(m => m.platform === 'instagram').length,
+    tiktok: clientMessages.filter(m => m.platform === 'tiktok').length,
+    facebook: clientMessages.filter(m => m.platform === 'facebook').length,
+    linkedin: clientMessages.filter(m => m.platform === 'linkedin').length,
+    youtube: clientMessages.filter(m => m.platform === 'youtube').length,
+    'google-business': clientMessages.filter(m => m.platform === 'google-business').length,
+    whatsapp: clientMessages.filter(m => m.platform === 'whatsapp').length,
+  }), [clientMessages]);
 
   // Calculate thread messages for the selected message
   const threadMessages = React.useMemo(() => {
@@ -377,6 +388,7 @@ export function Inbox() {
                 icon={<FaInstagram className="h-3.5 w-3.5" />}
                 activeColorClass="bg-pink-600"
                 hoverColorClass="hover:text-pink-600 hover:border-pink-200 hover:bg-pink-50"
+                count={platformCounts.instagram}
               />
               <FilterButton 
                 active={platformFilter === 'tiktok'} 
@@ -385,6 +397,7 @@ export function Inbox() {
                 icon={<FaTiktok className="h-3.5 w-3.5" />}
                 activeColorClass="bg-black"
                 hoverColorClass="hover:text-black hover:border-gray-300 hover:bg-gray-100"
+                count={platformCounts.tiktok}
               />
               <FilterButton 
                 active={platformFilter === 'facebook'} 
@@ -393,6 +406,7 @@ export function Inbox() {
                 icon={<FaFacebook className="h-3.5 w-3.5" />}
                 activeColorClass="bg-blue-600"
                 hoverColorClass="hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50"
+                count={platformCounts.facebook}
               />
               <FilterButton 
                 active={platformFilter === 'linkedin'} 
@@ -401,6 +415,7 @@ export function Inbox() {
                 icon={<FaLinkedin className="h-3.5 w-3.5" />}
                 activeColorClass="bg-[#0077b5]"
                 hoverColorClass="hover:text-[#0077b5] hover:border-[#0077b5]/30 hover:bg-[#0077b5]/10"
+                count={platformCounts.linkedin}
               />
                <FilterButton 
                 active={platformFilter === 'youtube'} 
@@ -409,6 +424,7 @@ export function Inbox() {
                 icon={<FaYoutube className="h-3.5 w-3.5" />}
                 activeColorClass="bg-red-600"
                 hoverColorClass="hover:text-red-600 hover:border-red-200 hover:bg-red-50"
+                count={platformCounts.youtube}
               />
               <FilterButton 
                 active={platformFilter === 'google-business'} 
@@ -417,6 +433,7 @@ export function Inbox() {
                 icon={<GoogleBusinessIcon className="h-3.5 w-3.5" />}
                 activeColorClass="bg-blue-500"
                 hoverColorClass="hover:text-blue-500 hover:border-blue-200 hover:bg-blue-50"
+                count={platformCounts['google-business']}
               />
               <FilterButton 
                 active={platformFilter === 'whatsapp'} 
@@ -425,6 +442,7 @@ export function Inbox() {
                 icon={<FaWhatsapp className="h-3.5 w-3.5" />}
                 activeColorClass="bg-green-500"
                 hoverColorClass="hover:text-green-500 hover:border-green-200 hover:bg-green-50"
+                count={platformCounts.whatsapp}
               />
            </div>
 
@@ -1102,20 +1120,25 @@ function SentimentIndicator({ sentiment, showLabel }: { sentiment: Sentiment, sh
     );
 }
 
-function FilterButton({ active, onClick, label, icon, activeColorClass, hoverColorClass }: { active: boolean, onClick: () => void, label: string, icon?: React.ReactNode, activeColorClass?: string, hoverColorClass?: string }) {
+function FilterButton({ active, onClick, label, icon, activeColorClass, hoverColorClass, count }: { active: boolean, onClick: () => void, label: string, icon?: React.ReactNode, activeColorClass?: string, hoverColorClass?: string, count?: number }) {
   return (
     <button 
       onClick={onClick}
       title={label}
       type="button"
       className={cn(
-        "flex items-center justify-center h-10 w-10 rounded-full text-xs font-medium transition-all border shrink-0 touch-manipulation",
+        "relative flex items-center justify-center h-10 w-10 rounded-full text-xs font-medium transition-all border shrink-0 touch-manipulation",
         active 
           ? cn("text-white border-transparent shadow-sm", activeColorClass || "bg-gray-900") 
           : cn("bg-white text-gray-500 border-gray-200", hoverColorClass || "hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900")
       )}
     >
       {icon}
+      {count !== undefined && count > 0 && (
+        <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold h-4 min-w-[16px] flex items-center justify-center rounded-full px-1 shadow-sm ring-2 ring-white z-10">
+          {count > 99 ? '99+' : count}
+        </div>
+      )}
     </button>
   );
 }
