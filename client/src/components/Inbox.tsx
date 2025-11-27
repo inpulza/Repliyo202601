@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNexus } from '@/context/NexusContext';
+import { useNexus, type ConversationWithPost } from '@/context/NexusContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { CRMContextPanel } from './CRMContextPanel';
+import { ConversationCard } from './ConversationCard';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -138,10 +139,22 @@ interface SyncStatus {
 }
 
 export function Inbox() {
-  const { messages, activeClientId, activeClient, approveMessage, updateMessageDraft, refreshFeed } = useNexus();
+  const { 
+    messages, 
+    conversations,
+    activeConversation,
+    activeConversationMessages,
+    setActiveConversation,
+    activeClientId, 
+    activeClient, 
+    approveMessage, 
+    updateMessageDraft, 
+    refreshFeed,
+    isLoadingConversations,
+    isLoadingConversationMessages,
+  } = useNexus();
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
-  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -169,80 +182,73 @@ export function Inbox() {
   const [fireMode, setFireMode] = useState(false);
   const [isCRMOpen, setIsCRMOpen] = useState(!isMobile);
 
-  // Filter Logic
-  const filteredMessages = messages
-    .filter(m => m.brandId === activeClientId)
-    .filter(m => !m.parentMessageId) // Exclude nested replies from the list - they only show in threads
-    .filter(m => {
-      if (fireMode && (m.urgency !== 'high' && m.urgency !== 'medium')) return false;
-      if (intentFilter !== 'all' && m.intent !== intentFilter) return false;
-      if (platformFilter !== 'all' && m.platform !== platformFilter) return false;
-      if (typeFilter !== 'all' && m.type !== typeFilter) return false;
-      if (searchQuery && !m.content.toLowerCase().includes(searchQuery.toLowerCase()) && !m.author.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+  // Filter Conversations
+  const filteredConversations = conversations
+    .filter(c => {
+      if (platformFilter !== 'all' && c.platform !== platformFilter) return false;
+      if (typeFilter !== 'all') {
+        const convType = c.type === 'dm' ? 'dm' : 'comment';
+        if (typeFilter !== convType) return false;
+      }
+      if (searchQuery) {
+        const searchLower = searchQuery.toLowerCase();
+        const matchesName = c.customerName?.toLowerCase().includes(searchLower);
+        const matchesPreview = c.lastMessagePreview?.toLowerCase().includes(searchLower);
+        if (!matchesName && !matchesPreview) return false;
+      }
       return true;
     })
-    .sort((a, b) => {
-       // Sort by urgency first if Fire Mode is on, otherwise by date
-       if (fireMode) {
-           const urgencyScore: Record<string, number> = { high: 3, medium: 2, low: 1 };
-           const aScore = urgencyScore[a.urgency || 'low'] || 1;
-           const bScore = urgencyScore[b.urgency || 'low'] || 1;
-           if (aScore !== bScore) {
-               return bScore - aScore;
-           }
-       }
-       return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-    });
+    .sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
 
-  // Calculate Stats for Header
-  const clientMessages = messages.filter(m => m.brandId === activeClientId && !m.parentMessageId);
-  const criticalCount = clientMessages.filter(m => m.urgency === 'high').length;
-  const opportunityCount = clientMessages.filter(m => m.intent === 'sales').length;
-  const pendingCount = clientMessages.filter(m => m.status === 'unread').length;
+  // Calculate Stats for Header (from conversations)
+  const totalUnread = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+  const criticalCount = 0;
+  const opportunityCount = 0;
+  const pendingCount = totalUnread;
 
-  // Calculate message counts per platform
+  // Calculate conversation counts per platform
   const platformCounts = React.useMemo(() => ({
-    instagram: clientMessages.filter(m => m.platform === 'instagram').length,
-    tiktok: clientMessages.filter(m => m.platform === 'tiktok').length,
-    facebook: clientMessages.filter(m => m.platform === 'facebook').length,
-    linkedin: clientMessages.filter(m => m.platform === 'linkedin').length,
-    youtube: clientMessages.filter(m => m.platform === 'youtube').length,
-    'google-business': clientMessages.filter(m => m.platform === 'google-business').length,
-    whatsapp: clientMessages.filter(m => m.platform === 'whatsapp').length,
-  }), [clientMessages]);
+    instagram: conversations.filter(c => c.platform === 'instagram').length,
+    tiktok: conversations.filter(c => c.platform === 'tiktok').length,
+    facebook: conversations.filter(c => c.platform === 'facebook').length,
+    linkedin: conversations.filter(c => c.platform === 'linkedin').length,
+    youtube: conversations.filter(c => c.platform === 'youtube').length,
+    'google-business': conversations.filter(c => c.platform === 'google-business').length,
+    whatsapp: conversations.filter(c => c.platform === 'whatsapp').length,
+  }), [conversations]);
 
-  // Calculate thread messages for the selected message
-  const threadMessages = React.useMemo(() => {
-    if (!selectedMessageId) return [];
-    
-    const selectedMsg = messages.find(m => m.id === selectedMessageId);
-    if (!selectedMsg || !selectedMsg.threadId) {
-      return selectedMsg ? [selectedMsg] : [];
-    }
-    
-    // Get all messages in the same thread
-    const thread = messages
-      .filter(m => m.threadId === selectedMsg.threadId)
-      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-    
-    return thread;
-  }, [selectedMessageId, messages]);
+  // Thread messages are now loaded from activeConversationMessages
+  const threadMessages = activeConversationMessages;
 
-  // Auto-select first message (Desktop Only)
+  // Derive active draft message (outbound with drafting/pending status) and last inbound message
+  const activeDraftMessage = React.useMemo(() => {
+    return threadMessages.find(m => 
+      m.direction === 'outbound' && 
+      (m.status === 'drafting' || m.status === 'pending' || m.status === 'unread')
+    );
+  }, [threadMessages]);
+
+  const lastInboundMessage = React.useMemo(() => {
+    const inbound = threadMessages.filter(m => m.direction === 'inbound');
+    return inbound[inbound.length - 1];
+  }, [threadMessages]);
+
+  // For backward compatibility, selectedMessage prioritizes the draft, then last inbound
+  const selectedMessage = activeDraftMessage || lastInboundMessage || threadMessages[threadMessages.length - 1];
+
+  // Auto-select first conversation (Desktop Only)
   useEffect(() => {
-    if (isMobile) return; // Don't auto-select on mobile
+    if (isMobile) return;
     
-    if (filteredMessages.length > 0 && !filteredMessages.find(m => m.id === selectedMessageId)) {
-      setSelectedMessageId(filteredMessages[0].id);
+    if (filteredConversations.length > 0 && !activeConversation) {
+      setActiveConversation(filteredConversations[0]);
     }
-  }, [filteredMessages, selectedMessageId, isMobile]);
+  }, [filteredConversations, activeConversation, isMobile, setActiveConversation]);
 
-  // Reset editing state when selecting a new message
+  // Reset editing state when selecting a new conversation
   useEffect(() => {
     setIsEditing(false);
-  }, [selectedMessageId]);
-
-  const selectedMessage = messages.find(m => m.id === selectedMessageId);
+  }, [activeConversation?.id]);
 
   const handleSyncData = async () => {
     if (!activeClientId || isSyncing) return;
@@ -266,7 +272,7 @@ export function Inbox() {
       <div className={cn(
           "w-[400px] border-r flex flex-col bg-white relative z-10 shadow-sm",
           isMobile ? "w-full" : "",
-          isMobile && selectedMessageId ? "hidden" : "flex"
+          isMobile && activeConversation ? "hidden" : "flex"
       )}>
         
         {/* Header / Title */}
@@ -292,7 +298,7 @@ export function Inbox() {
               )}
             </div>
             <Badge variant="outline" className="font-normal text-gray-500">
-              {filteredMessages.length}
+              {filteredConversations.length}
             </Badge>
           </div>
           
@@ -489,22 +495,26 @@ export function Inbox() {
            </div>
         </div>
 
-        {/* Messages List */}
+        {/* Conversations List */}
         <ScrollArea className="flex-1 bg-gray-200/70">
           <div className="flex flex-col p-2 gap-2 w-full max-w-full min-w-0 overflow-hidden">
             <AnimatePresence mode="sync">
-              {filteredMessages.length === 0 ? (
+              {isLoadingConversations ? (
+                <div className="p-8 text-center text-muted-foreground text-sm flex items-center justify-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading conversations...
+                </div>
+              ) : filteredConversations.length === 0 ? (
                  <div className="p-8 text-center text-muted-foreground text-sm">
-                    No messages match your filters.
+                    No conversations match your filters.
                  </div>
               ) : (
-                filteredMessages.map((msg) => (
-                  <MessageCard 
-                    key={msg.id} 
-                    message={msg} 
-                    isSelected={selectedMessageId === msg.id} 
-                    onClick={() => setSelectedMessageId(msg.id)} 
-                    onOpenCRM={() => setIsCRMOpen(true)}
+                filteredConversations.map((conv) => (
+                  <ConversationCard 
+                    key={conv.id} 
+                    conversation={conv} 
+                    isSelected={activeConversation?.id === conv.id} 
+                    onClick={() => setActiveConversation(conv)} 
                   />
                 ))
               )}
@@ -516,58 +526,56 @@ export function Inbox() {
       {/* COLUMN 3: Chat Detail */}
       <div className={cn(
         "flex-1 flex flex-col bg-white relative min-w-0 z-0",
-        isMobile && !selectedMessageId ? "hidden" : "flex"
+        isMobile && !activeConversation ? "hidden" : "flex"
       )}>
-        {selectedMessage ? (
+        {activeConversation ? (
           <>
             {/* Chat Header - AI Summary */}
             <header className="h-auto min-h-[64px] md:min-h-[80px] border-b px-4 md:px-6 py-3 md:py-4 flex flex-col justify-center shrink-0 bg-white z-20 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
                <div className="flex items-center justify-between gap-3">
                  <div className="flex items-center gap-3 overflow-hidden flex-1">
                     {isMobile && (
-                        <Button variant="ghost" size="icon" className="-ml-2 mr-0 h-8 w-8 shrink-0" onClick={() => setSelectedMessageId(null)}>
+                        <Button variant="ghost" size="icon" className="-ml-2 mr-0 h-8 w-8 shrink-0" onClick={() => setActiveConversation(null)}>
                             <ArrowLeft className="h-5 w-5" />
                         </Button>
                     )}
                     <Avatar className="h-10 w-10 ring-2 ring-offset-2 ring-gray-50 shrink-0">
-                        <AvatarImage src={selectedMessage.authorAvatar || undefined} alt={selectedMessage.author} />
-                        <AvatarFallback className="bg-gray-100 font-bold text-gray-600">{selectedMessage.author.substring(0,2).toUpperCase()}</AvatarFallback>
+                        <AvatarImage src={activeConversation.customerAvatar || undefined} alt={activeConversation.customerName || 'User'} />
+                        <AvatarFallback className="bg-gray-100 font-bold text-gray-600">{(activeConversation.customerName || 'U').substring(0,2).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     
                     <div className="min-w-0 flex-1">
                         {/* Row 1: Name */}
                         <h2 className="font-bold text-gray-900 truncate text-sm md:text-base leading-tight">
-                            {selectedMessage.author}
+                            {activeConversation.customerName || 'Unknown User'}
                         </h2>
                         
                         {/* Row 2: Info */}
                         <div className="flex items-center gap-1.5 mt-0.5 md:mt-1.5">
                              {/* Platform Badge - Unified location */}
-                             <PlatformBadge platform={(selectedMessage.platform || 'instagram') as Platform} size="sm" />
+                             <PlatformBadge platform={(activeConversation.platform || 'instagram') as Platform} size="sm" />
                              
                              <span className="text-gray-300 text-[10px] hidden md:inline">|</span>
 
                              {/* Desktop Metadata */}
                              <div className="hidden md:flex items-center gap-2">
-                                <SentimentIndicator sentiment={(selectedMessage.sentiment || 'neutral') as Sentiment} showLabel />
-                                <span className="text-gray-300 text-[10px]">|</span>
                                 <span className="text-xs text-muted-foreground">
-                                   {selectedMessage.type === 'dm' && 'Direct Message'}
-                                   {selectedMessage.type === 'comment' && 'Comment'}
-                                   {selectedMessage.type === 'review' && 'Review'}
+                                   {activeConversation.type === 'dm' && 'Direct Message'}
+                                   {activeConversation.type === 'comment' && 'Comment'}
+                                   {activeConversation.type === 'review' && 'Review'}
                                 </span>
                                 
-                                {selectedMessage.sourceUrl && (
+                                {activeConversation.socialPost?.permalink && (
                                    <>
                                        <span className="text-gray-300 text-[10px]">|</span>
                                        <a 
-                                           href={selectedMessage.sourceUrl}
+                                           href={activeConversation.socialPost.permalink}
                                            target="_blank"
                                            rel="noopener noreferrer"
                                            className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1 font-medium"
                                        >
                                            <ExternalLink className="h-3 w-3" />
-                                           View Original {selectedMessage.contextType === 'post' ? 'Post' : 'Context'}
+                                           View Original Post
                                        </a>
                                    </>
                                 )}
@@ -576,7 +584,6 @@ export function Inbox() {
                              {/* Mobile Metadata */}
                              <div className="flex md:hidden items-center gap-1.5">
                                 <span className="text-gray-300 text-[10px]">|</span>
-                                <SentimentIndicator sentiment={(selectedMessage.sentiment || 'neutral') as Sentiment} />
                                 
                                 <DropdownMenu>
                                    <DropdownMenuTrigger asChild>
@@ -586,31 +593,28 @@ export function Inbox() {
                                    </DropdownMenuTrigger>
                                    <DropdownMenuContent align="start" className="w-56">
                                        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                                           Message Information
+                                           Conversation Info
                                        </DropdownMenuLabel>
-                                       <DropdownMenuItem className="gap-2">
-                                           <SentimentIndicator sentiment={(selectedMessage.sentiment || 'neutral') as Sentiment} showLabel />
-                                       </DropdownMenuItem>
                                        <DropdownMenuItem>
                                            <MessageCircle className="h-3.5 w-3.5 mr-2 text-gray-500" />
                                            <span className="text-xs">
-                                               {selectedMessage.type === 'dm' && 'Direct Message'}
-                                               {selectedMessage.type === 'comment' && 'Public Comment'}
-                                               {selectedMessage.type === 'review' && 'Review'}
+                                               {activeConversation.type === 'dm' && 'Direct Message'}
+                                               {activeConversation.type === 'comment' && 'Public Comment'}
+                                               {activeConversation.type === 'review' && 'Review'}
                                            </span>
                                        </DropdownMenuItem>
-                                       {selectedMessage.sourceUrl && (
+                                       {activeConversation.socialPost?.permalink && (
                                            <>
                                                <DropdownMenuSeparator />
                                                <DropdownMenuItem asChild>
                                                    <a 
-                                                       href={selectedMessage.sourceUrl}
+                                                       href={activeConversation.socialPost.permalink}
                                                        target="_blank"
                                                        rel="noopener noreferrer"
                                                        className="flex items-center gap-2 text-indigo-600 cursor-pointer"
                                                    >
                                                        <ExternalLink className="h-3.5 w-3.5" />
-                                                       <span className="text-xs font-medium">View Original Context</span>
+                                                       <span className="text-xs font-medium">View Original Post</span>
                                                    </a>
                                                </DropdownMenuItem>
                                            </>
@@ -651,32 +655,42 @@ export function Inbox() {
             </header>
 
             {/* Chat Content */}
-            <div className={cn("flex-1 relative flex flex-col overflow-hidden", selectedMessage ? getPlatformStyles((selectedMessage.platform || 'instagram') as Platform).container : "bg-indigo-50/30")}>
+            <div className={cn("flex-1 relative flex flex-col overflow-hidden", getPlatformStyles((activeConversation.platform || 'instagram') as Platform).container)}>
                 <ScrollArea className="flex-1 p-4 md:p-8">
                    <div className="max-w-3xl mx-auto space-y-8 pb-32">
-                  {/* Thread Header - Show if multiple messages in thread */}
-                  {threadMessages.length > 1 && (
-                    <div className="flex items-center justify-center gap-2 mb-4">
-                      <div className="h-px flex-1 bg-gray-200" />
-                      <span className="text-[10px] font-medium text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200 flex items-center gap-1.5">
-                        <MessageCircle className="h-3 w-3" />
-                        Thread · {threadMessages.length} messages
-                      </span>
-                      <div className="h-px flex-1 bg-gray-200" />
+                  {/* Loading state for messages */}
+                  {isLoadingConversationMessages ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                      <span className="ml-2 text-sm text-gray-500">Loading messages...</span>
                     </div>
-                  )}
+                  ) : (
+                    <>
+                      {/* Thread Header - Show if multiple messages in thread */}
+                      {threadMessages.length > 1 && (
+                        <div className="flex items-center justify-center gap-2 mb-4">
+                          <div className="h-px flex-1 bg-gray-200" />
+                          <span className="text-[10px] font-medium text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200 flex items-center gap-1.5">
+                            <MessageCircle className="h-3 w-3" />
+                            Thread · {threadMessages.length} messages
+                          </span>
+                          <div className="h-px flex-1 bg-gray-200" />
+                        </div>
+                      )}
 
-                  {/* Date Separator */}
-                  <div className="flex justify-center">
-                      <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
-                          {new Date(selectedMessage.timestamp).toLocaleDateString()}
-                      </span>
-                  </div>
+                      {/* Date Separator */}
+                      {threadMessages.length > 0 && (
+                        <div className="flex justify-center">
+                            <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
+                                {new Date(threadMessages[0].timestamp).toLocaleDateString()}
+                            </span>
+                        </div>
+                      )}
 
-                  {/* Render all messages in the thread */}
-                  {threadMessages.map((msg, index) => {
-                    const isReply = !!msg.parentMessageId;
-                    const isSelected = msg.id === selectedMessageId;
+                      {/* Render all messages in the thread */}
+                      {threadMessages.map((msg, index) => {
+                        const isReply = !!msg.parentMessageId;
+                        const isInbound = msg.direction === 'inbound';
                     const isOwner = activeClient && msg.author.toLowerCase() === activeClient.name.toLowerCase();
                     
                     return (
@@ -895,6 +909,8 @@ export function Inbox() {
 
                   {/* Spacer to prevent content from being hidden behind the floating card */}
                   <div className="h-24"></div>
+                    </>
+                  )}
                </div>
             </ScrollArea>
 

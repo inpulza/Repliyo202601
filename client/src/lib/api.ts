@@ -1,4 +1,4 @@
-import type { Client, Message, Brand } from '@shared/schema';
+import type { Client, Message, Brand, Conversation, SocialPost } from '@shared/schema';
 import type { Platform, MessageType, Urgency, Intent, Sentiment, MessageStatus, CRMContact } from '@/lib/types';
 
 const API_BASE = '/api';
@@ -154,6 +154,51 @@ export const api = {
         method: 'DELETE',
       });
       if (!res.ok) throw new Error('Failed to delete message');
+    },
+  },
+
+  conversations: {
+    getAll: async (brandId?: string, platform?: string, type?: string): Promise<(Conversation & { socialPost: SocialPost | null })[]> => {
+      const params = new URLSearchParams();
+      if (brandId) params.append('brandId', brandId);
+      if (platform) params.append('platform', platform);
+      if (type) params.append('type', type);
+      
+      const url = `${API_BASE}/conversations${params.toString() ? `?${params.toString()}` : ''}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to fetch conversations');
+      return res.json();
+    },
+
+    getById: async (id: string): Promise<Conversation & { socialPost: SocialPost | null }> => {
+      const res = await fetch(`${API_BASE}/conversations/${id}`);
+      if (!res.ok) throw new Error('Failed to fetch conversation');
+      return res.json();
+    },
+
+    getMessages: async (conversationId: string): Promise<Message[]> => {
+      const res = await fetch(`${API_BASE}/conversations/${conversationId}/messages`);
+      if (!res.ok) throw new Error('Failed to fetch conversation messages');
+      const messages: Message[] = await res.json();
+      return messages.map(adaptMessage);
+    },
+
+    markAsRead: async (conversationId: string): Promise<Conversation> => {
+      const res = await fetch(`${API_BASE}/conversations/${conversationId}/mark-read`, {
+        method: 'POST',
+      });
+      if (!res.ok) throw new Error('Failed to mark conversation as read');
+      return res.json();
+    },
+
+    update: async (id: string, data: Partial<Conversation>): Promise<Conversation> => {
+      const res = await fetch(`${API_BASE}/conversations/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('Failed to update conversation');
+      return res.json();
     },
   },
 };

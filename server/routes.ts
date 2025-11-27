@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertBrandSchema, insertUserSchema, insertMessageSchema, updateMessageSchema } from "@shared/schema";
+import { insertBrandSchema, insertUserSchema, insertMessageSchema, updateMessageSchema, updateConversationSchema } from "@shared/schema";
 import { hashPassword, verifyPassword, sanitizeUser, sanitizeBrand, type AuthenticatedUser } from "./auth";
 import { MetricoolService } from "./services/metricool";
 import { syncService } from "./services/syncService";
@@ -335,6 +335,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: "Invalid user data" });
     }
   });
+
+  // ========== CONVERSATIONS ENDPOINTS ==========
+  
+  app.get("/api/conversations", requireAuth, async (req, res) => {
+    try {
+      let brandId = req.query.brandId as string | undefined;
+      const platform = req.query.platform as string | undefined;
+      const type = req.query.type as string | undefined;
+      
+      if (req.user!.role === 'client' && req.user!.brandId) {
+        brandId = req.user!.brandId;
+      }
+      
+      if (!brandId && req.user!.role !== 'admin') {
+        return res.status(400).json({ error: "brandId is required" });
+      }
+      
+      let conversationsList = brandId 
+        ? await storage.getConversations(brandId)
+        : [];
+      
+      if (req.user!.role === 'admin' && !brandId) {
+        const brands = await storage.getBrands();
+        const allConversations = await Promise.all(
+          brands.map(b => storage.getConversations(b.id))
+        );
+        conversationsList = allConversations.flat();
+      }
+      
+      if (platform) {
+        conversationsList = conversationsList.filter(c => c.platform === platform);
+      }
+      
+      if (type) {
+        conversationsList = conversationsList.filter(c => c.type === type);
+      }
+      
+      conversationsList.sort((a, b) => 
+        new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
+      );
+      
+      const conversationsWithSocialPost = await Promise.all(
+        conversationsList.map(async (conv) => {
+          let socialPost = null;
+          if (conv.socialPostId) {
+            socialPost = await storage.getSocialPost(conv.socialPostId);
+          }
+          return {
+            ...conv,
+            socialPost,
+          };
+        })
+      );
+      
+      res.json(conversationsWithSocialPost);
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+      res.status(500).json({ error: "Failed to fetch conversations" });
+    }
+  });
+
+  app.get("/api/conversations/:id", requireAuth, async (req, res) => {
+    try {
+      const conversation = await storage.getConversation(req.params.id);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      
+      if (req.user!.role === 'client' && conversation.brandId !== req.user!.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      let socialPost = null;
+      if (conversation.socialPostId) {
+        socialPost = await storage.getSocialPost(conversation.socialPostId);
+      }
+      
+      res.json({ ...conversation, socialPost });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch conversation" });
+    }
+  });
+
+  app.get("/api/conversations/:id/messages", requireAuth, async (req, res) => {
+    try {
+      const conversation = await storage.getConversation(req.params.id);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      
+      if (req.user!.role === 'client' && conversation.brandId !== req.user!.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const messages = await storage.getMessagesByConversation(req.params.id);
+      
+      messages.sort((a, b) => 
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
+      
+      res.json(messages);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch conversation messages" });
+    }
+  });
+
+  app.patch("/api/conversations/:id", requireAuth, async (req, res) => {
+    try {
+      const conversation = await storage.getConversation(req.params.id);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      
+      if (req.user!.role === 'client' && conversation.brandId !== req.user!.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const validatedData = updateConversationSchema.parse(req.body);
+      const updatedConversation = await storage.updateConversation(req.params.id, validatedData);
+      
+      res.json(updatedConversation);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid update data" });
+    }
+  });
+
+  app.post("/api/conversations/:id/mark-read", requireAuth, async (req, res) => {
+    try {
+      const conversation = await storage.getConversation(req.params.id);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      
+      if (req.user!.role === 'client' && conversation.brandId !== req.user!.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const updatedConversation = await storage.updateConversation(req.params.id, {
+        unreadCount: 0,
+      });
+      
+      const messages = await storage.getMessagesByConversation(req.params.id);
+      for (const msg of messages) {
+        if (msg.status === 'unread') {
+          await storage.updateMessage(msg.id, { status: 'read' });
+        }
+      }
+      
+      res.json(updatedConversation);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to mark conversation as read" });
+    }
+  });
+
+  // ========== MESSAGES ENDPOINTS ==========
 
   app.get("/api/messages", requireAuth, filterByBrand(), async (req, res) => {
     try {

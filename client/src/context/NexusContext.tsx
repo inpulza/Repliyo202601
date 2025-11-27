@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
 import { api } from '@/lib/api';
-import type { Client, Message } from '@shared/schema';
+import type { Client, Message, Conversation, SocialPost } from '@shared/schema';
 import { useAuth } from './AuthContext';
 
 interface ClientSettings {
@@ -11,14 +11,23 @@ interface ClientSettings {
   businessContext: string;
 }
 
+export type ConversationWithPost = Conversation & { socialPost: SocialPost | null };
+
 interface NexusContextType {
   activeClientId: string | null;
   activeClient: Client | undefined;
   clients: Client[];
+  conversations: ConversationWithPost[];
+  activeConversation: ConversationWithPost | null;
+  activeConversationMessages: Message[];
   messages: Message[];
   isLoadingClients: boolean;
+  isLoadingConversations: boolean;
   isLoadingMessages: boolean;
+  isLoadingConversationMessages: boolean;
   setActiveClientId: (id: string) => void;
+  setActiveConversation: (conversation: ConversationWithPost | null) => void;
+  markConversationAsRead: (conversationId: string) => void;
   updateClientSettings: (clientId: string, settings: ClientSettings) => void;
   updateMessageDraft: (messageId: string, draft: string) => void;
   approveMessage: (messageId: string) => void;
@@ -36,6 +45,7 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
   const queryClient = useQueryClient();
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [activeClientId, setActiveClientId] = useState<string | null>(null);
+  const [activeConversation, setActiveConversationState] = useState<ConversationWithPost | null>(null);
   const [metricoolBrands, setMetricoolBrands] = useState<any[]>([]);
   const [isLoadingMetricool, setIsLoadingMetricool] = useState(false);
 
@@ -45,13 +55,24 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
     enabled: isAuthenticated && !isAuthLoading,
   });
 
+  const { data: conversations = [], isLoading: isLoadingConversations } = useQuery({
+    queryKey: ['conversations', activeClientId],
+    queryFn: () => api.conversations.getAll(activeClientId || undefined),
+    enabled: !!activeClientId,
+  });
+
+  const { data: activeConversationMessages = [], isLoading: isLoadingConversationMessages } = useQuery({
+    queryKey: ['conversationMessages', activeConversation?.id],
+    queryFn: () => activeConversation ? api.conversations.getMessages(activeConversation.id) : Promise.resolve([]),
+    enabled: !!activeConversation?.id,
+  });
+
   const { data: messages = [], isLoading: isLoadingMessages } = useQuery({
     queryKey: ['messages', activeClientId],
     queryFn: () => api.messages.getAll(activeClientId || undefined),
     enabled: !!activeClientId,
   });
 
-  // Auto-select first client when loaded
   React.useEffect(() => {
     if (isAuthenticated && !isAuthLoading && !activeClientId && clients.length > 0 && !isLoadingClients) {
       setActiveClientId(clients[0].id);
@@ -62,6 +83,24 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
     () => clients.find(c => c.id === activeClientId),
     [clients, activeClientId]
   );
+
+  const setActiveConversation = (conversation: ConversationWithPost | null) => {
+    setActiveConversationState(conversation);
+    if (conversation && conversation.unreadCount && conversation.unreadCount > 0) {
+      markConversationAsReadMutation.mutate(conversation.id);
+    }
+  };
+
+  const markConversationAsReadMutation = useMutation({
+    mutationFn: api.conversations.markAsRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    },
+  });
+
+  const markConversationAsRead = (conversationId: string) => {
+    markConversationAsReadMutation.mutate(conversationId);
+  };
 
   const createClientMutation = useMutation({
     mutationFn: api.clients.create,
@@ -80,6 +119,7 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
       api.messages.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['messages'] });
+      queryClient.invalidateQueries({ queryKey: ['conversationMessages'] });
     },
   });
 
@@ -150,6 +190,7 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
       await api.metricool.syncBrand(importedBrand.id);
 
       queryClient.invalidateQueries({ queryKey: ['messages'] });
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
       
       toast({
         title: "¡Sincronización Completada!",
@@ -166,41 +207,6 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
         variant: "destructive"
       });
     }
-  };
-
-  const deprecatedImportMetricoolBrandOld = (brandId: string) => {
-    const brandToImport = metricoolBrands.find(b => b.id === brandId);
-    if (!brandToImport) return;
-
-    if (clients.some(c => c.name === brandToImport.name)) {
-       toast({
-        title: "Already Connected",
-        description: "This brand is already in your workspace.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    addClient({
-      name: brandToImport.name,
-      industry: brandToImport.industry,
-      avatar: brandToImport.avatar,
-      agentName: `${brandToImport.name.split(' ')[0]}Bot`,
-      tone: 'casual',
-      businessContext: `Official account for ${brandToImport.name}.`,
-    });
-    
-    toast({
-      title: "Importing Data",
-      description: "Fetching recent DMs and comments from Metricool...",
-    });
-
-    setTimeout(() => {
-       toast({
-        title: "Sync Complete",
-        description: "Messages loaded successfully.",
-      });
-    }, 2000);
   };
 
   const updateClientSettings = (clientId: string, newSettings: ClientSettings) => {
@@ -237,6 +243,7 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshFeed = () => {
     queryClient.invalidateQueries({ queryKey: ['messages'] });
+    queryClient.invalidateQueries({ queryKey: ['conversations'] });
     toast({ title: "Feed Refreshed", description: "Checking for new messages..." });
   };
 
@@ -245,10 +252,17 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
       activeClientId,
       activeClient,
       clients,
+      conversations,
+      activeConversation,
+      activeConversationMessages,
       messages,
       isLoadingClients,
+      isLoadingConversations,
       isLoadingMessages,
+      isLoadingConversationMessages,
       setActiveClientId,
+      setActiveConversation,
+      markConversationAsRead,
       updateClientSettings,
       updateMessageDraft,
       approveMessage,
