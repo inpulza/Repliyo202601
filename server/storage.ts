@@ -1,6 +1,13 @@
-import { brands, users, messages, type Brand, type InsertBrand, type User, type InsertUser, type Message, type InsertMessage, type UpdateMessage } from "@shared/schema";
+import { 
+  brands, users, messages, socialPosts, conversations,
+  type Brand, type InsertBrand, 
+  type User, type InsertUser, 
+  type Message, type InsertMessage, type UpdateMessage,
+  type SocialPost, type InsertSocialPost,
+  type Conversation, type InsertConversation, type UpdateConversation
+} from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, isNull } from "drizzle-orm";
 
 export interface IStorage {
   getBrands(): Promise<Brand[]>;
@@ -15,7 +22,21 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<InsertUser>): Promise<User | undefined>;
   
+  getSocialPosts(brandId: string): Promise<SocialPost[]>;
+  getSocialPost(id: string): Promise<SocialPost | undefined>;
+  getSocialPostByExternalId(brandId: string, platform: string, externalId: string): Promise<SocialPost | undefined>;
+  createSocialPost(post: InsertSocialPost): Promise<SocialPost>;
+  upsertSocialPost(post: InsertSocialPost): Promise<SocialPost>;
+  
+  getConversations(brandId: string): Promise<Conversation[]>;
+  getConversation(id: string): Promise<Conversation | undefined>;
+  getConversationByKey(brandId: string, platform: string, customerId: string, socialPostId?: string | null): Promise<Conversation | undefined>;
+  createConversation(conversation: InsertConversation): Promise<Conversation>;
+  updateConversation(id: string, updates: UpdateConversation): Promise<Conversation | undefined>;
+  upsertConversation(conversation: InsertConversation): Promise<Conversation>;
+  
   getMessages(brandId?: string): Promise<Message[]>;
+  getMessagesByConversation(conversationId: string): Promise<Message[]>;
   getMessage(id: string): Promise<Message | undefined>;
   getMessageByMetricoolId(metricoolId: string, brandId: string): Promise<Message | undefined>;
   createMessage(message: InsertMessage): Promise<Message>;
@@ -87,11 +108,181 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
+  async getSocialPosts(brandId: string): Promise<SocialPost[]> {
+    return await db.select().from(socialPosts).where(eq(socialPosts.brandId, brandId)).orderBy(desc(socialPosts.createdAt));
+  }
+
+  async getSocialPost(id: string): Promise<SocialPost | undefined> {
+    const [post] = await db.select().from(socialPosts).where(eq(socialPosts.id, id));
+    return post || undefined;
+  }
+
+  async getSocialPostByExternalId(brandId: string, platform: string, externalId: string): Promise<SocialPost | undefined> {
+    const [post] = await db
+      .select()
+      .from(socialPosts)
+      .where(
+        and(
+          eq(socialPosts.brandId, brandId),
+          eq(socialPosts.platform, platform),
+          eq(socialPosts.externalId, externalId)
+        )
+      );
+    return post || undefined;
+  }
+
+  async createSocialPost(insertPost: InsertSocialPost): Promise<SocialPost> {
+    const [post] = await db
+      .insert(socialPosts)
+      .values(insertPost)
+      .returning();
+    return post;
+  }
+
+  async upsertSocialPost(insertPost: InsertSocialPost): Promise<SocialPost> {
+    const existing = await this.getSocialPostByExternalId(
+      insertPost.brandId,
+      insertPost.platform,
+      insertPost.externalId
+    );
+    
+    if (existing) {
+      const [updated] = await db
+        .update(socialPosts)
+        .set({
+          permalink: insertPost.permalink,
+          thumbnailUrl: insertPost.thumbnailUrl,
+          caption: insertPost.caption,
+        })
+        .where(eq(socialPosts.id, existing.id))
+        .returning();
+      return updated;
+    }
+
+    return this.createSocialPost(insertPost);
+  }
+
+  async getConversations(brandId: string): Promise<Conversation[]> {
+    return await db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.brandId, brandId))
+      .orderBy(desc(conversations.lastMessageAt));
+  }
+
+  async getConversation(id: string): Promise<Conversation | undefined> {
+    const [conversation] = await db.select().from(conversations).where(eq(conversations.id, id));
+    return conversation || undefined;
+  }
+
+  async getConversationByKey(
+    brandId: string, 
+    platform: string, 
+    customerId: string, 
+    socialPostId?: string | null,
+    threadExternalId?: string | null
+  ): Promise<Conversation | undefined> {
+    if (socialPostId) {
+      const [conversation] = await db
+        .select()
+        .from(conversations)
+        .where(
+          and(
+            eq(conversations.brandId, brandId),
+            eq(conversations.platform, platform),
+            eq(conversations.customerId, customerId),
+            eq(conversations.socialPostId, socialPostId)
+          )
+        );
+      return conversation || undefined;
+    } else if (threadExternalId) {
+      const [conversation] = await db
+        .select()
+        .from(conversations)
+        .where(
+          and(
+            eq(conversations.brandId, brandId),
+            eq(conversations.platform, platform),
+            eq(conversations.threadExternalId, threadExternalId)
+          )
+        );
+      return conversation || undefined;
+    } else {
+      const [conversation] = await db
+        .select()
+        .from(conversations)
+        .where(
+          and(
+            eq(conversations.brandId, brandId),
+            eq(conversations.platform, platform),
+            eq(conversations.customerId, customerId),
+            isNull(conversations.socialPostId)
+          )
+        );
+      return conversation || undefined;
+    }
+  }
+
+  async createConversation(insertConversation: InsertConversation): Promise<Conversation> {
+    const [conversation] = await db
+      .insert(conversations)
+      .values(insertConversation)
+      .returning();
+    return conversation;
+  }
+
+  async updateConversation(id: string, updates: UpdateConversation): Promise<Conversation | undefined> {
+    const [conversation] = await db
+      .update(conversations)
+      .set(updates)
+      .where(eq(conversations.id, id))
+      .returning();
+    return conversation || undefined;
+  }
+
+  async upsertConversation(insertConversation: InsertConversation, isInbound: boolean = true): Promise<Conversation> {
+    const existing = await this.getConversationByKey(
+      insertConversation.brandId,
+      insertConversation.platform,
+      insertConversation.customerId,
+      insertConversation.socialPostId,
+      insertConversation.threadExternalId
+    );
+    
+    if (existing) {
+      const newUnreadCount = isInbound 
+        ? (existing.unreadCount || 0) + 1 
+        : 0;
+      
+      const updated = await this.updateConversation(existing.id, {
+        lastMessageAt: insertConversation.lastMessageAt,
+        lastMessagePreview: insertConversation.lastMessagePreview,
+        customerName: insertConversation.customerName || existing.customerName,
+        customerAvatar: insertConversation.customerAvatar || existing.customerAvatar,
+        unreadCount: newUnreadCount,
+      });
+      return updated!;
+    }
+
+    return this.createConversation({
+      ...insertConversation,
+      unreadCount: isInbound ? 1 : 0,
+    });
+  }
+
   async getMessages(brandId?: string): Promise<Message[]> {
     if (brandId) {
       return await db.select().from(messages).where(eq(messages.brandId, brandId)).orderBy(desc(messages.timestamp));
     }
     return await db.select().from(messages).orderBy(desc(messages.timestamp));
+  }
+
+  async getMessagesByConversation(conversationId: string): Promise<Message[]> {
+    return await db
+      .select()
+      .from(messages)
+      .where(eq(messages.conversationId, conversationId))
+      .orderBy(messages.timestamp);
   }
 
   async getMessage(id: string): Promise<Message | undefined> {
@@ -103,7 +294,12 @@ export class DatabaseStorage implements IStorage {
     const [message] = await db
       .select()
       .from(messages)
-      .where(eq(messages.metricoolId, metricoolId));
+      .where(
+        and(
+          eq(messages.metricoolId, metricoolId),
+          eq(messages.brandId, brandId)
+        )
+      );
     return message || undefined;
   }
 

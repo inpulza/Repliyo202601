@@ -127,13 +127,17 @@ class SyncService {
       const conv = conversation as any;
       if (!conv.messages || conv.messages.length === 0) continue;
 
+      const participants = conv.participants || [];
+      const brandAccountId = conv.rawData?.pageId || conv.rawData?.accountId || null;
+
       for (const msg of conv.messages) {
         try {
           let author = 'Unknown';
-          let authorAvatar = null;
+          let authorAvatar: string | null = null;
           let content = msg.message || msg.text || '';
+          let customerId = '';
+          let isFromBrand = false;
           
-          // Extract timestamp - prioritize publicationDateTime from the message
           let timestamp: string | number = Date.now();
           if (msg.publicationDateTime) {
             timestamp = msg.publicationDateTime;
@@ -145,27 +149,57 @@ class SyncService {
             timestamp = conv.rawData.creationDate;
           }
 
+          const platform = this.normalizePlatform(conv.provider || "unknown");
+
           if (conv.provider === 'INSTAGRAM' || conv.provider === 'LINKEDIN' || conv.provider === 'TIKTOKBUSINESS') {
             const fromId = msg.from;
-            const participants = conv.participants || [];
             const fromParticipant = participants.find((p: any) => p.id === fromId);
             
             author = fromParticipant?.name || `Unknown ${conv.provider} User`;
             authorAvatar = fromParticipant?.imageProfileUrl || null;
+            
+            isFromBrand = brandAccountId ? fromId === brandAccountId : false;
+            
+            const customerParticipant = participants.find((p: any) => 
+              p.id !== brandAccountId
+            ) || participants[0];
+            customerId = customerParticipant?.id || fromId || author;
           } else {
             author = msg.from?.name || msg.sender?.name || 'Unknown';
             authorAvatar = msg.from?.picture || msg.sender?.picture || null;
+            const senderId = msg.from?.id || msg.sender?.id;
+            isFromBrand = brandAccountId ? senderId === brandAccountId : false;
+            customerId = msg.from?.id || msg.sender?.id || author;
           }
+
+          const direction = isFromBrand ? 'outbound' : 'inbound';
+          const isInbound = !isFromBrand;
+
+          const conversationRecord = await storage.upsertConversation({
+            brandId,
+            socialPostId: null,
+            platform,
+            type: 'dm',
+            customerId,
+            customerName: author,
+            customerAvatar: authorAvatar,
+            threadExternalId: conv.id,
+            lastMessageAt: new Date(timestamp),
+            lastMessagePreview: content.substring(0, 100),
+            status: 'open',
+          }, isInbound);
 
           const messageData = {
             brandId,
-            platform: this.normalizePlatform(conv.provider || "unknown"),
+            conversationId: conversationRecord.id,
+            platform,
             type: "conversation" as const,
+            direction: direction as 'inbound' | 'outbound',
             author,
-            authorAvatar: authorAvatar || null,
+            authorAvatar,
             content,
             timestamp: new Date(timestamp),
-            status: "unread" as const,
+            status: direction === 'outbound' ? 'read' as const : 'unread' as const,
             urgency: null,
             intent: null,
             sentiment: null,
@@ -190,13 +224,57 @@ class SyncService {
 
     for (const comment of inboxData.comments) {
       try {
-        const threadId = comment.postId || comment.rawData?.root?.element?.id || null;
-        
+        const platform = this.normalizePlatform(comment.provider);
+        const postExternalId = comment.postId || comment.rawData?.root?.element?.id || null;
+        const postPermalink = comment.postUrl || comment.rawData?.root?.element?.link || null;
+        const postCaption = comment.rawData?.root?.element?.text || null;
+
+        let socialPostId: string | null = null;
+
+        if (postExternalId) {
+          const socialPost = await storage.upsertSocialPost({
+            brandId,
+            platform,
+            externalId: postExternalId,
+            permalink: postPermalink,
+            thumbnailUrl: null,
+            caption: postCaption ? postCaption.substring(0, 500) : null,
+          });
+          socialPostId = socialPost.id;
+        }
+
+        const participants = comment.rawData?.participants || [];
+        let customerId = comment.author;
+        let customerName = comment.author;
+        let customerAvatar = comment.authorAvatar || null;
+
+        if (participants.length > 0) {
+          const authorParticipant = participants.find((p: any) => p.name === comment.author) || participants[0];
+          customerId = authorParticipant.id || comment.author;
+          customerName = authorParticipant.name || comment.author;
+          customerAvatar = authorParticipant.imageProfileUrl || comment.authorAvatar || null;
+        }
+
+        const conversationRecord = await storage.upsertConversation({
+          brandId,
+          socialPostId,
+          platform,
+          type: 'comment',
+          customerId,
+          customerName,
+          customerAvatar,
+          lastMessageAt: new Date(comment.timestamp),
+          lastMessagePreview: comment.content.substring(0, 100),
+          status: 'open',
+        }, true);
+
         const savedComment = await storage.upsertMessage({
           brandId,
+          conversationId: conversationRecord.id,
           metricoolId: comment.id,
-          platform: this.normalizePlatform(comment.provider),
+          platform,
           type: "comment" as const,
+          direction: "inbound" as const,
           author: comment.author,
           authorAvatar: comment.authorAvatar || null,
           content: comment.content,
@@ -204,7 +282,7 @@ class SyncService {
           status: "unread" as const,
           sourceUrl: comment.postUrl || null,
           rawData: comment.rawData || comment,
-          threadId: threadId,
+          threadId: postExternalId,
           parentMessageId: null,
           urgency: null,
           intent: null,
@@ -218,21 +296,9 @@ class SyncService {
 
         const nestedReplies = (comment.replies && comment.replies.length > 0) ? comment.replies : (comment.rawData?.root?.comments || []);
         
-        // Debug logging for YouTube nested comments
-        if (comment.provider === 'YOUTUBE' || comment.provider === 'youtube') {
-          console.log(`[SyncService] YouTube comment ${comment.id}:`);
-          console.log(`  - comment.replies: ${JSON.stringify(comment.replies?.length || 0)}`);
-          console.log(`  - rawData.root.comments: ${JSON.stringify(comment.rawData?.root?.comments?.length || 0)}`);
-          console.log(`  - nestedReplies total: ${nestedReplies.length}`);
-        }
-        
-        if (nestedReplies.length > 0) {
-          console.log(`[SyncService] Found ${nestedReplies.length} nested replies for comment ${comment.id} on ${comment.provider}`);
-        }
         for (const reply of nestedReplies) {
           try {
             const replyOwnerId = reply.owner;
-            const participants = comment.rawData?.participants || [];
             const replyAuthorParticipant = participants.find((p: any) => p.id === replyOwnerId);
             
             const replyAuthor = replyAuthorParticipant?.name || `Unknown Reply Author`;
@@ -242,9 +308,11 @@ class SyncService {
 
             await storage.upsertMessage({
               brandId,
+              conversationId: conversationRecord.id,
               metricoolId: reply.id,
-              platform: this.normalizePlatform(comment.provider),
+              platform,
               type: "comment" as const,
+              direction: "inbound" as const,
               author: replyAuthor,
               authorAvatar: replyAvatar,
               content: replyContent,
@@ -252,7 +320,7 @@ class SyncService {
               status: "unread" as const,
               sourceUrl: reply.properties?.permalink || comment.postUrl || null,
               rawData: reply,
-              threadId: threadId,
+              threadId: postExternalId,
               parentMessageId: savedComment.id,
               urgency: null,
               intent: null,
