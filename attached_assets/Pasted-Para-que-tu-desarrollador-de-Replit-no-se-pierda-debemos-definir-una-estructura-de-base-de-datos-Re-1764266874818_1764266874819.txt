@@ -1,0 +1,129 @@
+Para que tu desarrollador de Replit no se pierda, debemos definir una estructura de base de datos Relacional muy clara. No podemos guardar todo en una sola tabla.
+
+Aquí tienes la arquitectura de base de datos y la lógica de negocio para lograr exactamente ese comportamiento de "hilo único" tipo WhatsApp.
+
+🏛️ Arquitectura de Base de Datos (El Mapa Mental)
+Imagina la base de datos como un sistema de carpetas anidadas:
+
+Empresa (Brand): La carpeta raíz del cliente.
+
+Red Social (SocialAccount): La cuenta conectada (ej. Instagram de la Empresa).
+
+Contexto (Post/Video): Solo para comentarios. La publicación donde ocurre la acción.
+
+Hilo (Conversation): La "Tarjeta" en tu columna izquierda. Es la agrupación de mensajes.
+
+Mensajes (Messages): Los globos de texto individuales.
+
+📝 PRD: Arquitectura de Base de Datos y Lógica de Agrupación (Threading)
+Copia y pega este bloque al Agente. Está diseñado para PostgreSQL (o cualquier SQL), que es lo ideal para esto.
+
+Markdown
+
+# Feature Spec: Database Schema & Threading Architecture
+
+**Objetivo:** Diseñar el esquema de base de datos y la lógica de backend para agrupar mensajes entrantes en "Conversaciones" (Threads) únicas, evitando la duplicación de tarjetas en la UI.
+
+**Principio Core:**
+* **DMs:** Se agrupan por `(Red Social + Usuario Remoto)`.
+* **Comentarios:** Se agrupan por `(Post Original + Usuario Remoto)`.
+
+---
+
+## 1. Esquema de Base de Datos (Relational Schema)
+
+El agente debe implementar las siguientes tablas con sus relaciones (Foreign Keys):
+
+### A. Tablas de Estructura (Tenancy)
+1.  **`Brands`** (Ya existente): La empresa cliente.
+2.  **`SocialAccounts`**:
+    * `id`: UUID.
+    * `brand_id`: FK -> Brands.
+    * `platform`: 'instagram', 'facebook', etc.
+    * `provider_account_id`: ID externo de la cuenta (Page ID).
+    * `name`, `avatar_url`: Datos visuales.
+
+### B. Tablas de Contexto (La raíz de los comentarios)
+3.  **`SocialPosts`** (NUEVA - Crítico para tu requerimiento):
+    * `id`: UUID.
+    * `social_account_id`: FK -> SocialAccounts.
+    * `external_id`: ID del post en la red social.
+    * `permalink`: URL al post/video original.
+    * `thumbnail_url`: Imagen del video/post.
+    * `caption`: Texto del post.
+    * *Nota:* Si el mensaje es un DM, este campo no se usa. Si es comentario, es obligatorio.
+
+### C. Tablas de Conversación (El corazón del Inbox)
+4.  **`Conversations`** (Las "Tarjetas" de la izquierda):
+    * `id`: UUID.
+    * `social_account_id`: FK -> SocialAccounts.
+    * `social_post_id`: FK -> SocialPosts (Nullable. Solo si es comentario).
+    * `type`: 'dm' | 'comment'.
+    * `customer_id`: ID externo del usuario que escribe.
+    * `customer_name`: Nombre del usuario.
+    * `customer_avatar`: Avatar del usuario.
+    * `last_message_at`: Timestamp (Para ordenar la lista: el más reciente arriba).
+    * `status`: 'open', 'closed'.
+    * **UNIQUE CONSTRAINT:**
+        * Para DMs: Unique(`social_account_id`, `customer_id`).
+        * Para Comentarios: Unique(`social_post_id`, `customer_id`).
+        * *Esto es lo que impide técnicamente que se creen tarjetas duplicadas.*
+
+5.  **`Messages`** (El contenido del chat):
+    * `id`: UUID.
+    * `conversation_id`: FK -> Conversations.
+    * `external_id`: ID del mensaje en la plataforma (para evitar duplicados al sincronizar).
+    * `content`: Texto.
+    * `direction`: 'inbound' (cliente) | 'outbound' (nosotros).
+    * `created_at`: Timestamp.
+
+---
+
+## 2. Lógica de Ingestión (Backend Logic)
+
+Cuando el `SyncService` recibe un dato nuevo de la API (Metricool o Directa), debe ejecutar este flujo lógico antes de guardar nada:
+
+### Caso 1: Llega un DM (Mensaje Directo)
+1.  **Identificar:** Extraer `sender_id` (Cliente) y `recipient_id` (Nuestra Marca).
+2.  **Buscar Hilo:**
+    * `SELECT * FROM Conversations WHERE social_account_id = [NuestraMarca] AND customer_id = [SenderID] AND type = 'dm'`.
+3.  **Decisión:**
+    * **Si existe:** Usamos ese `conversation_id`. Actualizamos `last_message_at = NOW()`.
+    * **Si NO existe:** Creamos una nueva fila en `Conversations`.
+4.  **Guardar Mensaje:** Insertamos el mensaje vinculado a ese `conversation_id`.
+
+### Caso 2: Llega un Comentario (La lógica compleja)
+1.  **Contexto:** El dato trae el `media_id` (Post ID) y el `from_id` (Usuario).
+2.  **Verificar Post:**
+    * ¿Existe el post en la tabla `SocialPosts`?
+    * Si no, créalo (guarda la URL, miniatura, etc.). Esto nos permite mostrar el contexto visual en el chat.
+3.  **Buscar Hilo (Grouping):**
+    * `SELECT * FROM Conversations WHERE social_post_id = [PostID] AND customer_id = [FromID]`.
+    * *Traducción:* "¿Este usuario específico ya ha comentado en ESTE video específico?"
+4.  **Decisión:**
+    * **Si existe:** Significa que es el segundo comentario de esa persona en el mismo video. Agregamos el mensaje al hilo existente. La tarjeta sube al inicio.
+    * **Si NO existe:** Es la primera vez que comenta en este video. Creamos nueva `Conversation` (Tarjeta).
+5.  **Guardar Mensaje:** Insertamos en `Messages`.
+
+---
+
+## 3. Especificaciones UX: Visualización de Contexto
+
+Para cumplir con el requisito de "Todo parte del post":
+
+**En la Vista de Detalle (Columna Derecha):**
+Si la conversación tiene `social_post_id` (es decir, es de tipo Comentario):
+
+* **Renderizar un "Sticky Header" (Cabecera Contextual) debajo de la barra de título:**
+    * **Imagen:** Miniatura del `SocialPost`.
+    * **Texto:** "Comentando en: [Caption truncado del post...]".
+    * **Acción:** Clic en la miniatura -> Abre `permalink` (URL del post) en nueva pestaña.
+
+**Resultado:**
+El operador sabe inmediatamente que está respondiendo a "Juan", pero dentro del contexto del "Video de Navidad", y no del "Video de Ofertas".
+¿Por qué esta estructura es sólida?
+Constraint UNIQUE: Al poner restricciones únicas en la base de datos (Unique(post_id, customer_id)), haces imposible que el software cree dos tarjetas para la misma persona en el mismo video por error. La base de datos lo bloquearía. Es un seguro de vida.
+
+Tabla SocialPosts: Al separar los posts en su propia tabla, si 1,000 personas comentan en el mismo video viral, solo guardas la foto y la URL del video una vez. Es mucho más eficiente y ordenado.
+
+Escalabilidad: Esta estructura es idéntica a la que usan herramientas profesionales. Soporta millones de mensajes sin desordenarse.
