@@ -483,6 +483,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               timestamp: new Date(timestamp),
               status: 'unread',
               rawData: { conversation: conv, message: msg },
+              threadId: conv.id,
+              parentMessageId: null,
             });
             conversationsCount++;
           } catch (error: any) {
@@ -493,7 +495,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       for (const comment of comments) {
         try {
-          await storage.upsertMessage({
+          // Extract threadId from post ID for grouping comments on the same post
+          const threadId = comment.postId || comment.rawData?.root?.element?.id || null;
+          
+          // Upsert the main comment
+          const savedComment = await storage.upsertMessage({
             brandId: brand.id,
             metricoolId: comment.id,
             platform: normalizePlatform(comment.provider),
@@ -505,8 +511,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
             status: 'unread',
             sourceUrl: comment.postUrl || null,
             rawData: comment.rawData || comment,
+            threadId: threadId,
+            parentMessageId: null,
           });
           commentsCount++;
+
+          // Process nested replies (comments array in rawData)
+          const nestedReplies = comment.replies || comment.rawData?.root?.comments || [];
+          for (const reply of nestedReplies) {
+            try {
+              // Find author info for the reply from participants
+              const replyOwnerId = reply.owner;
+              const participants = comment.rawData?.participants || [];
+              const replyAuthorParticipant = participants.find((p: any) => p.id === replyOwnerId);
+              
+              const replyAuthor = replyAuthorParticipant?.name || `Unknown Reply Author`;
+              const replyAvatar = replyAuthorParticipant?.imageProfileUrl || null;
+              const replyContent = reply.text || '';
+              const replyTimestamp = reply.creationDate || comment.timestamp;
+
+              await storage.upsertMessage({
+                brandId: brand.id,
+                metricoolId: reply.id,
+                platform: normalizePlatform(comment.provider),
+                type: 'comment',
+                author: replyAuthor,
+                authorAvatar: replyAvatar,
+                content: replyContent,
+                timestamp: new Date(replyTimestamp),
+                status: 'unread',
+                sourceUrl: reply.properties?.permalink || comment.postUrl || null,
+                rawData: reply,
+                threadId: threadId,
+                parentMessageId: savedComment.id,
+              });
+              commentsCount++;
+              console.log(`   ↳ Saved nested reply from ${replyAuthor}`);
+            } catch (replyError: any) {
+              console.error(`Error upserting reply:`, replyError.message);
+            }
+          }
         } catch (error: any) {
           console.error(`Error upserting comment:`, error.message);
         }
