@@ -624,7 +624,8 @@ export function Inbox() {
                         key={msg.id} 
                         className={cn(
                           "flex gap-4 group transition-all",
-                          isReply && "ml-8"
+                          isReply && "ml-8",
+                          isOwner && "ml-12"
                         )}
                       >
                          <Avatar className={cn(
