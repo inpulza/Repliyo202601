@@ -1,0 +1,92 @@
+📋 RESUMEN PARA NUEVO AGENTE - Problema de Threading/Ordenamiento Visual
+🎯 Contexto del Proyecto
+Sistema de gestión de inbox de redes sociales integrado con Metricool API. Centraliza DMs y comentarios de Instagram, TikTok, Facebook, LinkedIn, YouTube y Google Business para múltiples marcas.
+
+🔧 Lo que ya está implementado y funcionando:
+Reply a comentarios - Funcional para TikTok y YouTube
+
+Endpoint: POST /api/inbox/reply
+Guarda mensaje con direction: 'outbound' y parentMessageId (apunta al comentario específico)
+Badge "Enviado desde Repliyo" + logo en avatar
+Sistema de Reconciliación - Evita duplicados
+
+Archivo: server/storage.ts → función findPendingOutboundMatch()
+Cuando Metricool sincroniza un mensaje que ya enviamos, lo detecta y actualiza el existente
+Usa comparación de contenido normalizado + ventana de 2 horas
+Threading en Base de Datos
+
+Tabla messages tiene campo parent_message_id
+Cuando enviamos reply, guardamos: parentMessageId = ID del comentario al que respondemos
+⚠️ EL PROBLEMA ACTUAL DE UX
+Descripción:
+Las respuestas enviadas desde Repliyo no aparecen visualmente debajo del comentario al que respondieron.
+
+Ejemplo concreto (TikTok):
+
+Comentario de dra.melvavidal: "¿Cómo? ¿Respuesta de prueba?"
+Nuestra respuesta: "@dra.melvavidal Perdone doctora!!"
+Esperado: La respuesta debe aparecer INMEDIATAMENTE debajo del comentario de la doctora
+Actual: Puede aparecer en otro lugar de la conversación
+Causa raíz:
+
+Nosotros guardamos: parentMessageId = c588b3e3 (el comentario de la doctora)
+Metricool devuelve el mismo mensaje con: parentMessageId = d802cf25 (el post original)
+Metricool NO conoce threading anidado - para ellos todo es "comentario del post"
+📁 Archivos Clave para Revisar
+Archivo	Qué hace	Líneas importantes
+client/src/components/Inbox.tsx	Threading UI	Líneas 227-262 (threadMessages useMemo)
+server/storage.ts	Reconciliación	findPendingOutboundMatch()
+server/routes.ts	Endpoint Reply	Líneas 567-673 (/api/inbox/reply)
+shared/schema.ts	Schema DB	Campo parentMessageId
+🔍 Lógica Actual de Threading (Inbox.tsx líneas 227-262)
+const threadMessages = useMemo(() => {
+  // 1. Separar mensajes raíz (sin parentMessageId) de replies
+  const rootMessages = messages.filter(m => !m.parentMessageId);
+  const replies = messages.filter(m => m.parentMessageId);
+  
+  // 2. Ordenar raíces por timestamp
+  rootMessages.sort((a, b) => timestamp_a - timestamp_b);
+  
+  // 3. Para cada raíz, insertar sus replies debajo
+  for (const root of rootMessages) {
+    orderedMessages.push(root);
+    const rootReplies = replies.filter(r => r.parentMessageId === root.id);
+    orderedMessages.push(...rootReplies);
+  }
+  
+  // 4. Replies huérfanos (padre no encontrado) van al final
+});
+
+🎯 Lo que necesita verificarse/arreglarse
+Verificar visualmente que cuando envías un reply desde Repliyo:
+
+Aparece inmediatamente debajo del comentario al que respondiste
+Tiene el badge "Enviado desde Repliyo"
+Tiene el logo de Repliyo en el avatar
+El problema de Metricool:
+
+Metricool asigna parentMessageId diferente (del post, no del comentario)
+Nuestro mensaje outbound tiene el parentMessageId correcto
+La reconciliación preserva nuestro parentMessageId (no lo sobrescribe)
+Pero puede haber edge cases donde el threading se rompe
+Posibles soluciones a explorar:
+
+Ignorar el parentMessageId que viene de Metricool para mensajes reconciliados
+Usar el contenido del mensaje (menciones @username) para inferir el padre
+Crear una heurística basada en timestamp + contenido
+📊 Estado de la Base de Datos (ejemplo TikTok)
+-- Estructura actual de la conversación
+id                 | direction | parent_message_id           | content
+-------------------|-----------|----------------------------|------------------
+d802cf25... (raíz) | inbound   | NULL                       | "Cool.. explicame..."
+c588b3e3...        | inbound   | d802cf25 (debería ser NULL)| "¿Cómo? ¿Respuesta?"
+fc6c369f... ✅     | outbound  | c588b3e3 (CORRECTO)        | "Perdone doctora!!"
+
+El mensaje fc6c369f (nuestra respuesta) tiene el parentMessageId correcto apuntando al comentario c588b3e3.
+
+🚀 Próximos pasos sugeridos
+Abrir la app y navegar a una conversación de TikTok
+Verificar visualmente si las respuestas aparecen en el lugar correcto
+Si no, debuggear el threadMessages useMemo en Inbox.tsx
+Probar enviando un nuevo reply y verificar el ordenamiento
+Documentación completa: DOCUMENTACION_COMPLETA.md
