@@ -489,6 +489,169 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ========== REPLY TO MESSAGE ENDPOINT ==========
+  
+  const replyToMessageSchema = z.object({
+    messageId: z.string().min(1, "Message ID is required"),
+    text: z.string().min(1, "Reply text is required"),
+    includeMention: z.boolean().optional().default(true),
+  });
+
+  app.post("/api/inbox/reply", requireAuth, async (req, res) => {
+    try {
+      const { messageId, text, includeMention } = replyToMessageSchema.parse(req.body);
+      
+      const message = await storage.getMessage(messageId);
+      if (!message) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+      
+      if (req.user!.role === 'client' && message.brandId !== req.user!.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const brand = await storage.getBrand(message.brandId);
+      if (!brand) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+      
+      const userToken = process.env.METRICOOL_USER_TOKEN;
+      const userId = process.env.METRICOOL_USER_ID;
+      
+      if (!userToken || !userId) {
+        return res.status(500).json({ error: "Metricool credentials not configured" });
+      }
+      
+      const metricool = new MetricoolService({ userToken, userId });
+      
+      const rawData = message.rawData as any;
+      if (!rawData) {
+        return res.status(400).json({ error: "Message does not have raw data for reply" });
+      }
+      
+      const metricoolId = rawData.id || message.metricoolId;
+      if (!metricoolId) {
+        return res.status(400).json({ error: "Cannot determine Metricool comment ID for reply" });
+      }
+      
+      const provider = rawData.provider || message.platform;
+      
+      let mentionUsername: string | undefined = undefined;
+      if (includeMention) {
+        const participants = rawData.participants || [];
+        const ownerId = rawData.root?.owner;
+        const ownerParticipant = participants.find((p: any) => p.id === ownerId);
+        mentionUsername = ownerParticipant?.name || message.author;
+      }
+      
+      if (message.type === 'comment') {
+        const result = await metricool.replyToComment({
+          provider: provider,
+          objectId: metricoolId,
+          text: text,
+          blogId: brand.metricoolBlogId || '',
+          mentionUsername: mentionUsername,
+        });
+        
+        if (!result.success) {
+          return res.status(500).json({ 
+            error: result.error || "Failed to send reply to Metricool",
+            details: result.rawResponse 
+          });
+        }
+        
+        const outboundMessage = await storage.createMessage({
+          brandId: message.brandId,
+          conversationId: message.conversationId,
+          platform: message.platform,
+          type: message.type,
+          author: brand.name,
+          content: includeMention && mentionUsername ? `@${mentionUsername} ${text}` : text,
+          timestamp: new Date(),
+          status: 'sent',
+          direction: 'outbound',
+          parentMessageId: message.id,
+          metricoolId: result.messageId || null,
+          rawData: result.rawResponse || null,
+        });
+        
+        if (message.conversationId) {
+          await storage.updateConversation(message.conversationId, {
+            lastMessageAt: new Date(),
+            lastMessagePreview: text.substring(0, 100),
+          });
+        }
+        
+        res.json({
+          success: true,
+          message: outboundMessage,
+          metricoolResponse: result.rawResponse,
+        });
+        
+      } else if (message.type === 'conversation' || message.type === 'dm') {
+        const conversationId = rawData.id;
+        const recipient = rawData.root?.owner || rawData.from?.id;
+        
+        if (!conversationId || !recipient) {
+          return res.status(400).json({ error: "Cannot determine conversation or recipient for DM reply" });
+        }
+        
+        const result = await metricool.replyToConversation({
+          provider: provider,
+          conversationId: conversationId,
+          recipient: recipient,
+          text: text,
+          blogId: brand.metricoolBlogId || '',
+        });
+        
+        if (!result.success) {
+          return res.status(500).json({ 
+            error: result.error || "Failed to send DM reply to Metricool",
+            details: result.rawResponse 
+          });
+        }
+        
+        const outboundMessage = await storage.createMessage({
+          brandId: message.brandId,
+          conversationId: message.conversationId,
+          platform: message.platform,
+          type: 'conversation',
+          author: brand.name,
+          content: text,
+          timestamp: new Date(),
+          status: 'sent',
+          direction: 'outbound',
+          parentMessageId: message.id,
+          metricoolId: result.messageId || null,
+          rawData: result.rawResponse || null,
+        });
+        
+        if (message.conversationId) {
+          await storage.updateConversation(message.conversationId, {
+            lastMessageAt: new Date(),
+            lastMessagePreview: text.substring(0, 100),
+          });
+        }
+        
+        res.json({
+          success: true,
+          message: outboundMessage,
+          metricoolResponse: result.rawResponse,
+        });
+        
+      } else {
+        return res.status(400).json({ error: `Unsupported message type: ${message.type}` });
+      }
+      
+    } catch (error: any) {
+      console.error("[Reply] Error:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ error: "Invalid request data", details: error.errors });
+      }
+      res.status(500).json({ error: error.message || "Failed to send reply" });
+    }
+  });
+
   // ========== MESSAGES ENDPOINTS ==========
 
   app.get("/api/messages", requireAuth, filterByBrand(), async (req, res) => {
