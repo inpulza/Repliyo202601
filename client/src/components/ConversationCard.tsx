@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from 'date-fns';
-import { MessageCircle, MessageSquare, ExternalLink } from 'lucide-react';
+import { MessageCircle, MessageSquare, ExternalLink, Play } from 'lucide-react';
 import { FaInstagram, FaFacebook, FaLinkedin, FaTiktok, FaYoutube, FaWhatsapp } from 'react-icons/fa';
 import { GoogleBusinessIcon } from './GoogleBusinessIcon';
 import { motion } from "framer-motion";
@@ -36,12 +36,16 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
 
   const renderThumbnail = () => {
     if (isComment) {
-      if (conversation.socialPost?.thumbnailUrl) {
+      const thumbnailUrl = conversation.socialPost?.thumbnailUrl;
+      const isVideoUrl = thumbnailUrl?.includes('.mp4') || thumbnailUrl?.includes('.webm');
+      const isImageThumbnail = thumbnailUrl && !isVideoUrl;
+      
+      if (isImageThumbnail) {
         return (
           <div className="relative shrink-0 self-center">
             <div className="h-16 w-12 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 shadow-sm">
               <img 
-                src={conversation.socialPost.thumbnailUrl} 
+                src={thumbnailUrl} 
                 alt="Post thumbnail"
                 className="h-full w-full object-cover"
                 onError={(e) => {
@@ -57,10 +61,23 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
           </div>
         );
       }
+      
+      const platformGradients: Record<string, string> = {
+        instagram: 'from-pink-100 to-purple-100',
+        facebook: 'from-blue-100 to-blue-50',
+        linkedin: 'from-sky-100 to-blue-50',
+        youtube: 'from-red-100 to-red-50',
+        tiktok: 'from-gray-100 to-gray-50',
+      };
+      const gradient = platformGradients[platform] || 'from-gray-100 to-gray-200';
+      
       return (
         <div className="relative shrink-0 self-center">
-          <div className="h-16 w-12 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 border border-gray-200 flex items-center justify-center shadow-sm">
-            <MessageSquare className="h-6 w-6 text-gray-400" />
+          <div className={cn(
+            "h-16 w-12 rounded-lg border border-gray-200 flex items-center justify-center shadow-sm bg-gradient-to-br",
+            gradient
+          )}>
+            <Play className="h-6 w-6 text-gray-500 fill-gray-400/50" />
           </div>
           <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
             <PlatformIcon platform={platform} className="h-4 w-4" />
