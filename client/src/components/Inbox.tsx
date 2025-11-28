@@ -223,42 +223,55 @@ export function Inbox() {
     whatsapp: conversations.filter(c => c.platform === 'whatsapp').length,
   }), [conversations]);
 
-  // Thread messages - reordered so replies appear directly after their parent message
+  // Thread messages - recursive approach for multi-level threading
+  // This ensures replies to comments appear directly after the comment they respond to
   const threadMessages = React.useMemo(() => {
-    if (!activeConversationMessages || activeConversationMessages.length === 0) {
-      return [];
-    }
-    
-    // Separate root messages (no parentMessageId) from replies
-    const rootMessages = activeConversationMessages.filter(m => !m.parentMessageId);
-    const replies = activeConversationMessages.filter(m => m.parentMessageId);
-    
-    // Sort root messages by timestamp (oldest first)
+    if (!activeConversationMessages?.length) return [];
+
+    // 1. Build a map of parent ID -> array of children for quick lookup
+    const childrenMap = new Map<string, typeof activeConversationMessages>();
+    const rootMessages: typeof activeConversationMessages = [];
+
+    activeConversationMessages.forEach(m => {
+      if (m.parentMessageId) {
+        // It's a child: add it to its parent's children list
+        const siblings = childrenMap.get(m.parentMessageId) || [];
+        siblings.push(m);
+        childrenMap.set(m.parentMessageId, siblings);
+      } else {
+        // It's a root (original post/comment): add to root list
+        rootMessages.push(m);
+      }
+    });
+
+    // 2. Recursive function to flatten the tree in correct order
+    const flattened: typeof activeConversationMessages = [];
+
+    const addMessageAndChildren = (message: typeof activeConversationMessages[0]) => {
+      // A. Add the current message
+      flattened.push(message);
+
+      // B. Find children of this message
+      const children = childrenMap.get(message.id) || [];
+      
+      // C. Sort children by timestamp (chronological order)
+      children.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+      // D. RECURSION: Process each child the same way (add it and find its children)
+      children.forEach(child => addMessageAndChildren(child));
+    };
+
+    // 3. Start from roots, sorted by timestamp
     rootMessages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-    
-    // Build the threaded order: each root message followed by its replies
-    const orderedMessages: typeof activeConversationMessages = [];
-    
-    for (const root of rootMessages) {
-      orderedMessages.push(root);
-      
-      // Find all replies to this root message and sort them by timestamp
-      const rootReplies = replies
-        .filter(r => r.parentMessageId === root.id)
-        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-      
-      orderedMessages.push(...rootReplies);
-    }
-    
-    // Add any orphan replies (parentMessageId exists but parent not found) at the end
-    const usedReplyIds = new Set(orderedMessages.map(m => m.id));
-    const orphanReplies = replies
-      .filter(r => !usedReplyIds.has(r.id))
+    rootMessages.forEach(root => addMessageAndChildren(root));
+
+    // 4. Handle orphans (safety net for sync errors where parent doesn't exist)
+    const processedIds = new Set(flattened.map(m => m.id));
+    const orphans = activeConversationMessages
+      .filter(m => !processedIds.has(m.id))
       .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
     
-    orderedMessages.push(...orphanReplies);
-    
-    return orderedMessages;
+    return [...flattened, ...orphans];
   }, [activeConversationMessages]);
 
   // Derive active draft message (outbound with drafting/pending status) and last inbound message
