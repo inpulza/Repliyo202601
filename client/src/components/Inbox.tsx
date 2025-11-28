@@ -787,6 +787,10 @@ export function Inbox() {
                                    {msg.type === 'review' && 'Public Review'}
                                    {msg.type === 'dm' && 'Direct Message'}
                                </span>
+                               {/* Sentiment indicator for inbound messages */}
+                               {msg.direction === 'inbound' && !isOwner && (
+                                 <SentimentIndicator sentiment={(msg.sentiment || 'neutral') as Sentiment} />
+                               )}
                             </div>
                             <div className={cn(
                                 "p-4 rounded-2xl text-sm leading-relaxed shadow-sm relative rounded-tl-none",
@@ -1351,7 +1355,7 @@ function ExpandableAICard({ message }: { message: Message }) {
 
     return (
         <div 
-            className="absolute bottom-6 right-6 z-30"
+            className="absolute top-20 right-4 z-30"
             onMouseEnter={() => setIsExpanded(true)}
             onMouseLeave={() => setIsExpanded(false)}
         >
