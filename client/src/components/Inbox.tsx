@@ -223,8 +223,43 @@ export function Inbox() {
     whatsapp: conversations.filter(c => c.platform === 'whatsapp').length,
   }), [conversations]);
 
-  // Thread messages are now loaded from activeConversationMessages
-  const threadMessages = activeConversationMessages;
+  // Thread messages - reordered so replies appear directly after their parent message
+  const threadMessages = React.useMemo(() => {
+    if (!activeConversationMessages || activeConversationMessages.length === 0) {
+      return [];
+    }
+    
+    // Separate root messages (no parentMessageId) from replies
+    const rootMessages = activeConversationMessages.filter(m => !m.parentMessageId);
+    const replies = activeConversationMessages.filter(m => m.parentMessageId);
+    
+    // Sort root messages by timestamp (oldest first)
+    rootMessages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    
+    // Build the threaded order: each root message followed by its replies
+    const orderedMessages: typeof activeConversationMessages = [];
+    
+    for (const root of rootMessages) {
+      orderedMessages.push(root);
+      
+      // Find all replies to this root message and sort them by timestamp
+      const rootReplies = replies
+        .filter(r => r.parentMessageId === root.id)
+        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      
+      orderedMessages.push(...rootReplies);
+    }
+    
+    // Add any orphan replies (parentMessageId exists but parent not found) at the end
+    const usedReplyIds = new Set(orderedMessages.map(m => m.id));
+    const orphanReplies = replies
+      .filter(r => !usedReplyIds.has(r.id))
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    
+    orderedMessages.push(...orphanReplies);
+    
+    return orderedMessages;
+  }, [activeConversationMessages]);
 
   // Derive active draft message (outbound with drafting/pending status) and last inbound message
   const activeDraftMessage = React.useMemo(() => {
