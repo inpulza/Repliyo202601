@@ -391,19 +391,27 @@ export class DatabaseStorage implements IStorage {
     const syncedNormalized = normalizeContent(syncedMessage.content);
     const syncedTime = syncedMessage.timestamp ? new Date(syncedMessage.timestamp).getTime() : Date.now();
 
-    // Find a matching message by content similarity and timestamp proximity (within 5 minutes)
+    // Find a matching message by content similarity and timestamp proximity (within 2 hours)
+    // We use 2 hours because Metricool sync can have significant delays
+    const TIME_TOLERANCE_MS = 2 * 60 * 60 * 1000; // 2 hours
+    
     for (const pending of pendingMessages) {
       const pendingNormalized = normalizeContent(pending.content);
       const pendingTime = new Date(pending.timestamp).getTime();
       const timeDiff = Math.abs(syncedTime - pendingTime);
       
-      // Content must be similar and within 5 minutes
-      if (pendingNormalized === syncedNormalized && timeDiff < 5 * 60 * 1000) {
+      // Content must be similar and within time tolerance
+      if (pendingNormalized === syncedNormalized && timeDiff < TIME_TOLERANCE_MS) {
         return pending;
       }
       
       // Also check if content starts the same way (for longer messages that might be truncated)
-      if (pendingNormalized.startsWith(syncedNormalized.substring(0, 50)) && timeDiff < 5 * 60 * 1000) {
+      if (pendingNormalized.startsWith(syncedNormalized.substring(0, 50)) && timeDiff < TIME_TOLERANCE_MS) {
+        return pending;
+      }
+      
+      // Also check reverse (synced content starts with pending content) for truncation on either side
+      if (syncedNormalized.startsWith(pendingNormalized.substring(0, 50)) && timeDiff < TIME_TOLERANCE_MS) {
         return pending;
       }
     }
