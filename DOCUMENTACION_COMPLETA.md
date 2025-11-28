@@ -4,15 +4,16 @@
 Sistema de gestión de mensajes de redes sociales que se integra con Metricool para centralizar y gestionar DMs y comentarios de múltiples marcas/empresas. El sistema permite a usuarios admin y clientes gestionar sus interacciones sociales de forma organizada.
 
 ## Estado Actual
-- **Fase Actual**: ✅ FASE 6.1 COMPLETADA - Agrupación de Conversaciones Corregida
-- **Última Actualización**: 27 de Noviembre 2025
+- **Fase Actual**: ✅ FASE 6.2 COMPLETADA - Reply a Comentarios de TikTok
+- **Última Actualización**: 28 de Noviembre 2025
 - **Login/Logout**: ✅ Completamente funcional (página de login creada, logout en sidebar)
 - **Sistema de Roles**: ✅ Admin vs Client funcionando correctamente
-- **Marca de Prueba**: ✅ Impulsa conectada (blogId: 4074962)
+- **Marca de Prueba**: ✅ Inpulza conectada (blogId: 4074962)
 - **Sincronización**: ✅ Automática cada 2 minutos - 172 mensajes totales
 - **Conversaciones**: ✅ 24 hilos de comentarios (uno por post) + 32 DMs
-- **UI**: ✅ ConversationCard con miniatura de post para comentarios
-- **Próximo Paso**: Organizar visualmente comentarios padre/respuesta dentro de conversación
+- **Reply TikTok**: ✅ Funcional - Respuestas a comentarios enviadas desde la app
+- **UI Reply**: ✅ Botón reply en mensajes, caja de texto flotante, badge "Enviado desde Repliyo"
+- **Próximo Paso**: Implementar Reply para YouTube
 
 ---
 
@@ -1261,5 +1262,135 @@ DMs:
 │  = 1 CONVERSACIÓN                       │
 └─────────────────────────────────────────┘
 ```
+
+---
+
+## FASE 6.2: Funcionalidad de Reply a Comentarios - TikTok (28 Nov 2025)
+
+### Objetivo
+Implementar la funcionalidad de responder a comentarios directamente desde la aplicación, empezando con TikTok.
+
+### Implementación Completada
+
+#### 1. Backend - MetricoolService (`server/services/metricool.ts`)
+
+**Nuevo método `replyToComment()`:**
+```typescript
+async replyToComment(params: {
+  provider: string;
+  objectId: string;
+  text: string;
+  blogId: string;
+  mentionUsername?: string;
+}): Promise<{ success: boolean; messageId?: string; error?: string; rawResponse?: any }>
+```
+
+**Endpoint de Metricool utilizado:**
+```
+POST /api/v2/inbox/post-comments?userId={userId}&blogId={blogId}
+Headers: X-Mc-Auth: {token}
+Body: {
+  "provider": "TIKTOKBUSINESS",
+  "objectId": "{commentId}",
+  "text": "@username respuesta...",
+  "attachment": ""
+}
+```
+
+#### 2. Backend - Endpoint de Reply (`server/routes.ts`)
+
+**Nuevo endpoint `POST /api/inbox/reply`:**
+```typescript
+// Validaciones de seguridad:
+// 1. Autenticación requerida
+// 2. Verificación de propiedad de marca (client solo su brand)
+// 3. Solo mensajes inbound pueden recibir reply (outbound rechazados)
+// 4. Validación de rawData y metricoolId presentes
+
+// Normalización de providers:
+const providerMap = {
+  'tiktok': 'TIKTOKBUSINESS',
+  'instagram': 'instagram',
+  'facebook': 'FACEBOOK',
+  'linkedin': 'linkedin',
+  'youtube': 'youtube',
+  'google-business': 'GMB',
+};
+```
+
+**Flujo del Reply:**
+1. Recibe `messageId`, `text`, `includeMention`
+2. Obtiene mensaje original y valida acceso
+3. Extrae `objectId` del rawData (formato: `{videoId}_{commentId}`)
+4. Incluye @username si `includeMention=true`
+5. Envía a Metricool API
+6. Guarda mensaje outbound en BD con `parentMessageId` vinculado
+7. Actualiza conversación con `lastMessageAt` y `lastMessagePreview`
+
+#### 3. Frontend - UI de Reply (`client/src/components/Inbox.tsx`)
+
+**Estados añadidos:**
+```typescript
+const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
+const [replyText, setReplyText] = useState("");
+const [isSendingReply, setIsSendingReply] = useState(false);
+```
+
+**Componentes UI:**
+1. **Botón Reply**: Flechita visible debajo de cada mensaje entrante (siempre visible, no hover)
+2. **Caja de texto flotante**: Aparece al tocar Reply, incluye:
+   - Vista previa del mensaje citado con borde indigo
+   - Textarea para escribir respuesta
+   - Contador de caracteres con límite por plataforma
+   - Botón Enviar con loading state
+   - Botón X para cancelar
+
+**Identificador visual "Enviado desde Repliyo":**
+- Mensajes enviados desde la app muestran el logo de Repliyo como avatar
+- Etiqueta "Enviado desde Repliyo" con icono de envío dentro de la burbuja
+- Diferencia visual clara vs mensajes respondidos directamente en TikTok
+
+#### 4. Diferencia entre Tipos de Respuesta (Metricool API)
+
+| Tipo de Acción | objectId que usas | Ejemplo de ID |
+|----------------|-------------------|---------------|
+| Responder comentario raíz | conversation.id | 7522238432484085047 |
+| Responder comentario anidado | reply.id (dentro de root.comments) | 7522238432484085047_7521978977020396302 |
+| Comentar publicación sin responder | **No disponible en Metricool API** | N/A |
+
+**Importante:** Metricool API está diseñada para gestión de inbox y respuestas, NO para publicar comentarios nuevos sin contexto de conversación.
+
+#### 5. Indicadores de Sentimiento
+
+**Caritas en mensajes entrantes:**
+- 😊 Positivo (verde)
+- 😐 Neutral (gris)
+- 😟 Negativo (rojo)
+
+Mostradas junto al badge de tipo de mensaje. Por defecto muestra "neutral" si no hay análisis de sentimiento.
+
+### Verificación de Funcionamiento
+
+**Test exitoso realizado:**
+```
+[Metricool POST] https://app.metricool.com/api/v2/inbox/post-comments?userId=2603584&blogId=4074962
+[Metricool POST] Body: {
+  "provider": "TIKTOKBUSINESS",
+  "objectId": "7438626225028959520_7438757586096849697",
+  "text": "@mandy_mandex No nos has comentado...",
+  "attachment": ""
+}
+[Metricool POST] Response (201): {"data":"OK"}
+POST /api/inbox/reply 200 in 1416ms
+```
+
+### Archivos Modificados
+- `server/services/metricool.ts` - Añadido `replyToComment()` y `makePostRequest()`
+- `server/routes.ts` - Nuevo endpoint `POST /api/inbox/reply`
+- `client/src/components/Inbox.tsx` - UI de reply completa
+- `client/src/assets/repliyo-logo.jpg` - Logo de la app para avatar
+
+### Próximo Paso
+Implementar Reply para YouTube (mismo patrón, diferente provider).
 
 ---
