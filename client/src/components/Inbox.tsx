@@ -784,6 +784,8 @@ export function Inbox() {
                       {threadMessages.map((msg, index) => {
                         const isReply = !!msg.parentMessageId;
                         const isInbound = msg.direction === 'inbound';
+                        const isOutbound = msg.direction === 'outbound';
+                        const isSentFromRepliyo = isOutbound && isReply;
                     const isOwner = activeClient && msg.author.toLowerCase() === activeClient.name.toLowerCase();
                     
                     return (
@@ -801,8 +803,8 @@ export function Inbox() {
                          )}>
                             {/* Show Repliyo logo for messages sent from this app, otherwise show author avatar */}
                             <AvatarImage 
-                              src={isOwner && msg.parentMessageId ? repliyoLogo : (msg.authorAvatar || undefined)} 
-                              alt={isOwner && msg.parentMessageId ? "Repliyo" : msg.author} 
+                              src={isSentFromRepliyo ? repliyoLogo : (msg.authorAvatar || undefined)} 
+                              alt={isSentFromRepliyo ? "Repliyo" : msg.author} 
                             />
                             <AvatarFallback className={cn(
                               isOwner ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-500"
@@ -834,16 +836,18 @@ export function Inbox() {
                             </div>
                             <div className={cn(
                                 "p-4 rounded-2xl text-sm leading-relaxed shadow-sm relative rounded-tl-none",
-                                isOwner 
+                                isSentFromRepliyo 
                                   ? "bg-gray-800 text-white" 
-                                  : isReply 
-                                    ? getPlatformStyles((msg.platform || 'instagram') as Platform).replyBubble
-                                    : getPlatformStyles((msg.platform || 'instagram') as Platform).bubble
+                                  : isOwner 
+                                    ? "bg-gray-600 text-white"
+                                    : isReply 
+                                      ? getPlatformStyles((msg.platform || 'instagram') as Platform).replyBubble
+                                      : getPlatformStyles((msg.platform || 'instagram') as Platform).bubble
                             )}>
                                {msg.content}
                                
                                {/* "Sent from Repliyo" indicator for messages sent from this app */}
-                               {isOwner && msg.parentMessageId && (
+                               {isSentFromRepliyo && (
                                  <div className="mt-2 pt-2 border-t border-gray-700/50 flex items-center gap-1.5 text-[10px] text-gray-400">
                                    <Send className="h-2.5 w-2.5" />
                                    <span>Enviado desde Repliyo</span>
