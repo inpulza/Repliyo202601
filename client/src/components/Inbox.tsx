@@ -61,6 +61,7 @@ import type { Message } from '@shared/schema';
 import { motion, AnimatePresence } from "framer-motion";
 import { getCharacterLimit } from '@/utils/platformLimits';
 import { Reply, X } from 'lucide-react';
+import repliyoLogo from '@/assets/repliyo-logo.jpg';
 
 
 // --- Helper: Platform Styles ---
@@ -763,7 +764,11 @@ export function Inbox() {
                            "mt-1 opacity-80 group-hover:opacity-100 transition-opacity",
                            isReply ? "h-6 w-6" : "h-8 w-8"
                          )}>
-                            <AvatarImage src={msg.authorAvatar || undefined} alt={msg.author} />
+                            {/* Show Repliyo logo for messages sent from this app, otherwise show author avatar */}
+                            <AvatarImage 
+                              src={isOwner && msg.parentMessageId ? repliyoLogo : (msg.authorAvatar || undefined)} 
+                              alt={isOwner && msg.parentMessageId ? "Repliyo" : msg.author} 
+                            />
                             <AvatarFallback className={cn(
                               isOwner ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-500"
                             )}>
