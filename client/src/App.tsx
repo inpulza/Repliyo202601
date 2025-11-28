@@ -19,20 +19,42 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
-      <Route path="/">
+      <Route path="/connections">
         {() => (
           <DashboardLayout>
-            <Switch>
-              <Route path="/" component={Inbox} />
-              <Route path="/overview" component={Overview} />
-              <Route path="/connections" component={Connections} />
-              <Route path="/integrations" component={IntegrationsPage} />
-              <Route path="/settings" component={AgentSettings} />
-              <Route component={NotFound} />
-            </Switch>
+            <Connections />
           </DashboardLayout>
         )}
       </Route>
+      <Route path="/integrations">
+        {() => (
+          <DashboardLayout>
+            <IntegrationsPage />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/overview">
+        {() => (
+          <DashboardLayout>
+            <Overview />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/settings">
+        {() => (
+          <DashboardLayout>
+            <AgentSettings />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/">
+        {() => (
+          <DashboardLayout>
+            <Inbox />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route component={NotFound} />
     </Switch>
   );
 }
