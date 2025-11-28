@@ -325,6 +325,17 @@ export class DatabaseStorage implements IStorage {
     const existing = await this.getMessageByMetricoolId(insertMessage.metricoolId, insertMessage.brandId);
     
     if (existing) {
+      // PROTECTION: If existing message is 'outbound' (sent from Repliyo), preserve that direction
+      // Metricool may send the same message as 'inbound', but we don't want to overwrite our state
+      if (existing.direction === 'outbound' && insertMessage.direction === 'inbound') {
+        console.log(`[Storage] Protecting outbound message ${existing.id} - Metricool tried to overwrite as inbound`);
+        // Only update rawData but keep direction as outbound
+        const updated = await this.updateMessage(existing.id, {
+          rawData: insertMessage.rawData,
+          // Keep direction as 'outbound' to preserve "Sent from Repliyo" indicator
+        });
+        return updated!;
+      }
       const updated = await this.updateMessage(existing.id, insertMessage);
       return updated!;
     }

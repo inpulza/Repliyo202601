@@ -798,8 +798,32 @@ export function Inbox() {
                         const isReply = !!msg.parentMessageId;
                         const isInbound = msg.direction === 'inbound';
                         const isOutbound = msg.direction === 'outbound';
-                        const isSentFromRepliyo = isOutbound && isReply;
-                    const isOwner = activeClient && msg.author.toLowerCase() === activeClient.name.toLowerCase();
+                        
+                        // Check if author is the brand using explicit pattern matching
+                        // This avoids false positives by only matching known brand handle patterns
+                        const authorIsBrand = (() => {
+                          if (!activeClient?.name) return false;
+                          
+                          const authorLower = msg.author.toLowerCase().replace(/^@+/, '');
+                          const brandLower = activeClient.name.toLowerCase();
+                          
+                          // Exact match (case insensitive, ignoring @ prefix)
+                          if (authorLower === brandLower) return true;
+                          
+                          // Brand with common suffixes (handles platform-specific naming conventions)
+                          const knownSuffixes = ['_agencia', '_official', ' agency', '_agency'];
+                          for (const suffix of knownSuffixes) {
+                            if (authorLower === `${brandLower}${suffix}`) return true;
+                          }
+                          
+                          return false;
+                        })();
+                        
+                        // isSentFromRepliyo: TRUE if explicitly outbound, OR if author is the brand and it's a reply
+                        // This ensures messages show "Enviado desde Repliyo" even if Metricool overwrote direction
+                        const isSentFromRepliyo = (isOutbound && isReply) || (authorIsBrand && isReply);
+                        
+                        const isOwner = activeClient && msg.author.toLowerCase() === activeClient.name.toLowerCase();
                     
                     return (
                       <div 
