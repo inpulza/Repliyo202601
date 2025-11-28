@@ -32,6 +32,29 @@ interface MetricoolComment {
   rawData?: any;
 }
 
+export interface ReplyToCommentParams {
+  provider: string;
+  objectId: string;
+  text: string;
+  blogId: string;
+  mentionUsername?: string;
+}
+
+export interface ReplyToConversationParams {
+  provider: string;
+  conversationId: string;
+  recipient: string;
+  text: string;
+  blogId: string;
+}
+
+export interface MetricoolReplyResponse {
+  success: boolean;
+  messageId?: string;
+  error?: string;
+  rawResponse?: any;
+}
+
 export const SUPPORTED_PROVIDERS = ['FACEBOOK', 'instagram', 'TIKTOKBUSINESS', 'GMB', 'twitter', 'linkedin', 'youtube'] as const;
 export type SocialProvider = typeof SUPPORTED_PROVIDERS[number];
 
@@ -208,6 +231,138 @@ export class MetricoolService {
       console.error(`Error fetching comments for blogId ${blogId}:`, error);
       throw error;
     }
+  }
+
+  private async makePostRequest<T>(
+    endpoint: string, 
+    body: Record<string, any>, 
+    queryParams: Record<string, any> = {}
+  ): Promise<T> {
+    const url = new URL(`${this.baseUrl}${endpoint}`);
+    
+    url.searchParams.append('userId', this.config.userId);
+    
+    Object.entries(queryParams).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        url.searchParams.append(key, String(value));
+      }
+    });
+
+    console.log(`[Metricool POST] ${url.toString()}`);
+    console.log(`[Metricool POST] Body:`, JSON.stringify(body, null, 2));
+
+    const response = await fetch(url.toString(), {
+      method: 'POST',
+      headers: {
+        'X-Mc-Auth': this.config.userToken,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    const responseText = await response.text();
+    console.log(`[Metricool POST] Response (${response.status}):`, responseText);
+
+    if (!response.ok) {
+      throw new Error(`Metricool API POST error (${response.status}): ${responseText}`);
+    }
+
+    try {
+      return responseText ? JSON.parse(responseText) : {} as T;
+    } catch {
+      return {} as T;
+    }
+  }
+
+  async replyToComment(params: ReplyToCommentParams): Promise<MetricoolReplyResponse> {
+    const { provider, objectId, text, blogId, mentionUsername } = params;
+    
+    const normalizedProvider = this.normalizeProvider(provider);
+    
+    const messageText = mentionUsername 
+      ? `@${mentionUsername.replace('@', '')} ${text}`
+      : text;
+
+    const requestBody = {
+      provider: normalizedProvider,
+      objectId: objectId,
+      text: messageText,
+      attachment: '',
+    };
+
+    try {
+      const response = await this.makePostRequest<any>(
+        '/v2/inbox/post-comments',
+        requestBody,
+        { blogId }
+      );
+
+      console.log(`[Metricool] Reply to comment sent successfully:`, response);
+
+      return {
+        success: true,
+        messageId: response?.id || response?.messageId,
+        rawResponse: response,
+      };
+    } catch (error: any) {
+      console.error(`[Metricool] Error replying to comment:`, error);
+      return {
+        success: false,
+        error: error.message || 'Failed to send reply',
+      };
+    }
+  }
+
+  async replyToConversation(params: ReplyToConversationParams): Promise<MetricoolReplyResponse> {
+    const { provider, conversationId, recipient, text, blogId } = params;
+    
+    const normalizedProvider = this.normalizeProvider(provider);
+
+    const requestBody = {
+      provider: normalizedProvider,
+      conversationId: conversationId,
+      recipient: recipient,
+      text: text,
+      attachment: null,
+    };
+
+    try {
+      const response = await this.makePostRequest<any>(
+        '/v2/inbox/conversations',
+        requestBody,
+        { blogId }
+      );
+
+      console.log(`[Metricool] Reply to DM sent successfully:`, response);
+
+      return {
+        success: true,
+        messageId: response?.id || response?.messageId,
+        rawResponse: response,
+      };
+    } catch (error: any) {
+      console.error(`[Metricool] Error replying to DM:`, error);
+      return {
+        success: false,
+        error: error.message || 'Failed to send DM reply',
+      };
+    }
+  }
+
+  private normalizeProvider(provider: string): string {
+    const providerMap: Record<string, string> = {
+      'tiktok': 'TIKTOKBUSINESS',
+      'instagram': 'INSTAGRAM',
+      'facebook': 'FACEBOOK',
+      'youtube': 'YOUTUBE',
+      'linkedin': 'LINKEDIN',
+      'google-business': 'GMB',
+      'gmb': 'GMB',
+    };
+    
+    const normalized = provider.toLowerCase();
+    return providerMap[normalized] || provider.toUpperCase();
   }
 }
 
