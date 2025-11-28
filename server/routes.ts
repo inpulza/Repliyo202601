@@ -506,8 +506,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Message not found" });
       }
       
+      // Security: Verify brand ownership for all users (not just clients)
       if (req.user!.role === 'client' && message.brandId !== req.user!.brandId) {
         return res.status(403).json({ error: "Access denied" });
+      }
+      
+      // Security: Only allow replying to inbound messages
+      if (message.direction === 'outbound') {
+        return res.status(400).json({ error: "Cannot reply to your own messages" });
       }
       
       const brand = await storage.getBrand(message.brandId);
@@ -526,7 +532,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const rawData = message.rawData as any;
       if (!rawData) {
-        return res.status(400).json({ error: "Message does not have raw data for reply" });
+        return res.status(400).json({ error: "Message does not have raw data for reply. This message may have been imported without full metadata." });
       }
       
       const metricoolId = rawData.id || message.metricoolId;
@@ -534,7 +540,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Cannot determine Metricool comment ID for reply" });
       }
       
-      const provider = rawData.provider || message.platform;
+      // Derive provider from rawData or message platform, normalize format
+      let provider = rawData.provider || message.platform;
+      if (!provider) {
+        return res.status(400).json({ error: "Cannot determine platform provider for reply" });
+      }
+      // Normalize provider name for Metricool API
+      const providerMap: Record<string, string> = {
+        'tiktok': 'TIKTOKBUSINESS',
+        'instagram': 'instagram',
+        'facebook': 'FACEBOOK',
+        'linkedin': 'linkedin',
+        'youtube': 'youtube',
+        'google-business': 'GMB',
+      };
+      provider = providerMap[provider.toLowerCase()] || provider;
       
       let mentionUsername: string | undefined = undefined;
       if (includeMention) {

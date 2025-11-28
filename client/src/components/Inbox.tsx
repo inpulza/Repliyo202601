@@ -787,9 +787,9 @@ export function Inbox() {
                                    {msg.type === 'review' && 'Public Review'}
                                    {msg.type === 'dm' && 'Direct Message'}
                                </span>
-                               {/* Sentiment indicator for inbound messages */}
-                               {msg.direction === 'inbound' && !isOwner && (
-                                 <SentimentIndicator sentiment={(msg.sentiment || 'neutral') as Sentiment} />
+                               {/* Sentiment indicator for inbound messages - only show if sentiment is available */}
+                               {msg.direction === 'inbound' && !isOwner && msg.sentiment && (
+                                 <SentimentIndicator sentiment={msg.sentiment as Sentiment} />
                                )}
                             </div>
                             <div className={cn(
@@ -1076,8 +1076,8 @@ export function Inbox() {
               )}
             </AnimatePresence>
 
-            {/* Floating AI Analysis Card - Expandable on hover */}
-            {selectedMessage && (
+            {/* Floating AI Analysis Card - Expandable on hover (hidden on mobile) */}
+            {selectedMessage && !isMobile && (
               <ExpandableAICard message={selectedMessage} />
             )}
             </div>
