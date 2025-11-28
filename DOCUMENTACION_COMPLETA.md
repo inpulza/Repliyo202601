@@ -1459,3 +1459,86 @@ POST /api/inbox/reply
 Probar y documentar Reply para Instagram, Facebook y LinkedIn.
 
 ---
+
+## FASE 6.4: Sistema de Reconciliación y Threading
+
+### Fecha: 28 de Noviembre 2025
+
+### Objetivo
+Prevenir mensajes duplicados cuando Metricool sincroniza respuestas enviadas desde Repliyo, y organizar visualmente los mensajes en hilos (threading).
+
+### Problema Identificado
+Cuando enviamos un reply desde Repliyo:
+1. Se guarda localmente con `direction: 'outbound'` y `parentMessageId` apuntando al comentario al que respondimos
+2. Metricool lo sincroniza después como `direction: 'inbound'` con un `parentMessageId` diferente (apunta al post, no al comentario)
+3. Esto creaba **duplicados** en la interfaz
+
+### Solución Implementada
+
+#### 1. Sistema de Reconciliación (`server/storage.ts`)
+
+```typescript
+// Cuando llega un mensaje de Metricool, buscar si ya existe un outbound pendiente
+async findPendingOutboundMatch(syncedMessage):
+  - Busca mensajes outbound sin metricoolId en la misma conversación
+  - Normaliza contenido (quita @menciones, espacios extras)
+  - Compara por similitud de contenido + proximidad de timestamp (2 horas)
+  - Si encuentra match: actualiza el outbound con metricoolId (no crea duplicado)
+```
+
+#### 2. Identificación de Mensajes de Repliyo (`client/src/components/Inbox.tsx`)
+
+```typescript
+const isOutbound = msg.direction === 'outbound';
+const isSentFromRepliyo = isOutbound && isReply;
+// Solo mostrar badge "Enviado desde Repliyo" si direction='outbound' Y tiene parentMessageId
+```
+
+#### 3. Threading Visual (`threadMessages` useMemo)
+
+```typescript
+// Organiza mensajes en orden padre-hijo:
+1. Separa mensajes raíz (sin parentMessageId) de replies
+2. Ordena mensajes raíz por timestamp
+3. Para cada raíz, agrega sus replies ordenados por timestamp
+4. Replies huérfanos (padre no encontrado) van al final
+```
+
+### Configuración Actual
+
+| Parámetro | Valor | Razón |
+|-----------|-------|-------|
+| TIME_TOLERANCE_MS | 2 horas | Metricool puede tener delays significativos en sync |
+| Normalización | Quita @menciones, lowercase, colapsa espacios | Metricool puede modificar formato |
+| Matching bidireccional | Sí | Contenido puede truncarse en cualquier lado |
+
+### Archivos Clave
+
+| Archivo | Función |
+|---------|---------|
+| `server/storage.ts` | `findPendingOutboundMatch()` - Reconciliación |
+| `client/src/components/Inbox.tsx` | `threadMessages` useMemo - Ordenamiento visual |
+| `server/routes.ts` | `/api/inbox/reply` - Guarda con `parentMessageId` correcto |
+
+### Estado Actual del Threading
+
+**Lo que funciona:**
+- ✅ Replies se guardan con `parentMessageId` correcto (apunta al comentario específico)
+- ✅ Reconciliación evita duplicados en nuevos mensajes
+- ✅ Badge "Enviado desde Repliyo" solo aparece en mensajes outbound
+- ✅ Logo de Repliyo en avatar para mensajes enviados desde la app
+
+**Problema pendiente de UX:**
+- ⚠️ El ordenamiento visual (`threadMessages`) agrupa replies bajo su padre
+- ⚠️ PERO Metricool asigna `parentMessageId` diferente (apunta al post, no al comentario)
+- ⚠️ Esto puede causar que replies aparezcan en lugar incorrecto visualmente
+
+### Limitación de Metricool
+
+Metricool no conoce nuestra estructura de threading. Cuando respondemos a un comentario específico:
+- **Nosotros guardamos**: `parentMessageId = ID del comentario`
+- **Metricool devuelve**: `parentMessageId = ID del post original`
+
+Esto causa discrepancia en el threading visual.
+
+---
