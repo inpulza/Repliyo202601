@@ -321,6 +321,7 @@ export class DatabaseStorage implements IStorage {
       return this.createMessage(insertMessage);
     }
 
+    // First, check if this metricoolId already exists (standard upsert)
     const existing = await this.getMessageByMetricoolId(insertMessage.metricoolId, insertMessage.brandId);
     
     if (existing) {
@@ -328,7 +329,86 @@ export class DatabaseStorage implements IStorage {
       return updated!;
     }
 
+    // NEW: Reconciliation logic for messages sent from Repliyo
+    // When we send a reply from our app, we save it without a metricoolId.
+    // Later, when Metricool syncs, the same message comes back with a metricoolId.
+    // We need to detect this and update the existing message instead of creating a duplicate.
+    if (insertMessage.conversationId && insertMessage.direction === 'inbound') {
+      // Look for an outbound message without metricoolId in the same conversation
+      // that has matching content (the message we sent from Repliyo)
+      const pendingOutbound = await this.findPendingOutboundMatch(insertMessage);
+      
+      if (pendingOutbound) {
+        console.log(`[Storage] Reconciling message: updating local outbound with metricoolId ${insertMessage.metricoolId}`);
+        // Update the existing outbound message with the metricoolId and rawData from Metricool
+        // But keep direction as 'outbound' and keep parentMessageId to preserve "Sent from Repliyo" badge
+        const updated = await this.updateMessage(pendingOutbound.id, {
+          metricoolId: insertMessage.metricoolId,
+          rawData: insertMessage.rawData,
+          // Keep direction as outbound to preserve the "Sent from Repliyo" indicator
+        });
+        return updated!;
+      }
+    }
+
     return this.createMessage(insertMessage);
+  }
+
+  // Helper method to find a pending outbound message that matches an incoming synced message
+  private async findPendingOutboundMatch(syncedMessage: InsertMessage): Promise<Message | undefined> {
+    if (!syncedMessage.conversationId || !syncedMessage.content) {
+      return undefined;
+    }
+
+    // Find outbound messages without metricoolId in the same conversation
+    const pendingMessages = await db
+      .select()
+      .from(messages)
+      .where(
+        and(
+          eq(messages.conversationId, syncedMessage.conversationId),
+          eq(messages.direction, 'outbound'),
+          isNull(messages.metricoolId),
+          eq(messages.brandId, syncedMessage.brandId)
+        )
+      );
+
+    if (pendingMessages.length === 0) {
+      return undefined;
+    }
+
+    // Normalize content for comparison (trim, collapse whitespace, remove mentions)
+    const normalizeContent = (text: string) => {
+      return text
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .replace(/^@+[\w.-]+\s*/g, '') // Remove leading @mention(s) like @@username or @username
+        .replace(/^@+[\w.-]+\s*/g, '') // Run twice in case of double mention @@user @user
+        .substring(0, 100); // Compare first 100 chars
+    };
+
+    const syncedNormalized = normalizeContent(syncedMessage.content);
+    const syncedTime = syncedMessage.timestamp ? new Date(syncedMessage.timestamp).getTime() : Date.now();
+
+    // Find a matching message by content similarity and timestamp proximity (within 5 minutes)
+    for (const pending of pendingMessages) {
+      const pendingNormalized = normalizeContent(pending.content);
+      const pendingTime = new Date(pending.timestamp).getTime();
+      const timeDiff = Math.abs(syncedTime - pendingTime);
+      
+      // Content must be similar and within 5 minutes
+      if (pendingNormalized === syncedNormalized && timeDiff < 5 * 60 * 1000) {
+        return pending;
+      }
+      
+      // Also check if content starts the same way (for longer messages that might be truncated)
+      if (pendingNormalized.startsWith(syncedNormalized.substring(0, 50)) && timeDiff < 5 * 60 * 1000) {
+        return pending;
+      }
+    }
+
+    return undefined;
   }
 
   async updateMessage(id: string, updates: UpdateMessage): Promise<Message | undefined> {
