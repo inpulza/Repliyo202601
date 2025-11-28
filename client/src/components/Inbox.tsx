@@ -47,6 +47,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -59,6 +60,7 @@ import { Platform, MessageType, Urgency, Intent, Sentiment, MessageStatus, CRMCo
 import type { Message } from '@shared/schema';
 import { motion, AnimatePresence } from "framer-motion";
 import { getCharacterLimit } from '@/utils/platformLimits';
+import { Reply, X } from 'lucide-react';
 
 
 // --- Helper: Platform Styles ---
@@ -157,6 +159,9 @@ export function Inbox() {
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [isSendingReply, setIsSendingReply] = useState(false);
 
   const { data: syncStatus } = useQuery<SyncStatus>({
     queryKey: ['/api/sync/status'],
@@ -264,6 +269,58 @@ export function Inbox() {
     } finally {
       setIsSyncing(false);
     }
+  };
+
+  const handleStartReply = (message: Message) => {
+    setReplyToMessage(message);
+    setReplyText("");
+  };
+
+  const handleCancelReply = () => {
+    setReplyToMessage(null);
+    setReplyText("");
+  };
+
+  const handleSendReply = async () => {
+    if (!replyToMessage || !replyText.trim() || isSendingReply) return;
+    
+    setIsSendingReply(true);
+    try {
+      const response = await fetch('/api/inbox/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          messageId: replyToMessage.id,
+          text: replyText.trim(),
+          includeMention: true,
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send reply');
+      }
+      
+      handleCancelReply();
+      await refreshFeed();
+      if (activeConversation) {
+        queryClient.invalidateQueries({ queryKey: [`/api/conversations/${activeConversation.id}/messages`] });
+      }
+    } catch (error: any) {
+      console.error('[Reply] Error:', error);
+      alert('Error sending reply: ' + error.message);
+    } finally {
+      setIsSendingReply(false);
+    }
+  };
+
+  const getReplyCharacterLimit = () => {
+    if (!replyToMessage) return 2200;
+    return getCharacterLimit(
+      (replyToMessage.platform || 'instagram') as Platform, 
+      (replyToMessage.type || 'comment') as MessageType
+    );
   };
 
   return (
@@ -740,6 +797,20 @@ export function Inbox() {
                                     : getPlatformStyles((msg.platform || 'instagram') as Platform).bubble
                             )}>
                                {msg.content}
+                               
+                               {/* Reply Button - only show for inbound messages that aren't from brand owner */}
+                               {!isOwner && msg.direction === 'inbound' && (
+                                 <Button
+                                   variant="ghost"
+                                   size="sm"
+                                   className="absolute -bottom-2 -right-2 h-7 w-7 p-0 rounded-full bg-white border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-indigo-50 hover:text-indigo-600"
+                                   onClick={() => handleStartReply(msg)}
+                                   data-testid={`button-reply-${msg.id}`}
+                                   title="Reply to this message"
+                                 >
+                                   <Reply className="h-3.5 w-3.5" />
+                                 </Button>
+                               )}
                             </div>
                          </div>
                       </div>
@@ -913,6 +984,93 @@ export function Inbox() {
                   )}
                </div>
             </ScrollArea>
+
+            {/* Floating Reply Input Box */}
+            <AnimatePresence>
+              {replyToMessage && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg p-4"
+                >
+                  {/* Quoted Message Preview */}
+                  <div className="mb-3 flex items-start gap-2">
+                    <div className="flex-1 bg-gray-50 rounded-lg p-3 border-l-4 border-indigo-500">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-semibold text-gray-700">
+                          Replying to {replyToMessage.author}
+                        </span>
+                        <PlatformIcon 
+                          platform={(replyToMessage.platform || 'instagram') as Platform} 
+                          className="h-3 w-3" 
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 line-clamp-2">
+                        {replyToMessage.content}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                      onClick={handleCancelReply}
+                      data-testid="button-cancel-reply"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {/* Reply Input */}
+                  <div className="flex gap-3">
+                    <Textarea
+                      placeholder="Write your reply..."
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      className="flex-1 min-h-[60px] max-h-[120px] resize-none text-sm"
+                      data-testid="input-reply-text"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                          handleSendReply();
+                        }
+                      }}
+                    />
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        onClick={handleSendReply}
+                        disabled={!replyText.trim() || isSendingReply || replyText.length > getReplyCharacterLimit()}
+                        className={cn(
+                          "h-10 px-4",
+                          replyText.length > getReplyCharacterLimit() 
+                            ? "bg-red-100 text-red-500 hover:bg-red-100" 
+                            : "bg-indigo-600 hover:bg-indigo-700"
+                        )}
+                        data-testid="button-send-reply"
+                      >
+                        {isSendingReply ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Send className="h-4 w-4 mr-1" />
+                            Send
+                          </>
+                        )}
+                      </Button>
+                      <div className={cn(
+                        "text-[10px] text-center font-medium",
+                        replyText.length > getReplyCharacterLimit() 
+                          ? "text-red-500" 
+                          : replyText.length > getReplyCharacterLimit() * 0.9 
+                            ? "text-amber-500" 
+                            : "text-gray-400"
+                      )}>
+                        {replyText.length}/{getReplyCharacterLimit()}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Floating AI Analysis Card - Expandable on hover */}
             {selectedMessage && (
