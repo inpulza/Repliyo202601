@@ -163,8 +163,6 @@ export function Inbox() {
   const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
   const [replyText, setReplyText] = useState("");
   const [isSendingReply, setIsSendingReply] = useState(false);
-  const [isCommentingPost, setIsCommentingPost] = useState(false);
-  const [postCommentText, setPostCommentText] = useState("");
 
   const { data: syncStatus } = useQuery<SyncStatus>({
     queryKey: ['/api/sync/status'],
@@ -323,63 +321,6 @@ export function Inbox() {
     return getCharacterLimit(
       (replyToMessage.platform || 'instagram') as Platform, 
       (replyToMessage.type || 'comment') as MessageType
-    );
-  };
-
-  const handleStartPostComment = () => {
-    setIsCommentingPost(true);
-    setPostCommentText("");
-    setReplyToMessage(null);
-  };
-
-  const handleCancelPostComment = () => {
-    setIsCommentingPost(false);
-    setPostCommentText("");
-  };
-
-  const handleSendPostComment = async () => {
-    if (!activeConversation || !postCommentText.trim() || isSendingReply) return;
-    
-    const firstMessage = threadMessages.find(m => m.direction === 'inbound');
-    if (!firstMessage) {
-      alert('No se puede determinar el post para comentar');
-      return;
-    }
-    
-    setIsSendingReply(true);
-    try {
-      const response = await fetch('/api/inbox/comment-post', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          conversationId: activeConversation.id,
-          referenceMessageId: firstMessage.id,
-          text: postCommentText.trim(),
-        }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to send comment');
-      }
-      
-      handleCancelPostComment();
-      await refreshFeed();
-      queryClient.invalidateQueries({ queryKey: [`/api/conversations/${activeConversation.id}/messages`] });
-    } catch (error: any) {
-      console.error('[PostComment] Error:', error);
-      alert('Error sending comment: ' + error.message);
-    } finally {
-      setIsSendingReply(false);
-    }
-  };
-
-  const getPostCommentCharacterLimit = () => {
-    if (!activeConversation) return 2200;
-    return getCharacterLimit(
-      (activeConversation.platform || 'instagram') as Platform, 
-      'comment' as MessageType
     );
   };
 
@@ -1072,21 +1013,6 @@ export function Inbox() {
                </div>
             </ScrollArea>
 
-            {/* Bottom Action Bar - Comment button */}
-            {!replyToMessage && !isCommentingPost && activeConversation?.type === 'comment' && (
-              <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3">
-                <Button
-                  onClick={handleStartPostComment}
-                  variant="outline"
-                  className="w-full h-10 text-sm text-gray-600 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50"
-                  data-testid="button-comment-post"
-                >
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  Comentar en el post
-                </Button>
-              </div>
-            )}
-
             {/* Floating Reply Input Box */}
             <AnimatePresence>
               {replyToMessage && (
@@ -1167,96 +1093,6 @@ export function Inbox() {
                             : "text-gray-400"
                       )}>
                         {replyText.length}/{getReplyCharacterLimit()}
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Floating Post Comment Input Box */}
-            <AnimatePresence>
-              {isCommentingPost && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 20 }}
-                  className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg p-4"
-                >
-                  {/* Post Comment Header */}
-                  <div className="mb-3 flex items-start gap-2">
-                    <div className="flex-1 bg-indigo-50 rounded-lg p-3 border-l-4 border-indigo-600">
-                      <div className="flex items-center gap-2">
-                        <MessageCircle className="h-4 w-4 text-indigo-600" />
-                        <span className="text-xs font-semibold text-indigo-700">
-                          Nuevo comentario en el post
-                        </span>
-                        {activeConversation && (
-                          <PlatformIcon 
-                            platform={(activeConversation.platform || 'instagram') as Platform} 
-                            className="h-3 w-3" 
-                          />
-                        )}
-                      </div>
-                      <p className="text-xs text-indigo-600 mt-1">
-                        Este comentario será visible para todos en la publicación
-                      </p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
-                      onClick={handleCancelPostComment}
-                      data-testid="button-cancel-post-comment"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  {/* Post Comment Input */}
-                  <div className="flex gap-3">
-                    <Textarea
-                      placeholder="Escribe tu comentario..."
-                      value={postCommentText}
-                      onChange={(e) => setPostCommentText(e.target.value)}
-                      className="flex-1 min-h-[60px] max-h-[120px] resize-none text-sm"
-                      data-testid="input-post-comment-text"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                          handleSendPostComment();
-                        }
-                      }}
-                    />
-                    <div className="flex flex-col gap-2">
-                      <Button
-                        onClick={handleSendPostComment}
-                        disabled={!postCommentText.trim() || isSendingReply || postCommentText.length > getPostCommentCharacterLimit()}
-                        className={cn(
-                          "h-10 px-4",
-                          postCommentText.length > getPostCommentCharacterLimit() 
-                            ? "bg-red-100 text-red-500 hover:bg-red-100" 
-                            : "bg-indigo-600 hover:bg-indigo-700"
-                        )}
-                        data-testid="button-send-post-comment"
-                      >
-                        {isSendingReply ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <>
-                            <Send className="h-4 w-4 mr-1" />
-                            Publicar
-                          </>
-                        )}
-                      </Button>
-                      <div className={cn(
-                        "text-[10px] text-center font-medium",
-                        postCommentText.length > getPostCommentCharacterLimit() 
-                          ? "text-red-500" 
-                          : postCommentText.length > getPostCommentCharacterLimit() * 0.9 
-                            ? "text-amber-500" 
-                            : "text-gray-400"
-                      )}>
-                        {postCommentText.length}/{getPostCommentCharacterLimit()}
                       </div>
                     </div>
                   </div>

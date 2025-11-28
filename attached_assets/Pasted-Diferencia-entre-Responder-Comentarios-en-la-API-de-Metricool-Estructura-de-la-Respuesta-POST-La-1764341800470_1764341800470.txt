@@ -1,0 +1,46 @@
+Diferencia entre Responder Comentarios en la API de Metricool
+Estructura de la Respuesta (POST)
+La API de Metricool usa el endpoint /v2/inbox/post-comments tanto para leer como para responder comentarios. La diferencia clave está en el objectId que envías en el payload:
+
+1. Responder a un comentario "raíz" (comentario principal en una publicación)
+Cuando alguien deja un comentario directamente en tu video/publicación y quieres responderle:
+
+// POST /v2/inbox/post-comments?provider=TIKTOKBUSINESS&blogId=4075873&userId=2603584
+{
+  "objectId": "7522238432484085047",  // ID de la conversación/comentario principal
+  "text": "¡Gracias por tu comentario!",
+  "provider": "TIKTOKBUSINESS"
+}
+
+El objectId aquí es el ID del comentario principal (que viene en conversation.id cuando obtienes los comentarios).
+
+2. Responder a un comentario anidado (reply a un reply)
+Cuando alguien ya respondió a un comentario y quieres responder a esa respuesta específica:
+
+// POST /v2/inbox/post-comments?provider=TIKTOKBUSINESS&blogId=4075873&userId=2603584
+{
+  "objectId": "7522238432484085047_7521978977020396302",  // ID del comentario anidado específico
+  "text": "¡Te ayudamos con eso!",
+  "provider": "TIKTOKBUSINESS"
+}
+
+El objectId aquí es el ID del comentario anidado (que viene en conversation.root.comments[].id). Este ID típicamente tiene formato compuesto: {videoId}_{replyId}.
+
+3. Simplemente "comentar" desde tu app (sin responder a nadie específico)
+En tu aplicación actual, no existe la funcionalidad de "comentar libremente" una publicación como si fueras un usuario cualquiera. Lo que hace Metricool es gestionar respuestas desde tu cuenta de marca hacia comentarios existentes. Para "comentar" desde cero en una publicación, tendrías que usar la API directa de TikTok (no Metricool), ya que Metricool está diseñado para gestión de inbox y respuestas, no para publicar comentarios nuevos sin contexto de conversación.
+
+Resumen Visual
+Tipo de Acción	objectId que usas	Ejemplo de ID
+Responder comentario principal	conversation.id	7522238432484085047
+Responder comentario anidado	reply.id (dentro de root.comments)	7522238432484085047_7521978977020396302
+Comentar publicación sin responder	No disponible en Metricool API	N/A
+Parámetros de Query Obligatorios
+En todos los casos, siempre necesitas estos parámetros en la URL:
+
+provider: "TIKTOKBUSINESS"
+blogId: El ID de tu marca en Metricool (ej: 4075873)
+userId: Tu ID de usuario en Metricool (ej: 2603584)
+Y en los headers:
+
+X-Mc-Auth: Tu token de API de Metricool
+Content-Type: application/json
