@@ -795,12 +795,20 @@ export function Inbox() {
                             <div className={cn(
                                 "p-4 rounded-2xl text-sm leading-relaxed shadow-sm relative rounded-tl-none",
                                 isOwner 
-                                  ? "bg-blue-600 text-white" 
+                                  ? "bg-gray-800 text-white" 
                                   : isReply 
                                     ? getPlatformStyles((msg.platform || 'instagram') as Platform).replyBubble
                                     : getPlatformStyles((msg.platform || 'instagram') as Platform).bubble
                             )}>
                                {msg.content}
+                               
+                               {/* "Sent from here" indicator for messages sent from this app */}
+                               {isOwner && msg.parentMessageId && (
+                                 <div className="mt-2 pt-2 border-t border-gray-700/50 flex items-center gap-1.5 text-[10px] text-gray-400">
+                                   <Send className="h-2.5 w-2.5" />
+                                   <span>Enviado desde aquí</span>
+                                 </div>
+                               )}
                                
                                {/* Reply Button - only show for inbound messages that aren't from brand owner */}
                                {!isOwner && msg.direction === 'inbound' && (
