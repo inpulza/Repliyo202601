@@ -233,6 +233,12 @@ class SyncService {
         const postExternalId = comment.postId || comment.rawData?.root?.element?.id || null;
         const postPermalink = comment.postUrl || comment.rawData?.root?.element?.link || null;
         const postCaption = comment.rawData?.root?.element?.text || null;
+        
+        // Extract thumbnail from mediaUrls array (first image) 
+        const mediaUrls = comment.rawData?.root?.element?.mediaUrls;
+        const postThumbnailUrl = Array.isArray(mediaUrls) && mediaUrls.length > 0 
+          ? mediaUrls[0] 
+          : null;
 
         let socialPostId: string | null = null;
 
@@ -242,7 +248,7 @@ class SyncService {
             platform,
             externalId: postExternalId,
             permalink: postPermalink,
-            thumbnailUrl: null,
+            thumbnailUrl: postThumbnailUrl,
             caption: postCaption ? postCaption.substring(0, 500) : null,
           });
           socialPostId = socialPost.id;
