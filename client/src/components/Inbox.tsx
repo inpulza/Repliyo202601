@@ -792,9 +792,9 @@ export function Inbox() {
                                    {msg.type === 'review' && 'Public Review'}
                                    {msg.type === 'dm' && 'Direct Message'}
                                </span>
-                               {/* Sentiment indicator for inbound messages - only show if sentiment is available */}
-                               {msg.direction === 'inbound' && !isOwner && msg.sentiment && (
-                                 <SentimentIndicator sentiment={msg.sentiment as Sentiment} />
+                               {/* Sentiment indicator for inbound messages */}
+                               {msg.direction === 'inbound' && !isOwner && (
+                                 <SentimentIndicator sentiment={(msg.sentiment || 'neutral') as Sentiment} />
                                )}
                             </div>
                             <div className={cn(
@@ -815,20 +815,31 @@ export function Inbox() {
                                  </div>
                                )}
                                
-                               {/* Reply Button - only show for inbound messages that aren't from brand owner */}
-                               {!isOwner && msg.direction === 'inbound' && (
-                                 <Button
-                                   variant="ghost"
-                                   size="sm"
-                                   className="absolute -bottom-2 -right-2 h-7 w-7 p-0 rounded-full bg-white border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-indigo-50 hover:text-indigo-600"
-                                   onClick={() => handleStartReply(msg)}
-                                   data-testid={`button-reply-${msg.id}`}
-                                   title="Reply to this message"
-                                 >
-                                   <Reply className="h-3.5 w-3.5" />
-                                 </Button>
-                               )}
                             </div>
+                            
+                            {/* Reply arrow - visible for inbound messages that aren't from brand owner */}
+                            {!isOwner && msg.direction === 'inbound' && (
+                              <button
+                                onClick={() => handleStartReply(msg)}
+                                data-testid={`button-reply-${msg.id}`}
+                                title="Reply to this message"
+                                className="flex items-center gap-1 text-gray-400 hover:text-indigo-600 transition-colors mt-1 ml-1"
+                              >
+                                <svg 
+                                  className="h-4 w-4" 
+                                  viewBox="0 0 24 24" 
+                                  fill="none" 
+                                  stroke="currentColor" 
+                                  strokeWidth="2" 
+                                  strokeLinecap="round" 
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M3 10h10a5 5 0 0 1 5 5v6" />
+                                  <path d="M7 6l-4 4 4 4" />
+                                </svg>
+                                <span className="text-[10px] font-medium">Reply</span>
+                              </button>
+                            )}
                          </div>
                       </div>
                     );
@@ -1089,10 +1100,6 @@ export function Inbox() {
               )}
             </AnimatePresence>
 
-            {/* Floating AI Analysis Card - Expandable on hover (hidden on mobile) */}
-            {selectedMessage && !isMobile && (
-              <ExpandableAICard message={selectedMessage} />
-            )}
             </div>
           </>
         ) : (
