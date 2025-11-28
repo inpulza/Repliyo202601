@@ -802,11 +802,11 @@ export function Inbox() {
                             )}>
                                {msg.content}
                                
-                               {/* "Sent from here" indicator for messages sent from this app */}
+                               {/* "Sent from Repliyo" indicator for messages sent from this app */}
                                {isOwner && msg.parentMessageId && (
                                  <div className="mt-2 pt-2 border-t border-gray-700/50 flex items-center gap-1.5 text-[10px] text-gray-400">
                                    <Send className="h-2.5 w-2.5" />
-                                   <span>Enviado desde aquí</span>
+                                   <span>Enviado desde Repliyo</span>
                                  </div>
                                )}
                                
