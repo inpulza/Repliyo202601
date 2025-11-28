@@ -4,16 +4,16 @@
 Sistema de gestión de mensajes de redes sociales que se integra con Metricool para centralizar y gestionar DMs y comentarios de múltiples marcas/empresas. El sistema permite a usuarios admin y clientes gestionar sus interacciones sociales de forma organizada.
 
 ## Estado Actual
-- **Fase Actual**: ✅ FASE 6.2 COMPLETADA - Reply a Comentarios de TikTok
+- **Fase Actual**: ✅ FASE 6.3 COMPLETADA - Reply a Comentarios de YouTube
 - **Última Actualización**: 28 de Noviembre 2025
 - **Login/Logout**: ✅ Completamente funcional (página de login creada, logout en sidebar)
 - **Sistema de Roles**: ✅ Admin vs Client funcionando correctamente
 - **Marca de Prueba**: ✅ Inpulza conectada (blogId: 4074962)
-- **Sincronización**: ✅ Automática cada 2 minutos - 172 mensajes totales
-- **Conversaciones**: ✅ 24 hilos de comentarios (uno por post) + 32 DMs
+- **Sincronización**: ✅ Automática cada 2 minutos
 - **Reply TikTok**: ✅ Funcional - Respuestas a comentarios enviadas desde la app
+- **Reply YouTube**: ✅ Funcional - Probado exitosamente
 - **UI Reply**: ✅ Botón reply en mensajes, caja de texto flotante, badge "Enviado desde Repliyo"
-- **Próximo Paso**: Implementar Reply para YouTube
+- **Próximo Paso**: Probar Reply para Instagram, Facebook y LinkedIn
 
 ---
 
@@ -1390,7 +1390,72 @@ POST /api/inbox/reply 200 in 1416ms
 - `client/src/components/Inbox.tsx` - UI de reply completa
 - `client/src/assets/repliyo-logo.jpg` - Logo de la app para avatar
 
+---
+
+## FASE 6.3: Funcionalidad de Reply a Comentarios - YouTube (28 Nov 2025)
+
+### Objetivo
+Extender la funcionalidad de Reply para soportar comentarios de YouTube.
+
+### Análisis de Estructura
+
+**Formato de IDs de YouTube:**
+| Tipo | Formato de ID | Ejemplo |
+|------|---------------|---------|
+| Comentario raíz | `{commentId}` | `Ugznv4HhyKsJTrZlTnd4AaABAg` |
+| Respuesta anidada | `{parentId}.{replyId}` | `Ugznv4HhyKsJTrZlTnd4AaABAg.AQ1MFmta96nAQ1MaXGj19S` |
+
+**Diferencia con TikTok:**
+- TikTok: `{videoId}_{commentId}` (underscore)
+- YouTube: `{commentId}` o `{parentId}.{replyId}` (punto)
+
+### Implementación
+
+**Resultado:** El código existente ya soportaba YouTube correctamente sin necesidad de modificaciones.
+
+**Flujo verificado:**
+1. `rawData.id` contiene el ID del comentario de YouTube
+2. Provider se normaliza a `'youtube'` (minúsculas)
+3. Metricool API acepta el objectId directamente
+4. Menciones funcionan con formato `@{username}`
+
+### Test Exitoso
+
+```bash
+POST /api/inbox/reply
+{
+  "messageId": "ab71b530-83f0-4950-b3c4-f39b99456dd0",
+  "text": "Gracias por tu pregunta!...",
+  "includeMention": true
+}
+```
+
+**Respuesta del servidor:**
+```json
+{
+  "success": true,
+  "message": {
+    "id": "c47a14d5-60a1-48c4-b7ef-a12d7e10b01b",
+    "platform": "youtube",
+    "direction": "outbound",
+    "content": "@@jordandelgado7691 Gracias por tu pregunta!...",
+    "parentMessageId": "ab71b530-83f0-4950-b3c4-f39b99456dd0"
+  },
+  "metricoolResponse": {"data": "OK"}
+}
+```
+
+### Plataformas con Reply Funcional
+
+| Plataforma | Status | Provider Metricool | Formato objectId |
+|------------|--------|-------------------|------------------|
+| TikTok | ✅ Funcional | TIKTOKBUSINESS | `{videoId}_{commentId}` |
+| YouTube | ✅ Funcional | youtube | `{commentId}` o `{parentId}.{replyId}` |
+| Instagram | 🔄 Pendiente | instagram | Por verificar |
+| Facebook | 🔄 Pendiente | FACEBOOK | Por verificar |
+| LinkedIn | 🔄 Pendiente | linkedin | Por verificar |
+
 ### Próximo Paso
-Implementar Reply para YouTube (mismo patrón, diferente provider).
+Probar y documentar Reply para Instagram, Facebook y LinkedIn.
 
 ---
