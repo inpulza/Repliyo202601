@@ -672,6 +672,137 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ========== COMMENT ON POST ENDPOINT ==========
+  
+  const commentOnPostSchema = z.object({
+    conversationId: z.string().min(1, "Conversation ID is required"),
+    referenceMessageId: z.string().min(1, "Reference message ID is required"),
+    text: z.string().min(1, "Comment text is required"),
+  });
+
+  app.post("/api/inbox/comment-post", requireAuth, async (req, res) => {
+    try {
+      const { conversationId, referenceMessageId, text } = commentOnPostSchema.parse(req.body);
+      
+      // Get conversation and reference message
+      const conversation = await storage.getConversation(conversationId);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      
+      const refMessage = await storage.getMessage(referenceMessageId);
+      if (!refMessage) {
+        return res.status(404).json({ error: "Reference message not found" });
+      }
+      
+      // Security: Verify brand ownership
+      if (req.user!.role === 'client' && conversation.brandId !== req.user!.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const brand = await storage.getBrand(conversation.brandId);
+      if (!brand) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+      
+      const userToken = process.env.METRICOOL_USER_TOKEN;
+      const userId = process.env.METRICOOL_USER_ID;
+      
+      if (!userToken || !userId) {
+        return res.status(500).json({ error: "Metricool credentials not configured" });
+      }
+      
+      const metricool = new MetricoolService({ userToken, userId });
+      
+      // Get post ID from conversation or rawData
+      const rawData = refMessage.rawData as any;
+      if (!rawData) {
+        return res.status(400).json({ error: "Cannot determine post information for comment" });
+      }
+      
+      // For comments, we need the postId (video/post ID) not the comment ID
+      // The postId is the first part of the objectId before the underscore
+      const metricoolId = rawData.id || refMessage.metricoolId;
+      let postId = metricoolId;
+      
+      // If the ID contains underscore, extract the post ID (first part)
+      if (metricoolId && metricoolId.includes('_')) {
+        postId = metricoolId.split('_')[0];
+      }
+      
+      if (!postId) {
+        return res.status(400).json({ error: "Cannot determine post ID for comment" });
+      }
+      
+      // Normalize provider
+      let provider = rawData.provider || refMessage.platform;
+      const providerMap: Record<string, string> = {
+        'tiktok': 'TIKTOKBUSINESS',
+        'instagram': 'instagram',
+        'facebook': 'FACEBOOK',
+        'linkedin': 'linkedin',
+        'youtube': 'youtube',
+        'google-business': 'GMB',
+      };
+      provider = providerMap[provider?.toLowerCase()] || provider;
+      
+      console.log(`[PostComment] Sending comment to post ${postId} on ${provider}`);
+      
+      // Send comment to post (not as reply to a comment)
+      const result = await metricool.replyToComment({
+        provider: provider,
+        objectId: postId,
+        text: text,
+        blogId: brand.metricoolBlogId || '',
+        mentionUsername: undefined, // No mention for direct post comment
+      });
+      
+      if (!result.success) {
+        return res.status(500).json({ 
+          error: result.error || "Failed to send comment to Metricool",
+          details: result.rawResponse 
+        });
+      }
+      
+      // Save the outbound message
+      const outboundMessage = await storage.createMessage({
+        brandId: conversation.brandId,
+        conversationId: conversationId,
+        platform: conversation.platform,
+        type: 'comment',
+        author: brand.name,
+        content: text,
+        timestamp: new Date(),
+        status: 'sent',
+        direction: 'outbound',
+        parentMessageId: null, // No parent - direct post comment
+        metricoolId: result.messageId || null,
+        rawData: result.rawResponse || null,
+      });
+      
+      // Update conversation
+      await storage.updateConversation(conversationId, {
+        lastMessageAt: new Date(),
+        lastMessagePreview: text.substring(0, 100),
+      });
+      
+      console.log(`[PostComment] Comment sent successfully to post ${postId}`);
+      
+      res.json({
+        success: true,
+        message: outboundMessage,
+        metricoolResponse: result.rawResponse,
+      });
+      
+    } catch (error: any) {
+      console.error("[PostComment] Error:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ error: "Invalid request data", details: error.errors });
+      }
+      res.status(500).json({ error: error.message || "Failed to send comment" });
+    }
+  });
+
   // ========== MESSAGES ENDPOINTS ==========
 
   app.get("/api/messages", requireAuth, filterByBrand(), async (req, res) => {
