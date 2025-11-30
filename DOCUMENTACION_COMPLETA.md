@@ -4,8 +4,8 @@
 Sistema de gestión de mensajes de redes sociales que se integra con Metricool para centralizar y gestionar DMs y comentarios de múltiples marcas/empresas. El sistema permite a usuarios admin y clientes gestionar sus interacciones sociales de forma organizada.
 
 ## Estado Actual
-- **Fase Actual**: ✅ FASE 6.3 COMPLETADA - Reply a Comentarios de YouTube
-- **Última Actualización**: 28 de Noviembre 2025
+- **Fase Actual**: ✅ FASE 6.4 COMPLETADA - Campo Source para Diferenciación de Origen
+- **Última Actualización**: 30 de Noviembre 2025
 - **Login/Logout**: ✅ Completamente funcional (página de login creada, logout en sidebar)
 - **Sistema de Roles**: ✅ Admin vs Client funcionando correctamente
 - **Marca de Prueba**: ✅ Inpulza conectada (blogId: 4074962)
@@ -13,6 +13,7 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 - **Reply TikTok**: ✅ Funcional - Respuestas a comentarios enviadas desde la app
 - **Reply YouTube**: ✅ Funcional - Probado exitosamente
 - **UI Reply**: ✅ Botón reply en mensajes, caja de texto flotante, badge "Enviado desde Repliyo"
+- **Campo Source**: ✅ Diferencia mensajes de Repliyo vs sincronizados de redes sociales
 - **Próximo Paso**: Probar Reply para Instagram, Facebook y LinkedIn
 
 ---
@@ -1540,5 +1541,135 @@ Metricool no conoce nuestra estructura de threading. Cuando respondemos a un com
 - **Metricool devuelve**: `parentMessageId = ID del post original`
 
 Esto causa discrepancia en el threading visual.
+
+---
+
+## FASE 6.4: Campo Source para Diferenciación de Origen de Mensajes ✅ COMPLETADA - 30 Noviembre 2025
+
+### Problema Identificado
+
+El sistema tenía un dilema de diferenciación:
+1. **Mensajes enviados desde Repliyo** → Deberían mostrar badge "Enviado desde Repliyo"
+2. **Respuestas nativas del dueño** → Respuestas que Inpulza hizo directamente en sus redes sociales (antes de conectar Repliyo) NO deberían mostrar ese badge
+
+**El problema técnico:** Cuando Metricool sincroniza, **no diferencia** entre respuestas enviadas desde herramientas externas vs respuestas nativas de la red social. Todos los mensajes del autor de la marca llegan como `inbound` sin ninguna marca de origen.
+
+### Solución Implementada: Campo `source`
+
+#### 1. Schema (`shared/schema.ts`)
+
+```typescript
+// Nueva columna en tabla messages
+source: text("source").default('metricool_sync'),
+```
+
+**Valores posibles:**
+| Valor | Significado |
+|-------|-------------|
+| `'repliyo'` | Mensaje enviado desde la aplicación Repliyo |
+| `'metricool_sync'` | Mensaje sincronizado desde Metricool (respuestas nativas de las redes) |
+
+#### 2. Backend - Creación de Mensajes (`server/routes.ts`)
+
+Cuando se envía una respuesta desde Repliyo, se guarda con `source: 'repliyo'`:
+
+```typescript
+// Líneas 596 y 648 - Tanto para comentarios como DMs
+const outboundMessage = await storage.createMessage({
+  brandId: message.brandId,
+  conversationId: message.conversationId,
+  platform: message.platform,
+  type: message.type,
+  author: brand.name,
+  content: text,
+  timestamp: new Date(),
+  status: 'sent',
+  direction: 'outbound',
+  parentMessageId: message.id,
+  metricoolId: result.messageId || null,
+  rawData: result.rawResponse || null,
+  source: 'repliyo',  // ⭐ NUEVO CAMPO
+});
+```
+
+#### 3. Backend - Protección de Reconciliación (`server/storage.ts`)
+
+Cuando Metricool sincroniza un mensaje que ya existe como `repliyo`, se preservan los campos originales:
+
+```typescript
+if (existing.source === 'repliyo' || (existing.direction === 'outbound' && insertMessage.direction === 'inbound')) {
+  console.log(`[Storage] Protecting Repliyo message ${existing.id} - preserving source and direction`);
+  // Solo actualiza rawData, preserva: direction, source, parentMessageId
+  const updated = await this.updateMessage(existing.id, {
+    rawData: insertMessage.rawData,
+  });
+  return updated!;
+}
+```
+
+#### 4. Frontend - Detección Simplificada (`client/src/components/Inbox.tsx`)
+
+La lógica de detección ahora es simple y precisa:
+
+```typescript
+// Check if message was sent from Repliyo using the source field
+// This is the authoritative way to identify messages sent from our app
+// vs messages that the brand sent natively from their social networks
+const isSentFromRepliyo = (msg as any).source === 'repliyo';
+```
+
+### Migración de Datos Históricos
+
+**IMPORTANTE:** No es posible migrar datos históricos porque:
+
+1. **Metricool no proporciona información sobre el origen** - La API no diferencia entre respuestas enviadas desde herramientas externas vs respuestas nativas
+2. **No hay campo en rawData que indique origen** - El campo `self` solo indica el ID de la marca, no el origen del mensaje
+3. **Todos los mensajes del dueño llegan iguales** - Sin importar si fueron enviados desde Instagram directamente, TikTok nativo, o cualquier herramienta
+
+**Análisis de datos existentes:**
+
+```sql
+SELECT source, direction, COUNT(*) 
+FROM messages 
+WHERE author ILIKE '%inpulza%'
+GROUP BY source, direction;
+-- Resultado: 97 mensajes con source='metricool_sync', direction='inbound'
+```
+
+### Comportamiento Final
+
+| Origen del Mensaje | Campo `source` | Badge "Enviado desde Repliyo" |
+|-------------------|----------------|-------------------------------|
+| Enviado desde Repliyo (a partir de ahora) | `'repliyo'` | ✅ Sí |
+| Respuestas históricas (antes de conectar) | `'metricool_sync'` | ❌ No |
+| Respuestas nativas desde la red social | `'metricool_sync'` | ❌ No |
+
+### Archivos Modificados
+
+| Archivo | Cambio |
+|---------|--------|
+| `shared/schema.ts` | Añadido campo `source` con default `'metricool_sync'` |
+| `server/routes.ts` | Líneas 596 y 648: `source: 'repliyo'` al crear mensajes |
+| `server/storage.ts` | Protección ampliada para preservar `source` en reconciliación |
+| `client/src/components/Inbox.tsx` | Lógica simplificada: `isSentFromRepliyo = msg.source === 'repliyo'` |
+
+### Comando SQL Ejecutado
+
+```sql
+-- Añadir columna (ejecutado automáticamente)
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'metricool_sync';
+
+-- Intentó backfill pero 0 filas afectadas (no había mensajes outbound sin metricoolId)
+UPDATE messages SET source = 'repliyo' 
+WHERE direction = 'outbound' AND metricool_id IS NULL;
+-- Resultado: UPDATE 0
+```
+
+### Notas para Desarrolladores
+
+1. **El campo `source` es la fuente de verdad** para determinar si un mensaje fue enviado desde Repliyo
+2. **No confiar en `direction`** - Metricool puede sobrescribir este campo durante sync
+3. **No confiar en detección por nombre de autor** - Genera falsos positivos/negativos
+4. **La protección de reconciliación es crítica** - Sin ella, Metricool sobrescribiría el `source` a `'metricool_sync'`
 
 ---
