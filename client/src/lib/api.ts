@@ -1,7 +1,13 @@
-import type { Client, Message, Brand, Conversation, SocialPost } from '@shared/schema';
+import type { Client, Message, Brand, Conversation, SocialPost, SocialAccount } from '@shared/schema';
 import type { Platform, MessageType, Urgency, Intent, Sentiment, MessageStatus, CRMContact } from '@/lib/types';
 
 const API_BASE = '/api';
+
+export interface DetectedProvider {
+  provider: string;
+  accountName: string | null;
+  accountAvatar?: string | null;
+}
 
 interface MetricoolBrand {
   id: string;
@@ -9,12 +15,19 @@ interface MetricoolBrand {
   industry: string;
   avatar: string | null;
   blogId: string;
+  detectedProviders?: DetectedProvider[];
 }
 
 interface ImportBrandPayload extends MetricoolBrand {
   agentName?: string;
   tone?: string;
   businessContext?: string;
+  detectedProviders?: DetectedProvider[];
+  selectedProviders?: string[];
+}
+
+interface ImportBrandResponse extends Brand {
+  socialAccounts?: SocialAccount[];
 }
 
 // Adapter function to convert DB message to frontend format
@@ -83,7 +96,7 @@ export const api = {
       return res.json();
     },
 
-    importBrand: async (brand: ImportBrandPayload): Promise<Brand> => {
+    importBrand: async (brand: ImportBrandPayload): Promise<ImportBrandResponse> => {
       const res = await fetch(`${API_BASE}/brands/import`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -104,6 +117,30 @@ export const api = {
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || 'Failed to sync brand');
+      }
+      return res.json();
+    },
+  },
+
+  socialAccounts: {
+    getByBrand: async (brandId: string): Promise<SocialAccount[]> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/social-accounts`);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to fetch social accounts');
+      }
+      return res.json();
+    },
+
+    updateStatus: async (brandId: string, provider: string, isActive: boolean): Promise<SocialAccount> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/social-accounts/${provider}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to update social account');
       }
       return res.json();
     },

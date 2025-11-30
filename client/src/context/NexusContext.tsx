@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
-import { api } from '@/lib/api';
+import { api, type DetectedProvider } from '@/lib/api';
 import type { Client, Message, Conversation, SocialPost } from '@shared/schema';
 import { useAuth } from './AuthContext';
 
@@ -36,7 +36,7 @@ interface NexusContextType {
   metricoolBrands: any[];
   isLoadingMetricool: boolean;
   fetchMetricoolBrands: () => Promise<void>;
-  importMetricoolBrand: (brandId: string) => void;
+  importMetricoolBrand: (brandId: string, detectedProviders?: DetectedProvider[], selectedProviders?: string[]) => void;
 }
 
 const NexusContext = createContext<NexusContextType | undefined>(undefined);
@@ -149,7 +149,7 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const importMetricoolBrand = async (brandId: string) => {
+  const importMetricoolBrand = async (brandId: string, detectedProviders?: DetectedProvider[], selectedProviders?: string[]) => {
     const brandToImport = metricoolBrands.find(b => b.blogId === brandId || b.id === brandId);
     if (!brandToImport) return;
 
@@ -168,34 +168,49 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
         description: "Guardando marca en la base de datos...",
       });
 
+      const providersToUse = detectedProviders || brandToImport.detectedProviders || [];
+      const selectedToUse = selectedProviders || providersToUse.map((p: DetectedProvider) => p.provider);
+
       const importedBrand = await api.metricool.importBrand({
         ...brandToImport,
         agentName: `${brandToImport.name.split(' ')[0]}Bot`,
         tone: 'casual',
         businessContext: `Official account for ${brandToImport.name}.`,
+        detectedProviders: providersToUse,
+        selectedProviders: selectedToUse,
       });
 
       queryClient.invalidateQueries({ queryKey: ['clients'] });
 
-      toast({
-        title: "Marca Importada",
-        description: `${importedBrand.name} ha sido agregado correctamente.`,
-      });
-
-      toast({
-        title: "Sincronizando Mensajes",
-        description: "Descargando DMs y comentarios de Metricool...",
-      });
-
-      await api.metricool.syncBrand(importedBrand.id);
-
-      queryClient.invalidateQueries({ queryKey: ['messages'] });
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      const activeCount = selectedToUse.length;
+      const totalCount = providersToUse.length;
       
       toast({
-        title: "¡Sincronización Completada!",
-        description: "Los mensajes de Metricool han sido importados.",
+        title: "Marca Importada",
+        description: `${importedBrand.name} agregado con ${activeCount}/${totalCount} redes activas.`,
       });
+
+      if (activeCount > 0) {
+        toast({
+          title: "Sincronizando Mensajes",
+          description: "Descargando DMs y comentarios de las redes activas...",
+        });
+
+        await api.metricool.syncBrand(importedBrand.id);
+
+        queryClient.invalidateQueries({ queryKey: ['messages'] });
+        queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        
+        toast({
+          title: "¡Sincronización Completada!",
+          description: "Los mensajes de las redes activas han sido importados.",
+        });
+      } else {
+        toast({
+          title: "Sin Redes Activas",
+          description: "No se seleccionaron redes para sincronizar. Puedes activarlas en la configuración.",
+        });
+      }
 
       setActiveClientId(importedBrand.id);
 
