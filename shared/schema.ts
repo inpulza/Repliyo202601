@@ -82,6 +82,7 @@ export const messages = pgTable("messages", {
   rawData: jsonb("raw_data"),
   threadId: text("thread_id"),
   parentMessageId: varchar("parent_message_id"),
+  source: text("source").default('metricool_sync'),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
