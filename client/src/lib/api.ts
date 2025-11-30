@@ -1,6 +1,8 @@
 import type { Client, Message, Brand, Conversation, SocialPost, SocialAccount } from '@shared/schema';
 import type { Platform, MessageType, Urgency, Intent, Sentiment, MessageStatus, CRMContact } from '@/lib/types';
 
+export type { SocialAccount };
+
 const API_BASE = '/api';
 
 export interface DetectedProvider {
@@ -141,6 +143,18 @@ export const api = {
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || 'Failed to update social account');
+      }
+      return res.json();
+    },
+
+    refresh: async (brandId: string): Promise<{ message: string; detected: number; accounts: SocialAccount[] }> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/social-accounts/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to refresh social accounts');
       }
       return res.json();
     },

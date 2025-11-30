@@ -4,11 +4,13 @@ import { useNexus } from '@/context/NexusContext';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { RefreshCw, Check, Loader2, Globe, Building2, ShieldCheck, ArrowLeft, ArrowRight } from "lucide-react";
+import { RefreshCw, Check, Loader2, Globe, Building2, ShieldCheck, ArrowLeft, ArrowRight, Settings2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FaInstagram, FaFacebookF, FaTiktok, FaYoutube, FaLinkedinIn, FaGoogle, FaTwitter } from 'react-icons/fa';
 import type { DetectedProvider } from '@/lib/api';
+import { SocialAccountsManager } from './SocialAccountsManager';
+import type { Client } from '@shared/schema';
 
 interface MetricoolConnectionProps {
   onClose: () => void;
@@ -46,6 +48,7 @@ export function MetricoolConnection({ onClose }: MetricoolConnectionProps) {
   const [selectedBrand, setSelectedBrand] = useState<MetricoolBrandWithProviders | null>(null);
   const [selectedProviders, setSelectedProviders] = useState<Set<string>>(new Set());
   const [isImporting, setIsImporting] = useState(false);
+  const [configureClient, setConfigureClient] = useState<Client | null>(null);
 
   useEffect(() => {
     fetchMetricoolBrands();
@@ -275,24 +278,35 @@ export function MetricoolConnection({ onClose }: MetricoolConnectionProps) {
                         </div>
                       </div>
                     </div>
-                    <Button 
-                      size="sm" 
-                      variant={isAdded ? "ghost" : "outline"}
-                      className={`h-7 text-xs ${isAdded ? "text-green-600 bg-green-50 hover:text-green-700 hover:bg-green-100" : ""}`}
-                      onClick={() => {
-                          if (!isAdded) {
-                              handleSelectBrand(brand);
-                          }
-                      }}
-                      disabled={isAdded}
-                      data-testid={`button-import-brand-${brand.blogId}`}
-                    >
-                      {isAdded ? (
-                        <><Check className="h-3 w-3 mr-1" /> Conectado</>
-                      ) : (
-                        "Importar"
-                      )}
-                    </Button>
+                    {isAdded ? (
+                      <div className="flex items-center gap-1">
+                        <Badge variant="outline" className="text-[10px] text-green-600 border-green-200 bg-green-50 flex items-center gap-1">
+                          <Check className="h-2.5 w-2.5" /> Conectado
+                        </Badge>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-gray-400 hover:text-indigo-600"
+                          onClick={() => {
+                            const client = clients.find(c => c.metricoolBlogId === brand.blogId);
+                            if (client) setConfigureClient(client);
+                          }}
+                          data-testid={`button-configure-brand-${brand.blogId}`}
+                        >
+                          <Settings2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() => handleSelectBrand(brand)}
+                        data-testid={`button-import-brand-${brand.blogId}`}
+                      >
+                        Importar
+                      </Button>
+                    )}
                   </div>
                 );
               })}
@@ -306,6 +320,13 @@ export function MetricoolConnection({ onClose }: MetricoolConnectionProps) {
           )}
         </ScrollArea>
       </div>
+
+      <SocialAccountsManager
+        open={!!configureClient}
+        onOpenChange={(open) => !open && setConfigureClient(null)}
+        client={configureClient}
+        onAccountsUpdated={() => {}}
+      />
     </div>
   );
 }

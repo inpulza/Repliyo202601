@@ -316,6 +316,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to update social account" });
     }
   });
+
+  app.post("/api/brands/:id/social-accounts/refresh", requireAuth, async (req, res) => {
+    try {
+      const brandId = req.params.id;
+      
+      if (req.user!.role !== 'admin') {
+        return res.status(403).json({ error: "Only admins can refresh social accounts" });
+      }
+
+      const brand = await storage.getBrand(brandId);
+      if (!brand) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+
+      const metricoolService = new MetricoolService({
+        userToken: brand.metricoolToken,
+        userId: brand.metricoolUserId
+      });
+
+      const metricoolBrands = await metricoolService.getBrands();
+      const matchingBrand = metricoolBrands.find(b => b.blogId === brand.metricoolBlogId);
+
+      if (!matchingBrand) {
+        return res.status(404).json({ error: "Brand not found in Metricool" });
+      }
+
+      const detectedProviders = matchingBrand.detectedProviders || [];
+      const existingAccounts = await storage.getSocialAccountsByBrand(brandId);
+      const existingProviderMap = new Map(existingAccounts.map(a => [a.provider, a]));
+
+      let newCount = 0;
+      let updatedCount = 0;
+
+      for (const dp of detectedProviders) {
+        const existing = existingProviderMap.get(dp.provider);
+        if (!existing) {
+          await storage.upsertSocialAccount({
+            brandId: brand.id,
+            provider: dp.provider,
+            isActive: false,
+            accountName: dp.accountName || null,
+            accountAvatar: dp.accountAvatar || null,
+          });
+          newCount++;
+        } else if (dp.accountName !== existing.accountName || dp.accountAvatar !== existing.accountAvatar) {
+          await storage.upsertSocialAccount({
+            brandId: brand.id,
+            provider: dp.provider,
+            isActive: existing.isActive,
+            accountName: dp.accountName || existing.accountName || null,
+            accountAvatar: dp.accountAvatar || existing.accountAvatar || null,
+          });
+          updatedCount++;
+        }
+      }
+
+      const updatedAccounts = await storage.getSocialAccountsByBrand(brandId);
+      res.json({ 
+        message: "Social accounts refreshed",
+        detected: detectedProviders.length,
+        newAccounts: newCount,
+        updatedAccounts: updatedCount,
+        accounts: updatedAccounts 
+      });
+    } catch (error: any) {
+      console.error('Error refreshing social accounts:', error);
+      res.status(500).json({ error: "Failed to refresh social accounts" });
+    }
+  });
   
   app.get("/api/brands", requireAuth, async (req, res) => {
     try {
