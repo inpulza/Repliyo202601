@@ -799,29 +799,10 @@ export function Inbox() {
                         const isInbound = msg.direction === 'inbound';
                         const isOutbound = msg.direction === 'outbound';
                         
-                        // Check if author is the brand using explicit pattern matching
-                        // This avoids false positives by only matching known brand handle patterns
-                        const authorIsBrand = (() => {
-                          if (!activeClient?.name) return false;
-                          
-                          const authorLower = msg.author.toLowerCase().replace(/^@+/, '');
-                          const brandLower = activeClient.name.toLowerCase();
-                          
-                          // Exact match (case insensitive, ignoring @ prefix)
-                          if (authorLower === brandLower) return true;
-                          
-                          // Brand with common suffixes (handles platform-specific naming conventions)
-                          const knownSuffixes = ['_agencia', '_official', ' agency', '_agency'];
-                          for (const suffix of knownSuffixes) {
-                            if (authorLower === `${brandLower}${suffix}`) return true;
-                          }
-                          
-                          return false;
-                        })();
-                        
-                        // isSentFromRepliyo: TRUE if explicitly outbound, OR if author is the brand and it's a reply
-                        // This ensures messages show "Enviado desde Repliyo" even if Metricool overwrote direction
-                        const isSentFromRepliyo = (isOutbound && isReply) || (authorIsBrand && isReply);
+                        // Check if message was sent from Repliyo using the source field
+                        // This is the authoritative way to identify messages sent from our app
+                        // vs messages that the brand sent natively from their social networks
+                        const isSentFromRepliyo = (msg as any).source === 'repliyo';
                         
                         const isOwner = activeClient && msg.author.toLowerCase() === activeClient.name.toLowerCase();
                     
