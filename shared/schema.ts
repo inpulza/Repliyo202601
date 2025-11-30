@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, jsonb, unique, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, jsonb, unique, integer, boolean } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -17,6 +17,20 @@ export const brands = pgTable("brands", {
   businessContext: text("business_context"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const socialAccounts = pgTable("social_accounts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brandId: varchar("brand_id").notNull().references(() => brands.id, { onDelete: 'cascade' }),
+  provider: text("provider").notNull(),
+  isActive: boolean("is_active").default(false).notNull(),
+  accountName: text("account_name"),
+  accountAvatar: text("account_avatar"),
+  lastSyncAt: timestamp("last_sync_at"),
+  lastSyncStatus: text("last_sync_status"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueBrandProvider: unique().on(table.brandId, table.provider),
+}));
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -91,6 +105,14 @@ export const brandsRelations = relations(brands, ({ many }) => ({
   users: many(users),
   socialPosts: many(socialPosts),
   conversations: many(conversations),
+  socialAccounts: many(socialAccounts),
+}));
+
+export const socialAccountsRelations = relations(socialAccounts, ({ one }) => ({
+  brand: one(brands, {
+    fields: [socialAccounts.brandId],
+    references: [brands.id],
+  }),
 }));
 
 export const usersRelations = relations(users, ({ one }) => ({
@@ -188,3 +210,16 @@ export type UpdateConversation = z.infer<typeof updateConversationSchema>;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type Message = typeof messages.$inferSelect;
 export type UpdateMessage = z.infer<typeof updateMessageSchema>;
+
+export const insertSocialAccountSchema = createInsertSchema(socialAccounts).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const selectSocialAccountSchema = createSelectSchema(socialAccounts);
+
+export const updateSocialAccountSchema = insertSocialAccountSchema.partial();
+
+export type InsertSocialAccount = z.infer<typeof insertSocialAccountSchema>;
+export type SocialAccount = typeof socialAccounts.$inferSelect;
+export type UpdateSocialAccount = z.infer<typeof updateSocialAccountSchema>;
