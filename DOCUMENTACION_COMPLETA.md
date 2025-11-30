@@ -1778,3 +1778,188 @@ getStatus(): {
 4. **Logs detallados**: Para debugging y monitoreo del sistema
 
 ---
+
+## FASE 6.6: Control Granular de Redes Sociales por Marca ✅ COMPLETADA - 30 Noviembre 2025
+
+### Objetivo
+Implementar control granular por marca y por red social, permitiendo a usuarios activar/desactivar selectivamente qué redes sociales sincronizar para cada marca con un enfoque privacy-first (opt-in).
+
+### Arquitectura Implementada
+
+#### 1. Nueva Tabla `social_accounts`
+
+```typescript
+// shared/schema.ts
+export const socialAccounts = pgTable("social_accounts", {
+  id: serial("id").primaryKey(),
+  brandId: integer("brand_id").references(() => brands.id).notNull(),
+  provider: text("provider").notNull(), // INSTAGRAM, FACEBOOK, TIKTOKBUSINESS, etc.
+  isActive: boolean("is_active").default(false).notNull(), // Privacy-first: OFF por defecto
+  accountName: text("account_name"),
+  accountAvatar: text("account_avatar"),
+  lastSyncAt: timestamp("last_sync_at"),
+  lastSyncStatus: text("last_sync_status"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+```
+
+**Principio Privacy-First:**
+- Todas las redes sociales se detectan pero empiezan DESACTIVADAS (`isActive: false`)
+- El usuario debe activar explícitamente cada red que desee sincronizar
+- Mayor control y privacidad para el usuario
+
+#### 2. Smart Discovery en MetricoolService
+
+El servicio de Metricool ahora detecta automáticamente qué redes sociales tiene conectadas cada marca:
+
+```typescript
+// server/services/metricool.ts
+interface DetectedProvider {
+  provider: string;      // INSTAGRAM, FACEBOOK, TIKTOKBUSINESS, YOUTUBE, LINKEDIN, GMB
+  accountName: string | null;
+  accountAvatar: string | null;
+}
+
+async getBrands(token: string, userId: string): Promise<MetricoolBrand[]> {
+  // Detecta providers de campos: facebook, instagram, tiktok, twitter, youtube, linkedinCompany, gmb
+  return brands.map(brand => ({
+    ...brand,
+    detectedProviders: this.detectProviders(brand) // Nuevo campo
+  }));
+}
+```
+
+#### 3. Flujo de Importación en Dos Pasos
+
+**Paso 1:** Selección de marca desde la lista de Metricool
+**Paso 2:** Selección de redes sociales a activar (Smart Discovery muestra las detectadas)
+
+```typescript
+// client/src/components/MetricoolConnection.tsx
+const [importStep, setImportStep] = useState<'select' | 'configure'>('select');
+const [selectedBrand, setSelectedBrand] = useState<MetricoolBrand | null>(null);
+const [selectedProviders, setSelectedProviders] = useState<string[]>([]);
+```
+
+#### 4. Endpoints API
+
+| Endpoint | Método | Descripción |
+|----------|--------|-------------|
+| `/api/brands/:id/social-accounts` | GET | Obtener cuentas sociales de una marca |
+| `/api/brands/:id/social-accounts/:provider` | PUT | Actualizar estado de activación de una red |
+| `/api/brands/:id/social-accounts/refresh` | POST | Re-detectar redes desde Metricool (preserva activaciones) |
+
+#### 5. SocialAccountsManager Component
+
+Componente para gestionar redes sociales post-importación:
+
+```typescript
+// client/src/components/SocialAccountsManager.tsx
+interface SocialAccountsManagerProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  client: Client | null;
+  onAccountsUpdated?: () => void;
+}
+```
+
+**Funcionalidades:**
+- Lista de redes detectadas con toggles de activación/desactivación
+- Botón "Sincronizar" para actualizar mensajes de redes activas
+- Botón "Detectar Redes" (icono Scan) para re-detectar providers desde Metricool
+- Indicadores visuales de última sincronización y estado
+
+#### 6. Integración con SyncService
+
+El servicio de sincronización ahora consulta solo providers activos:
+
+```typescript
+// server/services/syncService.ts
+async syncBrand(brand: Brand): Promise<void> {
+  const activeProviders = await storage.getActiveProviders(brand.id);
+  
+  if (activeProviders.length === 0) {
+    console.log(`[SyncService] No active providers for brand ${brand.name}`);
+    return;
+  }
+  
+  // Solo sincroniza providers activos
+  for (const provider of activeProviders) {
+    await this.syncProvider(brand, provider);
+    await storage.updateSocialAccountStatus(brand.id, provider, 'success');
+  }
+}
+```
+
+### Flujo Completo
+
+```
+1. Usuario abre modal "Conectar con Metricool"
+2. Se cargan marcas disponibles desde Metricool (con Smart Discovery)
+3. Usuario selecciona una marca → Paso 2
+4. Se muestran las redes detectadas con checkboxes (todas OFF por defecto)
+5. Usuario activa las redes deseadas y confirma importación
+6. Sistema crea registros en social_accounts con estado seleccionado
+7. Solo las redes activas se sincronizan
+
+Post-importación:
+- Botón "Configurar" (engranaje) abre SocialAccountsManager
+- Toggles para activar/desactivar redes en cualquier momento
+- Botón "Detectar Redes" para marcas legacy (importadas antes de Smart Discovery)
+- Los cambios de activación persisten incluso tras refresh de providers
+```
+
+### Comportamiento del Endpoint Refresh
+
+El endpoint `POST /api/brands/:id/social-accounts/refresh` tiene un comportamiento específico para preservar activaciones:
+
+1. **Nuevos providers**: Se agregan con `isActive: false`
+2. **Providers existentes**: Se actualiza nombre/avatar pero se PRESERVA `isActive`
+3. **Respuesta**: Lista completa de social_accounts actualizada
+
+```typescript
+// No sobrescribe activaciones existentes
+if (existing) {
+  await storage.upsertSocialAccount({
+    brandId: brand.id,
+    provider: dp.provider,
+    isActive: existing.isActive, // Preserva estado original
+    accountName: dp.accountName || existing.accountName,
+    accountAvatar: dp.accountAvatar || existing.accountAvatar,
+  });
+}
+```
+
+### Iconos de Redes Sociales
+
+| Provider | Icono | Color |
+|----------|-------|-------|
+| INSTAGRAM | FaInstagram | text-pink-500 |
+| FACEBOOK | FaFacebook | text-blue-600 |
+| TIKTOKBUSINESS | FaTiktok | text-gray-800 |
+| YOUTUBE | FaYoutube | text-red-600 |
+| LINKEDIN | FaLinkedin | text-blue-700 |
+| GMB | FaGoogle | text-yellow-500 |
+| twitter | FaTwitter | text-gray-800 |
+
+### Archivos Modificados/Creados
+
+| Archivo | Cambio |
+|---------|--------|
+| `shared/schema.ts` | Nueva tabla `social_accounts` con tipos Zod |
+| `server/storage.ts` | Métodos CRUD para social_accounts |
+| `server/services/metricool.ts` | Smart Discovery de providers |
+| `server/services/syncService.ts` | Filtrado por providers activos |
+| `server/routes.ts` | Endpoints para social_accounts |
+| `client/src/lib/api.ts` | Métodos API client |
+| `client/src/components/MetricoolConnection.tsx` | Flujo de importación en 2 pasos |
+| `client/src/components/SocialAccountsManager.tsx` | Nuevo componente de gestión |
+
+### Notas Técnicas
+
+1. **Privacy-First**: Todas las redes empiezan desactivadas - el usuario decide qué activar
+2. **Preservación de Estado**: El refresh de providers NUNCA borra activaciones existentes
+3. **Retrocompatibilidad**: Marcas importadas antes tienen el botón "Detectar Redes"
+4. **Performance**: La sincronización solo procesa providers activos
+
+---
