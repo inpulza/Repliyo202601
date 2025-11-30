@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertBrandSchema, insertUserSchema, insertMessageSchema, updateMessageSchema, updateConversationSchema } from "@shared/schema";
+import { insertBrandSchema, insertUserSchema, insertMessageSchema, updateMessageSchema, updateConversationSchema, insertSocialAccountSchema } from "@shared/schema";
 import { hashPassword, verifyPassword, sanitizeUser, sanitizeBrand, type AuthenticatedUser } from "./auth";
 import { MetricoolService } from "./services/metricool";
 import { syncService } from "./services/syncService";
@@ -181,6 +181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         industry: 'Social Media',
         avatar: brand.avatar || null,
         blogId: brand.blogId,
+        detectedProviders: brand.detectedProviders || [],
       }));
 
       res.json(formattedBrands);
@@ -196,7 +197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Only admins can import brands" });
       }
 
-      const { name, industry, avatar, blogId, agentName, tone, businessContext } = req.body;
+      const { name, industry, avatar, blogId, agentName, tone, businessContext, detectedProviders, selectedProviders } = req.body;
 
       if (!name || !blogId) {
         return res.status(400).json({ error: "name and blogId are required" });
@@ -231,10 +232,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
         businessContext: businessContext || null,
       });
 
-      res.status(201).json(sanitizeBrand(brand));
+      if (detectedProviders && Array.isArray(detectedProviders)) {
+        const selectedSet = new Set(selectedProviders || []);
+        
+        for (const dp of detectedProviders) {
+          await storage.upsertSocialAccount({
+            brandId: brand.id,
+            provider: dp.provider,
+            isActive: selectedSet.has(dp.provider),
+            accountName: dp.accountName || null,
+            accountAvatar: dp.accountAvatar || null,
+          });
+        }
+      }
+
+      const socialAccounts = await storage.getSocialAccountsByBrand(brand.id);
+
+      res.status(201).json({
+        ...sanitizeBrand(brand),
+        socialAccounts,
+      });
     } catch (error: any) {
       console.error('Error importing brand:', error);
       res.status(500).json({ error: `Failed to import brand: ${error.message}` });
+    }
+  });
+
+  // ========== SOCIAL ACCOUNTS ENDPOINTS ==========
+  
+  app.get("/api/brands/:id/social-accounts", requireAuth, async (req, res) => {
+    try {
+      const brandId = req.params.id;
+      
+      if (req.user!.role === 'client' && brandId !== req.user!.brandId) {
+        return res.status(403).json({ error: "Access denied to this brand" });
+      }
+
+      const brand = await storage.getBrand(brandId);
+      if (!brand) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+
+      const socialAccounts = await storage.getSocialAccountsByBrand(brandId);
+      res.json(socialAccounts);
+    } catch (error) {
+      console.error('Error fetching social accounts:', error);
+      res.status(500).json({ error: "Failed to fetch social accounts" });
+    }
+  });
+
+  const updateSocialAccountStatusSchema = z.object({
+    isActive: z.boolean(),
+  });
+
+  app.put("/api/brands/:id/social-accounts/:provider", requireAuth, async (req, res) => {
+    try {
+      const brandId = req.params.id;
+      const provider = req.params.provider;
+      
+      if (req.user!.role === 'client' && brandId !== req.user!.brandId) {
+        return res.status(403).json({ error: "Access denied to this brand" });
+      }
+
+      const brand = await storage.getBrand(brandId);
+      if (!brand) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+
+      const existingAccount = await storage.getSocialAccount(brandId, provider);
+      if (!existingAccount) {
+        return res.status(404).json({ error: "Social account not found for this provider" });
+      }
+
+      const { isActive } = updateSocialAccountStatusSchema.parse(req.body);
+      const updated = await storage.updateSocialAccountStatus(brandId, provider, isActive);
+
+      res.json(updated);
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ error: "Invalid request body" });
+      }
+      console.error('Error updating social account:', error);
+      res.status(500).json({ error: "Failed to update social account" });
     }
   });
   

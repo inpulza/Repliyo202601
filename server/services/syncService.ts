@@ -133,12 +133,21 @@ class SyncService {
   ): Promise<number> {
     log(`[SyncService] Syncing brand: ${brandName}`, "sync");
 
+    const activeProviders = await storage.getActiveProviders(brandId);
+    
+    if (activeProviders.length === 0) {
+      log(`[SyncService] Brand ${brandName} has no active providers, skipping sync`, "sync");
+      return 0;
+    }
+    
+    log(`[SyncService] Brand ${brandName}: active providers - ${activeProviders.join(', ')}`, "sync");
+
     const metricoolService = new MetricoolService({
       userToken: token,
       userId: userId
     });
     
-    const inboxData = await metricoolService.getAllInboxData(blogId);
+    const inboxData = await metricoolService.getAllInboxData(blogId, activeProviders);
 
     let savedCount = 0;
 

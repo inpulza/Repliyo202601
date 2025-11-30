@@ -73,12 +73,23 @@ export class MetricoolService {
     this.config = config;
   }
 
-  async getAllInboxData(blogId: string): Promise<{ conversations: MetricoolConversation[]; comments: MetricoolComment[] }> {
+  async getAllInboxData(blogId: string, activeProviders?: string[]): Promise<{ conversations: MetricoolConversation[]; comments: MetricoolComment[] }> {
     const allConversations: MetricoolConversation[] = [];
     const allComments: MetricoolComment[] = [];
 
-    const conversationProviders: SocialProvider[] = ['instagram', 'FACEBOOK'];
-    const commentProviders: SocialProvider[] = ['instagram', 'FACEBOOK', 'TIKTOKBUSINESS', 'youtube', 'linkedin', 'GMB'];
+    const allConversationProviders: SocialProvider[] = ['instagram', 'FACEBOOK'];
+    const allCommentProviders: SocialProvider[] = ['instagram', 'FACEBOOK', 'TIKTOKBUSINESS', 'youtube', 'linkedin', 'GMB'];
+
+    const isProviderActive = (provider: string) => {
+      if (!activeProviders || activeProviders.length === 0) {
+        return true;
+      }
+      const normalizedProvider = provider.toUpperCase();
+      return activeProviders.some(ap => ap.toUpperCase() === normalizedProvider);
+    };
+
+    const conversationProviders = allConversationProviders.filter(isProviderActive);
+    const commentProviders = allCommentProviders.filter(isProviderActive);
 
     for (const provider of conversationProviders) {
       try {
