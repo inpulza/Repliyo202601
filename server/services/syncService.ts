@@ -1,16 +1,26 @@
 import { storage } from "../storage";
-import { MetricoolService } from "./metricool";
+import { MetricoolService, createMetricoolService } from "./metricool";
 import { log } from "../app";
+
+interface BrandSyncResult {
+  newBrands: string[];
+  disconnectedBrands: string[];
+  totalAvailable: number;
+}
 
 class SyncService {
   private isRunning = false;
   private syncInterval: NodeJS.Timeout | null = null;
+  private brandSyncInterval: NodeJS.Timeout | null = null;
   private readonly SYNC_INTERVAL_MS = 120 * 1000; // 2 minutes
+  private readonly BRAND_SYNC_INTERVAL_MS = 12 * 60 * 60 * 1000; // 12 hours
   private readonly DELAY_BETWEEN_BRANDS_MS = 2000; // 2 seconds jitter
   private readonly COOLDOWN_DURATION_MS = 5 * 60 * 1000; // 5 minutes cooldown for 429
   private brandCooldowns: Map<string, Date> = new Map();
   private lastSyncTime: Date | null = null;
+  private lastBrandSyncTime: Date | null = null;
   private isSyncing = false;
+  private isSyncingBrands = false;
 
   async start(): Promise<void> {
     if (this.isRunning) {
@@ -19,19 +29,28 @@ class SyncService {
     }
 
     this.isRunning = true;
-    log("[SyncService] Starting automatic sync service (interval: 2 minutes)", "sync");
+    log("[SyncService] Starting automatic sync service (messages: 2 min, brands: 12 hours)", "sync");
 
     await this.syncAllBrands();
+    await this.syncAvailableBrands();
 
     this.syncInterval = setInterval(async () => {
       await this.syncAllBrands();
     }, this.SYNC_INTERVAL_MS);
+
+    this.brandSyncInterval = setInterval(async () => {
+      await this.syncAvailableBrands();
+    }, this.BRAND_SYNC_INTERVAL_MS);
   }
 
   stop(): void {
     if (this.syncInterval) {
       clearInterval(this.syncInterval);
       this.syncInterval = null;
+    }
+    if (this.brandSyncInterval) {
+      clearInterval(this.brandSyncInterval);
+      this.brandSyncInterval = null;
     }
     this.isRunning = false;
     log("[SyncService] Stopped", "sync");
@@ -404,7 +423,9 @@ class SyncService {
   getStatus(): {
     isRunning: boolean;
     isSyncing: boolean;
+    isSyncingBrands: boolean;
     lastSyncTime: Date | null;
+    lastBrandSyncTime: Date | null;
     cooldownBrands: { brandId: string; cooldownUntil: Date }[];
   } {
     const cooldownBrands: { brandId: string; cooldownUntil: Date }[] = [];
@@ -417,7 +438,9 @@ class SyncService {
     return {
       isRunning: this.isRunning,
       isSyncing: this.isSyncing,
+      isSyncingBrands: this.isSyncingBrands,
       lastSyncTime: this.lastSyncTime,
+      lastBrandSyncTime: this.lastBrandSyncTime,
       cooldownBrands,
     };
   }
@@ -425,6 +448,68 @@ class SyncService {
   async triggerManualSync(): Promise<{ success: boolean; brandsSynced: number; errors: string[] }> {
     log("[SyncService] Manual sync triggered", "sync");
     return this.syncAllBrands();
+  }
+
+  async syncAvailableBrands(): Promise<BrandSyncResult> {
+    if (this.isSyncingBrands) {
+      log("[SyncService] Brand sync already in progress, skipping", "sync");
+      return { newBrands: [], disconnectedBrands: [], totalAvailable: 0 };
+    }
+
+    this.isSyncingBrands = true;
+    const newBrands: string[] = [];
+    const disconnectedBrands: string[] = [];
+
+    try {
+      log("[SyncService] Starting brand availability check...", "sync");
+
+      const metricoolService = createMetricoolService();
+      const availableBrands = await metricoolService.getBrands();
+      
+      log(`[SyncService] Found ${availableBrands.length} brands available in Metricool`, "sync");
+
+      const connectedBrands = await storage.getBrands();
+      const connectedBlogIds = new Set(connectedBrands.map(b => b.metricoolBlogId));
+      const availableBlogIds = new Set(availableBrands.map(b => b.blogId));
+
+      for (const brand of availableBrands) {
+        if (!connectedBlogIds.has(brand.blogId)) {
+          newBrands.push(brand.name);
+          log(`[SyncService] New brand detected: ${brand.name} (blogId: ${brand.blogId})`, "sync");
+        }
+      }
+
+      for (const brand of connectedBrands) {
+        if (brand.metricoolBlogId && !availableBlogIds.has(brand.metricoolBlogId)) {
+          disconnectedBrands.push(brand.name);
+          log(`[SyncService] Disconnected brand detected: ${brand.name} (blogId: ${brand.metricoolBlogId})`, "sync");
+        }
+      }
+
+      this.lastBrandSyncTime = new Date();
+
+      if (newBrands.length > 0 || disconnectedBrands.length > 0) {
+        log(`[SyncService] Brand sync complete. New: ${newBrands.length}, Disconnected: ${disconnectedBrands.length}`, "sync");
+      } else {
+        log(`[SyncService] Brand sync complete. No changes detected.`, "sync");
+      }
+
+      return {
+        newBrands,
+        disconnectedBrands,
+        totalAvailable: availableBrands.length,
+      };
+    } catch (error: any) {
+      log(`[SyncService] Error during brand sync: ${error.message}`, "sync");
+      return { newBrands: [], disconnectedBrands: [], totalAvailable: 0 };
+    } finally {
+      this.isSyncingBrands = false;
+    }
+  }
+
+  async triggerManualBrandSync(): Promise<BrandSyncResult> {
+    log("[SyncService] Manual brand sync triggered", "sync");
+    return this.syncAvailableBrands();
   }
 }
 

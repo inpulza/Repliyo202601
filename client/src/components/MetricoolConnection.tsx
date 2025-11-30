@@ -1,13 +1,10 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNexus } from '@/context/NexusContext';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { RefreshCw, Check, Loader2, Globe, Building2, Key, ShieldCheck, AlertCircle } from "lucide-react";
+import { RefreshCw, Check, Loader2, Globe, Building2, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface MetricoolConnectionProps {
@@ -22,6 +19,10 @@ export function MetricoolConnection({ onClose }: MetricoolConnectionProps) {
     importMetricoolBrand, 
     clients 
   } = useNexus();
+
+  useEffect(() => {
+    fetchMetricoolBrands();
+  }, []);
 
   return (
     <div className="space-y-6 py-2">
@@ -43,14 +44,14 @@ export function MetricoolConnection({ onClose }: MetricoolConnectionProps) {
           className="w-full bg-indigo-600 hover:bg-indigo-700"
           onClick={fetchMetricoolBrands}
           disabled={isLoadingMetricool}
-          data-testid="button-fetch-metricool-brands"
+          data-testid="button-refresh-metricool-brands"
         >
           {isLoadingMetricool ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
           ) : (
             <RefreshCw className="h-4 w-4 mr-2" />
           )}
-          Cargar Marcas desde Metricool
+          Actualizar Marcas
         </Button>
       </div>
 
@@ -116,7 +117,7 @@ export function MetricoolConnection({ onClose }: MetricoolConnectionProps) {
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
               <p className="text-xs opacity-70 text-center px-4">
-                Ingresa tus credenciales y haz clic en verificar para ver tus marcas.
+                No se encontraron marcas disponibles. Haz clic en "Actualizar Marcas" para reintentar.
               </p>
             </div>
           )}

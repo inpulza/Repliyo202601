@@ -1673,3 +1673,108 @@ WHERE direction = 'outbound' AND metricool_id IS NULL;
 4. **La protección de reconciliación es crítica** - Sin ella, Metricool sobrescribiría el `source` a `'metricool_sync'`
 
 ---
+
+## FASE 6.5: Mejora del Modal de Metricool Import - 30 Noviembre 2025 ✅ COMPLETADA
+
+### Objetivo
+Mejorar la experiencia del usuario en el modal de conexión de Metricool con carga automática de marcas y sincronización periódica en segundo plano.
+
+### Cambios Implementados
+
+#### 1. Carga Automática de Marcas en el Modal
+
+**Antes:**
+- Usuario abría el modal y veía un botón "Cargar Marcas desde Metricool"
+- Debía hacer clic para ver las marcas disponibles
+- La sección "Marcas Disponibles" estaba vacía hasta el clic
+
+**Después:**
+- Las marcas se cargan automáticamente al abrir el modal
+- El botón cambió a "Actualizar Marcas" para refrescar manualmente si es necesario
+- Experiencia más fluida sin pasos manuales innecesarios
+
+**Archivo modificado:** `client/src/components/MetricoolConnection.tsx`
+- Agregado `useEffect` que llama `fetchMetricoolBrands()` al montar el componente
+- Limpiados imports no utilizados
+- Actualizado texto del botón y mensaje vacío
+
+#### 2. Sincronización Automática de Marcas (Cada 12 horas)
+
+**Extensión del SyncService existente:**
+
+El servicio ya sincronizaba mensajes cada 2 minutos. Ahora también sincroniza la disponibilidad de marcas cada 12 horas.
+
+**Nuevas características:**
+- `syncAvailableBrands()` - Método que detecta cambios en marcas disponibles
+- Detección de **marcas nuevas**: Marcas en Metricool que no están conectadas localmente
+- Detección de **marcas desconectadas**: Marcas locales que ya no existen en Metricool
+- Logs informativos en consola del servidor
+- Método `triggerManualBrandSync()` para sincronización manual si es necesario
+
+**Archivo modificado:** `server/services/syncService.ts`
+
+```typescript
+// Nuevas constantes
+private readonly BRAND_SYNC_INTERVAL_MS = 12 * 60 * 60 * 1000; // 12 hours
+private brandSyncInterval: NodeJS.Timeout | null = null;
+private lastBrandSyncTime: Date | null = null;
+private isSyncingBrands = false;
+
+// Nuevo método
+async syncAvailableBrands(): Promise<BrandSyncResult> {
+  // Compara marcas disponibles en Metricool vs conectadas localmente
+  // Detecta nuevas y desconectadas
+  // Log de resultados
+}
+```
+
+### Patrón de Arquitectura
+
+Ambas sincronizaciones usan el mismo patrón `setInterval` ya probado:
+
+| Sincronización | Intervalo | Propósito |
+|---------------|-----------|-----------|
+| Mensajes | 2 minutos | Obtener nuevos DMs y comentarios |
+| Marcas | 12 horas | Detectar cambios en marcas disponibles |
+
+### Logs del Sistema
+
+El SyncService ahora genera logs para ambos procesos:
+
+```
+[SyncService] Starting automatic sync service (messages: 2 min, brands: 12 hours)
+[SyncService] Starting brand availability check...
+[SyncService] Found 15 brands available in Metricool
+[SyncService] New brand detected: NuevaMarca (blogId: 12345)
+[SyncService] Brand sync complete. New: 1, Disconnected: 0
+```
+
+### Estado Actualizado de getStatus()
+
+```typescript
+getStatus(): {
+  isRunning: boolean;
+  isSyncing: boolean;
+  isSyncingBrands: boolean;  // Nuevo
+  lastSyncTime: Date | null;
+  lastBrandSyncTime: Date | null;  // Nuevo
+  cooldownBrands: { brandId: string; cooldownUntil: Date }[];
+}
+```
+
+### Archivos Modificados
+
+| Archivo | Cambio |
+|---------|--------|
+| `client/src/components/MetricoolConnection.tsx` | Carga automática de marcas con useEffect, botón "Actualizar" |
+| `server/services/syncService.ts` | Nuevo intervalo de 12h para sincronizar disponibilidad de marcas |
+| `DOCUMENTACION_COMPLETA.md` | Esta documentación |
+
+### Notas Técnicas
+
+1. **Consistencia arquitectónica**: Ambos intervalos usan el mismo patrón setInterval
+2. **Sin dependencias nuevas**: Usa el MetricoolService existente
+3. **Tolerante a fallos**: Los errores en brand sync no afectan la sincronización de mensajes
+4. **Logs detallados**: Para debugging y monitoreo del sistema
+
+---
