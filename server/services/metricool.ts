@@ -8,6 +8,13 @@ interface MetricoolBrand {
   name: string;
   avatar?: string;
   url?: string;
+  detectedProviders: DetectedProvider[];
+}
+
+export interface DetectedProvider {
+  provider: string;
+  accountName: string | null;
+  accountAvatar?: string | null;
 }
 
 interface MetricoolConversation {
@@ -138,11 +145,39 @@ export class MetricoolService {
         name: brand.label || brand.name || brand.title || 'Unknown Brand',
         avatar: brand.picture || brand.avatar || brand.image || brand.logo,
         url: brand.url || brand.website,
+        detectedProviders: this.extractProviders(brand),
       }));
     } catch (error) {
       console.error('Error fetching Metricool brands:', error);
       throw error;
     }
+  }
+
+  private extractProviders(brand: any): DetectedProvider[] {
+    const providers: DetectedProvider[] = [];
+    
+    const providerMapping: Record<string, string> = {
+      'facebook': 'FACEBOOK',
+      'instagram': 'INSTAGRAM',
+      'tiktok': 'TIKTOKBUSINESS',
+      'twitter': 'twitter',
+      'youtube': 'YOUTUBE',
+      'linkedinCompany': 'LINKEDIN',
+      'gmb': 'GMB',
+    };
+
+    for (const [field, providerName] of Object.entries(providerMapping)) {
+      const value = brand[field];
+      if (value !== null && value !== undefined) {
+        providers.push({
+          provider: providerName,
+          accountName: typeof value === 'string' ? value : (value?.username || value?.name || null),
+          accountAvatar: typeof value === 'object' ? (value?.picture || value?.avatar) : null,
+        });
+      }
+    }
+
+    return providers;
   }
 
   async getConversations(blogId: string, provider: string = 'instagram'): Promise<MetricoolConversation[]> {

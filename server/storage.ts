@@ -1,10 +1,11 @@
 import { 
-  brands, users, messages, socialPosts, conversations,
+  brands, users, messages, socialPosts, conversations, socialAccounts,
   type Brand, type InsertBrand, 
   type User, type InsertUser, 
   type Message, type InsertMessage, type UpdateMessage,
   type SocialPost, type InsertSocialPost,
-  type Conversation, type InsertConversation, type UpdateConversation
+  type Conversation, type InsertConversation, type UpdateConversation,
+  type SocialAccount, type InsertSocialAccount, type UpdateSocialAccount
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, isNull } from "drizzle-orm";
@@ -43,6 +44,14 @@ export interface IStorage {
   upsertMessage(message: InsertMessage): Promise<Message>;
   updateMessage(id: string, updates: UpdateMessage): Promise<Message | undefined>;
   deleteMessage(id: string): Promise<void>;
+  
+  getSocialAccountsByBrand(brandId: string): Promise<SocialAccount[]>;
+  getSocialAccount(brandId: string, provider: string): Promise<SocialAccount | undefined>;
+  getActiveProviders(brandId: string): Promise<string[]>;
+  upsertSocialAccount(account: InsertSocialAccount): Promise<SocialAccount>;
+  updateSocialAccountStatus(brandId: string, provider: string, isActive: boolean): Promise<SocialAccount | undefined>;
+  updateSocialAccountSyncStatus(brandId: string, provider: string, status: string): Promise<SocialAccount | undefined>;
+  deleteSocialAccountsByBrand(brandId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -441,6 +450,97 @@ export class DatabaseStorage implements IStorage {
 
   async deleteMessage(id: string): Promise<void> {
     await db.delete(messages).where(eq(messages.id, id));
+  }
+
+  async getSocialAccountsByBrand(brandId: string): Promise<SocialAccount[]> {
+    return await db
+      .select()
+      .from(socialAccounts)
+      .where(eq(socialAccounts.brandId, brandId))
+      .orderBy(socialAccounts.provider);
+  }
+
+  async getSocialAccount(brandId: string, provider: string): Promise<SocialAccount | undefined> {
+    const [account] = await db
+      .select()
+      .from(socialAccounts)
+      .where(
+        and(
+          eq(socialAccounts.brandId, brandId),
+          eq(socialAccounts.provider, provider)
+        )
+      );
+    return account || undefined;
+  }
+
+  async getActiveProviders(brandId: string): Promise<string[]> {
+    const accounts = await db
+      .select({ provider: socialAccounts.provider })
+      .from(socialAccounts)
+      .where(
+        and(
+          eq(socialAccounts.brandId, brandId),
+          eq(socialAccounts.isActive, true)
+        )
+      );
+    return accounts.map(a => a.provider);
+  }
+
+  async upsertSocialAccount(account: InsertSocialAccount): Promise<SocialAccount> {
+    const existing = await this.getSocialAccount(account.brandId, account.provider);
+    
+    if (existing) {
+      const [updated] = await db
+        .update(socialAccounts)
+        .set({
+          accountName: account.accountName ?? existing.accountName,
+          accountAvatar: account.accountAvatar ?? existing.accountAvatar,
+        })
+        .where(eq(socialAccounts.id, existing.id))
+        .returning();
+      return updated;
+    }
+
+    const [created] = await db
+      .insert(socialAccounts)
+      .values(account)
+      .returning();
+    return created;
+  }
+
+  async updateSocialAccountStatus(brandId: string, provider: string, isActive: boolean): Promise<SocialAccount | undefined> {
+    const [updated] = await db
+      .update(socialAccounts)
+      .set({ isActive })
+      .where(
+        and(
+          eq(socialAccounts.brandId, brandId),
+          eq(socialAccounts.provider, provider)
+        )
+      )
+      .returning();
+    return updated || undefined;
+  }
+
+  async updateSocialAccountSyncStatus(brandId: string, provider: string, status: string): Promise<SocialAccount | undefined> {
+    const [updated] = await db
+      .update(socialAccounts)
+      .set({ 
+        lastSyncAt: new Date(),
+        lastSyncStatus: status 
+      })
+      .where(
+        and(
+          eq(socialAccounts.brandId, brandId),
+          eq(socialAccounts.provider, provider)
+        )
+      )
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteSocialAccountsByBrand(brandId: string): Promise<void> {
+    await db.delete(socialAccounts).where(eq(socialAccounts.brandId, brandId));
   }
 }
 
