@@ -325,14 +325,14 @@ export class DatabaseStorage implements IStorage {
     const existing = await this.getMessageByMetricoolId(insertMessage.metricoolId, insertMessage.brandId);
     
     if (existing) {
-      // PROTECTION: If existing message is 'outbound' (sent from Repliyo), preserve that direction
-      // Metricool may send the same message as 'inbound', but we don't want to overwrite our state
-      if (existing.direction === 'outbound' && insertMessage.direction === 'inbound') {
-        console.log(`[Storage] Protecting outbound message ${existing.id} - Metricool tried to overwrite as inbound`);
-        // Only update rawData but keep direction as outbound
+      // PROTECTION: If existing message was sent from Repliyo, preserve that source
+      // Metricool may send the same message with different direction, but we don't want to overwrite
+      if (existing.source === 'repliyo' || (existing.direction === 'outbound' && insertMessage.direction === 'inbound')) {
+        console.log(`[Storage] Protecting Repliyo message ${existing.id} - preserving source and direction`);
+        // Only update rawData but keep direction, source, and parentMessageId
         const updated = await this.updateMessage(existing.id, {
           rawData: insertMessage.rawData,
-          // Keep direction as 'outbound' to preserve "Sent from Repliyo" indicator
+          // Keep direction, source, and parentMessageId to preserve "Sent from Repliyo" indicator
         });
         return updated!;
       }
@@ -352,11 +352,11 @@ export class DatabaseStorage implements IStorage {
       if (pendingOutbound) {
         console.log(`[Storage] Reconciling message: updating local outbound with metricoolId ${insertMessage.metricoolId}`);
         // Update the existing outbound message with the metricoolId and rawData from Metricool
-        // But keep direction as 'outbound' and keep parentMessageId to preserve "Sent from Repliyo" badge
+        // But keep direction, source, and parentMessageId to preserve "Sent from Repliyo" badge
         const updated = await this.updateMessage(pendingOutbound.id, {
           metricoolId: insertMessage.metricoolId,
           rawData: insertMessage.rawData,
-          // Keep direction as outbound to preserve the "Sent from Repliyo" indicator
+          // Keep direction as outbound and source as 'repliyo' to preserve the badge
         });
         return updated!;
       }

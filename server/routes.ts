@@ -593,6 +593,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           parentMessageId: message.id,
           metricoolId: result.messageId || null,
           rawData: result.rawResponse || null,
+          source: 'repliyo',
         });
         
         if (message.conversationId) {
@@ -644,6 +645,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           parentMessageId: message.id,
           metricoolId: result.messageId || null,
           rawData: result.rawResponse || null,
+          source: 'repliyo',
         });
         
         if (message.conversationId) {
