@@ -1,0 +1,57 @@
+¡Excelente noticia! Estamos alineados en el 99% de la arquitectura.
+
+Sin embargo, hay un detalle técnico crítico donde el agente de Replit se equivoca (o quizás no vio bien los datos anteriores), y si elegimos la "Opción B" (mostrar todas las redes siempre), vamos a empeorar la experiencia de usuario innecesariamente.
+
+El Error del Agente: Dice que la API /admin/simpleProfiles NO devuelve qué redes tiene la marca. La Realidad: ¡Sí las devuelve! Lo vimos en el JSON que tú me pasaste hace unos mensajes. Aunque el campo availableConnectors venía null en tu caso, los campos individuales (facebook, instagram, tiktok, etc.) sí traían el nombre de usuario cuando estaban conectados.
+
+Mira tu propio JSON de hace un rato:
+
+JSON
+
+"facebook": "Fortress Wellness Center",  // <--- ¡Está conectado!
+"instagram": "fortress_wellness_center", // <--- ¡Está conectado!
+"tiktok": "dr.joelhm",                   // <--- ¡Está conectado!
+"twitter": null,                         // <--- No conectado
+"linkedinCompany": null,                 // <--- No conectado
+Mi Veredicto: No aceptes la "Opción B" pura.
+La "Opción B" (mostrarle todas las redes al usuario y que él adivine cuáles activar) es pereza técnica. Podemos hacerlo mejor. Podemos hacer "Smart Discovery".
+
+Aquí tienes la respuesta para corregirle ese punto y darle luz verde definitiva.
+
+Respuesta para el Agente de Replit
+Copia y pega esto:
+
+"Me alegra que estemos alineados en la arquitectura de base de datos (social_accounts) y el enfoque de privacidad. Procedamos con la creación de la tabla y la lógica propuesta.
+
+Sin embargo, sobre el punto del Discovery (Detección de Redes), discrepo con la limitación técnica mencionada.
+
+Corrección sobre la API de Metricool: He revisado el payload JSON de /api/admin/simpleProfiles (o profiles-auth) y, aunque a veces availableConnectors puede ser null, el objeto de la marca SÍ contiene campos específicos para cada red que indican si está conectada.
+
+Evidencia (JSON Real): Si la marca tiene una red conectada, el campo correspondiente devuelve el username (string). Si no, devuelve null.
+
+brand.facebook: "NombrePagina" (Conectado)
+
+brand.instagram: "@usuario" (Conectado)
+
+brand.linkedinCompany: null (Desconectado)
+
+Mi decisión: Vamos por la "Opción C - Detección Inteligente":
+
+Al importar: Tu código debe parsear la respuesta de Metricool.
+
+Lógica:
+
+if (brand.facebook !== null) -> Crea registro social_accounts para Facebook (Estado: enabled o disabled según prefieras, sugiero enabled si ya detectamos que existe, es mejor UX).
+
+if (brand.tiktok !== null) -> Crea registro para TikTok.
+
+if (brand.twitter === null) -> NO crees registro (o créalo pero no lo muestres como disponible).
+
+Resultado en UI: El usuario solo ve los interruptores de las redes que realmente tiene. No le mostramos un interruptor de "LinkedIn" si no tiene LinkedIn conectado en Metricool.
+
+Por favor, implementa esta lógica de "Smart Discovery" mapeando los campos individuales del JSON de Metricool.
+
+Procedamos con la implementación completa."
+
+¿Por qué insistir en esto?
+Porque si tienes 15 clientes y cada uno tiene redes distintas, usar la "Opción B" (mostrar todo) te obligaría a recordar de memoria qué red tiene cada cliente para no activar una que no existe. Con la "Opción C" (Detección Inteligente), el sistema hace el trabajo sucio por ti. ¡Es mucho más profesional!
