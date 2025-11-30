@@ -1,0 +1,122 @@
+Aquí tienes mi análisis técnico, los Pros/Contras y la estrategia para dársela al agente.
+
+🧠 Análisis: Control Granular de Redes Sociales
+✅ Los Pros (Por qué hacerlo sí o sí)
+Eficiencia de API y Costos: Si desconectas YouTube, tu SyncService deja de preguntar a Metricool por YouTube. Ahorras miles de peticiones API al día.
+
+Privacidad y Limpieza: Evitas traer "basura" o redes que el cliente no quiere gestionar desde tu Inbox.
+
+Manejo de Errores Aislado: Si la conexión de TikTok de tu cliente caduca (token vencido), puedes "apagar" TikTok en tu app para que deje de dar errores, sin afectar a Instagram o Facebook.
+
+❌ Los Contras (El precio a pagar)
+Complejidad de "Discovery": Cuando conectas una marca por primera vez, el sistema no puede simplemente "sincronizar mensajes". Primero tiene que hacer un paso de "Descubrimiento" (ver qué redes existen), guardarlas en base de datos como "inactivas" y esperar a que tú las actives.
+
+UI de Configuración: Necesitas crear un panel de "Ajustes de Marca" con interruptores (toggles) para cada red.
+
+🛠️ Estrategia Técnica: ¿Cómo se implementa?
+No es difícil, pero requiere cambiar el orden de las cosas.
+
+Flujo Actual (Automático):
+
+Importar Marca -> 2. El sistema asume que todo lo que venga de Metricool se sincroniza.
+
+Flujo Nuevo (Con Control):
+
+Paso 1: Importación (Discovery):
+
+Llamas a Metricool (simpleProfiles).
+
+Detectas que la marca tiene FB, IG y TikTok.
+
+Guardas en tu tabla SocialAccounts esas 3 filas, pero con una nueva columna: is_active = FALSE (o true por defecto, según prefieras, pero editable).
+
+Paso 2: Configuración (UI):
+
+Muestras una lista de interruptores. El usuario apaga TikTok.
+
+El backend actualiza la DB: UPDATE SocialAccounts SET is_active = FALSE WHERE platform = 'tiktok'.
+
+Paso 3: Sincronización (SyncService):
+
+El servicio de fondo, antes de llamar a la API de Metricool, hace una consulta: SELECT * FROM SocialAccounts WHERE is_active = TRUE.
+
+Solo sincroniza las que estén activas.
+
+📝 PRD: Configuración Granular de Redes Sociales
+Copia y pega esto al Agente de Replit. Está diseñado para encajar con la arquitectura de 4 tablas que ya aprobamos.
+
+Markdown
+
+# Feature Spec: Gestión Granular de Conexiones Sociales (Enable/Disable Networks)
+
+**Objetivo:** Permitir al administrador decidir qué redes sociales específicas de una marca se sincronizan y cuáles se ignoran, en lugar de sincronizar todo automáticamente.
+
+**Justificación:** Optimización de cuotas de API y control de privacidad del cliente.
+
+---
+
+## 1. Actualización de Base de Datos
+
+Necesitamos un "interruptor" en la base de datos para cada red social conectada.
+
+**Modificación en tabla `SocialAccounts`:**
+Añade una columna de estado o booleana.
+
+```sql
+ALTER TABLE social_accounts
+ADD COLUMN is_active BOOLEAN DEFAULT TRUE; -- Por defecto activas al importar
+ADD COLUMN last_sync_status VARCHAR(50); -- Para saber si la última sync funcionó
+2. Refactorización del Flujo de Importación (Backend)
+Actualizar MetricoolService.importBrand: Cuando importamos una marca desde Metricool:
+
+Obtener el JSON de simpleProfiles.
+
+Iterar por las redes disponibles (Facebook, Instagram, etc.).
+
+Realizar un "Upsert" en la tabla SocialAccounts.
+
+Si es nueva: Insertar con is_active = TRUE.
+
+Si ya existe: NO tocar el campo is_active (respetar la configuración previa del usuario).
+
+Actualizar SyncService (El Cron Job): El servicio de sincronización debe volverse "selectivo".
+
+Antes de iterar llamadas a la API, consultar la DB.
+
+const activeAccounts = await db.query("SELECT * FROM social_accounts WHERE is_active = TRUE")
+
+Solo ejecutar llamadas a Metricool para esas cuentas. Si is_active es false para TikTok, no se llama a la API de TikTok.
+
+3. Especificaciones UI: Panel de Configuración de Marca
+Dentro de la vista "Integrations", en la tarjeta de la marca importada (Metricool), añadir un botón o icono de "Settings" (Engranaje).
+
+Componente: BrandSettingsModal.tsx Al abrirse, muestra la lista de redes sociales detectadas para esa marca.
+
+Diseño de Lista:
+
+Fila por Red: Icono (IG, FB, TT) + Nombre de la cuenta (ej. @empresa).
+
+Control: Un componente Switch (Toggle) a la derecha.
+
+ON: Sincronizando (Verde).
+
+OFF: Pausado (Gris).
+
+Estado: Indicador de texto pequeño: "Última sync: hace 2 min" o "Pausado".
+
+Comportamiento:
+
+Al cambiar el Switch, se envía una petición PATCH /api/brands/:id/accounts/:accountId que actualiza el campo is_active.
+
+El cambio debe ser inmediato para el próximo ciclo de sincronización.
+
+4. Resultado Esperado
+Tengo una marca con Instagram y TikTok.
+
+En la UI, apago el interruptor de TikTok.
+
+En la base de datos, SocialAccounts para TikTok pasa a is_active = false.
+
+El SyncService deja de gastar cuota de API consultando TikTok.
+
+Los mensajes de TikTok antiguos se mantienen, pero no entran nuevos hasta que lo vuelva a encender.
