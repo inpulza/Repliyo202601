@@ -50,11 +50,21 @@ const filterByBrand = (brandIdParam?: string) => {
       return res.status(401).json({ error: "Not authenticated" });
     }
 
+    const brandId = brandIdParam || req.query.brandId as string || req.body.brandId;
+    
+    if (brandId) {
+      const brand = await storage.getBrand(brandId);
+      if (brand && brand.status === 'archived') {
+        return res.status(403).json({ 
+          error: "Brand archived",
+          message: "Esta marca ha sido archivada y no está disponible."
+        });
+      }
+    }
+
     if (req.user.role === 'admin') {
       return next();
     }
-
-    const brandId = brandIdParam || req.query.brandId as string || req.body.brandId;
     
     if (!req.user.brandId) {
       return res.status(403).json({ error: "User not associated with any brand" });

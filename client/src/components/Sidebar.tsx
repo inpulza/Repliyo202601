@@ -36,6 +36,10 @@ export function Sidebar() {
   const [isClientManagerOpen, setIsClientManagerOpen] = useState(false);
   const { toast } = useToast();
 
+  const activeClients = React.useMemo(() => {
+    return clients.filter(client => client.status !== 'archived');
+  }, [clients]);
+
   const handleLogout = async () => {
     toast({
       title: "Sesión Cerrada",
@@ -80,7 +84,7 @@ export function Sidebar() {
             <DropdownMenuLabel className="text-xs text-gray-500 uppercase tracking-wider">Cambiar Marca</DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-gray-100" />
             <ScrollArea className="max-h-[200px]">
-            {clients.map((client) => (
+            {activeClients.map((client) => (
               <DropdownMenuItem 
                 key={client.id}
                 onClick={() => setActiveClientId(client.id)}

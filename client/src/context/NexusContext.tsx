@@ -55,6 +55,10 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
     enabled: isAuthenticated && !isAuthLoading,
   });
 
+  const activeClients = React.useMemo(() => {
+    return clients.filter(client => client.status !== 'archived');
+  }, [clients]);
+
   const { data: conversations = [], isLoading: isLoadingConversations } = useQuery({
     queryKey: ['conversations', activeClientId],
     queryFn: () => api.conversations.getAll(activeClientId || undefined),
@@ -74,15 +78,28 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
   });
 
   React.useEffect(() => {
-    if (isAuthenticated && !isAuthLoading && !activeClientId && clients.length > 0 && !isLoadingClients) {
-      setActiveClientId(clients[0].id);
+    if (isAuthenticated && !isAuthLoading && !activeClientId && activeClients.length > 0 && !isLoadingClients) {
+      setActiveClientId(activeClients[0].id);
     }
-  }, [isAuthenticated, isAuthLoading, clients.length, activeClientId, isLoadingClients]);
+  }, [isAuthenticated, isAuthLoading, activeClients.length, activeClientId, isLoadingClients]);
 
   const activeClient = React.useMemo(
     () => clients.find(c => c.id === activeClientId),
     [clients, activeClientId]
   );
+
+  const handleSetActiveClientId = (id: string) => {
+    const client = clients.find(c => c.id === id);
+    if (client && client.status === 'archived') {
+      toast({
+        title: "Marca Archivada",
+        description: "Esta marca ha sido archivada y no está disponible.",
+        variant: "destructive"
+      });
+      return;
+    }
+    setActiveClientId(id);
+  };
 
   const setActiveConversation = (conversation: ConversationWithPost | null) => {
     setActiveConversationState(conversation);
@@ -275,7 +292,7 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
       isLoadingConversations,
       isLoadingMessages,
       isLoadingConversationMessages,
-      setActiveClientId,
+      setActiveClientId: handleSetActiveClientId,
       setActiveConversation,
       markConversationAsRead,
       updateClientSettings,
