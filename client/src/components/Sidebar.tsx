@@ -22,11 +22,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Link, useLocation } from 'wouter';
-import { ClientManager } from './ClientManager';
+import { BrandImportWizard } from './BrandImportWizard';
 import { useToast } from '@/hooks/use-toast';
 
 export function Sidebar() {
@@ -50,7 +57,20 @@ export function Sidebar() {
 
   return (
     <div className="h-screen w-[260px] bg-[#EEF2F6] text-gray-600 flex flex-col border-r border-gray-200 shrink-0 transition-all duration-300">
-      <ClientManager open={isClientManagerOpen} onOpenChange={setIsClientManagerOpen} />
+      <Dialog open={isClientManagerOpen} onOpenChange={setIsClientManagerOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Agregar Marca</DialogTitle>
+            <DialogDescription>
+              Conecta una nueva marca desde Metricool.
+            </DialogDescription>
+          </DialogHeader>
+          <BrandImportWizard 
+            onComplete={() => setIsClientManagerOpen(false)}
+            onCancel={() => setIsClientManagerOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
       
       {/* Header / Branding */}
       <div className="p-5 flex items-center gap-3">
