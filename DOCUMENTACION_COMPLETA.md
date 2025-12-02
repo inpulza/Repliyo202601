@@ -4,8 +4,8 @@
 Sistema de gestión de mensajes de redes sociales que se integra con Metricool para centralizar y gestionar DMs y comentarios de múltiples marcas/empresas. El sistema permite a usuarios admin y clientes gestionar sus interacciones sociales de forma organizada.
 
 ## Estado Actual
-- **Fase Actual**: ✅ FASE 6.4 COMPLETADA - Campo Source para Diferenciación de Origen
-- **Última Actualización**: 30 de Noviembre 2025
+- **Fase Actual**: ✅ FASE 6.5 COMPLETADA - Unificación BrandImportWizard
+- **Última Actualización**: 2 de Diciembre 2025
 - **Login/Logout**: ✅ Completamente funcional (página de login creada, logout en sidebar)
 - **Sistema de Roles**: ✅ Admin vs Client funcionando correctamente
 - **Marca de Prueba**: ✅ Inpulza conectada (blogId: 4074962)
@@ -14,6 +14,7 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 - **Reply YouTube**: ✅ Funcional - Probado exitosamente
 - **UI Reply**: ✅ Botón reply en mensajes, caja de texto flotante, badge "Enviado desde Repliyo"
 - **Campo Source**: ✅ Diferencia mensajes de Repliyo vs sincronizados de redes sociales
+- **BrandImportWizard**: ✅ Flujo unificado de importación con selección de redes (Sidebar + Integrations)
 - **Próximo Paso**: Probar Reply para Instagram, Facebook y LinkedIn
 
 ---
@@ -1961,6 +1962,92 @@ if (existing) {
 2. **Preservación de Estado**: El refresh de providers NUNCA borra activaciones existentes
 3. **Retrocompatibilidad**: Marcas importadas antes tienen el botón "Detectar Redes"
 4. **Performance**: La sincronización solo procesa providers activos
+
+---
+
+## 2 de Diciembre 2025 - Unificación de BrandImportWizard ✅ COMPLETADA
+
+### Problema Detectado
+
+Se identificó una **inconsistencia crítica** en la experiencia de usuario al agregar nuevas marcas desde Metricool:
+
+| Punto de Entrada | Componente | Comportamiento |
+|------------------|------------|----------------|
+| `/Integrations` → Metricool → "Connect" | `MetricoolConnection` | ✅ Lista marcas → Selecciona redes → Importa |
+| Sidebar → "Agregar Marca" | `ClientManager` | ❌ Lista marcas → Importa **SIN selección de redes** |
+
+El flujo del Sidebar omitía el paso de selección de redes, rompiendo el modelo de privacidad "opt-in" donde el usuario decide qué redes sincronizar.
+
+### Solución Implementada: BrandImportWizard
+
+Se creó un **componente autónomo** que encapsula todo el flujo de importación, siguiendo el principio DRY (Don't Repeat Yourself).
+
+#### Arquitectura Antes vs Después
+
+**ANTES:**
+```
+Sidebar "Agregar Marca" ──► ClientManager ──► Importa SIN selección de redes
+Integrations "Connect"  ──► MetricoolConnection ──► Importa CON selección de redes
+```
+
+**DESPUÉS:**
+```
+Sidebar "Agregar Marca" ──┐
+                          ├──► BrandImportWizard ──► Importa CON selección de redes
+Integrations "Connect"  ──┘
+```
+
+### Archivos Modificados/Creados
+
+| Archivo | Cambio |
+|---------|--------|
+| `client/src/components/BrandImportWizard.tsx` | **NUEVO** - Componente autónomo con flujo completo (2 pasos) |
+| `client/src/components/MetricoolConnection.tsx` | Refactorizado a wrapper delgado que usa BrandImportWizard |
+| `client/src/components/Sidebar.tsx` | Actualizado para usar BrandImportWizard en Dialog |
+| `client/src/components/ClientManager.tsx` | **ELIMINADO** - Código muerto removido |
+
+### API del BrandImportWizard
+
+```typescript
+interface BrandImportWizardProps {
+  onComplete?: () => void;  // Callback cuando se completa importación
+  onCancel?: () => void;    // Callback cuando se cancela
+  autoFetch?: boolean;      // Auto-cargar marcas al montar (default: true)
+}
+```
+
+### Flujo del Wizard
+
+```
+Paso 1: Listar Marcas
+├── Auto-fetch de marcas de Metricool al abrir
+├── Muestra marcas disponibles con badge de redes detectadas
+├── Marcas ya importadas muestran "Conectado" + botón configurar
+└── Click en "Importar" → Paso 2
+
+Paso 2: Seleccionar Redes
+├── Muestra redes detectadas con checkboxes
+├── Mensaje de privacidad visible
+├── Botón "Volver a marcas" para regresar
+└── Botón "Importar (X redes)" para confirmar
+```
+
+### Beneficios
+
+1. **Single Source of Truth**: Un solo componente maneja la importación
+2. **Consistencia UX**: Misma experiencia desde cualquier punto de entrada
+3. **Privacidad Garantizada**: Siempre se muestra el paso de selección de redes
+4. **Mantenibilidad**: Mejoras futuras se aplican automáticamente a ambos lugares
+5. **Menos código**: Eliminado `ClientManager.tsx` (130 líneas de código duplicado)
+
+### Integración con Arquitectura Existente
+
+- El wizard reutiliza el contexto `useNexus()` para acceder a:
+  - `fetchMetricoolBrands()` - Cargar marcas
+  - `importMetricoolBrand()` - Importar con providers seleccionados
+  - `clients` - Verificar marcas ya importadas
+- Incluye `SocialAccountsManager` para configurar marcas existentes
+- Usa tema claro unificado para modales
 
 ---
 
