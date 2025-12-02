@@ -5,6 +5,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { CRMContextPanel } from './CRMContextPanel';
 import { ConversationCard } from './ConversationCard';
+import { api } from '@/lib/api';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +38,7 @@ import {
   ArrowLeft,
   Info,
   ChevronDown,
+  Archive,
 } from 'lucide-react';
 import { FaInstagram, FaFacebook, FaLinkedin, FaTiktok, FaYoutube, FaWhatsapp } from 'react-icons/fa';
 import { GoogleBusinessIcon } from './GoogleBusinessIcon';
@@ -187,6 +189,21 @@ export function Inbox() {
   const [typeFilter, setTypeFilter] = useState<MessageType | 'all'>('all');
   const [fireMode, setFireMode] = useState(false);
   const [isCRMOpen, setIsCRMOpen] = useState(!isMobile);
+  const [showInactiveNetworks, setShowInactiveNetworks] = useState(false);
+
+  const { data: socialAccounts = [] } = useQuery({
+    queryKey: ['socialAccounts', activeClientId],
+    queryFn: () => activeClientId ? api.socialAccounts.getByBrand(activeClientId) : Promise.resolve([]),
+    enabled: !!activeClientId,
+  });
+
+  const activeProviders = React.useMemo(() => {
+    return socialAccounts.filter(acc => acc.isActive).map(acc => acc.provider.toLowerCase());
+  }, [socialAccounts]);
+
+  const inactiveProviders = React.useMemo(() => {
+    return socialAccounts.filter(acc => !acc.isActive).map(acc => acc.provider.toLowerCase());
+  }, [socialAccounts]);
 
   // Filter Conversations
   const filteredConversations = conversations
@@ -201,6 +218,9 @@ export function Inbox() {
         const matchesName = c.customerName?.toLowerCase().includes(searchLower);
         const matchesPreview = c.lastMessagePreview?.toLowerCase().includes(searchLower);
         if (!matchesName && !matchesPreview) return false;
+      }
+      if (!showInactiveNetworks && inactiveProviders.length > 0) {
+        if (inactiveProviders.includes(c.platform.toLowerCase())) return false;
       }
       return true;
     })
@@ -599,6 +619,28 @@ export function Inbox() {
                   </SelectContent>
               </Select>
            </div>
+
+           {inactiveProviders.length > 0 && (
+             <div className="flex items-center justify-between px-1 py-1.5 bg-amber-50 rounded-md border border-amber-100">
+               <div className="flex items-center gap-2">
+                 <Archive className="h-3.5 w-3.5 text-amber-600" />
+                 <span className="text-xs text-amber-700">
+                   {inactiveProviders.length} redes desactivadas
+                 </span>
+               </div>
+               <div className="flex items-center gap-2">
+                 <Switch
+                   id="show-inactive"
+                   checked={showInactiveNetworks}
+                   onCheckedChange={setShowInactiveNetworks}
+                   className="h-4 w-7 data-[state=checked]:bg-amber-500"
+                 />
+                 <Label htmlFor="show-inactive" className="text-xs text-amber-600 cursor-pointer">
+                   Mostrar
+                 </Label>
+               </div>
+             </div>
+           )}
         </div>
 
         {/* Conversations List */}
