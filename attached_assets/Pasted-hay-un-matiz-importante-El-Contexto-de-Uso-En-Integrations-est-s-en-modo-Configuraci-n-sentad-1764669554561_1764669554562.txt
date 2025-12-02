@@ -1,0 +1,47 @@
+hay un matiz importante: El Contexto de Uso.
+
+En Integrations, estás en modo "Configuración" (sentado, tranquilo).
+
+En Sidebar, estás en modo "Acción Rápida" (atajo).
+
+A pesar de la diferencia de contexto, el resultado (Importar Marca + Configurar Redes) DEBE ser idéntico por seguridad y consistencia.
+
+Aquí está mi análisis crítico y mi recomendación refinada para que se la pases al agente.
+
+🔍 Mi Veredicto: Opción A Refinada (Componente Híbrido)
+Estoy 100% de acuerdo con la Opción A, pero con una condición técnica para que no se sienta "pegado con cinta adhesiva".
+
+El Riesgo de la Opción A pura: Si simplemente "inyectas" el componente de Integrations en el Sidebar, podrías traer dependencias innecesarias o estilos visuales que rompen la armonía del sidebar (que suele ser oscuro o más denso).
+
+La Solución Correcta: Crear un "Wizard de Importación" (Componente Autónomo).
+
+No elimines ClientManager para reemplazarlo por MetricoolConnection tal cual. Más bien, extrae la lógica del Wizard (Selección de Marca -> Selección de Redes) a un componente independiente que ambos llamen.
+
+📝 Respuesta y Plan de Acción para el Agente
+Copia y pega esto. Es la instrucción técnica precisa para ejecutar la Opción A de forma profesional:
+
+"Tu análisis sobre el principio Single Source of Truth (DRY) es impecable. No podemos permitirnos tener dos flujos de importación divergentes, especialmente cuando la privacidad (selección de redes) está en juego.
+
+APROBADO: Vamos con la Opción A (Reutilización y Unificación), pero con la siguiente estrategia de implementación:
+
+Extracción del Wizard:
+
+Refactoriza el flujo de importación (Paso 1: Listar Marcas -> Paso 2: Seleccionar Redes) en un componente autónomo, por ejemplo: <BrandImportWizard />.
+
+Este componente debe manejar toda la lógica de estado y llamadas a la API.
+
+Adaptabilidad Visual (Props):
+
+El componente <BrandImportWizard /> debe aceptar una prop theme o variant (ej. 'card' para Integrations vs 'modal' para Sidebar) o simplemente usar estilos neutros que funcionen en ambos contextos.
+
+Decisión de Diseño: Unifiquemos hacia el Tema Claro para los modales/diálogos en toda la aplicación. Es más limpio y estándar.
+
+Eliminación de Código Muerto:
+
+Una vez que el Sidebar use el nuevo <BrandImportWizard /> dentro de un Dialog estándar, elimina el componente ClientManager antiguo para evitar deuda técnica.
+
+Flujo Resultante:
+
+Usuario: Click en Sidebar "Agregar Marca" -> Se abre Modal <BrandImportWizard /> -> Selecciona Marca -> Selecciona Redes -> Confirma.
+
+Usuario: Click en Integrations "Connect" -> Se abre el mismo Modal -> Mismo flujo.
