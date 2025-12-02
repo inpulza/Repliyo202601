@@ -1,0 +1,63 @@
+Aquí tienes mi análisis de sus puntos y la Decisión Técnica para cada uno, redactada para que se la pases directamente.
+
+🧠 Mi Análisis de las Decisiones Críticas
+Usuarios de Marcas Archivadas:
+
+Si archivas una marca (ej. cliente deja de pagar), sus usuarios NO deben poder acceder al dashboard operativo. Deben ser bloqueados en el Login o ver una pantalla de "Cuenta Suspendida".
+
+Conversaciones Mixtas:
+
+Si desactivas Instagram, la conversación entera debe ocultarse por defecto. No tiene sentido ver tus respuestas flotando sin el contexto del cliente. Todo el hilo pertenece a esa "Red Social".
+
+Consistencia de Estados (El punto 5 es clave):
+
+Replit sugiere "Desactivar redes al archivar marca". Yo disiento.
+
+Por qué: Si archivas una marca por error y la reactivas a los 5 minutos, no querrás tener que ir una por una reactivando sus redes sociales.
+
+Mejor solución: El SyncService debe hacer una consulta inteligente: Sincroniza SI (Red está Activa Y Marca está Activa).
+
+🚀 Respuesta para el Agente de Replit
+Copia y pega esto. Resuelve todas sus dudas con lógica robusta:
+
+"Tu análisis de casos edge es brillante. Has tocado puntos críticos de lógica de negocio. Aquí tienes las decisiones definitivas para proceder:
+
+1. Usuarios de Marcas Archivadas
+
+Decisión: Opción A/B (Bloqueo).
+
+Implementación: En el middleware de autenticación o login, si el usuario pertenece a una marca con status = 'archived', el login debe fallar o redirigir a una página estática de "Cuenta Suspendida/Archivada". No deben acceder al Inbox.
+
+2. Conversaciones Mixtas (Integridad Visual)
+
+Decisión: Filtrado a Nivel de Hilo.
+
+Si una SocialAccount está inactiva, ocultamos todas sus Conversations completas (incluyendo nuestras respuestas).
+
+Por qué: Ver respuestas sueltas sin el mensaje del cliente ("out of context") aporta ruido, no valor. Si queremos verlas, usamos el filtro global.
+
+3. Ubicación del Filtro "Inactivos"
+
+Decisión: Opción A (Global en Inbox).
+
+Un simple Toggle/Switch en la cabecera de la lista de mensajes: "Mostrar archivados". Es lo más limpio para el MVP.
+
+4. Reactivación y Sync
+
+Decisión: Confiar en tu lógica actual de Idempotencia (metricoolId).
+
+Si reactivamos tras 3 meses, el SyncService traerá lo que Metricool le dé. Como tu sistema ya evita duplicados por ID, no hay riesgo de corrupción de datos. Deja que el sistema se autoregule.
+
+5. Consistencia de Estados (Marca vs Red)
+
+Decisión: Lógica de Consulta (No cascada en DB).
+
+Diferencia clave: No cambies is_active de las redes a false cuando se archive la marca (para no perder la configuración del usuario si reactivamos la marca después).
+
+Solución: El SyncService debe modificar su query para sincronizar SOLO si: social_accounts.is_active === TRUE AND brands.status === 'active'.
+
+Es decir, la marca archivada actúa como un "Master Switch" lógico, no físico.
+
+6. Naming (isActive vs Status)
+
+Decisión: Mantenlo como está (isActive bool y status string). Es semántica aceptable y evitamos refactorizar la DB ahora mismo por estética.
