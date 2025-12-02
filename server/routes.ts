@@ -137,6 +137,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
+      if (user.role === 'client' && user.brandId) {
+        const brand = await storage.getBrand(user.brandId);
+        if (brand && brand.status === 'archived') {
+          return res.status(403).json({ 
+            error: "Account suspended",
+            message: "Tu cuenta ha sido suspendida. Contacta al administrador para más información."
+          });
+        }
+      }
+
       req.session.userId = user.id;
       res.json(sanitizeUser(user));
     } catch (error) {
@@ -431,6 +441,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(sanitizeBrand(brand));
     } catch (error) {
       res.status(400).json({ error: "Invalid brand data" });
+    }
+  });
+
+  app.put("/api/brands/:id/archive", requireAuth, async (req, res) => {
+    try {
+      if (req.user!.role !== 'admin') {
+        return res.status(403).json({ error: "Only admins can archive brands" });
+      }
+
+      const brand = await storage.getBrand(req.params.id);
+      if (!brand) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+
+      const archived = await storage.archiveBrand(req.params.id);
+      res.json({ 
+        message: "Brand archived successfully",
+        brand: sanitizeBrand(archived!)
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to archive brand" });
+    }
+  });
+
+  app.put("/api/brands/:id/unarchive", requireAuth, async (req, res) => {
+    try {
+      if (req.user!.role !== 'admin') {
+        return res.status(403).json({ error: "Only admins can unarchive brands" });
+      }
+
+      const brand = await storage.getBrand(req.params.id);
+      if (!brand) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+
+      const unarchived = await storage.unarchiveBrand(req.params.id);
+      res.json({ 
+        message: "Brand unarchived successfully",
+        brand: sanitizeBrand(unarchived!)
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to unarchive brand" });
     }
   });
 

@@ -12,10 +12,13 @@ import { eq, desc, and, isNull } from "drizzle-orm";
 
 export interface IStorage {
   getBrands(): Promise<Brand[]>;
+  getActiveBrands(): Promise<Brand[]>;
   getBrand(id: string): Promise<Brand | undefined>;
   getBrandByBlogId(blogId: string): Promise<Brand | undefined>;
   createBrand(brand: InsertBrand): Promise<Brand>;
   updateBrand(id: string, updates: Partial<InsertBrand>): Promise<Brand | undefined>;
+  archiveBrand(id: string): Promise<Brand | undefined>;
+  unarchiveBrand(id: string): Promise<Brand | undefined>;
   
   getUsers(): Promise<User[]>;
   getUser(id: string): Promise<User | undefined>;
@@ -59,6 +62,14 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(brands).orderBy(desc(brands.createdAt));
   }
 
+  async getActiveBrands(): Promise<Brand[]> {
+    return await db
+      .select()
+      .from(brands)
+      .where(eq(brands.status, 'active'))
+      .orderBy(desc(brands.createdAt));
+  }
+
   async getBrand(id: string): Promise<Brand | undefined> {
     const [brand] = await db.select().from(brands).where(eq(brands.id, id));
     return brand || undefined;
@@ -81,6 +92,24 @@ export class DatabaseStorage implements IStorage {
     const [brand] = await db
       .update(brands)
       .set(updates)
+      .where(eq(brands.id, id))
+      .returning();
+    return brand || undefined;
+  }
+
+  async archiveBrand(id: string): Promise<Brand | undefined> {
+    const [brand] = await db
+      .update(brands)
+      .set({ status: 'archived' })
+      .where(eq(brands.id, id))
+      .returning();
+    return brand || undefined;
+  }
+
+  async unarchiveBrand(id: string): Promise<Brand | undefined> {
+    const [brand] = await db
+      .update(brands)
+      .set({ status: 'active' })
       .where(eq(brands.id, id))
       .returning();
     return brand || undefined;

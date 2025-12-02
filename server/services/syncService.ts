@@ -69,15 +69,15 @@ class SyncService {
     try {
       log("[SyncService] Starting sync cycle...", "sync");
 
-      const brands = await storage.getBrands();
+      const brands = await storage.getActiveBrands();
       
       if (brands.length === 0) {
-        log("[SyncService] No brands found to sync", "sync");
+        log("[SyncService] No active brands found to sync", "sync");
         this.lastSyncTime = new Date();
         return { success: true, brandsSynced: 0, errors: [] };
       }
 
-      log(`[SyncService] Found ${brands.length} brands to sync`, "sync");
+      log(`[SyncService] Found ${brands.length} active brands to sync`, "sync");
 
       for (const brand of brands) {
         if (!brand.metricoolToken || !brand.metricoolBlogId) {
