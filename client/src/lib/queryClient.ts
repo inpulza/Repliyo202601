@@ -55,3 +55,13 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+export async function archiveBrand(brandId: string): Promise<{ message: string; brand: any }> {
+  const res = await apiRequest("PUT", `/api/brands/${brandId}/archive`);
+  return res.json();
+}
+
+export async function unarchiveBrand(brandId: string): Promise<{ message: string; brand: any }> {
+  const res = await apiRequest("PUT", `/api/brands/${brandId}/unarchive`);
+  return res.json();
+}
