@@ -1963,3 +1963,49 @@ if (existing) {
 4. **Performance**: La sincronización solo procesa providers activos
 
 ---
+
+## PENDIENTES / TODO
+
+### 1. Resiliencia de Conexión a Base de Datos (Prioridad: Media)
+
+**Problema identificado:** La base de datos PostgreSQL (Neon) se suspende automáticamente después de 5 minutos de inactividad. Cuando esto ocurre, las conexiones activas se terminan abruptamente causando el error:
+```
+FATAL: terminating connection due to administrator command (código 57P01)
+```
+
+**Contexto técnico:**
+- Replit usa Neon como proveedor de PostgreSQL serverless
+- Neon suspende el "compute" después de 5 minutos sin consultas para ahorrar recursos
+- El servidor Express se cae si no maneja correctamente la reconexión
+
+**Soluciones a implementar:**
+
+1. **Keep-alive automático** - Agregar un ping periódico a la base de datos:
+```typescript
+// En server/db.ts o server/index.ts
+setInterval(async () => {
+  try {
+    await db.execute(sql`SELECT 1`);
+    console.log('[DB] Keep-alive ping successful');
+  } catch (error) {
+    console.error('[DB] Keep-alive ping failed:', error);
+  }
+}, 240000); // Cada 4 minutos (antes de los 5 min de timeout)
+```
+
+2. **Manejo de errores de conexión** - Agregar listener para errores del pool:
+```typescript
+// Si usamos pool de conexiones
+pool.on('error', (err, client) => {
+  console.error('[DB] Unexpected error on idle client:', err);
+  // El pool se reconecta automáticamente
+});
+```
+
+3. **Retry automático en consultas críticas** - Wrapper para reintentar consultas fallidas
+
+**Referencias:**
+- [Neon Docs - Connection Errors](https://neon.tech/docs/connect/connection-errors)
+- [Replit Docs - SQL Database](https://docs.replit.com/cloud-services/storage-and-databases/sql-database)
+
+---
