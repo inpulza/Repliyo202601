@@ -4,11 +4,11 @@
 Sistema de gestión de mensajes de redes sociales que se integra con Metricool para centralizar y gestionar DMs y comentarios de múltiples marcas/empresas. El sistema permite a usuarios admin y clientes gestionar sus interacciones sociales de forma organizada.
 
 ## Estado Actual
-- **Fase Actual**: ✅ FASE 7 COMPLETADA - Configuración del Agente IA (Frontend)
+- **Fase Actual**: ✅ FASE 7.1 COMPLETADA - Playground conectado a IA real
 - **Última Actualización**: 9 de Diciembre 2025
 - **Login/Logout**: ✅ Completamente funcional (página de login creada, logout en sidebar)
 - **Sistema de Roles**: ✅ Admin vs Client funcionando correctamente
-- **Marca de Prueba**: ✅ Inpulza conectada (blogId: 4074962)
+- **Marca de Prueba**: ✅ Inpulza Testing conectada (blogId: 4074962)
 - **Sincronización**: ✅ Automática cada 2 minutos
 - **Reply TikTok**: ✅ Funcional - Respuestas a comentarios enviadas desde la app
 - **Reply YouTube**: ✅ Funcional - Probado exitosamente
@@ -19,7 +19,8 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 - **Agentes IA - Paso 2**: ✅ Módulo LLM Provider (OpenAI + Gemini) funcionando
 - **Agentes IA - Paso 3**: ✅ Endpoints de API para guardar/obtener configuración
 - **Agentes IA - Paso 4**: ✅ Frontend AIAgentConfig.tsx con 6 tabs completos
-- **Próximo Paso**: Backend del Agente IA - Generación real de respuestas con LLM
+- **Agentes IA - Paso 5**: ✅ Playground conectado a IA real (endpoint test-generate)
+- **Próximo Paso**: Integrar sugerencias de IA en la vista de Inbox (botón "Generar respuesta IA" en cada mensaje)
 
 ---
 
@@ -305,11 +306,24 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 - ✅ Selección de proveedor (OpenAI/Gemini) y modelo
 - ✅ Configuración de prompts, automatización, plataformas
 
-**FASE 8: Características Avanzadas (Futuro)**
-- ⚪ Backend del Agente IA (generación real de respuestas)
+**FASE 7.1: Playground con IA Real ✅ COMPLETADA - 9 Diciembre 2025**
+- ✅ Endpoint `POST /api/ai-agent/:brandId/test-generate` creado
+- ✅ Acepta mensaje de prueba libre (no requiere mensaje real en DB)
+- ✅ Usa la configuración guardada del agente (prompts, modelo, temperatura)
+- ✅ Frontend AIAgentConfig.tsx actualizado para llamar al endpoint real
+- ✅ Muestra respuesta de Gemini/OpenAI según configuración
+
+**FASE 8: Integración de IA en Inbox (Pendiente)**
+- ⚪ Botón "Generar respuesta IA" en cada mensaje del Inbox
+- ⚪ Pre-llenar caja de respuesta con sugerencia de la IA
+- ⚪ Opción de editar antes de enviar
+- ⚪ Modo borrador automático
+
+**FASE 9: Características Avanzadas (Futuro)**
 - ⚪ Sistema de notificaciones en tiempo real
 - ⚪ Tests unitarios para MetricoolService
 - ⚪ Rate limiting para API endpoints
+- ⚪ Dashboard de métricas de uso de IA
 
 ---
 
@@ -2450,6 +2464,76 @@ interface LLMProvider {
 4. **Proveedor Agnóstico**: El código usa `LLMProvider.generate()` internamente, permitiendo cambiar de OpenAI a Gemini sin modificar lógica.
 
 5. **Tokens para Facturación**: Se guardan `promptTokens` y `completionTokens` en audit log para futuros reportes de costos por marca.
+
+---
+
+## FASE 7.1: Playground con IA Real - 9 Diciembre 2025 ✅
+
+### Contexto
+El Playground en la página de configuración del Agente IA (Settings → Agente IA → tab Playground) anteriormente mostraba respuestas mock/falsas. Se implementó la conexión real a la IA.
+
+### Implementación Realizada
+
+#### 1. Backend - Nuevo Endpoint
+**Archivo:** `server/routes.ts` (líneas 1349-1416)
+
+```typescript
+POST /api/ai-agent/:brandId/test-generate
+```
+
+**Request Body:**
+```json
+{
+  "testMessage": "Hola, quisiera saber los servicios...",
+  "platform": "instagram"  // opcional, default: instagram
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "reply": "¡Hola! En Inpulza ofrecemos...",
+  "characterCount": 245,
+  "platformLimit": 2200,
+  "wasCharacterLimited": false,
+  "usage": { "promptTokens": 450, "completionTokens": 85, "totalTokens": 535 },
+  "model": "gemini-2.5-flash",
+  "provider": "gemini"
+}
+```
+
+#### 2. Frontend - Cliente API Actualizado
+**Archivo:** `client/src/lib/api.ts` (líneas 311-332)
+
+Nuevo método:
+```typescript
+api.aiAgent.testGenerate(brandId, testMessage, platform)
+```
+
+#### 3. Frontend - Componente Actualizado
+**Archivo:** `client/src/components/AIAgentConfig.tsx` (líneas 160-184)
+
+La función `handleTestPlayground()` ahora:
+- Llama al endpoint real `/api/ai-agent/:brandId/test-generate`
+- Muestra la respuesta de la IA en el área de texto
+- Muestra toast con conteo de caracteres y modelo usado
+- Maneja errores con mensajes descriptivos
+
+### Flujo de Uso
+1. Usuario va a Settings → Agente IA
+2. Configura System Prompt, Knowledge Base, Guardrails en tab "Prompts"
+3. Guarda la configuración (botón Guardar)
+4. Va al tab "Playground"
+5. Escribe un mensaje de prueba
+6. Hace clic en "Generar Respuesta"
+7. La IA (Gemini o OpenAI según configuración) genera la respuesta real
+
+### Notas Técnicas
+- El endpoint crea un mensaje "mock" temporal para pasar al LLM provider
+- No guarda nada en base de datos (es solo para pruebas)
+- Usa la misma lógica de prompt-composer que el endpoint de producción
+- Respeta límites de caracteres de la plataforma seleccionada
 
 ---
 
