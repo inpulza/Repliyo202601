@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, jsonb, unique, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, jsonb, unique, integer, boolean, real } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -98,15 +98,61 @@ export const messages = pgTable("messages", {
   threadId: text("thread_id"),
   parentMessageId: varchar("parent_message_id"),
   source: text("source").default('metricool_sync'),
+  aiSuggestedReply: text("ai_suggested_reply"),
+  aiReplyStatus: text("ai_reply_status").default('none'),
+  aiAgentId: varchar("ai_agent_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const brandsRelations = relations(brands, ({ many }) => ({
+export const aiAgents = pgTable("ai_agents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brandId: varchar("brand_id").notNull().references(() => brands.id, { onDelete: 'cascade' }).unique(),
+  provider: text("provider").notNull().default('openai'),
+  model: text("model").notNull().default('gpt-4o-mini'),
+  temperature: real("temperature").notNull().default(0.7),
+  maxTokens: integer("max_tokens").notNull().default(500),
+  systemPrompt: text("system_prompt"),
+  knowledgeBase: text("knowledge_base"),
+  guardrailPrompt: text("guardrail_prompt"),
+  autoReplyMode: text("auto_reply_mode").notNull().default('off'),
+  approvalWorkflow: text("approval_workflow").notNull().default('none'),
+  characterLimitStrategy: text("character_limit_strategy").notNull().default('truncate'),
+  cooldownSeconds: integer("cooldown_seconds").notNull().default(0),
+  lastAutoReplyAt: timestamp("last_auto_reply_at"),
+  platformSettings: jsonb("platform_settings"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const aiAgentAuditLog = pgTable("ai_agent_audit_log", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  agentId: varchar("agent_id").notNull().references(() => aiAgents.id, { onDelete: 'cascade' }),
+  messageId: varchar("message_id").references(() => messages.id, { onDelete: 'set null' }),
+  conversationId: varchar("conversation_id").references(() => conversations.id, { onDelete: 'set null' }),
+  action: text("action").notNull(),
+  inputContent: text("input_content"),
+  outputContent: text("output_content"),
+  status: text("status").notNull().default('success'),
+  errorReason: text("error_reason"),
+  promptTokens: integer("prompt_tokens"),
+  completionTokens: integer("completion_tokens"),
+  platform: text("platform"),
+  characterCount: integer("character_count"),
+  wasCharacterLimited: boolean("was_character_limited").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const brandsRelations = relations(brands, ({ many, one }) => ({
   messages: many(messages),
   users: many(users),
   socialPosts: many(socialPosts),
   conversations: many(conversations),
   socialAccounts: many(socialAccounts),
+  aiAgent: one(aiAgents, {
+    fields: [brands.id],
+    references: [aiAgents.brandId],
+  }),
 }));
 
 export const socialAccountsRelations = relations(socialAccounts, ({ one }) => ({
@@ -150,6 +196,34 @@ export const messagesRelations = relations(messages, ({ one }) => ({
   }),
   conversation: one(conversations, {
     fields: [messages.conversationId],
+    references: [conversations.id],
+  }),
+  aiAgent: one(aiAgents, {
+    fields: [messages.aiAgentId],
+    references: [aiAgents.id],
+  }),
+}));
+
+export const aiAgentsRelations = relations(aiAgents, ({ one, many }) => ({
+  brand: one(brands, {
+    fields: [aiAgents.brandId],
+    references: [brands.id],
+  }),
+  auditLogs: many(aiAgentAuditLog),
+  messages: many(messages),
+}));
+
+export const aiAgentAuditLogRelations = relations(aiAgentAuditLog, ({ one }) => ({
+  agent: one(aiAgents, {
+    fields: [aiAgentAuditLog.agentId],
+    references: [aiAgents.id],
+  }),
+  message: one(messages, {
+    fields: [aiAgentAuditLog.messageId],
+    references: [messages.id],
+  }),
+  conversation: one(conversations, {
+    fields: [aiAgentAuditLog.conversationId],
     references: [conversations.id],
   }),
 }));
@@ -224,3 +298,45 @@ export const updateSocialAccountSchema = insertSocialAccountSchema.partial();
 export type InsertSocialAccount = z.infer<typeof insertSocialAccountSchema>;
 export type SocialAccount = typeof socialAccounts.$inferSelect;
 export type UpdateSocialAccount = z.infer<typeof updateSocialAccountSchema>;
+
+export const insertAiAgentSchema = createInsertSchema(aiAgents).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const selectAiAgentSchema = createSelectSchema(aiAgents);
+
+export const updateAiAgentSchema = insertAiAgentSchema.partial();
+
+export type InsertAiAgent = z.infer<typeof insertAiAgentSchema>;
+export type AiAgent = typeof aiAgents.$inferSelect;
+export type UpdateAiAgent = z.infer<typeof updateAiAgentSchema>;
+
+export const insertAiAgentAuditLogSchema = createInsertSchema(aiAgentAuditLog).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const selectAiAgentAuditLogSchema = createSelectSchema(aiAgentAuditLog);
+
+export const updateAiAgentAuditLogSchema = insertAiAgentAuditLogSchema.partial();
+
+export type InsertAiAgentAuditLog = z.infer<typeof insertAiAgentAuditLogSchema>;
+export type AiAgentAuditLog = typeof aiAgentAuditLog.$inferSelect;
+export type UpdateAiAgentAuditLog = z.infer<typeof updateAiAgentAuditLogSchema>;
+
+export const aiReplyStatusEnum = z.enum(['none', 'suggested', 'approved', 'sent', 'rejected']);
+export type AiReplyStatus = z.infer<typeof aiReplyStatusEnum>;
+
+export const autoReplyModeEnum = z.enum(['off', 'draft', 'auto']);
+export type AutoReplyMode = z.infer<typeof autoReplyModeEnum>;
+
+export const approvalWorkflowEnum = z.enum(['none', 'human_review']);
+export type ApprovalWorkflow = z.infer<typeof approvalWorkflowEnum>;
+
+export const characterLimitStrategyEnum = z.enum(['truncate', 'reject', 'summarize']);
+export type CharacterLimitStrategy = z.infer<typeof characterLimitStrategyEnum>;
+
+export const llmProviderEnum = z.enum(['openai', 'gemini']);
+export type LlmProvider = z.infer<typeof llmProviderEnum>;

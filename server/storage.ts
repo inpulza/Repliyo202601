@@ -1,14 +1,16 @@
 import { 
-  brands, users, messages, socialPosts, conversations, socialAccounts,
+  brands, users, messages, socialPosts, conversations, socialAccounts, aiAgents, aiAgentAuditLog,
   type Brand, type InsertBrand, 
   type User, type InsertUser, 
   type Message, type InsertMessage, type UpdateMessage,
   type SocialPost, type InsertSocialPost,
   type Conversation, type InsertConversation, type UpdateConversation,
-  type SocialAccount, type InsertSocialAccount, type UpdateSocialAccount
+  type SocialAccount, type InsertSocialAccount, type UpdateSocialAccount,
+  type AiAgent, type InsertAiAgent, type UpdateAiAgent,
+  type AiAgentAuditLog, type InsertAiAgentAuditLog
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, isNull } from "drizzle-orm";
+import { eq, desc, and, isNull, gte } from "drizzle-orm";
 
 export interface IStorage {
   getBrands(): Promise<Brand[]>;
@@ -55,6 +57,19 @@ export interface IStorage {
   updateSocialAccountStatus(brandId: string, provider: string, isActive: boolean): Promise<SocialAccount | undefined>;
   updateSocialAccountSyncStatus(brandId: string, provider: string, status: string): Promise<SocialAccount | undefined>;
   deleteSocialAccountsByBrand(brandId: string): Promise<void>;
+  
+  getAiAgent(id: string): Promise<AiAgent | undefined>;
+  getAiAgentByBrand(brandId: string): Promise<AiAgent | undefined>;
+  createAiAgent(agent: InsertAiAgent): Promise<AiAgent>;
+  updateAiAgent(id: string, updates: UpdateAiAgent): Promise<AiAgent | undefined>;
+  upsertAiAgent(agent: InsertAiAgent): Promise<AiAgent>;
+  toggleAiAgentActive(id: string, isActive: boolean): Promise<AiAgent | undefined>;
+  updateAiAgentLastAutoReply(id: string): Promise<AiAgent | undefined>;
+  
+  createAuditLog(log: InsertAiAgentAuditLog): Promise<AiAgentAuditLog>;
+  getAuditLogsByAgent(agentId: string, limit?: number): Promise<AiAgentAuditLog[]>;
+  getAuditLogsByConversation(conversationId: string): Promise<AiAgentAuditLog[]>;
+  getAuditLogsAfterDate(agentId: string, since: Date): Promise<AiAgentAuditLog[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -570,6 +585,100 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSocialAccountsByBrand(brandId: string): Promise<void> {
     await db.delete(socialAccounts).where(eq(socialAccounts.brandId, brandId));
+  }
+
+  async getAiAgent(id: string): Promise<AiAgent | undefined> {
+    const [agent] = await db.select().from(aiAgents).where(eq(aiAgents.id, id));
+    return agent || undefined;
+  }
+
+  async getAiAgentByBrand(brandId: string): Promise<AiAgent | undefined> {
+    const [agent] = await db.select().from(aiAgents).where(eq(aiAgents.brandId, brandId));
+    return agent || undefined;
+  }
+
+  async createAiAgent(insertAgent: InsertAiAgent): Promise<AiAgent> {
+    const [agent] = await db
+      .insert(aiAgents)
+      .values(insertAgent)
+      .returning();
+    return agent;
+  }
+
+  async updateAiAgent(id: string, updates: UpdateAiAgent): Promise<AiAgent | undefined> {
+    const [agent] = await db
+      .update(aiAgents)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(aiAgents.id, id))
+      .returning();
+    return agent || undefined;
+  }
+
+  async upsertAiAgent(insertAgent: InsertAiAgent): Promise<AiAgent> {
+    const existing = await this.getAiAgentByBrand(insertAgent.brandId);
+    
+    if (existing) {
+      const updated = await this.updateAiAgent(existing.id, insertAgent);
+      return updated!;
+    }
+
+    return this.createAiAgent(insertAgent);
+  }
+
+  async toggleAiAgentActive(id: string, isActive: boolean): Promise<AiAgent | undefined> {
+    const [agent] = await db
+      .update(aiAgents)
+      .set({ isActive, updatedAt: new Date() })
+      .where(eq(aiAgents.id, id))
+      .returning();
+    return agent || undefined;
+  }
+
+  async updateAiAgentLastAutoReply(id: string): Promise<AiAgent | undefined> {
+    const [agent] = await db
+      .update(aiAgents)
+      .set({ lastAutoReplyAt: new Date(), updatedAt: new Date() })
+      .where(eq(aiAgents.id, id))
+      .returning();
+    return agent || undefined;
+  }
+
+  async createAuditLog(insertLog: InsertAiAgentAuditLog): Promise<AiAgentAuditLog> {
+    const [log] = await db
+      .insert(aiAgentAuditLog)
+      .values(insertLog)
+      .returning();
+    return log;
+  }
+
+  async getAuditLogsByAgent(agentId: string, limit: number = 100): Promise<AiAgentAuditLog[]> {
+    return await db
+      .select()
+      .from(aiAgentAuditLog)
+      .where(eq(aiAgentAuditLog.agentId, agentId))
+      .orderBy(desc(aiAgentAuditLog.createdAt))
+      .limit(limit);
+  }
+
+  async getAuditLogsByConversation(conversationId: string): Promise<AiAgentAuditLog[]> {
+    return await db
+      .select()
+      .from(aiAgentAuditLog)
+      .where(eq(aiAgentAuditLog.conversationId, conversationId))
+      .orderBy(desc(aiAgentAuditLog.createdAt));
+  }
+
+  async getAuditLogsAfterDate(agentId: string, since: Date): Promise<AiAgentAuditLog[]> {
+    return await db
+      .select()
+      .from(aiAgentAuditLog)
+      .where(
+        and(
+          eq(aiAgentAuditLog.agentId, agentId),
+          gte(aiAgentAuditLog.createdAt, since)
+        )
+      )
+      .orderBy(desc(aiAgentAuditLog.createdAt));
   }
 }
 
