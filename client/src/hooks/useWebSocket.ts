@@ -2,9 +2,11 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 interface NotificationPayload {
-  type: 'new_message' | 'sync_complete' | 'agent_reply' | 'subscribed';
+  type: 'new_message' | 'sync_complete' | 'agent_reply' | 'subscribed' | 'connected' | 'error';
   brandId?: string;
   data?: any;
+  message?: string;
+  userId?: string;
 }
 
 interface UseWebSocketOptions {
@@ -68,6 +70,10 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
               onAgentReply?.(payload.data);
               break;
             case 'subscribed':
+            case 'connected':
+              break;
+            case 'error':
+              console.error('[WebSocket] Server error:', payload.message);
               break;
           }
         } catch (error) {

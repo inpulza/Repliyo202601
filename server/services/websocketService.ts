@@ -1,6 +1,9 @@
 import { WebSocketServer, WebSocket } from 'ws';
-import { Server } from 'http';
+import { Server, IncomingMessage } from 'http';
 import { log } from '../app';
+import { storage } from '../storage';
+import cookie from 'cookie';
+import signature from 'cookie-signature';
 
 interface NotificationPayload {
   type: 'new_message' | 'sync_complete' | 'agent_reply';
@@ -11,57 +14,154 @@ interface NotificationPayload {
 interface ConnectedClient {
   ws: WebSocket;
   brandId: string | null;
-  userId: string | null;
+  userId: string;
+  userRole: string;
+  userBrandId: string | null;
 }
 
 class WebSocketService {
   private wss: WebSocketServer | null = null;
   private clients: Map<WebSocket, ConnectedClient> = new Map();
+  private sessionSecret: string = process.env.SESSION_SECRET || "dev-secret-change-in-production";
 
   initialize(server: Server): void {
     this.wss = new WebSocketServer({ server, path: '/ws' });
 
-    this.wss.on('connection', (ws: WebSocket) => {
-      log('[WebSocket] Client connected', 'ws');
-      
-      this.clients.set(ws, { ws, brandId: null, userId: null });
-
-      ws.on('message', (message: Buffer) => {
-        try {
-          const data = JSON.parse(message.toString());
-          this.handleMessage(ws, data);
-        } catch (error) {
-          log('[WebSocket] Error parsing message', 'ws');
+    this.wss.on('connection', async (ws: WebSocket, req: IncomingMessage) => {
+      try {
+        const sessionData = await this.authenticateConnection(req);
+        
+        if (!sessionData) {
+          log('[WebSocket] Connection rejected - not authenticated', 'ws');
+          ws.close(4001, 'Not authenticated');
+          return;
         }
-      });
 
-      ws.on('close', () => {
-        this.clients.delete(ws);
-        log('[WebSocket] Client disconnected', 'ws');
-      });
+        log(`[WebSocket] Client connected - user: ${sessionData.userId}`, 'ws');
+        
+        this.clients.set(ws, { 
+          ws, 
+          brandId: null, 
+          userId: sessionData.userId,
+          userRole: sessionData.role,
+          userBrandId: sessionData.brandId
+        });
 
-      ws.on('error', (error) => {
-        log(`[WebSocket] Error: ${error.message}`, 'ws');
-        this.clients.delete(ws);
-      });
+        ws.send(JSON.stringify({ 
+          type: 'connected', 
+          userId: sessionData.userId 
+        }));
+
+        ws.on('message', (message: Buffer) => {
+          try {
+            const data = JSON.parse(message.toString());
+            this.handleMessage(ws, data);
+          } catch (error) {
+            log('[WebSocket] Error parsing message', 'ws');
+          }
+        });
+
+        ws.on('close', () => {
+          this.clients.delete(ws);
+          log('[WebSocket] Client disconnected', 'ws');
+        });
+
+        ws.on('error', (error) => {
+          log(`[WebSocket] Error: ${error.message}`, 'ws');
+          this.clients.delete(ws);
+        });
+      } catch (error) {
+        log(`[WebSocket] Connection error: ${error}`, 'ws');
+        ws.close(4000, 'Connection error');
+      }
     });
 
-    log('[WebSocket] Service initialized on /ws', 'ws');
+    log('[WebSocket] Service initialized on /ws (authenticated)', 'ws');
+  }
+
+  private async authenticateConnection(req: IncomingMessage): Promise<{ userId: string; role: string; brandId: string | null } | null> {
+    try {
+      const cookies = cookie.parse(req.headers.cookie || '');
+      const sessionCookie = cookies['connect.sid'];
+      
+      if (!sessionCookie) {
+        return null;
+      }
+
+      let sessionId = sessionCookie;
+      if (sessionCookie.startsWith('s:')) {
+        const unsigned = signature.unsign(sessionCookie.slice(2), this.sessionSecret);
+        if (!unsigned) {
+          log('[WebSocket] Invalid session signature', 'ws');
+          return null;
+        }
+        sessionId = unsigned;
+      }
+
+      const userId = await this.getSessionUserId(sessionId);
+      if (!userId) {
+        return null;
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return null;
+      }
+
+      return {
+        userId: user.id,
+        role: user.role,
+        brandId: user.brandId
+      };
+    } catch (error) {
+      log(`[WebSocket] Auth error: ${error}`, 'ws');
+      return null;
+    }
+  }
+
+  private async getSessionUserId(sessionId: string): Promise<string | null> {
+    return new Promise((resolve) => {
+      const { sessionStore } = require('../sessionStore');
+      if (sessionStore && sessionStore.get) {
+        sessionStore.get(sessionId, (err: any, session: any) => {
+          if (err || !session) {
+            resolve(null);
+          } else {
+            resolve(session.userId || null);
+          }
+        });
+      } else {
+        resolve(null);
+      }
+    });
   }
 
   private handleMessage(ws: WebSocket, data: any): void {
+    const client = this.clients.get(ws);
+    if (!client) return;
+
     if (data.type === 'subscribe') {
-      const client = this.clients.get(ws);
-      if (client) {
-        client.brandId = data.brandId || null;
-        client.userId = data.userId || null;
-        log(`[WebSocket] Client subscribed to brand: ${client.brandId}`, 'ws');
-        
-        ws.send(JSON.stringify({ 
-          type: 'subscribed', 
-          brandId: client.brandId 
-        }));
+      const requestedBrandId = data.brandId;
+      
+      if (client.userRole === 'admin') {
+        client.brandId = requestedBrandId || null;
+        log(`[WebSocket] Admin subscribed to brand: ${client.brandId || 'all'}`, 'ws');
+      } else {
+        if (requestedBrandId && requestedBrandId !== client.userBrandId) {
+          ws.send(JSON.stringify({ 
+            type: 'error', 
+            message: 'Access denied to this brand' 
+          }));
+          return;
+        }
+        client.brandId = client.userBrandId;
+        log(`[WebSocket] Client subscribed to own brand: ${client.brandId}`, 'ws');
       }
+      
+      ws.send(JSON.stringify({ 
+        type: 'subscribed', 
+        brandId: client.brandId 
+      }));
     }
   }
 
@@ -97,7 +197,11 @@ class WebSocketService {
 
     this.clients.forEach((client) => {
       if (client.ws.readyState === WebSocket.OPEN) {
-        if (!client.brandId || client.brandId === payload.brandId) {
+        const canAccess = client.userRole === 'admin' || 
+                         !client.brandId || 
+                         client.brandId === payload.brandId;
+        
+        if (canAccess) {
           client.ws.send(message);
           sentCount++;
         }
