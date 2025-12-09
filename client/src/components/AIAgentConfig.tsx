@@ -160,14 +160,21 @@ export function AIAgentConfig() {
     setTestResponse('');
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setTestResponse(`Esta es una respuesta de prueba basada en tu configuración actual.
-
-El mensaje que enviaste fue: "${testMessage}"
-
-En producción, esta respuesta sería generada por ${formData.provider === 'openai' ? 'OpenAI' : 'Gemini'} usando el modelo ${formData.model}.`);
-    } catch (error) {
-      toast({ title: "Error", description: "No se pudo generar la respuesta de prueba", variant: "destructive" });
+      const result = await api.aiAgent.testGenerate(activeClient!.id, testMessage.trim(), 'instagram');
+      
+      if (result.success) {
+        setTestResponse(result.reply);
+        toast({ 
+          title: "Respuesta generada", 
+          description: `${result.characterCount} caracteres usando ${result.provider}/${result.model}` 
+        });
+      } else {
+        throw new Error(result.error || "Error desconocido");
+      }
+    } catch (error: any) {
+      const errorMessage = error.message || "No se pudo generar la respuesta de prueba";
+      setTestResponse(`Error: ${errorMessage}`);
+      toast({ title: "Error", description: errorMessage, variant: "destructive" });
     } finally {
       setIsTesting(false);
     }

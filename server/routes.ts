@@ -1343,6 +1343,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/ai-agent/:brandId/test-generate - Probar generación de respuesta IA en playground
+  app.post("/api/ai-agent/:brandId/test-generate", requireAuth, filterByBrand("brandId"), async (req, res) => {
+    try {
+      const { brandId } = req.params;
+      const { testMessage, platform = "instagram" } = req.body;
+      
+      if (!testMessage || testMessage.trim() === "") {
+        return res.status(400).json({ error: "testMessage is required" });
+      }
+      
+      const brand = await storage.getBrand(brandId);
+      if (!brand) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+      
+      const agent = await storage.getAiAgentByBrand(brandId);
+      if (!agent) {
+        return res.status(400).json({ error: "AI agent is not configured for this brand. Please save the configuration first." });
+      }
+      
+      const { createLLMProvider, PLATFORM_CHARACTER_LIMITS } = await import("./services/llm");
+      
+      const llmProvider = createLLMProvider(agent, {});
+      
+      const mockMessage: any = {
+        id: "test-playground",
+        brandId,
+        externalId: "test-playground",
+        platform,
+        type: "conversation",
+        direction: "inbound",
+        author: "Usuario de Prueba",
+        content: testMessage.trim(),
+        timestamp: new Date(),
+        status: "pending",
+        conversationId: null,
+      };
+      
+      const response = await llmProvider.generateReply({
+        agent,
+        message: mockMessage,
+        brand,
+        conversationHistory: [],
+      });
+      
+      const platformLimit = PLATFORM_CHARACTER_LIMITS[platform] || PLATFORM_CHARACTER_LIMITS.default;
+      
+      res.json({
+        success: true,
+        reply: response.text,
+        characterCount: response.characterCount,
+        platformLimit,
+        wasCharacterLimited: response.wasCharacterLimited,
+        usage: response.usage,
+        model: response.model,
+        provider: response.provider,
+      });
+    } catch (error: any) {
+      console.error('Error in playground test-generate:', error);
+      res.status(500).json({ error: `Failed to generate test reply: ${error.message}` });
+    }
+  });
+
   // GET /api/ai-agent/:brandId/audit-log - Obtener historial de auditoría
   app.get("/api/ai-agent/:brandId/audit-log", requireAuth, filterByBrand("brandId"), async (req, res) => {
     try {

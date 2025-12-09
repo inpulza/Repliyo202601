@@ -304,5 +304,28 @@ export const api = {
       }
       return res.json();
     },
+
+    testGenerate: async (brandId: string, testMessage: string, platform: string = 'instagram'): Promise<{
+      success: boolean;
+      reply: string;
+      characterCount: number;
+      platformLimit: number;
+      wasCharacterLimited: boolean;
+      usage: { promptTokens: number; completionTokens: number; totalTokens: number };
+      model: string;
+      provider: string;
+      error?: string;
+    }> => {
+      const res = await fetch(`${API_BASE}/ai-agent/${brandId}/test-generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ testMessage, platform }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to generate test reply');
+      }
+      return res.json();
+    },
   },
 };
