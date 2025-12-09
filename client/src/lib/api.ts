@@ -278,10 +278,14 @@ export const api = {
     },
 
     generateReply: async (brandId: string, messageId: string, conversationId: string): Promise<{ 
-      suggestedReply: string; 
-      auditLogId: string;
-      promptTokens?: number;
-      completionTokens?: number;
+      success: boolean;
+      reply: string;
+      characterCount: number;
+      platformLimit: number;
+      wasCharacterLimited: boolean;
+      usage: { promptTokens: number; completionTokens: number; totalTokens: number };
+      model: string;
+      provider: string;
     }> => {
       const res = await fetch(`${API_BASE}/ai-agent/${brandId}/generate-reply`, {
         method: 'POST',

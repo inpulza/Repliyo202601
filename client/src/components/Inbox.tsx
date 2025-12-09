@@ -64,6 +64,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { getCharacterLimit } from '@/utils/platformLimits';
 import { Reply, X } from 'lucide-react';
 import repliyoLogo from '@/assets/repliyo-logo.jpg';
+import { toast } from '@/hooks/use-toast';
 
 
 // --- Helper: Platform Styles ---
@@ -165,6 +166,7 @@ export function Inbox() {
   const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
   const [replyText, setReplyText] = useState("");
   const [isSendingReply, setIsSendingReply] = useState(false);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
 
   const { data: syncStatus } = useQuery<SyncStatus>({
     queryKey: ['/api/sync/status'],
@@ -390,6 +392,37 @@ export function Inbox() {
       (replyToMessage.platform || 'instagram') as Platform, 
       (replyToMessage.type || 'comment') as MessageType
     );
+  };
+
+  const handleGenerateAIReply = async () => {
+    if (!replyToMessage || !activeClientId || !activeConversation || isGeneratingAI) return;
+    
+    setIsGeneratingAI(true);
+    try {
+      const result = await api.aiAgent.generateReply(
+        activeClientId, 
+        replyToMessage.id,
+        activeConversation.id
+      );
+      
+      if (result.reply) {
+        setReplyText(result.reply);
+        const providerLabel = result.provider === 'openai' ? 'OpenAI' : result.provider === 'gemini' ? 'Gemini' : result.provider;
+        toast({
+          title: "Respuesta IA generada",
+          description: `${providerLabel} · ${result.model} · ${result.characterCount} chars`,
+        });
+      }
+    } catch (error: any) {
+      console.error('[AI Reply] Error:', error);
+      toast({
+        title: "Error generando respuesta",
+        description: error.message || "No se pudo generar la respuesta IA",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingAI(false);
+    }
   };
 
   return (
@@ -1150,19 +1183,44 @@ export function Inbox() {
 
                   {/* Reply Input */}
                   <div className="flex gap-3">
-                    <Textarea
-                      placeholder="Escribe tu respuesta..."
-                      value={replyText}
-                      onChange={(e) => setReplyText(e.target.value)}
-                      className="flex-1 min-h-[60px] max-h-[120px] resize-none text-sm"
-                      data-testid="input-reply-text"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                          handleSendReply();
-                        }
-                      }}
-                    />
-                    <div className="flex flex-col gap-2">
+                    <div className="flex-1 flex flex-col gap-1">
+                      <Textarea
+                        placeholder="Escribe tu respuesta..."
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        className="flex-1 min-h-[60px] max-h-[120px] resize-none text-sm"
+                        data-testid="input-reply-text"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                            handleSendReply();
+                          }
+                        }}
+                      />
+                      <div className="flex items-center justify-between">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleGenerateAIReply}
+                          disabled={isGeneratingAI || !activeClientId}
+                          className="h-6 text-[10px] font-medium text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 px-2"
+                          data-testid="button-generate-ai-reply"
+                        >
+                          {isGeneratingAI ? (
+                            <>
+                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                              Generando...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-3 w-3 mr-1" />
+                              Generar con IA
+                            </>
+                          )}
+                        </Button>
+                        <span className="text-[10px] text-gray-400">Ctrl+Enter</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1">
                       <Button
                         onClick={handleSendReply}
                         disabled={!replyText.trim() || isSendingReply || replyText.length > getReplyCharacterLimit()}

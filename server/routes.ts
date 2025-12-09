@@ -1317,6 +1317,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           platformLimit,
           wasCharacterLimited: response.wasCharacterLimited,
           usage: response.usage,
+          model: agent.model || 'gpt-4o-mini',
+          provider: agent.provider || 'openai',
         });
       } catch (llmError: any) {
         const errorMessage = llmError instanceof LLMError 
