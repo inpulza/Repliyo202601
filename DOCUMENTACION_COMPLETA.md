@@ -2591,3 +2591,53 @@ pool.on('error', (err, client) => {
 - [Replit Docs - SQL Database](https://docs.replit.com/cloud-services/storage-and-databases/sql-database)
 
 ---
+
+### 2. Análisis de Sentimiento Automático (Prioridad: Media)
+
+**Problema identificado:** Los mensajes del inbox no tienen análisis de sentimiento asignado. La columna `sentiment` en la tabla `messages` existe pero está vacía (NULL) para todos los mensajes, lo que hace que la métrica de "Sentimiento" en el Overview muestre "--".
+
+**Datos actuales (9 Dic 2025):**
+- 332 mensajes totales
+- 0 mensajes con sentimiento asignado
+- Campo `sentiment` acepta: 'positive', 'neutral', 'negative'
+
+**Solución propuesta:**
+
+1. **Análisis automático al sincronizar** - Cuando llegan mensajes nuevos de Metricool, usar IA para clasificar el sentimiento:
+```typescript
+// En server/services/syncService.ts
+async function analyzeSentiment(content: string): Promise<'positive' | 'neutral' | 'negative'> {
+  // Usar LLM Provider existente (Gemini/OpenAI)
+  const prompt = `Clasifica el sentimiento del siguiente mensaje como 'positive', 'neutral' o 'negative'. Responde solo con una palabra: "${content}"`;
+  const result = await llmProvider.generate(prompt);
+  return result.trim().toLowerCase() as 'positive' | 'neutral' | 'negative';
+}
+```
+
+2. **Batch processing para mensajes existentes** - Script o endpoint para analizar mensajes sin sentimiento:
+```typescript
+// POST /api/admin/analyze-sentiment
+// Procesa N mensajes sin sentimiento en batch
+```
+
+3. **Actualizar storage.ts** - Método `updateMessageSentiment(messageId, sentiment)`
+
+**Consideraciones:**
+- Rate limiting para evitar exceder límites de API de IA
+- Costo: ~$0.001 por mensaje analizado (Gemini Flash)
+- Alternativa: Usar modelo de sentimiento local (más rápido, sin costo)
+
+---
+
+### 3. Cálculo de Tiempo de Respuesta (Prioridad: Baja)
+
+**Problema identificado:** El "Tiempo de Respuesta" en Overview muestra "--" porque solo hay 2 mensajes outbound de 332 totales. El cálculo requiere emparejar mensajes inbound con sus respuestas outbound.
+
+**Datos actuales:**
+- 330 mensajes inbound (recibidos)
+- 2 mensajes outbound (enviados)
+- Sin suficientes datos para calcular promedio significativo
+
+**Solución:** Este problema se resolverá naturalmente cuando se usen más respuestas desde Repliyo. No requiere desarrollo adicional, solo uso del sistema.
+
+---
