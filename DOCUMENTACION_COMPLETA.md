@@ -4,8 +4,8 @@
 Sistema de gestión de mensajes de redes sociales que se integra con Metricool para centralizar y gestionar DMs y comentarios de múltiples marcas/empresas. El sistema permite a usuarios admin y clientes gestionar sus interacciones sociales de forma organizada.
 
 ## Estado Actual
-- **Fase Actual**: ✅ FASE 6.5 COMPLETADA - Unificación BrandImportWizard
-- **Última Actualización**: 2 de Diciembre 2025
+- **Fase Actual**: 🔄 FASE 7 EN PROGRESO - Sistema de Agentes IA
+- **Última Actualización**: 9 de Diciembre 2025
 - **Login/Logout**: ✅ Completamente funcional (página de login creada, logout en sidebar)
 - **Sistema de Roles**: ✅ Admin vs Client funcionando correctamente
 - **Marca de Prueba**: ✅ Inpulza conectada (blogId: 4074962)
@@ -15,7 +15,9 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 - **UI Reply**: ✅ Botón reply en mensajes, caja de texto flotante, badge "Enviado desde Repliyo"
 - **Campo Source**: ✅ Diferencia mensajes de Repliyo vs sincronizados de redes sociales
 - **BrandImportWizard**: ✅ Flujo unificado de importación con selección de redes (Sidebar + Integrations)
-- **Próximo Paso**: Probar Reply para Instagram, Facebook y LinkedIn
+- **Agentes IA - Paso 1**: ✅ Base de datos con tablas aiAgents y aiAgentAuditLog
+- **Agentes IA - Paso 2**: ✅ Módulo LLM Provider (OpenAI + Gemini) funcionando
+- **Próximo Paso**: Paso 3 - Crear endpoints de API para configuración y generación de respuestas IA
 
 ---
 
@@ -2339,19 +2341,89 @@ Cuando hay un borrador sugerido por IA:
 
 ### Plan de Implementación
 
-| Paso | Descripción | Tiempo Est. |
-|------|-------------|-------------|
-| **1** | Base de datos: Crear tablas `ai_agents`, `ai_agent_audit_log`, campos en `messages` | 2h |
-| **2** | Backend - Storage: Métodos CRUD para agentes y audit log | 2h |
-| **3** | Backend - Integraciones IA: Instalar OpenAI/Gemini de Replit, crear servicio unificado `LLMProvider` | 3h |
-| **4** | Backend - API Routes: Endpoints CRUD y playground de pruebas | 2h |
-| **5** | Backend - Auto-respuesta: Integrar en syncService con toda la lógica de flujo | 4h |
-| **6** | Frontend - UI de Configuración: Pestañas de settings del agente | 4h |
-| **7** | Frontend - Playground: Área de pruebas con previsualización | 3h |
-| **8** | Frontend - Integración Inbox: Mostrar borradores, botones aprobar/rechazar | 2h |
-| **9** | Testing y ajustes | 2h |
+| Paso | Descripción | Tiempo Est. | Estado |
+|------|-------------|-------------|--------|
+| **1** | Base de datos: Crear tablas `ai_agents`, `ai_agent_audit_log`, campos en `messages` | 2h | ✅ COMPLETADO |
+| **2** | Backend - LLM Provider: Módulo con adaptadores OpenAI/Gemini, factory, y prompt composer | 3h | ✅ COMPLETADO |
+| **3** | Backend - API Routes: Endpoints CRUD y generación de respuestas | 2h | 🔄 EN PROGRESO |
+| **4** | Frontend - UI de Configuración: Pestañas de settings del agente | 4h | ⏳ PENDIENTE |
+| **5** | Frontend - Integración Inbox: Mostrar sugerencias, botones aprobar/rechazar | 2h | ⏳ PENDIENTE |
+| **6** | Backend - Auto-respuesta: Integrar en syncService con toda la lógica de flujo | 4h | ⏳ PENDIENTE |
+| **7** | Frontend - Playground: Área de pruebas con previsualización | 3h | ⏳ PENDIENTE |
+| **8** | Testing y ajustes | 2h | ⏳ PENDIENTE |
 
-**Total estimado:** 24 horas
+**Total estimado:** 22 horas
+
+---
+
+### Paso 1: Base de Datos ✅ COMPLETADO - 9 Diciembre 2025
+
+Las tablas fueron creadas exitosamente en `shared/schema.ts`:
+
+**Tablas creadas:**
+- `aiAgents` - Configuración del agente por marca
+- `aiAgentAuditLog` - Historial de acciones del agente
+
+**Campos añadidos a `messages`:**
+- `aiSuggestedReply` - Borrador sugerido por IA
+- `aiReplyStatus` - Estado del borrador ('none', 'suggested', 'approved', 'sent', 'rejected')
+- `aiAgentId` - Referencia al agente que generó la sugerencia
+
+---
+
+### Paso 2: Backend LLM Provider ✅ COMPLETADO - 9 Diciembre 2025
+
+Se creó un módulo completo en `server/services/llm/` con arquitectura modular:
+
+**Archivos creados:**
+
+| Archivo | Propósito |
+|---------|-----------|
+| `types.ts` | Interfaces: `LLMProvider`, `LLMMessage`, `LLMResponse`, `LLMConfig`, `AgentSecrets` |
+| `prompt-composer.ts` | Composición de prompts con variables dinámicas y límites de caracteres |
+| `openai-adapter.ts` | Adaptador para OpenAI (gpt-4o, gpt-4o-mini, gpt-4.1, o3-mini) |
+| `gemini-adapter.ts` | Adaptador para Gemini (gemini-2.5-flash, gemini-2.5-pro) |
+| `factory.ts` | Factory function `createLLMProvider()` que instancia el proveedor correcto |
+| `index.ts` | Exportaciones del módulo |
+
+**Características implementadas:**
+
+1. **Interface unificada `LLMProvider`:**
+```typescript
+interface LLMProvider {
+  generate(messages: LLMMessage[], config: LLMConfig): Promise<LLMResponse>;
+}
+```
+
+2. **Composición de prompts:**
+   - System prompt + Knowledge base + Guardrails
+   - Variables dinámicas: `{{customer_name}}`, `{{platform}}`, `{{brand_name}}`, `{{char_limit}}`
+   - Inyección automática de límites de caracteres por plataforma
+
+3. **Manejo de errores normalizado:**
+   - Errores de autenticación (401)
+   - Rate limiting (429)
+   - Timeouts
+   - Errores de red
+
+4. **Resolución de API Keys:**
+   - Prioridad: `platformSettings` → Secrets de Replit → Variables de entorno
+   - Keys: `OPENAI_API_KEY`, `GEMINI_API_KEY`
+
+**Pruebas realizadas con API keys reales:**
+- ✅ OpenAI (gpt-4o-mini): Respondió correctamente
+- ✅ Gemini (gemini-2.5-flash): Respondió correctamente
+
+**Dependencias instaladas:**
+- `openai` - SDK oficial de OpenAI
+- `@google/genai` - SDK de Google Gemini
+
+**Notas técnicas importantes:**
+- GPT-5 y modelos recientes NO soportan parámetro `temperature` (usar solo `max_completion_tokens`)
+- Para modelos anteriores usar `max_tokens` con `temperature`
+- Gemini usa `maxOutputTokens` en lugar de `max_tokens`
+
+---
 
 ### Notas Técnicas
 
