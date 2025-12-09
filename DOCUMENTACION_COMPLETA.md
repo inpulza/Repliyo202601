@@ -327,12 +327,17 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 - ⚪ Rate limiting para API endpoints
 - ⚪ Dashboard de métricas de uso de IA
 
-**FASE 10: Auto-Reply Automático (Pendiente)**
-- ⚪ Integración del sync con generación automática de respuestas
-- ⚪ Cuando llegan mensajes nuevos + agente en modo 'auto' → generar y enviar respuesta
-- ⚪ Respetar cooldown configurado entre respuestas automáticas
-- ⚪ Registro en audit log de respuestas automáticas enviadas
-- ⚪ Verificación de endpoint de envío de Metricool para auto-reply
+**FASE 10: Auto-Reply Automático ✅ COMPLETADA - 9 Diciembre 2025**
+- ✅ Servicio `AutoReplyService` creado (`server/services/autoReplyService.ts`)
+- ✅ Integración con syncService para procesar mensajes nuevos inbound
+- ✅ Verificación de configuración del agente (isActive, autoReplyMode === 'auto')
+- ✅ Respeto del cooldown configurado entre respuestas automáticas
+- ✅ Generación de respuesta con LLM (OpenAI/Gemini según configuración)
+- ✅ Envío de respuestas vía Metricool (replyToComment/replyToConversation)
+- ✅ Guardado del mensaje de respuesta en DB con source='repliyo_auto'
+- ✅ Registro en audit log con action='auto_reply' (éxito o error)
+- ✅ Notificación WebSocket cuando se envía respuesta automática
+- ✅ Actualización de lastAutoReplyAt en el agente para cooldown
 
 ---
 

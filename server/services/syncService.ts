@@ -1,6 +1,7 @@
 import { storage } from "../storage";
 import { MetricoolService, createMetricoolService } from "./metricool";
 import { websocketService } from "./websocketService";
+import { autoReplyService } from "./autoReplyService";
 import { log } from "../app";
 
 interface BrandSyncResult {
@@ -260,6 +261,8 @@ class SyncService {
               type: 'dm',
               conversationId: conversationRecord.id,
             });
+
+            this.triggerAutoReply(brandId, savedMessage, conversationRecord);
           }
         } catch (error: any) {
           console.error(`Error upserting conversation message:`, error.message);
@@ -358,6 +361,8 @@ class SyncService {
             type: 'comment',
             conversationId: conversationRecord.id,
           });
+
+          this.triggerAutoReply(brandId, savedComment, conversationRecord);
         }
 
         const nestedReplies = (comment.replies && comment.replies.length > 0) ? comment.replies : (comment.rawData?.root?.comments || []);
@@ -450,6 +455,31 @@ class SyncService {
 
   private delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  private triggerAutoReply(brandId: string, message: any, conversation: any): void {
+    storage.getBrand(brandId).then(brand => {
+      if (!brand) {
+        log(`[SyncService] Brand ${brandId} not found for auto-reply`, "sync");
+        return;
+      }
+
+      autoReplyService.processNewMessage(message, conversation, brand)
+        .then(result => {
+          if (result.success) {
+            log(`[SyncService] Auto-reply sent for message ${message.id}`, "sync");
+          } else if (result.skippedReason) {
+            log(`[SyncService] Auto-reply skipped: ${result.skippedReason}`, "sync");
+          } else if (result.error) {
+            log(`[SyncService] Auto-reply failed: ${result.error}`, "sync");
+          }
+        })
+        .catch(error => {
+          log(`[SyncService] Auto-reply error: ${error.message}`, "sync");
+        });
+    }).catch(error => {
+      log(`[SyncService] Error fetching brand for auto-reply: ${error.message}`, "sync");
+    });
   }
 
   getStatus(): {
