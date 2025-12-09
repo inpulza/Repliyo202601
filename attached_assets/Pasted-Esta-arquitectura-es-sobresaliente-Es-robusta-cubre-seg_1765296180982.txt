@@ -1,0 +1,87 @@
+Esta arquitectura es sobresaliente. Es robusta, cubre seguridad, auditoría y tiene una lógica de negocio muy madura (especialmente el manejo de límites y los modos draft/auto).
+
+Sin embargo, para pasar de un "buen sistema" a un "sistema profesional", tengo 4 ajustes estratégicos que debes pedirle al agente antes de que escriba una sola línea de código. Son detalles que te ahorrarán dinero (tokens) y dolores de cabeza futuros.
+
+Aquí tienes mi análisis y las mejoras propuestas:
+
+✅ Lo que está perfecto
+La tabla ai_agent_audit_log: Vital. Si un cliente dice "¿Por qué el bot insultó a alguien?", tienes la prueba forense.
+
+Estrategia de Límites: Tener opciones (Truncar vs Resumir) es excelente UX.
+
+Playground: Imprescindible para que el cliente confíe antes de soltar al robot.
+
+🚀 Las 4 Mejoras Críticas (El "Fine-Tuning" de la Arquitectura)
+1. Inyección de Contexto de Negocio (Separar Reglas de Conocimiento)
+Problema: En el plan actual, todo parece ir en systemPrompt. Si el cliente quiere pegar su "Política de Devoluciones", ensuciará el prompt del sistema.
+
+Solución: Añade un campo knowledge_base (TEXT) en la tabla ai_agents.
+
+Por qué:
+
+System Prompt: "Eres un asistente amable..." (Cómo comportarse).
+
+Knowledge Base: "Abrimos de 9 a 5. Las devoluciones son en 30 días..." (Qué saber).
+
+Al generar el prompt final, concatenas ambos. Es más limpio para el usuario.
+
+2. Lógica de Límites "Preventiva" (Ahorro de Tokens)
+Problema: El plan dice: Generar respuesta -> Verificar límite -> Si excede, resumir.
+
+Esto implica dos llamadas a la IA (doble gasto) si la primera se pasa.
+
+Solución: Inyectar el límite en la primera llamada.
+
+Prompt Dinámico:
+
+"...Responde a este usuario. IMPORTANTE: Tu respuesta NO puede exceder los {CHAR_LIMIT} caracteres bajo ninguna circunstancia."
+
+Resultado: La IA casi siempre acertará a la primera. La estrategia de "Resumir" queda solo como red de seguridad (fallback), no como norma.
+
+3. Auditoría de Costos (Token Usage)
+Problema: Sabes qué dijo la IA, pero no cuánto costó.
+
+Solución: En ai_agent_audit_log, añade dos columnas: prompt_tokens (int) y completion_tokens (int).
+
+Por qué: En el futuro querrás facturar a tus clientes por uso o limitar el consumo. Sin estos datos, estás ciego financieramente.
+
+4. Vinculación con "Hilos" (La arquitectura que hicimos antes)
+Ajuste: En el paso 5 del flujo ("PREPARAR CONTEXTO"), asegúrate de que el agente entienda que "Últimos N mensajes" significa consultar la tabla Messages filtrando por el conversation_id del mensaje entrante.
+
+Si no lo especificas, podría intentar buscar mensajes sueltos y la IA perderá el hilo.
+
+📊 Diagrama del Flujo Optimizado
+Aquí visualizamos cómo se integran estos ajustes en el pipeline:
+
+📝 Respuesta para el Agente (Instrucciones Finales)
+Copia y pega esto. Valida su gran trabajo e inserta las mejoras quirúrgicas.
+
+"Esta arquitectura es excepcional. Has cubierto los puntos críticos de seguridad, límites por plataforma y auditoría. Es un plan muy sólido.
+
+APROBADO con 4 Ajustes de Optimización:
+
+Por favor, incorpora estos cambios al plan antes de implementar:
+
+Base de Datos (ai_agents):
+
+Añade el campo knowledge_base (TEXT). Queremos separar las instrucciones de comportamiento (systemPrompt) de la información del negocio (horarios, precios, FAQs).
+
+En el momento de generar la respuesta, concatena ambos en el contexto.
+
+Base de Datos (ai_agent_audit_log):
+
+Añade tokens_usage (JSONB o columnas separadas) para guardar prompt_tokens y completion_tokens que devuelve la API de OpenAI/Gemini. Necesitamos esto para futuros reportes de costos.
+
+Lógica de Límites (Optimización Preventiva):
+
+En el Paso 6 (Generar Respuesta), inyecta el límite de caracteres de la plataforma directamente en el Prompt del sistema (ej: "Tu respuesta debe tener menos de 150 caracteres" para TikTok).
+
+Mantén tu estrategia de "Resumir/Truncar" en el paso 7 solo como un fallback de seguridad si la IA ignora la instrucción inicial. Esto ahorra tiempo y tokens.
+
+Integración de Contexto (Threading):
+
+En el Paso 5, confirma explícitamente que para obtener los "Últimos N mensajes", consultarás la tabla Messages filtrando por el conversation_id del mensaje entrante (usando la arquitectura de 4 tablas que definimos previamente).
+
+Procede a crear las tablas y la lógica del Backend con estos ajustes."
+
+Con esto, tienes un sistema que no solo responde, sino que es rentable, ordenado y consciente del contexto. ¡Estás listo para construir el cerebro!
