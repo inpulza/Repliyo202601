@@ -79,6 +79,28 @@ export interface IStorage {
     byAction: Record<string, number>;
     dailyStats: Array<{ date: string; count: number; tokens: number }>;
   }>;
+  
+  getInboxStats(brandId: string, days?: number): Promise<{
+    totalMessages: number;
+    inboundMessages: number;
+    outboundMessages: number;
+    totalConversations: number;
+    openConversations: number;
+    closedConversations: number;
+    uniqueContacts: number;
+    avgResponseTimeMs: number | null;
+    byPlatform: Record<string, { inbound: number; outbound: number }>;
+    bySentiment: Record<string, number>;
+    dailyStats: Array<{ date: string; inbound: number; outbound: number }>;
+    recentActivity: Array<{
+      id: string;
+      type: 'message' | 'reply';
+      author: string;
+      content: string;
+      platform: string;
+      timestamp: Date;
+    }>;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -769,6 +791,114 @@ export class DatabaseStorage implements IStorage {
       byPlatform,
       byAction,
       dailyStats,
+    };
+  }
+
+  async getInboxStats(brandId: string, days: number = 7): Promise<{
+    totalMessages: number;
+    inboundMessages: number;
+    outboundMessages: number;
+    totalConversations: number;
+    openConversations: number;
+    closedConversations: number;
+    uniqueContacts: number;
+    avgResponseTimeMs: number | null;
+    byPlatform: Record<string, { inbound: number; outbound: number }>;
+    bySentiment: Record<string, number>;
+    dailyStats: Array<{ date: string; inbound: number; outbound: number }>;
+    recentActivity: Array<{
+      id: string;
+      type: 'message' | 'reply';
+      author: string;
+      content: string;
+      platform: string;
+      timestamp: Date;
+    }>;
+  }> {
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    since.setHours(0, 0, 0, 0);
+
+    const allMessages = await db
+      .select()
+      .from(messages)
+      .where(
+        and(
+          eq(messages.brandId, brandId),
+          gte(messages.timestamp, since)
+        )
+      )
+      .orderBy(desc(messages.timestamp));
+
+    const allConversations = await db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.brandId, brandId));
+
+    const inboundMessages = allMessages.filter(m => m.direction === 'inbound');
+    const outboundMessages = allMessages.filter(m => m.direction === 'outbound');
+
+    const openConversations = allConversations.filter(c => c.status === 'open').length;
+    const closedConversations = allConversations.filter(c => c.status === 'closed').length;
+
+    const uniqueCustomerIds = new Set(allConversations.map(c => c.customerId));
+
+    const byPlatform: Record<string, { inbound: number; outbound: number }> = {};
+    const bySentiment: Record<string, number> = {};
+    const dailyMap: Record<string, { inbound: number; outbound: number }> = {};
+
+    for (const msg of allMessages) {
+      const platform = msg.platform || 'unknown';
+      if (!byPlatform[platform]) {
+        byPlatform[platform] = { inbound: 0, outbound: 0 };
+      }
+      if (msg.direction === 'inbound') {
+        byPlatform[platform].inbound++;
+      } else {
+        byPlatform[platform].outbound++;
+      }
+
+      if (msg.sentiment) {
+        bySentiment[msg.sentiment] = (bySentiment[msg.sentiment] || 0) + 1;
+      }
+
+      const dateStr = msg.timestamp.toISOString().split('T')[0];
+      if (!dailyMap[dateStr]) {
+        dailyMap[dateStr] = { inbound: 0, outbound: 0 };
+      }
+      if (msg.direction === 'inbound') {
+        dailyMap[dateStr].inbound++;
+      } else {
+        dailyMap[dateStr].outbound++;
+      }
+    }
+
+    const dailyStats = Object.entries(dailyMap)
+      .map(([date, stats]) => ({ date, ...stats }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    const recentActivity = allMessages.slice(0, 10).map(msg => ({
+      id: msg.id,
+      type: (msg.direction === 'outbound' ? 'reply' : 'message') as 'message' | 'reply',
+      author: msg.author,
+      content: msg.content.substring(0, 100) + (msg.content.length > 100 ? '...' : ''),
+      platform: msg.platform,
+      timestamp: msg.timestamp,
+    }));
+
+    return {
+      totalMessages: allMessages.length,
+      inboundMessages: inboundMessages.length,
+      outboundMessages: outboundMessages.length,
+      totalConversations: allConversations.length,
+      openConversations,
+      closedConversations,
+      uniqueContacts: uniqueCustomerIds.size,
+      avgResponseTimeMs: null,
+      byPlatform,
+      bySentiment,
+      dailyStats,
+      recentActivity,
     };
   }
 }

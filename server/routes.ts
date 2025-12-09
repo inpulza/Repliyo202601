@@ -1441,6 +1441,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/inbox-stats/:brandId - Obtener estadísticas del inbox
+  app.get("/api/inbox-stats/:brandId", requireAuth, filterByBrand("brandId"), async (req, res) => {
+    try {
+      const { brandId } = req.params;
+      const days = parseInt(req.query.days as string) || 7;
+      
+      const brand = await storage.getBrand(brandId);
+      if (!brand) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+      
+      const stats = await storage.getInboxStats(brandId, days);
+      res.json(stats);
+    } catch (error: any) {
+      console.error('Error fetching inbox stats:', error);
+      res.status(500).json({ error: "Failed to fetch inbox stats" });
+    }
+  });
+
   // GET /api/ai-agent/:brandId/metrics - Obtener métricas de uso de IA
   app.get("/api/ai-agent/:brandId/metrics", requireAuth, filterByBrand("brandId"), async (req, res) => {
     try {
