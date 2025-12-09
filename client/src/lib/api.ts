@@ -1,4 +1,4 @@
-import type { Client, Message, Brand, Conversation, SocialPost, SocialAccount } from '@shared/schema';
+import type { Client, Message, Brand, Conversation, SocialPost, SocialAccount, AiAgent, AiAgentAuditLog } from '@shared/schema';
 import type { Platform, MessageType, Urgency, Intent, Sentiment, MessageStatus, CRMContact } from '@/lib/types';
 
 export type { SocialAccount };
@@ -249,6 +249,59 @@ export const api = {
         body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error('Failed to update conversation');
+      return res.json();
+    },
+  },
+
+  aiAgent: {
+    get: async (brandId: string): Promise<AiAgent | null> => {
+      const res = await fetch(`${API_BASE}/ai-agent/${brandId}`);
+      if (res.status === 404) return null;
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to fetch AI agent');
+      }
+      return res.json();
+    },
+
+    save: async (brandId: string, data: Partial<AiAgent>): Promise<AiAgent> => {
+      const res = await fetch(`${API_BASE}/ai-agent/${brandId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to save AI agent');
+      }
+      return res.json();
+    },
+
+    generateReply: async (brandId: string, messageId: string, conversationId: string): Promise<{ 
+      suggestedReply: string; 
+      auditLogId: string;
+      promptTokens?: number;
+      completionTokens?: number;
+    }> => {
+      const res = await fetch(`${API_BASE}/ai-agent/${brandId}/generate-reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId, conversationId }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to generate reply');
+      }
+      return res.json();
+    },
+
+    getAuditLog: async (brandId: string, limit?: number): Promise<AiAgentAuditLog[]> => {
+      const params = limit ? `?limit=${limit}` : '';
+      const res = await fetch(`${API_BASE}/ai-agent/${brandId}/audit-log${params}`);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to fetch audit log');
+      }
       return res.json();
     },
   },
