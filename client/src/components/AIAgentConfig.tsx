@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNexus } from '@/context/NexusContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import type { AiAgent, AiAgentAuditLog } from '@shared/schema';
+import type { AiAgent, AiAgentAuditLog, SocialAccount } from '@shared/schema';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,8 +25,9 @@ import { toast } from '@/hooks/use-toast';
 import { 
   Bot, Settings, MessageSquare, Zap, Shield, History, 
   Play, Save, Loader2, Sparkles, Brain, BookOpen,
-  Clock, AlertTriangle, CheckCircle, XCircle
+  Clock, AlertTriangle, CheckCircle, XCircle, Share2
 } from 'lucide-react';
+import { FaFacebook, FaInstagram, FaTwitter, FaTiktok, FaLinkedin, FaYoutube } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -50,6 +51,15 @@ Instrucciones:
 - Mantén un tono profesional pero cercano
 - Sé conciso y ve al grano
 - Si no sabes algo, admítelo honestamente`;
+
+const PLATFORM_CONFIG = {
+  facebook: { name: 'Facebook', icon: FaFacebook, color: 'text-blue-600', charLimit: 2000 },
+  instagram: { name: 'Instagram', icon: FaInstagram, color: 'text-pink-600', charLimit: 2200 },
+  twitter: { name: 'Twitter/X', icon: FaTwitter, color: 'text-sky-500', charLimit: 280 },
+  tiktok: { name: 'TikTok', icon: FaTiktok, color: 'text-gray-900', charLimit: 150 },
+  linkedin: { name: 'LinkedIn', icon: FaLinkedin, color: 'text-blue-700', charLimit: 3000 },
+  youtube: { name: 'YouTube', icon: FaYoutube, color: 'text-red-600', charLimit: 500 },
+};
 
 const DEFAULT_GUARDRAIL = `Restricciones de seguridad:
 - No compartas información confidencial de la empresa
@@ -90,6 +100,24 @@ export function AIAgentConfig() {
     queryKey: ['aiAgentAuditLog', activeClient?.id],
     queryFn: () => api.aiAgent.getAuditLog(activeClient!.id, 50),
     enabled: !!activeClient?.id && activeTab === 'history',
+  });
+
+  const { data: socialAccounts = [], isLoading: isLoadingSocialAccounts } = useQuery({
+    queryKey: ['socialAccounts', activeClient?.id],
+    queryFn: () => api.socialAccounts.getByBrand(activeClient!.id),
+    enabled: !!activeClient?.id && activeTab === 'platforms',
+  });
+
+  const updateSocialAccountMutation = useMutation({
+    mutationFn: ({ provider, isActive }: { provider: string; isActive: boolean }) => 
+      api.socialAccounts.updateStatus(activeClient!.id, provider, isActive),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['socialAccounts', activeClient?.id] });
+      toast({ title: "Actualizado", description: "Estado de la plataforma actualizado." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
   });
 
   const saveMutation = useMutation({
@@ -236,6 +264,10 @@ En producción, esta respuesta sería generada por ${formData.provider === 'open
             <TabsTrigger value="automation" className="gap-2 data-[state=active]:bg-indigo-50" data-testid="tab-automation">
               <Zap className="h-4 w-4" />
               Automatización
+            </TabsTrigger>
+            <TabsTrigger value="platforms" className="gap-2 data-[state=active]:bg-indigo-50" data-testid="tab-platforms">
+              <Share2 className="h-4 w-4" />
+              Plataformas
             </TabsTrigger>
             <TabsTrigger value="playground" className="gap-2 data-[state=active]:bg-indigo-50" data-testid="tab-playground">
               <Play className="h-4 w-4" />
@@ -530,6 +562,127 @@ En producción, esta respuesta sería generada por ${formData.provider === 'open
                           data-testid="slider-cooldown"
                         />
                       </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </TabsContent>
+
+            <TabsContent value="platforms" className="mt-0 space-y-6">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Share2 className="h-5 w-5 text-indigo-500" />
+                      Configuración por Plataforma
+                    </CardTitle>
+                    <CardDescription>
+                      Activa o desactiva el agente IA para cada red social conectada
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoadingSocialAccounts ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                      </div>
+                    ) : socialAccounts.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Share2 className="h-10 w-10 mx-auto text-gray-300 mb-3" />
+                        <p className="text-muted-foreground">No hay cuentas sociales conectadas</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Conecta redes sociales desde la configuración de marca
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {socialAccounts.map((account) => {
+                          const config = PLATFORM_CONFIG[account.provider as keyof typeof PLATFORM_CONFIG];
+                          if (!config) return null;
+                          const Icon = config.icon;
+                          
+                          return (
+                            <div 
+                              key={account.id}
+                              className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                              data-testid={`platform-card-${account.provider}`}
+                            >
+                              <div className="flex items-center gap-4">
+                                <div className={`p-2 rounded-lg bg-gray-100`}>
+                                  <Icon className={`h-5 w-5 ${config.color}`} />
+                                </div>
+                                <div>
+                                  <div className="font-medium flex items-center gap-2">
+                                    {config.name}
+                                    {account.accountName && (
+                                      <span className="text-sm text-muted-foreground">
+                                        @{account.accountName}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    Límite: {config.charLimit} caracteres
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <Badge 
+                                  variant={account.isActive ? "default" : "secondary"}
+                                  className={account.isActive ? "bg-green-100 text-green-700" : ""}
+                                >
+                                  {account.isActive ? 'IA Activa' : 'IA Inactiva'}
+                                </Badge>
+                                <Switch
+                                  checked={account.isActive}
+                                  onCheckedChange={(checked) => 
+                                    updateSocialAccountMutation.mutate({ 
+                                      provider: account.provider, 
+                                      isActive: checked 
+                                    })
+                                  }
+                                  disabled={updateSocialAccountMutation.isPending}
+                                  data-testid={`switch-platform-${account.provider}`}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MessageSquare className="h-5 w-5 text-blue-500" />
+                      Límites de Caracteres por Plataforma
+                    </CardTitle>
+                    <CardDescription>
+                      Referencia de límites de caracteres para respuestas en cada plataforma
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {Object.entries(PLATFORM_CONFIG).map(([key, config]) => {
+                        const Icon = config.icon;
+                        return (
+                          <div 
+                            key={key}
+                            className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
+                            data-testid={`char-limit-${key}`}
+                          >
+                            <Icon className={`h-4 w-4 ${config.color}`} />
+                            <div>
+                              <div className="text-sm font-medium">{config.name}</div>
+                              <div className="text-xs text-muted-foreground">{config.charLimit} chars</div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </CardContent>
                 </Card>
