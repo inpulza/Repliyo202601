@@ -2051,6 +2051,322 @@ Paso 2: Seleccionar Redes
 
 ---
 
+## FASE 7: Sistema de Agentes IA con Respuestas Automáticas (Próxima Implementación)
+
+### Fecha de Planificación: 9 de Diciembre 2025
+
+### Descripción General
+
+Sistema de agentes de inteligencia artificial que permite asignar a cada marca un agente configurado para responder automáticamente a mensajes y comentarios de redes sociales. Funciona similar a los playgrounds de OpenAI o Google Gemini, donde el usuario puede configurar prompts, seleccionar modelos, y probar respuestas antes de activarlas.
+
+### Proveedores de IA Disponibles
+
+Replit ofrece integraciones nativas que **no requieren API key propia** - los cargos se facturan a los créditos de Replit.
+
+| Proveedor | Modelos Disponibles | Mejor Para |
+|-----------|---------------------|------------|
+| **OpenAI** | GPT-4o, GPT-4o-mini, o3-mini, GPT-4.1 | Chat general, respuestas rápidas |
+| **Gemini** | 2.5 Pro, 2.5 Flash, 3 Pro Preview | Razonamiento complejo, alto volumen |
+
+### Arquitectura de Base de Datos
+
+#### Nueva Tabla: `ai_agents` (Configuración del agente por marca)
+
+```typescript
+ai_agents = pgTable("ai_agents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brandId: varchar("brand_id").notNull().references(() => brands.id, { onDelete: 'cascade' }),
+  
+  // Configuración del modelo
+  provider: text("provider").notNull().default('openai'), // 'openai' | 'gemini'
+  model: text("model").notNull().default('gpt-4o-mini'),
+  temperature: real("temperature").default(0.7),
+  maxTokens: integer("max_tokens").default(500),
+  
+  // Prompts separados (mejor organización)
+  systemPrompt: text("system_prompt"), // Personalidad, tono, comportamiento
+  knowledgeBase: text("knowledge_base"), // Datos del negocio, FAQs, horarios
+  guardrailPrompt: text("guardrail_prompt"), // Instrucciones de seguridad
+  
+  // Modo de operación
+  autoReplyMode: text("auto_reply_mode").notNull().default('off'), // 'off' | 'draft' | 'auto'
+  approvalWorkflow: text("approval_workflow").default('none'), // 'none' | 'human_review'
+  
+  // Estrategia de límites de caracteres
+  characterLimitStrategy: text("character_limit_strategy").default('truncate'), // 'truncate' | 'reject' | 'summarize'
+  
+  // Control de frecuencia
+  cooldownSeconds: integer("cooldown_seconds").default(60),
+  lastAutoReplyAt: timestamp("last_auto_reply_at"),
+  
+  // Configuración por plataforma (JSON)
+  platformSettings: jsonb("platform_settings"), // { tiktok: { enabled: true }, instagram: { enabled: false } }
+  
+  // Estado
+  isActive: boolean("is_active").default(false).notNull(),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+```
+
+#### Nueva Tabla: `ai_agent_audit_log` (Historial de acciones)
+
+```typescript
+ai_agent_audit_log = pgTable("ai_agent_audit_log", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  agentId: varchar("agent_id").notNull().references(() => ai_agents.id, { onDelete: 'cascade' }),
+  messageId: varchar("message_id").references(() => messages.id),
+  conversationId: varchar("conversation_id").references(() => conversations.id),
+  
+  // Acción realizada
+  action: text("action").notNull(), // 'generated' | 'sent' | 'failed' | 'rejected' | 'approved'
+  
+  // Contenido
+  inputContent: text("input_content"), // Mensaje original recibido
+  outputContent: text("output_content"), // Respuesta generada
+  
+  // Resultado
+  status: text("status").notNull(), // 'success' | 'failed' | 'pending_review'
+  errorReason: text("error_reason"),
+  
+  // Métricas de uso (para facturación futura)
+  promptTokens: integer("prompt_tokens"),
+  completionTokens: integer("completion_tokens"),
+  
+  // Metadata
+  platform: text("platform"),
+  characterCount: integer("character_count"),
+  wasCharacterLimited: boolean("was_character_limited").default(false),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+```
+
+#### Campos Nuevos en Tabla `messages`
+
+```typescript
+// Añadir a la tabla messages existente:
+aiSuggestedReply: text("ai_suggested_reply"),       // Borrador sugerido por IA
+aiReplyStatus: text("ai_reply_status"),             // 'none' | 'suggested' | 'approved' | 'sent' | 'rejected'
+aiAgentId: varchar("ai_agent_id").references(() => ai_agents.id),
+```
+
+### Límites de Caracteres por Plataforma
+
+```typescript
+const PLATFORM_LIMITS = {
+  tiktok: { comment: 150, dm: null },
+  instagram: { comment: 2200, dm: 1000 },
+  facebook: { comment: 8000, dm: 20000 },
+  linkedin: { comment: 1250, dm: 1900 },
+  youtube: { comment: 10000, dm: null },
+  'google-business': { comment: 4000, dm: null },
+};
+```
+
+### Flujo de Auto-Respuesta (Backend)
+
+```
+1. LLEGA MENSAJE NUEVO (vía syncService de Metricool)
+         ↓
+2. ¿Tiene la marca un agente activo (isActive=true)?
+         ↓ NO → Termina
+         ↓ SÍ
+3. ¿Está habilitado autoReplyMode ('draft' o 'auto')?
+         ↓ NO → Termina
+         ↓ SÍ
+4. ¿Está habilitada esta plataforma en platformSettings?
+         ↓ NO → Termina
+         ↓ SÍ
+5. ¿Pasó el cooldown desde lastAutoReplyAt?
+         ↓ NO → Termina
+         ↓ SÍ
+6. PREPARAR CONTEXTO:
+   - Consultar mensajes de la conversación por conversation_id
+   - Obtener últimos N mensajes (contexto del hilo)
+   - Cargar información del cliente (customerName)
+   - Obtener datos del socialPost original (si es comentario)
+         ↓
+7. CONSTRUIR PROMPT COMPLETO:
+   - System Prompt (personalidad)
+   - Knowledge Base (datos del negocio)
+   - Límite de caracteres inyectado: "MÁXIMO {CHAR_LIMIT} caracteres"
+   - Guardrails (reglas de seguridad)
+   - Variables dinámicas reemplazadas: {{customer_name}}, {{platform}}, etc.
+   - Contexto de la conversación
+         ↓
+8. LLAMAR A PROVEEDOR IA (OpenAI/Gemini)
+   - Usar integración nativa de Replit
+   - Registrar tokens usados (promptTokens, completionTokens)
+         ↓
+9. FILTROS DE SEGURIDAD:
+   - Verificar profanidad/toxicidad
+   - Detectar PII (emails, teléfonos)
+   - Verificar palabras bloqueadas
+         ↓ FALLA → Guardar como draft con status='rejected'
+         ↓ PASA
+10. POST-PROCESAMIENTO:
+    - Verificar límite de caracteres
+    - Si excede: aplicar estrategia (truncar/resumir/rechazar)
+         ↓
+11. SEGÚN MODO DE OPERACIÓN:
+    ┌─ Si modo "draft":
+    │    → Guardar en messages.aiSuggestedReply
+    │    → aiReplyStatus = 'suggested'
+    │    → Notificar al usuario (UI muestra borrador)
+    │
+    └─ Si modo "auto" (y no requiere human_review):
+         → Enviar vía endpoint /api/inbox/reply existente
+         → aiReplyStatus = 'sent'
+         → Actualizar lastAutoReplyAt
+         ↓
+12. REGISTRAR EN ai_agent_audit_log
+```
+
+### Variables Dinámicas Soportadas
+
+El sistema reemplaza estas variables antes de enviar a la IA:
+
+| Variable | Descripción | Fuente |
+|----------|-------------|--------|
+| `{{customer_name}}` | Nombre del cliente | `conversation.customerName` |
+| `{{platform}}` | Red social | `message.platform` |
+| `{{brand_name}}` | Nombre de la marca | `brand.name` |
+| `{{post_context}}` | Descripción del post original | `socialPost.caption` |
+| `{{char_limit}}` | Límite de caracteres | `PLATFORM_LIMITS[platform]` |
+
+### Estructura del Frontend
+
+#### Ubicación: Configuraciones de Marca
+
+La configuración del agente IA estará dentro de Brand Settings, en una nueva pestaña "Agente IA".
+
+#### Pestañas de Configuración:
+
+**1. General**
+- Selector de proveedor (OpenAI/Gemini)
+- Selector de modelo con descripción
+- Slider de temperatura (0.0-1.0)
+- Editor de System Prompt (personalidad, tono)
+- Editor de Knowledge Base (FAQs, horarios, datos del negocio)
+- Contador de tokens en tiempo real
+
+**2. Plataformas**
+- Toggle por red social (activar/desactivar auto-respuesta por plataforma)
+- Vista de límites de caracteres por plataforma
+- Estrategia de límite: Truncar | Resumir | Rechazar
+
+**3. Automatización**
+- Modo: Apagado | Solo borradores | Automático completo
+- Flujo de aprobación (requiere revisión humana)
+- Cooldown entre respuestas (segundos)
+- Horario de funcionamiento (opcional, futuro)
+
+**4. Seguridad**
+- Filtro de profanidad (on/off)
+- Lista de palabras bloqueadas
+- Detección de PII (on/off)
+- Prompt de guardrails
+
+**5. Playground de Pruebas**
+- Opción A: Seleccionar conversación real existente
+- Opción B: Escribir mensajes simulados
+- Ver respuesta generada en tiempo real
+- Contador de caracteres con indicador de límite por plataforma
+- Preview de cómo quedaría truncado/resumido
+- Botón "Usar esta configuración"
+
+**6. Historial / Analytics**
+- Últimas respuestas automáticas
+- Gráfico de uso de tokens
+- Tasa de éxito/fallo
+- Errores recientes
+
+### Integración con Inbox Existente
+
+Cuando hay un borrador sugerido por IA:
+
+```
+┌─────────────────────────────────────────────────┐
+│  💬 Comentario entrante de @usuario             │
+│  "¿Tienen envío gratis?"                        │
+├─────────────────────────────────────────────────┤
+│  🤖 Sugerencia de IA:                           │
+│  ┌───────────────────────────────────────────┐  │
+│  │ "¡Hola! Sí, el envío es gratis en compras │  │
+│  │  mayores a $50. ¿Te puedo ayudar en algo  │  │
+│  │  más?"                                     │  │
+│  └───────────────────────────────────────────┘  │
+│  [✓ Aprobar y Enviar]  [✏️ Editar]  [✗ Rechazar]│
+└─────────────────────────────────────────────────┘
+```
+
+### Endpoints API Nuevos
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/api/brands/:id/agent` | Obtener configuración del agente |
+| `POST` | `/api/brands/:id/agent` | Crear configuración de agente |
+| `PUT` | `/api/brands/:id/agent` | Actualizar configuración |
+| `DELETE` | `/api/brands/:id/agent` | Eliminar agente |
+| `POST` | `/api/brands/:id/agent/test` | Probar respuesta (playground) |
+| `GET` | `/api/brands/:id/agent/audit` | Historial de acciones |
+| `POST` | `/api/messages/:id/ai-approve` | Aprobar borrador de IA |
+| `POST` | `/api/messages/:id/ai-reject` | Rechazar borrador de IA |
+
+### Reglas de Seguridad
+
+1. **Autenticación**: Todos los endpoints requieren `requireAuth`
+2. **Autorización**: Solo admin o dueño de la marca pueden configurar agentes
+3. **Rate Limiting**: Máximo X respuestas automáticas por minuto por marca
+4. **Cooldown**: Tiempo mínimo configurable entre respuestas
+5. **Filtros de contenido**: Bloqueo de profanidad y PII
+6. **Auditoría completa**: Toda acción queda registrada en audit_log
+7. **Botón de emergencia**: Toggle global para desactivar todas las respuestas
+8. **Secrets seguros**: API keys manejadas por integraciones de Replit (no en código)
+
+### Manejo de Errores
+
+| Error | Acción |
+|-------|--------|
+| Timeout del proveedor IA | Reintentar 3 veces con backoff exponencial |
+| Respuesta muy larga | Aplicar estrategia configurada (truncar/resumir/rechazar) |
+| Fallo al enviar por Metricool | Guardar como borrador, notificar usuario |
+| Contenido bloqueado por filtro | Guardar en draft con status='rejected' |
+| Rate limit de API proveedor | Esperar cooldown y reintentar |
+| Fallo de validación de seguridad | Rechazar y registrar en audit log |
+
+### Plan de Implementación
+
+| Paso | Descripción | Tiempo Est. |
+|------|-------------|-------------|
+| **1** | Base de datos: Crear tablas `ai_agents`, `ai_agent_audit_log`, campos en `messages` | 2h |
+| **2** | Backend - Storage: Métodos CRUD para agentes y audit log | 2h |
+| **3** | Backend - Integraciones IA: Instalar OpenAI/Gemini de Replit, crear servicio unificado `LLMProvider` | 3h |
+| **4** | Backend - API Routes: Endpoints CRUD y playground de pruebas | 2h |
+| **5** | Backend - Auto-respuesta: Integrar en syncService con toda la lógica de flujo | 4h |
+| **6** | Frontend - UI de Configuración: Pestañas de settings del agente | 4h |
+| **7** | Frontend - Playground: Área de pruebas con previsualización | 3h |
+| **8** | Frontend - Integración Inbox: Mostrar borradores, botones aprobar/rechazar | 2h |
+| **9** | Testing y ajustes | 2h |
+
+**Total estimado:** 24 horas
+
+### Notas Técnicas
+
+1. **Separación Prompt/Conocimiento**: `systemPrompt` define comportamiento, `knowledgeBase` define datos del negocio. Se concatenan al generar.
+
+2. **Optimización de Tokens**: El límite de caracteres se inyecta en el prompt ANTES de llamar a la IA, no después. Esto reduce el gasto de tokens al evitar llamadas dobles.
+
+3. **Contexto por Conversación**: Siempre se consulta por `conversation_id` para mantener el hilo. Nunca mensajes sueltos.
+
+4. **Proveedor Agnóstico**: El código usa `LLMProvider.generate()` internamente, permitiendo cambiar de OpenAI a Gemini sin modificar lógica.
+
+5. **Tokens para Facturación**: Se guardan `promptTokens` y `completionTokens` en audit log para futuros reportes de costos por marca.
+
+---
+
 ## PENDIENTES / TODO
 
 ### 1. Resiliencia de Conexión a Base de Datos (Prioridad: Media)
