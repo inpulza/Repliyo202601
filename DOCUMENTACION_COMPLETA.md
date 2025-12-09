@@ -4,7 +4,7 @@
 Sistema de gestión de mensajes de redes sociales que se integra con Metricool para centralizar y gestionar DMs y comentarios de múltiples marcas/empresas. El sistema permite a usuarios admin y clientes gestionar sus interacciones sociales de forma organizada.
 
 ## Estado Actual
-- **Fase Actual**: ✅ FASE 7.1 COMPLETADA - Playground conectado a IA real
+- **Fase Actual**: ✅ FASE 8 COMPLETADA - Integración de IA en Inbox
 - **Última Actualización**: 9 de Diciembre 2025
 - **Login/Logout**: ✅ Completamente funcional (página de login creada, logout en sidebar)
 - **Sistema de Roles**: ✅ Admin vs Client funcionando correctamente
@@ -20,7 +20,8 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 - **Agentes IA - Paso 3**: ✅ Endpoints de API para guardar/obtener configuración
 - **Agentes IA - Paso 4**: ✅ Frontend AIAgentConfig.tsx con 6 tabs completos
 - **Agentes IA - Paso 5**: ✅ Playground conectado a IA real (endpoint test-generate)
-- **Próximo Paso**: Integrar sugerencias de IA en la vista de Inbox (botón "Generar respuesta IA" en cada mensaje)
+- **Agentes IA - Paso 6**: ✅ Botón "Generar con IA" en Inbox (endpoint generate-reply)
+- **Próximo Paso**: FASE 9 - Características Avanzadas (notificaciones, tests, rate limiting, dashboard métricas)
 
 ---
 
@@ -313,17 +314,25 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 - ✅ Frontend AIAgentConfig.tsx actualizado para llamar al endpoint real
 - ✅ Muestra respuesta de Gemini/OpenAI según configuración
 
-**FASE 8: Integración de IA en Inbox (Pendiente)**
-- ⚪ Botón "Generar respuesta IA" en cada mensaje del Inbox
-- ⚪ Pre-llenar caja de respuesta con sugerencia de la IA
-- ⚪ Opción de editar antes de enviar
-- ⚪ Modo borrador automático
+**FASE 8: Integración de IA en Inbox ✅ COMPLETADA - 9 Diciembre 2025**
+- ✅ Botón "Generar con IA" en composer flotante del Inbox
+- ✅ Endpoint `/api/ai-agent/:brandId/generate-reply` para mensajes reales
+- ✅ Pre-llena caja de respuesta con sugerencia de la IA
+- ✅ Toast con información del provider/model/caracteres generados
+- ✅ Opción de editar antes de enviar
 
-**FASE 9: Características Avanzadas (Futuro)**
+**FASE 9: Características Avanzadas (Próxima)**
 - ⚪ Sistema de notificaciones en tiempo real
 - ⚪ Tests unitarios para MetricoolService
 - ⚪ Rate limiting para API endpoints
 - ⚪ Dashboard de métricas de uso de IA
+
+**FASE 10: Auto-Reply Automático (Pendiente)**
+- ⚪ Integración del sync con generación automática de respuestas
+- ⚪ Cuando llegan mensajes nuevos + agente en modo 'auto' → generar y enviar respuesta
+- ⚪ Respetar cooldown configurado entre respuestas automáticas
+- ⚪ Registro en audit log de respuestas automáticas enviadas
+- ⚪ Verificación de endpoint de envío de Metricool para auto-reply
 
 ---
 

@@ -5,6 +5,7 @@ import { insertBrandSchema, insertUserSchema, insertMessageSchema, updateMessage
 import { hashPassword, verifyPassword, sanitizeUser, sanitizeBrand, type AuthenticatedUser } from "./auth";
 import { MetricoolService } from "./services/metricool";
 import { syncService } from "./services/syncService";
+import { websocketService } from "./services/websocketService";
 import { z } from "zod";
 
 declare global {
@@ -1440,6 +1441,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+
+  websocketService.initialize(httpServer);
 
   return httpServer;
 }

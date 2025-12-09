@@ -1,5 +1,6 @@
 import { storage } from "../storage";
 import { MetricoolService, createMetricoolService } from "./metricool";
+import { websocketService } from "./websocketService";
 import { log } from "../app";
 
 interface BrandSyncResult {
@@ -247,8 +248,19 @@ class SyncService {
             parentMessageId: null,
           };
 
-          await storage.upsertMessage(messageData);
+          const savedMessage = await storage.upsertMessage(messageData);
           savedCount++;
+          
+          if (isNewMessage && isInbound) {
+            websocketService.notifyNewMessage(brandId, {
+              id: savedMessage.id,
+              platform,
+              author,
+              content: content.substring(0, 100),
+              type: 'dm',
+              conversationId: conversationRecord.id,
+            });
+          }
         } catch (error: any) {
           console.error(`Error upserting conversation message:`, error.message);
         }
@@ -336,6 +348,17 @@ class SyncService {
           crmData: null,
         });
         savedCount++;
+        
+        if (isNewComment) {
+          websocketService.notifyNewMessage(brandId, {
+            id: savedComment.id,
+            platform,
+            author: comment.author,
+            content: comment.content.substring(0, 100),
+            type: 'comment',
+            conversationId: conversationRecord.id,
+          });
+        }
 
         const nestedReplies = (comment.replies && comment.replies.length > 0) ? comment.replies : (comment.rawData?.root?.comments || []);
         

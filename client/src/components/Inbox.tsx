@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNexus, type ConversationWithPost } from '@/context/NexusContext';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useWebSocket } from '@/hooks/useWebSocket';
 import { cn } from '@/lib/utils';
 import { CRMContextPanel } from './CRMContextPanel';
 import { ConversationCard } from './ConversationCard';
@@ -161,6 +162,16 @@ export function Inbox() {
   } = useNexus();
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
+  
+  useWebSocket({
+    brandId: activeClientId || undefined,
+    onNewMessage: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/messages'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+    },
+    showToasts: true,
+  });
+  
   const [isEditing, setIsEditing] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
