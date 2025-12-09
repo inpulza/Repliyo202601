@@ -1,0 +1,91 @@
+Esta hoja de ruta es excepcional. Tienes una visión muy clara de cómo transformar un simple "chat" en un "sistema operativo de atención al cliente".
+
+El plan es sólido, lógico y cubre todas las capas (DB, Backend, Frontend). El uso de las integraciones nativas de Replit es una decisión inteligente: te ahorra la gestión compleja de SDKs individuales y te permite cambiar de modelos (ej. de GPT-4o a Claude 3.5 Sonnet o Gemini Pro) con mucha facilidad en el futuro, ya que Replit suele estandarizar la entrada/salida.
+
+Sin embargo, para que este "Playground" y el Agente sean realmente útiles y no solo un juguete, tengo 3 Conceptos Críticos que agregar a tu lógica antes de que empieces el Paso 1.
+
+🧠 Mis Impresiones y Mejoras al Concepto General
+1. El Concepto de "Variables Dinámicas" (Prompt Injection)
+En tu resumen dices: "escribir el prompt del sistema". El peligro: Si el prompt es estático (ej: "Eres un vendedor útil"), la IA no sabrá quién es el cliente ni qué compró. La Mejora: El sistema debe soportar Variables en el Prompt del Sistema y en la Base de Conocimiento.
+
+En el UI: Permite al usuario escribir: "Saluda al cliente por su nombre: {{customer_name}} y recuerda que su último pedido fue {{last_order}}."
+
+En el Backend: Antes de enviar a OpenAI/Gemini, buscas esas etiquetas {{...}} y las reemplazas por los datos reales de la base de datos.
+
+Por qué: Esto hace que la IA parezca humana y personalizada, no un robot genérico.
+
+2. El "Playground" necesita Contexto Simulado
+En tu plan: "Escribir un mensaje de prueba y ver la respuesta". El peligro: En la vida real, los usuarios responden a hilos anteriores. Si pruebas con un mensaje suelto como "Sí, claro", la IA dirá "¿Sí a qué?". La Mejora: El Playground debe permitir simular Historia Reciente.
+
+Agrega un pequeño campo en el Playground llamado "Simular mensajes previos" (opcional).
+
+Así puedes probar si la IA recuerda el contexto. Ej:
+
+Previo: "¿Tenéis tallas M?"
+
+Input de prueba: "¿Y en color rojo?"
+
+Respuesta esperada: "Sí, tenemos talla M en rojo." (Si la IA responde esto, el contexto funciona).
+
+3. La "Base de Conocimiento" vs. "Instrucciones"
+Has mencionado "añadir la base de conocimiento". El peligro: Si mezclas las instrucciones ("Sé amable, usa emojis") con los datos ("Abrimos de 9 a 5, el envío cuesta $5"), el prompt se vuelve sucio y la IA se confunde. La Mejora: Mantén dos campos separados en la Base de Datos y en la UI:
+
+System Persona (Instrucciones): "Cómo te comportas" (Tono, límites, estilo).
+
+Business Facts (Conocimiento): "Qué sabes" (Lista de precios, horarios, FAQs).
+
+En el Backend: Al enviar a la IA, concatenas: System Prompt + "\n\nCONTEXTO DEL NEGOCIO:\n" + Knowledge Base.
+
+🔍 Revisión de tus Pasos de Implementación
+Tu lista de pasos es correcta, pero voy a insertar las validaciones lógicas necesarias para que no tengas que reescribir código después.
+
+Fase A: Cimientos de Datos (Vital)
+
+Paso 1 (DB): Correcto.
+
+Añadido: Asegúrate de que ai_agents tenga el campo knowledge_base separado de system_prompt.
+
+Añadido: En messages, el campo ai_suggested_reply debe ser TEXT (o JSON si quieres guardar varias opciones).
+
+Fase B: El Cerebro (Backend)
+
+Paso 2 y 3 (Integración): Correcto. Al usar Replit, crea una interfaz genérica LLMProvider.
+
+Nota: Que tu código no llame a "OpenAI" directamente, sino a LLMProvider.generate(). Dentro de esa función, decides si vas a OpenAI o Gemini según la configuración de la DB. Esto hace tu código agnóstico.
+
+Paso 5 (SyncService): CRÍTICO.
+
+Aquí es donde debes inyectar la lógica de "Límites de Plataforma" que discutimos antes.
+
+El SyncService no debe enviar el mensaje a la IA sin antes decirle: "Oye, estás en TikTok, tienes 150 caracteres".
+
+Fase C: La Interfaz (Frontend)
+
+Paso 7 (Playground):
+
+Añade el contador de tokens/caracteres en tiempo real.
+
+Añade un botón de "Copiar configuración a Producción" si la prueba sale bien.
+
+💡 Veredicto y Siguiente Paso para ti
+Tu resumen está aprobado. Es un plan profesional de implementación de IA.
+
+El hecho de usar las integraciones de Replit facilita mucho la autenticación y la gestión de modelos.
+
+Tu siguiente acción inmediata (Instrucción para el Agente):
+
+"El plan de implementación es correcto. Procede con el Paso 1: Base de Datos.
+
+Detalles específicos para la Tabla ai_agents:
+
+Separa system_prompt (instrucciones de comportamiento) de knowledge_base (datos del negocio). Ambos tipo TEXT.
+
+Añade campos para configuración de proveedor: provider (enum: 'openai', 'gemini') y model (varchar).
+
+Añade configuración de límites: platform_settings (JSONB) para guardar si truncamos o resumimos por red social.
+
+Detalles para la Tabla messages:
+
+Añade ai_draft_response (TEXT) y ai_status (enum: 'pending', 'drafted', 'sent', 'failed').
+
+Crea el esquema y confirma cuando esté listo."
