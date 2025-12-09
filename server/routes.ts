@@ -44,13 +44,31 @@ function normalizePlatform(provider: string): string {
 // We keep 'conversation' and 'comment' in DB (matches schema)
 // Frontend will convert 'conversation' -> 'dm' when displaying
 
-const filterByBrand = (brandIdParam?: string) => {
+const filterByBrand = (brandIdParamName?: string) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({ error: "Not authenticated" });
     }
 
-    const brandId = brandIdParam || req.query.brandId as string || req.body.brandId;
+    let brandId = brandIdParamName 
+      ? req.params[brandIdParamName] 
+      : (req.query.brandId as string || req.body.brandId);
+    
+    if (req.user.role !== 'admin') {
+      if (!req.user.brandId) {
+        return res.status(403).json({ error: "User not associated with any brand" });
+      }
+      
+      if (brandIdParamName && (!brandId || brandId.trim() === '')) {
+        return res.status(400).json({ error: "Brand ID is required" });
+      }
+      
+      if (brandId && brandId !== req.user.brandId) {
+        return res.status(403).json({ error: "Access denied to this brand" });
+      }
+      
+      brandId = brandId || req.user.brandId;
+    }
     
     if (brandId) {
       const brand = await storage.getBrand(brandId);
@@ -60,18 +78,6 @@ const filterByBrand = (brandIdParam?: string) => {
           message: "Esta marca ha sido archivada y no está disponible."
         });
       }
-    }
-
-    if (req.user.role === 'admin') {
-      return next();
-    }
-    
-    if (!req.user.brandId) {
-      return res.status(403).json({ error: "User not associated with any brand" });
-    }
-
-    if (brandId && brandId !== req.user.brandId) {
-      return res.status(403).json({ error: "Access denied to this brand" });
     }
 
     next();
@@ -1156,6 +1162,215 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ========== AI AGENT ENDPOINTS ==========
+  
+  // GET /api/ai-agent/:brandId - Obtener configuración del agente
+  app.get("/api/ai-agent/:brandId", requireAuth, filterByBrand("brandId"), async (req, res) => {
+    try {
+      const { brandId } = req.params;
+      
+      const brand = await storage.getBrand(brandId);
+      if (!brand) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+      
+      const agent = await storage.getAiAgentByBrand(brandId);
+      if (!agent) {
+        return res.json(null);
+      }
+      
+      res.json(agent);
+    } catch (error: any) {
+      console.error('Error fetching AI agent:', error);
+      res.status(500).json({ error: "Failed to fetch AI agent configuration" });
+    }
+  });
+
+  // POST /api/ai-agent/:brandId - Crear o actualizar configuración del agente
+  app.post("/api/ai-agent/:brandId", requireAuth, filterByBrand("brandId"), async (req, res) => {
+    try {
+      const { brandId } = req.params;
+      
+      const brand = await storage.getBrand(brandId);
+      if (!brand) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+      
+      const agentData = {
+        ...req.body,
+        brandId,
+      };
+      
+      const agent = await storage.upsertAiAgent(agentData);
+      res.json(agent);
+    } catch (error: any) {
+      console.error('Error saving AI agent:', error);
+      res.status(500).json({ error: `Failed to save AI agent configuration: ${error.message}` });
+    }
+  });
+
+  // POST /api/ai-agent/:brandId/generate-reply - Generar sugerencia de respuesta IA
+  app.post("/api/ai-agent/:brandId/generate-reply", requireAuth, filterByBrand("brandId"), async (req, res) => {
+    try {
+      const { brandId } = req.params;
+      const { messageId, conversationId } = req.body;
+      
+      if (!messageId && !conversationId) {
+        return res.status(400).json({ error: "messageId or conversationId is required" });
+      }
+      
+      const brand = await storage.getBrand(brandId);
+      if (!brand) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+      
+      const agent = await storage.getAiAgentByBrand(brandId);
+      if (!agent || !agent.isActive) {
+        return res.status(400).json({ error: "AI agent is not configured or not active for this brand" });
+      }
+      
+      let targetMessage;
+      let conversationMessages: any[] = [];
+      let conversation;
+      
+      if (messageId) {
+        targetMessage = await storage.getMessage(messageId);
+        if (!targetMessage) {
+          return res.status(404).json({ error: "Message not found" });
+        }
+        
+        if (targetMessage.brandId !== brandId) {
+          return res.status(403).json({ error: "Access denied to this message" });
+        }
+        
+        if (targetMessage.conversationId) {
+          conversation = await storage.getConversation(targetMessage.conversationId);
+          conversationMessages = await storage.getMessagesByConversation(targetMessage.conversationId);
+        }
+      } else if (conversationId) {
+        conversation = await storage.getConversation(conversationId);
+        if (!conversation) {
+          return res.status(404).json({ error: "Conversation not found" });
+        }
+        
+        if (conversation.brandId !== brandId) {
+          return res.status(403).json({ error: "Access denied to this conversation" });
+        }
+        
+        conversationMessages = await storage.getMessagesByConversation(conversationId);
+        if (conversationMessages.length === 0) {
+          return res.status(404).json({ error: "No messages found in conversation" });
+        }
+        conversationMessages.sort((a, b) => 
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+        targetMessage = conversationMessages[conversationMessages.length - 1];
+      }
+      
+      const { createLLMProvider, PLATFORM_CHARACTER_LIMITS, LLMError } = await import("./services/llm");
+      
+      const llmProvider = createLLMProvider(agent, {});
+      
+      conversationMessages.sort((a, b) => 
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
+      
+      try {
+        const response = await llmProvider.generateReply({
+          agent,
+          message: targetMessage,
+          conversation: conversation || undefined,
+          brand,
+          conversationHistory: conversationMessages,
+        });
+        
+        await storage.updateMessage(targetMessage.id, {
+          aiSuggestedReply: response.text,
+          aiReplyStatus: 'suggested',
+          aiAgentId: agent.id,
+        });
+        
+        const platformLimit = PLATFORM_CHARACTER_LIMITS[targetMessage.platform] || PLATFORM_CHARACTER_LIMITS.default;
+        
+        await storage.createAuditLog({
+          agentId: agent.id,
+          messageId: targetMessage.id,
+          conversationId: targetMessage.conversationId || null,
+          action: 'generate_reply',
+          inputContent: targetMessage.content,
+          outputContent: response.text,
+          status: 'success',
+          promptTokens: response.usage.promptTokens,
+          completionTokens: response.usage.completionTokens,
+          platform: targetMessage.platform,
+          characterCount: response.characterCount,
+          wasCharacterLimited: response.wasCharacterLimited,
+        });
+        
+        res.json({
+          success: true,
+          reply: response.text,
+          characterCount: response.characterCount,
+          platformLimit,
+          wasCharacterLimited: response.wasCharacterLimited,
+          usage: response.usage,
+        });
+      } catch (llmError: any) {
+        const errorMessage = llmError instanceof LLMError 
+          ? llmError.message 
+          : 'Error generating reply';
+        
+        await storage.createAuditLog({
+          agentId: agent.id,
+          messageId: targetMessage.id,
+          conversationId: targetMessage.conversationId || null,
+          action: 'generate_reply',
+          inputContent: targetMessage.content,
+          outputContent: null,
+          status: 'error',
+          errorReason: errorMessage,
+          platform: targetMessage.platform,
+        });
+        
+        return res.status(500).json({ error: errorMessage });
+      }
+    } catch (error: any) {
+      console.error('Error generating AI reply:', error);
+      res.status(500).json({ error: `Failed to generate reply: ${error.message}` });
+    }
+  });
+
+  // GET /api/ai-agent/:brandId/audit-log - Obtener historial de auditoría
+  app.get("/api/ai-agent/:brandId/audit-log", requireAuth, filterByBrand("brandId"), async (req, res) => {
+    try {
+      const { brandId } = req.params;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const since = req.query.since ? new Date(req.query.since as string) : undefined;
+      
+      const brand = await storage.getBrand(brandId);
+      if (!brand) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+      
+      const agent = await storage.getAiAgentByBrand(brandId);
+      if (!agent) {
+        return res.status(404).json({ error: "AI agent not configured for this brand" });
+      }
+      
+      let logs;
+      if (since) {
+        logs = await storage.getAuditLogsAfterDate(agent.id, since);
+      } else {
+        logs = await storage.getAuditLogsByAgent(agent.id, limit);
+      }
+      
+      res.json(logs);
+    } catch (error: any) {
+      console.error('Error fetching audit logs:', error);
+      res.status(500).json({ error: "Failed to fetch audit logs" });
     }
   });
 
