@@ -352,6 +352,8 @@ class SyncService {
         });
         savedCount++;
         
+        log(`[SyncService] Comment ${comment.id} from ${comment.author}: isNew=${isNewComment}`, "sync");
+        
         if (isNewComment) {
           websocketService.notifyNewMessage(brandId, {
             id: savedComment.id,
