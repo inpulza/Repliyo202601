@@ -10,6 +10,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Inbox } from "@/components/Inbox";
 import { Overview } from "@/pages/Overview";
 import { AIAgentConfig } from "@/components/AIAgentConfig";
+import { AiMetrics } from "@/pages/AiMetrics";
 
 import { Connections } from "@/pages/Connections";
 import { IntegrationsPage } from "@/pages/Integrations";
@@ -44,6 +45,13 @@ function Router() {
         {() => (
           <DashboardLayout>
             <AIAgentConfig />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/ai-metrics">
+        {() => (
+          <DashboardLayout>
+            <AiMetrics />
           </DashboardLayout>
         )}
       </Route>

@@ -70,6 +70,15 @@ export interface IStorage {
   getAuditLogsByAgent(agentId: string, limit?: number): Promise<AiAgentAuditLog[]>;
   getAuditLogsByConversation(conversationId: string): Promise<AiAgentAuditLog[]>;
   getAuditLogsAfterDate(agentId: string, since: Date): Promise<AiAgentAuditLog[]>;
+  getAiMetricsStats(brandId: string, days?: number): Promise<{
+    totalRequests: number;
+    successCount: number;
+    errorCount: number;
+    totalTokens: number;
+    byPlatform: Record<string, number>;
+    byAction: Record<string, number>;
+    dailyStats: Array<{ date: string; count: number; tokens: number }>;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -679,6 +688,88 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .orderBy(desc(aiAgentAuditLog.createdAt));
+  }
+
+  async getAiMetricsStats(brandId: string, days: number = 30): Promise<{
+    totalRequests: number;
+    successCount: number;
+    errorCount: number;
+    totalTokens: number;
+    byPlatform: Record<string, number>;
+    byAction: Record<string, number>;
+    dailyStats: Array<{ date: string; count: number; tokens: number }>;
+  }> {
+    const agent = await this.getAiAgentByBrand(brandId);
+    if (!agent) {
+      return {
+        totalRequests: 0,
+        successCount: 0,
+        errorCount: 0,
+        totalTokens: 0,
+        byPlatform: {},
+        byAction: {},
+        dailyStats: [],
+      };
+    }
+
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    since.setHours(0, 0, 0, 0);
+
+    const logs = await db
+      .select()
+      .from(aiAgentAuditLog)
+      .where(
+        and(
+          eq(aiAgentAuditLog.agentId, agent.id),
+          gte(aiAgentAuditLog.createdAt, since)
+        )
+      )
+      .orderBy(desc(aiAgentAuditLog.createdAt));
+
+    const byPlatform: Record<string, number> = {};
+    const byAction: Record<string, number> = {};
+    const dailyMap: Record<string, { count: number; tokens: number }> = {};
+
+    let successCount = 0;
+    let errorCount = 0;
+    let totalTokens = 0;
+
+    for (const log of logs) {
+      if (log.status === 'success') successCount++;
+      else if (log.status === 'error') errorCount++;
+
+      totalTokens += (log.promptTokens || 0) + (log.completionTokens || 0);
+
+      if (log.platform) {
+        byPlatform[log.platform] = (byPlatform[log.platform] || 0) + 1;
+      }
+
+      if (log.action) {
+        byAction[log.action] = (byAction[log.action] || 0) + 1;
+      }
+
+      const dateStr = log.createdAt.toISOString().split('T')[0];
+      if (!dailyMap[dateStr]) {
+        dailyMap[dateStr] = { count: 0, tokens: 0 };
+      }
+      dailyMap[dateStr].count++;
+      dailyMap[dateStr].tokens += (log.promptTokens || 0) + (log.completionTokens || 0);
+    }
+
+    const dailyStats = Object.entries(dailyMap)
+      .map(([date, stats]) => ({ date, ...stats }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    return {
+      totalRequests: logs.length,
+      successCount,
+      errorCount,
+      totalTokens,
+      byPlatform,
+      byAction,
+      dailyStats,
+    };
   }
 }
 

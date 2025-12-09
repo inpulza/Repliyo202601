@@ -12,7 +12,8 @@ import {
   Command,
   Search,
   PlusCircle,
-  BarChart3
+  BarChart3,
+  Bot
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -215,6 +216,21 @@ export function Sidebar() {
           >
             <Settings className="h-4 w-4" />
             Agent Settings
+          </Button>
+        </Link>
+
+        <Link href="/ai-metrics">
+          <Button 
+            variant="ghost" 
+            className={cn(
+              "w-full justify-start gap-3 h-9 px-3 text-sm font-medium transition-all rounded-lg", 
+              location === "/ai-metrics" 
+                ? "bg-white text-gray-900 shadow-sm border border-gray-200" 
+                : "hover:bg-black/5 hover:text-gray-900 text-gray-600"
+            )}
+          >
+            <Bot className="h-4 w-4" />
+            IA Metrics
           </Button>
         </Link>
       </nav>

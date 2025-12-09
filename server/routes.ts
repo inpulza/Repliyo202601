@@ -6,6 +6,7 @@ import { hashPassword, verifyPassword, sanitizeUser, sanitizeBrand, type Authent
 import { MetricoolService } from "./services/metricool";
 import { syncService } from "./services/syncService";
 import { websocketService } from "./services/websocketService";
+import { authRateLimiter, syncRateLimiter, aiRateLimiter, sendMessageRateLimiter } from "./middleware/rateLimiter";
 import { z } from "zod";
 
 declare global {
@@ -140,7 +141,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", authRateLimiter, async (req, res) => {
     try {
       const { email, password } = loginSchema.parse(req.body);
 
@@ -714,7 +715,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     includeMention: z.boolean().optional().default(true),
   });
 
-  app.post("/api/inbox/reply", requireAuth, async (req, res) => {
+  app.post("/api/inbox/reply", requireAuth, sendMessageRateLimiter, async (req, res) => {
     try {
       const { messageId, text, includeMention } = replyToMessageSchema.parse(req.body);
       
@@ -925,7 +926,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/messages", requireAuth, filterByBrand(), async (req, res) => {
+  app.post("/api/messages", requireAuth, filterByBrand(), sendMessageRateLimiter, async (req, res) => {
     try {
       const validatedData = insertMessageSchema.parse(req.body);
       
@@ -977,7 +978,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/sync-brand/:brandId", requireAuth, async (req, res) => {
+  app.post("/api/sync-brand/:brandId", requireAuth, syncRateLimiter, async (req, res) => {
     try {
       const { brandId } = req.params;
       
@@ -1148,7 +1149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/sync/trigger", requireAuth, async (req, res) => {
+  app.post("/api/sync/trigger", requireAuth, syncRateLimiter, async (req, res) => {
     try {
       if (req.user!.role !== 'admin') {
         return res.status(403).json({ error: "Only admins can trigger manual sync" });
@@ -1214,7 +1215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/ai-agent/:brandId/generate-reply - Generar sugerencia de respuesta IA
-  app.post("/api/ai-agent/:brandId/generate-reply", requireAuth, filterByBrand("brandId"), async (req, res) => {
+  app.post("/api/ai-agent/:brandId/generate-reply", requireAuth, filterByBrand("brandId"), aiRateLimiter, async (req, res) => {
     try {
       const { brandId } = req.params;
       const { messageId, conversationId } = req.body;
@@ -1347,7 +1348,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/ai-agent/:brandId/test-generate - Probar generación de respuesta IA en playground
-  app.post("/api/ai-agent/:brandId/test-generate", requireAuth, filterByBrand("brandId"), async (req, res) => {
+  app.post("/api/ai-agent/:brandId/test-generate", requireAuth, filterByBrand("brandId"), aiRateLimiter, async (req, res) => {
     try {
       const { brandId } = req.params;
       const { testMessage, platform = "instagram" } = req.body;
@@ -1437,6 +1438,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error fetching audit logs:', error);
       res.status(500).json({ error: "Failed to fetch audit logs" });
+    }
+  });
+
+  // GET /api/ai-agent/:brandId/metrics - Obtener métricas de uso de IA
+  app.get("/api/ai-agent/:brandId/metrics", requireAuth, filterByBrand("brandId"), async (req, res) => {
+    try {
+      const { brandId } = req.params;
+      const days = parseInt(req.query.days as string) || 30;
+      
+      const brand = await storage.getBrand(brandId);
+      if (!brand) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+      
+      const metrics = await storage.getAiMetricsStats(brandId, days);
+      res.json(metrics);
+    } catch (error: any) {
+      console.error('Error fetching AI metrics:', error);
+      res.status(500).json({ error: "Failed to fetch AI metrics" });
     }
   });
 

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'wouter';
-import { Inbox, LayoutDashboard, Command, Settings, BarChart3 } from 'lucide-react';
+import { Inbox, LayoutDashboard, Command, Settings, BarChart3, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function BottomNav() {
@@ -10,8 +10,8 @@ export function BottomNav() {
   const navItems = [
     { href: '/overview', icon: BarChart3, label: 'Overview' },
     { href: '/', icon: Inbox, label: 'Inbox' },
+    { href: '/ai-metrics', icon: Bot, label: 'IA Metrics' },
     { href: '/connections', icon: LayoutDashboard, label: 'Connect' },
-    { href: '/integrations', icon: Command, label: 'Apps' },
     { href: '/settings', icon: Settings, label: 'Settings' },
   ];
 
