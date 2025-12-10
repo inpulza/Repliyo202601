@@ -18,7 +18,8 @@ interface VariableContext {
 }
 
 function formatUsername(author: string, platform: string): string {
-  const needsAtSymbol = platform === 'instagram' || platform === 'tiktok';
+  const normalizedPlatform = (platform || '').toLowerCase().trim();
+  const needsAtSymbol = normalizedPlatform === 'instagram' || normalizedPlatform === 'tiktok';
   
   if (needsAtSymbol) {
     return author.startsWith('@') ? author : `@${author}`;
@@ -32,14 +33,14 @@ function buildVariableContext(
   conversation?: Conversation,
   socialPost?: SocialPost | null
 ): VariableContext {
-  const platform = message.platform || 'default';
+  const platform = (message.platform || 'default').toLowerCase().trim();
   const username = formatUsername(message.author || 'Usuario', platform);
   const comment = message.content || '';
   
   let postContext = '';
   if (socialPost?.caption) {
     postContext = socialPost.caption;
-  } else if (message.type === 'conversation') {
+  } else if (message.type === 'conversation' && !socialPost) {
     postContext = 'Este es un mensaje directo privado.';
   }
   
@@ -54,10 +55,10 @@ function buildVariableContext(
 export function replaceVariables(text: string, context: VariableContext): string {
   let result = text;
   
-  result = result.replace(/\{\{username\}\}/g, context.username);
-  result = result.replace(/\{\{platform\}\}/g, context.platform);
-  result = result.replace(/\{\{comment\}\}/g, context.comment);
-  result = result.replace(/\{\{post_context\}\}/g, context.postContext);
+  result = result.replace(/\{\{\s*username\s*\}\}/g, context.username);
+  result = result.replace(/\{\{\s*platform\s*\}\}/g, context.platform);
+  result = result.replace(/\{\{\s*comment\s*\}\}/g, context.comment);
+  result = result.replace(/\{\{\s*post_context\s*\}\}/g, context.postContext);
   
   return result;
 }

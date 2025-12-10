@@ -3,6 +3,7 @@ import { useNexus } from '@/context/NexusContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { AiAgent, AiAgentAuditLog, SocialAccount } from '@shared/schema';
+import { DYNAMIC_VARIABLES } from '@shared/dynamicVariables';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,7 +26,7 @@ import { toast } from '@/hooks/use-toast';
 import { 
   Bot, Settings, MessageSquare, Zap, Shield, History, 
   Play, Save, Loader2, Sparkles, Brain, BookOpen,
-  Clock, AlertTriangle, CheckCircle, XCircle, Share2
+  Clock, AlertTriangle, CheckCircle, XCircle, Share2, Variable, Copy
 } from 'lucide-react';
 import { FaFacebook, FaInstagram, FaTwitter, FaTiktok, FaLinkedin, FaYoutube } from 'react-icons/fa';
 import { format } from 'date-fns';
@@ -387,6 +388,49 @@ export function AIAgentConfig() {
             </TabsContent>
 
             <TabsContent value="prompts" className="mt-0 space-y-6">
+              <Card className="border border-border shadow-none bg-muted/30">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                    <Variable className="h-4 w-4 text-muted-foreground" />
+                    Variables Dinámicas
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Usa estas variables en tus prompts para personalizar las respuestas automáticamente
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-3">
+                    {DYNAMIC_VARIABLES.map((variable) => (
+                      <div
+                        key={variable.key}
+                        className="flex items-start gap-3 p-3 rounded-lg border border-border bg-background"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <code className="text-xs font-mono bg-primary/10 text-primary px-2 py-0.5 rounded">
+                              {variable.placeholder}
+                            </code>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(variable.placeholder);
+                                toast({ title: "Copiado", description: `${variable.placeholder} copiado al portapapeles` });
+                              }}
+                              className="p-1 hover:bg-muted rounded transition-colors"
+                              data-testid={`button-copy-${variable.key}`}
+                            >
+                              <Copy className="h-3 w-3 text-muted-foreground" />
+                            </button>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">{variable.description}</p>
+                          <p className="text-xs text-muted-foreground/70 mt-0.5">Ej: {variable.example}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
               <Card className="border border-border shadow-none">
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2 text-base font-semibold">
