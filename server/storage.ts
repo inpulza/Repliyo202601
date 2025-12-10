@@ -430,13 +430,22 @@ export class DatabaseStorage implements IStorage {
     // Later, when Metricool syncs, the same message comes back with a metricoolId.
     // We need to detect this and update the existing message instead of creating a duplicate.
     // 
-    // IMPORTANT: This applies to BOTH inbound AND outbound synced messages because:
-    // - Metricool sometimes reports our outbound messages as 'inbound' (wrong direction)
-    // - Metricool sometimes reports them as 'outbound' (correct direction)
-    // - Metricool may create different conversation IDs than we have locally
-    // 
-    // So we search across the entire brand, not just the same conversation.
-    if (insertMessage.content) {
+    // DETECTION: A message is likely our outbound if:
+    // 1. Direction is 'outbound' (Metricool correctly identified it as our message)
+    // 2. OR source is 'metricool_sync' (it's a synced message that could be our reply)
+    //
+    // The reconciliation function itself has additional safety:
+    // - Only matches pending messages with source='repliyo' or 'repliyo_auto'
+    // - Uses robust content normalization
+    // - Tiered timestamp tolerance (10min for short, 2hrs for long)
+    // - Sorted by timestamp proximity to prefer closest match
+    //
+    // This ensures we reconcile our outbound replies while customer messages
+    // remain unaffected (they won't match our pending outbound content+timestamp).
+    const isFromMetricoolSync = insertMessage.source === 'metricool_sync';
+    const isExplicitOutbound = insertMessage.direction === 'outbound';
+    
+    if (insertMessage.content && (isExplicitOutbound || isFromMetricoolSync)) {
       const pendingOutbound = await this.findPendingOutboundMatchBrandWide(insertMessage);
       
       if (pendingOutbound) {
@@ -484,32 +493,52 @@ export class DatabaseStorage implements IStorage {
       return undefined;
     }
 
-    // Normalize content for comparison (trim, collapse whitespace, remove mentions)
+    // Normalize content for robust comparison (handles variations from different platforms)
     const normalizeContent = (text: string) => {
       return text
         .trim()
         .toLowerCase()
-        .replace(/\s+/g, ' ')
-        .replace(/^@+[\w.-]+\s*/g, '') // Remove leading @mention(s) like @@username or @username
-        .replace(/^@+[\w.-]+\s*/g, '') // Run twice in case of double mention @@user @user
-        .substring(0, 100); // Compare first 100 chars
+        .replace(/\s+/g, ' ')                                // Collapse all whitespace
+        .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, '')          // Remove zero-width chars and nbsp
+        .replace(/\uFE0F/g, '')                              // Remove emoji variation selectors
+        .replace(/\uD83C[\uDFFB-\uDFFF]/g, '')               // Remove emoji skin tone modifiers (surrogate pairs)
+        .replace(/[\u201C\u201D\u201E\u201F\u00AB\u00BB]/g, '"')  // Smart double quotes → "
+        .replace(/[\u2018\u2019\u201A\u201B\u2039\u203A]/g, "'")  // Smart single quotes → '
+        .replace(/\u2026/g, '...')                           // Ellipsis → ...
+        .replace(/&amp;/g, '&').replace(/&lt;/g, '<')        // Common HTML entities
+        .replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+        .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))  // Numeric HTML entities (supports emoji)
+        .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCodePoint(parseInt(h, 16)))  // Hex HTML entities (supports emoji)
+        .replace(/^@+[\w.-]+\s*/g, '')                       // Remove leading @mention(s)
+        .replace(/^@+[\w.-]+\s*/g, '')                       // Run twice in case of double
+        .substring(0, 100);                                   // Compare first 100 chars
     };
 
     const syncedNormalized = normalizeContent(syncedMessage.content);
     const syncedTime = syncedMessage.timestamp ? new Date(syncedMessage.timestamp).getTime() : Date.now();
 
-    // Find a matching message by content similarity and timestamp proximity (within 2 hours)
-    // We use 2 hours because Metricool sync can have significant delays
-    const TIME_TOLERANCE_MS = 2 * 60 * 60 * 1000; // 2 hours
+    // Find a matching message by content similarity and timestamp proximity
+    // Use tiered tolerance: short messages (< 20 chars) need closer timestamps to avoid false matches
+    const isShortMessage = syncedNormalized.length < 20;
+    const TIME_TOLERANCE_MS = isShortMessage 
+      ? 10 * 60 * 1000   // 10 minutes for short messages ("ok", "gracias", etc.)
+      : 2 * 60 * 60 * 1000; // 2 hours for longer messages
     
-    for (const pending of pendingMessages) {
+    // Sort by timestamp proximity to prefer the closest match first
+    const sortedPending = [...pendingMessages].sort((a, b) => {
+      const diffA = Math.abs(new Date(a.timestamp).getTime() - syncedTime);
+      const diffB = Math.abs(new Date(b.timestamp).getTime() - syncedTime);
+      return diffA - diffB;
+    });
+    
+    for (const pending of sortedPending) {
       const pendingNormalized = normalizeContent(pending.content);
       const pendingTime = new Date(pending.timestamp).getTime();
       const timeDiff = Math.abs(syncedTime - pendingTime);
       
       // Content must be similar and within time tolerance
       if (pendingNormalized === syncedNormalized && timeDiff < TIME_TOLERANCE_MS) {
-        console.log(`[Storage] Found brand-wide match for reconciliation: pending ${pending.id} matches synced content`);
+        console.log(`[Storage] Found brand-wide match for reconciliation: pending ${pending.id} matches synced content (timeDiff: ${Math.round(timeDiff/1000)}s)`);
         return pending;
       }
       

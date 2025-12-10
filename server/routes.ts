@@ -1057,19 +1057,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
             let authorAvatar = null;
             let content = msg.message || msg.text || '';
             let timestamp = msg.created_time || msg.publicationDateTime || msg.timestamp || Date.now();
+            
+            // Detect message direction: outbound = from brand, inbound = from customer
+            // 'self' contains the brand's account ID in Metricool conversations
+            const rawConv = conv.rawData as any;
+            const selfId = rawConv?.self;
+            const fromId = msg.from;
+            const isOutbound = selfId && fromId === selfId;
 
             // Instagram, LinkedIn, and TikTok use participants array
             if (conv.provider === 'INSTAGRAM' || conv.provider === 'LINKEDIN' || conv.provider === 'TIKTOKBUSINESS') {
-              const fromId = msg.from;
               const participants = conv.participants || [];
               const fromParticipant = participants.find((p: any) => p.id === fromId);
               
-              author = fromParticipant?.name || `Unknown ${conv.provider} User`;
-              authorAvatar = fromParticipant?.imageProfileUrl || null;
+              // For outbound messages, use the brand name as author
+              if (isOutbound) {
+                author = brand.name;
+                authorAvatar = null; // Brand avatar will be handled by UI
+              } else {
+                author = fromParticipant?.name || `Unknown ${conv.provider} User`;
+                authorAvatar = fromParticipant?.imageProfileUrl || null;
+              }
             } else {
               // Generic fallback for other providers
-              author = msg.from?.name || msg.sender?.name || 'Unknown';
-              authorAvatar = msg.from?.picture || msg.sender?.picture || null;
+              if (isOutbound) {
+                author = brand.name;
+                authorAvatar = null;
+              } else {
+                author = msg.from?.name || msg.sender?.name || 'Unknown';
+                authorAvatar = msg.from?.picture || msg.sender?.picture || null;
+              }
             }
 
             await storage.upsertMessage({
@@ -1085,6 +1102,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               rawData: { conversation: conv, message: msg },
               threadId: conv.id,
               parentMessageId: null,
+              direction: isOutbound ? 'outbound' : 'inbound',
+              source: 'metricool_sync',
             });
             conversationsCount++;
           } catch (error: any) {
