@@ -10,7 +10,7 @@ import {
   type AiAgentAuditLog, type InsertAiAgentAuditLog
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, isNull, gte, lte, sql } from "drizzle-orm";
+import { eq, desc, and, or, isNull, gte, lte, sql } from "drizzle-orm";
 
 export interface IStorage {
   getBrands(): Promise<Brand[]>;
@@ -425,24 +425,29 @@ export class DatabaseStorage implements IStorage {
       return updated!;
     }
 
-    // NEW: Reconciliation logic for messages sent from Repliyo
+    // RECONCILIATION LOGIC for messages sent from Repliyo
     // When we send a reply from our app, we save it without a metricoolId.
     // Later, when Metricool syncs, the same message comes back with a metricoolId.
     // We need to detect this and update the existing message instead of creating a duplicate.
-    if (insertMessage.conversationId && insertMessage.direction === 'inbound') {
-      // Look for an outbound message without metricoolId in the same conversation
-      // that has matching content (the message we sent from Repliyo)
-      const pendingOutbound = await this.findPendingOutboundMatch(insertMessage);
+    // 
+    // IMPORTANT: This applies to BOTH inbound AND outbound synced messages because:
+    // - Metricool sometimes reports our outbound messages as 'inbound' (wrong direction)
+    // - Metricool sometimes reports them as 'outbound' (correct direction)
+    // - Metricool may create different conversation IDs than we have locally
+    // 
+    // So we search across the entire brand, not just the same conversation.
+    if (insertMessage.content) {
+      const pendingOutbound = await this.findPendingOutboundMatchBrandWide(insertMessage);
       
       if (pendingOutbound) {
-        console.log(`[Storage] Reconciling message: updating local outbound with metricoolId ${insertMessage.metricoolId}`);
+        console.log(`[Storage] Reconciling message: updating local outbound ${pendingOutbound.id} with metricoolId ${insertMessage.metricoolId}`);
         // Update the existing outbound message with the metricoolId, rawData and avatar from Metricool
-        // But keep direction, source, and parentMessageId to preserve "Sent from Repliyo" badge
+        // But keep direction, source, author, and parentMessageId to preserve "Sent from Repliyo" badge
         const updated = await this.updateMessage(pendingOutbound.id, {
           metricoolId: insertMessage.metricoolId,
           rawData: insertMessage.rawData,
           authorAvatar: insertMessage.authorAvatar || pendingOutbound.authorAvatar,
-          // Keep direction as outbound and source as 'repliyo' to preserve the badge
+          // Keep direction as outbound and source as 'repliyo'/'repliyo_auto' to preserve the badge
         });
         return updated!;
       }
@@ -451,22 +456,27 @@ export class DatabaseStorage implements IStorage {
     return this.createMessage(insertMessage);
   }
 
-  // Helper method to find a pending outbound message that matches an incoming synced message
-  private async findPendingOutboundMatch(syncedMessage: InsertMessage): Promise<Message | undefined> {
-    if (!syncedMessage.conversationId || !syncedMessage.content) {
+  // Helper method to find a pending outbound message that matches an incoming synced message (BRAND-WIDE)
+  // This searches across ALL conversations in the brand because Metricool may assign different conversation IDs
+  private async findPendingOutboundMatchBrandWide(syncedMessage: InsertMessage): Promise<Message | undefined> {
+    if (!syncedMessage.content || !syncedMessage.brandId) {
       return undefined;
     }
 
-    // Find outbound messages without metricoolId in the same conversation
+    // Find outbound messages without metricoolId across the ENTIRE brand
+    // Filter by source='repliyo' or 'repliyo_auto' to only match messages sent from our app
     const pendingMessages = await db
       .select()
       .from(messages)
       .where(
         and(
-          eq(messages.conversationId, syncedMessage.conversationId),
+          eq(messages.brandId, syncedMessage.brandId),
           eq(messages.direction, 'outbound'),
           isNull(messages.metricoolId),
-          eq(messages.brandId, syncedMessage.brandId)
+          or(
+            eq(messages.source, 'repliyo'),
+            eq(messages.source, 'repliyo_auto')
+          )
         )
       );
 
@@ -499,16 +509,19 @@ export class DatabaseStorage implements IStorage {
       
       // Content must be similar and within time tolerance
       if (pendingNormalized === syncedNormalized && timeDiff < TIME_TOLERANCE_MS) {
+        console.log(`[Storage] Found brand-wide match for reconciliation: pending ${pending.id} matches synced content`);
         return pending;
       }
       
       // Also check if content starts the same way (for longer messages that might be truncated)
       if (pendingNormalized.startsWith(syncedNormalized.substring(0, 50)) && timeDiff < TIME_TOLERANCE_MS) {
+        console.log(`[Storage] Found brand-wide match (prefix) for reconciliation: pending ${pending.id}`);
         return pending;
       }
       
       // Also check reverse (synced content starts with pending content) for truncation on either side
       if (syncedNormalized.startsWith(pendingNormalized.substring(0, 50)) && timeDiff < TIME_TOLERANCE_MS) {
+        console.log(`[Storage] Found brand-wide match (reverse prefix) for reconciliation: pending ${pending.id}`);
         return pending;
       }
     }
