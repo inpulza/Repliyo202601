@@ -435,7 +435,7 @@ export function AIAgentConfig() {
                       </Select>
                     </div>
                     
-                    <p className="text-xs text-muted-foreground">
+                    <p className={`text-xs ${formData.transcriptionProvider === 'openai' ? 'text-red-500' : 'text-muted-foreground'}`}>
                       {formData.transcriptionProvider === 'openai' 
                         ? 'OpenAI Whisper utiliza tu API key configurada (OPENAI_API_KEY).'
                         : 'Gemini usa el modelo de respuestas configurado para transcribir audio (2.5 Flash, 2.5 Pro, o 3 Pro).'
