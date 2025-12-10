@@ -835,8 +835,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Get threadExternalId from conversation or rawData
         const threadExternalId = conversation?.threadExternalId || rawData?.conversation?.id || rawData?.id;
-        // Get recipient from conversation customerId or rawData
-        const recipient = conversation?.customerId || rawData?.root?.owner || rawData?.from?.id;
+        
+        // Get recipient - must be the OTHER participant (not self/brand account)
+        // The 'from' field of an inbound message is the customer who wrote to us
+        // The 'self' field in conversation.rawData is our brand account ID
+        const convRawData = rawData?.conversation?.rawData || rawData?.conversation || {};
+        const selfAccountId = convRawData?.self;
+        const participants = convRawData?.participants || rawData?.conversation?.participants || [];
+        
+        // Find recipient: the participant who is NOT the self/brand account
+        let recipient: string | undefined;
+        if (message.direction === 'inbound') {
+          // For inbound messages, the sender (from) is who we want to reply to
+          recipient = rawData?.message?.from || rawData?.from;
+        }
+        // Fallback: find participant that isn't self
+        if (!recipient && selfAccountId && participants.length > 0) {
+          const otherParticipant = participants.find((p: any) => p.id !== selfAccountId);
+          recipient = otherParticipant?.id;
+        }
+        // Final fallback
+        if (!recipient) {
+          recipient = rawData?.from?.id || rawData?.root?.owner;
+        }
+        
+        console.log("[Reply] DM recipient resolution:", { 
+          recipient, 
+          selfAccountId, 
+          messageFrom: rawData?.message?.from || rawData?.from,
+          participants: participants.map((p: any) => ({ id: p.id, name: p.name })),
+        });
         
         if (!threadExternalId || !recipient) {
           console.error("[Reply] DM reply missing data:", { 
