@@ -30,7 +30,7 @@ import {
   Bot, Settings, MessageSquare, Zap, Shield, History, 
   Play, Save, Loader2, Sparkles, Brain, BookOpen,
   Clock, AlertTriangle, CheckCircle, XCircle, Share2, Variable, Copy,
-  ChevronDown, ChevronUp, Filter, RotateCcw, Eye
+  ChevronDown, ChevronUp, Filter, RotateCcw, Eye, Info
 } from 'lucide-react';
 import { FaFacebook, FaInstagram, FaTwitter, FaTiktok, FaLinkedin, FaYoutube } from 'react-icons/fa';
 import { format } from 'date-fns';
@@ -432,12 +432,11 @@ export function AIAgentConfig() {
                     </Select>
                     
                     {formData.transcriptionProvider === 'openai' && (
-                      <Alert className="border-amber-200 bg-amber-50">
-                        <AlertTriangle className="h-4 w-4 text-amber-600" />
-                        <AlertDescription className="text-xs text-amber-800">
-                          <strong>Importante:</strong> Replit AI Integrations no soporta transcripción con OpenAI. 
-                          Para usar OpenAI Whisper necesitas configurar tu propia API key de OpenAI en los Secrets del proyecto (OPENAI_API_KEY).
-                          Si no la tienes, los audios no se transcribirán.
+                      <Alert className="border-blue-200 bg-blue-50">
+                        <Info className="h-4 w-4 text-blue-600" />
+                        <AlertDescription className="text-xs text-blue-800">
+                          <strong>Nota:</strong> OpenAI Whisper usa tu propia API key (OPENAI_API_KEY) para transcripción de audio.
+                          Replit AI Integrations no soporta audio con OpenAI, pero como tienes tu API key configurada, funcionará correctamente.
                         </AlertDescription>
                       </Alert>
                     )}
