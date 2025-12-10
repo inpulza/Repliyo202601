@@ -38,15 +38,30 @@ import { es } from 'date-fns/locale';
 
 const MODELS = {
   openai: [
-    { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Rápido y económico)' },
-    { value: 'gpt-4o', label: 'GPT-4o (Más potente)' },
-    { value: 'gpt-4.1', label: 'GPT-4.1 (Último modelo)' },
+    { value: 'gpt-5.1', label: 'GPT-5.1 (Más potente)', tier: 'premium' },
+    { value: 'gpt-5', label: 'GPT-5', tier: 'premium' },
+    { value: 'gpt-5-mini', label: 'GPT-5 Mini', tier: 'standard' },
+    { value: 'gpt-5-nano', label: 'GPT-5 Nano (Económico)', tier: 'economy' },
+    { value: 'gpt-4.1', label: 'GPT-4.1', tier: 'standard' },
+    { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini', tier: 'economy' },
+    { value: 'gpt-4.1-nano', label: 'GPT-4.1 Nano (Muy económico)', tier: 'economy' },
+    { value: 'gpt-4o', label: 'GPT-4o', tier: 'standard' },
+    { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Rápido)', tier: 'economy' },
+    { value: 'o4-mini', label: 'O4 Mini (Razonamiento)', tier: 'standard' },
+    { value: 'o3', label: 'O3 (Razonamiento avanzado)', tier: 'premium' },
+    { value: 'o3-mini', label: 'O3 Mini (Razonamiento)', tier: 'standard' },
   ],
   gemini: [
-    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Rápido)' },
-    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (Potente)' },
+    { value: 'gemini-3-pro-preview', label: 'Gemini 3 Pro (Más potente)', tier: 'premium' },
+    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (Razonamiento)', tier: 'standard' },
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Rápido)', tier: 'economy' },
   ],
 };
+
+const TRANSCRIPTION_PROVIDERS = [
+  { value: 'gemini', label: 'Gemini (Recomendado)', description: 'Usa Gemini 2.5 Flash - soportado por Replit AI' },
+  { value: 'openai', label: 'OpenAI Whisper', description: 'Requiere API key propia de OpenAI' },
+];
 
 const DEFAULT_SYSTEM_PROMPT = `Eres un asistente de atención al cliente profesional y amigable. Tu objetivo es ayudar a los usuarios con sus consultas de manera clara y concisa.
 
@@ -86,6 +101,7 @@ export function AIAgentConfig() {
   const [formData, setFormData] = useState<Partial<AiAgent>>({
     provider: 'openai',
     model: 'gpt-4o-mini',
+    transcriptionProvider: 'gemini',
     temperature: 0.7,
     maxTokens: 500,
     systemPrompt: DEFAULT_SYSTEM_PROMPT,
@@ -182,6 +198,7 @@ export function AIAgentConfig() {
       setFormData({
         provider: agent.provider || 'openai',
         model: agent.model || 'gpt-4o-mini',
+        transcriptionProvider: agent.transcriptionProvider || 'gemini',
         temperature: agent.temperature || 0.7,
         maxTokens: agent.maxTokens || 500,
         systemPrompt: agent.systemPrompt || DEFAULT_SYSTEM_PROMPT,
@@ -389,6 +406,30 @@ export function AIAgentConfig() {
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-2">
+                    <Label className="text-sm">Transcripción de Audio</Label>
+                    <Select
+                      value={formData.transcriptionProvider || 'gemini'}
+                      onValueChange={(value) => setFormData({ ...formData, transcriptionProvider: value })}
+                    >
+                      <SelectTrigger data-testid="select-transcription" className="shadow-none">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TRANSCRIPTION_PROVIDERS.map((provider) => (
+                          <SelectItem key={provider.value} value={provider.value}>
+                            {provider.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Proveedor para transcribir mensajes de audio. Gemini es recomendado porque está incluido en Replit AI.
+                    </p>
                   </div>
 
                   <Separator />

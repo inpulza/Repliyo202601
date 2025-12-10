@@ -116,6 +116,7 @@ export const aiAgents = pgTable("ai_agents", {
   brandId: varchar("brand_id").notNull().references(() => brands.id, { onDelete: 'cascade' }).unique(),
   provider: text("provider").notNull().default('openai'),
   model: text("model").notNull().default('gpt-4o-mini'),
+  transcriptionProvider: text("transcription_provider").notNull().default('gemini'),
   temperature: real("temperature").notNull().default(0.7),
   maxTokens: integer("max_tokens").notNull().default(500),
   systemPrompt: text("system_prompt"),

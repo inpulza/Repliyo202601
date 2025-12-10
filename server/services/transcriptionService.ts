@@ -36,12 +36,12 @@ class TranscriptionService {
   private async getProviderForBrand(brandId: string): Promise<TranscriptionProvider> {
     try {
       const agent = await storage.getAiAgentByBrand(brandId);
-      if (agent?.model) {
-        const model = agent.model.toLowerCase();
-        if (model.includes('gpt') || model.includes('openai')) {
+      if (agent?.transcriptionProvider) {
+        const provider = agent.transcriptionProvider.toLowerCase();
+        if (provider === 'openai') {
           return 'openai';
         }
-        if (model.includes('gemini')) {
+        if (provider === 'gemini') {
           return 'gemini';
         }
       }
