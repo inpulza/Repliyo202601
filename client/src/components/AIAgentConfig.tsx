@@ -59,8 +59,8 @@ const MODELS = {
 };
 
 const TRANSCRIPTION_PROVIDERS = [
-  { value: 'gemini', label: 'Gemini (Recomendado)', description: 'Usa Gemini 2.5 Flash - soportado por Replit AI' },
-  { value: 'openai', label: 'OpenAI Whisper', description: 'Requiere API key propia de OpenAI' },
+  { value: 'gemini', label: 'Gemini (Recomendado)', description: 'Usa Gemini 2.5 Flash - incluido en Replit AI', requiresOwnKey: false },
+  { value: 'openai', label: 'OpenAI Whisper', description: 'Requiere tu propia API key de OpenAI', requiresOwnKey: true },
 ];
 
 const DEFAULT_SYSTEM_PROMPT = `Eres un asistente de atención al cliente profesional y amigable. Tu objetivo es ayudar a los usuarios con sus consultas de manera clara y concisa.
@@ -422,14 +422,31 @@ export function AIAgentConfig() {
                       <SelectContent>
                         {TRANSCRIPTION_PROVIDERS.map((provider) => (
                           <SelectItem key={provider.value} value={provider.value}>
-                            {provider.label}
+                            <div className="flex flex-col items-start">
+                              <span>{provider.label}</span>
+                              <span className="text-xs text-muted-foreground">{provider.description}</span>
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground">
-                      Proveedor para transcribir mensajes de audio. Gemini es recomendado porque está incluido en Replit AI.
-                    </p>
+                    
+                    {formData.transcriptionProvider === 'openai' && (
+                      <Alert className="border-amber-200 bg-amber-50">
+                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                        <AlertDescription className="text-xs text-amber-800">
+                          <strong>Importante:</strong> Replit AI Integrations no soporta transcripción con OpenAI. 
+                          Para usar OpenAI Whisper necesitas configurar tu propia API key de OpenAI en los Secrets del proyecto (OPENAI_API_KEY).
+                          Si no la tienes, los audios no se transcribirán.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    
+                    {formData.transcriptionProvider === 'gemini' && (
+                      <p className="text-xs text-muted-foreground">
+                        Gemini está incluido en Replit AI y no requiere configuración adicional.
+                      </p>
+                    )}
                   </div>
 
                   <Separator />
