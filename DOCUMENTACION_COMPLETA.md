@@ -2634,6 +2634,76 @@ async function analyzeSentiment(content: string): Promise<'positive' | 'neutral'
 
 ---
 
+## CORRECCIONES - 10 Diciembre 2025
+
+### 1. Bug Crítico: Auto-Reply a Mensajes Propios ✅ CORREGIDO
+
+**Problema:** Cuando el usuario enviaba un DM desde Instagram directamente (no desde Repliyo), el sistema lo sincronizaba como mensaje nuevo y la IA intentaba responder. Error de Metricool: "No matching user found" porque intentaba responder a sí mismo.
+
+**Causa raíz:** El campo `brandAccountId` no detectaba correctamente el ID de la cuenta propia de la marca. Solo buscaba en `conv.rawData?.pageId` y `conv.rawData?.accountId`, pero Metricool usa el campo `self` para identificar la cuenta del propietario.
+
+**Solución implementada en 2 niveles:**
+
+1. **SyncService (server/services/syncService.ts):**
+   - Mejorada la detección de `brandAccountId` para incluir:
+     - `conv.rawData?.self` (campo principal de Metricool)
+     - `conv.rawData?.pageId` / `conv.rawData?.accountId` (fallbacks)
+     - `conv.self` (campo directo)
+     - `participants.find(p => p.self === true)?.id` (participante marcado como self)
+   - Añadida verificación adicional: `if (fromParticipant?.self === true) isFromBrand = true`
+   - Los mensajes de la propia marca ahora se marcan como `direction: 'outbound'`
+
+2. **AutoReplyService (server/services/autoReplyService.ts):**
+   - Añadido guard defensivo al inicio del procesamiento:
+   ```typescript
+   if (message.direction === 'outbound') {
+     log(`Skipping outbound message (sent by brand), not replying to self`);
+     return { success: false, skippedReason: "outbound_message" };
+   }
+   ```
+
+**Resultado:** Los mensajes enviados por el usuario desde sus redes sociales ya NO disparan auto-respuestas.
+
+---
+
+### 2. Sistema de Códigos Cortos para Audit Log ✅ IMPLEMENTADO
+
+**Problema:** Los IDs de UUID eran difíciles de comunicar verbalmente ("revisa el log ar-5c2f8b3d...")
+
+**Solución:**
+- Añadido campo `shortCode` (VARCHAR 12, UNIQUE nullable) al schema `aiAgentAuditLog`
+- Formato: `MMDD-NNNN` (ej: "1210-0001" para el primer log del 10 de diciembre)
+- Generación automática con MAX(short_code) para obtener el siguiente número
+- Manejo robusto de concurrencia:
+  - 10 reintentos con delays aleatorios (0-50ms) entre intentos
+  - Fallback a código con timestamp+random si hay colisiones
+  - Fallback final a NULL (UI muestra primeros 8 chars del UUID)
+- UI: Badge prominente con click-to-copy
+
+**Archivos modificados:**
+- `shared/schema.ts` - Campo shortCode añadido
+- `server/storage.ts` - Métodos createAuditLog y generateAuditLogShortCode
+- `client/src/components/AIAgentConfig.tsx` - Mostrar shortCode en Activity History
+
+---
+
+### 3. PENDIENTE: Unificación Visual de Mensajes Enviados
+
+**Problema detectado:** Los mensajes enviados desde Repliyo (tanto manuales como auto-reply) no tienen un estilo visual consistente en todas las plataformas y tipos de mensajes.
+
+**Estado actual:**
+- En comentarios: Funciona parcialmente con `isSentFromRepliyo` (bg-gray-800, logo de Repliyo)
+- En DMs: No hay diferenciación visual clara entre mensajes del usuario enviados desde la app vs desde la red social
+
+**Campo clave:** `source` en la tabla `messages`:
+- `'repliyo'` = mensaje enviado manualmente desde Repliyo
+- `'repliyo_auto'` = mensaje enviado automáticamente por IA
+- `NULL` o vacío = mensaje sincronizado de redes sociales
+
+**Ver instrucciones en archivo:** `INSTRUCCIONES_UNIFICACION_VISUAL.md`
+
+---
+
 ### 3. Cálculo de Tiempo de Respuesta (Prioridad: Baja)
 
 **Problema identificado:** El "Tiempo de Respuesta" en Overview muestra "--" porque solo hay 2 mensajes outbound de 332 totales. El cálculo requiere emparejar mensajes inbound con sus respuestas outbound.
