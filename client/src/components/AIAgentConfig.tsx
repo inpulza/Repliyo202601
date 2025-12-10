@@ -864,7 +864,7 @@ export function AIAgentConfig() {
                           Exitoso
                         </div>
                       </SelectItem>
-                      <SelectItem value="error">
+                      <SelectItem value="failed">
                         <div className="flex items-center gap-2">
                           <XCircle className="h-3 w-3 text-red-500" />
                           Error
