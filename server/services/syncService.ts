@@ -158,7 +158,14 @@ class SyncService {
       if (!conv.messages || conv.messages.length === 0) continue;
 
       const participants = conv.participants || [];
-      const brandAccountId = conv.rawData?.pageId || conv.rawData?.accountId || null;
+      // Get brand's own account ID from various Metricool fields
+      const brandAccountId = conv.rawData?.self || 
+                             conv.rawData?.pageId || 
+                             conv.rawData?.accountId ||
+                             conv.self ||
+                             // Find participant marked as self
+                             participants.find((p: any) => p.self === true)?.id ||
+                             null;
 
       for (const msg of conv.messages) {
         try {
@@ -188,7 +195,12 @@ class SyncService {
             author = fromParticipant?.name || msg.from?.name || `Unknown ${conv.provider} User`;
             authorAvatar = fromParticipant?.imageProfileUrl || null;
             
+            // Check if message is from brand's own account
             isFromBrand = brandAccountId ? fromId === brandAccountId : false;
+            // Also check if the fromParticipant is marked as self
+            if (!isFromBrand && fromParticipant?.self === true) {
+              isFromBrand = true;
+            }
             
             const customerParticipant = participants.find((p: any) => 
               p.id !== brandAccountId

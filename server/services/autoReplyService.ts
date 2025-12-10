@@ -64,6 +64,12 @@ class AutoReplyService {
         return { success: false, skippedReason: "already_processed" };
       }
 
+      // CRITICAL: Never reply to outbound messages (messages sent BY the brand)
+      if (message.direction === 'outbound') {
+        log(`${logPrefix} Skipping outbound message (sent by brand), not replying to self`, "sync");
+        return { success: false, skippedReason: "outbound_message" };
+      }
+
       await storage.updateMessage(message.id, { aiReplyStatus: 'processing' });
 
       log(`${logPrefix} Generating AI response for message ${message.id}`, "sync");
