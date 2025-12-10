@@ -1,4 +1,4 @@
-import type { AiAgent, Message, Conversation, Brand } from "@shared/schema";
+import type { AiAgent, Message, Conversation, Brand, SocialPost } from "@shared/schema";
 import { PLATFORM_CHARACTER_LIMITS } from "./types";
 
 interface PromptContext {
@@ -7,6 +7,59 @@ interface PromptContext {
   conversation?: Conversation;
   brand?: Brand;
   conversationHistory?: Message[];
+  socialPost?: SocialPost | null;
+}
+
+interface VariableContext {
+  username: string;
+  platform: string;
+  comment: string;
+  postContext: string;
+}
+
+function formatUsername(author: string, platform: string): string {
+  const needsAtSymbol = platform === 'instagram' || platform === 'tiktok';
+  
+  if (needsAtSymbol) {
+    return author.startsWith('@') ? author : `@${author}`;
+  }
+  
+  return author;
+}
+
+function buildVariableContext(
+  message: Message,
+  conversation?: Conversation,
+  socialPost?: SocialPost | null
+): VariableContext {
+  const platform = message.platform || 'default';
+  const username = formatUsername(message.author || 'Usuario', platform);
+  const comment = message.content || '';
+  
+  let postContext = '';
+  if (socialPost?.caption) {
+    postContext = socialPost.caption;
+  } else if (message.type === 'conversation') {
+    postContext = 'Este es un mensaje directo privado.';
+  }
+  
+  return {
+    username,
+    platform,
+    comment,
+    postContext,
+  };
+}
+
+export function replaceVariables(text: string, context: VariableContext): string {
+  let result = text;
+  
+  result = result.replace(/\{\{username\}\}/g, context.username);
+  result = result.replace(/\{\{platform\}\}/g, context.platform);
+  result = result.replace(/\{\{comment\}\}/g, context.comment);
+  result = result.replace(/\{\{post_context\}\}/g, context.postContext);
+  
+  return result;
 }
 
 export function composePrompt(context: PromptContext): {
@@ -14,25 +67,27 @@ export function composePrompt(context: PromptContext): {
   userPrompt: string;
   characterLimit: number;
 } {
-  const { agent, message, conversation, brand, conversationHistory } = context;
+  const { agent, message, conversation, brand, conversationHistory, socialPost } = context;
   
   const platform = message.platform || "default";
   const characterLimit = PLATFORM_CHARACTER_LIMITS[platform] || PLATFORM_CHARACTER_LIMITS.default;
 
+  const variableContext = buildVariableContext(message, conversation, socialPost);
+
   const systemParts: string[] = [];
 
   if (agent.systemPrompt) {
-    systemParts.push(agent.systemPrompt);
+    systemParts.push(replaceVariables(agent.systemPrompt, variableContext));
   } else {
     systemParts.push(`Eres un asistente de atención al cliente para ${brand?.name || "la marca"}.`);
   }
 
   if (agent.guardrailPrompt) {
-    systemParts.push(`\n--- REGLAS IMPORTANTES ---\n${agent.guardrailPrompt}`);
+    systemParts.push(`\n--- REGLAS IMPORTANTES ---\n${replaceVariables(agent.guardrailPrompt, variableContext)}`);
   }
 
   if (agent.knowledgeBase) {
-    systemParts.push(`\n--- BASE DE CONOCIMIENTO ---\n${agent.knowledgeBase}`);
+    systemParts.push(`\n--- BASE DE CONOCIMIENTO ---\n${replaceVariables(agent.knowledgeBase, variableContext)}`);
   }
 
   if (brand?.tone) {
