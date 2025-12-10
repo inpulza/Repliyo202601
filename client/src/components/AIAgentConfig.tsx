@@ -394,17 +394,21 @@ export function AIAgentConfig() {
                     System Prompt
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    Define la personalidad, tono y comportamiento del agente
+                    Define la personalidad, tono, estructura de respuesta y ejemplos (Few-Shot). Puedes incluir prompts extensos con múltiples secciones.
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-2">
                   <Textarea
                     value={formData.systemPrompt || ''}
                     onChange={(e) => setFormData({ ...formData, systemPrompt: e.target.value })}
-                    placeholder="Eres un asistente de atención al cliente..."
-                    className="min-h-[180px] font-mono text-sm shadow-none"
+                    placeholder="## 1. Rol y Objetivo&#10;Eres un asistente de IA que emula a...&#10;&#10;## 2. Estilo y Tono&#10;- Profesional y empático&#10;- Clara y accesible&#10;&#10;## 3. Estructura de Respuesta&#10;1. Saludo personalizado&#10;2. Cuerpo del mensaje&#10;3. Cierre con información de contacto&#10;&#10;## 4. Ejemplos de Casos de Uso&#10;**Caso 1:** ...&#10;**Respuesta:** ..."
+                    className="min-h-[400px] font-mono text-sm shadow-none resize-y"
+                    style={{ maxHeight: '70vh' }}
                     data-testid="textarea-system-prompt"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    {(formData.systemPrompt?.length || 0).toLocaleString()} caracteres
+                  </p>
                 </CardContent>
               </Card>
 
