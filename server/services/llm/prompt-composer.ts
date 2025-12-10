@@ -110,9 +110,18 @@ export function composePrompt(context: PromptContext): {
 - Mantén el idioma del mensaje original.
 - IMPORTANTE: Completa siempre tus oraciones. No dejes frases a medias.`);
 
+  // Add conversation memory instructions
+  systemParts.push(`\n--- MEMORIA DE CONVERSACIÓN ---
+- IMPORTANTE: Tienes acceso completo al historial reciente de esta conversación.
+- El historial de mensajes anteriores se te proporciona abajo como "HISTORIAL DE CONVERSACIÓN".
+- USA este historial para dar continuidad a la conversación y responder con contexto.
+- Si el cliente pregunta sobre algo que mencionó antes, PUEDES y DEBES referirte a esa información.
+- Nunca digas que "no puedes acceder a mensajes anteriores" - SÍ tienes acceso al historial proporcionado.
+- Responde de manera coherente con lo que se ha discutido previamente.`);
+
   let historyContext = "";
   if (conversationHistory && conversationHistory.length > 0) {
-    const recentMessages = conversationHistory.slice(-5);
+    const recentMessages = conversationHistory.slice(-10);
     historyContext = "\n--- HISTORIAL DE CONVERSACIÓN ---\n";
     for (const msg of recentMessages) {
       const role = msg.direction === "inbound" ? "Cliente" : "Marca";

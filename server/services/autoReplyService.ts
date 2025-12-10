@@ -82,7 +82,7 @@ class AutoReplyService {
         message,
         conversation,
         brand,
-        conversationHistory: conversationHistory.slice(-5),
+        conversationHistory: conversationHistory.slice(-10),
       });
 
       log(`${logPrefix} Generated reply (${llmResponse.characterCount} chars)`, "sync");
