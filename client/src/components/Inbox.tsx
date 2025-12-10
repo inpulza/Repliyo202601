@@ -911,9 +911,10 @@ export function Inbox() {
                               alt={isSentFromRepliyo ? "Repliyo" : msg.author} 
                             />
                             <AvatarFallback className={cn(
-                              isOwner ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-500"
+                              isOwner ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-600",
+                              isReply ? "text-[10px]" : "text-xs font-medium"
                             )}>
-                              <User className={isReply ? "h-3 w-3" : "h-4 w-4"} />
+                              {msg.author.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || <User className={isReply ? "h-3 w-3" : "h-4 w-4"} />}
                             </AvatarFallback>
                          </Avatar>
                          <div className="flex flex-col gap-1 max-w-[85%]">

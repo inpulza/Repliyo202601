@@ -413,9 +413,10 @@ export class DatabaseStorage implements IStorage {
       // Metricool may send the same message with different direction, but we don't want to overwrite
       if (existing.source === 'repliyo' || (existing.direction === 'outbound' && insertMessage.direction === 'inbound')) {
         console.log(`[Storage] Protecting Repliyo message ${existing.id} - preserving source and direction`);
-        // Only update rawData but keep direction, source, and parentMessageId
+        // Only update rawData and avatar but keep direction, source, and parentMessageId
         const updated = await this.updateMessage(existing.id, {
           rawData: insertMessage.rawData,
+          authorAvatar: insertMessage.authorAvatar || existing.authorAvatar,
           // Keep direction, source, and parentMessageId to preserve "Sent from Repliyo" indicator
         });
         return updated!;
@@ -435,11 +436,12 @@ export class DatabaseStorage implements IStorage {
       
       if (pendingOutbound) {
         console.log(`[Storage] Reconciling message: updating local outbound with metricoolId ${insertMessage.metricoolId}`);
-        // Update the existing outbound message with the metricoolId and rawData from Metricool
+        // Update the existing outbound message with the metricoolId, rawData and avatar from Metricool
         // But keep direction, source, and parentMessageId to preserve "Sent from Repliyo" badge
         const updated = await this.updateMessage(pendingOutbound.id, {
           metricoolId: insertMessage.metricoolId,
           rawData: insertMessage.rawData,
+          authorAvatar: insertMessage.authorAvatar || pendingOutbound.authorAvatar,
           // Keep direction as outbound and source as 'repliyo' to preserve the badge
         });
         return updated!;

@@ -181,11 +181,11 @@ class SyncService {
 
           const platform = this.normalizePlatform(conv.provider || "unknown");
 
-          if (conv.provider === 'INSTAGRAM' || conv.provider === 'LINKEDIN' || conv.provider === 'TIKTOKBUSINESS') {
+          if (conv.provider === 'INSTAGRAM' || conv.provider === 'LINKEDIN' || conv.provider === 'TIKTOKBUSINESS' || conv.provider === 'FACEBOOK') {
             const fromId = msg.from;
             const fromParticipant = participants.find((p: any) => p.id === fromId);
             
-            author = fromParticipant?.name || `Unknown ${conv.provider} User`;
+            author = fromParticipant?.name || msg.from?.name || `Unknown ${conv.provider} User`;
             authorAvatar = fromParticipant?.imageProfileUrl || null;
             
             isFromBrand = brandAccountId ? fromId === brandAccountId : false;
