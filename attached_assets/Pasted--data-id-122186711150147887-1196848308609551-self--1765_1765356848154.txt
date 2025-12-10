@@ -1,0 +1,248 @@
+[
+  {
+    "data": [
+      {
+        "id": "122186711150147887_1196848308609551",
+        "self": "203785422810157",
+        "provider": "FACEBOOK",
+        "status": "READ",
+        "creationDate": "2025-12-09T20:11:47+0100",
+        "lastUpdateTime": "2025-12-10T09:41:05+0100",
+        "lastReadTime": "2025-12-10T09:28:19+0100",
+        "participants": [
+          {
+            "id": "254142671114215",
+            "name": "Inpulza",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/254142671114215/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQIyz9Xi06i2zktZBBGuFuM1733Snm1teAHegmQdsxtGv2HtFwOMrtOmsCLSEZAhIRZBOP3Wfey0sBY4XPz07XLPWI1mjYG8OyjnDD3OaPN7nNxYWQqGNJH6CRBdjjLw2TC2ZAH42ZC5p2NWIGSnA1bpDb5pPMCdj9LSxyxm1hUhxeUct7H0OT8FRys40ZD&appsecret_proof=b05e60808679502734cf3ac2ee28dad001ddbdede6a02c80fef672f4b64b6332&appsecret_time=1765355299"
+          },
+          {
+            "id": "203785422810157",
+            "name": "Make Test",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/203785422810157/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQIyz9Xi06i2zktZBBGuFuM1733Snm1teAHegmQdsxtGv2HtFwOMrtOmsCLSEZAhIRZBOP3Wfey0sBY4XPz07XLPWI1mjYG8OyjnDD3OaPN7nNxYWQqGNJH6CRBdjjLw2TC2ZAH42ZC5p2NWIGSnA1bpDb5pPMCdj9LSxyxm1hUhxeUct7H0OT8FRys40ZD&appsecret_proof=b05e60808679502734cf3ac2ee28dad001ddbdede6a02c80fef672f4b64b6332&appsecret_time=1765355299"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "203785422810157_122186711150147887",
+            "owner": {
+              "id": "203785422810157"
+            },
+            "link": "https://www.facebook.com/122186712626147887/posts/122186711150147887?substory_index=553268810736101",
+            "text": null,
+            "mediaUrls": [
+              "https://scontent-lhr6-2.xx.fbcdn.net/v/t39.30808-6/465381494_122186711156147887_5174024191870470412_n.jpg?stp=dst-jpg_p720x720_tt6&_nc_cat=100&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=XQxdD2crB8AQ7kNvwH-rFIm&_nc_oc=AdkysJg8SIirhn4d1omtZFdeMCxrnypcxLg5KA8_tFuh_9SZbwfes82rgA8H8xotjk8&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=s3L3tyVkPkE45DkWSFlHqw&_nc_tpa=Q5bMBQHh9e_8na3mbv-9SOZ7StOGOfrjkd0IdeWDOH66aoGAn5F8SMQfptTK2kNkSVqrBq-rYHeD-31Z&oh=00_AfmrP84H2WhgbdgezILtXQn8JJ3eU6gZHHVLjXZEtNV5ag&oe=693EE5FD"
+            ],
+            "commentCount": 14,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122186711150147887_1196848308609551",
+          "creationDate": "2025-12-09T20:11:47+0100",
+          "owner": "254142671114215",
+          "text": "Llevo un buen rato detenido en esta publicación porque realmente hay algo en la atmósfera que has logrado aquí que me parece magnético. Más allá de la técnica, que es evidentemente sólida, lo que me atrapa es la capacidad que tiene esta pieza para contar una historia sin usar una sola palabra. La expresión y el lenguaje corporal transmiten una vulnerabilidad muy específica, casi como si estuviéramos invadiendo un momento privado del sujeto. Me fascina cómo has utilizado la paleta de colores para reforzar esa sensación; esos tonos [menciona un color, ej: fríos/azules] no solo construyen la forma, sino que dictan el estado de ánimo entero de la obra. Es raro encontrar arte en este feed que te obligue a pausar y reflexionar, pero esto definitivamente lo ha logrado. ¿Hubo algún evento o emoción específica que te inspiró a capturar este momento en particular? Realmente resuena mucho",
+          "mediaUrl": "",
+          "properties": {
+            "permalink": "https://www.facebook.com/photo.php?fbid=122186711150147887&set=a.122102153810147887&type=3&comment_id=1196848308609551"
+          },
+          "comments": [
+            {
+              "parentId": "122186711150147887_1196848308609551",
+              "id": "122186711150147887_1373465704250008",
+              "creationDate": "2025-12-09T20:14:16+0100",
+              "owner": "203785422810157",
+              "text": "@Inpulza ¡Hola! Nos alegra mucho que nuestra publicación haya resonado contigo de esa manera tan profunda. 😊\n\nEs genial leer tu interpretación y cómo te ha hecho reflexionar. Aunque somos una agencia de",
+              "mediaUrl": "",
+              "properties": {
+                "permalink": "https://www.facebook.com/photo.php?fbid=122186711150147887&set=a.122102153810147887&type=3&comment_id=1196848308609551&reply_comment_id=1373465704250008",
+                "userLikes": false
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "122186711150147887_379660965141886",
+        "self": "203785422810157",
+        "provider": "FACEBOOK",
+        "status": "READ",
+        "creationDate": "2024-11-09T18:24:18+0100",
+        "lastUpdateTime": "2025-01-11T02:00:07+0100",
+        "lastReadTime": "2025-12-10T09:28:19+0100",
+        "participants": [
+          {
+            "id": "8769095859802995",
+            "name": "Mandy Arab",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/8769095859802995/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQIyz9Xi06i2zktZBBGuFuM1733Snm1teAHegmQdsxtGv2HtFwOMrtOmsCLSEZAhIRZBOP3Wfey0sBY4XPz07XLPWI1mjYG8OyjnDD3OaPN7nNxYWQqGNJH6CRBdjjLw2TC2ZAH42ZC5p2NWIGSnA1bpDb5pPMCdj9LSxyxm1hUhxeUct7H0OT8FRys40ZD&appsecret_proof=b05e60808679502734cf3ac2ee28dad001ddbdede6a02c80fef672f4b64b6332&appsecret_time=1765355299"
+          },
+          {
+            "id": "203785422810157",
+            "name": "Make Test",
+            "imageProfileUrl": "https://graph.facebook.com/v24.0/203785422810157/picture?locale=en_US&access_token=EAAIS8Rq7hf4BQIyz9Xi06i2zktZBBGuFuM1733Snm1teAHegmQdsxtGv2HtFwOMrtOmsCLSEZAhIRZBOP3Wfey0sBY4XPz07XLPWI1mjYG8OyjnDD3OaPN7nNxYWQqGNJH6CRBdjjLw2TC2ZAH42ZC5p2NWIGSnA1bpDb5pPMCdj9LSxyxm1hUhxeUct7H0OT8FRys40ZD&appsecret_proof=b05e60808679502734cf3ac2ee28dad001ddbdede6a02c80fef672f4b64b6332&appsecret_time=1765355299"
+          }
+        ],
+        "root": {
+          "element": {
+            "id": "203785422810157_122186711150147887",
+            "owner": {
+              "id": "203785422810157"
+            },
+            "link": "https://www.facebook.com/122186712626147887/posts/122186711150147887?substory_index=553268810736101",
+            "text": null,
+            "mediaUrls": [
+              "https://scontent-lhr6-2.xx.fbcdn.net/v/t39.30808-6/465381494_122186711156147887_5174024191870470412_n.jpg?stp=dst-jpg_p720x720_tt6&_nc_cat=100&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=XQxdD2crB8AQ7kNvwH-rFIm&_nc_oc=AdkysJg8SIirhn4d1omtZFdeMCxrnypcxLg5KA8_tFuh_9SZbwfes82rgA8H8xotjk8&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AKK4YLsEAAAA&_nc_gid=s3L3tyVkPkE45DkWSFlHqw&_nc_tpa=Q5bMBQHh9e_8na3mbv-9SOZ7StOGOfrjkd0IdeWDOH66aoGAn5F8SMQfptTK2kNkSVqrBq-rYHeD-31Z&oh=00_AfmrP84H2WhgbdgezILtXQn8JJ3eU6gZHHVLjXZEtNV5ag&oe=693EE5FD"
+            ],
+            "commentCount": 14,
+            "reactionCount": null,
+            "properties": {
+              "fbMediaProductType": "POST"
+            }
+          },
+          "id": "122186711150147887_379660965141886",
+          "creationDate": "2024-11-09T18:24:18+0100",
+          "owner": "8769095859802995",
+          "text": "Hola linda foto",
+          "mediaUrl": "",
+          "properties": {
+            "permalink": "https://www.facebook.com/photo.php?fbid=122186711150147887&set=a.122102153810147887&type=3&comment_id=379660965141886"
+          },
+          "comments": [
+            {
+              "parentId": "122186711150147887_379660965141886",
+              "id": "122186711150147887_608461274941751",
+              "creationDate": "2024-11-09T18:24:35+0100",
+              "owner": "203785422810157",
+              "text": "¡Hola, Mandy! Muchas gracias por tu comentario, nos alegra que te haya gustado la foto. ¿Qué parte de la imagen te llamó más la atención? ¡Nos encantaría saber tu opinión! 😊",
+              "mediaUrl": "",
+              "properties": {
+                "permalink": "https://www.facebook.com/photo.php?fbid=122186711150147887&set=a.122102153810147887&type=3&comment_id=379660965141886&reply_comment_id=608461274941751",
+                "userLikes": false
+              }
+            },
+            {
+              "parentId": "122186711150147887_379660965141886",
+              "id": "122186711150147887_1751779102286324",
+              "creationDate": "2025-01-11T01:05:31+0100",
+              "owner": "203785422810157",
+              "text": "Prueba",
+              "mediaUrl": "",
+              "properties": {
+                "permalink": "https://www.facebook.com/photo.php?fbid=122186711150147887&set=a.122102153810147887&type=3&comment_id=379660965141886&reply_comment_id=1751779102286324",
+                "userLikes": false
+              }
+            },
+            {
+              "parentId": "122186711150147887_379660965141886",
+              "id": "122186711150147887_1358720592165429",
+              "creationDate": "2025-01-11T01:23:03+0100",
+              "owner": "203785422810157",
+              "text": "Prueba",
+              "mediaUrl": "",
+              "properties": {
+                "permalink": "https://www.facebook.com/photo.php?fbid=122186711150147887&set=a.122102153810147887&type=3&comment_id=379660965141886&reply_comment_id=1358720592165429",
+                "userLikes": false
+              }
+            },
+            {
+              "parentId": "122186711150147887_379660965141886",
+              "id": "122186711150147887_1795099217919133",
+              "creationDate": "2025-01-11T01:29:04+0100",
+              "owner": "203785422810157",
+              "text": "Prueba From Lambda",
+              "mediaUrl": "",
+              "properties": {
+                "permalink": "https://www.facebook.com/photo.php?fbid=122186711150147887&set=a.122102153810147887&type=3&comment_id=379660965141886&reply_comment_id=1795099217919133",
+                "userLikes": false
+              }
+            },
+            {
+              "parentId": "122186711150147887_379660965141886",
+              "id": "122186711150147887_1120626636176537",
+              "creationDate": "2025-01-11T01:31:05+0100",
+              "owner": "203785422810157",
+              "text": "Prueba From Lambda",
+              "mediaUrl": "",
+              "properties": {
+                "permalink": "https://www.facebook.com/photo.php?fbid=122186711150147887&set=a.122102153810147887&type=3&comment_id=379660965141886&reply_comment_id=1120626636176537",
+                "userLikes": false
+              }
+            },
+            {
+              "parentId": "122186711150147887_379660965141886",
+              "id": "122186711150147887_526009567119302",
+              "creationDate": "2025-01-11T01:45:12+0100",
+              "owner": "203785422810157",
+              "text": "Prueba From Lambda",
+              "mediaUrl": "",
+              "properties": {
+                "permalink": "https://www.facebook.com/photo.php?fbid=122186711150147887&set=a.122102153810147887&type=3&comment_id=379660965141886&reply_comment_id=526009567119302",
+                "userLikes": false
+              }
+            },
+            {
+              "parentId": "122186711150147887_379660965141886",
+              "id": "122186711150147887_1654215138525992",
+              "creationDate": "2025-01-11T01:46:23+0100",
+              "owner": "203785422810157",
+              "text": "Prueba From Lambda",
+              "mediaUrl": "",
+              "properties": {
+                "permalink": "https://www.facebook.com/photo.php?fbid=122186711150147887&set=a.122102153810147887&type=3&comment_id=379660965141886&reply_comment_id=1654215138525992",
+                "userLikes": false
+              }
+            },
+            {
+              "parentId": "122186711150147887_379660965141886",
+              "id": "122186711150147887_586948190715187",
+              "creationDate": "2025-01-11T01:51:45+0100",
+              "owner": "203785422810157",
+              "text": "Prueba From Test",
+              "mediaUrl": "",
+              "properties": {
+                "permalink": "https://www.facebook.com/photo.php?fbid=122186711150147887&set=a.122102153810147887&type=3&comment_id=379660965141886&reply_comment_id=586948190715187",
+                "userLikes": false
+              }
+            },
+            {
+              "parentId": "122186711150147887_379660965141886",
+              "id": "122186711150147887_1590903855127820",
+              "creationDate": "2025-01-11T01:56:25+0100",
+              "owner": "203785422810157",
+              "text": "Prueba From Task",
+              "mediaUrl": "",
+              "properties": {
+                "permalink": "https://www.facebook.com/photo.php?fbid=122186711150147887&set=a.122102153810147887&type=3&comment_id=379660965141886&reply_comment_id=1590903855127820",
+                "userLikes": false
+              }
+            },
+            {
+              "parentId": "122186711150147887_379660965141886",
+              "id": "122186711150147887_9532082303471157",
+              "creationDate": "2025-01-11T01:59:03+0100",
+              "owner": "203785422810157",
+              "text": "Prueba From Task",
+              "mediaUrl": "",
+              "properties": {
+                "permalink": "https://www.facebook.com/photo.php?fbid=122186711150147887&set=a.122102153810147887&type=3&comment_id=379660965141886&reply_comment_id=9532082303471157",
+                "userLikes": false
+              }
+            },
+            {
+              "parentId": "122186711150147887_379660965141886",
+              "id": "122186711150147887_831954052343970",
+              "creationDate": "2025-01-11T02:00:03+0100",
+              "owner": "203785422810157",
+              "text": "What kind of pic are you looking for? 😊✨",
+              "mediaUrl": "",
+              "properties": {
+                "permalink": "https://www.facebook.com/photo.php?fbid=122186711150147887&set=a.122102153810147887&type=3&comment_id=379660965141886&reply_comment_id=831954052343970",
+                "userLikes": false
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+]
