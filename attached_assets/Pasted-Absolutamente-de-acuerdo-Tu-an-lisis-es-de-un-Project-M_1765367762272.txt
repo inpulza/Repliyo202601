@@ -1,0 +1,72 @@
+Absolutamente de acuerdo! Tu análisis es de un Project Manager técnico senior.
+
+Has sabido distinguir perfectamente entre "lo ideal" (fantasía técnica) y "lo viable/necesario" (realidad del producto).
+
+Aquí te explico por qué tu priorización es la correcta y un par de matices para cerrar el plan:
+
+👍 Por qué tu plan es sólido
+Matar el "Feature Creep" (Interrupción del usuario): Descartar la detección de interrupción en tiempo real es la mejor decisión que has tomado. Sin webhooks instantáneos, intentar simular eso sería un "infierno de condiciones de carrera" (race conditions) que causaría más bugs que beneficios. Los delays cortos (1-2s) mitigan esto lo suficiente.
+
+El Margen de Seguridad (900 vs 1000): Esta es la solución elegante al "Soft Trim". En lugar de programar una lógica compleja para borrar palabras, simplemente le mientes piadosamente a la IA: "El límite es 900". Si se pasa un poco, caerá en los 1000 reales y no habrá que dividir. Genial.
+
+División Pragmática: Aceptar que el corte semántico perfecto es difícil y optar por un corte seguro (oraciones/párrafos) con indicadores visuales (1/2)... es UX funcional.
+
+📝 Prompt listo para enviar al Agente de Replit
+Aquí tienes el mensaje estructurado para que el agente ejecute la Fase 1 sin perderse.
+
+"He analizado las opciones y he definido un plan de acción concreto dividido en fases.
+
+Tu tarea ahora es implementar ÚNICAMENTE la Fase 1.
+
+Objetivo: Resolver el problema de los mensajes largos (long messages) sin sobre-ingeniería.
+
+Especificaciones de la Fase 1:
+
+Corrección de Límites (Hard & Soft Limits):
+
+En prompt-composer.ts, corrige la inyección del límite de caracteres.
+
+Define límites diferenciados:
+
+Instagram/Facebook Comentarios: 2200 chars.
+
+Instagram/Facebook DMs: 1000 chars (Límite real).
+
+Importante: En el System Prompt, instruye a la IA con un "Límite Seguro" del 90% (ej: dile que el límite es 900 para DMs) para reducir la probabilidad de tener que dividir.
+
+Lógica de División (Splitter Inteligente):
+
+Crea la función splitMessageForDelivery(text, limit).
+
+Estrategia de corte: Prioriza saltos de párrafo \n -> luego oraciones . -> último recurso palabras (espacios). Nunca cortar en mitad de una palabra.
+
+Formato: Si se divide, añade indicadores:
+
+Parte 1: Texto... (1/2) 👇
+
+Parte 2: (2/2) ...continuación del texto.
+
+Ejecución de Envío (Secuencial):
+
+Implementa el envío en bucle/secuencia.
+
+Delay: Fijo y corto (2 segundos) entre partes.
+
+Manejo de Error: Si falla la Parte 1, no enviar la Parte 2. Si falla la Parte 2, registrar el error pero no reintentar infinitamente.
+
+Base de Datos:
+
+Implementa los campos replyGroupId, partIndex y totalParts en la tabla messages.
+
+Lo que NO debes hacer (Fuera de alcance):
+
+No intentes detectar si el usuario interrumpe durante el delay.
+
+No implementes agrupación visual en el frontend todavía (se verán como mensajes separados por ahora).
+
+No hagas llamadas extra a la IA para resumir texto.
+
+Por favor, revisa prompt-composer.ts y el controlador de envío de mensajes, y aplica estos cambios."
+
+¿Un último detalle?
+Cuando implementes esto, ten en cuenta que los emojis a veces cuentan como 2 caracteres en algunos sistemas antiguos, pero en JavaScript moderno (string.length) y en las APIs de Meta suelen contar bien. Con tu margen de seguridad de 900 sobre 1000, estás cubierto, así que no te preocupes por eso ahora.
