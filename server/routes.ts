@@ -828,16 +828,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
       } else if (message.type === 'conversation' || message.type === 'dm') {
-        const conversationId = rawData.id;
-        const recipient = rawData.root?.owner || rawData.from?.id;
+        // Get conversation data for DM replies
+        const conversation = message.conversationId 
+          ? await storage.getConversation(message.conversationId) 
+          : null;
         
-        if (!conversationId || !recipient) {
+        // Get threadExternalId from conversation or rawData
+        const threadExternalId = conversation?.threadExternalId || rawData?.conversation?.id || rawData?.id;
+        // Get recipient from conversation customerId or rawData
+        const recipient = conversation?.customerId || rawData?.root?.owner || rawData?.from?.id;
+        
+        if (!threadExternalId || !recipient) {
+          console.error("[Reply] DM reply missing data:", { 
+            threadExternalId, 
+            recipient, 
+            conversationId: message.conversationId,
+            hasConversation: !!conversation 
+          });
           return res.status(400).json({ error: "Cannot determine conversation or recipient for DM reply" });
         }
         
         const result = await metricool.replyToConversation({
           provider: provider,
-          conversationId: conversationId,
+          conversationId: threadExternalId,
           recipient: recipient,
           text: text,
           blogId: brand.metricoolBlogId || '',
