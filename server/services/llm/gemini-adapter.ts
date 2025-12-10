@@ -57,6 +57,8 @@ export class GeminiAdapter implements LLMProvider {
         config.maxOutputTokens = agent.maxTokens;
       }
 
+      console.log(`[Gemini] Generating reply with maxOutputTokens=${config.maxOutputTokens || 'default'}`);
+      
       const response = await this.client.models.generateContent({
         model,
         config,
@@ -64,11 +66,18 @@ export class GeminiAdapter implements LLMProvider {
       });
 
       const rawText = response.text || "";
+      const usage = response.usageMetadata || {};
+      const finishReason = (response as any).candidates?.[0]?.finishReason;
+      
+      console.log(`[Gemini] Response: ${rawText.length} chars, ${usage.candidatesTokenCount || 0} tokens, finishReason=${finishReason || 'unknown'}`);
+      
       const strategy = (agent.characterLimitStrategy || "truncate") as CharacterLimitStrategy;
       
       const { text, wasLimited } = truncateResponse(rawText, characterLimit, strategy);
-
-      const usage = response.usageMetadata || {};
+      
+      if (wasLimited) {
+        console.log(`[Gemini] Response was ${strategy}d from ${rawText.length} to ${text.length} chars`);
+      }
 
       return {
         text,
