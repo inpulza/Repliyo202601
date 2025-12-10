@@ -933,6 +933,18 @@ export function AIAgentConfig() {
                               </div>
                               <div>
                                 <div className="flex items-center gap-2">
+                                  <code 
+                                    className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded font-mono text-xs font-semibold cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                    onClick={() => {
+                                      const code = log.shortCode || log.id.slice(0, 8);
+                                      navigator.clipboard.writeText(code);
+                                      toast({ title: "ID Copiado", description: `${code} copiado al portapapeles` });
+                                    }}
+                                    title="Clic para copiar ID"
+                                    data-testid={`log-code-${log.shortCode || log.id.slice(0, 8)}`}
+                                  >
+                                    {log.shortCode || log.id.slice(0, 8)}
+                                  </code>
                                   <span className="font-medium text-sm">{log.action}</span>
                                   {log.platform && (
                                     <Badge variant="outline" className="text-xs capitalize">
@@ -945,16 +957,18 @@ export function AIAgentConfig() {
                                 </span>
                               </div>
                             </div>
-                            <Badge 
-                              variant={log.status === 'success' ? 'default' : 'destructive'}
-                              className={`text-xs ${log.status === 'success' ? 'bg-green-100 text-green-700 hover:bg-green-100' : ''}`}
-                            >
-                              {log.status === 'success' ? (
-                                <><CheckCircle className="h-3 w-3 mr-1" /> Exitoso</>
-                              ) : (
-                                <><XCircle className="h-3 w-3 mr-1" /> Error</>
-                              )}
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge 
+                                variant={log.status === 'success' ? 'default' : 'destructive'}
+                                className={`text-xs ${log.status === 'success' ? 'bg-green-100 text-green-700 hover:bg-green-100' : ''}`}
+                              >
+                                {log.status === 'success' ? (
+                                  <><CheckCircle className="h-3 w-3 mr-1" /> Exitoso</>
+                                ) : (
+                                  <><XCircle className="h-3 w-3 mr-1" /> Error</>
+                                )}
+                              </Badge>
+                            </div>
                           </div>
                         </CardHeader>
                         

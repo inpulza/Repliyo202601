@@ -1,0 +1,2 @@
+ALTER TABLE "ai_agent_audit_log" ADD COLUMN "short_code" varchar(12);--> statement-breakpoint
+ALTER TABLE "ai_agent_audit_log" ADD CONSTRAINT "ai_agent_audit_log_short_code_unique" UNIQUE("short_code");

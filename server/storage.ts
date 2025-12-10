@@ -10,7 +10,7 @@ import {
   type AiAgentAuditLog, type InsertAiAgentAuditLog
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, isNull, gte } from "drizzle-orm";
+import { eq, desc, and, isNull, gte, lte, sql } from "drizzle-orm";
 
 export interface IStorage {
   getBrands(): Promise<Brand[]>;
@@ -677,11 +677,70 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createAuditLog(insertLog: InsertAiAgentAuditLog): Promise<AiAgentAuditLog> {
-    const [log] = await db
-      .insert(aiAgentAuditLog)
-      .values(insertLog)
-      .returning();
-    return log;
+    const maxRetries = 10;
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const shortCode = await this.generateAuditLogShortCode();
+        const [log] = await db
+          .insert(aiAgentAuditLog)
+          .values({ ...insertLog, shortCode })
+          .returning();
+        return log;
+      } catch (error: any) {
+        if (error.code === '23505' && error.constraint?.includes('short_code')) {
+          await new Promise(resolve => setTimeout(resolve, Math.random() * 50));
+          continue;
+        }
+        throw error;
+      }
+    }
+    
+    const randomSuffix = Math.random().toString(36).slice(2, 6).toUpperCase();
+    const fallbackCode = `X${Date.now().toString(36).slice(-5).toUpperCase()}${randomSuffix}`;
+    try {
+      const [log] = await db
+        .insert(aiAgentAuditLog)
+        .values({ ...insertLog, shortCode: fallbackCode })
+        .returning();
+      return log;
+    } catch (error: any) {
+      const [log] = await db
+        .insert(aiAgentAuditLog)
+        .values({ ...insertLog, shortCode: null })
+        .returning();
+      return log;
+    }
+  }
+
+  private async generateAuditLogShortCode(): Promise<string> {
+    const today = new Date();
+    const datePrefix = `${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}`;
+    
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+    
+    const result = await db
+      .select({ maxCode: sql<string>`MAX(short_code)` })
+      .from(aiAgentAuditLog)
+      .where(
+        and(
+          gte(aiAgentAuditLog.createdAt, startOfDay),
+          lte(aiAgentAuditLog.createdAt, endOfDay),
+          sql`short_code LIKE ${datePrefix + '-%'}`
+        )
+      );
+    
+    let nextNumber = 1;
+    const maxCode = result[0]?.maxCode;
+    if (maxCode && maxCode.includes('-')) {
+      const numPart = parseInt(maxCode.split('-')[1], 10);
+      if (!isNaN(numPart)) {
+        nextNumber = numPart + 1;
+      }
+    }
+    
+    return `${datePrefix}-${nextNumber.toString().padStart(4, '0')}`;
   }
 
   async getAuditLogsByAgent(agentId: string, limit: number = 100): Promise<AiAgentAuditLog[]> {

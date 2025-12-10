@@ -127,6 +127,7 @@ export const aiAgents = pgTable("ai_agents", {
 
 export const aiAgentAuditLog = pgTable("ai_agent_audit_log", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shortCode: varchar("short_code", { length: 12 }).unique(),
   agentId: varchar("agent_id").notNull().references(() => aiAgents.id, { onDelete: 'cascade' }),
   messageId: varchar("message_id").references(() => messages.id, { onDelete: 'set null' }),
   conversationId: varchar("conversation_id").references(() => conversations.id, { onDelete: 'set null' }),
