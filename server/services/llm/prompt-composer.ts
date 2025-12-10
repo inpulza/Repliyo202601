@@ -43,13 +43,10 @@ export function composePrompt(context: PromptContext): {
     systemParts.push(`\n--- CONTEXTO DEL NEGOCIO ---\n${brand.businessContext}`);
   }
 
-  systemParts.push(`\n--- INSTRUCCIONES DE RESPUESTA ---
-- Genera una respuesta completa y útil. Puedes extenderte si es necesario para responder adecuadamente.
+  systemParts.push(`\n--- LÍMITES TÉCNICOS ---
 - El límite de caracteres para ${platform} es ${characterLimit} caracteres.
 - Tu respuesta DEBE ser menor a ${characterLimit} caracteres.
-- No incluyas saludos formales innecesarios si el mensaje es casual.
 - Mantén el idioma del mensaje original.
-- NO uses hashtags ni emojis excesivos a menos que sea apropiado para el contexto.
 - IMPORTANTE: Completa siempre tus oraciones. No dejes frases a medias.`);
 
   let historyContext = "";
