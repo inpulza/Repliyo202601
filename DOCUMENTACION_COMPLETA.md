@@ -2745,3 +2745,91 @@ Se agregó un nuevo campo en la tabla `messages` que actúa como "certificado de
 **Solución:** Este problema se resolverá naturalmente cuando se usen más respuestas desde Repliyo. No requiere desarrollo adicional, solo uso del sistema.
 
 ---
+
+## ACTUALIZACIONES - 10 Diciembre 2025 (Sesión Tarde)
+
+### 1. Soporte Multimodal: Audio e Imágenes en Inbox ✅ IMPLEMENTADO
+
+**Funcionalidad:** Los mensajes de audio e imágenes enviados por usuarios ahora se muestran correctamente en el inbox.
+
+**Audio:**
+- Reproductor visual moderno estilo WhatsApp/Instagram
+- Waveform matemático generado (superposición de ondas sinusoidales + ruido)
+- Controles: play/pause, barra de progreso, tiempo actual/total
+- Transcripción automática mostrada debajo del reproductor
+- **Nota CORS:** No se puede usar WaveSurfer.js porque las URLs de audio de Instagram/Facebook (lookaside.fbsbx.com) no permiten acceso cross-origin para análisis de waveform real
+
+**Imágenes:**
+- Visualización inline con click para ampliar
+- Soporte para múltiples formatos (jpg, png, etc.)
+
+**Archivos modificados:**
+- `client/src/components/Inbox.tsx` - Componentes `AudioPlayer` y visualización de imágenes
+
+---
+
+### 2. Transcripción de Audio con Proveedor Flexible ✅ IMPLEMENTADO
+
+**Funcionalidad:** Los audios recibidos se transcriben automáticamente usando IA, con opción de elegir el proveedor.
+
+**Proveedores soportados:**
+| Proveedor | Descripción | Requisitos |
+|-----------|-------------|------------|
+| **Gemini (Recomendado)** | Usa modelos Gemini (2.5 Flash, 2.5 Pro, 3 Pro) | Incluido en Replit AI o API key propia |
+| **OpenAI Whisper** | Modelo especializado en transcripción | Requiere API key propia (OPENAI_API_KEY) |
+
+**Nota técnica de Replit AI Integrations:**
+- ✅ Gemini: Soporta audio/video inputs para transcripción
+- ❌ OpenAI: NO soporta audio/video inputs (solo texto)
+- Si se usa OpenAI para transcripción, debe configurarse la API key propia
+
+**Configuración en Agent Settings:**
+- Nueva sección "Transcripción de Audio" en la pestaña Modelo
+- Selector para elegir proveedor (Gemini/OpenAI)
+- Mensaje informativo que cambia según selección (azul para Gemini, rojo para OpenAI)
+- Campo `transcriptionProvider` añadido a tabla `ai_agents` (default: 'gemini')
+
+**Archivos modificados:**
+- `shared/schema.ts` - Campo `transcriptionProvider` en aiAgents
+- `server/services/transcriptionService.ts` - Lógica de transcripción dual
+- `client/src/components/AIAgentConfig.tsx` - UI de configuración
+
+---
+
+### 3. Modelos de IA Actualizados ✅ IMPLEMENTADO
+
+**Modelos disponibles para respuestas (Agent Settings > Modelo):**
+
+**OpenAI:**
+- GPT-5.1 (Más potente)
+- GPT-5
+- GPT-5 Mini
+- GPT-5 Nano (Económico)
+- GPT-4.1, GPT-4.1 Mini, GPT-4.1 Nano
+- GPT-4o, GPT-4o Mini
+- O4 Mini, O3, O3 Mini (Razonamiento)
+
+**Gemini:**
+- Gemini 3 Pro Preview (Más potente)
+- Gemini 2.5 Pro (Razonamiento complejo)
+- Gemini 2.5 Flash (Rápido)
+
+---
+
+### 4. Fix: Notificaciones Duplicadas para Mensajes Ya Leídos ✅ SOLUCIONADO
+
+**Problema:** Al recargar la aplicación, aparecían notificaciones de "Nuevo mensaje" para mensajes que ya habían sido leídos.
+
+**Causa raíz:** En commit `72d58f1` (hace ~2 horas) se añadió detección de duplicados globales en `storage.upsertMessage()`, pero `syncService.ts` no verificaba si el mensaje devuelto pertenecía a la marca actual.
+
+**Flujo problemático:**
+1. `getMessageByMetricoolId(id, brandId)` → "no existe en esta marca" → `isNewMessage = true`
+2. `notifyNewMessage()` → se enviaba la notificación
+3. `upsertMessage()` → detectaba duplicado global → devolvía mensaje de OTRA marca
+
+**Solución:** Ahora después de `upsertMessage()` se verifica que `savedMessage.brandId === brandId`. Si no coincide, significa que es un duplicado de otra marca y NO se envía notificación.
+
+**Archivos modificados:**
+- `server/services/syncService.ts` - Añadido check `isReallyNew` en líneas ~305 y ~408
+
+---
