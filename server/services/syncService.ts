@@ -532,13 +532,39 @@ class SyncService {
   }
 
   private triggerAutoReply(brandId: string, message: any, conversation: any): void {
-    storage.getBrand(brandId).then(brand => {
+    storage.getBrand(brandId).then(async brand => {
       if (!brand) {
         log(`[SyncService] Brand ${brandId} not found for auto-reply`, "sync");
         return;
       }
 
-      autoReplyService.processNewMessage(message, conversation, brand)
+      let messageToProcess = message;
+
+      // If it's an audio message, transcribe it first before auto-reply
+      if (message.mediaType === 'audio' && message.mediaUrl && !message.mediaTranscription) {
+        log(`[SyncService] Audio message detected - transcribing before auto-reply`, "sync");
+        
+        try {
+          const transcription = await transcriptionService.transcribeAudio(message.id, brandId);
+          
+          if (transcription) {
+            log(`[SyncService] Audio transcribed successfully: "${transcription.substring(0, 50)}..."`, "sync");
+            // Fetch the updated message with transcription
+            const updatedMessage = await storage.getMessage(message.id);
+            if (updatedMessage) {
+              messageToProcess = updatedMessage;
+            }
+          } else {
+            log(`[SyncService] Audio transcription failed - skipping auto-reply for audio message`, "sync");
+            return; // Don't auto-reply if we couldn't transcribe
+          }
+        } catch (error: any) {
+          log(`[SyncService] Error transcribing audio for auto-reply: ${error.message}`, "sync");
+          return; // Don't auto-reply if transcription failed
+        }
+      }
+
+      autoReplyService.processNewMessage(messageToProcess, conversation, brand)
         .then(result => {
           if (result.success) {
             log(`[SyncService] Auto-reply sent for message ${message.id}`, "sync");
