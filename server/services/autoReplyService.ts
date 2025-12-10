@@ -76,13 +76,24 @@ class AutoReplyService {
 
       log(`${logPrefix} Generating AI response for message ${message.id}`, "sync");
       const conversationHistory = await storage.getMessagesByConversation(conversation.id);
+      const historyForLLM = conversationHistory.slice(-10);
+      log(`${logPrefix} Conversation history: ${conversationHistory.length} total messages, sending ${historyForLLM.length} to LLM`, "sync");
+      
+      // Log the history content for debugging
+      if (historyForLLM.length > 0) {
+        const historyPreview = historyForLLM.map(m => 
+          `${m.direction === 'inbound' ? 'Cliente' : 'Marca'}: ${(m.content || '').substring(0, 50)}...`
+        ).join(' | ');
+        log(`${logPrefix} History preview: ${historyPreview}`, "sync");
+      }
+      
       const llmProvider = createLLMProvider(agent, this.secrets);
       const llmResponse = await llmProvider.generateReply({
         agent,
         message,
         conversation,
         brand,
-        conversationHistory: conversationHistory.slice(-10),
+        conversationHistory: historyForLLM,
       });
 
       log(`${logPrefix} Generated reply (${llmResponse.characterCount} chars)`, "sync");
