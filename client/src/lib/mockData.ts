@@ -28,6 +28,22 @@ export interface Message {
   sourceUrl?: string;
   contextType?: 'post' | 'reel' | 'story' | 'dm' | 'ad';
   crmData?: CRMContact;
+  
+  // Message origin tracking
+  source?: string;
+}
+
+// Repliyo source constants for message origin detection
+export const REPLIYO_SOURCES = ['repliyo', 'repliyo_auto'] as const;
+export type RepliyoSource = typeof REPLIYO_SOURCES[number];
+
+// Helper functions for message source detection
+export function isRepliyoMessage(source: string | null | undefined): boolean {
+  return !!source && REPLIYO_SOURCES.includes(source as RepliyoSource);
+}
+
+export function isAutoReply(source: string | null | undefined): boolean {
+  return source === 'repliyo_auto';
 }
 
 export interface CRMContact {
