@@ -59,8 +59,8 @@ const MODELS = {
 };
 
 const TRANSCRIPTION_PROVIDERS = [
-  { value: 'gemini', label: 'Gemini (Recomendado)', description: 'Usa Gemini 2.5 Flash - incluido en Replit AI', requiresOwnKey: false },
-  { value: 'openai', label: 'OpenAI Whisper', description: 'Requiere tu propia API key de OpenAI', requiresOwnKey: true },
+  { value: 'gemini', label: 'Gemini', description: 'Usa el modelo Gemini configurado para transcribir audio', requiresOwnKey: false },
+  { value: 'openai', label: 'OpenAI Whisper', description: 'Usa tu API key de OpenAI para transcripción', requiresOwnKey: true },
 ];
 
 const DEFAULT_SYSTEM_PROMPT = `Eres un asistente de atención al cliente profesional y amigable. Tu objetivo es ayudar a los usuarios con sus consultas de manera clara y concisa.
@@ -410,42 +410,37 @@ export function AIAgentConfig() {
 
                   <Separator />
 
-                  <div className="space-y-2">
-                    <Label className="text-sm">Transcripción de Audio</Label>
-                    <Select
-                      value={formData.transcriptionProvider || 'gemini'}
-                      onValueChange={(value) => setFormData({ ...formData, transcriptionProvider: value })}
-                    >
-                      <SelectTrigger data-testid="select-transcription" className="shadow-none">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {TRANSCRIPTION_PROVIDERS.map((provider) => (
-                          <SelectItem key={provider.value} value={provider.value}>
-                            <div className="flex flex-col items-start">
-                              <span>{provider.label}</span>
-                              <span className="text-xs text-muted-foreground">{provider.description}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-sm">Transcripción de Audio</Label>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Proveedor para transcribir mensajes de voz
+                        </p>
+                      </div>
+                      <Select
+                        value={formData.transcriptionProvider || 'gemini'}
+                        onValueChange={(value) => setFormData({ ...formData, transcriptionProvider: value })}
+                      >
+                        <SelectTrigger data-testid="select-transcription" className="w-48 shadow-none">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TRANSCRIPTION_PROVIDERS.map((provider) => (
+                            <SelectItem key={provider.value} value={provider.value}>
+                              {provider.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     
-                    {formData.transcriptionProvider === 'openai' && (
-                      <Alert className="border-blue-200 bg-blue-50">
-                        <Info className="h-4 w-4 text-blue-600" />
-                        <AlertDescription className="text-xs text-blue-800">
-                          <strong>Nota:</strong> OpenAI Whisper usa tu propia API key (OPENAI_API_KEY) para transcripción de audio.
-                          Replit AI Integrations no soporta audio con OpenAI, pero como tienes tu API key configurada, funcionará correctamente.
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                    
-                    {formData.transcriptionProvider === 'gemini' && (
-                      <p className="text-xs text-muted-foreground">
-                        Gemini está incluido en Replit AI y no requiere configuración adicional.
-                      </p>
-                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {formData.transcriptionProvider === 'openai' 
+                        ? 'OpenAI Whisper utiliza tu API key configurada (OPENAI_API_KEY).'
+                        : 'Gemini usa el modelo de respuestas configurado para transcribir audio (2.5 Flash, 2.5 Pro, o 3 Pro).'
+                      }
+                    </p>
                   </div>
 
                   <Separator />
