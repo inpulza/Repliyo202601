@@ -1,0 +1,77 @@
+ Vale, tengo un nuevo problema que quiero analizar contigo para que me des soluciones. Aquí te dejo el resumen. 
+
+DIAGNÓSTICO COMPLETO: Problema de Etiquetas Visuales
+RESUMEN DEL PROBLEMA
+Los mensajes enviados desde Repliyo (manualmente o con IA) no muestran la etiqueta visual correcta ("Enviado desde Repliyo" o "Respondido con IA") en algunos casos, principalmente en DMs.
+ESTADO ACTUAL DE LA BASE DE DATOS
+Mensajesourcedirectionauthor¿Correcto?"¡Hola @inpulza! Gracias por tu mensaje..."repliyo_autooutboundInpulza Testing✅ SÍ"¡Hola @inpulza! Qué interesante propuesta..."metricool_syncoutboundsquareonpix❌ NO"¡Hola @jordanldp! Entiendo tu frustración..."metricool_syncoutboundsquareonpix❌ NO
+CAUSA RAÍZ DEL PROBLEMA
+Los mensajes fueron enviados desde Repliyo ANTES de implementar la protección completa. Cuando Metricool sincronizó esos mensajes de vuelta:
+El mensaje original tenía source='repliyo_auto' y author='Inpulza Testing'
+Metricool devolvió el mismo mensaje con source='metricool_sync' y author='squareonpix'
+La reconciliación sobrescribió el source y author porque la protección no estaba implementada correctamente
+EL FRONTEND ESTÁ CORRECTO
+El código de visualización funciona perfectamente:
+// Líneas 892-893 de Inbox.tsx
+const isSentFromRepliyo = isRepliyoMessage(msg.source); // ✅ Funciona
+const isSentByAI = isAutoReply(msg.source);              // ✅ Funciona
+
+// Líneas 957-968: Muestra la etiqueta si source es correcto
+{isSentFromRepliyo && (
+  <span>{isSentByAI ? "Respondido con IA" : "Enviado desde Repliyo"}</span>
+)}
+
+El problema NO está en el frontend. El frontend lee el campo source correctamente.
+EL PROBLEMA REAL: DATOS HISTÓRICOS CORRUPTOS
+Los mensajes enviados ANTES de la corrección tienen:
+source = 'metricool_sync' (incorrecto, debería ser 'repliyo_auto')
+author = 'squareonpix' (incorrecto, debería ser el nombre de la marca)
+¿Por qué? Porque cuando Metricool reconcilió esos mensajes, no había protección implementada y sobrescribió los campos.
+SOLUCIONES POSIBLES
+Opción 1: Migración de datos históricos
+-- Identificar y corregir mensajes históricos
+UPDATE messages 
+SET source = 'repliyo_auto',
+    author = 'Inpulza Testing',
+    direction = 'outbound'
+WHERE content LIKE '%¡Hola @inpulza!%' 
+  AND source = 'metricool_sync'
+  AND direction = 'outbound';
+
+Opción 2: Heurística en el frontend
+Detectar mensajes que probablemente fueron enviados por IA basándose en:
+El contenido tiene patrones de respuesta automática
+El author es squareonpix pero el mensaje parece respuesta
+No recomendada - Es parche, no solución.
+Opción 3: Flag adicional en la base de datos
+Agregar un campo sent_from_repliyo: boolean que se marca al enviar y NUNCA se sobrescribe durante sincronización.
+ARQUITECTURA ACTUAL (RESUMIDA)
+┌─────────────────────────────────────────────────────────────────┐
+│                        FLUJO DE DATOS                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  1. Usuario envía respuesta desde Repliyo                      │
+│     └─> Se guarda con source='repliyo' o 'repliyo_auto'        │
+│                                                                 │
+│  2. Metricool sincroniza el mensaje de vuelta                  │
+│     └─> Viene con source='metricool_sync'                      │
+│                                                                 │
+│  3. Reconciliación (upsertMessage)                             │
+│     ├─> SI encuentra match por metricoolId Y source='repliyo'  │
+│     │   └─> PROTEGE el mensaje (no sobrescribe)                │
+│     └─> SI NO hay protección                                   │
+│         └─> SOBRESCRIBE source y author ❌                     │
+│                                                                 │
+│  4. Frontend lee message.source                                │
+│     ├─> SI source='repliyo' → "Enviado desde Repliyo"          │
+│     ├─> SI source='repliyo_auto' → "Respondido con IA"         │
+│     └─> SI source='metricool_sync' → Sin etiqueta              │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+
+ESTADO ACTUAL DE LAS CORRECCIONES
+CorrecciónEstadoProtección de source='repliyo'✅ ImplementadaProtección de source='repliyo_auto'✅ Implementada (recién)Deduplicación global entre marcas✅ ImplementadaMigración de datos históricos❌ Pendiente
+RECOMENDACIÓN PARA TU DESARROLLADOR
+Corregir datos históricos con script SQL para los mensajes ya corruptos
+Agregar un campo immutable como sent_via_repliyo_at: timestamp que se marca una vez al enviar y nunca se modifica
+Test de regresión que verifique que nuevos mensajes de Repliyo mantienen su source después de sincronización Metricool
