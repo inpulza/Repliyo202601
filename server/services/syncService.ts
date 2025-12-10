@@ -299,7 +299,11 @@ class SyncService {
           const savedMessage = await storage.upsertMessage(messageData);
           savedCount++;
           
-          if (isNewMessage && isInbound) {
+          // Check if this is truly a new message by verifying it belongs to THIS brand
+          // (upsertMessage may return an existing message from another brand if it's a global duplicate)
+          const isReallyNew = isNewMessage && savedMessage.brandId === brandId;
+          
+          if (isReallyNew && isInbound) {
             websocketService.notifyNewMessage(brandId, {
               id: savedMessage.id,
               platform,
@@ -400,9 +404,13 @@ class SyncService {
         });
         savedCount++;
         
-        log(`[SyncService] Comment ${comment.id} from ${comment.author}: isNew=${isNewComment}`, "sync");
+        // Check if this is truly a new message by verifying it belongs to THIS brand
+        // (upsertMessage may return an existing message from another brand if it's a global duplicate)
+        const isReallyNew = isNewComment && savedComment.brandId === brandId;
         
-        if (isNewComment) {
+        log(`[SyncService] Comment ${comment.id} from ${comment.author}: isNew=${isNewComment}, isReallyNew=${isReallyNew}`, "sync");
+        
+        if (isReallyNew) {
           websocketService.notifyNewMessage(brandId, {
             id: savedComment.id,
             platform,
