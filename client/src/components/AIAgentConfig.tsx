@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNexus } from '@/context/NexusContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
@@ -23,10 +23,14 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { toast } from '@/hooks/use-toast';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { 
   Bot, Settings, MessageSquare, Zap, Shield, History, 
   Play, Save, Loader2, Sparkles, Brain, BookOpen,
-  Clock, AlertTriangle, CheckCircle, XCircle, Share2, Variable, Copy
+  Clock, AlertTriangle, CheckCircle, XCircle, Share2, Variable, Copy,
+  ChevronDown, ChevronUp, Filter, RotateCcw, Eye
 } from 'lucide-react';
 import { FaFacebook, FaInstagram, FaTwitter, FaTiktok, FaLinkedin, FaYoutube } from 'react-icons/fa';
 import { format } from 'date-fns';
@@ -74,6 +78,10 @@ export function AIAgentConfig() {
   const [testMessage, setTestMessage] = useState('');
   const [testResponse, setTestResponse] = useState('');
   const [isTesting, setIsTesting] = useState(false);
+  
+  const [filterPlatform, setFilterPlatform] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [expandedLogs, setExpandedLogs] = useState<Set<string>>(new Set());
 
   const [formData, setFormData] = useState<Partial<AiAgent>>({
     provider: 'openai',
@@ -101,6 +109,44 @@ export function AIAgentConfig() {
     queryFn: () => api.aiAgent.getAuditLog(activeClient!.id, 50),
     enabled: !!activeClient?.id && activeTab === 'history',
   });
+
+  const filteredAuditLogs = useMemo(() => {
+    return auditLogs.filter((log: AiAgentAuditLog) => {
+      if (filterPlatform !== 'all' && log.platform !== filterPlatform) return false;
+      if (filterStatus !== 'all' && log.status !== filterStatus) return false;
+      return true;
+    });
+  }, [auditLogs, filterPlatform, filterStatus]);
+
+  const uniquePlatforms = useMemo(() => {
+    const platforms = new Set(auditLogs.map((log: AiAgentAuditLog) => log.platform).filter(Boolean));
+    return Array.from(platforms) as string[];
+  }, [auditLogs]);
+
+  const toggleLogExpanded = (logId: string) => {
+    setExpandedLogs(prev => {
+      const next = new Set(prev);
+      if (next.has(logId)) {
+        next.delete(logId);
+      } else {
+        next.add(logId);
+      }
+      return next;
+    });
+  };
+
+  const resetFilters = () => {
+    setFilterPlatform('all');
+    setFilterStatus('all');
+  };
+
+  const getPlatformIcon = (platform: string | null) => {
+    if (!platform) return null;
+    const config = PLATFORM_CONFIG[platform.toLowerCase() as keyof typeof PLATFORM_CONFIG];
+    if (!config) return null;
+    const Icon = config.icon;
+    return <Icon className={`h-4 w-4 ${config.color}`} />;
+  };
 
   const { data: socialAccounts = [], isLoading: isLoadingSocialAccounts } = useQuery({
     queryKey: ['socialAccounts', activeClient?.id],
@@ -771,79 +817,252 @@ export function AIAgentConfig() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="history" className="mt-0 space-y-6">
-              <Card className="border border-border shadow-none">
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-base font-semibold">
+            <TabsContent value="history" className="mt-0 space-y-4">
+              <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-4 border-b border-border">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
                     <History className="h-4 w-4 text-muted-foreground" />
-                    Historial de Actividad
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    Registro de todas las respuestas generadas por el agente
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {isLoadingAudit ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                    </div>
-                  ) : auditLogs.length === 0 ? (
-                    <div className="text-center py-8">
-                      <Clock className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
-                      <p className="text-sm text-muted-foreground">No hay actividad registrada aún</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {auditLogs.map((log) => (
-                        <div
-                          key={log.id}
-                          className="p-4 border border-border rounded-lg hover:bg-muted/30 transition-colors"
-                          data-testid={`audit-log-${log.id}`}
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              {log.status === 'success' ? (
-                                <CheckCircle className="h-4 w-4 text-green-500" />
-                              ) : (
-                                <AlertTriangle className="h-4 w-4 text-red-500" />
-                              )}
-                              <span className="font-medium text-sm">{log.action}</span>
-                              {log.platform && (
-                                <Badge variant="outline" className="text-xs">{log.platform}</Badge>
-                              )}
-                            </div>
-                            <span className="text-xs text-muted-foreground">
-                              {format(new Date(log.createdAt), "d MMM HH:mm", { locale: es })}
-                            </span>
+                    <h3 className="text-base font-semibold">Historial de Actividad</h3>
+                    <Badge variant="secondary" className="text-xs">
+                      {filteredAuditLogs.length} registros
+                    </Badge>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Filtros:</span>
+                  </div>
+                  
+                  <Select value={filterPlatform} onValueChange={setFilterPlatform}>
+                    <SelectTrigger className="w-[140px] h-8 text-xs shadow-none" data-testid="filter-platform">
+                      <SelectValue placeholder="Plataforma" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      {uniquePlatforms.map(platform => (
+                        <SelectItem key={platform} value={platform}>
+                          <div className="flex items-center gap-2">
+                            {getPlatformIcon(platform)}
+                            <span className="capitalize">{platform}</span>
                           </div>
-                          {log.inputContent && (
-                            <div className="text-xs text-muted-foreground mb-1">
-                              <strong>Entrada:</strong> {log.inputContent.slice(0, 100)}...
-                            </div>
-                          )}
-                          {log.outputContent && (
-                            <div className="text-xs text-muted-foreground">
-                              <strong>Respuesta:</strong> {log.outputContent.slice(0, 150)}...
-                            </div>
-                          )}
-                          {log.promptTokens && (
-                            <div className="mt-2 flex gap-3 text-xs text-muted-foreground">
-                              <span>Tokens prompt: {log.promptTokens}</span>
-                              <span>Tokens respuesta: {log.completionTokens}</span>
-                              {log.characterCount && <span>Caracteres: {log.characterCount}</span>}
-                            </div>
-                          )}
-                          {log.errorReason && (
-                            <div className="mt-2 text-xs text-red-600">
-                              Error: {log.errorReason}
-                            </div>
-                          )}
-                        </div>
+                        </SelectItem>
                       ))}
-                    </div>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger className="w-[130px] h-8 text-xs shadow-none" data-testid="filter-status">
+                      <SelectValue placeholder="Estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="success">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-3 w-3 text-green-500" />
+                          Exitoso
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="error">
+                        <div className="flex items-center gap-2">
+                          <XCircle className="h-3 w-3 text-red-500" />
+                          Error
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="draft">
+                        <div className="flex items-center gap-2">
+                          <MessageSquare className="h-3 w-3 text-amber-500" />
+                          Borrador
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  {(filterPlatform !== 'all' || filterStatus !== 'all') && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={resetFilters}
+                      className="h-8 text-xs gap-1"
+                      data-testid="button-reset-filters"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      Limpiar
+                    </Button>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
+
+              {isLoadingAudit ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : filteredAuditLogs.length === 0 ? (
+                <div className="text-center py-12">
+                  <Clock className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
+                  <p className="text-sm text-muted-foreground">
+                    {auditLogs.length === 0 
+                      ? "No hay actividad registrada aún" 
+                      : "No hay resultados con los filtros seleccionados"}
+                  </p>
+                  {auditLogs.length > 0 && (
+                    <Button variant="link" size="sm" onClick={resetFilters} className="mt-2">
+                      Limpiar filtros
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredAuditLogs.map((log) => {
+                    const isExpanded = expandedLogs.has(log.id);
+                    const hasLongContent = (log.inputContent && log.inputContent.length > 100) || 
+                                          (log.outputContent && log.outputContent.length > 150);
+                    
+                    return (
+                      <Card 
+                        key={log.id} 
+                        className="border border-border shadow-none hover:border-muted-foreground/30 transition-colors"
+                        data-testid={`audit-log-${log.id}`}
+                      >
+                        <CardHeader className="pb-3 pt-4 px-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 rounded-lg bg-muted/50">
+                                {log.platform ? getPlatformIcon(log.platform) : <Bot className="h-4 w-4 text-muted-foreground" />}
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-sm">{log.action}</span>
+                                  {log.platform && (
+                                    <Badge variant="outline" className="text-xs capitalize">
+                                      {log.platform}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <span className="text-xs text-muted-foreground">
+                                  {format(new Date(log.createdAt), "d MMM yyyy, HH:mm", { locale: es })}
+                                </span>
+                              </div>
+                            </div>
+                            <Badge 
+                              variant={log.status === 'success' ? 'default' : 'destructive'}
+                              className={`text-xs ${log.status === 'success' ? 'bg-green-100 text-green-700 hover:bg-green-100' : ''}`}
+                            >
+                              {log.status === 'success' ? (
+                                <><CheckCircle className="h-3 w-3 mr-1" /> Exitoso</>
+                              ) : (
+                                <><XCircle className="h-3 w-3 mr-1" /> Error</>
+                              )}
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        
+                        <CardContent className="px-4 pb-4 pt-0 space-y-3">
+                          {log.inputContent && (
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Mensaje recibido</Label>
+                              <div className="p-3 bg-muted/30 rounded-lg border border-border">
+                                <p className="text-sm">
+                                  {isExpanded ? log.inputContent : log.inputContent.slice(0, 100)}
+                                  {!isExpanded && log.inputContent.length > 100 && '...'}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {log.outputContent && (
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Respuesta generada</Label>
+                              <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+                                <p className="text-sm">
+                                  {isExpanded ? log.outputContent : log.outputContent.slice(0, 150)}
+                                  {!isExpanded && log.outputContent.length > 150 && '...'}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {log.promptTokens && (
+                            <div className="flex flex-wrap gap-2">
+                              <Badge variant="outline" className="text-xs font-normal">
+                                Prompt: {log.promptTokens} tokens
+                              </Badge>
+                              <Badge variant="outline" className="text-xs font-normal">
+                                Respuesta: {log.completionTokens} tokens
+                              </Badge>
+                              {log.characterCount && (
+                                <Badge variant="outline" className="text-xs font-normal">
+                                  {log.characterCount} caracteres
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                          
+                          {log.errorReason && (
+                            <Alert variant="destructive" className="max-h-32 overflow-y-auto">
+                              <AlertTriangle className="h-4 w-4" />
+                              <AlertTitle className="text-sm">Error al procesar</AlertTitle>
+                              <AlertDescription className="text-xs mt-1 font-mono break-all">
+                                {log.errorReason.length > 200 ? (
+                                  <>
+                                    {isExpanded ? log.errorReason : log.errorReason.slice(0, 200) + '...'}
+                                  </>
+                                ) : log.errorReason}
+                              </AlertDescription>
+                              {log.errorReason.length > 200 && (
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="mt-2 h-6 text-xs">
+                                      <Eye className="h-3 w-3 mr-1" /> Ver completo
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                                    <DialogHeader>
+                                      <DialogTitle>Detalle del Error</DialogTitle>
+                                    </DialogHeader>
+                                    <div className="p-4 bg-muted rounded-lg font-mono text-xs whitespace-pre-wrap break-all">
+                                      {log.errorReason}
+                                    </div>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(log.errorReason || '');
+                                        toast({ title: "Copiado", description: "Error copiado al portapapeles" });
+                                      }}
+                                    >
+                                      <Copy className="h-4 w-4 mr-2" /> Copiar error
+                                    </Button>
+                                  </DialogContent>
+                                </Dialog>
+                              )}
+                            </Alert>
+                          )}
+                        </CardContent>
+                        
+                        {hasLongContent && (
+                          <CardFooter className="px-4 py-2 border-t border-border bg-muted/20">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleLogExpanded(log.id)}
+                              className="w-full h-7 text-xs gap-1"
+                              data-testid={`button-expand-${log.id}`}
+                            >
+                              {isExpanded ? (
+                                <><ChevronUp className="h-3 w-3" /> Mostrar menos</>
+                              ) : (
+                                <><ChevronDown className="h-3 w-3" /> Ver contenido completo</>
+                              )}
+                            </Button>
+                          </CardFooter>
+                        )}
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
             </TabsContent>
           </div>
         </ScrollArea>
