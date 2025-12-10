@@ -105,6 +105,9 @@ export const messages = pgTable("messages", {
   aiReplyStatus: text("ai_reply_status").default('none'),
   aiAgentId: varchar("ai_agent_id"),
   internalOrigin: text("internal_origin"),
+  mediaType: text("media_type"),
+  mediaUrl: text("media_url"),
+  mediaTranscription: text("media_transcription"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
