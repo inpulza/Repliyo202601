@@ -88,7 +88,29 @@ class AutoReplyService {
       if (message.type === "conversation") {
         const rawData = message.rawData as any;
         const threadExternalId = conversation.threadExternalId || rawData?.conversation?.id;
-        const recipient = conversation.customerId;
+        
+        // Get recipient - must be the OTHER participant (not self/brand account)
+        // The 'from' field of an inbound message is the customer who wrote to us
+        const convRawData = rawData?.conversation?.rawData || rawData?.conversation || {};
+        const selfAccountId = convRawData?.self;
+        const participants = convRawData?.participants || rawData?.conversation?.participants || [];
+        
+        let recipient: string | undefined;
+        if (message.direction === 'inbound') {
+          // For inbound messages, the sender (from) is who we want to reply to
+          recipient = rawData?.message?.from || rawData?.from;
+        }
+        // Fallback: find participant that isn't self
+        if (!recipient && selfAccountId && participants.length > 0) {
+          const otherParticipant = participants.find((p: any) => p.id !== selfAccountId);
+          recipient = otherParticipant?.id;
+        }
+        // Final fallback
+        if (!recipient) {
+          recipient = rawData?.from?.id || conversation.customerId;
+        }
+        
+        log(`${logPrefix} DM recipient: ${recipient} (self: ${selfAccountId})`, "sync");
 
         if (!threadExternalId || !recipient) {
           log(`${logPrefix} Missing conversation data for DM reply`, "sync");
