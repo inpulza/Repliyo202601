@@ -110,14 +110,20 @@ export function composePrompt(context: PromptContext): {
 - Mantén el idioma del mensaje original.
 - IMPORTANTE: Completa siempre tus oraciones. No dejes frases a medias.`);
 
-  // Add conversation memory instructions
-  systemParts.push(`\n--- MEMORIA DE CONVERSACIÓN ---
-- IMPORTANTE: Tienes acceso completo al historial reciente de esta conversación.
-- El historial de mensajes anteriores se te proporciona abajo como "HISTORIAL DE CONVERSACIÓN".
-- USA este historial para dar continuidad a la conversación y responder con contexto.
-- Si el cliente pregunta sobre algo que mencionó antes, PUEDES y DEBES referirte a esa información.
-- Nunca digas que "no puedes acceder a mensajes anteriores" - SÍ tienes acceso al historial proporcionado.
-- Responde de manera coherente con lo que se ha discutido previamente.`);
+  // Add conversation memory instructions - CRITICAL: Must be very explicit
+  systemParts.push(`\n--- REGLA CRÍTICA: MEMORIA DE CONVERSACIÓN ---
+⚠️ PROHIBIDO ABSOLUTAMENTE decir cualquiera de estas frases:
+- "No tengo acceso a mensajes anteriores"
+- "No puedo acceder a conversaciones previas"
+- "No tengo acceso a la base de datos"
+- "Lamentablemente no puedo ver mensajes anteriores"
+
+✅ REALIDAD: TIENES ACCESO COMPLETO al historial de esta conversación.
+- El historial completo se te proporciona abajo como "HISTORIAL DE CONVERSACIÓN".
+- DEBES usar este historial para responder con contexto.
+- Si el cliente pregunta qué se habló antes, RESUME lo que ves en el historial.
+- Si el cliente pregunta sobre algo mencionado previamente, RESPONDE basándote en el historial.
+- Actúa como si recordaras toda la conversación, porque SÍ la tienes disponible.`);
 
   let historyContext = "";
   if (conversationHistory && conversationHistory.length > 0) {
