@@ -1,5 +1,5 @@
 import type { AiAgent, Message, Conversation, Brand, SocialPost } from "@shared/schema";
-import { PLATFORM_CHARACTER_LIMITS } from "./types";
+import { PLATFORM_CHARACTER_LIMITS, getCharacterLimit } from "./types";
 
 interface PromptContext {
   agent: AiAgent;
@@ -67,11 +67,16 @@ export function composePrompt(context: PromptContext): {
   systemPrompt: string;
   userPrompt: string;
   characterLimit: number;
+  hardLimit: number;
 } {
   const { agent, message, conversation, brand, conversationHistory, socialPost } = context;
   
   const platform = message.platform || "default";
-  const characterLimit = PLATFORM_CHARACTER_LIMITS[platform] || PLATFORM_CHARACTER_LIMITS.default;
+  const messageType = message.type || "comment";
+  
+  // Use the new intelligent limit system that differentiates DMs from comments
+  const { safeLimit, hardLimit } = getCharacterLimit(platform, messageType);
+  const characterLimit = safeLimit; // Use safe limit (90%) for AI generation
 
   const variableContext = buildVariableContext(message, conversation, socialPost);
 
@@ -133,6 +138,7 @@ Por favor, genera una respuesta apropiada para este mensaje.`);
     systemPrompt: systemParts.join("\n"),
     userPrompt: userPromptParts.join("\n"),
     characterLimit,
+    hardLimit,
   };
 }
 
