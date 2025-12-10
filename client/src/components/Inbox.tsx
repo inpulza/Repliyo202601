@@ -45,6 +45,10 @@ import {
   ImageIcon,
   Video,
   FileAudio,
+  Play,
+  Pause,
+  Volume2,
+  ChevronRight,
 } from 'lucide-react';
 import { FaInstagram, FaFacebook, FaLinkedin, FaTiktok, FaYoutube, FaWhatsapp } from 'react-icons/fa';
 import { GoogleBusinessIcon } from './GoogleBusinessIcon';
@@ -956,29 +960,13 @@ export function Inbox() {
                                       : getPlatformStyles((msg.platform || 'instagram') as Platform).bubble
                             )}>
                                {/* Audio message display */}
-                               {(msg as any).mediaType === 'audio' && (
+                               {(msg as any).mediaType === 'audio' && (msg as any).mediaUrl && (
                                  <div className="mb-2">
-                                   <div className="flex items-center gap-2 mb-2">
-                                     <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
-                                       <Mic className="h-4 w-4 text-indigo-600" />
-                                     </div>
-                                     <span className="text-xs font-medium text-indigo-600">Mensaje de audio</span>
-                                   </div>
-                                   {(msg as any).mediaUrl && (
-                                     <audio 
-                                       controls 
-                                       className="w-full h-10 rounded-lg"
-                                       src={(msg as any).mediaUrl}
-                                     >
-                                       Tu navegador no soporta audio
-                                     </audio>
-                                   )}
-                                   {(msg as any).mediaTranscription && (
-                                     <div className="mt-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
-                                       <span className="text-[10px] text-gray-500 uppercase font-medium">Transcripción:</span>
-                                       <p className="text-sm text-gray-700 mt-1">{(msg as any).mediaTranscription}</p>
-                                     </div>
-                                   )}
+                                   <AudioPlayer 
+                                     src={(msg as any).mediaUrl}
+                                     transcription={(msg as any).mediaTranscription}
+                                     isOutbound={isSentFromRepliyo || isOwner}
+                                   />
                                  </div>
                                )}
                                
@@ -1525,6 +1513,178 @@ function UrgencyBadge({ urgency }: { urgency: Urgency }) {
             {urgency}
         </Badge>
     );
+}
+
+function AudioPlayer({ 
+  src, 
+  transcription,
+  isOutbound = false 
+}: { 
+  src: string; 
+  transcription?: string | null;
+  isOutbound?: boolean;
+}) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [showTranscription, setShowTranscription] = useState(false);
+  const audioRef = React.useRef<HTMLAudioElement>(null);
+  const progressRef = React.useRef<HTMLDivElement>(null);
+
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const togglePlay = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration);
+    }
+  };
+
+  const handleEnded = () => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+  };
+
+  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (progressRef.current && audioRef.current) {
+      const rect = progressRef.current.getBoundingClientRect();
+      const percent = (e.clientX - rect.left) / rect.width;
+      audioRef.current.currentTime = percent * duration;
+    }
+  };
+
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  
+  const waveformBars = 30;
+  const waveformPattern = Array.from({ length: waveformBars }, (_, i) => {
+    const seed = (i * 7 + 13) % 100;
+    return 20 + (seed % 80);
+  });
+
+  const baseColor = isOutbound ? 'bg-white/30' : 'bg-indigo-200';
+  const activeColor = isOutbound ? 'bg-white' : 'bg-indigo-600';
+  const textColor = isOutbound ? 'text-white/70' : 'text-gray-500';
+  const buttonBg = isOutbound ? 'bg-white/20 hover:bg-white/30' : 'bg-indigo-100 hover:bg-indigo-200';
+  const buttonIcon = isOutbound ? 'text-white' : 'text-indigo-600';
+  const transcriptionBg = isOutbound ? 'bg-white/10' : 'bg-gray-50';
+  const transcriptionBorder = isOutbound ? 'border-white/20' : 'border-gray-200';
+  const transcriptionText = isOutbound ? 'text-white/90' : 'text-gray-700';
+
+  return (
+    <div className="w-full max-w-[320px]">
+      <audio
+        ref={audioRef}
+        src={src}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={handleEnded}
+        preload="metadata"
+      />
+      
+      <div className="flex items-center gap-3">
+        <button
+          onClick={togglePlay}
+          className={cn(
+            "h-11 w-11 rounded-full flex items-center justify-center transition-all shrink-0",
+            buttonBg
+          )}
+          data-testid="button-audio-play"
+        >
+          {isPlaying ? (
+            <Pause className={cn("h-5 w-5", buttonIcon)} />
+          ) : (
+            <Play className={cn("h-5 w-5 ml-0.5", buttonIcon)} />
+          )}
+        </button>
+
+        <div className="flex-1 min-w-0">
+          <div 
+            ref={progressRef}
+            onClick={handleProgressClick}
+            className="flex items-center gap-[2px] h-8 cursor-pointer group"
+            data-testid="audio-waveform"
+          >
+            {waveformPattern.map((height, i) => {
+              const barProgress = (i / waveformBars) * 100;
+              const isActive = barProgress <= progress;
+              return (
+                <div
+                  key={i}
+                  className={cn(
+                    "w-[3px] rounded-full transition-all",
+                    isActive ? activeColor : baseColor
+                  )}
+                  style={{ height: `${height}%` }}
+                />
+              );
+            })}
+          </div>
+          
+          <div className={cn("flex justify-between text-[11px] mt-1", textColor)}>
+            <span>{formatTime(currentTime)}</span>
+            <span>{formatTime(duration)}</span>
+          </div>
+        </div>
+      </div>
+
+      {transcription && (
+        <div className="mt-2">
+          <button
+            onClick={() => setShowTranscription(!showTranscription)}
+            className={cn(
+              "flex items-center gap-1 text-xs font-medium transition-colors",
+              isOutbound ? "text-white/80 hover:text-white" : "text-indigo-600 hover:text-indigo-700"
+            )}
+            data-testid="button-toggle-transcription"
+          >
+            <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", showTranscription && "rotate-90")} />
+            Ver transcripción
+          </button>
+          
+          <AnimatePresence>
+            {showTranscription && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className={cn(
+                  "mt-2 p-3 rounded-xl border text-sm leading-relaxed",
+                  transcriptionBg,
+                  transcriptionBorder,
+                  transcriptionText
+                )}>
+                  {transcription}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function SentimentIndicator({ sentiment, showLabel }: { sentiment: Sentiment, showLabel?: boolean }) {
