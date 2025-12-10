@@ -887,10 +887,10 @@ export function Inbox() {
                         const isInbound = msg.direction === 'inbound';
                         const isOutbound = msg.direction === 'outbound';
                         
-                        // Check if message was sent from Repliyo using the source field
-                        // This detects both manual sends ('repliyo') and AI auto-replies ('repliyo_auto')
-                        const isSentFromRepliyo = isRepliyoMessage(msg.source);
-                        const isSentByAI = isAutoReply(msg.source);
+                        // Check if message was sent from Repliyo using internalOrigin (primary) or source (fallback)
+                        // This detects both manual sends ('manual') and AI auto-replies ('ai')
+                        const isSentFromRepliyo = isRepliyoMessage(msg.source, msg.internalOrigin);
+                        const isSentByAI = isAutoReply(msg.source, msg.internalOrigin);
                         
                         const isOwner = activeClient && msg.author.toLowerCase() === activeClient.name.toLowerCase();
                     

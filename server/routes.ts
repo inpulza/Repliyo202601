@@ -812,6 +812,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           metricoolId: result.messageId || null,
           rawData: result.rawResponse || null,
           source: 'repliyo',
+          internalOrigin: 'manual',
         });
         
         if (message.conversationId) {
@@ -905,6 +906,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           metricoolId: result.messageId || null,
           rawData: result.rawResponse || null,
           source: 'repliyo',
+          internalOrigin: 'manual',
         });
         
         if (message.conversationId) {

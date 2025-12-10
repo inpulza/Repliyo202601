@@ -37,12 +37,27 @@ export interface Message {
 export const REPLIYO_SOURCES = ['repliyo', 'repliyo_auto'] as const;
 export type RepliyoSource = typeof REPLIYO_SOURCES[number];
 
+// Internal origin values (immutable field)
+export const INTERNAL_ORIGINS = ['manual', 'ai'] as const;
+export type InternalOrigin = typeof INTERNAL_ORIGINS[number];
+
 // Helper functions for message source detection
-export function isRepliyoMessage(source: string | null | undefined): boolean {
+// Now uses internalOrigin as primary source (immutable), with fallback to source for backward compatibility
+export function isRepliyoMessage(source: string | null | undefined, internalOrigin?: string | null): boolean {
+  // Primary: use internalOrigin (immutable field that can't be overwritten by sync)
+  if (internalOrigin === 'manual' || internalOrigin === 'ai') {
+    return true;
+  }
+  // Fallback: use source for backward compatibility with existing messages
   return !!source && REPLIYO_SOURCES.includes(source as RepliyoSource);
 }
 
-export function isAutoReply(source: string | null | undefined): boolean {
+export function isAutoReply(source: string | null | undefined, internalOrigin?: string | null): boolean {
+  // Primary: use internalOrigin (immutable)
+  if (internalOrigin === 'ai') {
+    return true;
+  }
+  // Fallback: use source for backward compatibility
   return source === 'repliyo_auto';
 }
 

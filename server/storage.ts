@@ -409,21 +409,25 @@ export class DatabaseStorage implements IStorage {
     const existing = await this.getMessageByMetricoolId(insertMessage.metricoolId, insertMessage.brandId);
     
     if (existing) {
-      // PROTECTION: If existing message was sent from Repliyo, preserve that source
-      // Metricool may send the same message with different direction, but we don't want to overwrite
+      // PROTECTION PRIORITY 1: If existing message has internalOrigin set, ALWAYS preserve it
+      // This is the immutable "birth certificate" of the message
+      const hasInternalOrigin = existing.internalOrigin !== null && existing.internalOrigin !== undefined;
+      
+      // PROTECTION PRIORITY 2: If existing message was sent from Repliyo, preserve source/direction
       const isReplyoSource = existing.source === 'repliyo' || existing.source === 'repliyo_auto';
       const isOutboundBeingOverwritten = existing.direction === 'outbound' && insertMessage.direction === 'inbound';
       
-      if (isReplyoSource || isOutboundBeingOverwritten) {
-        console.log(`[Storage] Protecting Repliyo message ${existing.id} - preserving source and direction`);
-        // Only update rawData and avatar but keep direction, source, author, and parentMessageId
+      if (isReplyoSource || isOutboundBeingOverwritten || hasInternalOrigin) {
+        console.log(`[Storage] Protecting Repliyo message ${existing.id} - preserving source, direction, and internalOrigin (${existing.internalOrigin})`);
+        // Only update rawData and avatar but keep direction, source, author, parentMessageId, and internalOrigin
         const updated = await this.updateMessage(existing.id, {
           rawData: insertMessage.rawData,
           authorAvatar: insertMessage.authorAvatar || existing.authorAvatar,
-          // Keep direction, source, author, and parentMessageId to preserve "Sent from Repliyo" indicator
+          // Keep direction, source, author, parentMessageId, and internalOrigin to preserve "Sent from Repliyo" indicator
         });
         return updated!;
       }
+      
       const updated = await this.updateMessage(existing.id, insertMessage);
       return updated!;
     }
@@ -443,7 +447,9 @@ export class DatabaseStorage implements IStorage {
       const pendingOutboundSameBrand = await this.findPendingOutboundMatchBrandWide(insertMessage);
       
       if (pendingOutboundSameBrand) {
-        console.log(`[Storage] Reconciling message: updating local outbound ${pendingOutboundSameBrand.id} with metricoolId ${insertMessage.metricoolId}`);
+        console.log(`[Storage] Reconciling message: updating local outbound ${pendingOutboundSameBrand.id} with metricoolId ${insertMessage.metricoolId} (preserving internalOrigin: ${pendingOutboundSameBrand.internalOrigin})`);
+        // NOTE: Only updating specific fields - Drizzle does partial updates, so internalOrigin, source, 
+        // direction, and author are automatically preserved (not overwritten with null)
         const updated = await this.updateMessage(pendingOutboundSameBrand.id, {
           metricoolId: insertMessage.metricoolId,
           rawData: insertMessage.rawData,

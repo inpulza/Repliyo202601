@@ -208,6 +208,7 @@ class AutoReplyService {
           timestamp: new Date(),
           status: "read",
           source: "repliyo_auto",
+          internalOrigin: "ai",
           parentMessageId: chunk.partIndex === 1 ? message.id : null,
           aiAgentId: agent.id,
           aiSuggestedReply: chunk.partIndex === 1 ? llmResponse.text : null,
