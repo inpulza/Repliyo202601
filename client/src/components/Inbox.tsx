@@ -1528,8 +1528,10 @@ function AudioPlayer({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [showTranscription, setShowTranscription] = useState(false);
-  const audioRef = React.useRef<HTMLAudioElement>(null);
-  const progressRef = React.useRef<HTMLDivElement>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [wavesurferReady, setWavesurferReady] = useState(false);
+  const waveformRef = React.useRef<HTMLDivElement>(null);
+  const wavesurferRef = React.useRef<any>(null);
 
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60);
@@ -1537,52 +1539,79 @@ function AudioPlayer({
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const togglePlay = () => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
+  React.useEffect(() => {
+    let ws: any = null;
+    
+    const initWaveSurfer = async () => {
+      if (!waveformRef.current) return;
+      
+      try {
+        const WaveSurfer = (await import('wavesurfer.js')).default;
+        
+        ws = WaveSurfer.create({
+          container: waveformRef.current,
+          waveColor: isOutbound ? 'rgba(255,255,255,0.4)' : '#c7d2fe',
+          progressColor: isOutbound ? '#ffffff' : '#4f46e5',
+          cursorColor: 'transparent',
+          barWidth: 3,
+          barGap: 2,
+          barRadius: 3,
+          height: 36,
+          normalize: true,
+          backend: 'WebAudio',
+        });
+
+        wavesurferRef.current = ws;
+
+        ws.on('ready', () => {
+          setDuration(ws.getDuration());
+          setIsLoading(false);
+          setWavesurferReady(true);
+        });
+
+        ws.on('audioprocess', () => {
+          setCurrentTime(ws.getCurrentTime());
+        });
+
+        ws.on('seeking', () => {
+          setCurrentTime(ws.getCurrentTime());
+        });
+
+        ws.on('finish', () => {
+          setIsPlaying(false);
+          setCurrentTime(0);
+        });
+
+        ws.on('play', () => setIsPlaying(true));
+        ws.on('pause', () => setIsPlaying(false));
+
+        ws.on('error', (err: any) => {
+          console.warn('[AudioPlayer] WaveSurfer error, using fallback:', err);
+          setIsLoading(false);
+        });
+
+        ws.load(src);
+      } catch (err) {
+        console.warn('[AudioPlayer] Failed to init WaveSurfer:', err);
+        setIsLoading(false);
       }
-      setIsPlaying(!isPlaying);
+    };
+
+    initWaveSurfer();
+
+    return () => {
+      if (ws) {
+        ws.destroy();
+      }
+    };
+  }, [src, isOutbound]);
+
+  const togglePlay = () => {
+    if (wavesurferRef.current && wavesurferReady) {
+      wavesurferRef.current.playPause();
     }
   };
 
-  const handleTimeUpdate = () => {
-    if (audioRef.current) {
-      setCurrentTime(audioRef.current.currentTime);
-    }
-  };
-
-  const handleLoadedMetadata = () => {
-    if (audioRef.current) {
-      setDuration(audioRef.current.duration);
-    }
-  };
-
-  const handleEnded = () => {
-    setIsPlaying(false);
-    setCurrentTime(0);
-  };
-
-  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (progressRef.current && audioRef.current) {
-      const rect = progressRef.current.getBoundingClientRect();
-      const percent = (e.clientX - rect.left) / rect.width;
-      audioRef.current.currentTime = percent * duration;
-    }
-  };
-
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
-  
-  const waveformBars = 30;
-  const waveformPattern = Array.from({ length: waveformBars }, (_, i) => {
-    const seed = (i * 7 + 13) % 100;
-    return 20 + (seed % 80);
-  });
-
-  const baseColor = isOutbound ? 'bg-white/30' : 'bg-indigo-200';
-  const activeColor = isOutbound ? 'bg-white' : 'bg-indigo-600';
   const textColor = isOutbound ? 'text-white/70' : 'text-gray-500';
   const buttonBg = isOutbound ? 'bg-white/20 hover:bg-white/30' : 'bg-indigo-100 hover:bg-indigo-200';
   const buttonIcon = isOutbound ? 'text-white' : 'text-indigo-600';
@@ -1591,26 +1620,21 @@ function AudioPlayer({
   const transcriptionText = isOutbound ? 'text-white/90' : 'text-gray-700';
 
   return (
-    <div className="w-full max-w-[320px]">
-      <audio
-        ref={audioRef}
-        src={src}
-        onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleLoadedMetadata}
-        onEnded={handleEnded}
-        preload="metadata"
-      />
-      
+    <div className="w-full min-w-[280px] max-w-[340px]">
       <div className="flex items-center gap-3">
         <button
           onClick={togglePlay}
+          disabled={isLoading}
           className={cn(
-            "h-11 w-11 rounded-full flex items-center justify-center transition-all shrink-0",
-            buttonBg
+            "h-12 w-12 rounded-full flex items-center justify-center transition-all shrink-0",
+            buttonBg,
+            isLoading && "opacity-50 cursor-wait"
           )}
           data-testid="button-audio-play"
         >
-          {isPlaying ? (
+          {isLoading ? (
+            <Loader2 className={cn("h-5 w-5 animate-spin", buttonIcon)} />
+          ) : isPlaying ? (
             <Pause className={cn("h-5 w-5", buttonIcon)} />
           ) : (
             <Play className={cn("h-5 w-5 ml-0.5", buttonIcon)} />
@@ -1619,26 +1643,10 @@ function AudioPlayer({
 
         <div className="flex-1 min-w-0">
           <div 
-            ref={progressRef}
-            onClick={handleProgressClick}
-            className="flex items-center gap-[2px] h-8 cursor-pointer group"
+            ref={waveformRef}
+            className="w-full cursor-pointer"
             data-testid="audio-waveform"
-          >
-            {waveformPattern.map((height, i) => {
-              const barProgress = (i / waveformBars) * 100;
-              const isActive = barProgress <= progress;
-              return (
-                <div
-                  key={i}
-                  className={cn(
-                    "w-[3px] rounded-full transition-all",
-                    isActive ? activeColor : baseColor
-                  )}
-                  style={{ height: `${height}%` }}
-                />
-              );
-            })}
-          </div>
+          />
           
           <div className={cn("flex justify-between text-[11px] mt-1", textColor)}>
             <span>{formatTime(currentTime)}</span>
