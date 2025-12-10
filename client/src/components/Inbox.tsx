@@ -40,6 +40,7 @@ import {
   Info,
   ChevronDown,
   Archive,
+  Bot,
 } from 'lucide-react';
 import { FaInstagram, FaFacebook, FaLinkedin, FaTiktok, FaYoutube, FaWhatsapp } from 'react-icons/fa';
 import { GoogleBusinessIcon } from './GoogleBusinessIcon';
@@ -60,6 +61,7 @@ import {
 } from "@/components/ui/select";
 import { formatDistanceToNow } from 'date-fns';
 import { Platform, MessageType, Urgency, Intent, Sentiment, MessageStatus, CRMContact } from '@/lib/types';
+import { isRepliyoMessage, isAutoReply } from '@/lib/mockData';
 import type { Message } from '@shared/schema';
 import { motion, AnimatePresence } from "framer-motion";
 import { getCharacterLimit } from '@/utils/platformLimits';
@@ -886,9 +888,9 @@ export function Inbox() {
                         const isOutbound = msg.direction === 'outbound';
                         
                         // Check if message was sent from Repliyo using the source field
-                        // This is the authoritative way to identify messages sent from our app
-                        // vs messages that the brand sent natively from their social networks
-                        const isSentFromRepliyo = (msg as any).source === 'repliyo';
+                        // This detects both manual sends ('repliyo') and AI auto-replies ('repliyo_auto')
+                        const isSentFromRepliyo = isRepliyoMessage(msg.source);
+                        const isSentByAI = isAutoReply(msg.source);
                         
                         const isOwner = activeClient && msg.author.toLowerCase() === activeClient.name.toLowerCase();
                     
@@ -953,9 +955,16 @@ export function Inbox() {
                                
                                {/* "Sent from Repliyo" indicator for messages sent from this app */}
                                {isSentFromRepliyo && (
-                                 <div className="mt-2 pt-2 border-t border-gray-700/50 flex items-center gap-1.5 text-[10px] text-gray-400">
-                                   <Send className="h-2.5 w-2.5" />
-                                   <span>Enviado desde Repliyo</span>
+                                 <div className={cn(
+                                   "mt-2 pt-2 border-t border-gray-700/50 flex items-center gap-1.5 text-[10px] font-medium",
+                                   isSentByAI ? "text-purple-300" : "text-indigo-300"
+                                 )}>
+                                   {isSentByAI ? (
+                                     <Bot className="h-3 w-3" />
+                                   ) : (
+                                     <Send className="h-2.5 w-2.5" />
+                                   )}
+                                   <span>{isSentByAI ? "Respondido con IA" : "Enviado desde Repliyo"}</span>
                                  </div>
                                )}
                                
