@@ -411,13 +411,16 @@ export class DatabaseStorage implements IStorage {
     if (existing) {
       // PROTECTION: If existing message was sent from Repliyo, preserve that source
       // Metricool may send the same message with different direction, but we don't want to overwrite
-      if (existing.source === 'repliyo' || (existing.direction === 'outbound' && insertMessage.direction === 'inbound')) {
+      const isReplyoSource = existing.source === 'repliyo' || existing.source === 'repliyo_auto';
+      const isOutboundBeingOverwritten = existing.direction === 'outbound' && insertMessage.direction === 'inbound';
+      
+      if (isReplyoSource || isOutboundBeingOverwritten) {
         console.log(`[Storage] Protecting Repliyo message ${existing.id} - preserving source and direction`);
-        // Only update rawData and avatar but keep direction, source, and parentMessageId
+        // Only update rawData and avatar but keep direction, source, author, and parentMessageId
         const updated = await this.updateMessage(existing.id, {
           rawData: insertMessage.rawData,
           authorAvatar: insertMessage.authorAvatar || existing.authorAvatar,
-          // Keep direction, source, and parentMessageId to preserve "Sent from Repliyo" indicator
+          // Keep direction, source, author, and parentMessageId to preserve "Sent from Repliyo" indicator
         });
         return updated!;
       }
@@ -429,36 +432,34 @@ export class DatabaseStorage implements IStorage {
     // When we send a reply from our app, we save it without a metricoolId.
     // Later, when Metricool syncs, the same message comes back with a metricoolId.
     // We need to detect this and update the existing message instead of creating a duplicate.
-    // 
-    // DETECTION: A message is likely our outbound if:
-    // 1. Direction is 'outbound' (Metricool correctly identified it as our message)
-    // 2. OR source is 'metricool_sync' (it's a synced message that could be our reply)
     //
-    // The reconciliation function itself has additional safety:
-    // - Only matches pending messages with source='repliyo' or 'repliyo_auto'
-    // - Uses robust content normalization
-    // - Tiered timestamp tolerance (10min for short, 2hrs for long)
-    // - Sorted by timestamp proximity to prefer closest match
-    //
-    // This ensures we reconcile our outbound replies while customer messages
-    // remain unaffected (they won't match our pending outbound content+timestamp).
+    // CRITICAL: Metricool may sync the same message to MULTIPLE brands if they share
+    // the same social account. We need to search GLOBALLY (all brands) to prevent this.
     const isFromMetricoolSync = insertMessage.source === 'metricool_sync';
     const isExplicitOutbound = insertMessage.direction === 'outbound';
     
     if (insertMessage.content && (isExplicitOutbound || isFromMetricoolSync)) {
-      const pendingOutbound = await this.findPendingOutboundMatchBrandWide(insertMessage);
+      // First, try to find in the SAME brand (standard reconciliation)
+      const pendingOutboundSameBrand = await this.findPendingOutboundMatchBrandWide(insertMessage);
       
-      if (pendingOutbound) {
-        console.log(`[Storage] Reconciling message: updating local outbound ${pendingOutbound.id} with metricoolId ${insertMessage.metricoolId}`);
-        // Update the existing outbound message with the metricoolId, rawData and avatar from Metricool
-        // But keep direction, source, author, and parentMessageId to preserve "Sent from Repliyo" badge
-        const updated = await this.updateMessage(pendingOutbound.id, {
+      if (pendingOutboundSameBrand) {
+        console.log(`[Storage] Reconciling message: updating local outbound ${pendingOutboundSameBrand.id} with metricoolId ${insertMessage.metricoolId}`);
+        const updated = await this.updateMessage(pendingOutboundSameBrand.id, {
           metricoolId: insertMessage.metricoolId,
           rawData: insertMessage.rawData,
-          authorAvatar: insertMessage.authorAvatar || pendingOutbound.authorAvatar,
-          // Keep direction as outbound and source as 'repliyo'/'repliyo_auto' to preserve the badge
+          authorAvatar: insertMessage.authorAvatar || pendingOutboundSameBrand.authorAvatar,
         });
         return updated!;
+      }
+      
+      // GLOBAL CHECK: If not found in same brand, check ALL brands
+      // This prevents duplicates when Metricool syncs the same DM to multiple brands
+      const existingGlobal = await this.findExistingReplyoMessageGlobal(insertMessage);
+      if (existingGlobal) {
+        console.log(`[Storage] SKIPPING duplicate: message already exists in brand ${existingGlobal.brandId} as ${existingGlobal.id} (source: ${existingGlobal.source})`);
+        // Return the existing message without creating a new one
+        // We don't update the existing one because it belongs to a different brand
+        return existingGlobal;
       }
     }
 
@@ -552,6 +553,63 @@ export class DatabaseStorage implements IStorage {
       if (syncedNormalized.startsWith(pendingNormalized.substring(0, 50)) && timeDiff < TIME_TOLERANCE_MS) {
         console.log(`[Storage] Found brand-wide match (reverse prefix) for reconciliation: pending ${pending.id}`);
         return pending;
+      }
+    }
+
+    return undefined;
+  }
+
+  // GLOBAL search: Find any existing Repliyo message with the same content across ALL brands
+  // This prevents duplicates when Metricool syncs the same DM to multiple brands sharing a social account
+  private async findExistingReplyoMessageGlobal(syncedMessage: InsertMessage): Promise<Message | undefined> {
+    if (!syncedMessage.content) {
+      return undefined;
+    }
+
+    // Find ALL messages from Repliyo (any brand) that match this content
+    const replyoMessages = await db
+      .select()
+      .from(messages)
+      .where(
+        or(
+          eq(messages.source, 'repliyo'),
+          eq(messages.source, 'repliyo_auto')
+        )
+      );
+
+    if (replyoMessages.length === 0) {
+      return undefined;
+    }
+
+    // Normalize content for comparison
+    const normalizeContent = (text: string) => {
+      return text
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, '')
+        .substring(0, 100);
+    };
+
+    const syncedNormalized = normalizeContent(syncedMessage.content);
+    const syncedTime = syncedMessage.timestamp ? new Date(syncedMessage.timestamp).getTime() : Date.now();
+    const TIME_TOLERANCE_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+    for (const existing of replyoMessages) {
+      const existingNormalized = normalizeContent(existing.content);
+      const existingTime = new Date(existing.timestamp).getTime();
+      const timeDiff = Math.abs(syncedTime - existingTime);
+
+      if (existingNormalized === syncedNormalized && timeDiff < TIME_TOLERANCE_MS) {
+        return existing;
+      }
+      
+      // Also check partial content match (for long messages truncated differently)
+      const syncedStart = syncedNormalized.substring(0, 50);
+      const existingStart = existingNormalized.substring(0, 50);
+      if (syncedStart === existingStart && timeDiff < TIME_TOLERANCE_MS) {
+        console.log(`[Storage] Global match (prefix): found existing ${existing.id} with similar content start`);
+        return existing;
       }
     }
 
