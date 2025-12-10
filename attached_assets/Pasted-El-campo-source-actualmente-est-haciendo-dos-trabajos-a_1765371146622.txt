@@ -1,0 +1,69 @@
+El campo source actualmente está haciendo dos trabajos a la vez:
+
+Origen de Datos: "¿De dónde saqué esta información?" (Metricool API).
+
+Autoría Intelectual: "¿Quién escribió esto?" (Tu IA).
+
+Cuando Metricool sincroniza, gana el "Origen de Datos" y borra la "Autoría".
+
+Aquí está mi análisis y la Solución Definitiva (que combina la Opción 1 y 3).
+
+🧠 Mi Análisis Crítico
+Opción 1 (SQL Script): Es necesaria para limpiar el pasado ("curar la herida"), pero no previene que vuelva a pasar. Es un parche.
+
+Opción 2 (Heurística): Descartada totalmente. Adivinar es de amateurs.
+
+Opción 3 (Flag Inmutable): Esta es la solución arquitectónica correcta.
+
+Necesitamos un campo que actúe como "Certificado de Nacimiento" del mensaje. Una vez que se crea en tu sistema, ese campo se sella y la sincronización de Metricool tiene prohibido tocarlo.
+
+🚀 La Solución Robusta (Estrategia Combinada)
+Vamos a instruir al agente para que implemente una solución de "Inmutabilidad de Origen".
+
+Cambio en Base de Datos: En lugar de un simple booleano, sugiero un campo más descriptivo para que sepas si fue Humano o IA.
+
+Nuevo campo: internal_origin (ENUM: 'manual', 'ai', NULL).
+
+Si es NULL: Vino de fuera (cliente/red social).
+
+Si es 'manual': Lo escribió tu operador en Repliyo.
+
+Si es 'ai': Lo escribió tu Agente.
+
+Lógica de Frontend: El Frontend dejará de mirar source para poner la etiqueta. Mirará internal_origin.
+
+if (internal_origin === 'ai') -> Muestra "Respondido con IA".
+
+if (internal_origin === 'manual') -> Muestra "Enviado desde Repliyo".
+
+Así, aunque Metricool cambie el source a metricool_sync, tu etiqueta visual persiste porque internal_origin no cambia.
+
+📝 Respuesta para el Agente (Instrucciones Técnicas)
+Copia y pega esto. Le estamos pidiendo que arregle la arquitectura y luego limpie el desastre.
+
+"Tu diagnóstico es impecable. El problema raíz es confiar en un campo mutable (source) para un dato que debería ser inmutable (la autoría).
+
+APROBADO: Vamos con una Estrategia Combinada (Opción 3 + Opción 1).
+
+Paso 1: Arquitectura (Inmutabilidad)
+
+Modifica la tabla messages para añadir una columna inmutable:
+
+Nombre: internal_origin (VARCHAR o ENUM).
+
+Valores posibles: 'manual', 'ai', o NULL.
+
+Regla de Oro: Este campo se escribe SOLO cuando creamos el mensaje en nuestro sistema (endpoint /reply). La función de reconciliación/sync (upsertMessage) tiene PROHIBIDO modificar este campo si ya tiene valor.
+
+Frontend: Actualiza Inbox.tsx para que las etiquetas visuales ('Enviado desde Repliyo' / 'IA') dependan de internal_origin en lugar de source. Esto hace que la UI sea inmune a la sincronización.
+
+Paso 2: Reparación de Datos (SQL Script) Una vez creada la columna, ejecuta un script de migración para recuperar los mensajes corruptos:
+
+UPDATE messages SET internal_origin = 'ai' WHERE content LIKE '%@inpulza%' AND source = 'metricool_sync'; (Ajusta la condición LIKE según los patrones que identificaste).
+
+UPDATE messages SET internal_origin = 'manual' WHERE ... (para los manuales conocidos).
+
+Por favor, procede primero con el cambio de Schema (Paso 1)."
+
+¿Por qué esto es mejor?
+Con esta solución, Metricool puede sobrescribir el mensaje 100 veces si quiere para actualizar timestamps o estados, pero nunca más perderás la etiqueta de "Respondido con IA", porque ahora vive en una columna blindada.
