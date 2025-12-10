@@ -2,6 +2,7 @@ import { storage } from "../storage";
 import { MetricoolService, createMetricoolService } from "./metricool";
 import { websocketService } from "./websocketService";
 import { autoReplyService } from "./autoReplyService";
+import { transcriptionService } from "./transcriptionService";
 import { log } from "../app";
 
 interface BrandSyncResult {
@@ -175,6 +176,36 @@ class SyncService {
           let customerId = '';
           let isFromBrand = false;
           
+          let mediaType: string | null = null;
+          let mediaUrl: string | null = null;
+          
+          if (msg.attachments && Array.isArray(msg.attachments) && msg.attachments.length > 0) {
+            const firstAttachment = msg.attachments[0];
+            
+            // Handle different attachment formats from Metricool
+            if (typeof firstAttachment === 'string') {
+              mediaUrl = firstAttachment;
+            } else if (typeof firstAttachment === 'object' && firstAttachment !== null) {
+              // Extract URL from object formats: {url: "..."}, {src: "..."}, {link: "..."}, etc.
+              mediaUrl = firstAttachment.url || firstAttachment.src || firstAttachment.link || firstAttachment.href || null;
+              
+              // If still no URL, try to get it from nested properties
+              if (!mediaUrl && firstAttachment.data) {
+                mediaUrl = firstAttachment.data.url || firstAttachment.data.src || null;
+              }
+            }
+            
+            if (mediaUrl) {
+              mediaType = this.detectMediaType(mediaUrl);
+            }
+            
+            if (!content || content.trim() === '') {
+              content = mediaType === 'audio' ? '[Mensaje de audio]' : 
+                        mediaType === 'image' ? '[Imagen]' : 
+                        mediaType === 'video' ? '[Video]' : '[Archivo adjunto]';
+            }
+          }
+          
           let timestamp: string | number = Date.now();
           if (msg.publicationDateTime) {
             timestamp = msg.publicationDateTime;
@@ -260,6 +291,9 @@ class SyncService {
             rawData: { conversation: conv, message: msg },
             threadId: conv.id,
             parentMessageId: null,
+            mediaType,
+            mediaUrl,
+            mediaTranscription: null,
           };
 
           const savedMessage = await storage.upsertMessage(messageData);
@@ -440,7 +474,22 @@ class SyncService {
     }
 
     log(`[SyncService] Brand ${brandName}: saved ${savedCount} messages`, "sync");
+    
+    this.triggerPendingTranscriptions(brandId, brandName);
+    
     return savedCount;
+  }
+
+  private triggerPendingTranscriptions(brandId: string, brandName: string): void {
+    transcriptionService.transcribePendingAudios(brandId, 3)
+      .then(count => {
+        if (count > 0) {
+          log(`[SyncService] Brand ${brandName}: transcribed ${count} audio messages`, "sync");
+        }
+      })
+      .catch(error => {
+        log(`[SyncService] Brand ${brandName}: transcription error - ${error.message}`, "sync");
+      });
   }
 
   private normalizePlatform(provider: string): string {
@@ -589,6 +638,32 @@ class SyncService {
   async triggerManualBrandSync(): Promise<BrandSyncResult> {
     log("[SyncService] Manual brand sync triggered", "sync");
     return this.syncAvailableBrands();
+  }
+
+  private detectMediaType(url: string): 'audio' | 'image' | 'video' | null {
+    if (!url) return null;
+    
+    const lowerUrl = url.toLowerCase();
+    
+    if (lowerUrl.includes('ig_messaging_cdn') || lowerUrl.includes('fbsbx.com')) {
+      if (lowerUrl.includes('audio') || lowerUrl.includes('.mp3') || lowerUrl.includes('.m4a') || lowerUrl.includes('.aac') || lowerUrl.includes('.ogg')) {
+        return 'audio';
+      }
+      if (lowerUrl.includes('video') || lowerUrl.includes('.mp4') || lowerUrl.includes('.mov')) {
+        return 'video';
+      }
+      return 'audio';
+    }
+    
+    const audioExtensions = ['.mp3', '.m4a', '.aac', '.ogg', '.wav', '.opus'];
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+    const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm'];
+    
+    if (audioExtensions.some(ext => lowerUrl.includes(ext))) return 'audio';
+    if (imageExtensions.some(ext => lowerUrl.includes(ext))) return 'image';
+    if (videoExtensions.some(ext => lowerUrl.includes(ext))) return 'video';
+    
+    return null;
   }
 }
 

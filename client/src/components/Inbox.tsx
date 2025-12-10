@@ -41,6 +41,10 @@ import {
   ChevronDown,
   Archive,
   Bot,
+  Mic,
+  ImageIcon,
+  Video,
+  FileAudio,
 } from 'lucide-react';
 import { FaInstagram, FaFacebook, FaLinkedin, FaTiktok, FaYoutube, FaWhatsapp } from 'react-icons/fa';
 import { GoogleBusinessIcon } from './GoogleBusinessIcon';
@@ -951,7 +955,68 @@ export function Inbox() {
                                       ? getPlatformStyles((msg.platform || 'instagram') as Platform).replyBubble
                                       : getPlatformStyles((msg.platform || 'instagram') as Platform).bubble
                             )}>
-                               {msg.content}
+                               {/* Audio message display */}
+                               {(msg as any).mediaType === 'audio' && (
+                                 <div className="mb-2">
+                                   <div className="flex items-center gap-2 mb-2">
+                                     <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                                       <Mic className="h-4 w-4 text-indigo-600" />
+                                     </div>
+                                     <span className="text-xs font-medium text-indigo-600">Mensaje de audio</span>
+                                   </div>
+                                   {(msg as any).mediaUrl && (
+                                     <audio 
+                                       controls 
+                                       className="w-full h-10 rounded-lg"
+                                       src={(msg as any).mediaUrl}
+                                     >
+                                       Tu navegador no soporta audio
+                                     </audio>
+                                   )}
+                                   {(msg as any).mediaTranscription && (
+                                     <div className="mt-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                                       <span className="text-[10px] text-gray-500 uppercase font-medium">Transcripción:</span>
+                                       <p className="text-sm text-gray-700 mt-1">{(msg as any).mediaTranscription}</p>
+                                     </div>
+                                   )}
+                                 </div>
+                               )}
+                               
+                               {/* Image message display */}
+                               {(msg as any).mediaType === 'image' && (msg as any).mediaUrl && (
+                                 <div className="mb-2">
+                                   <img 
+                                     src={(msg as any).mediaUrl} 
+                                     alt="Imagen adjunta"
+                                     className="max-w-full rounded-lg border border-gray-200"
+                                     loading="lazy"
+                                   />
+                                 </div>
+                               )}
+                               
+                               {/* Video message display */}
+                               {(msg as any).mediaType === 'video' && (msg as any).mediaUrl && (
+                                 <div className="mb-2">
+                                   <div className="flex items-center gap-2 mb-2">
+                                     <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
+                                       <Video className="h-4 w-4 text-purple-600" />
+                                     </div>
+                                     <span className="text-xs font-medium text-purple-600">Video adjunto</span>
+                                   </div>
+                                   <video 
+                                     controls 
+                                     className="w-full rounded-lg"
+                                     src={(msg as any).mediaUrl}
+                                   >
+                                     Tu navegador no soporta video
+                                   </video>
+                                 </div>
+                               )}
+                               
+                               {/* Regular text content (show if not just a placeholder for media) */}
+                               {msg.content && !['[Mensaje de audio]', '[Imagen]', '[Video]', '[Archivo adjunto]'].includes(msg.content) && (
+                                 <span>{msg.content}</span>
+                               )}
                                
                                {/* "Sent from Repliyo" indicator for messages sent from this app */}
                                {isSentFromRepliyo && (

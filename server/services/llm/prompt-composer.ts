@@ -116,7 +116,22 @@ export function composePrompt(context: PromptContext): {
     historyContext = "\n--- HISTORIAL DE CONVERSACIÓN ---\n";
     for (const msg of recentMessages) {
       const role = msg.direction === "inbound" ? "Cliente" : "Marca";
-      historyContext += `${role}: ${msg.content.substring(0, 200)}\n`;
+      let messageContent = msg.content.substring(0, 200);
+      
+      if ((msg as any).mediaType === 'audio') {
+        const transcription = (msg as any).mediaTranscription;
+        if (transcription && transcription !== '[Audio no reconocible]' && transcription !== '[Transcripción no disponible]') {
+          messageContent = `[Audio transcrito]: ${transcription.substring(0, 200)}`;
+        } else {
+          messageContent = '[Mensaje de audio - transcripción pendiente]';
+        }
+      } else if ((msg as any).mediaType === 'image') {
+        messageContent = msg.content || '[Imagen enviada por el cliente]';
+      } else if ((msg as any).mediaType === 'video') {
+        messageContent = msg.content || '[Video enviado por el cliente]';
+      }
+      
+      historyContext += `${role}: ${messageContent}\n`;
     }
   }
 
@@ -126,11 +141,25 @@ export function composePrompt(context: PromptContext): {
     userPromptParts.push(historyContext);
   }
 
+  let currentMessageContent = message.content;
+  if ((message as any).mediaType === 'audio') {
+    const transcription = (message as any).mediaTranscription;
+    if (transcription && transcription !== '[Audio no reconocible]' && transcription !== '[Transcripción no disponible]') {
+      currentMessageContent = `[Audio transcrito]: ${transcription}`;
+    } else {
+      currentMessageContent = '[Mensaje de audio sin transcripción disponible]';
+    }
+  } else if ((message as any).mediaType === 'image') {
+    currentMessageContent = message.content || '[El cliente envió una imagen]';
+  } else if ((message as any).mediaType === 'video') {
+    currentMessageContent = message.content || '[El cliente envió un video]';
+  }
+
   userPromptParts.push(`--- MENSAJE A RESPONDER ---
 Plataforma: ${platform}
 Tipo: ${message.type === "conversation" ? "Mensaje Directo" : "Comentario"}
 Autor: ${message.author || "Usuario"}
-Contenido: ${message.content}
+Contenido: ${currentMessageContent}
 
 Por favor, genera una respuesta apropiada para este mensaje.`);
 

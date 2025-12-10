@@ -120,20 +120,24 @@ class WebSocketService {
   }
 
   private async getSessionUserId(sessionId: string): Promise<string | null> {
-    return new Promise((resolve) => {
-      const { sessionStore } = require('../sessionStore');
-      if (sessionStore && sessionStore.get) {
-        sessionStore.get(sessionId, (err: any, session: any) => {
-          if (err || !session) {
-            resolve(null);
-          } else {
-            resolve(session.userId || null);
-          }
-        });
-      } else {
-        resolve(null);
-      }
-    });
+    try {
+      const { sessionStore } = await import('../sessionStore');
+      return new Promise((resolve) => {
+        if (sessionStore && sessionStore.get) {
+          sessionStore.get(sessionId, (err: any, session: any) => {
+            if (err || !session) {
+              resolve(null);
+            } else {
+              resolve(session.userId || null);
+            }
+          });
+        } else {
+          resolve(null);
+        }
+      });
+    } catch (error) {
+      return null;
+    }
   }
 
   private handleMessage(ws: WebSocket, data: any): void {
