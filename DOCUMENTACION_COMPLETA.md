@@ -2687,63 +2687,49 @@ async function analyzeSentiment(content: string): Promise<'positive' | 'neutral'
 
 ---
 
-### 3. PENDIENTE: Unificación Visual de Mensajes Enviados
+### 3. COMPLETADO: Campo `internal_origin` - Inmutabilidad de Etiquetas ✅ (10 Dic 2025)
 
-**Problema detectado:** Los mensajes enviados desde Repliyo (tanto manuales como auto-reply) no tienen un estilo visual consistente en todas las plataformas y tipos de mensajes.
+**Problema original:** Los mensajes enviados desde Repliyo perdían su etiqueta visual ("Enviado desde Repliyo" / "Respondido con IA") cuando Metricool sincronizaba, porque el campo `source` era sobrescrito.
 
-**Estado actual:**
-- En comentarios: Funciona parcialmente con `isSentFromRepliyo` (bg-gray-800, logo de Repliyo)
-- En DMs: No hay diferenciación visual clara entre mensajes del usuario enviados desde la app vs desde la red social
+**Causa raíz:** El campo `source` hacía dos trabajos a la vez:
+1. Origen de datos: "¿De dónde saqué esta información?" (Metricool API)
+2. Autoría: "¿Quién escribió esto?" (Usuario/IA de Repliyo)
 
-**Campo clave:** `source` en la tabla `messages`:
-- `'repliyo'` = mensaje enviado manualmente desde Repliyo
-- `'repliyo_auto'` = mensaje enviado automáticamente por IA
-- `NULL` o vacío = mensaje sincronizado de redes sociales
+Cuando Metricool sincroniza, ganaba el "Origen de Datos" y borraba la "Autoría".
 
-**Solución requerida:**
+**Solución implementada: Campo `internal_origin` (inmutable)**
 
-**1. Actualizar condición en Inbox.tsx (línea ~891):**
-El código actual solo detecta mensajes manuales:
-```typescript
-const isSentFromRepliyo = (msg as any).source === 'repliyo';
-```
-Debe incluir también los automáticos:
-```typescript
-const isSentFromRepliyo = ['repliyo', 'repliyo_auto'].includes((msg as any).source);
-```
+Se agregó un nuevo campo en la tabla `messages` que actúa como "certificado de nacimiento":
 
-**2. Diferenciar visualmente manual vs automático:**
-- `source === 'repliyo'`: Badge "Enviado desde Repliyo" (icono Send)
-- `source === 'repliyo_auto'`: Badge "Respondido con IA" (icono Bot/Sparkles)
+| Valor | Significado | Etiqueta en UI |
+|-------|-------------|----------------|
+| `'manual'` | Escrito por operador desde Repliyo | "Enviado desde Repliyo" |
+| `'ai'` | Escrito por agente IA de Repliyo | "Respondido con IA" |
+| `NULL` | Mensaje externo (cliente/red social) | Sin etiqueta |
 
-**3. Estilos existentes que funcionan (Inbox.tsx líneas 944-963):**
-- Burbuja oscura: `bg-gray-800 text-white`
-- Avatar con logo Repliyo: ya implementado
-- Indicador en pie del mensaje: ya implementado pero solo para 'repliyo'
+**Protección en sincronización:**
+- `upsertMessage()` en `storage.ts` protege mensajes con `internalOrigin` definido
+- Solo actualiza `rawData` y `authorAvatar`, NUNCA sobrescribe `internalOrigin`
+- La reconciliación también preserva el campo
 
-**4. Verificar consistencia en:**
-- Vista de DMs (conversaciones privadas)
-- Vista de Comentarios públicos
-- Todas las plataformas: Instagram, Facebook, LinkedIn, TikTok, YouTube
+**Archivos modificados:**
+- `shared/schema.ts` - Campo `internalOrigin` + enum Zod
+- `server/storage.ts` - Protección en `upsertMessage()` (líneas 414-432)
+- `server/routes.ts` - Escribe `internalOrigin: 'manual'` al enviar respuestas manuales
+- `server/services/autoReplyService.ts` - Escribe `internalOrigin: 'ai'` al enviar respuestas IA
+- `client/src/lib/mockData.ts` - Helpers `isRepliyoMessage()` e `isAutoReply()` actualizados
+- `client/src/components/Inbox.tsx` - UI usa `internalOrigin` con fallback a `source`
 
-**5. Componente propuesto:**
-```typescript
-function MessageSourceBadge({ source }: { source: string | null }) {
-  if (!source || !['repliyo', 'repliyo_auto'].includes(source)) return null;
-  const isAuto = source === 'repliyo_auto';
-  return (
-    <div className={cn(
-      "flex items-center gap-1.5 text-[10px] font-medium",
-      isAuto ? "text-violet-400" : "text-indigo-400"
-    )}>
-      {isAuto ? <Bot className="h-3 w-3" /> : <Send className="h-2.5 w-2.5" />}
-      <span>{isAuto ? "Respondido con IA" : "Enviado desde Repliyo"}</span>
-    </div>
-  );
-}
-```
+**Migración de datos históricos:**
+- Ejecutado SQL para reparar mensajes corruptos
+- Mensajes con `source='repliyo_auto'` → `internal_origin='ai'`
+- Mensajes con `source='repliyo'` → `internal_origin='manual'`
+- Mensajes identificados en audit_log como IA → `internal_origin='ai'`
 
-**Archivos a revisar:** `client/src/components/Inbox.tsx` (líneas 888-963)
+**Comportamiento actual verificado:**
+- Mensajes escritos desde Repliyo → Etiqueta correcta que persiste
+- Mensajes escritos desde app nativa (Instagram/TikTok) → Sin etiqueta
+- Mensajes de clientes → Sin etiqueta
 
 ---
 
