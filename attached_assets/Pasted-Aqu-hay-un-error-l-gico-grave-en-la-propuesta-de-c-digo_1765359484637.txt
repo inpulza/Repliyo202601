@@ -1,0 +1,52 @@
+Aquí hay un error lógico grave en la propuesta de código de Replit que podría romper la estructura de tus prompts.
+
+Aunque su intención de "limpiar" es buena, la implementación técnica que propone (filter(line => line.trim() !== '')) es destructiva.
+
+Vamos a analizarlo con lupa de auditor:
+
+🚨 El Error Crítico: La "Limpieza de Líneas"
+Replit propone este código al final:
+
+JavaScript
+
+// Limpiar líneas que quedaron vacías o con solo espacios
+result = result.split('\n')
+  .filter(line => line.trim() !== '') // <--- ¡AQUÍ ESTÁ EL PELIGRO!
+  .join('\n');
+¿Por qué es un error? Tú usas Markdown en tus prompts (títulos, listas, separación de secciones). El Markdown y la legibilidad para la IA dependen de los espacios en blanco y los saltos de línea.
+
+Si ejecutas ese código, el sistema borrará TODOS los saltos de línea vacíos de tu prompt, no solo los que dejó la variable.
+
+Consecuencia: Tu prompt, que estaba bonito y organizado en párrafos, se convertirá en un bloque de texto denso y pegado. La IA perderá la noción de dónde termina una sección y empieza otra.
+
+⚠️ El Debate sobre los "Valores por Defecto"
+Replit propone: post_context: context.postContext || "[Sin contexto de publicación]"
+
+Mi análisis: Esto es una espada de doble filo.
+
+Pros: Es explícito. La IA sabe que no hay dato.
+
+Contras: Estás inyectando texto "meta" que la IA podría confundir con el contenido real.
+
+Ejemplo: Si tu prompt dice: "Responde basándote en este texto: {{post_context}}".
+
+Resultado: "Responde basándote en este texto: [Sin contexto de publicación]".
+
+Riesgo: Una IA mal configurada podría responder al usuario: "Lo siento, no puedo responder porque dice que no hay contexto", en lugar de ser proactiva.
+
+Mi sugerencia alternativa: Para variables opcionales como el contexto, es mejor usar Cadena Vacía ("") o un valor muy neutro como "N/A".
+
+🧠 Preguntas para ti (para definir la solución)
+Antes de corregir a Replit, necesito saber tu preferencia en estos dos puntos:
+
+Sobre el Formato: ¿Estás de acuerdo en que debemos prohibir que el código borre líneas vacías para respetar tu estructura de Markdown? (Yo creo que sí).
+
+Sobre el DM: Cuando llegue un DM (que no tiene post), ¿qué prefieres que le pasemos a la IA?
+
+Opción A (Replit): Un texto explícito: "[Es un Mensaje Directo, no hay post]" (Ayuda a la IA a cambiar de contexto).
+
+Opción B (Limpia): Nada (""). (El prompt quedaría: Contexto: ).
+
+Personalmente, para un asistente inteligente, la Opción A (texto explícito) suele funcionar mejor porque le da una pista a la IA de que cambie su "chip" de comentarista a agente de soporte privado. Pero debemos tener cuidado con el fraseo.
+
+¿Qué opinas?
