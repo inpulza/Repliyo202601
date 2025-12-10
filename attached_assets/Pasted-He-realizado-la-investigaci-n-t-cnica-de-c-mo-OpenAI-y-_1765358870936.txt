@@ -1,0 +1,60 @@
+He realizado la investigación técnica de cómo OpenAI y Google (Gemini/DeepMind) estructuran sus consolas de configuración al día de hoy.
+
+Aquí tienes el desglose real:
+
+1. OpenAI (Playground & Assistants API)
+OpenAI mantiene una filosofía de "Bloque Único de Instrucciones".
+
+System Instructions (Instrucciones): Un solo campo de texto gigante (Markdown). Aquí es donde OpenAI espera que pongas:
+
+El Rol (Persona).
+
+Las Reglas.
+
+El Formato de salida.
+
+Los Ejemplos (Few-Shot): OpenAI no tiene un campo separado para ejemplos en su Assistant Playground. Espera que los escribas dentro de las Instrucciones o que los subas como archivos si son muchos.
+
+Knowledge (File Search / Vector Store): Aquí es donde subes PDFs o TXTs. Esto equivale a tu campo Knowledge Base.
+
+Guardrails: No tienen un campo explícito. Esperan que lo pongas en las Instrucciones.
+
+Veredicto OpenAI: Ellos usan 2 Campos Principales (Instrucciones + Archivos).
+
+2. Google AI Studio (Gemini Advanced)
+Google es un poco más estructurado visualmente en su interfaz web, pero al final todo se envía junto.
+
+System Instructions: Campo de texto principal para el rol y reglas.
+
+Examples (Few-shot): Google sí tiene una sección visual separada en su UI para añadir pares "Input" -> "Output".
+
+Sin embargo: A nivel de API, estos ejemplos simplemente se insertan en el contexto antes del mensaje del usuario.
+
+Context Caching: Para bases de conocimiento gigantes.
+
+Veredicto Google: Ellos usan Estructura Visual, pero el funcionamiento de fondo es el mismo.
+
+🏛️ Mi Recomendación de Arquitectura (El "Estándar Unificado")
+Dado que tu aplicación debe conectarse a ambos (OpenAI y Google), no deberías copiar la interfaz de Google (que tiene campos separados para ejemplos) porque complicaría tu backend innecesariamente.
+
+Tu estructura actual de 3 campos es el "Sweet Spot" (Punto Óptimo) profesional:
+
+System Prompt (El Cerebro):
+
+Aquí metes: Rol + Estilo + Estructura + Ejemplos.
+
+Por qué: Es más flexible. Si quieres poner 3 ejemplos o 20, lo haces escribiendo texto. No necesitas crear un formulario complejo de "Agregar Ejemplo" en tu UI.
+
+Compatibilidad: Funciona perfecto para OpenAI y Gemini.
+
+Knowledge Base (El Contexto):
+
+Aquí metes: Datos del negocio.
+
+Por qué: Separa la "personalidad" de los "datos". Vital para mantenimiento.
+
+Guardrails (La Seguridad):
+
+Aquí metes: Reglas negativas ("No hables de política").
+
+Por qué: Aunque OpenAI lo mete todo junto, tenerlo separado en TU aplicación es una ventaja competitiva. Te permite inyectar estas reglas de seguridad al final de todo el prompt (System + Knowledge + Guardrails) para asegurarte de que la IA no las olvide (Recency Bias).
