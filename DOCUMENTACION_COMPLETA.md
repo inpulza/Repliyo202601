@@ -2700,7 +2700,50 @@ async function analyzeSentiment(content: string): Promise<'positive' | 'neutral'
 - `'repliyo_auto'` = mensaje enviado automáticamente por IA
 - `NULL` o vacío = mensaje sincronizado de redes sociales
 
-**Ver instrucciones en archivo:** `INSTRUCCIONES_UNIFICACION_VISUAL.md`
+**Solución requerida:**
+
+**1. Actualizar condición en Inbox.tsx (línea ~891):**
+El código actual solo detecta mensajes manuales:
+```typescript
+const isSentFromRepliyo = (msg as any).source === 'repliyo';
+```
+Debe incluir también los automáticos:
+```typescript
+const isSentFromRepliyo = ['repliyo', 'repliyo_auto'].includes((msg as any).source);
+```
+
+**2. Diferenciar visualmente manual vs automático:**
+- `source === 'repliyo'`: Badge "Enviado desde Repliyo" (icono Send)
+- `source === 'repliyo_auto'`: Badge "Respondido con IA" (icono Bot/Sparkles)
+
+**3. Estilos existentes que funcionan (Inbox.tsx líneas 944-963):**
+- Burbuja oscura: `bg-gray-800 text-white`
+- Avatar con logo Repliyo: ya implementado
+- Indicador en pie del mensaje: ya implementado pero solo para 'repliyo'
+
+**4. Verificar consistencia en:**
+- Vista de DMs (conversaciones privadas)
+- Vista de Comentarios públicos
+- Todas las plataformas: Instagram, Facebook, LinkedIn, TikTok, YouTube
+
+**5. Componente propuesto:**
+```typescript
+function MessageSourceBadge({ source }: { source: string | null }) {
+  if (!source || !['repliyo', 'repliyo_auto'].includes(source)) return null;
+  const isAuto = source === 'repliyo_auto';
+  return (
+    <div className={cn(
+      "flex items-center gap-1.5 text-[10px] font-medium",
+      isAuto ? "text-violet-400" : "text-indigo-400"
+    )}>
+      {isAuto ? <Bot className="h-3 w-3" /> : <Send className="h-2.5 w-2.5" />}
+      <span>{isAuto ? "Respondido con IA" : "Enviado desde Repliyo"}</span>
+    </div>
+  );
+}
+```
+
+**Archivos a revisar:** `client/src/components/Inbox.tsx` (líneas 888-963)
 
 ---
 
