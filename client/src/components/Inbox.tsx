@@ -1528,90 +1528,69 @@ function AudioPlayer({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [showTranscription, setShowTranscription] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [wavesurferReady, setWavesurferReady] = useState(false);
-  const waveformRef = React.useRef<HTMLDivElement>(null);
-  const wavesurferRef = React.useRef<any>(null);
+  const audioRef = React.useRef<HTMLAudioElement>(null);
+  const progressRef = React.useRef<HTMLDivElement>(null);
 
   const formatTime = (time: number) => {
+    if (!time || !isFinite(time)) return '0:00';
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  React.useEffect(() => {
-    let ws: any = null;
-    
-    const initWaveSurfer = async () => {
-      if (!waveformRef.current) return;
-      
-      try {
-        const WaveSurfer = (await import('wavesurfer.js')).default;
-        
-        ws = WaveSurfer.create({
-          container: waveformRef.current,
-          waveColor: isOutbound ? 'rgba(255,255,255,0.4)' : '#c7d2fe',
-          progressColor: isOutbound ? '#ffffff' : '#4f46e5',
-          cursorColor: 'transparent',
-          barWidth: 3,
-          barGap: 2,
-          barRadius: 3,
-          height: 36,
-          normalize: true,
-          backend: 'WebAudio',
-        });
-
-        wavesurferRef.current = ws;
-
-        ws.on('ready', () => {
-          setDuration(ws.getDuration());
-          setIsLoading(false);
-          setWavesurferReady(true);
-        });
-
-        ws.on('audioprocess', () => {
-          setCurrentTime(ws.getCurrentTime());
-        });
-
-        ws.on('seeking', () => {
-          setCurrentTime(ws.getCurrentTime());
-        });
-
-        ws.on('finish', () => {
-          setIsPlaying(false);
-          setCurrentTime(0);
-        });
-
-        ws.on('play', () => setIsPlaying(true));
-        ws.on('pause', () => setIsPlaying(false));
-
-        ws.on('error', (err: any) => {
-          console.warn('[AudioPlayer] WaveSurfer error, using fallback:', err);
-          setIsLoading(false);
-        });
-
-        ws.load(src);
-      } catch (err) {
-        console.warn('[AudioPlayer] Failed to init WaveSurfer:', err);
-        setIsLoading(false);
-      }
-    };
-
-    initWaveSurfer();
-
-    return () => {
-      if (ws) {
-        ws.destroy();
-      }
-    };
-  }, [src, isOutbound]);
-
   const togglePlay = () => {
-    if (wavesurferRef.current && wavesurferReady) {
-      wavesurferRef.current.playPause();
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
     }
   };
 
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current && isFinite(audioRef.current.duration)) {
+      setDuration(audioRef.current.duration);
+    }
+  };
+
+  const handleEnded = () => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+  };
+
+  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (progressRef.current && audioRef.current && duration > 0) {
+      const rect = progressRef.current.getBoundingClientRect();
+      const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      audioRef.current.currentTime = percent * duration;
+      setCurrentTime(percent * duration);
+    }
+  };
+
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  
+  const waveformBars = 35;
+  const waveformPattern = React.useMemo(() => {
+    return Array.from({ length: waveformBars }, (_, i) => {
+      const x = i / waveformBars;
+      const wave1 = Math.sin(x * Math.PI * 3) * 0.4;
+      const wave2 = Math.sin(x * Math.PI * 7 + 1) * 0.25;
+      const wave3 = Math.sin(x * Math.PI * 11 + 2) * 0.15;
+      const noise = (((i * 17 + 11) % 23) / 23 - 0.5) * 0.2;
+      const value = 0.4 + wave1 + wave2 + wave3 + noise;
+      return Math.max(15, Math.min(100, value * 100));
+    });
+  }, []);
+
+  const baseColor = isOutbound ? 'rgba(255,255,255,0.35)' : '#c7d2fe';
+  const activeColor = isOutbound ? '#ffffff' : '#4f46e5';
   const textColor = isOutbound ? 'text-white/70' : 'text-gray-500';
   const buttonBg = isOutbound ? 'bg-white/20 hover:bg-white/30' : 'bg-indigo-100 hover:bg-indigo-200';
   const buttonIcon = isOutbound ? 'text-white' : 'text-indigo-600';
@@ -1620,21 +1599,28 @@ function AudioPlayer({
   const transcriptionText = isOutbound ? 'text-white/90' : 'text-gray-700';
 
   return (
-    <div className="w-full min-w-[280px] max-w-[340px]">
+    <div className="w-full min-w-[280px] max-w-[360px]">
+      <audio
+        ref={audioRef}
+        src={src}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={handleEnded}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        preload="metadata"
+      />
+      
       <div className="flex items-center gap-3">
         <button
           onClick={togglePlay}
-          disabled={isLoading}
           className={cn(
-            "h-12 w-12 rounded-full flex items-center justify-center transition-all shrink-0",
-            buttonBg,
-            isLoading && "opacity-50 cursor-wait"
+            "h-12 w-12 rounded-full flex items-center justify-center transition-all shrink-0 shadow-sm",
+            buttonBg
           )}
           data-testid="button-audio-play"
         >
-          {isLoading ? (
-            <Loader2 className={cn("h-5 w-5 animate-spin", buttonIcon)} />
-          ) : isPlaying ? (
+          {isPlaying ? (
             <Pause className={cn("h-5 w-5", buttonIcon)} />
           ) : (
             <Play className={cn("h-5 w-5 ml-0.5", buttonIcon)} />
@@ -1643,12 +1629,30 @@ function AudioPlayer({
 
         <div className="flex-1 min-w-0">
           <div 
-            ref={waveformRef}
-            className="w-full cursor-pointer"
+            ref={progressRef}
+            onClick={handleProgressClick}
+            className="flex items-end gap-[2px] h-9 cursor-pointer py-1"
             data-testid="audio-waveform"
-          />
+          >
+            {waveformPattern.map((height, i) => {
+              const barProgress = (i / waveformBars) * 100;
+              const isActive = barProgress <= progress;
+              return (
+                <div
+                  key={i}
+                  className="flex-1 rounded-full transition-colors duration-150"
+                  style={{ 
+                    height: `${height}%`,
+                    backgroundColor: isActive ? activeColor : baseColor,
+                    minWidth: '2px',
+                    maxWidth: '4px'
+                  }}
+                />
+              );
+            })}
+          </div>
           
-          <div className={cn("flex justify-between text-[11px] mt-1", textColor)}>
+          <div className={cn("flex justify-between text-[11px] font-medium", textColor)}>
             <span>{formatTime(currentTime)}</span>
             <span>{formatTime(duration)}</span>
           </div>
@@ -1656,7 +1660,7 @@ function AudioPlayer({
       </div>
 
       {transcription && (
-        <div className="mt-2">
+        <div className="mt-3">
           <button
             onClick={() => setShowTranscription(!showTranscription)}
             className={cn(
@@ -1665,7 +1669,7 @@ function AudioPlayer({
             )}
             data-testid="button-toggle-transcription"
           >
-            <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", showTranscription && "rotate-90")} />
+            <ChevronRight className={cn("h-3.5 w-3.5 transition-transform duration-200", showTranscription && "rotate-90")} />
             Ver transcripción
           </button>
           
