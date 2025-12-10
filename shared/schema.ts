@@ -104,6 +104,7 @@ export const messages = pgTable("messages", {
   aiSuggestedReply: text("ai_suggested_reply"),
   aiReplyStatus: text("ai_reply_status").default('none'),
   aiAgentId: varchar("ai_agent_id"),
+  internalOrigin: text("internal_origin"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -344,3 +345,6 @@ export type CharacterLimitStrategy = z.infer<typeof characterLimitStrategyEnum>;
 
 export const llmProviderEnum = z.enum(['openai', 'gemini']);
 export type LlmProvider = z.infer<typeof llmProviderEnum>;
+
+export const internalOriginEnum = z.enum(['manual', 'ai']);
+export type InternalOrigin = z.infer<typeof internalOriginEnum>;
