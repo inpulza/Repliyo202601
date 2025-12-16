@@ -51,7 +51,7 @@ export class OpenAIAdapter implements LLMProvider {
   }
 
   async generateReply(request: LLMGenerateRequest): Promise<LLMResponse> {
-    const { agent, message, conversation, brand, conversationHistory, userSummary } = request;
+    const { agent, message, conversation, brand, conversationHistory, userSummary, socialPost } = request;
     const model = agent.model || "gpt-4o-mini";
     const isGpt5 = model.startsWith("gpt-5");
     
@@ -62,6 +62,7 @@ export class OpenAIAdapter implements LLMProvider {
       brand,
       conversationHistory,
       userSummary,
+      socialPost,
     });
 
     try {

@@ -33,7 +33,7 @@ export class GeminiAdapter implements LLMProvider {
   }
 
   async generateReply(request: LLMGenerateRequest): Promise<LLMResponse> {
-    const { agent, message, conversation, brand, conversationHistory, userSummary } = request;
+    const { agent, message, conversation, brand, conversationHistory, userSummary, socialPost } = request;
     const model = agent.model || "gemini-2.5-flash";
 
     const { systemPrompt, userPrompt, characterLimit } = composePrompt({
@@ -43,6 +43,7 @@ export class GeminiAdapter implements LLMProvider {
       brand,
       conversationHistory,
       userSummary,
+      socialPost,
     });
 
     try {
