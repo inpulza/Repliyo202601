@@ -100,9 +100,9 @@ const getPlatformStyles = (platform: Platform) => {
                 aiBubble: "bg-[#25D366] border-[#128C7E] text-white",
                 manualBubble: "bg-[#25D366] border-[#128C7E] text-white",
                 draftBubble: "bg-[#dcf8c6] border-[#25D366] text-gray-900",
+                draftCard: { bg: "from-green-50 to-slate-50", border: "border-l-[#25D366]", accent: "text-green-600", iconBg: "from-[#25D366] to-[#128C7E]" },
                 badge: "bg-[#dcf8c6] text-green-800 border-green-200",
                 commentBadge: "text-green-600",
-                // Legacy aliases for backward compatibility
                 bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
                 replyBubble: "bg-[#25D366] border-[#128C7E] text-white"
             };
@@ -114,6 +114,7 @@ const getPlatformStyles = (platform: Platform) => {
                 aiBubble: "bg-[#1877F2] border-[#1565D8] text-white",
                 manualBubble: "bg-[#1877F2] border-[#1565D8] text-white",
                 draftBubble: "bg-blue-50 border-[#1877F2] text-gray-900",
+                draftCard: { bg: "from-blue-50 to-slate-50", border: "border-l-[#1877F2]", accent: "text-blue-600", iconBg: "from-[#1877F2] to-[#1565D8]" },
                 badge: "bg-blue-100 text-blue-700 border-blue-200",
                 commentBadge: "text-blue-600",
                 bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
@@ -127,6 +128,7 @@ const getPlatformStyles = (platform: Platform) => {
                 aiBubble: "bg-gradient-to-r from-[#833AB4] via-[#E1306C] to-[#F77737] border-pink-500 text-white",
                 manualBubble: "bg-gradient-to-r from-[#833AB4] via-[#E1306C] to-[#F77737] border-pink-500 text-white",
                 draftBubble: "bg-gradient-to-r from-pink-50 via-purple-50 to-orange-50 border-pink-300 text-gray-900",
+                draftCard: { bg: "from-pink-50 via-purple-50 to-orange-50", border: "border-l-pink-400", accent: "text-pink-600", iconBg: "from-[#833AB4] via-[#E1306C] to-[#F77737]" },
                 badge: "bg-pink-100 text-pink-700 border-pink-200",
                 commentBadge: "text-pink-600",
                 bubble: "bg-white border-gray-100 text-gray-900 shadow-sm",
@@ -140,6 +142,7 @@ const getPlatformStyles = (platform: Platform) => {
                 aiBubble: "bg-[#0A66C2] border-[#004182] text-white",
                 manualBubble: "bg-[#0A66C2] border-[#004182] text-white",
                 draftBubble: "bg-sky-50 border-[#0A66C2] text-gray-900",
+                draftCard: { bg: "from-sky-50 to-slate-50", border: "border-l-[#0A66C2]", accent: "text-sky-700", iconBg: "from-[#0A66C2] to-[#004182]" },
                 badge: "bg-slate-100 text-slate-700 border-slate-200",
                 commentBadge: "text-slate-600",
                 bubble: "bg-white border-gray-200 text-slate-800 shadow-sm",
@@ -153,6 +156,7 @@ const getPlatformStyles = (platform: Platform) => {
                 aiBubble: "bg-red-600 border-red-500 text-white",
                 manualBubble: "bg-red-600 border-red-500 text-white",
                 draftBubble: "bg-red-50 border-red-400 text-gray-900",
+                draftCard: { bg: "from-red-50 to-slate-50", border: "border-l-red-500", accent: "text-red-600", iconBg: "from-red-600 to-red-500" },
                 badge: "bg-red-100 text-red-700 border-red-200",
                 commentBadge: "text-red-600",
                 bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
@@ -166,6 +170,7 @@ const getPlatformStyles = (platform: Platform) => {
                 aiBubble: "bg-[#121212] border-[#2F2F2F] text-white",
                 manualBubble: "bg-[#121212] border-[#2F2F2F] text-white",
                 draftBubble: "bg-gray-100 border-[#121212] text-gray-900",
+                draftCard: { bg: "from-gray-100 to-slate-50", border: "border-l-[#121212]", accent: "text-gray-800", iconBg: "from-[#121212] to-[#2F2F2F]" },
                 badge: "bg-gray-200 text-gray-800 border-gray-300",
                 commentBadge: "text-gray-800",
                 bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
@@ -179,6 +184,7 @@ const getPlatformStyles = (platform: Platform) => {
                 aiBubble: "bg-[#4285F4] border-[#3367D6] text-white",
                 manualBubble: "bg-[#4285F4] border-[#3367D6] text-white",
                 draftBubble: "bg-blue-50 border-[#4285F4] text-gray-900",
+                draftCard: { bg: "from-blue-50 to-slate-50", border: "border-l-[#4285F4]", accent: "text-blue-600", iconBg: "from-[#4285F4] to-[#3367D6]" },
                 badge: "bg-blue-100 text-blue-700 border-blue-200",
                 commentBadge: "text-blue-600",
                 bubble: "bg-white border-blue-100 text-gray-900 shadow-sm",
@@ -192,6 +198,7 @@ const getPlatformStyles = (platform: Platform) => {
                 aiBubble: "bg-indigo-600 border-indigo-700 text-white",
                 manualBubble: "bg-indigo-600 border-indigo-700 text-white",
                 draftBubble: "bg-indigo-50 border-indigo-400 text-gray-900",
+                draftCard: { bg: "from-indigo-50 to-slate-50", border: "border-l-indigo-400", accent: "text-indigo-600", iconBg: "from-indigo-500 to-purple-600" },
                 badge: "bg-gray-100 text-gray-700 border-gray-200",
                 commentBadge: "text-gray-600",
                 bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
@@ -1413,6 +1420,8 @@ export function Inbox() {
 
                               if (!hasDraft || isOwner || msg.direction !== 'inbound') return null;
 
+                              const platformDraftStyles = getPlatformStyles((msg.platform || 'instagram') as Platform).draftCard;
+
                               return (
                                 <motion.div 
                                   initial={{ opacity: 0, y: 10 }}
@@ -1422,13 +1431,13 @@ export function Inbox() {
                                 >
                                   {/* Generating State */}
                                   {isGeneratingDraft && !draftContent && (
-                                    <div className="rounded-2xl bg-white border border-indigo-100 p-4 shadow-sm flex items-center gap-3 animate-pulse">
-                                      <div className="h-7 w-7 rounded-full bg-indigo-50 flex items-center justify-center">
-                                        <Brain className="h-3.5 w-3.5 text-indigo-400" />
+                                    <div className={cn("rounded-2xl bg-gradient-to-r border p-4 shadow-sm flex items-center gap-3 animate-pulse", platformDraftStyles.bg, platformDraftStyles.border.replace('border-l-', 'border-'))}>
+                                      <div className={cn("h-7 w-7 rounded-full bg-gradient-to-br flex items-center justify-center", platformDraftStyles.iconBg)}>
+                                        <Brain className="h-3.5 w-3.5 text-white" />
                                       </div>
                                       <div className="space-y-1.5 flex-1">
-                                        <div className="h-2.5 bg-indigo-50 rounded w-1/4"></div>
-                                        <div className="h-2 bg-gray-50 rounded w-1/2"></div>
+                                        <div className="h-2.5 bg-white/60 rounded w-1/4"></div>
+                                        <div className="h-2 bg-white/40 rounded w-1/2"></div>
                                       </div>
                                     </div>
                                   )}
@@ -1459,16 +1468,18 @@ export function Inbox() {
                                   {/* Draft Card with Content */}
                                   {draftContent && (
                                     <div className={cn(
-                                      "rounded-xl bg-gradient-to-r from-indigo-50 to-slate-50 border-l-4 border-l-indigo-400 border border-indigo-200 shadow-sm transition-all overflow-hidden",
-                                      isOverLimit ? "border-red-300 border-l-red-500 ring-1 ring-red-100" : ""
+                                      "rounded-xl bg-gradient-to-r border-l-4 border-y border-r shadow-sm transition-all overflow-hidden",
+                                      platformDraftStyles.bg,
+                                      platformDraftStyles.border,
+                                      isOverLimit ? "border-y-red-300 border-r-red-300 border-l-red-500 ring-1 ring-red-100" : "border-y-gray-100 border-r-gray-100"
                                     )}>
                                       {/* Header */}
                                       <div className="px-3 py-2 flex items-center justify-between border-b border-gray-50 bg-gray-50/30">
                                         <div className="flex items-center gap-1.5">
-                                          <div className="h-4 w-4 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                                          <div className={cn("h-4 w-4 rounded-full bg-gradient-to-br flex items-center justify-center", platformDraftStyles.iconBg)}>
                                             <Brain className="h-2 w-2 text-white" />
                                           </div>
-                                          <span className="text-[10px] font-bold text-gray-700">Borrador IA</span>
+                                          <span className={cn("text-[10px] font-bold", platformDraftStyles.accent)}>Borrador IA</span>
                                           {wasEdited && (
                                             <Badge variant="outline" className="h-3.5 text-[8px] px-1 text-amber-600 border-amber-200 bg-amber-50">
                                               Editado
@@ -1487,7 +1498,7 @@ export function Inbox() {
                                       <div className="p-3">
                                         {isEditingThis ? (
                                           <textarea
-                                            className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-200 min-h-[60px] leading-relaxed"
+                                            className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-gray-300 min-h-[60px] leading-relaxed"
                                             value={editingDraftText}
                                             onChange={(e) => setEditingDraftText(e.target.value)}
                                             autoFocus
