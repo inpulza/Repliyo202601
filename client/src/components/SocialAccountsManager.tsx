@@ -220,17 +220,17 @@ export function SocialAccountsManager({ open, onOpenChange, client, onAccountsUp
                       }`}
                       data-testid={`account-row-${account.provider}`}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-full ${config.bgColor}`}>
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className={`p-2 rounded-full shrink-0 ${config.bgColor}`}>
                           <Icon className={`h-4 w-4 ${config.color}`} />
                         </div>
-                        <div>
-                          <p className="text-sm font-medium">{config.label}</p>
+                        <div className="min-w-0 overflow-hidden">
+                          <p className="text-sm font-medium truncate">{config.label}</p>
                           {account.accountName && (
-                            <p className="text-xs text-muted-foreground">@{account.accountName}</p>
+                            <p className="text-xs text-muted-foreground truncate">@{account.accountName}</p>
                           )}
                           {account.lastSyncAt && (
-                            <p className="text-[10px] text-muted-foreground">
+                            <p className="text-[10px] text-muted-foreground truncate">
                               Último sync: {new Date(account.lastSyncAt).toLocaleDateString()}
                             </p>
                           )}
