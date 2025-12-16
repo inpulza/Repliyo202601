@@ -88,6 +88,15 @@ class AutoReplyService {
         log(`${logPrefix} History preview: ${historyPreview}`, "sync");
       }
       
+      // Get the social post context (caption of the video/image being commented on)
+      let socialPost = null;
+      if (conversation.socialPostId) {
+        socialPost = await storage.getSocialPost(conversation.socialPostId);
+        if (socialPost?.caption) {
+          log(`${logPrefix} Found post context: "${socialPost.caption.substring(0, 80)}..."`, "sync");
+        }
+      }
+      
       // PHASE 2: Get persistent summary for this user (long-term memory)
       let userSummary = null;
       if (message.author) {
@@ -105,6 +114,7 @@ class AutoReplyService {
         brand,
         conversationHistory: historyForLLM,
         userSummary,
+        socialPost,
       });
 
       log(`${logPrefix} Generated reply (${llmResponse.characterCount} chars)`, "sync");

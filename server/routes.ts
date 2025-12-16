@@ -1392,6 +1392,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
       );
       
+      // Get the social post context (caption of the video/image being commented on)
+      let socialPost = null;
+      if (conversation?.socialPostId) {
+        socialPost = await storage.getSocialPost(conversation.socialPostId);
+      }
+      
       try {
         const response = await llmProvider.generateReply({
           agent,
@@ -1399,6 +1405,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           conversation: conversation || undefined,
           brand,
           conversationHistory: conversationMessages,
+          socialPost,
         });
         
         await storage.updateMessage(targetMessage.id, {
