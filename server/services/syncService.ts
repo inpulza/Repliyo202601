@@ -326,7 +326,13 @@ class SyncService {
         const platform = this.normalizePlatform(comment.provider);
         const postExternalId = comment.postId || comment.rawData?.root?.element?.id || null;
         const postPermalink = comment.postUrl || comment.rawData?.root?.element?.link || null;
-        const postCaption = comment.rawData?.root?.element?.text || null;
+        
+        // Extract post caption: title + description for YouTube, or just text for other platforms
+        const postTitle = comment.rawData?.root?.element?.text || null;
+        const postDescription = comment.rawData?.root?.element?.properties?.description || null;
+        const postCaption = postDescription 
+          ? `${postTitle || ''}\n\n${postDescription}`.trim()
+          : postTitle;
         
         // Extract thumbnail from mediaUrls array (first image) 
         const mediaUrls = comment.rawData?.root?.element?.mediaUrls;
@@ -343,7 +349,7 @@ class SyncService {
             externalId: postExternalId,
             permalink: postPermalink,
             thumbnailUrl: postThumbnailUrl,
-            caption: postCaption ? postCaption.substring(0, 500) : null,
+            caption: postCaption ? postCaption.substring(0, 2000) : null,
           });
           socialPostId = socialPost.id;
         }
