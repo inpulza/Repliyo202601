@@ -1,0 +1,38 @@
+¡Entendido! Esa es una pieza clave. Si no le decimos que mire el "manual de instrucciones" que ya tiene (Documentacion_Completa.md), corre el riesgo de inventar ruedas cuadradas o ignorar estructuras que ya definiste.
+
+Aquí tienes el Mensaje Kickoff Refinado, incluyendo esa directriz explícita para que se alinee con tu documentación histórica.
+
+Mensaje Kickoff para Replit: Análisis de Lógica de Contexto (Con Referencia Documental)
+"SITUACIÓN ACTUAL Y REINICIO DE LÓGICA:
+
+Hemos revertido los cambios anteriores y el sistema está estable nuevamente. El Inbox visualiza correctamente los hilos agrupados por socialPostId (una tarjeta por post), tal como debe ser.
+
+Ahora, necesitamos reabrir el debate sobre la Lógica de Generación de Resúmenes (Contexto de IA), separando claramente los DMs de los Comentarios, pero esta vez con un enfoque quirúrgico para no romper la UI.
+
+FUENTE DE VERDAD: Para este análisis, es IMPERATIVO que consultes el archivo Documentacion_Completa.md. Ahí está registrado todo el historial de desarrollo, la estructura de datos y las decisiones de diseño tomadas hasta la fecha. Úsalo para entender cómo está montado el sistema actualmente antes de proponer cambios.
+
+EL DILEMA A RESOLVER (Análisis Requerido):
+
+El Caso Fácil (DMs):
+
+Una conversation es única entre Marca y Usuario. El resumen funciona perfecto (ver documentación).
+
+El Caso Complejo (Comentarios en Posts):
+
+Realidad Visual (Inbox): Agrupamos por Post (socialPostId). Todos los comentarios de múltiples usuarios viven visualmente bajo una misma tarjeta. Esto NO se debe tocar.
+
+Necesidad Funcional (IA): Cuando la IA responde a un usuario específico (ej. Juan) dentro de ese post, el 'Contexto/Resumen' que recibe debe ser exclusivo de la interacción con Juan. No puede "leer" ni resumir lo que dijeron Pedro o María en el mismo post, porque contaminaría el contexto.
+
+LA SOLICITUD DE ANÁLISIS:
+
+Necesito que analices nuestra estructura actual en schema.ts y la lógica descrita en Documentacion_Completa.md para proponer una solución de Backend:
+
+¿Cómo podemos generar y persistir un 'Resumen de Conversación por Usuario' dentro de un hilo de comentarios compartido, SIN alterar la agrupación visual de la tabla conversations que usa el Inbox?
+
+Considera estas rutas en tu análisis:
+
+¿Es viable crear una tabla satélite conversation_summaries vinculada a (conversation_id, customer_id)?
+
+¿Es mejor filtrar dinámicamente los mensajes por author_id en tiempo de ejecución (prompting) y no guardar el resumen en la tabla conversations principal?
+
+Tu tarea: NO escribas código todavía. Analiza el problema lógico, revisa la documentación para no romper funcionalidades existentes, y propón la estrategia técnica más limpia para lograr esta 'Segregación de Contexto' manteniendo la 'Unificación Visual
