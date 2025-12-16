@@ -3,6 +3,7 @@ import { MetricoolService } from "./metricool";
 import { websocketService } from "./websocketService";
 import { createLLMProvider } from "./llm/factory";
 import { getCharacterLimit, splitMessageForDelivery, type MessageChunk } from "./llm/types";
+import { triggerSummaryUpdateAsync } from "./summaryService";
 import { log } from "../app";
 import type { Message, Conversation, Brand, AiAgent } from "@shared/schema";
 import { randomUUID } from "crypto";
@@ -325,6 +326,11 @@ class AutoReplyService {
       });
 
       log(`${logPrefix} Auto-reply sent successfully (${sentMessages.length} part(s))`, "sync");
+
+      // Trigger async summary update for this user (Phase 2: Persistent Memory)
+      if (message.conversationId && message.author) {
+        triggerSummaryUpdateAsync(message.conversationId, message.author);
+      }
 
       return {
         success: true,

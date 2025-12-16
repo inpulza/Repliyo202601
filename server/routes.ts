@@ -6,6 +6,7 @@ import { hashPassword, verifyPassword, sanitizeUser, sanitizeBrand, type Authent
 import { MetricoolService } from "./services/metricool";
 import { syncService } from "./services/syncService";
 import { websocketService } from "./services/websocketService";
+import { triggerSummaryUpdateAsync } from "./services/summaryService";
 import { authRateLimiter, syncRateLimiter, aiRateLimiter, sendMessageRateLimiter } from "./middleware/rateLimiter";
 import { z } from "zod";
 
@@ -858,6 +859,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             lastMessageAt: new Date(),
             lastMessagePreview: text.substring(0, 100),
           });
+          
+          // Trigger async summary update for this user (Phase 2: Persistent Memory)
+          if (message.author) {
+            triggerSummaryUpdateAsync(message.conversationId, message.author);
+          }
         }
         
         res.json({
@@ -952,6 +958,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             lastMessageAt: new Date(),
             lastMessagePreview: text.substring(0, 100),
           });
+          
+          // Trigger async summary update for this user (Phase 2: Persistent Memory)
+          // For DMs, use the customer's author name from the inbound message
+          if (message.author) {
+            triggerSummaryUpdateAsync(message.conversationId, message.author);
+          }
         }
         
         res.json({
