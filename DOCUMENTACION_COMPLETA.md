@@ -2833,3 +2833,150 @@ Se agregó un nuevo campo en la tabla `messages` que actúa como "certificado de
 - `server/services/syncService.ts` - Añadido check `isReallyNew` en líneas ~305 y ~408
 
 ---
+
+## ACTUALIZACIONES - 16 Diciembre 2025
+
+### 1. Fix: Auto-Reply con Memoria de Conversación ✅ MEJORADO
+
+**Problema resuelto:** El LLM respondía "no tengo acceso a mensajes anteriores" a pesar de recibir el historial.
+
+**Solución:** Se añadieron instrucciones más explícitas y prohibiciones específicas en el prompt:
+- Lista de frases PROHIBIDAS ("no tengo acceso a mensajes anteriores", etc.)
+- Instrucciones afirmativas claras sobre usar el historial
+- Movidas al inicio del system prompt para máxima prioridad
+
+**Archivo modificado:** `server/services/llm/prompt-composer.ts`
+
+---
+
+### 2. INVESTIGACIÓN: Gestión de Memoria en Agentes IA (Diciembre 2024-2025)
+
+**Objetivo:** Documentar las mejores prácticas actuales para manejar el contexto de conversación en agentes de IA.
+
+#### 2.1 Estrategias Principales de Gestión de Contexto
+
+| Estrategia | Descripción | Pros | Contras |
+|------------|-------------|------|---------|
+| **Sliding Window** | Mantener solo los últimos N mensajes | Simple, reduce costos 52% | Pierde contexto antiguo completamente |
+| **Summarization** | Resumir historial con LLM cada X mensajes | Comprime 5x+, preserva contexto | Latencia extra, posible pérdida de detalles |
+| **Hybrid (Recomendado)** | Resumen + últimos N mensajes verbatim | Balance entre eficiencia y detalle | Más complejo de implementar |
+| **Vector DB + RAG** | Embeddings + búsqueda semántica | Recupera contexto relevante específico | Setup complejo, requiere embeddings |
+| **Extraction-Based** | Extraer facts clave a estructura | Preciso, organizado | Requiere diseño de schema |
+
+#### 2.2 Enfoque Recomendado: Resumen Progresivo Acumulativo
+
+Basado en investigación de OpenAI Cookbook, LangChain, y papers académicos (2024):
+
+**Arquitectura propuesta para Repliyo:**
+
+```
+┌─────────────────────────────────────────────────────┐
+│                  CONTEXTO AL LLM                    │
+├─────────────────────────────────────────────────────┤
+│ 1. System Prompt (identidad, reglas, tono)          │
+│ 2. Resumen Acumulativo (conversación comprimida)    │
+│ 3. Últimos 5-10 mensajes (verbatim, detalle)        │
+│ 4. Mensaje actual a responder                       │
+└─────────────────────────────────────────────────────┘
+```
+
+**Flujo de Resumen Progresivo:**
+
+1. **Primera vez (sin resumen previo):**
+   - Tomar últimos 20 mensajes
+   - Generar resumen inicial
+   - Guardar en DB (`conversation_summary`, `summary_last_message_id`)
+
+2. **Actualizaciones posteriores:**
+   - Cada 10-15 mensajes nuevos desde último resumen
+   - Combinar: `resumen_anterior + nuevos_mensajes → nuevo_resumen`
+   - Actualizar campos en DB
+
+3. **Al generar respuesta:**
+   - Cargar resumen acumulativo de DB
+   - Añadir últimos 5-10 mensajes verbatim
+   - Añadir mensaje actual
+   - Enviar todo al LLM
+
+**Campos a añadir en tabla `conversations`:**
+```sql
+conversation_summary TEXT      -- Resumen acumulativo
+summary_last_message_id UUID   -- Hasta qué mensaje cubre el resumen
+summary_updated_at TIMESTAMP   -- Cuándo se actualizó
+```
+
+#### 2.3 Tipos de Memoria (LangChain Framework)
+
+Referencia de patrones establecidos:
+
+| Tipo | LangChain Class | Uso en Repliyo |
+|------|-----------------|----------------|
+| **Buffer** | ConversationBufferMemory | Actual (últimos 10 msgs) |
+| **Summary** | ConversationSummaryMemory | Para implementar |
+| **Hybrid** | ConversationSummaryBufferMemory | **Objetivo final** |
+| **Window** | ConversationBufferWindowMemory | Fallback simple |
+
+#### 2.4 Técnicas Avanzadas (Futuro)
+
+Para considerar en fases posteriores:
+
+1. **Vectorización + RAG:**
+   - Convertir mensajes a embeddings
+   - Almacenar en vector DB (Redis, Pinecone)
+   - Recuperar solo mensajes relevantes por similitud
+
+2. **Memory Consolidation:**
+   - Short-term → Long-term migration
+   - "Dynamic forgetting" de información irrelevante
+
+3. **Entity Memory:**
+   - Extraer entidades mencionadas (nombres, productos, fechas)
+   - Trackear a lo largo de la conversación
+
+4. **Knowledge Graph:**
+   - Mapear relaciones entre entidades
+   - Contexto más estructurado
+
+#### 2.5 Costos y Optimización
+
+**Métricas de referencia (OpenAI):**
+- Sin gestión de contexto: 100% tokens
+- Sliding window (10 msgs): ~40% tokens
+- Summarization: ~20% tokens (pero +1 API call)
+- Hybrid: ~25% tokens con mejor calidad
+
+**Cuándo generar resumen:**
+- Trigger por cantidad: cada 15-20 mensajes nuevos
+- Trigger por tokens: cuando contexto > 3000 tokens
+- Trigger por tiempo: después de responder (async)
+
+#### 2.6 Fuentes Consultadas (Diciembre 2024-2025)
+
+1. **OpenAI Cookbook** - Context Summarization with Realtime API
+2. **OpenAI Cookbook** - Session Memory with Agents SDK
+3. **LangChain Docs** - ConversationSummaryBufferMemory
+4. **JetBrains Research** (Dic 2025) - Efficient Context Management
+5. **Redis Blog** - Short-term and Long-term Memory with Redis
+6. **ArXiv Paper** - "Recursively Summarizing Enables Long-Term Dialogue Memory"
+7. **Mem0.ai** - Memory in Agents: What, Why and How
+8. **AWS Blog** - Amazon Bedrock AgentCore Memory
+
+#### 2.7 Plan de Implementación (PENDIENTE)
+
+**Fase 1: Resumen Básico**
+- [ ] Añadir campos a tabla `conversations`
+- [ ] Implementar función `generateConversationSummary()`
+- [ ] Modificar `prompt-composer.ts` para incluir resumen
+- [ ] Trigger de resumen cada 15 mensajes nuevos
+
+**Fase 2: Optimización**
+- [ ] Resumen asíncrono (después de responder)
+- [ ] Cache de resúmenes
+- [ ] Métricas de uso de tokens
+
+**Fase 3: Avanzado (Futuro)**
+- [ ] Vectorización opcional
+- [ ] Entity extraction
+- [ ] Dashboard de memoria por conversación
+
+---
