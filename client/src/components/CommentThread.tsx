@@ -27,6 +27,7 @@ import repliyoLogo from '@/assets/repliyo-logo.jpg';
 interface MessageNode {
   message: Message;
   children: MessageNode[];
+  isOrphan?: boolean;
 }
 
 interface CommentThreadProps {
@@ -68,14 +69,20 @@ function buildMessageTree(messages: Message[]): MessageNode[] {
   const rootNodes: MessageNode[] = [];
 
   messages.forEach(msg => {
-    messageMap.set(msg.id, { message: msg, children: [] });
+    messageMap.set(msg.id, { message: msg, children: [], isOrphan: false });
   });
 
   messages.forEach(msg => {
     const node = messageMap.get(msg.id)!;
-    if (msg.parentMessageId && messageMap.has(msg.parentMessageId)) {
-      const parentNode = messageMap.get(msg.parentMessageId)!;
-      parentNode.children.push(node);
+    if (msg.parentMessageId) {
+      if (messageMap.has(msg.parentMessageId)) {
+        const parentNode = messageMap.get(msg.parentMessageId)!;
+        parentNode.children.push(node);
+      } else {
+        node.isOrphan = true;
+        console.warn(`[CommentThread] Orphan message detected: ${msg.id} has parentMessageId ${msg.parentMessageId} but parent not found in current dataset`);
+        rootNodes.push(node);
+      }
     } else {
       rootNodes.push(node);
     }
@@ -95,6 +102,7 @@ function buildMessageTree(messages: Message[]): MessageNode[] {
 interface SingleMessageProps {
   msg: Message;
   isReply: boolean;
+  isOrphan?: boolean;
   platformStyles: CommentThreadProps['platformStyles'];
   onStartReply: CommentThreadProps['onStartReply'];
   onGenerateDraft: CommentThreadProps['onGenerateDraft'];
@@ -117,6 +125,7 @@ interface SingleMessageProps {
 function SingleMessage({
   msg,
   isReply,
+  isOrphan = false,
   platformStyles,
   onStartReply,
   onGenerateDraft,
@@ -180,6 +189,11 @@ function SingleMessage({
             {msg.type === 'review' && 'Public Review'}
             {msg.type === 'dm' && 'Direct Message'}
           </span>
+          {isOrphan && (
+            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200" title="Parent message not found in current thread">
+              Orphan
+            </span>
+          )}
           {msg.direction === 'inbound' && !isOwner && (
             <SentimentIndicator sentiment={(msg.sentiment || 'neutral') as Sentiment} />
           )}
@@ -635,6 +649,7 @@ function ThreadNode({
       <SingleMessage
         msg={node.message}
         isReply={isReply}
+        isOrphan={node.isOrphan}
         platformStyles={platformStyles}
         onStartReply={onStartReply}
         onGenerateDraft={onGenerateDraft}
@@ -717,36 +732,79 @@ export function CommentThread({
 }: CommentThreadProps) {
   const tree = React.useMemo(() => buildMessageTree(messages), [messages]);
 
+  const nodesWithDateInfo = React.useMemo(() => {
+    const getDateKey = (timestamp: string): string => {
+      return new Date(timestamp).toISOString().split('T')[0];
+    };
+
+    const getDateDisplay = (timestamp: string): string => {
+      const date = new Date(timestamp);
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      const dateKey = date.toISOString().split('T')[0];
+      const todayKey = today.toISOString().split('T')[0];
+      const yesterdayKey = yesterday.toISOString().split('T')[0];
+      
+      if (dateKey === todayKey) return 'Hoy';
+      if (dateKey === yesterdayKey) return 'Ayer';
+      return date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+    };
+
+    let lastDateKey: string | null = null;
+    return tree.map((node, index) => {
+      const dateKey = getDateKey(node.message.timestamp);
+      const showSeparator = dateKey !== lastDateKey;
+      lastDateKey = dateKey;
+      return {
+        node,
+        index,
+        dateKey,
+        dateDisplay: showSeparator ? getDateDisplay(node.message.timestamp) : null,
+        showSeparator,
+      };
+    });
+  }, [tree]);
+
   if (tree.length === 0) {
     return null;
   }
 
   return (
     <div className="space-y-6">
-      {tree.map((rootNode, index) => (
-        <ThreadNode
-          key={rootNode.message.id}
-          node={rootNode}
-          depth={0}
-          isLastChild={index === tree.length - 1}
-          platformStyles={platformStyles}
-          onStartReply={onStartReply}
-          onGenerateDraft={onGenerateDraft}
-          generatingDraftIds={generatingDraftIds}
-          editingDraftId={editingDraftId}
-          editingDraftText={editingDraftText}
-          setEditingDraftText={setEditingDraftText}
-          startEditingDraft={startEditingDraft}
-          cancelEditingDraft={cancelEditingDraft}
-          handleSaveDraftEdit={handleSaveDraftEdit}
-          handleDiscardDraft={handleDiscardDraft}
-          handleRegenerateDraft={handleRegenerateDraft}
-          handleSendDraft={handleSendDraft}
-          showRegenerateConfirm={showRegenerateConfirm}
-          setShowRegenerateConfirm={setShowRegenerateConfirm}
-          AudioPlayer={AudioPlayer}
-          SentimentIndicator={SentimentIndicator}
-        />
+      {nodesWithDateInfo.map(({ node: rootNode, index, dateKey, dateDisplay, showSeparator }) => (
+        <div key={rootNode.message.id} data-testid={`thread-root-${rootNode.message.id}`}>
+          {showSeparator && dateDisplay && (
+            <div className="flex justify-center my-4" data-testid={`date-separator-${dateKey}`}>
+              <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
+                {dateDisplay}
+              </span>
+            </div>
+          )}
+          <ThreadNode
+              node={rootNode}
+              depth={0}
+              isLastChild={index === tree.length - 1}
+              platformStyles={platformStyles}
+              onStartReply={onStartReply}
+              onGenerateDraft={onGenerateDraft}
+              generatingDraftIds={generatingDraftIds}
+              editingDraftId={editingDraftId}
+              editingDraftText={editingDraftText}
+              setEditingDraftText={setEditingDraftText}
+              startEditingDraft={startEditingDraft}
+              cancelEditingDraft={cancelEditingDraft}
+              handleSaveDraftEdit={handleSaveDraftEdit}
+              handleDiscardDraft={handleDiscardDraft}
+              handleRegenerateDraft={handleRegenerateDraft}
+              handleSendDraft={handleSendDraft}
+              showRegenerateConfirm={showRegenerateConfirm}
+              setShowRegenerateConfirm={setShowRegenerateConfirm}
+              AudioPlayer={AudioPlayer}
+              SentimentIndicator={SentimentIndicator}
+            />
+        </div>
       ))}
     </div>
   );
