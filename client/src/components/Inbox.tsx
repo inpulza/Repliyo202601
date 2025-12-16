@@ -6,6 +6,7 @@ import { useWebSocket } from '@/hooks/useWebSocket';
 import { cn } from '@/lib/utils';
 import { CRMContextPanel } from './CRMContextPanel';
 import { ConversationCard } from './ConversationCard';
+import { GroupedPostCard, type GroupedPost } from './GroupedPostCard';
 import { api } from '@/lib/api';
 import { 
   DropdownMenu,
@@ -249,6 +250,67 @@ export function Inbox() {
     })
     .sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
 
+  // Group comments by social post, keep DMs separate
+  const { groupedPosts, dmConversations } = React.useMemo(() => {
+    const dms: ConversationWithPost[] = [];
+    const postGroups = new Map<string, GroupedPost>();
+    
+    filteredConversations.forEach(conv => {
+      if (conv.type === 'dm' || !conv.socialPostId) {
+        dms.push(conv);
+      } else {
+        const postId = conv.socialPostId;
+        const existing = postGroups.get(postId);
+        
+        if (existing) {
+          existing.conversations.push(conv);
+          existing.totalUnread += conv.unreadCount || 0;
+          if (new Date(conv.lastMessageAt) > existing.lastMessageAt) {
+            existing.lastMessageAt = new Date(conv.lastMessageAt);
+          }
+        } else {
+          postGroups.set(postId, {
+            socialPostId: postId,
+            platform: conv.platform as Platform,
+            thumbnailUrl: conv.socialPost?.thumbnailUrl || null,
+            caption: conv.socialPost?.caption || null,
+            permalink: conv.socialPost?.permalink || null,
+            conversations: [conv],
+            totalUnread: conv.unreadCount || 0,
+            lastMessageAt: new Date(conv.lastMessageAt),
+          });
+        }
+      }
+    });
+    
+    const groups = Array.from(postGroups.values())
+      .sort((a, b) => b.lastMessageAt.getTime() - a.lastMessageAt.getTime());
+    
+    return { groupedPosts: groups, dmConversations: dms };
+  }, [filteredConversations]);
+
+  // Combined list for rendering (DMs + grouped posts, sorted by last message)
+  type InboxItem = 
+    | { type: 'dm'; conversation: ConversationWithPost }
+    | { type: 'grouped'; group: GroupedPost };
+  
+  const inboxItems = React.useMemo((): InboxItem[] => {
+    const items: InboxItem[] = [
+      ...dmConversations.map(conv => ({ type: 'dm' as const, conversation: conv })),
+      ...groupedPosts.map(group => ({ type: 'grouped' as const, group })),
+    ];
+    
+    return items.sort((a, b) => {
+      const aTime = a.type === 'dm' 
+        ? new Date(a.conversation.lastMessageAt).getTime() 
+        : a.group.lastMessageAt.getTime();
+      const bTime = b.type === 'dm' 
+        ? new Date(b.conversation.lastMessageAt).getTime() 
+        : b.group.lastMessageAt.getTime();
+      return bTime - aTime;
+    });
+  }, [dmConversations, groupedPosts]);
+
   // Calculate Stats for Header (from conversations)
   const totalUnread = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
   const criticalCount = 0;
@@ -337,10 +399,19 @@ export function Inbox() {
   useEffect(() => {
     if (isMobile) return;
     
-    if (filteredConversations.length > 0 && !activeConversation) {
-      setActiveConversation(filteredConversations[0]);
+    if (inboxItems.length > 0 && !activeConversation) {
+      const firstItem = inboxItems[0];
+      if (firstItem.type === 'dm') {
+        setActiveConversation(firstItem.conversation);
+      } else {
+        // For grouped posts, select the first (most recent) conversation in the group
+        const firstConv = firstItem.group.conversations[0];
+        if (firstConv) {
+          setActiveConversation(firstConv);
+        }
+      }
     }
-  }, [filteredConversations, activeConversation, isMobile, setActiveConversation]);
+  }, [inboxItems, activeConversation, isMobile, setActiveConversation]);
 
   // Reset editing state when selecting a new conversation
   useEffect(() => {
@@ -706,19 +777,28 @@ export function Inbox() {
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Loading conversations...
                 </div>
-              ) : filteredConversations.length === 0 ? (
+              ) : inboxItems.length === 0 ? (
                  <div className="p-8 text-center text-muted-foreground text-sm">
                     No conversations match your filters.
                  </div>
               ) : (
-                filteredConversations.map((conv) => (
-                  <ConversationCard 
-                    key={conv.id} 
-                    conversation={conv} 
-                    isSelected={activeConversation?.id === conv.id} 
-                    onClick={() => setActiveConversation(conv)} 
-                  />
-                ))
+                inboxItems.map((item) => 
+                  item.type === 'dm' ? (
+                    <ConversationCard 
+                      key={item.conversation.id} 
+                      conversation={item.conversation} 
+                      isSelected={activeConversation?.id === item.conversation.id} 
+                      onClick={() => setActiveConversation(item.conversation)} 
+                    />
+                  ) : (
+                    <GroupedPostCard
+                      key={item.group.socialPostId}
+                      group={item.group}
+                      activeConversationId={activeConversation?.id || null}
+                      onSelectConversation={setActiveConversation}
+                    />
+                  )
+                )
               )}
             </AnimatePresence>
           </div>
