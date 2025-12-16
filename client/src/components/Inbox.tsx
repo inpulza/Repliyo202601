@@ -222,6 +222,7 @@ export function Inbox() {
   const [fireMode, setFireMode] = useState(false);
   const [isCRMOpen, setIsCRMOpen] = useState(!isMobile);
   const [showInactiveNetworks, setShowInactiveNetworks] = useState(false);
+  const [showOnlyUnread, setShowOnlyUnread] = useState(false);
 
   const { data: socialAccounts = [] } = useQuery({
     queryKey: ['socialAccounts', activeClientId],
@@ -249,6 +250,7 @@ export function Inbox() {
   // Filter Conversations
   const filteredConversations = conversations
     .filter(c => {
+      if (showOnlyUnread && (c.unreadCount || 0) === 0) return false;
       if (platformFilter !== 'all' && c.platform !== platformFilter) return false;
       if (typeFilter !== 'all') {
         const convType = c.type === 'dm' ? 'dm' : 'comment';
@@ -779,20 +781,26 @@ export function Inbox() {
                     )}
                 </button>
 
-                {/* Pending Button */}
+                {/* Pending Button - Filter for unread messages */}
                 <button 
-                    onClick={() => {
-                        setFireMode(false);
-                        setIntentFilter('all');
-                        setPlatformFilter('all');
-                        setSearchQuery('');
-                    }}
-                    className="relative h-8 w-8 flex items-center justify-center rounded-full transition-all text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                    title="Show All Pending"
+                    onClick={() => setShowOnlyUnread(!showOnlyUnread)}
+                    className={cn(
+                        "relative h-8 w-8 flex items-center justify-center rounded-full transition-all",
+                        showOnlyUnread 
+                            ? "bg-blue-500 text-white hover:bg-blue-600" 
+                            : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                    )}
+                    title={showOnlyUnread ? "Show All Conversations" : "Show Only Unread"}
+                    data-testid="button-filter-unread"
                 >
                     <InboxIcon className="h-4 w-4" />
                     {pendingCount > 0 && (
-                        <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-[9px] font-bold h-3.5 min-w-[14px] flex items-center justify-center rounded-full px-0.5 shadow-sm ring-2 ring-white z-10">
+                        <div className={cn(
+                            "absolute -top-1 -right-1 text-[9px] font-bold h-3.5 min-w-[14px] flex items-center justify-center rounded-full px-0.5 shadow-sm ring-2 z-10",
+                            showOnlyUnread 
+                                ? "bg-white text-blue-500 ring-blue-500" 
+                                : "bg-blue-500 text-white ring-white"
+                        )}>
                             {pendingCount}
                         </div>
                     )}
