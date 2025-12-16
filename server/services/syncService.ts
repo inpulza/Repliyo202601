@@ -355,12 +355,39 @@ class SyncService {
         }
 
         const participants = comment.rawData?.participants || [];
+        
+        // Detect brand's account ID from participants (self: true) or rawData fields
+        const brandAccountId = participants.find((p: any) => p.self === true)?.id ||
+                               comment.rawData?.self ||
+                               comment.rawData?.pageId ||
+                               comment.rawData?.accountId ||
+                               null;
+        
+        // Get comment author ID from rawData
+        const commentOwnerId = comment.rawData?.root?.owner || 
+                               comment.rawData?.owner ||
+                               comment.rawData?.authorId ||
+                               null;
+        
+        // Find author participant for name/avatar
+        const authorParticipant = participants.find((p: any) => p.id === commentOwnerId) ||
+                                  participants.find((p: any) => p.name === comment.author);
+        
+        // Detect if comment is from brand's own account
+        let isCommentFromBrand = false;
+        if (brandAccountId && commentOwnerId) {
+          isCommentFromBrand = commentOwnerId === brandAccountId;
+        }
+        // Also check if the author participant is marked as self
+        if (!isCommentFromBrand && authorParticipant?.self === true) {
+          isCommentFromBrand = true;
+        }
+        
         let customerId = comment.author;
         let customerName = comment.author;
         let customerAvatar = comment.authorAvatar || null;
 
-        if (participants.length > 0) {
-          const authorParticipant = participants.find((p: any) => p.name === comment.author) || participants[0];
+        if (authorParticipant) {
           customerId = authorParticipant.id || comment.author;
           customerName = authorParticipant.name || comment.author;
           customerAvatar = authorParticipant.imageProfileUrl || comment.authorAvatar || null;
@@ -369,6 +396,9 @@ class SyncService {
         // Check if comment already exists BEFORE updating conversation unread count
         const existingComment = await storage.getMessageByMetricoolId(comment.id, brandId);
         const isNewComment = !existingComment;
+        
+        // Determine direction based on whether it's from brand
+        const commentDirection = isCommentFromBrand ? 'outbound' : 'inbound';
 
         const conversationRecord = await storage.upsertConversation({
           brandId,
@@ -381,7 +411,7 @@ class SyncService {
           lastMessageAt: new Date(comment.timestamp),
           lastMessagePreview: comment.content.substring(0, 100),
           status: 'open',
-        }, isNewComment); // Only increment unread if NEW comment
+        }, isNewComment && !isCommentFromBrand); // Only increment unread if NEW inbound comment (not from brand)
 
         const savedComment = await storage.upsertMessage({
           brandId,
@@ -389,13 +419,13 @@ class SyncService {
           metricoolId: comment.id,
           platform,
           type: "comment" as const,
-          direction: "inbound" as const,
+          direction: commentDirection as 'inbound' | 'outbound',
           source: 'metricool_sync' as const,
           author: comment.author,
           authorAvatar: comment.authorAvatar || null,
           content: comment.content,
           timestamp: new Date(comment.timestamp),
-          status: "unread" as const,
+          status: isCommentFromBrand ? "read" as const : "unread" as const,
           sourceUrl: comment.postUrl || null,
           rawData: comment.rawData || comment,
           threadId: postExternalId,
@@ -414,9 +444,10 @@ class SyncService {
         // (upsertMessage may return an existing message from another brand if it's a global duplicate)
         const isReallyNew = isNewComment && savedComment.brandId === brandId;
         
-        log(`[SyncService] Comment ${comment.id} from ${comment.author}: isNew=${isNewComment}, isReallyNew=${isReallyNew}`, "sync");
+        log(`[SyncService] Comment ${comment.id} from ${comment.author}: isNew=${isNewComment}, isReallyNew=${isReallyNew}, isFromBrand=${isCommentFromBrand}`, "sync");
         
-        if (isReallyNew) {
+        // Only notify and trigger auto-reply for NEW INBOUND comments (not from brand)
+        if (isReallyNew && !isCommentFromBrand) {
           websocketService.notifyNewMessage(brandId, {
             id: savedComment.id,
             platform,
@@ -440,13 +471,25 @@ class SyncService {
             const replyAvatar = replyAuthorParticipant?.imageProfileUrl || null;
             const replyContent = reply.text || '';
             const replyTimestamp = reply.creationDate || comment.timestamp;
+            
+            // Detect if reply is from brand's own account
+            let isReplyFromBrand = false;
+            if (brandAccountId && replyOwnerId) {
+              isReplyFromBrand = replyOwnerId === brandAccountId;
+            }
+            // Also check if the author participant is marked as self
+            if (!isReplyFromBrand && replyAuthorParticipant?.self === true) {
+              isReplyFromBrand = true;
+            }
+            
+            const replyDirection = isReplyFromBrand ? 'outbound' : 'inbound';
 
             // Check if reply already exists BEFORE incrementing
             const existingReply = await storage.getMessageByMetricoolId(reply.id, brandId);
             const isNewReply = !existingReply;
             
-            // Update conversation unread count only if this is a NEW reply
-            if (isNewReply) {
+            // Update conversation unread count only if this is a NEW inbound reply
+            if (isNewReply && !isReplyFromBrand) {
               await storage.updateConversation(conversationRecord.id, {
                 unreadCount: (conversationRecord.unreadCount || 0) + 1,
               });
@@ -458,13 +501,13 @@ class SyncService {
               metricoolId: reply.id,
               platform,
               type: "comment" as const,
-              direction: "inbound" as const,
+              direction: replyDirection as 'inbound' | 'outbound',
               source: 'metricool_sync' as const,
               author: replyAuthor,
               authorAvatar: replyAvatar,
               content: replyContent,
               timestamp: new Date(replyTimestamp),
-              status: "unread" as const,
+              status: isReplyFromBrand ? "read" as const : "unread" as const,
               sourceUrl: reply.properties?.permalink || comment.postUrl || null,
               rawData: reply,
               threadId: postExternalId,
