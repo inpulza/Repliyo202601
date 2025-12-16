@@ -1,0 +1,70 @@
+iene razón en casi todo, PERO hay un matiz conceptual clave sobre el punto 2 (Tokens y Coste) que debo aclarar. El campo thought no es para debugging, es para Razonamiento (CoT).
+
+Referencia Agent Quality.pdf: Si el modelo no "piensa" cuántos caracteres lleva antes de escribir, fallará el límite de TikTok. No podemos pedirle que escriba y cuente a la vez (los LLMs son pésimos contando caracteres al vuelo). Necesita planificar. Esos tokens extra son el precio de la precisión.
+
+Dicho esto, vamos a adoptar su enfoque de "Ingeniería Defensiva". Aquí tienes la respuesta técnica para él, aceptando sus mitigaciones y ajustando el plan.
+
+[COPIA Y PEGA ESTO EN EL CHAT DE REPLIT]
+
+Mensaje del Arquitecto de Prompts para el Desarrollador:
+
+"¡Brillante análisis! Has detectado puntos de fallo críticos (especialmente la ruptura del parser JSON por truncado y los placeholders vacíos). Tienes toda la razón en ser cauteloso.
+
+Vamos a pivotar a la Estrategia v5.1 (Hybrid & Defensive) incorporando tus correcciones.
+
+1. Respuesta a tus Puntos de Fricción
+Sobre el JSON/Tokens (Punto 2): El campo thought no es solo logs; es Chain of Thought (CoT). Sin él, el modelo alucina los límites de caracteres. Asumiremos el costo de latencia/tokens extra a cambio de precisión operativa en TikTok.
+
+Sobre Gemini (Punto 2 & 5): Acepto tu propuesta. Lancemos JSON Mode SOLO en OpenAI primero. Para Gemini, mantendremos texto plano por ahora hasta estabilizar la v1, o usaremos un prompt estructurado sin forzar MIME type.
+
+Sobre el Truncado (Punto 4): CRÍTICO. Tienes razón. El truncado debe ser la última milla, post-parsing.
+
+PLAN DE ACCIÓN REVISADO (v5.1)
+Por favor, implementa estos cambios defensivos:
+
+A. Refactorización Robusta (Código)
+
+Lógica de Placeholder (Tu sugerencia):
+
+Si message.type === 'comment' Y !socialPost.caption:
+
+Inyecta: "[Comentario en publicación - caption no disponible. Responde basándote solo en el mensaje del usuario]".
+
+Pipeline de Respuesta (OpenAI):
+
+Raw Response -> Try/Catch JSON Parse.
+
+IF Success: Extraer parsed.reply.
+
+IF Fail (Fallback): Usar Raw Response como texto (asumiendo que el modelo falló el formato pero respondió).
+
+Final Step: truncateResponse(replyText) (Aplicar tu función de corte AQUÍ, sobre el texto limpio, no sobre el JSON).
+
+Feature Flag:
+
+Implementa USE_JSON_MODE = true (solo para OpenAI por ahora).
+
+B. El Prompt v5.1 (Ajustado a tus observaciones)
+
+He simplificado el JSON para reducir tokens y he integrado tu feedback sobre el contexto. Úsalo como System Prompt:
+
+XML
+
+<system_core>
+  <role>
+    Eres el Social Media Manager IA de {{business_name}}. Tu objetivo es engagement y conversión.
+  </role>
+<context_input> Plataforma: {{platform}} Usuario: {{username}} Contexto Post: {{post_context}} </context_input>
+
+<platform_rules> [TIKTOK]: Límite estricto 150 caracteres. Tono casual/rápido. [GMB]: Formal, profesional. SEO local. [IG/FB]: Conversacional. ~200 chars en comments. </platform_rules>
+
+<thinking_protocol> ATENCIÓN: Para cumplir el límite de caracteres, PRIMERO planifica tu respuesta. 1. Identifica la plataforma. 2. Si es TikTok, asegura < 150 chars. 3. Si el Contexto Post dice "no disponible", sé genérico pero amable. </thinking_protocol>
+
+<output_format> Responde EXCLUSIVAMENTE con este objeto JSON (sin markdown): { "thought": "Plan breve: TikTok detectado, limitando a 140 chars...", "reply": "Texto final de la respuesta" } </output_format>
+
+[AQUÍ INSERTA TU KNOWLEDGE BASE]
+
+<critical_guardrails> - NO inventes precios ni servicios si no están en la Knowledge Base. - SI FALLA el contexto, invita a enviar DM. - REGLA DE ORO: Si es TikTok, sé BREVE. </critical_guardrails> </system_core>
+
+
+**Instrucción Final:** Procede primero con la lógica de **Try/Catch** y el **Placeholder mejorado**. Luego actualiza el prompt. Avísame cuando el `reply` limpio esté saliendo en consola."
