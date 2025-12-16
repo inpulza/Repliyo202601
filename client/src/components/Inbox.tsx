@@ -196,6 +196,7 @@ export function Inbox() {
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [editingDraftText, setEditingDraftText] = useState("");
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState<string | null>(null);
+  const [localDraftOverrides, setLocalDraftOverrides] = useState<Map<string, { aiSuggestedReply: string; aiReplyStatus: string; draftWasEdited: boolean }>>(new Map());
 
   const { data: syncStatus } = useQuery<SyncStatus>({
     queryKey: ['/api/sync/status'],
@@ -331,8 +332,17 @@ export function Inbox() {
       .filter(m => !processedIds.has(m.id))
       .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
     
-    return [...flattened, ...orphans];
-  }, [activeConversationMessages]);
+    const allMessages = [...flattened, ...orphans];
+    
+    // 5. Merge local draft overrides for real-time updates
+    return allMessages.map(msg => {
+      const override = localDraftOverrides.get(msg.id);
+      if (override) {
+        return { ...msg, ...override };
+      }
+      return msg;
+    });
+  }, [activeConversationMessages, localDraftOverrides]);
 
   // Derive active draft message (outbound with drafting/pending status) and last inbound message
   const activeDraftMessage = React.useMemo(() => {
@@ -359,9 +369,10 @@ export function Inbox() {
     }
   }, [filteredConversations, activeConversation, isMobile, setActiveConversation]);
 
-  // Reset editing state when selecting a new conversation
+  // Reset editing state and local draft overrides when selecting a new conversation
   useEffect(() => {
     setIsEditing(false);
+    setLocalDraftOverrides(new Map());
   }, [activeConversation?.id]);
 
   const handleSyncData = async () => {
@@ -469,12 +480,30 @@ export function Inbox() {
     setGeneratingDraftIds(prev => new Set(prev).add(messageId));
     try {
       const result = await api.aiAgent.generateDraft(activeClientId, messageId);
-      if (result.success) {
+      if (result.success && result.draft) {
+        // Update local state immediately for real-time feedback
+        setLocalDraftOverrides(prev => {
+          const next = new Map(prev);
+          next.set(messageId, {
+            aiSuggestedReply: result.draft,
+            aiReplyStatus: 'drafted',
+            draftWasEdited: false,
+          });
+          return next;
+        });
+        
         toast({
           title: "Borrador generado",
           description: `${result.characterCount} caracteres`,
         });
+        
+        // Background refresh to sync with server, then clear local override
         await refreshFeed();
+        setLocalDraftOverrides(prev => {
+          const next = new Map(prev);
+          next.delete(messageId);
+          return next;
+        });
         if (activeConversation) {
           queryClient.invalidateQueries({ queryKey: [`/api/conversations/${activeConversation.id}/messages`] });
         }
@@ -503,13 +532,36 @@ export function Inbox() {
       
       if (result.requiresConfirmation) {
         setShowRegenerateConfirm(messageId);
+        setGeneratingDraftIds(prev => {
+          const next = new Set(prev);
+          next.delete(messageId);
+          return next;
+        });
         return;
       }
       
       setShowRegenerateConfirm(null);
-      if (result.success) {
+      if (result.success && result.draft) {
+        // Update local state immediately for real-time feedback
+        setLocalDraftOverrides(prev => {
+          const next = new Map(prev);
+          next.set(messageId, {
+            aiSuggestedReply: result.draft,
+            aiReplyStatus: 'drafted',
+            draftWasEdited: false,
+          });
+          return next;
+        });
+        
         toast({ title: "Borrador regenerado" });
+        
+        // Background refresh to sync with server, then clear local override
         await refreshFeed();
+        setLocalDraftOverrides(prev => {
+          const next = new Map(prev);
+          next.delete(messageId);
+          return next;
+        });
         if (activeConversation) {
           queryClient.invalidateQueries({ queryKey: [`/api/conversations/${activeConversation.id}/messages`] });
         }
@@ -534,10 +586,29 @@ export function Inbox() {
     
     try {
       await api.aiAgent.updateDraft(activeClientId, messageId, editingDraftText.trim());
+      
+      // Update local state immediately
+      setLocalDraftOverrides(prev => {
+        const next = new Map(prev);
+        next.set(messageId, {
+          aiSuggestedReply: editingDraftText.trim(),
+          aiReplyStatus: 'edited',
+          draftWasEdited: true,
+        });
+        return next;
+      });
+      
       setEditingDraftId(null);
       setEditingDraftText("");
       toast({ title: "Borrador guardado" });
+      
+      // Background refresh to sync with server, then clear local override
       await refreshFeed();
+      setLocalDraftOverrides(prev => {
+        const next = new Map(prev);
+        next.delete(messageId);
+        return next;
+      });
       if (activeConversation) {
         queryClient.invalidateQueries({ queryKey: [`/api/conversations/${activeConversation.id}/messages`] });
       }
@@ -555,8 +626,27 @@ export function Inbox() {
     
     try {
       await api.aiAgent.discardDraft(activeClientId, messageId);
+      
+      // Update local state immediately - remove draft
+      setLocalDraftOverrides(prev => {
+        const next = new Map(prev);
+        next.set(messageId, {
+          aiSuggestedReply: '',
+          aiReplyStatus: 'none',
+          draftWasEdited: false,
+        });
+        return next;
+      });
+      
       toast({ title: "Borrador descartado" });
+      
+      // Background refresh to sync with server, then clear local override
       await refreshFeed();
+      setLocalDraftOverrides(prev => {
+        const next = new Map(prev);
+        next.delete(messageId);
+        return next;
+      });
       if (activeConversation) {
         queryClient.invalidateQueries({ queryKey: [`/api/conversations/${activeConversation.id}/messages`] });
       }
@@ -1270,8 +1360,8 @@ export function Inbox() {
                                   {/* Draft Card with Content */}
                                   {draftContent && (
                                     <div className={cn(
-                                      "rounded-2xl bg-white border shadow-sm transition-all overflow-hidden",
-                                      isOverLimit ? "border-red-200 ring-1 ring-red-100" : "border-indigo-100"
+                                      "rounded-xl bg-gradient-to-r from-indigo-50 to-slate-50 border-l-4 border-l-indigo-400 border border-indigo-200 shadow-sm transition-all overflow-hidden",
+                                      isOverLimit ? "border-red-300 border-l-red-500 ring-1 ring-red-100" : ""
                                     )}>
                                       {/* Header */}
                                       <div className="px-3 py-2 flex items-center justify-between border-b border-gray-50 bg-gray-50/30">
