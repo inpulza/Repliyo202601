@@ -570,14 +570,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "brandId is required" });
       }
       
+      // Use getInboxThreads() to get deduplicated conversations grouped by socialPostId
       let conversationsList = brandId 
-        ? await storage.getConversations(brandId)
+        ? await storage.getInboxThreads(brandId)
         : [];
       
       if (req.user!.role === 'admin' && !brandId) {
         const brands = await storage.getBrands();
         const allConversations = await Promise.all(
-          brands.map(b => storage.getConversations(b.id))
+          brands.map(b => storage.getInboxThreads(b.id))
         );
         conversationsList = allConversations.flat();
       }
@@ -647,13 +648,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Access denied" });
       }
       
-      const messages = await storage.getMessagesByConversation(req.params.id);
+      let allMessages: any[] = [];
       
-      messages.sort((a, b) => 
+      // If this conversation has a socialPostId, get messages from ALL conversations
+      // that share the same socialPostId (grouped comment threads)
+      if (conversation.socialPostId) {
+        // Security: Only get conversations with the SAME socialPostId
+        const relatedConversations = await storage.getConversationsBySocialPost(
+          conversation.brandId, 
+          conversation.socialPostId
+        );
+        
+        // Get messages from all related conversations
+        const messageArrays = await Promise.all(
+          relatedConversations.map(c => storage.getMessagesByConversation(c.id))
+        );
+        allMessages = messageArrays.flat();
+      } else {
+        // DM: just get messages from this single conversation
+        allMessages = await storage.getMessagesByConversation(req.params.id);
+      }
+      
+      allMessages.sort((a, b) => 
         new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
       );
       
-      res.json(messages);
+      res.json(allMessages);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch conversation messages" });
     }
@@ -690,17 +710,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Access denied" });
       }
       
-      const updatedConversation = await storage.updateConversation(req.params.id, {
-        unreadCount: 0,
-      });
-      
-      const messages = await storage.getMessagesByConversation(req.params.id);
-      for (const msg of messages) {
-        if (msg.status === 'unread') {
-          await storage.updateMessage(msg.id, { status: 'read' });
+      // If this is a grouped comment thread, mark all related conversations as read
+      if (conversation.socialPostId) {
+        // Security: Only get conversations with the SAME socialPostId
+        const relatedConversations = await storage.getConversationsBySocialPost(
+          conversation.brandId, 
+          conversation.socialPostId
+        );
+        
+        for (const relatedConv of relatedConversations) {
+          await storage.updateConversation(relatedConv.id, { unreadCount: 0 });
+          const messages = await storage.getMessagesByConversation(relatedConv.id);
+          for (const msg of messages) {
+            if (msg.status === 'unread') {
+              await storage.updateMessage(msg.id, { status: 'read' });
+            }
+          }
+        }
+      } else {
+        // DM: just mark this single conversation as read
+        await storage.updateConversation(req.params.id, { unreadCount: 0 });
+        const messages = await storage.getMessagesByConversation(req.params.id);
+        for (const msg of messages) {
+          if (msg.status === 'unread') {
+            await storage.updateMessage(msg.id, { status: 'read' });
+          }
         }
       }
       
+      const updatedConversation = await storage.getConversation(req.params.id);
       res.json(updatedConversation);
     } catch (error) {
       res.status(500).json({ error: "Failed to mark conversation as read" });

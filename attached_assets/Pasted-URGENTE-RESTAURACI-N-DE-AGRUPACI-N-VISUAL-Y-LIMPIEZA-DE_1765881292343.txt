@@ -1,0 +1,32 @@
+URGENTE: RESTAURACIÓN DE AGRUPACIÓN VISUAL Y LIMPIEZA DE ARTEFACTOS
+
+Hemos detectado que la implementación fallida de la lógica 'User-Centric' ha roto el Inbox y dejado datos sucios. Necesito que restaures la lógica original basada en DOCUMENTACION_COMPLETA.md inmediatamente.
+
+Los 2 Problemas Críticos a Resolver:
+
+Duplicidad Visual (El problema del Grouping):
+
+Actualmente, el Inbox muestra múltiples tarjetas para un mismo socialPostId.
+
+Requerimiento: El Inbox debe agrupar estrictamente por Publicación. 1 Post de Instagram/TikTok = 1 Tarjeta única en el Inbox, independientemente de cuántos usuarios comenten.
+
+Tarjetas Fantasma (El problema de los Artefactos):
+
+Observación: Además de los duplicados, hay tarjetas VACÍAS (sin mensajes visibles o sin el hilo principal) correspondientes al mismo post, mientras que hay una sola tarjeta que sí contiene los datos.
+
+Causa Probable: Son remanentes de las conversaciones individuales creadas erróneamente en el paso anterior.
+
+Requerimiento: Tu consulta SQL para el Inbox debe filtrar estas tarjetas vacías o consolidarlas. Si una conversación no tiene mensajes válidos o es un duplicado fragmentado del mismo socialPostId, no debe aparecer.
+
+Instrucción de Ejecución:
+
+Revisa y corrige la consulta del Inbox en server/storage.ts.
+
+Asegura que la agrupación sea por socialPostId para comentarios.
+
+Implementa una limpieza visual: Si hay múltiples entradas para el mismo post, muestra solo la principal que contiene el hilo de comentarios.
+
+IMPORTANTE: En este paso, IGNORA la lógica de resúmenes por usuario. Tu única prioridad es que el Inbox vuelva a verse limpio: una sola tarjeta por post, con todos los comentarios dentro, y sin tarjetas vacías."
+
+💡 Por qué pasa esto (Para tu tranquilidad)
+Esas tarjetas vacías son "basura lógica". El sistema intentó crear carpetas nuevas para cada usuario (Jefferson, Lisbeth, etc.), pero al fallar la visualización, esas carpetas quedaron ahí flotando vacías o con datos parciales. Con esta instrucción, obligamos al código a ignorarlas y mostrar solo la "carpeta maestra" del post.

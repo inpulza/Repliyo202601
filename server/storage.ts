@@ -35,6 +35,8 @@ export interface IStorage {
   upsertSocialPost(post: InsertSocialPost): Promise<SocialPost>;
   
   getConversations(brandId: string): Promise<Conversation[]>;
+  getConversationsBySocialPost(brandId: string, socialPostId: string): Promise<Conversation[]>;
+  getInboxThreads(brandId: string): Promise<Array<Conversation & { messageCount: number; aggregatedUnreadCount: number; representativeConversationIds: string[] }>>;
   getConversation(id: string): Promise<Conversation | undefined>;
   getConversationByKey(brandId: string, platform: string, customerId: string, socialPostId?: string | null): Promise<Conversation | undefined>;
   createConversation(conversation: InsertConversation): Promise<Conversation>;
@@ -253,6 +255,116 @@ export class DatabaseStorage implements IStorage {
       .from(conversations)
       .where(eq(conversations.brandId, brandId))
       .orderBy(desc(conversations.lastMessageAt));
+  }
+
+  async getConversationsBySocialPost(brandId: string, socialPostId: string): Promise<Conversation[]> {
+    return await db
+      .select()
+      .from(conversations)
+      .where(
+        and(
+          eq(conversations.brandId, brandId),
+          eq(conversations.socialPostId, socialPostId)
+        )
+      )
+      .orderBy(desc(conversations.lastMessageAt));
+  }
+
+  async getInboxThreads(brandId: string): Promise<Array<Conversation & { messageCount: number; aggregatedUnreadCount: number; representativeConversationIds: string[] }>> {
+    // Step 1: Get all conversations for this brand
+    const allConversations = await db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.brandId, brandId));
+    
+    // Step 2: Get message counts per conversation
+    const messageCounts = await db
+      .select({
+        conversationId: messages.conversationId,
+        count: sql<number>`count(*)::int`.as('count'),
+      })
+      .from(messages)
+      .where(eq(messages.brandId, brandId))
+      .groupBy(messages.conversationId);
+    
+    const messageCountMap = new Map(
+      messageCounts.map(mc => [mc.conversationId, mc.count])
+    );
+    
+    // Step 3: Separate DMs (no socialPostId) from comments (have socialPostId)
+    const dms: Array<Conversation & { messageCount: number; aggregatedUnreadCount: number; representativeConversationIds: string[] }> = [];
+    const commentsByPost = new Map<string, Conversation[]>();
+    
+    for (const conv of allConversations) {
+      const msgCount = messageCountMap.get(conv.id) || 0;
+      
+      if (!conv.socialPostId) {
+        // DM: include if has messages, keep as individual conversation
+        if (msgCount > 0) {
+          dms.push({
+            ...conv,
+            messageCount: msgCount,
+            aggregatedUnreadCount: conv.unreadCount || 0,
+            representativeConversationIds: [conv.id],
+          });
+        }
+      } else {
+        // Comment: group by socialPostId
+        if (!commentsByPost.has(conv.socialPostId)) {
+          commentsByPost.set(conv.socialPostId, []);
+        }
+        commentsByPost.get(conv.socialPostId)!.push(conv);
+      }
+    }
+    
+    // Step 4: For each socialPostId group, create ONE representative thread
+    const commentThreads: Array<Conversation & { messageCount: number; aggregatedUnreadCount: number; representativeConversationIds: string[] }> = [];
+    
+    for (const [socialPostId, convGroup] of Array.from(commentsByPost.entries())) {
+      // Calculate aggregated stats across all conversations for this post
+      let totalMessages = 0;
+      let totalUnread = 0;
+      let latestMessageAt = new Date(0);
+      let latestPreview = '';
+      let representativeConv: Conversation | null = null;
+      const allConvIds: string[] = [];
+      
+      for (const conv of convGroup) {
+        const msgCount = messageCountMap.get(conv.id) || 0;
+        totalMessages += msgCount;
+        totalUnread += conv.unreadCount || 0;
+        allConvIds.push(conv.id);
+        
+        // Track the conversation with the most recent message
+        const convLastMessageAt = new Date(conv.lastMessageAt);
+        if (convLastMessageAt > latestMessageAt) {
+          latestMessageAt = convLastMessageAt;
+          latestPreview = conv.lastMessagePreview || '';
+          representativeConv = conv;
+        }
+      }
+      
+      // Only include if there are actual messages
+      if (totalMessages > 0 && representativeConv) {
+        commentThreads.push({
+          ...representativeConv,
+          lastMessageAt: latestMessageAt,
+          lastMessagePreview: latestPreview,
+          unreadCount: totalUnread,
+          messageCount: totalMessages,
+          aggregatedUnreadCount: totalUnread,
+          representativeConversationIds: allConvIds,
+        });
+      }
+    }
+    
+    // Step 5: Combine and sort by lastMessageAt descending
+    const allThreads = [...dms, ...commentThreads];
+    allThreads.sort((a, b) => 
+      new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
+    );
+    
+    return allThreads;
   }
 
   async getConversation(id: string): Promise<Conversation | undefined> {
