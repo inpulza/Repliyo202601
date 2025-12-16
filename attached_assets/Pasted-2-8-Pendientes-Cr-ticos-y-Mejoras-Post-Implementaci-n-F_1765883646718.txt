@@ -1,0 +1,33 @@
+2.8 Pendientes Críticos y Mejoras (Post-Implementación Fase 2)
+A pesar de la aprobación de la arquitectura base, se han identificado 3 riesgos de "Lógica Fina" que deben abordarse en una fase de optimización (Fase 3) para garantizar robustez total.
+
+[ ] 1. Mitigación del "Cold Start" (Amnesia Histórica)
+El Problema: Al desplegar el nuevo sistema, los clientes antiguos con historiales largos (>50 mensajes) no tendrán resumen previo. La IA responderá basándose solo en la ventana deslizante (últimos 10 mensajes), ignorando el contexto histórico hasta que se genere el primer resumen nuevo.
+
+Solución Propuesta:
+
+Opción A (Script): Ejecutar un script de migración en background (backfill_summaries.ts) que detecte conversaciones antiguas sin resumen y las procese.
+
+Opción B (Lazy Load): En prompt-composer, si detecta que !summary Y total_messages > 20, forzar una generación de resumen inmediata (o marcar prioridad alta).
+
+[ ] 2. Control de Concurrencia (Race Conditions)
+El Problema: El proceso de resumen es asíncrono y toma tiempo (ej. 5-10 seg). Si el usuario envía un nuevo mensaje durante ese intervalo:
+
+El servicio lee hasta el mensaje #100.
+
+Entra el mensaje #101.
+
+El servicio guarda el resumen marcando last_message_id = #100.
+
+El siguiente trigger busca mensajes posteriores al resumen.
+
+Riesgo: Dependiendo de la query, el mensaje #101 podría quedar en un "limbo" si no se gestionan bien los timestamps o IDs.
+
+Solución Propuesta: Utilizar timestamps estrictos (created_at) o asegurarse de que la query del siguiente resumen incluya > last_message_id_of_summary, asegurando que nada se pierda en el intervalo de procesamiento.
+
+[ ] 3. Optimización de Costos (Filtro de "Basura")
+El Problema: Con un umbral fijo de 10 mensajes, el sistema gastará tokens resumiendo interacciones de bajo valor (ej. 10 mensajes de "Ok", "Jaja", "👍", "Gracias").
+
+Solución Propuesta: Implementar un "Check de Densidad" en summaryService antes de llamar a la API de Gemini.
+
+Lógica: SI (caracteres_totales_nuevos < 50) → NO generar resumen, aunque mensajes_nuevos > 10. Acumular para la siguiente tanda.

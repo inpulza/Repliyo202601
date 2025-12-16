@@ -3169,8 +3169,260 @@ CONTEXTO IA (al responder a Juan):
 ### Próximos Pasos (Visión de Futuro)
 
 La salida de `filterHistoryByAuthor()` será el INPUT para el sistema de "Resumen Progresivo con Consolidación":
-- Fase 1.1: Implementar `generateConversationSummary()` que tome el array filtrado
-- Fase 1.2: Persistir resúmenes por `(conversationId, customerId)` para optimización
-- Fase 1.3: Actualizar resumen solo cuando hay mensajes nuevos del mismo usuario
+- ~~Fase 1.1: Implementar `generateConversationSummary()` que tome el array filtrado~~ ✅ COMPLETADO
+- ~~Fase 1.2: Persistir resúmenes por `(conversationId, customerId)` para optimización~~ ✅ COMPLETADO
+- ~~Fase 1.3: Actualizar resumen solo cuando hay mensajes nuevos del mismo usuario~~ ✅ COMPLETADO
+
+---
+
+## FASE 12: Sistema de Memoria Persistente con Resúmenes Progresivos ✅ COMPLETADA - 16 Diciembre 2025
+
+### Objetivo
+Implementar memoria a largo plazo para la IA mediante resúmenes consolidados que permitan mantener contexto histórico sin exceder límites de tokens, optimizando costos.
+
+### Arquitectura Implementada
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    FLUJO DE MEMORIA PERSISTENTE                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  [Mensaje Nuevo de Usuario]                                     │
+│           │                                                     │
+│           ▼                                                     │
+│  ┌─────────────────────────┐                                   │
+│  │ 1. Obtener Resumen      │ ← conversation_user_summaries     │
+│  │    Existente (si hay)   │   (por conversationId + author)   │
+│  └──────────┬──────────────┘                                   │
+│             │                                                   │
+│             ▼                                                   │
+│  ┌─────────────────────────┐                                   │
+│  │ 2. Obtener Historial    │ ← filterHistoryByAuthor()         │
+│  │    Reciente (10 msgs)   │   (segregación por usuario)       │
+│  └──────────┬──────────────┘                                   │
+│             │                                                   │
+│             ▼                                                   │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ 3. PROMPT HÍBRIDO:                                       │   │
+│  │    [Resumen Consolidado] + [Historial Reciente]          │   │
+│  │    ↓                                                     │   │
+│  │    Memoria largo plazo  + Contexto inmediato             │   │
+│  └──────────┬──────────────────────────────────────────────┘   │
+│             │                                                   │
+│             ▼                                                   │
+│  ┌─────────────────────────┐                                   │
+│  │ 4. LLM Genera Respuesta │                                   │
+│  └──────────┬──────────────┘                                   │
+│             │                                                   │
+│             ▼                                                   │
+│  ┌─────────────────────────┐                                   │
+│  │ 5. Envío a Metricool    │                                   │
+│  └──────────┬──────────────┘                                   │
+│             │                                                   │
+│             ▼                                                   │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ 6. TRIGGER ASÍNCRONO (background):                       │   │
+│  │    triggerSummaryUpdateAsync(conversationId, author)     │   │
+│  │    ↓                                                     │   │
+│  │    SI mensajes_nuevos >= 10 → Generar nuevo resumen      │   │
+│  │    usando Gemini Flash (modelo más económico)            │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Componentes Implementados
+
+#### 1. Nueva Tabla: `conversation_user_summaries`
+
+```typescript
+// shared/schema.ts
+export const conversationUserSummaries = pgTable("conversation_user_summaries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversationId: uuid("conversation_id").notNull().references(() => conversations.id),
+  author: text("author").notNull(),
+  summary: text("summary").notNull(),
+  lastMessageId: uuid("last_message_id"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueConversationAuthor: unique().on(table.conversationId, table.author),
+}));
+```
+
+#### 2. Servicio de Resúmenes: `summaryService.ts`
+
+```typescript
+// server/services/summaryService.ts
+- generateSummary(): Genera resumen usando Gemini Flash 2.5
+- checkAndUpdateSummary(): Verifica umbral (10 msgs) y actualiza si necesario
+- triggerSummaryUpdateAsync(): Ejecuta en background sin bloquear respuesta
+```
+
+**Prompt de Generación de Resumen:**
+```
+Eres un asistente que crea resúmenes concisos de conversaciones de atención al cliente.
+- Resume puntos clave: preguntas, respuestas, acuerdos, preferencias del cliente
+- Mantén información crítica: nombres, fechas, pedidos, compromisos
+- Usa máximo 500 caracteres
+- Escribe en tercera persona ("El cliente preguntó...")
+- Si hay resumen anterior, intégralo con la nueva información
+```
+
+#### 3. Triggers Implementados
+
+| Ubicación | Trigger | Momento |
+|-----------|---------|---------|
+| `autoReplyService.ts` | `triggerSummaryUpdateAsync()` | Después de auto-reply exitoso |
+| `routes.ts` (POST /api/inbox/reply) | `triggerSummaryUpdateAsync()` | Después de reply manual exitoso |
+
+#### 4. Integración en Prompt Composer
+
+```typescript
+// server/services/llm/prompt-composer.ts
+export function composePrompt(context: PromptContext) {
+  // ...
+  
+  // FASE 2: Memoria Persistente
+  let summaryContext = "";
+  if (userSummary && userSummary.summary) {
+    summaryContext = `\n--- RESUMEN DE CONVERSACIÓN ANTERIOR ---
+(Este es un resumen consolidado de interacciones previas con ${message.author})
+${userSummary.summary}
+--- FIN DEL RESUMEN ---\n`;
+  }
+  
+  // Inyectar: Resumen → Historial Reciente → Mensaje Actual
+  if (summaryContext) userPromptParts.push(summaryContext);
+  if (historyContext) userPromptParts.push(historyContext);
+}
+```
+
+### Archivos Modificados/Creados
+
+| Archivo | Cambio |
+|---------|--------|
+| `shared/schema.ts` | Nueva tabla `conversationUserSummaries` + tipos |
+| `server/storage.ts` | Métodos CRUD: `getConversationUserSummary()`, `upsertConversationUserSummary()` |
+| `server/services/summaryService.ts` | **NUEVO** - Servicio completo de generación de resúmenes |
+| `server/services/autoReplyService.ts` | Import + trigger async + obtención de resumen antes de LLM |
+| `server/routes.ts` | Import + triggers en endpoints de reply manual |
+| `server/services/llm/prompt-composer.ts` | Nuevo campo `userSummary` + inyección de resumen en prompt |
+| `server/services/llm/types.ts` | `LLMGenerateRequest.userSummary` agregado |
+| `server/services/llm/gemini-adapter.ts` | Pasar `userSummary` a `composePrompt()` |
+| `server/services/llm/openai-adapter.ts` | Pasar `userSummary` a `composePrompt()` |
+
+### Beneficios
+
+1. **Memoria Ilimitada**: La IA puede recordar conversaciones de meses atrás
+2. **Optimización de Costos**: Usa Gemini Flash (modelo económico) para resúmenes
+3. **No Bloquea**: Generación asíncrona, no afecta latencia de respuesta
+4. **Segregación Mantenida**: Resúmenes son per-usuario, respeta privacidad entre usuarios
+
+---
+
+## FASE 13: Optimización de Memoria Persistente (PENDIENTE)
+
+### Pendientes Críticos Identificados
+
+Se han identificado 3 riesgos de "Lógica Fina" que deben abordarse para garantizar robustez total del sistema de memoria.
+
+#### [ ] 1. Mitigación del "Cold Start" (Amnesia Histórica)
+
+**El Problema:**
+Al desplegar el sistema, clientes antiguos con historiales extensos (>50 mensajes) no tendrán resumen previo. La IA responderá basándose únicamente en la ventana deslizante (últimos 10 mensajes), ignorando todo el contexto histórico hasta que se genere el primer resumen nuevo tras una interacción.
+
+**Impacto:** Cliente recurrente que ha conversado 100+ veces será tratado como "nuevo" hasta su siguiente mensaje.
+
+**Soluciones Propuestas:**
+
+| Opción | Descripción | Pros | Contras |
+|--------|-------------|------|---------|
+| **A: Script de Migración** | Ejecutar `backfill_summaries.ts` en background que detecte conversaciones antiguas sin resumen y las procese | Proactivo, resuelve todo de una vez | Costo inicial de tokens |
+| **B: Lazy Load Inteligente** | En `prompt-composer`, si detecta `!summary AND total_messages > 20`, generar resumen inmediato (síncrono) antes de responder | Sin costo previo, bajo demanda | Latencia en primera respuesta |
+
+**Implementación Recomendada:** Opción B con fallback a Opción A para clientes VIP.
+
+---
+
+#### [ ] 2. Control de Concurrencia (Race Conditions)
+
+**El Problema:**
+El proceso de resumen es asíncrono y puede tomar 5-10 segundos. Si el usuario envía un nuevo mensaje durante ese intervalo:
+
+```
+Timeline:
+t=0:    Servicio lee hasta mensaje #100
+t=1:    Usuario envía mensaje #101
+t=5:    Servicio guarda resumen con last_message_id = #100
+t=6:    Siguiente trigger busca mensajes posteriores al resumen
+
+Riesgo: Mensaje #101 podría quedar en "limbo" si la query
+        no gestiona correctamente el intervalo de procesamiento.
+```
+
+**Impacto:** Pérdida potencial de contexto de mensajes enviados durante generación de resumen.
+
+**Solución Propuesta:**
+Utilizar timestamps estrictos (`created_at`) en lugar de IDs, o asegurar que la query del siguiente resumen use `> last_message_id_of_summary` de forma estricta.
+
+```sql
+-- Query segura para obtener mensajes nuevos
+SELECT * FROM messages 
+WHERE conversation_id = $1 
+  AND author = $2 
+  AND (id > $last_message_id OR last_message_id IS NULL)
+ORDER BY timestamp ASC;
+```
+
+---
+
+#### [ ] 3. Optimización de Costos (Filtro de "Basura Conversacional")
+
+**El Problema:**
+Con umbral fijo de 10 mensajes, el sistema gastará tokens resumiendo interacciones de bajo valor informativo:
+
+```
+Ejemplo de conversación "basura":
+- Cliente: Ok
+- Marca: 👍
+- Cliente: Gracias
+- Marca: De nada
+- Cliente: Jaja
+- ... (5 mensajes más similares)
+
+= 10 mensajes = Trigger de resumen = Costo de API desperdiciado
+```
+
+**Impacto:** Costos innecesarios de API para resúmenes sin valor contextual.
+
+**Solución Propuesta: "Check de Densidad Informativa"**
+
+Implementar validación en `summaryService.checkAndUpdateSummary()` antes de llamar a Gemini:
+
+```typescript
+// Lógica de filtro de densidad
+const totalCharacters = newMessages.reduce((sum, m) => sum + (m.content?.length || 0), 0);
+const averageLength = totalCharacters / newMessages.length;
+
+// SI contenido es muy corto, acumular para siguiente tanda
+if (totalCharacters < 200 || averageLength < 20) {
+  console.log("[Summary] Mensajes de baja densidad, posponiendo resumen");
+  return; // No generar resumen aún
+}
+```
+
+**Thresholds Recomendados:**
+- `totalCharacters < 200` → No resumir (menos de ~50 palabras útiles)
+- `averageLength < 20` → Probablemente mensajes tipo "Ok", "👍", "Jaja"
+
+---
+
+### Priorización Sugerida
+
+| # | Pendiente | Urgencia | Impacto | Esfuerzo |
+|---|-----------|----------|---------|----------|
+| 1 | Filtro de Basura | 🔴 Alta | Ahorro inmediato de costos | Bajo (2h) |
+| 2 | Race Conditions | 🟡 Media | Prevención de bugs sutiles | Medio (4h) |
+| 3 | Cold Start | 🟢 Baja | UX para clientes históricos | Alto (8h) |
 
 ---
