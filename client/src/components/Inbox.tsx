@@ -83,71 +83,119 @@ import { toast } from '@/hooks/use-toast';
 
 
 // --- Helper: Platform Styles ---
+// Sistema unificado de estilos por plataforma y rol del mensaje
+// Roles:
+//   - userBubble: mensajes de usuarios/seguidores (inbound)
+//   - ownerBubble: mensajes del dueño enviados desde la red social (outbound, source=metricool_sync)
+//   - aiBubble: mensajes de auto-reply IA (outbound, internalOrigin=ai)
+//   - manualBubble: mensajes enviados manualmente desde Repliyo (outbound, internalOrigin=manual)
+//   - draftBubble: borradores de IA pendientes de enviar
 const getPlatformStyles = (platform: Platform) => {
     switch (platform) {
         case 'whatsapp':
             return {
-                container: "bg-[#efeae2]/60", // WhatsApp wallpaper vibe
-                bubble: "bg-[#e7fce3] border-[#dcf8c6] text-gray-900", // WhatsApp light green bubble
-                replyBubble: "bg-[#25D366] border-[#128C7E] text-white", // WhatsApp green for replies
+                container: "bg-[#efeae2]/60",
+                userBubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
+                ownerBubble: "bg-[#25D366] border-[#128C7E] text-white",
+                aiBubble: "bg-[#25D366] border-[#128C7E] text-white",
+                manualBubble: "bg-[#25D366] border-[#128C7E] text-white",
+                draftBubble: "bg-[#dcf8c6] border-[#25D366] text-gray-900",
                 badge: "bg-[#dcf8c6] text-green-800 border-green-200",
-                commentBadge: "text-green-600"
+                commentBadge: "text-green-600",
+                // Legacy aliases for backward compatibility
+                bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
+                replyBubble: "bg-[#25D366] border-[#128C7E] text-white"
             };
         case 'facebook':
             return {
-                container: "bg-[#f0f2f5]", // Facebook light gray/blue background
-                bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
-                replyBubble: "bg-[#1877F2] border-[#1565D8] text-white", // Facebook blue for replies
+                container: "bg-[#f0f2f5]",
+                userBubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
+                ownerBubble: "bg-[#1877F2] border-[#1565D8] text-white",
+                aiBubble: "bg-[#1877F2] border-[#1565D8] text-white",
+                manualBubble: "bg-[#1877F2] border-[#1565D8] text-white",
+                draftBubble: "bg-blue-50 border-[#1877F2] text-gray-900",
                 badge: "bg-blue-100 text-blue-700 border-blue-200",
-                commentBadge: "text-blue-600"
+                commentBadge: "text-blue-600",
+                bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
+                replyBubble: "bg-[#1877F2] border-[#1565D8] text-white"
             };
         case 'instagram':
             return {
-                container: "bg-gradient-to-br from-pink-50/50 via-white to-purple-50/50", // Subtle gradient
-                bubble: "bg-white border-gray-100 text-gray-900 shadow-sm",
-                replyBubble: "bg-gradient-to-r from-[#833AB4] via-[#E1306C] to-[#F77737] border-pink-500 text-white", // Instagram gradient for replies
+                container: "bg-gradient-to-br from-pink-50/50 via-white to-purple-50/50",
+                userBubble: "bg-white border-gray-100 text-gray-900 shadow-sm",
+                ownerBubble: "bg-gradient-to-r from-[#833AB4] via-[#E1306C] to-[#F77737] border-pink-500 text-white",
+                aiBubble: "bg-gradient-to-r from-[#833AB4] via-[#E1306C] to-[#F77737] border-pink-500 text-white",
+                manualBubble: "bg-gradient-to-r from-[#833AB4] via-[#E1306C] to-[#F77737] border-pink-500 text-white",
+                draftBubble: "bg-gradient-to-r from-pink-50 via-purple-50 to-orange-50 border-pink-300 text-gray-900",
                 badge: "bg-pink-100 text-pink-700 border-pink-200",
-                commentBadge: "text-pink-600"
+                commentBadge: "text-pink-600",
+                bubble: "bg-white border-gray-100 text-gray-900 shadow-sm",
+                replyBubble: "bg-gradient-to-r from-[#833AB4] via-[#E1306C] to-[#F77737] border-pink-500 text-white"
             };
         case 'linkedin':
             return {
-                container: "bg-[#f3f6f8]", // LinkedIn light gray background
-                bubble: "bg-white border-gray-200 text-slate-800 shadow-sm",
-                replyBubble: "bg-[#0A66C2] border-[#004182] text-white", // LinkedIn blue for replies
+                container: "bg-[#f3f6f8]",
+                userBubble: "bg-white border-gray-200 text-slate-800 shadow-sm",
+                ownerBubble: "bg-[#0A66C2] border-[#004182] text-white",
+                aiBubble: "bg-[#0A66C2] border-[#004182] text-white",
+                manualBubble: "bg-[#0A66C2] border-[#004182] text-white",
+                draftBubble: "bg-sky-50 border-[#0A66C2] text-gray-900",
                 badge: "bg-slate-100 text-slate-700 border-slate-200",
-                commentBadge: "text-slate-600"
+                commentBadge: "text-slate-600",
+                bubble: "bg-white border-gray-200 text-slate-800 shadow-sm",
+                replyBubble: "bg-[#0A66C2] border-[#004182] text-white"
             };
         case 'youtube':
             return {
-                container: "bg-red-50/20", // Very subtle red tint
-                bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
-                replyBubble: "bg-red-500/90 border-red-400 text-white", // Softer YouTube red for replies
+                container: "bg-red-50/20",
+                userBubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
+                ownerBubble: "bg-red-600 border-red-500 text-white",
+                aiBubble: "bg-red-600 border-red-500 text-white",
+                manualBubble: "bg-red-600 border-red-500 text-white",
+                draftBubble: "bg-red-50 border-red-400 text-gray-900",
                 badge: "bg-red-100 text-red-700 border-red-200",
-                commentBadge: "text-red-600"
+                commentBadge: "text-red-600",
+                bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
+                replyBubble: "bg-red-600 border-red-500 text-white"
             };
         case 'tiktok':
             return {
                 container: "bg-gray-50",
-                bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
-                replyBubble: "bg-[#121212] border-[#2F2F2F] text-white", // TikTok dark/black for replies
+                userBubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
+                ownerBubble: "bg-[#121212] border-[#2F2F2F] text-white",
+                aiBubble: "bg-[#121212] border-[#2F2F2F] text-white",
+                manualBubble: "bg-[#121212] border-[#2F2F2F] text-white",
+                draftBubble: "bg-gray-100 border-[#121212] text-gray-900",
                 badge: "bg-gray-200 text-gray-800 border-gray-300",
-                commentBadge: "text-gray-800"
+                commentBadge: "text-gray-800",
+                bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
+                replyBubble: "bg-[#121212] border-[#2F2F2F] text-white"
             };
         case 'google-business':
             return {
                 container: "bg-blue-50/20",
-                bubble: "bg-white border-blue-100 text-gray-900 shadow-sm",
-                replyBubble: "bg-[#4285F4] border-[#3367D6] text-white", // Google blue for replies
+                userBubble: "bg-white border-blue-100 text-gray-900 shadow-sm",
+                ownerBubble: "bg-[#4285F4] border-[#3367D6] text-white",
+                aiBubble: "bg-[#4285F4] border-[#3367D6] text-white",
+                manualBubble: "bg-[#4285F4] border-[#3367D6] text-white",
+                draftBubble: "bg-blue-50 border-[#4285F4] text-gray-900",
                 badge: "bg-blue-100 text-blue-700 border-blue-200",
-                commentBadge: "text-blue-600"
+                commentBadge: "text-blue-600",
+                bubble: "bg-white border-blue-100 text-gray-900 shadow-sm",
+                replyBubble: "bg-[#4285F4] border-[#3367D6] text-white"
             };
         default:
             return {
                 container: "bg-indigo-50/30",
-                bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
-                replyBubble: "bg-indigo-600 border-indigo-700 text-white", // Default indigo for replies
+                userBubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
+                ownerBubble: "bg-indigo-600 border-indigo-700 text-white",
+                aiBubble: "bg-indigo-600 border-indigo-700 text-white",
+                manualBubble: "bg-indigo-600 border-indigo-700 text-white",
+                draftBubble: "bg-indigo-50 border-indigo-400 text-gray-900",
                 badge: "bg-gray-100 text-gray-700 border-gray-200",
-                commentBadge: "text-gray-600"
+                commentBadge: "text-gray-600",
+                bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
+                replyBubble: "bg-indigo-600 border-indigo-700 text-white"
             };
     }
 };
