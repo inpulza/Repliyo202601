@@ -613,39 +613,30 @@ function ThreadNode({
   const hasChildren = node.children.length > 0;
   const canNest = depth < MAX_DEPTH;
 
-  const avatarSize = isReply ? AVATAR_SIZE_REPLY : AVATAR_SIZE_ROOT;
-  const avatarCenter = avatarSize / 2 + 4;
+  const parentAvatarSize = depth === 1 ? AVATAR_SIZE_ROOT : AVATAR_SIZE_REPLY;
+  const parentAvatarCenter = parentAvatarSize / 2;
+  const childAvatarCenter = AVATAR_SIZE_REPLY / 2;
   const connectorLeft = 24;
   const siblingGap = 12;
   
   return (
     <div className={cn("thread-node relative", isReply && "mt-3")}>
       {isReply && (
-        <>
-          <span 
-            className="absolute bg-gray-300 dark:bg-gray-600 pointer-events-none"
-            style={{
-              left: `-${connectorLeft}px`,
-              top: `-${siblingGap}px`,
-              width: '2px',
-              height: isLastChild 
-                ? `${siblingGap + avatarCenter}px`
-                : `calc(100% + ${siblingGap * 2}px)`,
-            }}
-            aria-hidden="true"
-          />
-          <span 
-            className="absolute bg-gray-300 dark:bg-gray-600 pointer-events-none"
-            style={{
-              left: `-${connectorLeft}px`,
-              top: `${avatarCenter - 1}px`,
-              width: `${connectorLeft}px`,
-              height: '2px',
-              borderTopLeftRadius: '4px',
-            }}
-            aria-hidden="true"
-          />
-        </>
+        <span 
+          className="absolute pointer-events-none"
+          style={{
+            left: `-${connectorLeft}px`,
+            top: `-${siblingGap + parentAvatarCenter}px`,
+            width: `${connectorLeft}px`,
+            height: isLastChild 
+              ? `${siblingGap + parentAvatarCenter + childAvatarCenter}px`
+              : `calc(100% + ${siblingGap + parentAvatarCenter}px)`,
+            borderLeft: '1px solid rgba(156, 163, 175, 0.5)',
+            borderBottom: '1px solid rgba(156, 163, 175, 0.5)',
+            borderBottomLeftRadius: '8px',
+          }}
+          aria-hidden="true"
+        />
       )}
 
       <SingleMessage
