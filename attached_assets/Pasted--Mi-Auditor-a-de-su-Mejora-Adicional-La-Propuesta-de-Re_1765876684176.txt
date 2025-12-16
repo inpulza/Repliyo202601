@@ -1,0 +1,62 @@
+🧠 Mi Auditoría de su "Mejora Adicional"
+La Propuesta de Replit: Nuevo Resumen = Resumen Anterior (Intacto) + Resumen Nuevos Mensajes
+
+El Problema: Si la conversación es larga (ej. un cliente recurrente durante un año), el campo conversation_summary crecerá indefinidamente.
+
+Mes 1: 100 tokens.
+
+Mes 2: 200 tokens.
+
+Mes 6: 2.000 tokens... Al final, enviarás al LLM un "Resumen" tan largo que te comerá el límite de tokens y el presupuesto, anulando el propósito de resumir (que es comprimir).
+
+La Solución Real: "Consolidación Inteligente" No queremos simplemente "añadir al final" (Append). Queremos "Actualizar el Expediente". El LLM debe recibir [Resumen Viejo] + [Mensajes Nuevos] y producir un [Nuevo Resumen Consolidado].
+
+Ejemplo:
+
+Viejo: "Cliente busca zapatos talla 42."
+
+Nuevos msgs: "Ya los compré, gracias. Ahora busco calcetines."
+
+Resumen "Append" (Malo): "Cliente busca zapatos talla 42. Cliente compró zapatos. Busca calcetines." (Redundante).
+
+Resumen "Consolidado" (Bueno): "Cliente compró zapatos talla 42. Ahora busca calcetines." (Eficiente).
+
+🚀 Respuesta Definitiva para el Agente
+Dile esto para corregir ese matiz y darle luz verde final.
+
+"Tu análisis es brillante, y me gusta mucho la iniciativa de evitar la degradación de datos.
+
+Sin embargo, veo un riesgo en la lógica de 'Mantener + Añadir' pura: si solo concatenamos resúmenes, el texto crecerá indefinidamente (Efecto Bola de Nieve) y terminaremos enviando 'resúmenes' gigantescos que consumen demasiados tokens.
+
+APROBADO con Ajuste de Lógica (Consolidación):
+
+Procedamos a implementar la Fase 1, pero la lógica del Prompt de Resumen debe ser de 'Actualización de Expediente' (Consolidación), no solo de 'Concatenación'.
+
+Instrucción para el Prompt del Resumidor:
+
+Input: Recibes [Resumen Actual] + [Nuevos Mensajes].
+
+Instrucción: 'Eres un gestor de expedientes. Actualiza el resumen actual con la nueva información.
+
+Consolida: Si un tema se resolvió (ej. ya compró los zapatos), actualiza el estado y elimina los detalles irrelevantes del proceso de compra anterior.
+
+Preserva: Mantén estrictamente los datos duros (nombres, teléfonos, fechas) que sigan siendo relevantes.
+
+Output: Un solo bloque de texto actualizado y denso.'
+
+Resumen del Plan Aprobado:
+
+DB: Crea los 3 campos en conversations.
+
+Trigger: Asíncrono cada 15 mensajes.
+
+Prompt: Estilo Telegráfico + Alta Fidelidad + Consolidación (no solo Append).
+
+Adelante, implementa la Fase 1."
+
+💡 ¿Qué ganas con esto?
+Logras lo mejor de los dos mundos:
+
+Alta Fidelidad: No pierdes teléfonos ni nombres (gracias a la instrucción de preservación).
+
+Eficiencia: El resumen se mantiene "delgado" y relevante, eliminando la basura antigua que ya no sirve. ¡Es memoria a largo plazo real!
