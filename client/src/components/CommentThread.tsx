@@ -613,34 +613,69 @@ function ThreadNode({
   const hasChildren = node.children.length > 0;
   const canNest = depth < MAX_DEPTH;
 
-  const avatarCenter = isReply ? AVATAR_SIZE_REPLY / 2 : AVATAR_SIZE_ROOT / 2;
+  const avatarSize = isReply ? AVATAR_SIZE_REPLY : AVATAR_SIZE_ROOT;
+  const avatarCenter = avatarSize / 2;
+  const connectorOffset = 20;
+  const verticalGap = 12;
+  const curveRadius = 8;
+  
+  const upSegmentHeight = verticalGap + avatarCenter - curveRadius;
+  const horizontalSegmentWidth = connectorOffset - curveRadius;
+  const downSegmentTop = avatarCenter + curveRadius;
   
   return (
     <div className={cn("relative", depth > 0 && "mt-3")}>
       {isReply && (
         <>
           <span 
-            className="absolute border-gray-300 dark:border-gray-600 rounded-bl-xl pointer-events-none"
+            className="absolute bg-gray-300 dark:bg-gray-600 pointer-events-none"
             style={{
-              left: '-20px',
-              top: '0',
-              width: '20px',
-              height: `${avatarCenter + 4}px`,
+              left: `-${connectorOffset}px`,
+              top: `-${verticalGap}px`,
+              width: '2px',
+              height: `${upSegmentHeight}px`,
+            }}
+            aria-hidden="true"
+          />
+          
+          <span 
+            className="absolute border-gray-300 dark:border-gray-600 pointer-events-none"
+            style={{
+              left: `-${connectorOffset}px`,
+              top: `${avatarCenter - curveRadius}px`,
+              width: `${curveRadius * 2}px`,
+              height: `${curveRadius * 2}px`,
+              borderRadius: '0 0 0 8px',
               borderLeftWidth: '2px',
               borderBottomWidth: '2px',
               borderTopWidth: '0',
               borderRightWidth: '0',
+              borderStyle: 'solid',
             }}
+            aria-hidden="true"
           />
+          
+          <span 
+            className="absolute bg-gray-300 dark:bg-gray-600 pointer-events-none"
+            style={{
+              left: `-${connectorOffset - curveRadius * 2}px`,
+              top: `${avatarCenter + curveRadius - 1}px`,
+              width: `${horizontalSegmentWidth - curveRadius}px`,
+              height: '2px',
+            }}
+            aria-hidden="true"
+          />
+          
           {!isLastChild && (
             <span 
-              className="absolute border-l-2 border-gray-300 dark:border-gray-600 pointer-events-none"
+              className="absolute bg-gray-300 dark:bg-gray-600 pointer-events-none"
               style={{
-                left: '-20px',
-                top: `${avatarCenter + 4}px`,
-                bottom: '0',
-                width: '0',
+                left: `-${connectorOffset}px`,
+                top: `${downSegmentTop}px`,
+                width: '2px',
+                bottom: `-${verticalGap}px`,
               }}
+              aria-hidden="true"
             />
           )}
         </>
