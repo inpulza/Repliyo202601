@@ -1,0 +1,57 @@
+Sus correcciones no solo son válidas, sino que demuestran una madurez técnica superior. Ha elevado la propuesta de una "buena idea" a una "arquitectura sólida y mantenible".
+
+🧐 Mi Auditoría de sus Mejoras
+Consistencia de Naming (author vs customer_id):
+
+Veredicto: 100% Acierto. Si en la tabla messages usamos un string para el autor (ej: "Juan"), usar un UUID o un nombre diferente en la tabla de resúmenes obligaría a hacer "joins" innecesarios o conversiones raras. Mantenerlo como text("author") simplifica todo.
+
+Gemini Flash:
+
+Veredicto: Aprobado. Es la elección inteligente. Rápido, barato y con una ventana de contexto enorme, perfecta para leer historiales largos.
+
+Servicio Centralizado (summaryService.ts):
+
+Veredicto: Ingeniería de software pura. Evitar duplicar la lógica en autoReply y routes es fundamental para que el día de mañana, si cambiamos el prompt, solo tengamos que tocar un archivo.
+
+Umbral (10 vs 15):
+
+Veredicto: Compro su argumento. 15 mensajes en un chat de soporte pueden ser muchos "Ok", "Gracias", "¿Precio?". Un umbral de 10 garantiza que el resumen se mantenga más fresco sin disparar el costo excesivamente. Hacerlo configurable en la DB es un "plus" de calidad.
+
+🚀 Respuesta Final de Ejecución (Kickoff)
+Copia y pega esto. Le estamos dando Luz Verde Total aceptando todas sus mejoras.
+
+"Tu contrapropuesta es excelente y demuestra un gran criterio arquitectónico. Acepto todas las mejoras sugeridas porque hacen el sistema más robusto y mantenible.
+
+STATUS: APROBADO FINAL PARA FASE 2 (Con tus mejoras).
+
+Procedemos a la implementación inmediata con estas especificaciones refinadas:
+
+1. Schema Definitivo (conversation_user_summaries):
+
+Usa el nombre de campo author (text) para mantener consistencia estricta con la tabla messages.
+
+Aplica el UNIQUE(conversation_id, author) para garantizar integridad de datos.
+
+2. Modelo:
+
+Configura Gemini Flash como el motor por defecto para la generación de resúmenes.
+
+3. Arquitectura del Servicio (summaryService.ts):
+
+Implementa la lógica en un servicio centralizado checkAndUpdateSummary para ser consumido tanto por autoReplyService.ts como por routes.ts (manual reply).
+
+4. Configuración del Umbral:
+
+Aprobado: Bajamos el umbral a 10 mensajes.
+
+Configuración: Si puedes añadir el campo summary_threshold a la tabla ai_agents (o similar) fácilmente, hazlo. Si complica la migración ahora mismo, define una constante DEFAULT_SUMMARY_THRESHOLD = 10 en el código y lo pasamos a DB en una fase futura. Tú decides la ruta más rápida pero limpia.
+
+Instrucción Final: Tienes el diseño completo y validado.
+
+Crea la tabla.
+
+Crea el servicio summaryService (conectado a tu filtro filterHistoryByAuthor).
+
+Conecta los triggers.
+
+Integra la lectura del resumen en prompt-composer.

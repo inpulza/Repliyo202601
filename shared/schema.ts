@@ -152,6 +152,21 @@ export const aiAgentAuditLog = pgTable("ai_agent_audit_log", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// TABLA SATÉLITE: Resúmenes de conversación por usuario
+// Permite almacenar un resumen independiente para cada usuario dentro de una conversación (post)
+// Esto evita la "contaminación de contexto" cuando múltiples usuarios comentan en el mismo post
+export const conversationUserSummaries = pgTable("conversation_user_summaries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  conversationId: varchar("conversation_id").notNull().references(() => conversations.id, { onDelete: 'cascade' }),
+  author: text("author").notNull(), // Consistente con messages.author
+  summary: text("summary"),
+  lastMessageId: varchar("last_message_id").references(() => messages.id, { onDelete: 'set null' }),
+  messageCount: integer("message_count").default(0), // Contador de mensajes resumidos
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueConversationAuthor: unique().on(table.conversationId, table.author),
+}));
+
 export const brandsRelations = relations(brands, ({ many, one }) => ({
   messages: many(messages),
   users: many(users),
@@ -234,6 +249,17 @@ export const aiAgentAuditLogRelations = relations(aiAgentAuditLog, ({ one }) => 
   conversation: one(conversations, {
     fields: [aiAgentAuditLog.conversationId],
     references: [conversations.id],
+  }),
+}));
+
+export const conversationUserSummariesRelations = relations(conversationUserSummaries, ({ one }) => ({
+  conversation: one(conversations, {
+    fields: [conversationUserSummaries.conversationId],
+    references: [conversations.id],
+  }),
+  lastMessage: one(messages, {
+    fields: [conversationUserSummaries.lastMessageId],
+    references: [messages.id],
   }),
 }));
 
@@ -352,3 +378,17 @@ export type LlmProvider = z.infer<typeof llmProviderEnum>;
 
 export const internalOriginEnum = z.enum(['manual', 'ai']);
 export type InternalOrigin = z.infer<typeof internalOriginEnum>;
+
+// Schemas y tipos para conversation_user_summaries
+export const insertConversationUserSummarySchema = createInsertSchema(conversationUserSummaries).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export const selectConversationUserSummarySchema = createSelectSchema(conversationUserSummaries);
+
+export const updateConversationUserSummarySchema = insertConversationUserSummarySchema.partial();
+
+export type InsertConversationUserSummary = z.infer<typeof insertConversationUserSummarySchema>;
+export type ConversationUserSummary = typeof conversationUserSummaries.$inferSelect;
+export type UpdateConversationUserSummary = z.infer<typeof updateConversationUserSummarySchema>;
