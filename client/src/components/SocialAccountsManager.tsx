@@ -201,7 +201,7 @@ export function SocialAccountsManager({ open, onOpenChange, client, onAccountsUp
                 <p className="text-sm">No se detectaron redes sociales</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2 w-full max-w-full">
                 {accounts.map((account) => {
                   const config = PROVIDER_CONFIG[account.provider] || { 
                     icon: Globe, 
@@ -215,28 +215,28 @@ export function SocialAccountsManager({ open, onOpenChange, client, onAccountsUp
                   return (
                     <div 
                       key={account.id}
-                      className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
+                      className={`flex items-center justify-between p-3 rounded-lg border transition-all w-full max-w-full overflow-hidden ${
                         account.isActive ? 'bg-white border-indigo-200' : 'bg-gray-50 border-gray-200'
                       }`}
                       data-testid={`account-row-${account.provider}`}
                     >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
                         <div className={`p-2 rounded-full shrink-0 ${config.bgColor}`}>
                           <Icon className={`h-4 w-4 ${config.color}`} />
                         </div>
-                        <div className="min-w-0 overflow-hidden">
-                          <p className="text-sm font-medium truncate">{config.label}</p>
+                        <div className="min-w-0 flex-1 overflow-hidden">
+                          <p className="text-sm font-medium truncate max-w-full">{config.label}</p>
                           {account.accountName && (
-                            <p className="text-xs text-muted-foreground truncate">@{account.accountName}</p>
+                            <p className="text-xs text-muted-foreground truncate max-w-full">@{account.accountName}</p>
                           )}
                           {account.lastSyncAt && (
-                            <p className="text-[10px] text-muted-foreground truncate">
+                            <p className="text-[10px] text-muted-foreground truncate max-w-full">
                               Último sync: {new Date(account.lastSyncAt).toLocaleDateString()}
                             </p>
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 shrink-0 ml-2">
                         {isUpdating && (
                           <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                         )}
