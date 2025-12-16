@@ -1,0 +1,19 @@
+Quiero consultar contigo. Quiero hacer una funcionalidad de borradores. O sea, cuando la aplicación está en la opción borrador, que es cuando vamos a la pantalla de automatización (agent settings, automatización), y está desactivado borrador automático. Esto tiene que funcionar.
+
+Cuando está en borrador y está activo el agente, arriba en la pestaña de activo, él puede entrar un mensaje o, en base de datos, hay mensajes que no tienen respuesta con IA porque entraron en un momento en que, por ejemplo, no estaba activo el agente.
+
+Es posible que a veces conectemos una marca, el agente no esté activo en la pestaña de agent settings. Y claro, los mensajes entran, se guardan en base de datos, se muestran en la interfaz, pero como el agente no está activo no se responden y se pierde la oportunidad de responder ese mensaje de forma automática.
+
+Por lo que habría que ir mensaje por mensaje respondiendo manualmente, o sea, darle al botón de reply y que genere una respuesta abajo en el cajón de mensajes y darle enviar.
+
+Básicamente, este es todo el contexto. Yo lo que necesito es que tú me analices esto y veas cómo solucionarlo.
+
+Por ejemplo, cuando esté marcada la opción en "Agent Settings" (automatización) en modo de respuesta automática, este borrador se ponga, pues tengamos una opción (no sé cuál sería la variante), de generar un borrador.
+
+A lo mejor, justo en la esquina de cada globo de mensajes en los hilos de la conversación, un pequeño botón que, cuando le des, se genere una autorrespuesta automáticamente. Se ponga debajo de ese mensaje en específico y que genere una borradora ahí abajo.
+
+Hacer un diseño de interfaz que creo que ya lo teníamos cuando importamos el diseño de Figma (ya había unos elementos que coincidían con esta funcionalidad). La idea es que, por ejemplo, si hay algunos mensajes como estos que están sin responder, nosotros podamos tocar en algún lugar (como mismo tenemos el botón de reply flotando), tal vez podemos poner otro en la otra esquina inferior que diga "generar borrador".
+
+Ir generando borradores que aparezcan justo debajo del mensaje correspondiente, que le podamos enviar desde ahí mismo, no necesariamente tener que tocar en el botón de reply, que se levante la caja de texto y manualmente tener una respuesta con ella, y que, tener que darle enviar nosotros normalmente al botón, sino poder ir dándole uno a uno a ese pequeño botón nuevo creado, y que se nos genere justo debajo del mensaje.
+
+No sé si esta es la mejor opción, pero quiero que analices todo el contexto, y a lo mejor tú puedes mejorar mi idea, aplica la lógica.
