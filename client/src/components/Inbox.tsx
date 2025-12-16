@@ -1267,7 +1267,10 @@ export function Inbox() {
                                 <span className={cn("font-medium text-gray-900", isReply ? "text-xs" : "text-sm")}>{msg.author}</span>
                                 <span className="text-[10px] text-muted-foreground">{new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                                {isReply && (
-                                 <span className="text-[9px] font-medium text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded">
+                                 <span className={cn(
+                                   "text-[9px] font-medium px-1.5 py-0.5 rounded",
+                                   getPlatformStyles((msg.platform || 'instagram') as Platform).badge
+                                 )}>
                                    Reply
                                  </span>
                                )}
