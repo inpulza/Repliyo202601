@@ -317,8 +317,8 @@ export function Inbox() {
       // B. Find children of this message
       const children = childrenMap.get(message.id) || [];
       
-      // C. Sort children by timestamp (newest first for consistent social media style)
-      children.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      // C. Sort children by timestamp (chronological - oldest first so replies read naturally after parent)
+      children.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
       // D. RECURSION: Process each child the same way (add it and find its children)
       children.forEach(child => addMessageAndChildren(child));
@@ -337,18 +337,14 @@ export function Inbox() {
     const allMessages = [...flattened, ...orphans];
     
     // 5. Merge local draft overrides for real-time updates
-    const messagesWithOverrides = allMessages.map(msg => {
+    // NO global sort - preserve parent-child grouping (newest root first, replies chronologically below)
+    return allMessages.map(msg => {
       const override = localDraftOverrides.get(msg.id);
       if (override) {
         return { ...msg, ...override };
       }
       return msg;
     });
-    
-    // 6. Final global sort to ensure strict newest-first ordering
-    // This handles cases where child replies are newer than their parent
-    // Applied AFTER overrides to ensure final rendered order is correct
-    return messagesWithOverrides.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   }, [activeConversationMessages, localDraftOverrides]);
 
   // Derive active draft message (outbound with drafting/pending status) and last inbound message
