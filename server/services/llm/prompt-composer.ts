@@ -1,4 +1,4 @@
-import type { AiAgent, Message, Conversation, Brand, SocialPost } from "@shared/schema";
+import type { AiAgent, Message, Conversation, Brand, SocialPost, ConversationUserSummary } from "@shared/schema";
 import { PLATFORM_CHARACTER_LIMITS, getCharacterLimit } from "./types";
 
 interface PromptContext {
@@ -8,6 +8,7 @@ interface PromptContext {
   brand?: Brand;
   conversationHistory?: Message[];
   socialPost?: SocialPost | null;
+  userSummary?: ConversationUserSummary | null;
 }
 
 interface VariableContext {
@@ -172,7 +173,7 @@ export function composePrompt(context: PromptContext): {
   characterLimit: number;
   hardLimit: number;
 } {
-  const { agent, message, conversation, brand, conversationHistory, socialPost } = context;
+  const { agent, message, conversation, brand, conversationHistory, socialPost, userSummary } = context;
   
   const platform = message.platform || "default";
   const messageType = message.type || "comment";
@@ -228,13 +229,25 @@ export function composePrompt(context: PromptContext): {
 - Si el cliente pregunta sobre algo mencionado previamente, RESPONDE basándote en el historial.
 - Actúa como si recordaras toda la conversación, porque SÍ la tienes disponible.`);
 
+  // FASE 2: Memoria Persistente con Resúmenes
+  // El sistema híbrido inyecta: [Resumen Consolidado] + [Últimos 10 mensajes filtrados]
+  // Esto proporciona contexto a largo plazo sin exceder límites de tokens
+  
+  let summaryContext = "";
+  if (userSummary && userSummary.summary) {
+    summaryContext = `\n--- RESUMEN DE CONVERSACIÓN ANTERIOR ---
+(Este es un resumen consolidado de interacciones previas con ${message.author || 'este usuario'})
+${userSummary.summary}
+--- FIN DEL RESUMEN ---\n`;
+  }
+
   let historyContext = "";
   if (conversationHistory && conversationHistory.length > 0) {
     // FILTRADO DINÁMICO: Para comentarios, solo incluir contexto del usuario objetivo
     const filteredMessages = filterHistoryByAuthor(conversationHistory, message, messageType);
     
     if (filteredMessages.length > 0) {
-      historyContext = "\n--- HISTORIAL DE CONVERSACIÓN ---\n";
+      historyContext = "\n--- HISTORIAL RECIENTE DE CONVERSACIÓN ---\n";
       // Para comentarios, añadir nota de contexto segregado
       if (messageType !== 'conversation') {
         historyContext += `(Contexto exclusivo con ${message.author || 'este usuario'})\n`;
@@ -264,6 +277,12 @@ export function composePrompt(context: PromptContext): {
 
   const userPromptParts: string[] = [];
 
+  // Inyectar primero el resumen consolidado (contexto a largo plazo)
+  if (summaryContext) {
+    userPromptParts.push(summaryContext);
+  }
+
+  // Luego el historial reciente (contexto inmediato)
   if (historyContext) {
     userPromptParts.push(historyContext);
   }

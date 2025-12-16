@@ -88,6 +88,15 @@ class AutoReplyService {
         log(`${logPrefix} History preview: ${historyPreview}`, "sync");
       }
       
+      // PHASE 2: Get persistent summary for this user (long-term memory)
+      let userSummary = null;
+      if (message.author) {
+        userSummary = await storage.getConversationUserSummary(conversation.id, message.author);
+        if (userSummary) {
+          log(`${logPrefix} Found persistent summary for user ${message.author}`, "sync");
+        }
+      }
+      
       const llmProvider = createLLMProvider(agent, this.secrets);
       const llmResponse = await llmProvider.generateReply({
         agent,
@@ -95,6 +104,7 @@ class AutoReplyService {
         conversation,
         brand,
         conversationHistory: historyForLLM,
+        userSummary,
       });
 
       log(`${logPrefix} Generated reply (${llmResponse.characterCount} chars)`, "sync");

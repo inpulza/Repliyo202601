@@ -1,4 +1,4 @@
-import type { AiAgent, Message, Conversation, Brand } from "@shared/schema";
+import type { AiAgent, Message, Conversation, Brand, ConversationUserSummary } from "@shared/schema";
 
 export interface LLMGenerateRequest {
   agent: AiAgent;
@@ -6,6 +6,7 @@ export interface LLMGenerateRequest {
   conversation?: Conversation;
   brand?: Brand;
   conversationHistory?: Message[];
+  userSummary?: ConversationUserSummary | null;
 }
 
 export interface LLMResponse {
