@@ -17,6 +17,109 @@ interface VariableContext {
   postContext: string;
 }
 
+/**
+ * FILTRADO DINÁMICO DE HISTORIAL POR AUTOR
+ * 
+ * Esta función segrega el contexto de IA para evitar "contaminación" entre usuarios.
+ * 
+ * Problema que resuelve:
+ * - Para comentarios en posts, múltiples usuarios comentan en el mismo hilo.
+ * - Si la IA ve TODO el historial, puede confundir contextos (responder a Juan con info de Pedro).
+ * 
+ * Solución:
+ * - Para DMs: Devuelve todo el historial (ya es 1:1 marca-usuario).
+ * - Para Comentarios: Filtra solo mensajes del autor objetivo + respuestas de la marca a ese autor.
+ * 
+ * Usa `parentMessageId` para vincular respuestas de la marca al mensaje inbound que respondieron.
+ * Si no hay `parentMessageId`, usa heurística de proximidad temporal.
+ * 
+ * @param history - Historial completo de mensajes de la conversación
+ * @param targetMessage - El mensaje al que se va a responder
+ * @param messageType - Tipo de mensaje: 'conversation' (DM) o 'comment'
+ * @returns Array filtrado de mensajes relevantes para este usuario específico
+ */
+export function filterHistoryByAuthor(
+  history: Message[],
+  targetMessage: Message,
+  messageType: string
+): Message[] {
+  if (!history || history.length === 0) {
+    return [];
+  }
+
+  // DMs: Ya son 1:1 entre marca y un usuario único. Devolver todo.
+  if (messageType === 'conversation') {
+    return history.slice(-10);
+  }
+
+  // COMENTARIOS: Necesitamos segregar por autor
+  const targetAuthor = targetMessage.author;
+  if (!targetAuthor) {
+    // Sin autor definido, devolvemos historial limitado como fallback
+    return history.slice(-10);
+  }
+
+  // Paso 1: Crear un mapa de IDs de mensajes del usuario objetivo
+  const targetUserMessageIds = new Set<string>();
+  const targetUserMessages: Message[] = [];
+
+  for (const msg of history) {
+    if (msg.direction === 'inbound' && msg.author === targetAuthor) {
+      targetUserMessageIds.add(msg.id);
+      targetUserMessages.push(msg);
+    }
+  }
+
+  // Paso 2: Identificar respuestas de la marca que pertenecen a este usuario
+  const brandRepliesToUser: Message[] = [];
+
+  for (const msg of history) {
+    if (msg.direction === 'outbound') {
+      // Estrategia 1: Usar parentMessageId (preciso)
+      if (msg.parentMessageId && targetUserMessageIds.has(msg.parentMessageId)) {
+        brandRepliesToUser.push(msg);
+        continue;
+      }
+
+      // Estrategia 2: Heurística de proximidad temporal
+      // Si el mensaje outbound no tiene parentMessageId, buscamos el mensaje inbound
+      // más cercano temporalmente que sea del autor objetivo
+      if (!msg.parentMessageId) {
+        const msgTimestamp = new Date(msg.timestamp).getTime();
+        let closestInbound: Message | null = null;
+        let closestTimeDiff = Infinity;
+
+        for (const inbound of targetUserMessages) {
+          const inboundTimestamp = new Date(inbound.timestamp).getTime();
+          // Solo consideramos inbound que sea ANTERIOR al outbound
+          if (inboundTimestamp < msgTimestamp) {
+            const timeDiff = msgTimestamp - inboundTimestamp;
+            // Umbral: 1 hora (3600000ms) - respuestas típicas ocurren dentro de este rango
+            if (timeDiff < 3600000 && timeDiff < closestTimeDiff) {
+              closestTimeDiff = timeDiff;
+              closestInbound = inbound;
+            }
+          }
+        }
+
+        // Si encontramos un inbound cercano del usuario objetivo, incluimos esta respuesta
+        if (closestInbound) {
+          brandRepliesToUser.push(msg);
+        }
+      }
+    }
+  }
+
+  // Paso 3: Combinar y ordenar cronológicamente
+  const filteredHistory = [...targetUserMessages, ...brandRepliesToUser];
+  filteredHistory.sort((a, b) => 
+    new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  );
+
+  // Limitar a los últimos 10 mensajes para el prompt
+  return filteredHistory.slice(-10);
+}
+
 function formatUsername(author: string, platform: string): string {
   const normalizedPlatform = (platform || '').toLowerCase().trim();
   const needsAtSymbol = normalizedPlatform === 'instagram' || normalizedPlatform === 'tiktok';
@@ -127,9 +230,18 @@ export function composePrompt(context: PromptContext): {
 
   let historyContext = "";
   if (conversationHistory && conversationHistory.length > 0) {
-    const recentMessages = conversationHistory.slice(-10);
-    historyContext = "\n--- HISTORIAL DE CONVERSACIÓN ---\n";
-    for (const msg of recentMessages) {
+    // FILTRADO DINÁMICO: Para comentarios, solo incluir contexto del usuario objetivo
+    const filteredMessages = filterHistoryByAuthor(conversationHistory, message, messageType);
+    
+    if (filteredMessages.length > 0) {
+      historyContext = "\n--- HISTORIAL DE CONVERSACIÓN ---\n";
+      // Para comentarios, añadir nota de contexto segregado
+      if (messageType !== 'conversation') {
+        historyContext += `(Contexto exclusivo con ${message.author || 'este usuario'})\n`;
+      }
+    }
+    
+    for (const msg of filteredMessages) {
       const role = msg.direction === "inbound" ? "Cliente" : "Marca";
       let messageContent = msg.content.substring(0, 200);
       

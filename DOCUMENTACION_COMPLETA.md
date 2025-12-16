@@ -3074,3 +3074,103 @@ Para considerar en fases posteriores:
 - [ ] Dashboard de memoria por conversación
 
 ---
+
+## FASE 11: Segregación de Contexto de IA para Comentarios ✅ COMPLETADA - 16 Diciembre 2025
+
+### Problema Resuelto
+
+**Situación anterior:**
+- En hilos de comentarios de un post, múltiples usuarios (Juan, Pedro, María) comentan.
+- El Inbox agrupa correctamente todos los comentarios visualmente bajo una sola tarjeta (por `socialPostId`).
+- PERO: Cuando la IA generaba una respuesta a Juan, veía TODO el historial, incluyendo mensajes de Pedro y María.
+- Esto causaba "contaminación de contexto": la IA podía responder a Juan basándose en lo que dijo Pedro.
+
+**Solución implementada:**
+- Nuevo sistema de **Filtrado Dinámico de Historial por Autor** en `prompt-composer.ts`.
+- Para DMs: Devuelve todo el historial (ya es 1:1 marca-usuario).
+- Para Comentarios: Filtra solo mensajes del autor objetivo + respuestas de la marca a ese autor.
+
+### Implementación Técnica
+
+#### Nueva función `filterHistoryByAuthor()` en `server/services/llm/prompt-composer.ts`
+
+```typescript
+export function filterHistoryByAuthor(
+  history: Message[],
+  targetMessage: Message,
+  messageType: string
+): Message[] {
+  // DMs: Ya son 1:1, devolver todo
+  if (messageType === 'conversation') {
+    return history.slice(-10);
+  }
+
+  // Comentarios: Segregar por autor
+  // Paso 1: Identificar mensajes del usuario objetivo (inbound)
+  // Paso 2: Identificar respuestas de la marca a ese usuario (usando parentMessageId)
+  // Paso 3: Fallback con heurística de proximidad temporal si no hay parentMessageId
+  // Paso 4: Combinar y ordenar cronológicamente
+}
+```
+
+#### Estrategias de vinculación:
+
+1. **Estrategia primaria:** Usar `parentMessageId` para vincular respuestas de la marca al mensaje inbound que respondieron.
+
+2. **Estrategia de fallback:** Heurística de proximidad temporal (1 hora) para mensajes outbound sin `parentMessageId`.
+
+#### Modificaciones a `composePrompt()`:
+
+```typescript
+// ANTES:
+const recentMessages = conversationHistory.slice(-10);
+
+// DESPUÉS:
+const filteredMessages = filterHistoryByAuthor(conversationHistory, message, messageType);
+```
+
+### Arquitectura Visual vs IA
+
+```
+INBOX (Visual):
+┌─────────────────────────────────────────────────────────┐
+│  Post "Video de Zapatos" (1 tarjeta)                    │
+│  ├── Comentario de Juan                                 │
+│  ├── Respuesta de Marca a Juan                         │
+│  ├── Comentario de Pedro                               │
+│  ├── Respuesta de Marca a Pedro                        │
+│  └── Comentario de María                               │
+└─────────────────────────────────────────────────────────┘
+
+CONTEXTO IA (al responder a Juan):
+┌─────────────────────────────────────────────────────────┐
+│  (Contexto exclusivo con @juan)                         │
+│  ├── Cliente: ¿Tienen envío gratis?                    │
+│  ├── Marca: Sí, en compras mayores a $50               │
+│  └── Cliente: Perfecto, quiero comprar                 │
+│                                                         │
+│  ❌ NO incluye mensajes de Pedro ni María              │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Archivos Modificados
+
+| Archivo | Cambio |
+|---------|--------|
+| `server/services/llm/prompt-composer.ts` | Nueva función `filterHistoryByAuthor()` + integración en `composePrompt()` |
+
+### Beneficios
+
+1. **Sin cambios de schema/DB:** No requiere migración de datos.
+2. **Sin romper el Inbox:** La agrupación visual permanece intacta.
+3. **Modular:** La función es reutilizable para futuras funcionalidades (resúmenes progresivos).
+4. **Dinámico:** Siempre usa datos frescos del historial.
+
+### Próximos Pasos (Visión de Futuro)
+
+La salida de `filterHistoryByAuthor()` será el INPUT para el sistema de "Resumen Progresivo con Consolidación":
+- Fase 1.1: Implementar `generateConversationSummary()` que tome el array filtrado
+- Fase 1.2: Persistir resúmenes por `(conversationId, customerId)` para optimización
+- Fase 1.3: Actualizar resumen solo cuando hay mensajes nuevos del mismo usuario
+
+---
