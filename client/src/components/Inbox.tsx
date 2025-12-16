@@ -1138,7 +1138,9 @@ export function Inbox() {
                         const isSentFromRepliyo = isRepliyoMessage(msg.source, msg.internalOrigin);
                         const isSentByAI = isAutoReply(msg.source, msg.internalOrigin);
                         
-                        const isOwner = activeClient && msg.author.toLowerCase() === activeClient.name.toLowerCase();
+                        // Use direction field from database - this is the authoritative source for owner detection
+                        // direction='outbound' means message is from the brand owner, direction='inbound' means from a customer
+                        const isOwner = isOutbound;
                     
                     return (
                       <div 
