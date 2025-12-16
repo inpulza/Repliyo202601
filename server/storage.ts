@@ -113,6 +113,7 @@ export interface IStorage {
   
   getPendingCommentsForBatchProcessing(brandId: string, platform: string, limit: number): Promise<Message[]>;
   getPendingCommentsCount(brandId: string, platform: string): Promise<number>;
+  getMessagesWithPendingSuggestions(brandId: string, platform: string, limit: number): Promise<Message[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1303,6 +1304,25 @@ export class DatabaseStorage implements IStorage {
     `);
     
     return parseInt((result.rows[0] as any)?.count || '0', 10);
+  }
+
+  async getMessagesWithPendingSuggestions(brandId: string, platform: string, limit: number): Promise<Message[]> {
+    const result = await db.execute(sql`
+      SELECT m.*
+      FROM messages m
+      JOIN conversations c ON m.conversation_id = c.id
+      WHERE c.brand_id = ${brandId}
+        AND m.direction = 'inbound'
+        AND m.platform = ${platform}
+        AND m.ai_suggested_reply IS NOT NULL
+        AND (m.ai_reply_status IS NULL OR m.ai_reply_status = 'suggested')
+        AND m.content IS NOT NULL
+        AND TRIM(m.content) != ''
+      ORDER BY m.timestamp DESC
+      LIMIT ${limit}
+    `);
+    
+    return result.rows as Message[];
   }
 }
 
