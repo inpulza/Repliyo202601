@@ -249,7 +249,6 @@ export function Inbox() {
     })
     .sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
 
-
   // Calculate Stats for Header (from conversations)
   const totalUnread = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
   const criticalCount = 0;
@@ -712,12 +711,12 @@ export function Inbox() {
                     No conversations match your filters.
                  </div>
               ) : (
-                filteredConversations.map((conversation) => (
+                filteredConversations.map((conv) => (
                   <ConversationCard 
-                    key={conversation.id} 
-                    conversation={conversation} 
-                    isSelected={activeConversation?.id === conversation.id} 
-                    onClick={() => setActiveConversation(conversation)} 
+                    key={conv.id} 
+                    conversation={conv} 
+                    isSelected={activeConversation?.id === conv.id} 
+                    onClick={() => setActiveConversation(conv)} 
                   />
                 ))
               )}
