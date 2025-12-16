@@ -6,6 +6,7 @@ import { getCharacterLimit, splitMessageForDelivery, type MessageChunk } from ".
 import { log } from "../app";
 import type { Message, Conversation, Brand, AiAgent } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { conversationSummaryService } from "./conversationSummaryService";
 
 interface AutoReplyResult {
   success: boolean;
@@ -79,6 +80,12 @@ class AutoReplyService {
       const historyForLLM = conversationHistory.slice(-10);
       log(`${logPrefix} Conversation history: ${conversationHistory.length} total messages, sending ${historyForLLM.length} to LLM`, "sync");
       
+      // Get conversation summary for extended context
+      const conversationSummary = conversation.conversationSummary;
+      if (conversationSummary) {
+        log(`${logPrefix} Including conversation summary (${conversationSummary.length} chars)`, "sync");
+      }
+      
       // Log the history content for debugging
       if (historyForLLM.length > 0) {
         const historyPreview = historyForLLM.map(m => 
@@ -94,6 +101,7 @@ class AutoReplyService {
         conversation,
         brand,
         conversationHistory: historyForLLM,
+        conversationSummary,
       });
 
       log(`${logPrefix} Generated reply (${llmResponse.characterCount} chars)`, "sync");
@@ -325,6 +333,15 @@ class AutoReplyService {
       });
 
       log(`${logPrefix} Auto-reply sent successfully (${sentMessages.length} part(s))`, "sync");
+
+      // Trigger async summary generation check (non-blocking)
+      setImmediate(async () => {
+        try {
+          await conversationSummaryService.checkAndGenerateSummary(conversation.id);
+        } catch (summaryError: any) {
+          log(`${logPrefix} Summary generation error (non-blocking): ${summaryError.message}`, "sync");
+        }
+      });
 
       return {
         success: true,

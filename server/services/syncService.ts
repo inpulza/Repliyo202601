@@ -3,6 +3,7 @@ import { MetricoolService, createMetricoolService } from "./metricool";
 import { websocketService } from "./websocketService";
 import { autoReplyService } from "./autoReplyService";
 import { transcriptionService } from "./transcriptionService";
+import { conversationSummaryService } from "./conversationSummaryService";
 import { log } from "../app";
 
 interface BrandSyncResult {
@@ -153,6 +154,7 @@ class SyncService {
     const inboxData = await metricoolService.getAllInboxData(blogId, activeProviders);
 
     let savedCount = 0;
+    const conversationsWithNewInbound: string[] = [];
 
     for (const conversation of inboxData.conversations) {
       const conv = conversation as any;
@@ -313,6 +315,10 @@ class SyncService {
               conversationId: conversationRecord.id,
             });
 
+            if (!conversationsWithNewInbound.includes(conversationRecord.id)) {
+              conversationsWithNewInbound.push(conversationRecord.id);
+            }
+
             this.triggerAutoReply(brandId, savedMessage, conversationRecord);
           }
         } catch (error: any) {
@@ -420,6 +426,10 @@ class SyncService {
             conversationId: conversationRecord.id,
           });
 
+          if (!conversationsWithNewInbound.includes(conversationRecord.id)) {
+            conversationsWithNewInbound.push(conversationRecord.id);
+          }
+
           this.triggerAutoReply(brandId, savedComment, conversationRecord);
         }
 
@@ -484,8 +494,34 @@ class SyncService {
     log(`[SyncService] Brand ${brandName}: saved ${savedCount} messages`, "sync");
     
     this.triggerPendingTranscriptions(brandId, brandName);
+    this.triggerConversationSummaryChecks(brandId, brandName, conversationsWithNewInbound);
     
     return savedCount;
+  }
+
+  private triggerConversationSummaryChecks(brandId: string, brandName: string, conversationIds: string[]): void {
+    if (conversationIds.length === 0) {
+      return;
+    }
+
+    (async () => {
+      let summariesGenerated = 0;
+      for (const convId of conversationIds) {
+        try {
+          const result = await conversationSummaryService.checkAndGenerateSummary(convId);
+          if (result.success) {
+            summariesGenerated++;
+          }
+        } catch (error: any) {
+          log(`[SyncService] Brand ${brandName}: summary error for conv ${convId} - ${error.message}`, "sync");
+        }
+      }
+      if (summariesGenerated > 0) {
+        log(`[SyncService] Brand ${brandName}: generated ${summariesGenerated} conversation summaries`, "sync");
+      }
+    })().catch(error => {
+      log(`[SyncService] Brand ${brandName}: summary check error - ${error.message}`, "sync");
+    });
   }
 
   private triggerPendingTranscriptions(brandId: string, brandName: string): void {

@@ -8,6 +8,7 @@ interface PromptContext {
   brand?: Brand;
   conversationHistory?: Message[];
   socialPost?: SocialPost | null;
+  conversationSummary?: string | null;
 }
 
 interface VariableContext {
@@ -69,7 +70,7 @@ export function composePrompt(context: PromptContext): {
   characterLimit: number;
   hardLimit: number;
 } {
-  const { agent, message, conversation, brand, conversationHistory, socialPost } = context;
+  const { agent, message, conversation, brand, conversationHistory, socialPost, conversationSummary } = context;
   
   const platform = message.platform || "default";
   const messageType = message.type || "comment";
@@ -125,10 +126,18 @@ export function composePrompt(context: PromptContext): {
 - Si el cliente pregunta sobre algo mencionado previamente, RESPONDE basándote en el historial.
 - Actúa como si recordaras toda la conversación, porque SÍ la tienes disponible.`);
 
+  let summaryContext = "";
+  if (conversationSummary) {
+    summaryContext = `\n--- RESUMEN DE CONVERSACIÓN PREVIA ---
+${conversationSummary}
+
+`;
+  }
+
   let historyContext = "";
   if (conversationHistory && conversationHistory.length > 0) {
     const recentMessages = conversationHistory.slice(-10);
-    historyContext = "\n--- HISTORIAL DE CONVERSACIÓN ---\n";
+    historyContext = "\n--- MENSAJES RECIENTES ---\n";
     for (const msg of recentMessages) {
       const role = msg.direction === "inbound" ? "Cliente" : "Marca";
       let messageContent = msg.content.substring(0, 200);
@@ -151,6 +160,10 @@ export function composePrompt(context: PromptContext): {
   }
 
   const userPromptParts: string[] = [];
+
+  if (summaryContext) {
+    userPromptParts.push(summaryContext);
+  }
 
   if (historyContext) {
     userPromptParts.push(historyContext);

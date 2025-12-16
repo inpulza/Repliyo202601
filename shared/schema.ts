@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, jsonb, unique, integer, boolean, real } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, jsonb, unique, integer, boolean, real, serial } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -70,11 +70,15 @@ export const conversations = pgTable("conversations", {
   lastMessagePreview: text("last_message_preview"),
   unreadCount: integer("unread_count").default(0),
   status: text("status").notNull().default('open'),
+  conversationSummary: text("conversation_summary"),
+  summaryLastMessageId: varchar("summary_last_message_id"),
+  summaryUpdatedAt: timestamp("summary_updated_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const messages = pgTable("messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  seq: serial("seq").notNull(),
   brandId: varchar("brand_id").notNull().references(() => brands.id, { onDelete: 'cascade' }),
   conversationId: varchar("conversation_id").references(() => conversations.id, { onDelete: 'cascade' }),
   metricoolId: text("metricool_id").unique(),
