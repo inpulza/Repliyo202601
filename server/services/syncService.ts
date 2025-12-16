@@ -349,7 +349,7 @@ class SyncService {
             externalId: postExternalId,
             permalink: postPermalink,
             thumbnailUrl: postThumbnailUrl,
-            caption: postCaption ? postCaption.substring(0, 2000) : null,
+            caption: postCaption ? postCaption.substring(0, 5000) : null,
           });
           socialPostId = socialPost.id;
         }
