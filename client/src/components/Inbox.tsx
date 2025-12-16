@@ -1450,27 +1450,6 @@ export function Inbox() {
                       </motion.div>
                     );
                   })}
-                    
-                    {selectedMessage && selectedMessage.status === 'sent' && (
-                       <motion.div 
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          className="flex gap-4 ml-0"
-                       >
-                          <Avatar className="h-8 w-8 mt-1">
-                             <AvatarFallback className="bg-indigo-600 text-white">AI</AvatarFallback>
-                          </Avatar>
-                          <div className="flex flex-col gap-1 max-w-[80%]">
-                             <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-2xl rounded-tl-none text-sm leading-relaxed text-indigo-900">
-                                {selectedMessage.draftResponse}
-                             </div>
-                             <span className="text-xs text-muted-foreground ml-1 flex items-center gap-1">
-                                <Check className="h-3 w-3" /> Sent just now
-                             </span>
-                          </div>
-                       </motion.div>
-                    )}
-                  </AnimatePresence>
 
                   {/* Spacer to prevent content from being hidden behind the floating card */}
                   <div className="h-16"></div>
