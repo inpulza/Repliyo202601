@@ -1572,6 +1572,168 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/ai-agent/:brandId/batch-generate - Procesar comentarios pendientes en lote
+  app.post("/api/ai-agent/:brandId/batch-generate", requireAuth, filterByBrand("brandId"), async (req, res) => {
+    try {
+      const { brandId } = req.params;
+      const { limit = 10, platform = 'instagram', dryRun = false } = req.body;
+      
+      const brand = await storage.getBrand(brandId);
+      if (!brand) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+      
+      const agent = await storage.getAiAgentByBrand(brandId);
+      if (!agent) {
+        return res.status(400).json({ error: "AI agent not configured for this brand" });
+      }
+      
+      const pendingMessages = await storage.getPendingCommentsForBatchProcessing(brandId, platform, limit);
+      
+      if (pendingMessages.length === 0) {
+        return res.json({ 
+          success: true, 
+          message: "No pending comments found",
+          processed: 0,
+          results: []
+        });
+      }
+      
+      if (dryRun) {
+        return res.json({
+          success: true,
+          dryRun: true,
+          message: `Found ${pendingMessages.length} comments to process`,
+          pendingMessages: pendingMessages.map(m => ({
+            id: m.id,
+            author: m.author,
+            content: m.content?.substring(0, 100),
+            platform: m.platform,
+            timestamp: m.timestamp,
+          }))
+        });
+      }
+      
+      const { createLLMProvider, PLATFORM_CHARACTER_LIMITS, LLMError } = await import("./services/llm");
+      const llmProvider = createLLMProvider(agent, {});
+      
+      const results: any[] = [];
+      
+      for (const message of pendingMessages) {
+        try {
+          let conversation;
+          let conversationMessages: any[] = [];
+          
+          if (message.conversationId) {
+            conversation = await storage.getConversation(message.conversationId);
+            conversationMessages = await storage.getMessagesByConversation(message.conversationId);
+            conversationMessages.sort((a, b) => 
+              new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+            );
+          }
+          
+          const response = await llmProvider.generateReply({
+            agent,
+            message,
+            conversation: conversation || undefined,
+            brand,
+            conversationHistory: conversationMessages,
+          });
+          
+          await storage.updateMessage(message.id, {
+            aiSuggestedReply: response.text,
+            aiReplyStatus: 'suggested',
+            aiAgentId: agent.id,
+          });
+          
+          await storage.createAuditLog({
+            agentId: agent.id,
+            messageId: message.id,
+            conversationId: message.conversationId || null,
+            action: 'batch_generate',
+            inputContent: message.content,
+            outputContent: response.text,
+            status: 'success',
+            promptTokens: response.usage.promptTokens,
+            completionTokens: response.usage.completionTokens,
+            platform: message.platform,
+            characterCount: response.characterCount,
+            wasCharacterLimited: response.wasCharacterLimited,
+          });
+          
+          results.push({
+            messageId: message.id,
+            author: message.author,
+            input: message.content?.substring(0, 50),
+            output: response.text,
+            characterCount: response.characterCount,
+            success: true,
+          });
+          
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+        } catch (error: any) {
+          console.error(`Batch processing error for message ${message.id}:`, error);
+          
+          await storage.createAuditLog({
+            agentId: agent.id,
+            messageId: message.id,
+            conversationId: message.conversationId || null,
+            action: 'batch_generate',
+            inputContent: message.content,
+            outputContent: null,
+            status: 'error',
+            errorReason: error.message,
+            platform: message.platform,
+          });
+          
+          results.push({
+            messageId: message.id,
+            author: message.author,
+            input: message.content?.substring(0, 50),
+            error: error.message,
+            success: false,
+          });
+        }
+      }
+      
+      const successCount = results.filter(r => r.success).length;
+      const errorCount = results.filter(r => !r.success).length;
+      
+      res.json({
+        success: true,
+        message: `Processed ${successCount}/${results.length} comments`,
+        processed: results.length,
+        successCount,
+        errorCount,
+        results,
+      });
+      
+    } catch (error: any) {
+      console.error('Error in batch-generate:', error);
+      res.status(500).json({ error: `Batch processing failed: ${error.message}` });
+    }
+  });
+
+  // GET /api/ai-agent/:brandId/pending-count - Obtener conteo de comentarios pendientes
+  app.get("/api/ai-agent/:brandId/pending-count", requireAuth, filterByBrand("brandId"), async (req, res) => {
+    try {
+      const { brandId } = req.params;
+      const { platform = 'instagram' } = req.query;
+      
+      const count = await storage.getPendingCommentsCount(brandId, platform as string);
+      
+      res.json({ 
+        pendingCount: count,
+        platform,
+        brandId
+      });
+    } catch (error: any) {
+      console.error('Error getting pending count:', error);
+      res.status(500).json({ error: "Failed to get pending count" });
+    }
+  });
+
   // GET /api/ai-agent/:brandId/metrics - Obtener métricas de uso de IA
   app.get("/api/ai-agent/:brandId/metrics", requireAuth, filterByBrand("brandId"), async (req, res) => {
     try {

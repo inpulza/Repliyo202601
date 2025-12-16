@@ -110,6 +110,9 @@ export interface IStorage {
       timestamp: Date;
     }>;
   }>;
+  
+  getPendingCommentsForBatchProcessing(brandId: string, platform: string, limit: number): Promise<Message[]>;
+  getPendingCommentsCount(brandId: string, platform: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1255,6 +1258,48 @@ export class DatabaseStorage implements IStorage {
       dailyStats,
       recentActivity,
     };
+  }
+
+  async getPendingCommentsForBatchProcessing(brandId: string, platform: string, limit: number): Promise<Message[]> {
+    const result = await db.execute(sql`
+      SELECT m.*
+      FROM messages m
+      JOIN conversations c ON m.conversation_id = c.id
+      WHERE c.brand_id = ${brandId}
+        AND m.direction = 'inbound'
+        AND m.platform = ${platform}
+        AND m.ai_suggested_reply IS NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM messages m2 
+          WHERE m2.conversation_id = m.conversation_id 
+          AND m2.direction = 'outbound' 
+          AND m2.source = 'ai_agent'
+        )
+      ORDER BY m.timestamp ASC
+      LIMIT ${limit}
+    `);
+    
+    return result.rows as Message[];
+  }
+
+  async getPendingCommentsCount(brandId: string, platform: string): Promise<number> {
+    const result = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM messages m
+      JOIN conversations c ON m.conversation_id = c.id
+      WHERE c.brand_id = ${brandId}
+        AND m.direction = 'inbound'
+        AND m.platform = ${platform}
+        AND m.ai_suggested_reply IS NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM messages m2 
+          WHERE m2.conversation_id = m.conversation_id 
+          AND m2.direction = 'outbound' 
+          AND m2.source = 'ai_agent'
+        )
+    `);
+    
+    return parseInt((result.rows[0] as any)?.count || '0', 10);
   }
 }
 
