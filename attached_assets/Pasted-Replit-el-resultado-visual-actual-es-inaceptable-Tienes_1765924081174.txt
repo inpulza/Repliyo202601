@@ -1,0 +1,45 @@
+Replit, el resultado visual actual es inaceptable. Tienes un error de lógica espacial: estás dibujando una línea continua en el contenedor padre, lo que causa que la línea baje más allá del último mensaje (efecto 'tubería rota') y las curvas no coincidan con los avatares.
+
+OLVIDA tu implementación anterior. Vamos a hacerlo con la técnica de 'Segmentos Individuales' (Standard de Tree View UI).
+
+Implementa exactamente esta lógica CSS (puedes usar Tailwind):
+
+1. El Contenedor (Padre):
+
+QUITA cualquier border-left. El padre NO debe tener líneas. Solo debe tener padding-left para empujar a los hijos a la derecha.
+
+2. El Hijo (Cada Respuesta Individual):
+
+Cada hijo debe dibujar su propio trozo de línea vertical que va hacia arriba para buscar al hermano anterior.
+
+Posicionamiento: relative.
+
+El Conector (Pseudo-elemento):
+
+Crea un div absoluto o span dentro del hijo.
+
+Height: 100% (más un extra hacia arriba para tapar huecos, ej: calc(100% + 10px)).
+
+Top: 0 (o negativo para subir).
+
+Width: La distancia hasta el centro del avatar.
+
+Bordes: border-left (vertical) y border-bottom (horizontal).
+
+Radio: rounded-bl-xl (la curva).
+
+3. REGLA DE ORO: La Alineación del Avatar:
+
+La parte horizontal de la curva (border-bottom) debe estar matemáticamente alineada con el centro del avatar.
+
+Cálculo: Si el avatar mide 32px, el centro es 16px. El conector debe tener una altura tal que la curva termine exactamente en el pixel 16 desde el top del contenedor.
+
+4. REGLA DE ORO: El Último Hijo (:last-child):
+
+El problema de tu línea larga es que no cortas el flujo.
+
+En el último hijo, la línea vertical (border-left) NO debe ocupar el 100% de la altura. Debe detenerse justo donde empieza la curva.
+
+Solución: Usa height: 16px (o la mitad del avatar) en el elemento conector del último hijo. Así la línea baja, hace la curva y se acaba ahí.
+
+Resumen: Reescribe el CSS para que la línea vertical se construya segmento a segmento en cada hijo, y corta la altura de la línea en el :last-child para que forme una 'L' perfecta y no una 'T' invertida."

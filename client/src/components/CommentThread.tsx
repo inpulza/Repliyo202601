@@ -614,28 +614,32 @@ function ThreadNode({
   const canNest = depth < MAX_DEPTH;
 
   const avatarSize = isReply ? AVATAR_SIZE_REPLY : AVATAR_SIZE_ROOT;
-  const connectorIndent = 22;
-  const connectorGap = 12;
+  const avatarCenter = avatarSize / 2;
+  const connectorLeft = 24;
+  const siblingGap = 12;
   
   return (
-    <div 
-      className={cn(
-        "thread-node",
-        isReply && "thread-node--reply",
-        isLastChild && "thread-node--last"
-      )}
-      style={isReply ? {
-        '--thread-avatar': `${avatarSize}px`,
-        '--thread-gap': `${connectorGap}px`,
-        '--thread-indent': `${connectorIndent}px`,
-      } as React.CSSProperties : undefined}
-    >
+    <div className={cn("thread-node relative", isReply && "mt-3")}>
       {isReply && (
-        <>
-          <span className="thread-node__stem" aria-hidden="true" />
-          <span className="thread-node__elbow" aria-hidden="true" />
-          {!isLastChild && <span className="thread-node__tail" aria-hidden="true" />}
-        </>
+        <span 
+          className="absolute pointer-events-none border-gray-300 dark:border-gray-600"
+          style={{
+            left: `-${connectorLeft}px`,
+            top: isLastChild ? '0px' : `-${siblingGap}px`,
+            width: `${connectorLeft}px`,
+            height: isLastChild 
+              ? `${avatarCenter}px`
+              : `calc(100% + ${siblingGap}px)`,
+            borderLeftWidth: '2px',
+            borderBottomWidth: '2px',
+            borderLeftStyle: 'solid',
+            borderBottomStyle: 'solid',
+            borderTopWidth: '0',
+            borderRightWidth: '0',
+            borderBottomLeftRadius: '12px',
+          }}
+          aria-hidden="true"
+        />
       )}
 
       <SingleMessage
@@ -725,12 +729,13 @@ export function CommentThread({
   const tree = React.useMemo(() => buildMessageTree(messages), [messages]);
 
   const nodesWithDateInfo = React.useMemo(() => {
-    const getDateKey = (timestamp: string): string => {
-      return new Date(timestamp).toISOString().split('T')[0];
+    const getDateKey = (timestamp: string | Date): string => {
+      const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
+      return date.toISOString().split('T')[0];
     };
 
-    const getDateDisplay = (timestamp: string): string => {
-      const date = new Date(timestamp);
+    const getDateDisplay = (timestamp: string | Date): string => {
+      const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
       const today = new Date();
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
