@@ -271,8 +271,8 @@ export class DatabaseStorage implements IStorage {
     threadExternalId?: string | null
   ): Promise<Conversation | undefined> {
     if (socialPostId) {
-      // For comments: Group by POST only (all comments on a post = one conversation)
-      // This matches how social media works: one post = one discussion thread
+      // For comments: User-Centric - each customer has their own conversation per post
+      // This enables proper CRM tracking of individual customer interactions
       const [conversation] = await db
         .select()
         .from(conversations)
@@ -280,7 +280,8 @@ export class DatabaseStorage implements IStorage {
           and(
             eq(conversations.brandId, brandId),
             eq(conversations.platform, platform),
-            eq(conversations.socialPostId, socialPostId)
+            eq(conversations.socialPostId, socialPostId),
+            eq(conversations.customerId, customerId)
           )
         );
       return conversation || undefined;

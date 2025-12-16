@@ -445,30 +445,70 @@ class SyncService {
             const replyContent = reply.text || '';
             const replyTimestamp = reply.creationDate || comment.timestamp;
 
-            // Check if reply already exists BEFORE incrementing
+            // Check if reply already exists FIRST before any conversation operations
             const existingReply = await storage.getMessageByMetricoolId(reply.id, brandId);
             const isNewReply = !existingReply;
+
+            // Determine if this reply is from the brand (self) or from a customer
+            const isReplyFromBrand = replyAuthorParticipant?.self === true;
+            const isReplyFromSameCustomer = replyOwnerId === customerId || replyAuthor === customerName;
             
-            // Update conversation unread count only if this is a NEW reply
-            if (isNewReply) {
-              await storage.updateConversation(conversationRecord.id, {
-                unreadCount: (conversationRecord.unreadCount || 0) + 1,
-              });
+            // Determine direction
+            const replyDirection: 'inbound' | 'outbound' = isReplyFromBrand ? 'outbound' : 'inbound';
+            
+            // Only increment unread for NEW inbound replies (not brand's own replies)
+            const shouldIncrementUnread = isNewReply && !isReplyFromBrand;
+            
+            // Determine which conversation this reply belongs to and update atomically via upsertConversation
+            let replyConversationId: string;
+            
+            if (isReplyFromBrand || isReplyFromSameCustomer) {
+              // Brand or same customer - use parent comment's conversation
+              // Update metadata via upsertConversation for atomic unread handling
+              const updatedConv = await storage.upsertConversation({
+                brandId,
+                socialPostId,
+                platform,
+                type: 'comment',
+                customerId,
+                customerName,
+                customerAvatar,
+                lastMessageAt: new Date(replyTimestamp),
+                lastMessagePreview: replyContent.substring(0, 100),
+                status: 'open',
+              }, shouldIncrementUnread);
+              replyConversationId = updatedConv.id;
+            } else {
+              // Different customer replying - create their own conversation
+              const replyCustomerId = replyOwnerId || replyAuthor;
+              const replyConversation = await storage.upsertConversation({
+                brandId,
+                socialPostId,
+                platform,
+                type: 'comment',
+                customerId: replyCustomerId,
+                customerName: replyAuthor,
+                customerAvatar: replyAvatar,
+                lastMessageAt: new Date(replyTimestamp),
+                lastMessagePreview: replyContent.substring(0, 100),
+                status: 'open',
+              }, shouldIncrementUnread);
+              replyConversationId = replyConversation.id;
             }
 
             await storage.upsertMessage({
               brandId,
-              conversationId: conversationRecord.id,
+              conversationId: replyConversationId,
               metricoolId: reply.id,
               platform,
               type: "comment" as const,
-              direction: "inbound" as const,
+              direction: replyDirection,
               source: 'metricool_sync' as const,
               author: replyAuthor,
               authorAvatar: replyAvatar,
               content: replyContent,
               timestamp: new Date(replyTimestamp),
-              status: "unread" as const,
+              status: replyDirection === 'outbound' ? "read" as const : "unread" as const,
               sourceUrl: reply.properties?.permalink || comment.postUrl || null,
               rawData: reply,
               threadId: postExternalId,
