@@ -73,7 +73,7 @@ import {
 } from "@/components/ui/select";
 import { formatDistanceToNow } from 'date-fns';
 import { Platform, MessageType, Urgency, Intent, Sentiment, MessageStatus, CRMContact } from '@/lib/types';
-import { isRepliyoMessage, isAutoReply } from '@/lib/mockData';
+import { isRepliyoMessage, isAutoReply, isManualReply, isSyncedMessage } from '@/lib/mockData';
 import type { Message } from '@shared/schema';
 import { motion, AnimatePresence } from "framer-motion";
 import { getCharacterLimit } from '@/utils/platformLimits';

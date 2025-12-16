@@ -34,22 +34,41 @@ export interface Message {
 }
 
 // Repliyo source constants for message origin detection
-export const REPLIYO_SOURCES = ['repliyo', 'repliyo_auto'] as const;
+// Includes all values that indicate a message was sent from Repliyo (not from the social network directly)
+export const REPLIYO_SOURCES = ['repliyo', 'repliyo_auto', 'ai_agent'] as const;
 export type RepliyoSource = typeof REPLIYO_SOURCES[number];
+
+// Sources that indicate AI-generated content
+export const AI_SOURCES = ['repliyo_auto', 'ai_agent'] as const;
+export type AISource = typeof AI_SOURCES[number];
+
+// Sources that indicate manual sends from Repliyo (not AI)
+export const MANUAL_SOURCES = ['repliyo'] as const;
+export type ManualSource = typeof MANUAL_SOURCES[number];
+
+// Source for messages synced from social networks (not sent from Repliyo)
+export const SYNC_SOURCES = ['metricool_sync'] as const;
+export type SyncSource = typeof SYNC_SOURCES[number];
 
 // Internal origin values (immutable field)
 export const INTERNAL_ORIGINS = ['manual', 'ai'] as const;
 export type InternalOrigin = typeof INTERNAL_ORIGINS[number];
 
 // Helper functions for message source detection
-// Now uses internalOrigin as primary source (immutable), with fallback to source for backward compatibility
+// Uses internalOrigin as primary source (immutable), with fallback to source for backward compatibility
+// Returns false explicitly when both values are null/undefined (message from social network sync)
+
 export function isRepliyoMessage(source: string | null | undefined, internalOrigin?: string | null): boolean {
   // Primary: use internalOrigin (immutable field that can't be overwritten by sync)
   if (internalOrigin === 'manual' || internalOrigin === 'ai') {
     return true;
   }
   // Fallback: use source for backward compatibility with existing messages
-  return !!source && REPLIYO_SOURCES.includes(source as RepliyoSource);
+  if (source && REPLIYO_SOURCES.includes(source as RepliyoSource)) {
+    return true;
+  }
+  // Explicitly return false for null/undefined or sync sources
+  return false;
 }
 
 export function isAutoReply(source: string | null | undefined, internalOrigin?: string | null): boolean {
@@ -57,8 +76,47 @@ export function isAutoReply(source: string | null | undefined, internalOrigin?: 
   if (internalOrigin === 'ai') {
     return true;
   }
-  // Fallback: use source for backward compatibility
-  return source === 'repliyo_auto';
+  // Fallback: use source for backward compatibility (includes 'repliyo_auto' and 'ai_agent')
+  if (source && AI_SOURCES.includes(source as AISource)) {
+    return true;
+  }
+  // Explicitly return false for null/undefined or non-AI sources
+  return false;
+}
+
+// Helper to check if message was sent manually from Repliyo (not AI)
+export function isManualReply(source: string | null | undefined, internalOrigin?: string | null): boolean {
+  // Primary: use internalOrigin
+  if (internalOrigin === 'manual') {
+    return true;
+  }
+  // If AI, explicitly return false
+  if (internalOrigin === 'ai') {
+    return false;
+  }
+  // Fallback: check for manual sources (any Repliyo source that's not an AI source)
+  if (source && MANUAL_SOURCES.includes(source as ManualSource)) {
+    return true;
+  }
+  // Explicitly return false for null/undefined or sync/AI sources
+  return false;
+}
+
+// Helper to check if message was synced from social network (not sent from Repliyo)
+export function isSyncedMessage(source: string | null | undefined, internalOrigin?: string | null): boolean {
+  // If internalOrigin is set, it's from Repliyo, not synced
+  if (internalOrigin === 'manual' || internalOrigin === 'ai') {
+    return false;
+  }
+  // Check for sync sources
+  if (source && SYNC_SOURCES.includes(source as SyncSource)) {
+    return true;
+  }
+  // If source is null/undefined and no internalOrigin, assume synced (legacy data)
+  if (!source && !internalOrigin) {
+    return true;
+  }
+  return false;
 }
 
 export interface CRMContact {
