@@ -6,7 +6,6 @@ export interface LLMGenerateRequest {
   conversation?: Conversation;
   brand?: Brand;
   conversationHistory?: Message[];
-  conversationSummary?: string | null;
 }
 
 export interface LLMResponse {

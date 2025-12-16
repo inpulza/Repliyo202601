@@ -2961,137 +2961,22 @@ Para considerar en fases posteriores:
 7. **Mem0.ai** - Memory in Agents: What, Why and How
 8. **AWS Blog** - Amazon Bedrock AgentCore Memory
 
-#### 2.7 Plan de Implementación - FASE 1 APROBADA
+#### 2.7 Plan de Implementación (PENDIENTE)
 
-**Status: APROBADO PARA IMPLEMENTACIÓN**
+**Fase 1: Resumen Básico**
+- [ ] Añadir campos a tabla `conversations`
+- [ ] Implementar función `generateConversationSummary()`
+- [ ] Modificar `prompt-composer.ts` para incluir resumen
+- [ ] Trigger de resumen cada 15 mensajes nuevos
 
----
-
-### ESPECIFICACIÓN TÉCNICA DETALLADA - FASE 1: Resumen Progresivo con Consolidación
-
-#### A. Cambios en Base de Datos
-
-**Tabla a modificar:** `conversations` (en `shared/schema.ts`)
-
-**Campos a añadir:**
-```typescript
-conversationSummary: text("conversation_summary"),           // Resumen acumulativo consolidado
-summaryLastMessageId: uuid("summary_last_message_id"),       // ID del último mensaje incluido en resumen
-summaryUpdatedAt: timestamp("summary_updated_at"),           // Timestamp de última actualización
-```
-
-**Después de modificar el schema:** Ejecutar `npm run db:push`
-
----
-
-#### B. Nuevo Servicio: `server/services/conversationSummaryService.ts`
-
-**Función principal:** `generateConversationSummary(conversationId: string)`
-
-**Lógica:**
-1. Obtener resumen actual de la conversación (si existe)
-2. Obtener mensajes nuevos desde `summaryLastMessageId` (o todos si no hay resumen)
-3. Si hay menos de 15 mensajes nuevos → No hacer nada
-4. Llamar al LLM con el prompt de consolidación
-5. Guardar nuevo resumen en DB
-
-**Prompt del Resumidor (APROBADO):**
-```
-Eres un gestor de expedientes de clientes. Tu tarea es ACTUALIZAR el resumen existente con la nueva información.
-
-REGLAS ABSOLUTAS:
-1. PRESERVA SIEMPRE: Nombres, teléfonos, correos, fechas, precios, productos específicos
-2. CONSOLIDA: Si un tema se resolvió, actualiza el estado (ej. "buscaba zapatos" → "compró zapatos talla 42")
-3. ELIMINA: Solo la "paja" conversacional (saludos, agradecimientos repetidos)
-4. ESTILO: Telegráfico, denso en datos. Usa viñetas o puntos.
-5. EN DUDA: Conserva. Mejor largo que perder datos.
-
-Input: [Resumen actual] + [Nuevos mensajes]
-Output: Resumen actualizado y consolidado (máximo ~500 tokens)
-```
-
----
-
-#### C. Modificar `server/services/llm/prompt-composer.ts`
-
-**En la función `composePrompt()`:**
-
-1. Cargar `conversationSummary` de la conversación
-2. Incluirlo en el contexto ANTES del historial de mensajes recientes:
-
-```
---- RESUMEN DE CONVERSACIÓN PREVIA ---
-[conversationSummary aquí]
-
---- MENSAJES RECIENTES ---
-[Últimos 10 mensajes verbatim]
-
---- MENSAJE A RESPONDER ---
-[Mensaje actual]
-```
-
----
-
-#### D. Trigger Asíncrono
-
-**Ubicación:** `server/services/autoReplyService.ts`
-
-**Cuándo disparar:** Después de enviar un auto-reply exitoso
-
-**Lógica:**
-```typescript
-// Después de enviar respuesta exitosa
-setTimeout(async () => {
-  await checkAndGenerateSummary(conversationId);
-}, 0); // Ejecutar en background, no bloquea
-```
-
-**Condición para generar:**
-- Contar mensajes desde `summaryLastMessageId`
-- Si >= 15 mensajes nuevos → Generar resumen
-- Si < 15 → No hacer nada
-
----
-
-#### E. Límites y Seguridad
-
-| Parámetro | Valor | Razón |
-|-----------|-------|-------|
-| Trigger cada N mensajes | 15 | Balance costo/contexto |
-| Tamaño máximo resumen | ~500 tokens | Evitar bola de nieve |
-| Mensajes recientes verbatim | 10 | Detalle en contexto inmediato |
-| Modelo para resumir | Mismo del agente | Consistencia |
-
----
-
-#### F. Archivos a Modificar/Crear
-
-1. **`shared/schema.ts`** - Añadir 3 campos a tabla `conversations`
-2. **`server/services/conversationSummaryService.ts`** - CREAR nuevo servicio
-3. **`server/services/llm/prompt-composer.ts`** - Incluir resumen en contexto
-4. **`server/services/autoReplyService.ts`** - Añadir trigger asíncrono
-5. **`server/storage.ts`** - Métodos para leer/escribir resumen
-
----
-
-#### G. Testing
-
-1. Enviar 15+ mensajes en una conversación de DM
-2. Verificar que se genera resumen en DB
-3. Enviar mensaje preguntando "¿qué hemos hablado?"
-4. Verificar que la respuesta usa el contexto del resumen
-
----
-
-**Fase 2: Optimización (FUTURO)**
-- [ ] Resumen asíncrono con cola de trabajos
-- [ ] Cache de resúmenes en memoria
+**Fase 2: Optimización**
+- [ ] Resumen asíncrono (después de responder)
+- [ ] Cache de resúmenes
 - [ ] Métricas de uso de tokens
-- [ ] Dashboard de memoria por conversación
 
-**Fase 3: Avanzado (FUTURO)**
-- [ ] Vectorización opcional con embeddings
-- [ ] Entity extraction automático
-- [ ] Knowledge graph por cliente
+**Fase 3: Avanzado (Futuro)**
+- [ ] Vectorización opcional
+- [ ] Entity extraction
+- [ ] Dashboard de memoria por conversación
 
 ---

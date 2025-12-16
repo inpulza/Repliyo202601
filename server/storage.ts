@@ -40,9 +40,6 @@ export interface IStorage {
   createConversation(conversation: InsertConversation): Promise<Conversation>;
   updateConversation(id: string, updates: UpdateConversation): Promise<Conversation | undefined>;
   upsertConversation(conversation: InsertConversation): Promise<Conversation>;
-  getMessagesAfterMessageId(conversationId: string, afterMessageId: string | null): Promise<Message[]>;
-  countMessagesAfterMessageId(conversationId: string, afterMessageId: string | null): Promise<number>;
-  updateConversationSummary(conversationId: string, summary: string, lastMessageId: string): Promise<Conversation | undefined>;
   
   getMessages(brandId?: string): Promise<Message[]>;
   getMessagesByConversation(conversationId: string): Promise<Message[]>;
@@ -325,90 +322,6 @@ export class DatabaseStorage implements IStorage {
       .update(conversations)
       .set(updates)
       .where(eq(conversations.id, id))
-      .returning();
-    return conversation || undefined;
-  }
-
-  async getMessagesAfterMessageId(conversationId: string, afterMessageId: string | null): Promise<Message[]> {
-    if (!afterMessageId) {
-      return await db
-        .select()
-        .from(messages)
-        .where(eq(messages.conversationId, conversationId))
-        .orderBy(messages.timestamp);
-    }
-
-    const referenceMessage = await this.getMessage(afterMessageId);
-    if (!referenceMessage) {
-      return await db
-        .select()
-        .from(messages)
-        .where(eq(messages.conversationId, conversationId))
-        .orderBy(messages.timestamp);
-    }
-
-    return await db
-      .select()
-      .from(messages)
-      .where(
-        and(
-          eq(messages.conversationId, conversationId),
-          sql`${messages.seq} > ${referenceMessage.seq}`
-        )
-      )
-      .orderBy(messages.seq);
-  }
-
-  async countMessagesAfterMessageId(conversationId: string, afterMessageId: string | null): Promise<number> {
-    if (!afterMessageId) {
-      const result = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(messages)
-        .where(
-          and(
-            eq(messages.conversationId, conversationId),
-            eq(messages.direction, 'inbound')
-          )
-        );
-      return result[0]?.count || 0;
-    }
-
-    const referenceMessage = await this.getMessage(afterMessageId);
-    if (!referenceMessage) {
-      const result = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(messages)
-        .where(
-          and(
-            eq(messages.conversationId, conversationId),
-            eq(messages.direction, 'inbound')
-          )
-        );
-      return result[0]?.count || 0;
-    }
-
-    const result = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(messages)
-      .where(
-        and(
-          eq(messages.conversationId, conversationId),
-          eq(messages.direction, 'inbound'),
-          sql`${messages.seq} > ${referenceMessage.seq}`
-        )
-      );
-    return result[0]?.count || 0;
-  }
-
-  async updateConversationSummary(conversationId: string, summary: string, lastMessageId: string): Promise<Conversation | undefined> {
-    const [conversation] = await db
-      .update(conversations)
-      .set({
-        conversationSummary: summary,
-        summaryLastMessageId: lastMessageId,
-        summaryUpdatedAt: new Date(),
-      })
-      .where(eq(conversations.id, conversationId))
       .returning();
     return conversation || undefined;
   }
