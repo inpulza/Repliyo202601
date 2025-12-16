@@ -1311,6 +1311,100 @@ DMs:
 
 ---
 
+## FASE 6.1.1: Implementación de getInboxThreads() - Sistema de Agrupación de Inbox (16 Dic 2025)
+
+### Problema Resuelto
+A pesar de la lógica de agrupación por `socialPostId`, el Inbox seguía mostrando múltiples tarjetas para el mismo post. Esto ocurría porque:
+1. Conversaciones legacy en la DB tenían duplicados
+2. El endpoint `GET /api/conversations` devolvía todas las conversaciones sin agrupar visualmente
+
+### Solución Implementada
+
+#### 1. Nuevo Método `getInboxThreads()` en `server/storage.ts`
+
+**Propósito:** Devolver UNA tarjeta por post, agregando todos los datos de conversaciones relacionadas.
+
+```typescript
+async getInboxThreads(brandId: string): Promise<Array<Conversation & {
+  messageCount: number;
+  aggregatedUnreadCount: number;
+  representativeConversationIds: string[];
+}>>
+```
+
+**Lógica:**
+1. Obtiene todas las conversaciones de la marca
+2. Cuenta mensajes por conversación (filtra vacías con `msgCount > 0`)
+3. **Comentarios** (`socialPostId` presente): Agrupa por `socialPostId`
+   - Suma `unreadCount` de todas las conversaciones del mismo post
+   - Guarda IDs de todas las conversaciones relacionadas
+   - Devuelve la conversación más reciente como representante
+4. **DMs** (`socialPostId` null): Las mantiene individuales
+5. Ordena por `lastMessageAt` descendente
+
+#### 2. Nuevo Método `getConversationsBySocialPost()` en `server/storage.ts`
+
+**Propósito:** Obtener conversaciones relacionadas con un post específico DE FORMA SEGURA.
+
+```typescript
+async getConversationsBySocialPost(brandId: string, socialPostId: string): Promise<Conversation[]>
+```
+
+**Seguridad:** Filtra por AMBOS `brandId` Y `socialPostId` para evitar fugas de datos cross-brand.
+
+#### 3. Endpoints Actualizados en `server/routes.ts`
+
+**GET /api/conversations:**
+- Antes: `storage.getConversations(brandId)` → devolvía todas
+- Después: `storage.getInboxThreads(brandId)` → devuelve agrupadas
+
+**GET /api/conversations/:id/messages:**
+- Cuando la conversación tiene `socialPostId`:
+  - Usa `getConversationsBySocialPost()` para obtener conversaciones relacionadas
+  - Obtiene mensajes de TODAS las conversaciones del mismo post
+  - Los ordena cronológicamente
+
+**POST /api/conversations/:id/mark-read:**
+- Cuando la conversación tiene `socialPostId`:
+  - Marca como leídas TODAS las conversaciones del mismo post
+
+### Seguridad Crítica
+
+**NUNCA usar:**
+```typescript
+// ❌ INSEGURO - expone todas las conversaciones de la marca
+const allConversations = await storage.getConversations(brandId);
+const related = allConversations.filter(c => c.socialPostId === id);
+```
+
+**SIEMPRE usar:**
+```typescript
+// ✅ SEGURO - filtra a nivel de base de datos
+const related = await storage.getConversationsBySocialPost(brandId, socialPostId);
+```
+
+### Archivos Modificados
+- `server/storage.ts`:
+  - Interfaz `IStorage`: Añadidos `getInboxThreads()` y `getConversationsBySocialPost()`
+  - Clase `DatabaseStorage`: Implementaciones completas
+- `server/routes.ts`:
+  - `GET /api/conversations`: Usa `getInboxThreads()`
+  - `GET /api/conversations/:id/messages`: Usa `getConversationsBySocialPost()`
+  - `POST /api/conversations/:id/mark-read`: Usa `getConversationsBySocialPost()`
+
+### Referencia Rápida
+
+**Si hay problemas de tarjetas duplicadas en el Inbox:**
+1. Verificar que `GET /api/conversations` use `getInboxThreads()` (no `getConversations()`)
+2. Verificar que las conversaciones vacías estén siendo filtradas (`msgCount > 0`)
+3. Verificar que la agrupación sea por `socialPostId` para comentarios
+
+**Si hay problemas de seguridad/datos cruzados:**
+1. Verificar que los endpoints usen `getConversationsBySocialPost()` 
+2. NUNCA obtener todas las conversaciones y filtrar en memoria
+
+---
+
 ## FASE 6.2: Funcionalidad de Reply a Comentarios - TikTok (28 Nov 2025)
 
 ### Objetivo
