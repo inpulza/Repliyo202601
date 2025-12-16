@@ -2114,16 +2114,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: replyResult.error || 'Failed to send reply' });
       }
       
-      await storage.updateMessage(messageId, {
-        aiReplyStatus: 'sent',
-        status: 'sent',
+      // Create a new outbound message with the sent draft content
+      const replyMessage = await storage.createMessage({
+        brandId: brand.id,
+        conversationId: conversation.id,
+        platform: message.platform,
+        type: message.type as "conversation" | "comment",
+        direction: "outbound",
+        author: brand.name,
+        authorAvatar: brand.avatar,
+        content: message.aiSuggestedReply,
+        timestamp: new Date(),
+        status: "read",
+        source: "repliyo",
+        internalOrigin: "ai",
+        parentMessageId: message.id,
+        aiAgentId: null,
+        aiSuggestedReply: message.aiSuggestedReply,
+        aiReplyStatus: "sent",
+        replyGroupId: null,
+        partIndex: null,
+        totalParts: null,
+        urgency: null,
+        intent: null,
+        sentiment: null,
+        aiSummary: null,
+        draftResponse: null,
+        sourceUrl: null,
+        contextType: null,
+        crmData: null,
+        metricoolId: null,
+        rawData: { draftSent: true, metricoolResponse: replyResult.rawResponse },
+        threadId: conversation.threadExternalId,
       });
       
-      console.log(`[SendDraft] Successfully sent draft for message ${messageId}`);
+      // Clear the draft from the original message
+      await storage.updateMessage(messageId, {
+        aiSuggestedReply: null,
+        aiReplyStatus: 'none',
+        draftWasEdited: false,
+      });
+      
+      console.log(`[SendDraft] Successfully sent draft for message ${messageId}, created reply message ${replyMessage.id}`);
       
       res.json({ 
         success: true, 
         messageId,
+        replyMessageId: replyMessage.id,
         externalMessageId: replyResult.messageId,
       });
       
