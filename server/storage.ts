@@ -114,6 +114,10 @@ export interface IStorage {
   getPendingCommentsForBatchProcessing(brandId: string, platform: string, limit: number): Promise<Message[]>;
   getPendingCommentsCount(brandId: string, platform: string): Promise<number>;
   getMessagesWithPendingSuggestions(brandId: string, platform: string, limit: number): Promise<Message[]>;
+  
+  getMessagesNeedingDrafts(brandId: string, limit?: number): Promise<Message[]>;
+  getMessagesNeedingDraftsCount(brandId: string): Promise<number>;
+  getConversationsWithDrafts(brandId: string): Promise<string[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1323,6 +1327,63 @@ export class DatabaseStorage implements IStorage {
     `);
     
     return result.rows as Message[];
+  }
+
+  async getMessagesNeedingDrafts(brandId: string, limit: number = 50): Promise<Message[]> {
+    const result = await db.execute(sql`
+      SELECT m.*
+      FROM messages m
+      JOIN conversations c ON m.conversation_id = c.id
+      WHERE c.brand_id = ${brandId}
+        AND m.direction = 'inbound'
+        AND m.content IS NOT NULL
+        AND TRIM(m.content) != ''
+        AND (m.ai_reply_status IS NULL OR m.ai_reply_status = 'none')
+        AND m.ai_suggested_reply IS NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM messages m2 
+          WHERE m2.parent_message_id = m.id 
+          AND m2.direction = 'outbound'
+        )
+      ORDER BY m.timestamp DESC
+      LIMIT ${limit}
+    `);
+    
+    return result.rows as Message[];
+  }
+
+  async getMessagesNeedingDraftsCount(brandId: string): Promise<number> {
+    const result = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM messages m
+      JOIN conversations c ON m.conversation_id = c.id
+      WHERE c.brand_id = ${brandId}
+        AND m.direction = 'inbound'
+        AND m.content IS NOT NULL
+        AND TRIM(m.content) != ''
+        AND (m.ai_reply_status IS NULL OR m.ai_reply_status = 'none')
+        AND m.ai_suggested_reply IS NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM messages m2 
+          WHERE m2.parent_message_id = m.id 
+          AND m2.direction = 'outbound'
+        )
+    `);
+    
+    return parseInt((result.rows[0] as any)?.count || '0', 10);
+  }
+
+  async getConversationsWithDrafts(brandId: string): Promise<string[]> {
+    const result = await db.execute(sql`
+      SELECT DISTINCT m.conversation_id
+      FROM messages m
+      JOIN conversations c ON m.conversation_id = c.id
+      WHERE c.brand_id = ${brandId}
+        AND m.ai_suggested_reply IS NOT NULL
+        AND m.ai_reply_status IN ('drafted', 'suggested')
+    `);
+    
+    return (result.rows as any[]).map(row => row.conversation_id);
   }
 }
 

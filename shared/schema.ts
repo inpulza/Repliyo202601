@@ -103,6 +103,7 @@ export const messages = pgTable("messages", {
   totalParts: integer("total_parts"),
   aiSuggestedReply: text("ai_suggested_reply"),
   aiReplyStatus: text("ai_reply_status").default('none'),
+  draftWasEdited: boolean("draft_was_edited").default(false),
   aiAgentId: varchar("ai_agent_id"),
   internalOrigin: text("internal_origin"),
   mediaType: text("media_type"),
@@ -361,7 +362,7 @@ export type InsertAiAgentAuditLog = z.infer<typeof insertAiAgentAuditLogSchema>;
 export type AiAgentAuditLog = typeof aiAgentAuditLog.$inferSelect;
 export type UpdateAiAgentAuditLog = z.infer<typeof updateAiAgentAuditLogSchema>;
 
-export const aiReplyStatusEnum = z.enum(['none', 'suggested', 'approved', 'sent', 'rejected']);
+export const aiReplyStatusEnum = z.enum(['none', 'suggested', 'approved', 'sent', 'rejected', 'drafting', 'drafted', 'draft_error']);
 export type AiReplyStatus = z.infer<typeof aiReplyStatusEnum>;
 
 export const autoReplyModeEnum = z.enum(['off', 'draft', 'auto']);
