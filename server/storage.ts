@@ -1,5 +1,5 @@
 import { 
-  brands, users, messages, socialPosts, conversations, socialAccounts, aiAgents, aiAgentAuditLog,
+  brands, users, messages, socialPosts, conversations, socialAccounts, aiAgents, aiAgentAuditLog, conversationUserSummaries,
   type Brand, type InsertBrand, 
   type User, type InsertUser, 
   type Message, type InsertMessage, type UpdateMessage,
@@ -7,7 +7,8 @@ import {
   type Conversation, type InsertConversation, type UpdateConversation,
   type SocialAccount, type InsertSocialAccount, type UpdateSocialAccount,
   type AiAgent, type InsertAiAgent, type UpdateAiAgent,
-  type AiAgentAuditLog, type InsertAiAgentAuditLog
+  type AiAgentAuditLog, type InsertAiAgentAuditLog,
+  type ConversationUserSummary, type InsertConversationUserSummary, type UpdateConversationUserSummary
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, isNull, gte, lte, sql } from "drizzle-orm";
@@ -82,6 +83,11 @@ export interface IStorage {
     byAction: Record<string, number>;
     dailyStats: Array<{ date: string; count: number; tokens: number }>;
   }>;
+  
+  // Conversation User Summaries (memoria persistente para resúmenes por usuario)
+  getConversationUserSummary(conversationId: string, author: string): Promise<ConversationUserSummary | undefined>;
+  upsertConversationUserSummary(summary: InsertConversationUserSummary): Promise<ConversationUserSummary>;
+  updateConversationUserSummary(id: string, updates: UpdateConversationUserSummary): Promise<ConversationUserSummary | undefined>;
   
   getInboxStats(brandId: string, days?: number): Promise<{
     totalMessages: number;
@@ -1087,6 +1093,60 @@ export class DatabaseStorage implements IStorage {
       byAction,
       dailyStats,
     };
+  }
+
+  // ========== CONVERSATION USER SUMMARIES (Memoria Persistente) ==========
+  
+  async getConversationUserSummary(conversationId: string, author: string): Promise<ConversationUserSummary | undefined> {
+    const [summary] = await db
+      .select()
+      .from(conversationUserSummaries)
+      .where(
+        and(
+          eq(conversationUserSummaries.conversationId, conversationId),
+          eq(conversationUserSummaries.author, author)
+        )
+      );
+    return summary || undefined;
+  }
+
+  async upsertConversationUserSummary(insertSummary: InsertConversationUserSummary): Promise<ConversationUserSummary> {
+    const existing = await this.getConversationUserSummary(
+      insertSummary.conversationId,
+      insertSummary.author
+    );
+    
+    if (existing) {
+      const [updated] = await db
+        .update(conversationUserSummaries)
+        .set({
+          summary: insertSummary.summary,
+          lastMessageId: insertSummary.lastMessageId,
+          messageCount: insertSummary.messageCount,
+          updatedAt: new Date(),
+        })
+        .where(eq(conversationUserSummaries.id, existing.id))
+        .returning();
+      return updated;
+    }
+
+    const [summary] = await db
+      .insert(conversationUserSummaries)
+      .values(insertSummary)
+      .returning();
+    return summary;
+  }
+
+  async updateConversationUserSummary(id: string, updates: UpdateConversationUserSummary): Promise<ConversationUserSummary | undefined> {
+    const [summary] = await db
+      .update(conversationUserSummaries)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+      })
+      .where(eq(conversationUserSummaries.id, id))
+      .returning();
+    return summary || undefined;
   }
 
   async getInboxStats(brandId: string, days: number = 7): Promise<{
