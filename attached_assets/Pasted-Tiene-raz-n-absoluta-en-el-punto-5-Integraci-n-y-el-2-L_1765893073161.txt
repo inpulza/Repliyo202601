@@ -1,0 +1,60 @@
+Tiene razón absoluta en el punto 5 (Integración) y el 2 (Límites Dinámicos). Si "hardcodeamos" el prompt, matamos la flexibilidad de tu UI.
+
+Vamos a ir con la Opción B (Integración/Wrapper). Mi prompt XML actuará como un "Exoesqueleto" o contenedor que envuelve lo que tú escribas en la base de datos.
+
+Aquí tienes la respuesta técnica definitiva para cerrar el ciclo.
+
+[COPIA Y PEGA ESTO EN REPLIT]
+
+Mensaje del Arquitecto para el Desarrollador:
+
+"Has dado en el clavo, especialmente con el punto 5 y 2. No queremos un prompt estático; queremos un 'Meta-Prompt Wrapper'.
+
+Vamos a proceder con la Opción B (Integración). Tu código construirá el prompt final inyectando los campos de la base de datos dentro de mi estructura XML.
+
+Aquí tienes las soluciones a tus 5 puntos y la estructura final de ensamblaje:
+
+1. Soluciones Técnicas Rápidas
+Var {{business_name}}: Correcto. Por favor, mapea brand.name (o equivalente) a esta variable.
+
+Límites Dinámicos (Punto 2): ¡Excelente observación! Eliminamos los números hardcodeados. Inyectaremos una nueva variable {{dynamic_limit}} que tu función getCharacterLimit() calculará antes.
+
+Schema Validation (Punto 3): Aprobado. Añade la validación: if (!parsed.reply || typeof parsed.reply !== 'string') throw new Error(...).
+
+Idioma (Punto 4): Añadiré la instrucción detect_language en el XML.
+
+2. La Nueva Arquitectura de Ensamblaje (Wrapper Pattern)
+En lugar de concatenar strings simples, tu función prompt-composer.ts debe usar este Template Maestro (v5.2) e inyectar las variables en los lugares marcados.
+
+Variables a inyectar:
+
+{{agent_persona}}: Viene de tu campo DB agent.systemPrompt.
+
+{{knowledge_base}}: Viene de agent.knowledgeBase.
+
+{{user_guardrails}}: Viene de agent.guardrailPrompt.
+
+{{platform}}, {{username}}, {{post_context}}: Las que ya tenías.
+
+{{dynamic_limit}}: El entero que calculas en código (ej: 150, 2200).
+
+TEMPLATE MAESTRO v5.2 (Implementa esto en tu composer):
+
+XML
+
+<system_core>
+  <meta_instructions>
+    Estás operando en modo "Strict JSON". Tu salida debe ser analizable por máquina.
+    IDIOMA: Detecta el idioma del mensaje del usuario y responde EXACTAMENTE en el mismo idioma.
+  </meta_instructions>
+<agent_identity> {{agent_persona}} (Eres el Social Media Manager de {{business_name}}) </agent_identity>
+
+<context_layer> Plataforma: {{platform}} Usuario: {{username}} Contexto Post: {{post_context}} LÍMITE ESTRICTO DE CARACTERES: {{dynamic_limit}} </context_layer>
+
+<knowledge_base> {{knowledge_base}} </knowledge_base>
+
+<thinking_protocol> Antes de responder, EJECUTA estos pasos mentales: 1. Revisa el {{dynamic_limit}}. 2. Si el {{post_context}} indica que no hay info, sé genérico. 3. Redacta la respuesta y verifica su longitud. </thinking_protocol>
+
+<output_schema> Responde SOLO con este JSON: { "thought": "Plan: Plataforma {{platform}}, límite {{dynamic_limit}}. El usuario pide X...", "reply": "Texto final de la respuesta" } </output_schema>
+
+<safety_lock> {{user_guardrails}} - PRIORIDAD MÁXIMA: Si la respuesta calculada excede {{dynamic_limit}}, RESÚMELA antes de generar el JSON. </safety_lock> </system_core>
