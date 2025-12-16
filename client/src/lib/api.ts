@@ -331,5 +331,104 @@ export const api = {
       }
       return res.json();
     },
+
+    generateDraft: async (brandId: string, messageId: string): Promise<{
+      success: boolean;
+      draft: string;
+      messageId: string;
+      characterCount: number;
+      provider?: string;
+      model?: string;
+    }> => {
+      const res = await fetch(`${API_BASE}/ai-agent/${brandId}/generate-draft/${messageId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to generate draft');
+      }
+      return res.json();
+    },
+
+    regenerateDraft: async (brandId: string, messageId: string, confirmOverwrite: boolean = false): Promise<{
+      success: boolean;
+      draft: string;
+      messageId: string;
+      characterCount: number;
+      requiresConfirmation?: boolean;
+      message?: string;
+    }> => {
+      const res = await fetch(`${API_BASE}/ai-agent/${brandId}/regenerate-draft/${messageId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmOverwrite }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        if (error.requiresConfirmation) {
+          return { success: false, draft: '', messageId, characterCount: 0, requiresConfirmation: true, message: error.message };
+        }
+        throw new Error(error.error || 'Failed to regenerate draft');
+      }
+      return res.json();
+    },
+
+    bulkGenerateDrafts: async (brandId: string, messageIds?: string[], limit?: number): Promise<{
+      success: boolean;
+      message: string;
+      processed: number;
+      successCount: number;
+      errorCount: number;
+      results: Array<{ messageId: string; success: boolean; error?: string }>;
+    }> => {
+      const res = await fetch(`${API_BASE}/ai-agent/${brandId}/bulk-generate-drafts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageIds, limit }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to bulk generate drafts');
+      }
+      return res.json();
+    },
+
+    updateDraft: async (brandId: string, messageId: string, draft: string): Promise<{ success: boolean; messageId: string; draft: string }> => {
+      const res = await fetch(`${API_BASE}/ai-agent/${brandId}/update-draft/${messageId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ draft }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to update draft');
+      }
+      return res.json();
+    },
+
+    discardDraft: async (brandId: string, messageId: string): Promise<{ success: boolean; messageId: string }> => {
+      const res = await fetch(`${API_BASE}/ai-agent/${brandId}/discard-draft/${messageId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to discard draft');
+      }
+      return res.json();
+    },
+
+    getDraftsCount: async (brandId: string): Promise<{
+      needsDrafts: number;
+      conversationsWithPendingDrafts: number;
+      conversationIds: string[];
+    }> => {
+      const res = await fetch(`${API_BASE}/ai-agent/${brandId}/drafts-count`);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to get drafts count');
+      }
+      return res.json();
+    },
   },
 };
