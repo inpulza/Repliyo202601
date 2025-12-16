@@ -1196,258 +1196,224 @@ export function Inbox() {
                                 </button>
                                 
                                 {/* Generate Draft button - show if no draft exists and not already generating */}
-                                {!msg.aiSuggestedReply && msg.aiReplyStatus !== 'drafted' && msg.aiReplyStatus !== 'drafting' && (
+                                {!msg.aiSuggestedReply && msg.aiReplyStatus !== 'drafted' && msg.aiReplyStatus !== 'drafting' && !generatingDraftIds.has(msg.id) && (
                                   <button
                                     onClick={() => handleGenerateDraft(msg.id)}
                                     disabled={generatingDraftIds.has(msg.id)}
                                     data-testid={`button-generate-draft-${msg.id}`}
                                     title="Generar borrador IA"
-                                    className={cn(
-                                      "flex items-center gap-1 transition-colors",
-                                      generatingDraftIds.has(msg.id) 
-                                        ? "text-indigo-400 cursor-wait"
-                                        : "text-gray-400 hover:text-purple-600"
-                                    )}
+                                    className="flex items-center gap-1 transition-colors text-gray-400 hover:text-purple-600"
                                   >
-                                    {generatingDraftIds.has(msg.id) ? (
-                                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                    ) : (
-                                      <Sparkles className="h-3.5 w-3.5" />
-                                    )}
-                                    <span className="text-[10px] font-medium">
-                                      {generatingDraftIds.has(msg.id) ? "Generando..." : "Generar Borrador"}
-                                    </span>
+                                    <Sparkles className="h-3.5 w-3.5" />
+                                    <span className="text-[10px] font-medium">Generar Borrador</span>
                                   </button>
                                 )}
                               </div>
                             )}
+                            
+                            {/* Inline Draft Card - Rendered directly below each message */}
+                            {(() => {
+                              const draftContent = msg.aiSuggestedReply || '';
+                              const isGeneratingDraft = generatingDraftIds.has(msg.id);
+                              const hasError = msg.aiReplyStatus === 'draft_error';
+                              const hasDraft = msg.aiSuggestedReply || isGeneratingDraft || hasError;
+                              const isEditingThis = editingDraftId === msg.id;
+                              const charLimit = getCharacterLimit((msg.platform || 'instagram') as Platform, (msg.type || 'comment') as MessageType);
+                              const isOverLimit = draftContent.length > charLimit;
+                              const wasEdited = (msg as any).draftWasEdited;
+
+                              if (!hasDraft || isOwner || msg.direction !== 'inbound') return null;
+
+                              return (
+                                <motion.div 
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  className="mt-3"
+                                >
+                                  {/* Generating State */}
+                                  {isGeneratingDraft && !draftContent && (
+                                    <div className="rounded-2xl bg-white border border-indigo-100 p-4 shadow-sm flex items-center gap-3 animate-pulse">
+                                      <div className="h-7 w-7 rounded-full bg-indigo-50 flex items-center justify-center">
+                                        <Brain className="h-3.5 w-3.5 text-indigo-400" />
+                                      </div>
+                                      <div className="space-y-1.5 flex-1">
+                                        <div className="h-2.5 bg-indigo-50 rounded w-1/4"></div>
+                                        <div className="h-2 bg-gray-50 rounded w-1/2"></div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Error State */}
+                                  {hasError && !draftContent && (
+                                    <div className="rounded-2xl bg-white border border-red-200 p-3 shadow-sm">
+                                      <div className="flex items-center gap-2">
+                                        <div className="h-6 w-6 rounded-full bg-red-50 flex items-center justify-center">
+                                          <AlertCircle className="h-3 w-3 text-red-500" />
+                                        </div>
+                                        <div className="flex-1">
+                                          <p className="text-xs font-medium text-red-700">Error al generar</p>
+                                        </div>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="h-6 text-[10px] text-red-600 border-red-200 hover:bg-red-50"
+                                          onClick={() => handleGenerateDraft(msg.id)}
+                                        >
+                                          <RotateCw className="h-2.5 w-2.5 mr-1" />
+                                          Reintentar
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Draft Card with Content */}
+                                  {draftContent && (
+                                    <div className={cn(
+                                      "rounded-2xl bg-white border shadow-sm transition-all overflow-hidden",
+                                      isOverLimit ? "border-red-200 ring-1 ring-red-100" : "border-indigo-100"
+                                    )}>
+                                      {/* Header */}
+                                      <div className="px-3 py-2 flex items-center justify-between border-b border-gray-50 bg-gray-50/30">
+                                        <div className="flex items-center gap-1.5">
+                                          <div className="h-4 w-4 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                                            <Brain className="h-2 w-2 text-white" />
+                                          </div>
+                                          <span className="text-[10px] font-bold text-gray-700">Borrador IA</span>
+                                          {wasEdited && (
+                                            <Badge variant="outline" className="h-3.5 text-[8px] px-1 text-amber-600 border-amber-200 bg-amber-50">
+                                              Editado
+                                            </Badge>
+                                          )}
+                                        </div>
+                                        <div className={cn(
+                                          "text-[9px] font-medium px-1 py-0.5 rounded-full border",
+                                          isOverLimit ? "bg-red-50 text-red-600 border-red-200" : "bg-gray-50 text-gray-500 border-gray-200"
+                                        )}>
+                                          {draftContent.length}/{charLimit}
+                                        </div>
+                                      </div>
+
+                                      {/* Content */}
+                                      <div className="p-3">
+                                        {isEditingThis ? (
+                                          <textarea
+                                            className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-200 min-h-[60px] leading-relaxed"
+                                            value={editingDraftText}
+                                            onChange={(e) => setEditingDraftText(e.target.value)}
+                                            autoFocus
+                                            data-testid={`textarea-edit-draft-${msg.id}`}
+                                          />
+                                        ) : (
+                                          <div className="text-xs text-gray-800 leading-relaxed whitespace-pre-wrap">
+                                            {draftContent}
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {/* Regenerate Confirmation */}
+                                      {showRegenerateConfirm === msg.id && (
+                                        <div className="px-3 py-2 bg-amber-50 border-t border-amber-200">
+                                          <p className="text-[10px] text-amber-700 mb-1.5">
+                                            ¿Regenerar y perder los cambios?
+                                          </p>
+                                          <div className="flex gap-1.5">
+                                            <Button variant="outline" size="sm" className="h-5 text-[9px] px-2" onClick={() => setShowRegenerateConfirm(null)}>
+                                              Cancelar
+                                            </Button>
+                                            <Button variant="destructive" size="sm" className="h-5 text-[9px] px-2" onClick={() => handleRegenerateDraft(msg.id, true)}>
+                                              Sí, regenerar
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {/* Actions Footer */}
+                                      <div className="px-2 py-2 bg-gray-50 flex items-center justify-between gap-1 border-t border-gray-100">
+                                        <div className="flex items-center gap-0.5">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 w-6 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                                            title="Descartar"
+                                            onClick={() => handleDiscardDraft(msg.id)}
+                                            data-testid={`button-discard-draft-${msg.id}`}
+                                          >
+                                            <Trash2 className="h-3 w-3" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 w-6 p-0 text-gray-400 hover:text-purple-600 hover:bg-purple-50"
+                                            title="Regenerar"
+                                            onClick={() => handleRegenerateDraft(msg.id)}
+                                            disabled={isGeneratingDraft}
+                                            data-testid={`button-regenerate-draft-${msg.id}`}
+                                          >
+                                            {isGeneratingDraft ? (
+                                              <Loader2 className="h-3 w-3 animate-spin" />
+                                            ) : (
+                                              <RotateCw className="h-3 w-3" />
+                                            )}
+                                          </Button>
+                                        </div>
+
+                                        <div className="flex items-center gap-1">
+                                          {isEditingThis ? (
+                                            <>
+                                              <Button variant="ghost" size="sm" className="h-6 text-[10px] text-gray-500 px-2" onClick={cancelEditingDraft}>
+                                                Cancelar
+                                              </Button>
+                                              <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-6 text-[10px] text-indigo-600 border-indigo-200 px-2"
+                                                onClick={() => handleSaveDraftEdit(msg.id)}
+                                                data-testid={`button-save-draft-${msg.id}`}
+                                              >
+                                                <Check className="h-2.5 w-2.5 mr-0.5" />
+                                                Guardar
+                                              </Button>
+                                            </>
+                                          ) : (
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-6 text-[10px] text-gray-600 hover:bg-white hover:shadow-sm px-2"
+                                              onClick={() => startEditingDraft(msg.id, draftContent)}
+                                              data-testid={`button-edit-draft-${msg.id}`}
+                                            >
+                                              <Pencil className="h-2.5 w-2.5 mr-0.5" />
+                                              Editar
+                                            </Button>
+                                          )}
+
+                                          {!isEditingThis && (
+                                            <Button
+                                              size="sm"
+                                              className={cn(
+                                                "h-6 text-[10px] font-medium px-2 shadow-sm transition-all",
+                                                isOverLimit
+                                                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                                  : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                                              )}
+                                              onClick={() => handleSendDraft(msg.id, draftContent)}
+                                              disabled={isOverLimit}
+                                              data-testid={`button-send-draft-${msg.id}`}
+                                            >
+                                              <Send className="h-2.5 w-2.5 mr-0.5" />
+                                              Enviar
+                                            </Button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </motion.div>
+                              );
+                            })()}
                          </div>
                       </div>
-                    );
-                  })}
-
-                  {/* Inline Draft Card - Show for each inbound message with aiSuggestedReply */}
-                  {threadMessages.filter(msg => 
-                    msg.direction === 'inbound' && 
-                    (msg.aiSuggestedReply || msg.aiReplyStatus === 'drafting' || msg.aiReplyStatus === 'draft_error')
-                  ).map(msg => {
-                    const draftContent = msg.aiSuggestedReply || '';
-                    const isGenerating = generatingDraftIds.has(msg.id) || msg.aiReplyStatus === 'drafting';
-                    const hasError = msg.aiReplyStatus === 'draft_error';
-                    const isEditingThis = editingDraftId === msg.id;
-                    const charLimit = getCharacterLimit((msg.platform || 'instagram') as Platform, (msg.type || 'comment') as MessageType);
-                    const isOverLimit = draftContent.length > charLimit;
-                    const wasEdited = (msg as any).draftWasEdited;
-
-                    return (
-                      <motion.div 
-                        key={`draft-${msg.id}`}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="mt-3 ml-12"
-                      >
-                        {/* Drafting State */}
-                        {isGenerating && !draftContent && (
-                          <div className="rounded-2xl bg-white border border-indigo-100 p-5 shadow-sm flex items-center gap-4 animate-pulse">
-                            <div className="h-8 w-8 rounded-full bg-indigo-50 flex items-center justify-center">
-                              <Brain className="h-4 w-4 text-indigo-400" />
-                            </div>
-                            <div className="space-y-2 flex-1">
-                              <div className="h-3 bg-indigo-50 rounded w-1/3"></div>
-                              <div className="h-2 bg-gray-50 rounded w-2/3"></div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Error State */}
-                        {hasError && !draftContent && (
-                          <div className="rounded-2xl bg-white border border-red-200 p-4 shadow-sm">
-                            <div className="flex items-center gap-3">
-                              <div className="h-8 w-8 rounded-full bg-red-50 flex items-center justify-center">
-                                <AlertCircle className="h-4 w-4 text-red-500" />
-                              </div>
-                              <div className="flex-1">
-                                <p className="text-sm font-medium text-red-700">Error al generar borrador</p>
-                                <p className="text-xs text-red-500">Intenta nuevamente</p>
-                              </div>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-7 text-xs text-red-600 border-red-200 hover:bg-red-50"
-                                onClick={() => handleGenerateDraft(msg.id)}
-                                data-testid={`button-retry-draft-${msg.id}`}
-                              >
-                                <RotateCw className="h-3 w-3 mr-1" />
-                                Reintentar
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Draft Card with Content */}
-                        {draftContent && (
-                          <div className={cn(
-                            "rounded-2xl bg-white border shadow-sm transition-all overflow-hidden",
-                            isOverLimit ? "border-red-200 ring-1 ring-red-100" : "border-indigo-100"
-                          )}>
-                            {/* Header */}
-                            <div className="px-4 py-2.5 flex items-center justify-between border-b border-gray-50 bg-gray-50/30">
-                              <div className="flex items-center gap-2">
-                                <div className="h-5 w-5 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                                  <Brain className="h-2.5 w-2.5 text-white" />
-                                </div>
-                                <span className="text-xs font-bold text-gray-700">Borrador IA</span>
-                                {wasEdited && (
-                                  <Badge variant="outline" className="h-4 text-[9px] px-1.5 text-amber-600 border-amber-200 bg-amber-50">
-                                    Editado
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className={cn(
-                                "text-[10px] font-medium px-1.5 py-0.5 rounded-full border",
-                                isOverLimit ? "bg-red-50 text-red-600 border-red-200" : "bg-gray-50 text-gray-500 border-gray-200"
-                              )}>
-                                {draftContent.length}/{charLimit}
-                              </div>
-                            </div>
-
-                            {/* Content */}
-                            <div className="p-4">
-                              {isEditingThis ? (
-                                <textarea
-                                  className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-200 min-h-[80px] leading-relaxed"
-                                  value={editingDraftText}
-                                  onChange={(e) => setEditingDraftText(e.target.value)}
-                                  autoFocus
-                                  data-testid={`textarea-edit-draft-${msg.id}`}
-                                />
-                              ) : (
-                                <div className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
-                                  {draftContent}
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Regenerate Confirmation Modal */}
-                            {showRegenerateConfirm === msg.id && (
-                              <div className="px-4 py-3 bg-amber-50 border-t border-amber-200">
-                                <p className="text-xs text-amber-700 mb-2">
-                                  Este borrador fue editado manualmente. ¿Deseas regenerarlo y perder los cambios?
-                                </p>
-                                <div className="flex gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-6 text-[10px]"
-                                    onClick={() => setShowRegenerateConfirm(null)}
-                                  >
-                                    Cancelar
-                                  </Button>
-                                  <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    className="h-6 text-[10px]"
-                                    onClick={() => handleRegenerateDraft(msg.id, true)}
-                                  >
-                                    Sí, regenerar
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Actions Footer */}
-                            <div className="px-3 py-2.5 bg-gray-50 flex items-center justify-between gap-2 border-t border-gray-100">
-                              <div className="flex items-center gap-1">
-                                {/* Discard */}
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-7 w-7 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50"
-                                  title="Descartar borrador"
-                                  onClick={() => handleDiscardDraft(msg.id)}
-                                  data-testid={`button-discard-draft-${msg.id}`}
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-
-                                {/* Regenerate */}
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-7 w-7 p-0 text-gray-400 hover:text-purple-600 hover:bg-purple-50"
-                                  title="Regenerar borrador"
-                                  onClick={() => handleRegenerateDraft(msg.id)}
-                                  disabled={isGenerating}
-                                  data-testid={`button-regenerate-draft-${msg.id}`}
-                                >
-                                  {isGenerating ? (
-                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                  ) : (
-                                    <RotateCw className="h-3.5 w-3.5" />
-                                  )}
-                                </Button>
-                              </div>
-
-                              <div className="flex items-center gap-2">
-                                {/* Edit / Save */}
-                                {isEditingThis ? (
-                                  <>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-7 text-xs text-gray-500"
-                                      onClick={cancelEditingDraft}
-                                    >
-                                      Cancelar
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="h-7 text-xs text-indigo-600 border-indigo-200"
-                                      onClick={() => handleSaveDraftEdit(msg.id)}
-                                      data-testid={`button-save-draft-${msg.id}`}
-                                    >
-                                      <Check className="h-3 w-3 mr-1" />
-                                      Guardar
-                                    </Button>
-                                  </>
-                                ) : (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7 text-xs text-gray-600 hover:bg-white hover:shadow-sm"
-                                    onClick={() => startEditingDraft(msg.id, draftContent)}
-                                    data-testid={`button-edit-draft-${msg.id}`}
-                                  >
-                                    <Pencil className="h-3 w-3 mr-1" />
-                                    Editar
-                                  </Button>
-                                )}
-
-                                {/* Send */}
-                                {!isEditingThis && (
-                                  <Button
-                                    size="sm"
-                                    className={cn(
-                                      "h-7 text-xs font-medium px-3 shadow-sm transition-all",
-                                      isOverLimit
-                                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                        : "bg-indigo-600 hover:bg-indigo-700 text-white"
-                                    )}
-                                    onClick={() => handleSendDraft(msg.id, draftContent)}
-                                    disabled={isOverLimit}
-                                    data-testid={`button-send-draft-${msg.id}`}
-                                  >
-                                    <Send className="h-3 w-3 mr-1" />
-                                    Enviar
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </motion.div>
                     );
                   })}
 
