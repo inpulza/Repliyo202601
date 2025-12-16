@@ -135,7 +135,7 @@ export function SocialAccountsManager({ open, onOpenChange, client, onAccountsUp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings2 className="h-5 w-5 text-indigo-500" />
@@ -146,7 +146,7 @@ export function SocialAccountsManager({ open, onOpenChange, client, onAccountsUp
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 overflow-hidden">
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
             <p className="text-xs text-amber-800">
               <strong>Privacidad:</strong> Solo se sincronizarán los mensajes de las redes activadas. 
