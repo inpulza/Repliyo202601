@@ -4,6 +4,30 @@ import { LLMError } from "./types";
 import { composePrompt, truncateResponse } from "./prompt-composer";
 import type { CharacterLimitStrategy } from "@shared/schema";
 
+interface JsonModeResponse {
+  thought?: string;
+  reply: string;
+}
+
+function parseJsonResponse(rawText: string): { reply: string; thought?: string } | null {
+  try {
+    const parsed: JsonModeResponse = JSON.parse(rawText);
+    
+    if (!parsed.reply || typeof parsed.reply !== 'string') {
+      console.warn('[OpenAI] JSON response missing valid "reply" field');
+      return null;
+    }
+    
+    return {
+      reply: parsed.reply,
+      thought: parsed.thought,
+    };
+  } catch (error) {
+    console.warn('[OpenAI] Failed to parse JSON response, falling back to raw text:', error);
+    return null;
+  }
+}
+
 export class OpenAIAdapter implements LLMProvider {
   private client: OpenAI;
   private apiKey: string;
@@ -31,7 +55,7 @@ export class OpenAIAdapter implements LLMProvider {
     const model = agent.model || "gpt-4o-mini";
     const isGpt5 = model.startsWith("gpt-5");
     
-    const { systemPrompt, userPrompt, characterLimit } = composePrompt({
+    const { systemPrompt, userPrompt, characterLimit, useJsonMode } = composePrompt({
       agent,
       message,
       conversation,
@@ -49,13 +73,15 @@ export class OpenAIAdapter implements LLMProvider {
         ],
       };
 
-      // gpt-5 doesn't support temperature parameter
-      // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+      if (useJsonMode) {
+        requestParams.response_format = { type: "json_object" };
+        console.log('[OpenAI] JSON mode enabled for this request');
+      }
+
       if (!isGpt5 && agent.temperature !== null && agent.temperature !== undefined) {
         requestParams.temperature = agent.temperature;
       }
 
-      // Use max_completion_tokens for gpt-5, max_tokens for older models
       if (agent.maxTokens) {
         if (isGpt5) {
           requestParams.max_completion_tokens = agent.maxTokens;
@@ -69,7 +95,24 @@ export class OpenAIAdapter implements LLMProvider {
       const rawText = response.choices[0]?.message?.content || "";
       const strategy = (agent.characterLimitStrategy || "truncate") as CharacterLimitStrategy;
       
-      const { text, wasLimited } = truncateResponse(rawText, characterLimit, strategy);
+      let finalText: string;
+      let thought: string | undefined;
+      
+      if (useJsonMode) {
+        const parsed = parseJsonResponse(rawText);
+        if (parsed) {
+          finalText = parsed.reply;
+          thought = parsed.thought;
+          console.log(`[OpenAI] JSON parsed successfully. Thought: "${thought?.substring(0, 50)}..."`);
+        } else {
+          finalText = rawText;
+          console.log('[OpenAI] JSON parse failed, using raw text as fallback');
+        }
+      } else {
+        finalText = rawText;
+      }
+      
+      const { text, wasLimited } = truncateResponse(finalText, characterLimit, strategy);
 
       return {
         text,

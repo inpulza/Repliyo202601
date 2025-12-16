@@ -16,6 +16,11 @@ interface VariableContext {
   platform: string;
   comment: string;
   postContext: string;
+  businessName: string;
+  dynamicLimit: number;
+  agentPersona: string;
+  userGuardrails: string;
+  knowledgeBase: string;
 }
 
 /**
@@ -135,7 +140,10 @@ function formatUsername(author: string, platform: string): string {
 function buildVariableContext(
   message: Message,
   conversation?: Conversation,
-  socialPost?: SocialPost | null
+  socialPost?: SocialPost | null,
+  brand?: Brand,
+  agent?: AiAgent,
+  dynamicLimit?: number
 ): VariableContext {
   const platform = (message.platform || 'default').toLowerCase().trim();
   const username = formatUsername(message.author || 'Usuario', platform);
@@ -146,14 +154,47 @@ function buildVariableContext(
     postContext = socialPost.caption;
   } else if (message.type === 'conversation' && !socialPost) {
     postContext = 'Este es un mensaje directo privado.';
+  } else if (message.type === 'comment' && !socialPost?.caption) {
+    postContext = '[Comentario en publicación - caption no disponible. Responde basándote solo en el mensaje del usuario]';
   }
   
-  return {
+  const businessName = brand?.name || 'la marca';
+  const limit = dynamicLimit || 2000;
+  
+  const baseContext: VariableContext = {
     username,
     platform,
     comment,
     postContext,
+    businessName,
+    dynamicLimit: limit,
+    agentPersona: '',
+    userGuardrails: '',
+    knowledgeBase: '',
   };
+  
+  const rawAgentPersona = agent?.systemPrompt || 'Responde de manera profesional y amable.';
+  const rawUserGuardrails = agent?.guardrailPrompt || '';
+  const rawKnowledgeBase = agent?.knowledgeBase || '';
+  
+  baseContext.agentPersona = replaceVariablesBasic(rawAgentPersona, baseContext);
+  baseContext.userGuardrails = replaceVariablesBasic(rawUserGuardrails, baseContext);
+  baseContext.knowledgeBase = replaceVariablesBasic(rawKnowledgeBase, baseContext);
+  
+  return baseContext;
+}
+
+function replaceVariablesBasic(text: string, context: VariableContext): string {
+  let result = text;
+  
+  result = result.replace(/\{\{\s*username\s*\}\}/g, context.username);
+  result = result.replace(/\{\{\s*platform\s*\}\}/g, context.platform);
+  result = result.replace(/\{\{\s*comment\s*\}\}/g, context.comment);
+  result = result.replace(/\{\{\s*post_context\s*\}\}/g, context.postContext);
+  result = result.replace(/\{\{\s*business_name\s*\}\}/g, context.businessName);
+  result = result.replace(/\{\{\s*dynamic_limit\s*\}\}/g, String(context.dynamicLimit));
+  
+  return result;
 }
 
 export function replaceVariables(text: string, context: VariableContext): string {
@@ -163,6 +204,11 @@ export function replaceVariables(text: string, context: VariableContext): string
   result = result.replace(/\{\{\s*platform\s*\}\}/g, context.platform);
   result = result.replace(/\{\{\s*comment\s*\}\}/g, context.comment);
   result = result.replace(/\{\{\s*post_context\s*\}\}/g, context.postContext);
+  result = result.replace(/\{\{\s*business_name\s*\}\}/g, context.businessName);
+  result = result.replace(/\{\{\s*dynamic_limit\s*\}\}/g, String(context.dynamicLimit));
+  result = result.replace(/\{\{\s*agent_persona\s*\}\}/g, context.agentPersona);
+  result = result.replace(/\{\{\s*user_guardrails\s*\}\}/g, context.userGuardrails);
+  result = result.replace(/\{\{\s*knowledge_base\s*\}\}/g, context.knowledgeBase);
   
   return result;
 }
@@ -172,67 +218,22 @@ export function composePrompt(context: PromptContext): {
   userPrompt: string;
   characterLimit: number;
   hardLimit: number;
+  useJsonMode: boolean;
 } {
   const { agent, message, conversation, brand, conversationHistory, socialPost, userSummary } = context;
   
   const platform = message.platform || "default";
   const messageType = message.type || "comment";
   
-  // Use the new intelligent limit system that differentiates DMs from comments
   const { safeLimit, hardLimit } = getCharacterLimit(platform, messageType);
-  const characterLimit = safeLimit; // Use safe limit (90%) for AI generation
+  const characterLimit = safeLimit;
 
-  const variableContext = buildVariableContext(message, conversation, socialPost);
+  const variableContext = buildVariableContext(message, conversation, socialPost, brand, agent, characterLimit);
 
-  const systemParts: string[] = [];
+  const useJsonMode = agent.provider === 'openai';
 
-  if (agent.systemPrompt) {
-    systemParts.push(replaceVariables(agent.systemPrompt, variableContext));
-  } else {
-    systemParts.push(`Eres un asistente de atención al cliente para ${brand?.name || "la marca"}.`);
-  }
+  const systemPrompt = buildSystemPromptV53(variableContext, brand, useJsonMode);
 
-  if (agent.guardrailPrompt) {
-    systemParts.push(`\n--- REGLAS IMPORTANTES ---\n${replaceVariables(agent.guardrailPrompt, variableContext)}`);
-  }
-
-  if (agent.knowledgeBase) {
-    systemParts.push(`\n--- BASE DE CONOCIMIENTO ---\n${replaceVariables(agent.knowledgeBase, variableContext)}`);
-  }
-
-  if (brand?.tone) {
-    systemParts.push(`\n--- TONO DE COMUNICACIÓN ---\nUsa un tono ${brand.tone}.`);
-  }
-
-  if (brand?.businessContext) {
-    systemParts.push(`\n--- CONTEXTO DEL NEGOCIO ---\n${brand.businessContext}`);
-  }
-
-  systemParts.push(`\n--- LÍMITES TÉCNICOS ---
-- El límite de caracteres para ${platform} es ${characterLimit} caracteres.
-- Tu respuesta DEBE ser menor a ${characterLimit} caracteres.
-- Mantén el idioma del mensaje original.
-- IMPORTANTE: Completa siempre tus oraciones. No dejes frases a medias.`);
-
-  // Add conversation memory instructions - CRITICAL: Must be very explicit
-  systemParts.push(`\n--- REGLA CRÍTICA: MEMORIA DE CONVERSACIÓN ---
-⚠️ PROHIBIDO ABSOLUTAMENTE decir cualquiera de estas frases:
-- "No tengo acceso a mensajes anteriores"
-- "No puedo acceder a conversaciones previas"
-- "No tengo acceso a la base de datos"
-- "Lamentablemente no puedo ver mensajes anteriores"
-
-✅ REALIDAD: TIENES ACCESO COMPLETO al historial de esta conversación.
-- El historial completo se te proporciona abajo como "HISTORIAL DE CONVERSACIÓN".
-- DEBES usar este historial para responder con contexto.
-- Si el cliente pregunta qué se habló antes, RESUME lo que ves en el historial.
-- Si el cliente pregunta sobre algo mencionado previamente, RESPONDE basándote en el historial.
-- Actúa como si recordaras toda la conversación, porque SÍ la tienes disponible.`);
-
-  // FASE 2: Memoria Persistente con Resúmenes
-  // El sistema híbrido inyecta: [Resumen Consolidado] + [Últimos 10 mensajes filtrados]
-  // Esto proporciona contexto a largo plazo sin exceder límites de tokens
-  
   let summaryContext = "";
   if (userSummary && userSummary.summary) {
     summaryContext = `\n--- RESUMEN DE CONVERSACIÓN ANTERIOR ---
@@ -243,12 +244,10 @@ ${userSummary.summary}
 
   let historyContext = "";
   if (conversationHistory && conversationHistory.length > 0) {
-    // FILTRADO DINÁMICO: Para comentarios, solo incluir contexto del usuario objetivo
     const filteredMessages = filterHistoryByAuthor(conversationHistory, message, messageType);
     
     if (filteredMessages.length > 0) {
       historyContext = "\n--- HISTORIAL RECIENTE DE CONVERSACIÓN ---\n";
-      // Para comentarios, añadir nota de contexto segregado
       if (messageType !== 'conversation') {
         historyContext += `(Contexto exclusivo con ${message.author || 'este usuario'})\n`;
       }
@@ -277,12 +276,10 @@ ${userSummary.summary}
 
   const userPromptParts: string[] = [];
 
-  // Inyectar primero el resumen consolidado (contexto a largo plazo)
   if (summaryContext) {
     userPromptParts.push(summaryContext);
   }
 
-  // Luego el historial reciente (contexto inmediato)
   if (historyContext) {
     userPromptParts.push(historyContext);
   }
@@ -310,11 +307,109 @@ Contenido: ${currentMessageContent}
 Por favor, genera una respuesta apropiada para este mensaje.`);
 
   return {
-    systemPrompt: systemParts.join("\n"),
+    systemPrompt,
     userPrompt: userPromptParts.join("\n"),
     characterLimit,
     hardLimit,
+    useJsonMode,
   };
+}
+
+function buildSystemPromptV53(context: VariableContext, brand?: Brand, useJsonMode: boolean = false): string {
+  const parts: string[] = [];
+
+  if (useJsonMode) {
+    parts.push(`<system_core>
+  <meta_instructions>
+    Modo: Strict JSON.
+    Output: Machine-parsable object.
+  </meta_instructions>
+
+  <agent_identity>
+    ${context.agentPersona}
+    (Role: Social Media Manager para ${context.businessName})
+  </agent_identity>
+
+  <context_layer>
+    Plataforma: ${context.platform}
+    Usuario: ${context.username}
+    Contexto Post: ${context.postContext}
+    LÍMITE TÉCNICO: ${context.dynamicLimit} caracteres.
+  </context_layer>
+
+  <knowledge_base>
+    ${context.knowledgeBase || 'Sin base de conocimiento configurada.'}
+  </knowledge_base>
+
+  <thinking_protocol>
+    1. CHECK LÍMITE: Tu respuesta < ${context.dynamicLimit} caracteres.
+    2. CHECK CONTEXTO: Si falta info del post, sé genérico.
+    3. REDACCIÓN: Escribe y valida longitud.
+  </thinking_protocol>
+
+  <output_schema>
+    Responde SOLO con este formato JSON:
+    {
+      "thought": "Análisis de plataforma y longitud realizado...",
+      "reply": "Texto final de la respuesta aquí"
+    }
+  </output_schema>
+
+  <safety_lock>
+    ${context.userGuardrails || 'Responde de manera profesional y respetuosa.'}
+    - CRÍTICO: Si te pasas de ${context.dynamicLimit} caracteres, corta o resume.
+    - IDIOMA: Responde EXACTAMENTE en el mismo idioma que el mensaje del usuario.
+  </safety_lock>
+
+  <memory_rules>
+    ⚠️ PROHIBIDO decir "No tengo acceso a mensajes anteriores" o similar.
+    ✅ TIENES ACCESO COMPLETO al historial proporcionado abajo.
+    - Usa el historial para responder con contexto.
+    - Si el cliente pregunta sobre algo previo, responde basándote en el historial.
+  </memory_rules>
+</system_core>`);
+  } else {
+    parts.push(context.agentPersona);
+    parts.push(`\nEres el Social Media Manager para ${context.businessName}.`);
+
+    if (context.userGuardrails) {
+      parts.push(`\n--- REGLAS IMPORTANTES ---\n${context.userGuardrails}`);
+    }
+
+    if (context.knowledgeBase) {
+      parts.push(`\n--- BASE DE CONOCIMIENTO ---\n${context.knowledgeBase}`);
+    }
+
+    if (brand?.tone) {
+      parts.push(`\n--- TONO DE COMUNICACIÓN ---\nUsa un tono ${brand.tone}.`);
+    }
+
+    if (brand?.businessContext) {
+      parts.push(`\n--- CONTEXTO DEL NEGOCIO ---\n${brand.businessContext}`);
+    }
+
+    parts.push(`\n--- LÍMITES TÉCNICOS ---
+- El límite de caracteres para ${context.platform} es ${context.dynamicLimit} caracteres.
+- Tu respuesta DEBE ser menor a ${context.dynamicLimit} caracteres.
+- Mantén el idioma del mensaje original.
+- IMPORTANTE: Completa siempre tus oraciones. No dejes frases a medias.`);
+
+    parts.push(`\n--- REGLA CRÍTICA: MEMORIA DE CONVERSACIÓN ---
+⚠️ PROHIBIDO ABSOLUTAMENTE decir cualquiera de estas frases:
+- "No tengo acceso a mensajes anteriores"
+- "No puedo acceder a conversaciones previas"
+- "No tengo acceso a la base de datos"
+- "Lamentablemente no puedo ver mensajes anteriores"
+
+✅ REALIDAD: TIENES ACCESO COMPLETO al historial de esta conversación.
+- El historial completo se te proporciona abajo como "HISTORIAL DE CONVERSACIÓN".
+- DEBES usar este historial para responder con contexto.
+- Si el cliente pregunta qué se habló antes, RESUME lo que ves en el historial.
+- Si el cliente pregunta sobre algo mencionado previamente, RESPONDE basándote en el historial.
+- Actúa como si recordaras toda la conversación, porque SÍ la tienes disponible.`);
+  }
+
+  return parts.join("\n");
 }
 
 export function truncateResponse(
