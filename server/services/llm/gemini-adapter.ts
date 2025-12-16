@@ -54,15 +54,19 @@ export class GeminiAdapter implements LLMProvider {
         config.temperature = agent.temperature;
       }
 
+      const isThinkingModel = model.includes('gemini-2.5');
+      
       if (agent.maxTokens) {
         config.maxOutputTokens = agent.maxTokens * 4;
-        
+      }
+      
+      if (isThinkingModel) {
         config.thinkingConfig = {
-          thinkingBudget: 0,
+          thinkingBudget: agent.maxTokens ? Math.max(1024, agent.maxTokens) : 2048,
         };
       }
 
-      console.log(`[Gemini] Generating reply with maxOutputTokens=${config.maxOutputTokens || 'default'} (thinkingBudget: 0)`);
+      console.log(`[Gemini] Generating reply with model=${model}, maxOutputTokens=${config.maxOutputTokens || 'default'}, thinkingBudget=${isThinkingModel ? (config.thinkingConfig as any)?.thinkingBudget : 'N/A'}`);
       
       const response = await this.client.models.generateContent({
         model,
