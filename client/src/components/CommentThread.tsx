@@ -614,70 +614,27 @@ function ThreadNode({
   const canNest = depth < MAX_DEPTH;
 
   const avatarSize = isReply ? AVATAR_SIZE_REPLY : AVATAR_SIZE_ROOT;
-  const avatarCenter = avatarSize / 2;
-  const connectorOffset = 20;
-  const verticalGap = 12;
-  const curveRadius = 8;
-  
-  const upSegmentHeight = verticalGap + avatarCenter - curveRadius;
-  const horizontalSegmentWidth = connectorOffset - curveRadius;
-  const downSegmentTop = avatarCenter + curveRadius;
+  const connectorIndent = 22;
+  const connectorGap = 12;
   
   return (
-    <div className={cn("relative", depth > 0 && "mt-3")}>
+    <div 
+      className={cn(
+        "thread-node",
+        isReply && "thread-node--reply",
+        isLastChild && "thread-node--last"
+      )}
+      style={isReply ? {
+        '--thread-avatar': `${avatarSize}px`,
+        '--thread-gap': `${connectorGap}px`,
+        '--thread-indent': `${connectorIndent}px`,
+      } as React.CSSProperties : undefined}
+    >
       {isReply && (
         <>
-          <span 
-            className="absolute bg-gray-300 dark:bg-gray-600 pointer-events-none"
-            style={{
-              left: `-${connectorOffset}px`,
-              top: `-${verticalGap}px`,
-              width: '2px',
-              height: `${upSegmentHeight}px`,
-            }}
-            aria-hidden="true"
-          />
-          
-          <span 
-            className="absolute border-gray-300 dark:border-gray-600 pointer-events-none"
-            style={{
-              left: `-${connectorOffset}px`,
-              top: `${avatarCenter - curveRadius}px`,
-              width: `${curveRadius * 2}px`,
-              height: `${curveRadius * 2}px`,
-              borderRadius: '0 0 0 8px',
-              borderLeftWidth: '2px',
-              borderBottomWidth: '2px',
-              borderTopWidth: '0',
-              borderRightWidth: '0',
-              borderStyle: 'solid',
-            }}
-            aria-hidden="true"
-          />
-          
-          <span 
-            className="absolute bg-gray-300 dark:bg-gray-600 pointer-events-none"
-            style={{
-              left: `-${connectorOffset - curveRadius * 2}px`,
-              top: `${avatarCenter + curveRadius - 1}px`,
-              width: `${horizontalSegmentWidth - curveRadius}px`,
-              height: '2px',
-            }}
-            aria-hidden="true"
-          />
-          
-          {!isLastChild && (
-            <span 
-              className="absolute bg-gray-300 dark:bg-gray-600 pointer-events-none"
-              style={{
-                left: `-${connectorOffset}px`,
-                top: `${downSegmentTop}px`,
-                width: '2px',
-                bottom: `-${verticalGap}px`,
-              }}
-              aria-hidden="true"
-            />
-          )}
+          <span className="thread-node__stem" aria-hidden="true" />
+          <span className="thread-node__elbow" aria-hidden="true" />
+          {!isLastChild && <span className="thread-node__tail" aria-hidden="true" />}
         </>
       )}
 
@@ -705,7 +662,7 @@ function ThreadNode({
       />
 
       {hasChildren && canNest && (
-        <div className="relative pl-8 mt-2" style={{ marginLeft: isReply ? '12px' : '16px' }}>
+        <div className="thread-children">
           {node.children.map((childNode, index) => (
             <ThreadNode
               key={childNode.message.id}
