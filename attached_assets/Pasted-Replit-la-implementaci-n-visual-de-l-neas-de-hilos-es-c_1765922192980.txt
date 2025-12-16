@@ -1,0 +1,56 @@
+Replit, la implementación visual de líneas de hilos es compleja. No intentes generarla desde cero. Usa esta implementación de referencia basada en estándares de la industria (como Reddit/Discord) para evitar errores de alineación.
+
+Implementa esta estructura HTML/CSS exacta en el componente de comentarios:
+
+1. Estructura HTML (Jerarquía): Necesito que los comentarios anidados estén dentro de un div contenedor, no sueltos.
+
+JavaScript
+
+<div className="comment-item">
+  {/* Contenido del Padre */}
+  <div className="comment-content">...</div>
+
+  {/* Contenedor de Hijos (Respuestas) */}
+  {/* IMPORTANTE: El borde izquierdo va AQUÍ */}
+  <div className="replies-container relative ml-4 pl-4 border-l-2 border-gray-200">
+     {replies.map(reply => (
+       <div className="reply-item relative">
+          {/* El conector curvo va en este div */}
+          <span className="connector-curve absolute -left-4 top-0 w-4 h-6 border-b-2 border-l-2 border-gray-200 rounded-bl-xl"></span>
+          <ReplyComponent data={reply} />
+       </div>
+     ))}
+  </div>
+</div>
+2. La Lógica del CSS (Explicación para que la apliques):
+
+replies-container:
+
+Tiene margin-left (espacio para la sangría).
+
+Tiene border-left (esta es la Línea Vertical Infinita). Al ponerla en el contenedor, nunca se romperá ni quedará corta, crecerá automáticamente con el contenido.
+
+connector-curve (El truco visual):
+
+Es un elemento decorativo dentro de cada hijo.
+
+Posición: absolute, top: 0, left: -[ancho del padding].
+
+Dimensiones: Ancho igual al padding del padre, Alto de unos 20px a 24px (para llegar a la mitad del avatar).
+
+Bordes: Solo border-bottom y border-left.
+
+Radio: rounded-bottom-left (esto hace la curva perfecta).
+
+3. El Caso del "Último Hijo" (Limpieza): Para que la línea vertical no siga bajando infinitamente después del último comentario, aplica esta clase o estilo al contenedor principal si quieres ocultar el exceso, o usa overflow: hidden con cuidado. Mejor aún: Si usas Tailwind, el código de arriba ya funciona visualmente bien porque la línea vertical pertenece al padre.
+
+Instrucción de Ejecución: Por favor, refactoriza el componente CommentList o MessageItem aplicando ESTA lógica de contenedores anidados y bordes. No uses SVGs ni cálculos de JS, usa CSS puro como se describe arriba.
+
+💡 Por qué esto sí funcionará
+No hay cálculos: Al usar border-left en el contenedor padre, la línea vertical siempre mide exactamente lo que miden los hijos. No puede quedar "corta" ni "larga".
+
+La Curva es estática: La curva es siempre una cajita de 20x20px (o lo que definas) pegada al hijo. Siempre encajará.
+
+Tailwind Friendly: Las clases que puse en el ejemplo (border-l-2, rounded-bl-xl) son estándar de Tailwind, que es lo que Replit suele usar por defecto.
+
+Pásale esto y verás que el resultado es sólido a la primera.
