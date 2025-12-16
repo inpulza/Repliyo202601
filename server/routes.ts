@@ -1760,6 +1760,316 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/ai-agent/:brandId/generate-draft - Generar borrador para un mensaje específico
+  app.post("/api/ai-agent/:brandId/generate-draft/:messageId", requireAuth, filterByBrand("brandId"), aiRateLimiter, async (req, res) => {
+    try {
+      const { brandId, messageId } = req.params;
+      
+      const message = await storage.getMessage(messageId);
+      if (!message) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+      
+      const conversation = await storage.getConversation(message.conversationId);
+      if (!conversation || conversation.brandId !== brandId) {
+        return res.status(403).json({ error: "Access denied to this message" });
+      }
+      
+      await storage.updateMessage(messageId, {
+        aiReplyStatus: 'drafting',
+      });
+      
+      const agent = await storage.getAiAgentByBrand(brandId);
+      if (!agent) {
+        await storage.updateMessage(messageId, { aiReplyStatus: 'draft_error' });
+        return res.status(404).json({ error: "AI Agent not configured for this brand" });
+      }
+      
+      const { generateReplyForMessage } = await import('./services/aiReplyGenerator');
+      
+      const MAX_RETRIES = 3;
+      let lastError: Error | null = null;
+      
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          const result = await generateReplyForMessage(agent, message, conversation, message.platform);
+          
+          if (result.success && result.reply) {
+            await storage.updateMessage(messageId, {
+              aiSuggestedReply: result.reply,
+              aiReplyStatus: 'drafted',
+              draftWasEdited: false,
+            });
+            
+            return res.json({
+              success: true,
+              draft: result.reply,
+              messageId,
+              characterCount: result.characterCount,
+              provider: result.provider,
+              model: result.model,
+            });
+          }
+          
+          lastError = new Error(result.error || 'Unknown error');
+        } catch (err: any) {
+          lastError = err;
+          if (attempt < MAX_RETRIES) {
+            await new Promise(r => setTimeout(r, 1000 * attempt));
+          }
+        }
+      }
+      
+      await storage.updateMessage(messageId, { aiReplyStatus: 'draft_error' });
+      return res.status(500).json({ 
+        error: lastError?.message || 'Failed to generate draft after multiple attempts',
+        messageId,
+      });
+      
+    } catch (error: any) {
+      console.error('Error generating draft:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // POST /api/ai-agent/:brandId/regenerate-draft - Regenerar borrador (limpia el anterior)
+  app.post("/api/ai-agent/:brandId/regenerate-draft/:messageId", requireAuth, filterByBrand("brandId"), aiRateLimiter, async (req, res) => {
+    try {
+      const { brandId, messageId } = req.params;
+      const { confirmOverwrite = false } = req.body;
+      
+      const message = await storage.getMessage(messageId);
+      if (!message) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+      
+      const conversation = await storage.getConversation(message.conversationId);
+      if (!conversation || conversation.brandId !== brandId) {
+        return res.status(403).json({ error: "Access denied to this message" });
+      }
+      
+      if (message.draftWasEdited && !confirmOverwrite) {
+        return res.status(409).json({ 
+          error: "Draft was edited",
+          requiresConfirmation: true,
+          message: "Este borrador fue editado manualmente. ¿Deseas regenerarlo y perder los cambios?",
+        });
+      }
+      
+      await storage.updateMessage(messageId, {
+        aiReplyStatus: 'drafting',
+        aiSuggestedReply: null,
+        draftWasEdited: false,
+      });
+      
+      const agent = await storage.getAiAgentByBrand(brandId);
+      if (!agent) {
+        await storage.updateMessage(messageId, { aiReplyStatus: 'draft_error' });
+        return res.status(404).json({ error: "AI Agent not configured for this brand" });
+      }
+      
+      const { generateReplyForMessage } = await import('./services/aiReplyGenerator');
+      const result = await generateReplyForMessage(agent, message, conversation, message.platform);
+      
+      if (result.success && result.reply) {
+        await storage.updateMessage(messageId, {
+          aiSuggestedReply: result.reply,
+          aiReplyStatus: 'drafted',
+          draftWasEdited: false,
+        });
+        
+        return res.json({
+          success: true,
+          draft: result.reply,
+          messageId,
+          characterCount: result.characterCount,
+        });
+      }
+      
+      await storage.updateMessage(messageId, { aiReplyStatus: 'draft_error' });
+      return res.status(500).json({ error: result.error || 'Failed to regenerate draft' });
+      
+    } catch (error: any) {
+      console.error('Error regenerating draft:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // POST /api/ai-agent/:brandId/bulk-generate-drafts - Generar borradores en lote
+  app.post("/api/ai-agent/:brandId/bulk-generate-drafts", requireAuth, filterByBrand("brandId"), async (req, res) => {
+    try {
+      const { brandId } = req.params;
+      const { messageIds, limit = 10 } = req.body;
+      
+      const agent = await storage.getAiAgentByBrand(brandId);
+      if (!agent) {
+        return res.status(404).json({ error: "AI Agent not configured" });
+      }
+      
+      let messagesToProcess: string[];
+      
+      if (messageIds && Array.isArray(messageIds) && messageIds.length > 0) {
+        messagesToProcess = messageIds.slice(0, 50);
+      } else {
+        const messages = await storage.getMessagesNeedingDrafts(brandId, Math.min(limit, 50));
+        messagesToProcess = messages.map(m => m.id);
+      }
+      
+      if (messagesToProcess.length === 0) {
+        return res.json({
+          success: true,
+          message: "No messages need drafts",
+          processed: 0,
+          successCount: 0,
+          errorCount: 0,
+          results: [],
+        });
+      }
+      
+      for (const id of messagesToProcess) {
+        await storage.updateMessage(id, { aiReplyStatus: 'drafting' });
+      }
+      
+      const { generateReplyForMessage } = await import('./services/aiReplyGenerator');
+      
+      const results: Array<{ messageId: string; success: boolean; error?: string }> = [];
+      
+      for (const messageId of messagesToProcess) {
+        try {
+          const message = await storage.getMessage(messageId);
+          if (!message) {
+            results.push({ messageId, success: false, error: 'Message not found' });
+            continue;
+          }
+          
+          const conversation = await storage.getConversation(message.conversationId);
+          if (!conversation) {
+            results.push({ messageId, success: false, error: 'Conversation not found' });
+            continue;
+          }
+          
+          const result = await generateReplyForMessage(agent, message, conversation, message.platform);
+          
+          if (result.success && result.reply) {
+            await storage.updateMessage(messageId, {
+              aiSuggestedReply: result.reply,
+              aiReplyStatus: 'drafted',
+              draftWasEdited: false,
+            });
+            results.push({ messageId, success: true });
+          } else {
+            await storage.updateMessage(messageId, { aiReplyStatus: 'draft_error' });
+            results.push({ messageId, success: false, error: result.error });
+          }
+          
+          await new Promise(r => setTimeout(r, 200));
+          
+        } catch (err: any) {
+          await storage.updateMessage(messageId, { aiReplyStatus: 'draft_error' });
+          results.push({ messageId, success: false, error: err.message });
+        }
+      }
+      
+      const successCount = results.filter(r => r.success).length;
+      const errorCount = results.filter(r => !r.success).length;
+      
+      res.json({
+        success: true,
+        message: `Generated ${successCount}/${results.length} drafts`,
+        processed: results.length,
+        successCount,
+        errorCount,
+        results,
+      });
+      
+    } catch (error: any) {
+      console.error('Error in bulk-generate-drafts:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // PUT /api/ai-agent/:brandId/update-draft - Actualizar borrador (marca como editado)
+  app.put("/api/ai-agent/:brandId/update-draft/:messageId", requireAuth, filterByBrand("brandId"), async (req, res) => {
+    try {
+      const { brandId, messageId } = req.params;
+      const { draft } = req.body;
+      
+      if (!draft || typeof draft !== 'string') {
+        return res.status(400).json({ error: "Draft content is required" });
+      }
+      
+      const message = await storage.getMessage(messageId);
+      if (!message) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+      
+      const conversation = await storage.getConversation(message.conversationId);
+      if (!conversation || conversation.brandId !== brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      await storage.updateMessage(messageId, {
+        aiSuggestedReply: draft,
+        aiReplyStatus: 'drafted',
+        draftWasEdited: true,
+      });
+      
+      res.json({ success: true, messageId, draft });
+      
+    } catch (error: any) {
+      console.error('Error updating draft:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // DELETE /api/ai-agent/:brandId/discard-draft - Descartar borrador
+  app.delete("/api/ai-agent/:brandId/discard-draft/:messageId", requireAuth, filterByBrand("brandId"), async (req, res) => {
+    try {
+      const { brandId, messageId } = req.params;
+      
+      const message = await storage.getMessage(messageId);
+      if (!message) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+      
+      const conversation = await storage.getConversation(message.conversationId);
+      if (!conversation || conversation.brandId !== brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      await storage.updateMessage(messageId, {
+        aiSuggestedReply: null,
+        aiReplyStatus: 'none',
+        draftWasEdited: false,
+      });
+      
+      res.json({ success: true, messageId });
+      
+    } catch (error: any) {
+      console.error('Error discarding draft:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // GET /api/ai-agent/:brandId/drafts-count - Obtener conteo de mensajes pendientes de borrador
+  app.get("/api/ai-agent/:brandId/drafts-count", requireAuth, filterByBrand("brandId"), async (req, res) => {
+    try {
+      const { brandId } = req.params;
+      
+      const count = await storage.getMessagesNeedingDraftsCount(brandId);
+      const conversationsWithDrafts = await storage.getConversationsWithDrafts(brandId);
+      
+      res.json({ 
+        needsDrafts: count,
+        conversationsWithPendingDrafts: conversationsWithDrafts.length,
+        conversationIds: conversationsWithDrafts,
+      });
+    } catch (error: any) {
+      console.error('Error getting drafts count:', error);
+      res.status(500).json({ error: "Failed to get drafts count" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   websocketService.initialize(httpServer);
