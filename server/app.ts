@@ -89,8 +89,16 @@ export default async function runApp(
     port,
     host: "0.0.0.0",
     reusePort: true,
-  }, () => {
+  }, async () => {
     log(`serving on port ${port}`);
+    
+    // Run backfill for brand message directions on startup
+    try {
+      const { storage } = await import('./storage');
+      await storage.backfillBrandMessageDirections();
+    } catch (err: any) {
+      log(`[Backfill] Error: ${err.message}`, "sync");
+    }
     
     syncService.start().catch(err => {
       log(`[SyncService] Failed to start: ${err.message}`, "sync");
