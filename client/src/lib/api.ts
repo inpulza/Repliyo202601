@@ -418,6 +418,17 @@ export const api = {
       return res.json();
     },
 
+    sendDraft: async (brandId: string, messageId: string): Promise<{ success: boolean; messageId: string; externalMessageId?: string }> => {
+      const res = await fetch(`${API_BASE}/ai-agent/${brandId}/send-draft/${messageId}`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to send draft');
+      }
+      return res.json();
+    },
+
     getDraftsCount: async (brandId: string): Promise<{
       needsDrafts: number;
       conversationsWithPendingDrafts: number;

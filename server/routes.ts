@@ -2051,6 +2051,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/ai-agent/:brandId/send-draft - Enviar borrador a la red social
+  app.post("/api/ai-agent/:brandId/send-draft/:messageId", requireAuth, filterByBrand("brandId"), async (req, res) => {
+    try {
+      const { brandId, messageId } = req.params;
+      
+      const message = await storage.getMessage(messageId);
+      if (!message) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+      
+      const conversation = await storage.getConversation(message.conversationId);
+      if (!conversation || conversation.brandId !== brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      if (!message.aiSuggestedReply || message.aiSuggestedReply.trim() === '') {
+        return res.status(400).json({ error: "No draft to send" });
+      }
+      
+      const brand = await storage.getBrand(brandId);
+      if (!brand || !brand.metricoolBlogId || !brand.metricoolToken || !brand.metricoolUserId) {
+        return res.status(400).json({ error: "Brand not configured with Metricool" });
+      }
+      
+      const metricoolService = new MetricoolService({
+        userToken: brand.metricoolToken,
+        userId: brand.metricoolUserId,
+      });
+      
+      console.log(`[SendDraft] Sending draft for message ${messageId}:`, {
+        platform: message.platform,
+        type: message.type,
+        metricoolId: message.metricoolId,
+        draft: message.aiSuggestedReply?.substring(0, 50) + '...',
+      });
+      
+      let replyResult;
+      
+      if (message.type === 'comment' || message.type === 'mention' || message.type === 'story_reply') {
+        replyResult = await metricoolService.replyToComment({
+          provider: message.platform,
+          objectId: message.metricoolId || '',
+          text: message.aiSuggestedReply,
+          blogId: brand.metricoolBlogId,
+          mentionUsername: message.author || undefined,
+        });
+      } else if (message.type === 'dm' || message.type === 'conversation') {
+        replyResult = await metricoolService.replyToConversation({
+          provider: message.platform,
+          conversationId: conversation.threadExternalId || '',
+          recipient: conversation.customerId || '',
+          text: message.aiSuggestedReply,
+          blogId: brand.metricoolBlogId,
+        });
+      } else {
+        return res.status(400).json({ error: `Unsupported message type: ${message.type}` });
+      }
+      
+      if (!replyResult.success) {
+        console.error(`[SendDraft] Failed to send:`, replyResult.error);
+        return res.status(500).json({ error: replyResult.error || 'Failed to send reply' });
+      }
+      
+      await storage.updateMessage(messageId, {
+        aiReplyStatus: 'sent',
+        status: 'sent',
+      });
+      
+      console.log(`[SendDraft] Successfully sent draft for message ${messageId}`);
+      
+      res.json({ 
+        success: true, 
+        messageId,
+        externalMessageId: replyResult.messageId,
+      });
+      
+    } catch (error: any) {
+      console.error('Error sending draft:', error);
+      res.status(500).json({ error: error.message || 'Failed to send draft' });
+    }
+  });
+
   // GET /api/ai-agent/:brandId/drafts-count - Obtener conteo de mensajes pendientes de borrador
   app.get("/api/ai-agent/:brandId/drafts-count", requireAuth, filterByBrand("brandId"), async (req, res) => {
     try {

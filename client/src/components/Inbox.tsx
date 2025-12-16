@@ -663,8 +663,31 @@ export function Inbox() {
     if (!activeClientId || !draft.trim()) return;
     
     try {
-      await approveMessage(messageId);
-      toast({ title: "Respuesta enviada" });
+      const result = await api.aiAgent.sendDraft(activeClientId, messageId);
+      
+      if (result.success) {
+        setLocalDraftOverrides(prev => {
+          const next = new Map(prev);
+          next.set(messageId, {
+            aiSuggestedReply: null,
+            aiReplyStatus: 'sent',
+            draftWasEdited: false,
+          });
+          return next;
+        });
+        
+        toast({ title: "Respuesta enviada", description: "La respuesta se publicó en la red social" });
+        
+        await refreshFeed();
+        setLocalDraftOverrides(prev => {
+          const next = new Map(prev);
+          next.delete(messageId);
+          return next;
+        });
+        if (activeConversation) {
+          queryClient.invalidateQueries({ queryKey: [`/api/conversations/${activeConversation.id}/messages`] });
+        }
+      }
     } catch (error: any) {
       toast({
         title: "Error",
