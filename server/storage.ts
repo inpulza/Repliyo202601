@@ -646,9 +646,8 @@ export class DatabaseStorage implements IStorage {
 
     // Normalize content for robust comparison (handles variations from different platforms)
     const normalizeContent = (text: string) => {
-      return text
+      let normalized = text
         .trim()
-        .toLowerCase()
         .replace(/\s+/g, ' ')                                // Collapse all whitespace
         .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, '')          // Remove zero-width chars and nbsp
         .replace(/\uFE0F/g, '')                              // Remove emoji variation selectors
@@ -659,10 +658,19 @@ export class DatabaseStorage implements IStorage {
         .replace(/&amp;/g, '&').replace(/&lt;/g, '<')        // Common HTML entities
         .replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
         .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))  // Numeric HTML entities (supports emoji)
-        .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCodePoint(parseInt(h, 16)))  // Hex HTML entities (supports emoji)
-        .replace(/^@+[\w.-]+\s*/g, '')                       // Remove leading @mention(s)
-        .replace(/^@+[\w.-]+\s*/g, '')                       // Run twice in case of double
-        .substring(0, 100);                                   // Compare first 100 chars
+        .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCodePoint(parseInt(h, 16)));  // Hex HTML entities (supports emoji)
+      
+      // FACEBOOK FIX: Remove leading @mentions with full names (including spaces)
+      // Facebook format: "@Nombre Apellido Mensaje real..." or "@username Mensaje real..."
+      // Strategy: Remove "@" followed by words until we hit a capital letter starting a new sentence
+      // This handles: "@Alejandra Monterroso Totalmente..." → "Totalmente..."
+      normalized = normalized.replace(/^@[A-Za-zÀ-ÿ\s]+?\s+(?=[A-ZÀ-Ý])/g, '');
+      
+      // Also handle simple @username mentions (no spaces in name)
+      normalized = normalized.replace(/^@[\w.-]+\s*/g, '');
+      normalized = normalized.replace(/^@[\w.-]+\s*/g, ''); // Run twice for double mentions
+      
+      return normalized.toLowerCase().substring(0, 100);     // Compare first 100 chars
     };
 
     const syncedNormalized = normalizeContent(syncedMessage.content);
@@ -731,14 +739,19 @@ export class DatabaseStorage implements IStorage {
       return undefined;
     }
 
-    // Normalize content for comparison
+    // Normalize content for comparison (must match the function in findPendingOutboundMatchBrandWide)
     const normalizeContent = (text: string) => {
-      return text
+      let normalized = text
         .trim()
-        .toLowerCase()
         .replace(/\s+/g, ' ')
-        .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, '')
-        .substring(0, 100);
+        .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, '');
+      
+      // FACEBOOK FIX: Remove leading @mentions with full names (including spaces)
+      normalized = normalized.replace(/^@[A-Za-zÀ-ÿ\s]+?\s+(?=[A-ZÀ-Ý])/g, '');
+      normalized = normalized.replace(/^@[\w.-]+\s*/g, '');
+      normalized = normalized.replace(/^@[\w.-]+\s*/g, '');
+      
+      return normalized.toLowerCase().substring(0, 100);
     };
 
     const syncedNormalized = normalizeContent(syncedMessage.content);
