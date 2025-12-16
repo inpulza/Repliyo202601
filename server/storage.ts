@@ -1269,13 +1269,16 @@ export class DatabaseStorage implements IStorage {
         AND m.direction = 'inbound'
         AND m.platform = ${platform}
         AND m.ai_suggested_reply IS NULL
+        AND m.content IS NOT NULL
+        AND TRIM(m.content) != ''
+        AND m.author NOT IN ('bo_trust_service', 'bettys_trustservices', 'botrustservices')
         AND NOT EXISTS (
           SELECT 1 FROM messages m2 
           WHERE m2.conversation_id = m.conversation_id 
           AND m2.direction = 'outbound' 
           AND m2.source = 'ai_agent'
         )
-      ORDER BY m.timestamp ASC
+      ORDER BY m.timestamp DESC
       LIMIT ${limit}
     `);
     
