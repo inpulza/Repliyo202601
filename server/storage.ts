@@ -556,10 +556,12 @@ export class DatabaseStorage implements IStorage {
       const hasInternalOrigin = existing.internalOrigin !== null && existing.internalOrigin !== undefined;
       
       // PROTECTION PRIORITY 2: If existing message was sent from Repliyo, preserve source/direction
+      // ONLY protect messages that originated from Repliyo, NOT all outbound messages
       const isReplyoSource = existing.source === 'repliyo' || existing.source === 'repliyo_auto';
-      const isOutboundBeingOverwritten = existing.direction === 'outbound' && insertMessage.direction === 'inbound';
       
-      if (isReplyoSource || isOutboundBeingOverwritten || hasInternalOrigin) {
+      // Only protect if message is from Repliyo OR has internalOrigin set
+      // Do NOT protect metricool_sync messages that were incorrectly marked as outbound
+      if (isReplyoSource || hasInternalOrigin) {
         console.log(`[Storage] Protecting Repliyo message ${existing.id} - preserving source, direction, and internalOrigin (${existing.internalOrigin})`);
         // Only update rawData and avatar but keep direction, source, author, parentMessageId, and internalOrigin
         const updated = await this.updateMessage(existing.id, {
@@ -1385,128 +1387,14 @@ export class DatabaseStorage implements IStorage {
     
     return (result.rows as any[]).map(row => row.conversation_id);
   }
-  // Backfill: Fix brand-authored messages that were incorrectly marked as inbound
-  // Uses declarative provider-scoped UPDATEs based on stable identifiers
+  // BACKFILL DISABLED: Direction detection is now handled in syncService.ts
+  // The syncService correctly identifies brand-authored messages using:
+  // - brandAccountId from participants.self or rawData.self
+  // - commentOwnerId from rawData.root.owner or rawData.owner
+  // This approach is more reliable than post-hoc SQL updates that can cause cross-brand issues
   async backfillBrandMessageDirections(): Promise<number> {
-    let totalUpdated = 0;
-    
-    // Strategy 1: Match by account_name across all platforms
-    // Uses social_accounts as authoritative source
-    const result1 = await db.execute(sql`
-      UPDATE messages m
-      SET direction = 'outbound'
-      FROM social_accounts sa
-      WHERE sa.brand_id = m.brand_id
-        AND LOWER(sa.provider) = LOWER(m.platform)
-        AND m.direction = 'inbound'
-        AND m.source = 'metricool_sync'
-        AND m.internal_origin IS NULL
-        AND LOWER(TRIM(LEADING '@' FROM m.author)) = LOWER(TRIM(sa.account_name))
-    `);
-    totalUpdated += (result1 as any).rowCount || 0;
-    
-    // Strategy 2: Match by brand_name (fallback for display names)
-    const result2 = await db.execute(sql`
-      UPDATE messages m
-      SET direction = 'outbound'
-      FROM brands b
-      WHERE b.id = m.brand_id
-        AND m.direction = 'inbound'
-        AND m.source = 'metricool_sync'
-        AND m.internal_origin IS NULL
-        AND LOWER(TRIM(m.author)) = LOWER(TRIM(b.name))
-    `);
-    totalUpdated += (result2 as any).rowCount || 0;
-    
-    // Strategy 3: Facebook - message.from equals conversation.rawData.self (brand ID)
-    // Both fields MUST exist to avoid false positives
-    const result3 = await db.execute(sql`
-      UPDATE messages
-      SET direction = 'outbound'
-      WHERE LOWER(platform) = 'facebook'
-        AND direction = 'inbound'
-        AND source = 'metricool_sync'
-        AND internal_origin IS NULL
-        AND raw_data->'message'->>'from' IS NOT NULL
-        AND raw_data->'conversation'->'rawData'->>'self' IS NOT NULL
-        AND raw_data->'message'->>'from' = raw_data->'conversation'->'rawData'->>'self'
-    `);
-    totalUpdated += (result3 as any).rowCount || 0;
-    
-    // Strategy 3b: Facebook fallback - match message.from against social_accounts.account_name
-    // For cases where conversation.rawData.self is missing
-    const result3b = await db.execute(sql`
-      UPDATE messages m
-      SET direction = 'outbound'
-      FROM social_accounts sa
-      WHERE LOWER(m.platform) = 'facebook'
-        AND m.direction = 'inbound'
-        AND m.source = 'metricool_sync'
-        AND m.internal_origin IS NULL
-        AND LOWER(sa.provider) = 'facebook'
-        AND sa.brand_id = m.brand_id
-        AND m.raw_data->'message'->>'from' IS NOT NULL
-        AND m.raw_data->'message'->>'from' = sa.account_name
-    `);
-    totalUpdated += (result3b as any).rowCount || 0;
-    
-    // Strategy 4: YouTube - owner field matches social_accounts.account_name
-    const result4 = await db.execute(sql`
-      UPDATE messages m
-      SET direction = 'outbound'
-      FROM social_accounts sa
-      WHERE LOWER(m.platform) = 'youtube'
-        AND m.direction = 'inbound'
-        AND m.source = 'metricool_sync'
-        AND m.internal_origin IS NULL
-        AND LOWER(sa.provider) = 'youtube'
-        AND sa.brand_id = m.brand_id
-        AND LOWER(COALESCE(m.raw_data->>'owner', '')) = LOWER(TRIM(sa.account_name))
-    `);
-    totalUpdated += (result4 as any).rowCount || 0;
-    
-    if (totalUpdated > 0) {
-      console.log(`[Storage] Backfill: Corrected ${totalUpdated} brand messages from inbound to outbound`);
-    }
-    
-    // Post-backfill verification using separate provider-specific counts
-    const verification = await db.execute(sql`
-      SELECT 
-        (SELECT COUNT(*) FROM messages m 
-         JOIN social_accounts sa ON sa.brand_id = m.brand_id AND LOWER(sa.provider) = LOWER(m.platform)
-         WHERE m.direction = 'inbound' AND m.source = 'metricool_sync' AND m.internal_origin IS NULL
-           AND LOWER(TRIM(LEADING '@' FROM m.author)) = LOWER(TRIM(sa.account_name))) as by_account,
-        (SELECT COUNT(*) FROM messages m 
-         JOIN brands b ON b.id = m.brand_id
-         WHERE m.direction = 'inbound' AND m.source = 'metricool_sync' AND m.internal_origin IS NULL
-           AND LOWER(TRIM(m.author)) = LOWER(TRIM(b.name))) as by_brand,
-        (SELECT COUNT(*) FROM messages 
-         WHERE LOWER(platform) = 'facebook' AND direction = 'inbound' AND source = 'metricool_sync' AND internal_origin IS NULL
-           AND raw_data->'message'->>'from' IS NOT NULL
-           AND raw_data->'conversation'->'rawData'->>'self' IS NOT NULL
-           AND raw_data->'message'->>'from' = raw_data->'conversation'->'rawData'->>'self') as by_fb_raw,
-        (SELECT COUNT(*) FROM messages m 
-         JOIN social_accounts sa ON sa.brand_id = m.brand_id AND LOWER(sa.provider) = 'facebook'
-         WHERE LOWER(m.platform) = 'facebook' AND m.direction = 'inbound' AND m.source = 'metricool_sync' AND m.internal_origin IS NULL
-           AND m.raw_data->'message'->>'from' IS NOT NULL
-           AND m.raw_data->'message'->>'from' = sa.account_name) as by_fb_account,
-        (SELECT COUNT(*) FROM messages m 
-         JOIN social_accounts sa ON sa.brand_id = m.brand_id AND LOWER(sa.provider) = 'youtube'
-         WHERE LOWER(m.platform) = 'youtube' AND m.direction = 'inbound' AND m.source = 'metricool_sync' AND m.internal_origin IS NULL
-           AND LOWER(COALESCE(m.raw_data->>'owner', '')) = LOWER(TRIM(sa.account_name))) as by_yt_raw
-    `);
-    
-    const v = (verification.rows as any[])[0] || {};
-    const remaining = parseInt(v.by_account || '0') + parseInt(v.by_brand || '0') + 
-                      parseInt(v.by_fb_raw || '0') + parseInt(v.by_fb_account || '0') + parseInt(v.by_yt_raw || '0');
-    
-    if (remaining > 0) {
-      console.warn(`[Storage] Backfill warning: ${remaining} potential brand messages still inbound (account:${v.by_account}, brand:${v.by_brand}, fb_raw:${v.by_fb_raw}, fb_account:${v.by_fb_account}, yt:${v.by_yt_raw})`);
-    } else {
-      console.log(`[Storage] Backfill verification passed: No brand messages remaining as inbound`);
-    }
-    
-    return totalUpdated;
+    console.log(`[Storage] Backfill disabled - direction detection handled in syncService.ts`);
+    return 0;
   }
 }
 

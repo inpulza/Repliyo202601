@@ -98,6 +98,14 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
       });
       return;
     }
+    // Clear active conversation when switching brands to prevent cross-brand data bleed
+    if (id !== activeClientId) {
+      setActiveConversationState(null);
+      // Remove cached data for the previous brand to ensure fresh fetch
+      queryClient.removeQueries({ queryKey: ['conversations', activeClientId] });
+      queryClient.removeQueries({ queryKey: ['messages', activeClientId] });
+      queryClient.removeQueries({ queryKey: ['conversationMessages'] });
+    }
     setActiveClientId(id);
   };
 

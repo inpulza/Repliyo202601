@@ -55,6 +55,11 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
           switch (payload.type) {
             case 'new_message':
+              // Only process messages for the currently active brand to prevent cross-brand data bleed
+              if (brandId && payload.brandId && payload.brandId !== brandId) {
+                console.debug('[WebSocket] Ignoring message for different brand:', payload.brandId, 'vs active:', brandId);
+                break;
+              }
               onNewMessage?.(payload.data);
               if (showToasts) {
                 toast({

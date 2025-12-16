@@ -235,8 +235,10 @@ export function Inbox() {
   useWebSocket({
     brandId: activeClientId || undefined,
     onNewMessage: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/messages'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+      // Use correct cache keys that match NexusContext queries
+      queryClient.invalidateQueries({ queryKey: ['messages', activeClientId] });
+      queryClient.invalidateQueries({ queryKey: ['conversations', activeClientId] });
+      queryClient.invalidateQueries({ queryKey: ['conversationMessages'] });
     },
     showToasts: true,
   });
@@ -251,7 +253,7 @@ export function Inbox() {
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [editingDraftText, setEditingDraftText] = useState("");
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState<string | null>(null);
-  const [localDraftOverrides, setLocalDraftOverrides] = useState<Map<string, { aiSuggestedReply: string; aiReplyStatus: string; draftWasEdited: boolean }>>(new Map());
+  const [localDraftOverrides, setLocalDraftOverrides] = useState<Map<string, { aiSuggestedReply: string | null; aiReplyStatus: string; draftWasEdited: boolean }>>(new Map());
 
   const { data: syncStatus } = useQuery<SyncStatus>({
     queryKey: ['/api/sync/status'],
@@ -484,7 +486,7 @@ export function Inbox() {
       handleCancelReply();
       await refreshFeed();
       if (activeConversation) {
-        queryClient.invalidateQueries({ queryKey: [`/api/conversations/${activeConversation.id}/messages`] });
+        queryClient.invalidateQueries({ queryKey: ['conversationMessages', activeConversation.id] });
       }
     } catch (error: any) {
       console.error('[Reply] Error:', error);
@@ -564,7 +566,7 @@ export function Inbox() {
           return next;
         });
         if (activeConversation) {
-          queryClient.invalidateQueries({ queryKey: [`/api/conversations/${activeConversation.id}/messages`] });
+          queryClient.invalidateQueries({ queryKey: ['conversationMessages', activeConversation.id] });
         }
       }
     } catch (error: any) {
@@ -622,7 +624,7 @@ export function Inbox() {
           return next;
         });
         if (activeConversation) {
-          queryClient.invalidateQueries({ queryKey: [`/api/conversations/${activeConversation.id}/messages`] });
+          queryClient.invalidateQueries({ queryKey: ['conversationMessages', activeConversation.id] });
         }
       }
     } catch (error: any) {
@@ -669,7 +671,7 @@ export function Inbox() {
         return next;
       });
       if (activeConversation) {
-        queryClient.invalidateQueries({ queryKey: [`/api/conversations/${activeConversation.id}/messages`] });
+        queryClient.invalidateQueries({ queryKey: ['conversationMessages', activeConversation.id] });
       }
     } catch (error: any) {
       toast({
@@ -707,7 +709,7 @@ export function Inbox() {
         return next;
       });
       if (activeConversation) {
-        queryClient.invalidateQueries({ queryKey: [`/api/conversations/${activeConversation.id}/messages`] });
+        queryClient.invalidateQueries({ queryKey: ['conversationMessages', activeConversation.id] });
       }
     } catch (error: any) {
       toast({
@@ -744,7 +746,7 @@ export function Inbox() {
           return next;
         });
         if (activeConversation) {
-          queryClient.invalidateQueries({ queryKey: [`/api/conversations/${activeConversation.id}/messages`] });
+          queryClient.invalidateQueries({ queryKey: ['conversationMessages', activeConversation.id] });
         }
       }
     } catch (error: any) {
