@@ -712,6 +712,18 @@ export class DatabaseStorage implements IStorage {
         console.log(`[Storage] Found brand-wide match (reverse prefix) for reconciliation: pending ${pending.id}`);
         return pending;
       }
+      
+      // FACEBOOK FIX: Check if synced message CONTAINS the pending message content
+      // This handles "@Nombre Apellido ContenidoReal..." where ContenidoReal matches pending
+      // Use raw lowercase content (without @mention removal) to do substring check
+      const syncedRaw = syncedMessage.content.trim().toLowerCase().replace(/\s+/g, ' ');
+      const pendingRaw = pending.content.trim().toLowerCase().replace(/\s+/g, ' ');
+      const pendingFirst50 = pendingRaw.substring(0, 50);
+      
+      if (pendingFirst50.length >= 20 && syncedRaw.includes(pendingFirst50) && timeDiff < TIME_TOLERANCE_MS) {
+        console.log(`[Storage] Found Facebook-style match: synced message contains pending content (timeDiff: ${Math.round(timeDiff/1000)}s)`);
+        return pending;
+      }
     }
 
     return undefined;
@@ -772,6 +784,16 @@ export class DatabaseStorage implements IStorage {
       const existingStart = existingNormalized.substring(0, 50);
       if (syncedStart === existingStart && timeDiff < TIME_TOLERANCE_MS) {
         console.log(`[Storage] Global match (prefix): found existing ${existing.id} with similar content start`);
+        return existing;
+      }
+      
+      // FACEBOOK FIX: Check if synced message CONTAINS the existing message content
+      const syncedRaw = syncedMessage.content.trim().toLowerCase().replace(/\s+/g, ' ');
+      const existingRaw = existing.content.trim().toLowerCase().replace(/\s+/g, ' ');
+      const existingFirst50 = existingRaw.substring(0, 50);
+      
+      if (existingFirst50.length >= 20 && syncedRaw.includes(existingFirst50) && timeDiff < TIME_TOLERANCE_MS) {
+        console.log(`[Storage] Global match (Facebook-style contains): found existing ${existing.id}`);
         return existing;
       }
     }
