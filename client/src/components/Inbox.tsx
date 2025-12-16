@@ -220,12 +220,21 @@ export function Inbox() {
     enabled: !!activeClientId,
   });
 
+  const normalizeProviderToPlatform = (provider: string): string => {
+    const mapping: Record<string, string> = {
+      'tiktokbusiness': 'tiktok',
+      'gmb': 'google-business',
+    };
+    const normalized = provider.toLowerCase();
+    return mapping[normalized] || normalized;
+  };
+
   const activeProviders = React.useMemo(() => {
-    return socialAccounts.filter(acc => acc.isActive).map(acc => acc.provider.toLowerCase());
+    return socialAccounts.filter(acc => acc.isActive).map(acc => normalizeProviderToPlatform(acc.provider));
   }, [socialAccounts]);
 
   const inactiveProviders = React.useMemo(() => {
-    return socialAccounts.filter(acc => !acc.isActive).map(acc => acc.provider.toLowerCase());
+    return socialAccounts.filter(acc => !acc.isActive).map(acc => normalizeProviderToPlatform(acc.provider));
   }, [socialAccounts]);
 
   // Filter Conversations
