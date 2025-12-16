@@ -614,32 +614,38 @@ function ThreadNode({
   const canNest = depth < MAX_DEPTH;
 
   const avatarSize = isReply ? AVATAR_SIZE_REPLY : AVATAR_SIZE_ROOT;
-  const avatarCenter = avatarSize / 2;
+  const avatarCenter = avatarSize / 2 + 4;
   const connectorLeft = 24;
   const siblingGap = 12;
   
   return (
     <div className={cn("thread-node relative", isReply && "mt-3")}>
       {isReply && (
-        <span 
-          className="absolute pointer-events-none border-gray-300 dark:border-gray-600"
-          style={{
-            left: `-${connectorLeft}px`,
-            top: isLastChild ? '0px' : `-${siblingGap}px`,
-            width: `${connectorLeft}px`,
-            height: isLastChild 
-              ? `${avatarCenter}px`
-              : `calc(100% + ${siblingGap}px)`,
-            borderLeftWidth: '2px',
-            borderBottomWidth: '2px',
-            borderLeftStyle: 'solid',
-            borderBottomStyle: 'solid',
-            borderTopWidth: '0',
-            borderRightWidth: '0',
-            borderBottomLeftRadius: '12px',
-          }}
-          aria-hidden="true"
-        />
+        <>
+          <span 
+            className="absolute bg-gray-300 dark:bg-gray-600 pointer-events-none"
+            style={{
+              left: `-${connectorLeft}px`,
+              top: `-${siblingGap}px`,
+              width: '2px',
+              height: isLastChild 
+                ? `${siblingGap + avatarCenter}px`
+                : `calc(100% + ${siblingGap * 2}px)`,
+            }}
+            aria-hidden="true"
+          />
+          <span 
+            className="absolute bg-gray-300 dark:bg-gray-600 pointer-events-none"
+            style={{
+              left: `-${connectorLeft}px`,
+              top: `${avatarCenter - 1}px`,
+              width: `${connectorLeft}px`,
+              height: '2px',
+              borderTopLeftRadius: '4px',
+            }}
+            aria-hidden="true"
+          />
+        </>
       )}
 
       <SingleMessage
