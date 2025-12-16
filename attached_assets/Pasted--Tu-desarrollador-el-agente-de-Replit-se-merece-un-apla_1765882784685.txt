@@ -1,0 +1,78 @@
+¡Tu desarrollador (el agente de Replit) se merece un aplauso! 👏
+
+Ha detectado un error crítico en mi instrucción anterior. Yo estaba asumiendo la estructura 1:1 (DM) y olvidé que, al mantener la visualización agrupada por Post (1:N), no podemos guardar el resumen en la tabla principal conversations porque sobrescribiríamos los datos de Juan con los de Pedro.
+
+Su diagnóstico es 100% correcto. Si hubiéramos seguido mi instrucción anterior, habríamos creado un desastre de datos.
+
+Aquí tienes mi análisis de sus puntos y la Respuesta Definitiva para desbloquear la implementación.
+
+🧠 Mi Auditoría de su Feedback
+Sobre el Schema (El Problema Crítico):
+
+Veredicto: Tiene toda la razón.
+
+Decisión: Vamos con la Opción A (Tabla Satélite). Es la única forma limpia de tener "Múltiples resúmenes para un solo Post".
+
+Tabla: conversation_user_summaries.
+
+Sobre el Modelo (Costo):
+
+Veredicto: Muy buena pregunta. No necesitamos usar GPT-4o (caro) para resumir textos.
+
+Decisión: Usaremos un modelo "Light" y económico para esta tarea de background. GPT-4o-mini o Gemini Flash son perfectos. Son rápidos, baratos y muy buenos resumiendo.
+
+Sobre el Trigger (Manual vs. Auto):
+
+Veredicto: Excelente observación. Si un humano responde, eso también es parte de la historia y debe actualizar el resumen.
+
+Decisión: El trigger debe estar en el nivel más bajo posible (en el servicio de envío de mensajes), para que se dispare tanto si responde la IA como si respondes tú.
+
+🚀 Mensaje de Respuesta para el Agente (Luz Verde Fase 2)
+Copia y pega esto. Le estamos dando la razón y aprobando la arquitectura más robusta.
+
+"Tu análisis crítico es impecable y nos has salvado de un error de arquitectura grave. Tienes toda la razón: al agrupar visualmente por post, no podemos guardar el resumen en la tabla conversations porque colisionarían los usuarios.
+
+DECISIÓN TÉCNICA: APROBADA LA OPCIÓN A (Tabla Satélite).
+
+Procedamos con la implementación de la Fase 2 corrigiendo el rumbo según tus observaciones:
+
+1. Base de Datos (Nuevo Schema): Crea la tabla conversation_user_summaries (o el nombre que prefieras que siga la convención) con:
+
+id (PK)
+
+conversation_id (FK a conversations)
+
+customer_id / author_id (El identificador del usuario específico, ej. 'Juan')
+
+summary (TEXT)
+
+last_message_id (Para saber dónde se quedó el último resumen)
+
+updated_at
+
+2. Modelo de IA para Resúmenes: Para optimizar costos, NO uses el modelo principal del agente (que podría ser GPT-4). Configura el servicio de resúmenes para usar un modelo Low-Cost / High-Speed por defecto (como GPT-4o-mini o Gemini Flash 1.5), ya que la tarea de resumir hechos no requiere la "creatividad" del modelo caro.
+
+3. Lógica del Trigger (Cobertura Total): Tienes razón, las respuestas manuales también importan.
+
+Implementa el trigger de verificación (if news_msgs > 15) en un punto centralizado que capture TANTAS las respuestas automáticas (autoReplyService) COMO las manuales (Endpoint /api/inbox/reply).
+
+Esto asegura que el expediente de Juan se mantenga actualizado incluso si interviene un humano.
+
+4. Integración en prompt-composer: Cuando construyas el prompt para la IA:
+
+Llama a filterHistoryByAuthor (que ya hiciste).
+
+Busca si existe un registro en conversation_user_summaries para ese conversation_id + author.
+
+Combina: [Resumen Satélite] + [Historial Filtrado].
+
+Adelante, procede con la Opción A y la Tabla Satélite."
+
+💡 Nota para ti
+Con esta decisión, tu sistema queda blindado.
+
+Escalable: No importa si 1.000 personas comentan en un post, cada uno tiene su fila en la tabla satélite.
+
+Barato: Usar modelos "mini" para el resumen te ahorrará mucho dinero a la larga.
+
+Completo: Al incluir las respuestas manuales, la IA sabrá lo que tú prometiste al cliente, no solo lo que ella dijo.
