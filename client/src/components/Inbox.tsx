@@ -317,33 +317,38 @@ export function Inbox() {
       // B. Find children of this message
       const children = childrenMap.get(message.id) || [];
       
-      // C. Sort children by timestamp (chronological order)
-      children.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      // C. Sort children by timestamp (newest first for consistent social media style)
+      children.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
       // D. RECURSION: Process each child the same way (add it and find its children)
       children.forEach(child => addMessageAndChildren(child));
     };
 
-    // 3. Start from roots, sorted by timestamp
-    rootMessages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    // 3. Start from roots, sorted by timestamp (newest first for social media style)
+    rootMessages.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     rootMessages.forEach(root => addMessageAndChildren(root));
 
     // 4. Handle orphans (safety net for sync errors where parent doesn't exist)
     const processedIds = new Set(flattened.map(m => m.id));
     const orphans = activeConversationMessages
       .filter(m => !processedIds.has(m.id))
-      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     
     const allMessages = [...flattened, ...orphans];
     
     // 5. Merge local draft overrides for real-time updates
-    return allMessages.map(msg => {
+    const messagesWithOverrides = allMessages.map(msg => {
       const override = localDraftOverrides.get(msg.id);
       if (override) {
         return { ...msg, ...override };
       }
       return msg;
     });
+    
+    // 6. Final global sort to ensure strict newest-first ordering
+    // This handles cases where child replies are newer than their parent
+    // Applied AFTER overrides to ensure final rendered order is correct
+    return messagesWithOverrides.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   }, [activeConversationMessages, localDraftOverrides]);
 
   // Derive active draft message (outbound with drafting/pending status) and last inbound message
@@ -355,12 +360,13 @@ export function Inbox() {
   }, [threadMessages]);
 
   const lastInboundMessage = React.useMemo(() => {
+    // With newest first ordering, the first inbound message is the most recent
     const inbound = threadMessages.filter(m => m.direction === 'inbound');
-    return inbound[inbound.length - 1];
+    return inbound[0];
   }, [threadMessages]);
 
-  // For backward compatibility, selectedMessage prioritizes the draft, then last inbound
-  const selectedMessage = activeDraftMessage || lastInboundMessage || threadMessages[threadMessages.length - 1];
+  // For backward compatibility, selectedMessage prioritizes the draft, then last inbound (which is now the first in the array)
+  const selectedMessage = activeDraftMessage || lastInboundMessage || threadMessages[0];
 
   // Auto-select first conversation (Desktop Only)
   useEffect(() => {
@@ -1149,16 +1155,7 @@ export function Inbox() {
                         </div>
                       )}
 
-                      {/* Date Separator */}
-                      {threadMessages.length > 0 && (
-                        <div className="flex justify-center">
-                            <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
-                                {new Date(threadMessages[0].timestamp).toLocaleDateString()}
-                            </span>
-                        </div>
-                      )}
-
-                      {/* Render all messages in the thread */}
+                      {/* Render all messages in the thread with dynamic date separators */}
                       {threadMessages.map((msg, index) => {
                         const isReply = !!msg.parentMessageId;
                         const isInbound = msg.direction === 'inbound';
@@ -1172,16 +1169,32 @@ export function Inbox() {
                         // Use direction field from database - this is the authoritative source for owner detection
                         // direction='outbound' means message is from the brand owner, direction='inbound' means from a customer
                         const isOwner = isOutbound;
+
+                        // Dynamic date separator logic (like WhatsApp)
+                        // Show separator when the date changes from the previous message
+                        const currentDate = new Date(msg.timestamp).toLocaleDateString();
+                        const prevMessage = index > 0 ? threadMessages[index - 1] : null;
+                        const prevDate = prevMessage ? new Date(prevMessage.timestamp).toLocaleDateString() : null;
+                        const showDateSeparator = index === 0 || currentDate !== prevDate;
                     
                     return (
-                      <div 
-                        key={msg.id} 
-                        className={cn(
-                          "flex gap-4 group transition-all",
-                          isReply && "ml-8",
-                          isOwner && "ml-12"
+                      <React.Fragment key={msg.id}>
+                        {/* Date Separator - shows when date changes */}
+                        {showDateSeparator && (
+                          <div className="flex justify-center my-4">
+                            <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
+                              {currentDate}
+                            </span>
+                          </div>
                         )}
-                      >
+                        
+                        <div 
+                          className={cn(
+                            "flex gap-4 group transition-all",
+                            isReply && "ml-8",
+                            isOwner && "ml-12"
+                          )}
+                        >
                          <Avatar className={cn(
                            "mt-1 opacity-80 group-hover:opacity-100 transition-opacity",
                            isReply ? "h-6 w-6" : "h-8 w-8"
@@ -1539,7 +1552,8 @@ export function Inbox() {
                               );
                             })()}
                          </div>
-                      </div>
+                        </div>
+                      </React.Fragment>
                     );
                   })}
 
