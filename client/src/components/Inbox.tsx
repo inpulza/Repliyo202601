@@ -1249,7 +1249,7 @@ export function Inbox() {
                               alt={isSentFromRepliyo ? "Repliyo" : msg.author} 
                             />
                             <AvatarFallback className={cn(
-                              isOwner ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-600",
+                              isOwner ? getPlatformStyles((msg.platform || 'instagram') as Platform).badge : "bg-gray-200 text-gray-600",
                               isReply ? "text-[10px]" : "text-xs font-medium"
                             )}>
                               {msg.author.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || <User className={isReply ? "h-3 w-3" : "h-4 w-4"} />}
@@ -1279,13 +1279,22 @@ export function Inbox() {
                             </div>
                             <div className={cn(
                                 "p-4 rounded-2xl text-sm leading-relaxed shadow-sm relative rounded-tl-none",
-                                isSentFromRepliyo 
-                                  ? "bg-gray-800 text-white" 
-                                  : isOwner 
-                                    ? "bg-gray-600 text-white"
-                                    : isReply 
-                                      ? getPlatformStyles((msg.platform || 'instagram') as Platform).replyBubble
-                                      : getPlatformStyles((msg.platform || 'instagram') as Platform).bubble
+                                (() => {
+                                  const styles = getPlatformStyles((msg.platform || 'instagram') as Platform);
+                                  // Inbound messages (from users/followers) → userBubble
+                                  if (msg.direction === 'inbound') {
+                                    return styles.userBubble;
+                                  }
+                                  // Outbound messages: determine based on origin
+                                  if (isSentByAI) {
+                                    return styles.aiBubble;
+                                  }
+                                  if (isSentFromRepliyo) {
+                                    return styles.manualBubble;
+                                  }
+                                  // Outbound from social network (owner replied directly on platform)
+                                  return styles.ownerBubble;
+                                })()
                             )}>
                                {/* Audio message display */}
                                {(msg as any).mediaType === 'audio' && (msg as any).mediaUrl && (
@@ -1336,10 +1345,7 @@ export function Inbox() {
                                
                                {/* "Sent from Repliyo" indicator for messages sent from this app */}
                                {isSentFromRepliyo && (
-                                 <div className={cn(
-                                   "mt-2 pt-2 border-t border-gray-700/50 flex items-center gap-1.5 text-[10px] font-medium",
-                                   isSentByAI ? "text-purple-300" : "text-indigo-300"
-                                 )}>
+                                 <div className="mt-2 pt-2 border-t border-white/20 flex items-center gap-1.5 text-[10px] font-medium text-white/80">
                                    {isSentByAI ? (
                                      <Bot className="h-3 w-3" />
                                    ) : (
