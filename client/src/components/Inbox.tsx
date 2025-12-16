@@ -1310,8 +1310,9 @@ export function Inbox() {
                                   <span className="text-[10px] font-medium">Reply</span>
                                 </button>
                                 
-                                {/* Generate Draft button - show if no draft exists and not already generating */}
-                                {!msg.aiSuggestedReply && msg.aiReplyStatus !== 'drafted' && msg.aiReplyStatus !== 'drafting' && !generatingDraftIds.has(msg.id) && (
+                                {/* Generate Draft button - show if no draft exists and not currently generating
+                                   Also show if status is 'drafting' but no content and not in generatingDraftIds (stuck state) */}
+                                {!msg.aiSuggestedReply && msg.aiReplyStatus !== 'drafted' && !generatingDraftIds.has(msg.id) && (
                                   <button
                                     onClick={() => handleGenerateDraft(msg.id)}
                                     disabled={generatingDraftIds.has(msg.id)}
@@ -1331,7 +1332,9 @@ export function Inbox() {
                               const draftContent = msg.aiSuggestedReply || '';
                               const isGeneratingDraft = generatingDraftIds.has(msg.id);
                               const hasError = msg.aiReplyStatus === 'draft_error';
-                              const hasDraft = msg.aiSuggestedReply || isGeneratingDraft || hasError;
+                              // Only show as having draft if actively generating OR has actual content OR has error
+                              // Don't show stuck 'drafting' states without content as having a draft
+                              const hasDraft = isGeneratingDraft || msg.aiSuggestedReply || hasError;
                               const isEditingThis = editingDraftId === msg.id;
                               const charLimit = getCharacterLimit((msg.platform || 'instagram') as Platform, (msg.type || 'comment') as MessageType);
                               const isOverLimit = draftContent.length > charLimit;
