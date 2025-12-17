@@ -121,15 +121,6 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
                   : (conversation.customerName || 'Unknown User')
                 }
               </span>
-              {conversation.unreadCount && conversation.unreadCount > 0 && (
-                <Badge 
-                  variant="default" 
-                  className="h-5 min-w-[20px] px-1.5 text-[10px] font-bold bg-indigo-600 shrink-0"
-                  data-testid={`badge-unread-${conversation.id}`}
-                >
-                  {conversation.unreadCount}
-                </Badge>
-              )}
             </div>
             <div className="flex items-center gap-1 shrink-0">
               {conversation.socialPost?.permalink && (
@@ -184,6 +175,17 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
           </p>
         </div>
       </div>
+      
+      {/* Unread count badge - bottom right */}
+      {conversation.unreadCount && conversation.unreadCount > 0 && (
+        <Badge 
+          variant="default" 
+          className="absolute bottom-2 right-2 h-5 min-w-[20px] px-1.5 text-[10px] font-bold bg-indigo-600"
+          data-testid={`badge-unread-${conversation.id}`}
+        >
+          {conversation.unreadCount}
+        </Badge>
+      )}
     </motion.button>
   );
 }
