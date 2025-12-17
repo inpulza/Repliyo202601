@@ -619,10 +619,11 @@ function ThreadNode({
   const parentAvatarCenter = parentAvatarSize / 2;
   const childAvatarCenter = AVATAR_SIZE_REPLY / 2;
   const siblingGap = 12;
+  const extraReach = parentAvatarCenter - 2; // extend line closer to parent avatar bottom
   
   const connectorLeftOffset = INDENT - parentAvatarCenter;
   const connectorWidth = connectorLeftOffset + childAvatarCenter;
-  const verticalOffset = siblingGap + parentAvatarCenter + AVATAR_MT;
+  const verticalOffset = siblingGap + parentAvatarCenter + AVATAR_MT + extraReach;
   
   return (
     <div className={cn("thread-node relative", isReply && "mt-3")}>
