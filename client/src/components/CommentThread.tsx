@@ -658,14 +658,13 @@ function ThreadNode({
     return () => observer.disconnect();
   }, []);
   
-  // L-connector: connects parent avatar center to child avatar center
-  // Base width from parent avatar center to child avatar center
-  const baseWidth = (CHILD_MARGIN_LEFT - parentAvatarCenter) + thisAvatarCenter; // 28px for depth 1
-  // Extend horizontal line 2x longer while keeping START at child avatar center
-  const extendedWidth = baseWidth * 2; // 56px
-  // Left edge = child avatar center - extended width (to keep right edge at child avatar)
-  const horizontalConnectorLeft = extendedWidth - thisAvatarCenter; // 56 - 12 = 44px
-  const horizontalConnectorWidth = extendedWidth;
+  // L-connector: connects child avatar center to parent avatar center exactly
+  // horizontalConnectorLeft = distance from child container to parent avatar center
+  // For depth 1: 32 - 16 = 16px (parent avatar center is 16px to the left)
+  const horizontalConnectorLeft = CHILD_MARGIN_LEFT - parentAvatarCenter;
+  // horizontalConnectorWidth = from parent avatar center to child avatar center
+  // For depth 1: 16 + 12 = 28px
+  const horizontalConnectorWidth = horizontalConnectorLeft + thisAvatarCenter;
   
   // Vertical line height: from child avatar UP to parent avatar level
   // This accounts for: parent message height + sibling gap + distance to reach parent avatar center
@@ -675,12 +674,11 @@ function ThreadNode({
   
   return (
     <div className={cn("thread-node relative", isReply && "mt-3")}>
-      {/* L-shaped connector for replies */}
+      {/* L-shaped connector for replies - z-index 0 to stay behind message bubbles */}
       {isReply && verticalLineHeight > 0 && (
         <span 
           className="absolute pointer-events-none"
           style={{
-            // Position at parent avatar center
             left: `-${horizontalConnectorLeft}px`,
             top: `-${verticalLineHeight - AVATAR_MT - thisAvatarCenter}px`,
             width: `${horizontalConnectorWidth}px`,
@@ -688,6 +686,7 @@ function ThreadNode({
             borderLeft: '1px solid rgba(156, 163, 175, 0.5)',
             borderBottom: '1px solid rgba(156, 163, 175, 0.5)',
             borderBottomLeftRadius: '8px',
+            zIndex: 0,
           }}
           aria-hidden="true"
         />
