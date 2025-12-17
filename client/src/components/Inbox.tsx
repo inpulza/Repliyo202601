@@ -199,7 +199,7 @@ export function Inbox() {
   const [platformFilter, setPlatformFilter] = useState<Platform | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<MessageType | 'all'>('all');
   const [fireMode, setFireMode] = useState(false);
-  const [isCRMOpen, setIsCRMOpen] = useState(!isMobile);
+  const [isCRMOpen, setIsCRMOpen] = useState(false);
   const [showInactiveNetworks, setShowInactiveNetworks] = useState(false);
   const [showOnlyUnread, setShowOnlyUnread] = useState(false);
 
