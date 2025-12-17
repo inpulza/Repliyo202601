@@ -142,10 +142,7 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
             </div>
           </div>
           
-          <div className="flex items-center gap-2 mb-0.5 flex-wrap min-w-0 max-w-full justify-end">
-            <div className="flex items-center shrink-0">
-              <PlatformIcon platform={platform} className="h-4 w-4" />
-            </div>
+          <div className="flex items-center gap-2 mb-0.5 flex-wrap min-w-0 max-w-full justify-between">
             <div className="flex items-center gap-1 text-[10px] text-gray-400 shrink-0">
               {isDM && (
                 <>
@@ -160,11 +157,14 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
                 </>
               )}
             </div>
-            {isDM && conversation.socialPost?.caption && (
-              <span className="text-[10px] text-gray-400 truncate max-w-[150px]" title={conversation.socialPost.caption}>
-                on: {conversation.socialPost.caption.substring(0, 30)}...
-              </span>
-            )}
+            <div className="flex items-center gap-2 shrink-0">
+              {isDM && conversation.socialPost?.caption && (
+                <span className="text-[10px] text-gray-400 truncate max-w-[100px]" title={conversation.socialPost.caption}>
+                  on: {conversation.socialPost.caption.substring(0, 20)}...
+                </span>
+              )}
+              <PlatformIcon platform={platform} className="h-4 w-4" />
+            </div>
           </div>
 
           <div className="flex items-center justify-between">
