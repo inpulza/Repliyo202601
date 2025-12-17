@@ -108,7 +108,7 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
         {renderThumbnail()}
 
         <div className="flex-1 min-w-0 max-w-full overflow-hidden">
-          <div className="flex items-center justify-between mb-1 min-w-0 max-w-full">
+          <div className="flex items-center justify-between mb-0.5 min-w-0 max-w-full">
             <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden mr-3">
               <span className={cn(
                 "text-sm font-bold truncate text-gray-900",
@@ -142,7 +142,7 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
             </div>
           </div>
           
-          <div className="flex items-center gap-2 mb-1 flex-wrap min-w-0 max-w-full justify-end">
+          <div className="flex items-center gap-2 mb-0.5 flex-wrap min-w-0 max-w-full justify-end">
             <div className="flex items-center shrink-0">
               <PlatformIcon platform={platform} className="h-4 w-4" />
             </div>
