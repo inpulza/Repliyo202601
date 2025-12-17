@@ -615,13 +615,15 @@ function ThreadNode({
   const hasChildren = node.children.length > 0;
   const canNest = depth < MAX_DEPTH;
 
-  const INDENT = 24; // Reduced for better visual alignment
+  const FLEX_GAP = 12; // gap-3 in the message flex container
   const AVATAR_MT = 4; // mt-1 on avatar
   const siblingGap = 12; // mt-3 between siblings
   const parentAvatarSize = depth === 1 ? AVATAR_SIZE_ROOT : AVATAR_SIZE_REPLY;
   const parentAvatarCenter = parentAvatarSize / 2;
   const childAvatarCenter = AVATAR_SIZE_REPLY / 2;
   const thisAvatarSize = isReply ? AVATAR_SIZE_REPLY : AVATAR_SIZE_ROOT;
+  // The actual indent includes the parent avatar width + the flex gap
+  const INDENT = parentAvatarSize + FLEX_GAP;
   
   // Ref to measure this node's message height for passing to children
   const messageRef = React.useRef<HTMLDivElement>(null);
