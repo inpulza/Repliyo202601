@@ -618,7 +618,7 @@ function ThreadNode({
 
   const FLEX_GAP = 12; // gap-3 in the message flex container
   const AVATAR_MT = 4; // mt-1 on avatar
-  const siblingGap = 20; // mt-5 between siblings
+  const siblingGap = 28; // mt-7 between siblings
   
   // This node's avatar size
   const thisAvatarSize = isReply ? AVATAR_SIZE_REPLY : AVATAR_SIZE_ROOT;
@@ -674,7 +674,7 @@ function ThreadNode({
     : 0;
   
   return (
-    <div className={cn("thread-node relative", isReply && "mt-5")}>
+    <div className={cn("thread-node relative", isReply && "mt-7")}>
       {/* L-shaped connector for replies - above background, behind content */}
       {isReply && verticalLineHeight > 0 && (
         <span 
@@ -720,7 +720,7 @@ function ThreadNode({
 
       {hasChildren && canNest && (
         <div 
-          className="thread-children relative"
+          className="thread-children relative mt-4"
           style={{
             marginLeft: `${CHILD_MARGIN_LEFT}px`,
           }}
