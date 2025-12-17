@@ -568,6 +568,7 @@ interface ThreadNodeProps {
   node: MessageNode;
   depth: number;
   isLastChild: boolean;
+  parentMessageHeight?: number; // Height of parent's message bubble for connector calculation
   platformStyles: CommentThreadProps['platformStyles'];
   onStartReply: CommentThreadProps['onStartReply'];
   onGenerateDraft: CommentThreadProps['onGenerateDraft'];
@@ -591,6 +592,7 @@ function ThreadNode({
   node,
   depth,
   isLastChild,
+  parentMessageHeight = 0,
   platformStyles,
   onStartReply,
   onGenerateDraft,
@@ -615,57 +617,56 @@ function ThreadNode({
 
   const INDENT = 32;
   const AVATAR_MT = 4; // mt-1 on avatar
+  const siblingGap = 12; // mt-3 between siblings
   const parentAvatarSize = depth === 1 ? AVATAR_SIZE_ROOT : AVATAR_SIZE_REPLY;
   const parentAvatarCenter = parentAvatarSize / 2;
   const childAvatarCenter = AVATAR_SIZE_REPLY / 2;
+  const thisAvatarSize = isReply ? AVATAR_SIZE_REPLY : AVATAR_SIZE_ROOT;
   
-  // Horizontal connector: from the vertical line to the child avatar
+  // Ref to measure this node's message height for passing to children
+  const messageRef = React.useRef<HTMLDivElement>(null);
+  const [myMessageHeight, setMyMessageHeight] = React.useState(0);
+  
+  // Measure this message's height using ResizeObserver for dynamic updates
+  React.useLayoutEffect(() => {
+    const el = messageRef.current;
+    if (!el) return;
+    
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setMyMessageHeight(entry.contentRect.height);
+      }
+    });
+    
+    observer.observe(el);
+    // Initial measurement
+    setMyMessageHeight(el.getBoundingClientRect().height);
+    
+    return () => observer.disconnect();
+  }, []);
+  
+  // Calculate the L-connector dimensions for replies
+  // The vertical part needs to go UP from child avatar to connect with parent avatar
   const horizontalConnectorLeft = INDENT - parentAvatarCenter;
   const horizontalConnectorWidth = horizontalConnectorLeft + childAvatarCenter;
   
-  // Reference to measure the container and position the vertical line dynamically
-  const nodeRef = React.useRef<HTMLDivElement>(null);
-  const childrenContainerRef = React.useRef<HTMLDivElement>(null);
-  const [verticalLineHeight, setVerticalLineHeight] = React.useState<number | null>(null);
-  
-  // Calculate the avatar center position for this node (used by children to draw their horizontal connector)
-  const thisAvatarCenter = isReply ? AVATAR_SIZE_REPLY / 2 : AVATAR_SIZE_ROOT / 2;
-  const currentAvatarSize = isReply ? AVATAR_SIZE_REPLY : AVATAR_SIZE_ROOT;
-  
-  // Measure children container to calculate vertical line height
-  React.useLayoutEffect(() => {
-    if (hasChildren && canNest && nodeRef.current && childrenContainerRef.current) {
-      const nodeRect = nodeRef.current.getBoundingClientRect();
-      const childrenRect = childrenContainerRef.current.getBoundingClientRect();
-      
-      // The vertical line starts from the avatar center (after avatar top margin)
-      // and ends at the last child's horizontal connector position
-      const avatarTopPosition = AVATAR_MT + thisAvatarCenter;
-      
-      // Calculate where the children container starts relative to this node
-      const childrenStartRelative = childrenRect.top - nodeRect.top;
-      
-      // The line should end at the last child's connector (childAvatarCenter + AVATAR_MT from bottom of container)
-      const lineEndFromTop = childrenRect.height - childAvatarCenter - AVATAR_MT + childrenStartRelative;
-      
-      // Total line height from avatar center to last child connector
-      const totalHeight = lineEndFromTop - avatarTopPosition;
-      
-      setVerticalLineHeight(Math.max(0, totalHeight));
-    }
-  }, [hasChildren, canNest, thisAvatarCenter, childAvatarCenter, node.children.length]);
+  // Vertical line height: from child avatar UP to parent avatar level
+  // This accounts for: parent message height + sibling gap + distance to reach parent avatar center
+  const verticalLineHeight = isReply 
+    ? parentMessageHeight + siblingGap + parentAvatarCenter - childAvatarCenter
+    : 0;
   
   return (
-    <div ref={nodeRef} className={cn("thread-node relative", isReply && "mt-3")}>
-      {/* Horizontal connector with rounded corner - only for replies */}
-      {isReply && (
+    <div className={cn("thread-node relative", isReply && "mt-3")}>
+      {/* L-shaped connector for replies - single continuous line */}
+      {isReply && verticalLineHeight > 0 && (
         <span 
           className="absolute pointer-events-none"
           style={{
             left: `-${horizontalConnectorLeft}px`,
-            top: `${AVATAR_MT}px`,
+            top: `-${verticalLineHeight - AVATAR_MT - childAvatarCenter}px`,
             width: `${horizontalConnectorWidth}px`,
-            height: `${childAvatarCenter}px`,
+            height: `${verticalLineHeight}px`,
             borderLeft: '1px solid rgba(156, 163, 175, 0.5)',
             borderBottom: '1px solid rgba(156, 163, 175, 0.5)',
             borderBottomLeftRadius: '8px',
@@ -673,48 +674,34 @@ function ThreadNode({
           aria-hidden="true"
         />
       )}
-      
-      {/* Vertical line from this node's avatar down to children - dynamically measured */}
-      {hasChildren && canNest && verticalLineHeight !== null && verticalLineHeight > 0 && (
-        <span 
-          className="absolute pointer-events-none"
-          style={{
-            left: `${thisAvatarCenter - 0.5}px`, // Center of the avatar
-            top: `${AVATAR_MT + thisAvatarCenter}px`, // Start from avatar center
-            width: '1px',
-            height: `${verticalLineHeight}px`,
-            backgroundColor: 'rgba(156, 163, 175, 0.5)',
-          }}
-          aria-hidden="true"
-        />
-      )}
 
-      <SingleMessage
-        msg={node.message}
-        isReply={isReply}
-        isOrphan={node.isOrphan}
-        platformStyles={platformStyles}
-        onStartReply={onStartReply}
-        onGenerateDraft={onGenerateDraft}
-        generatingDraftIds={generatingDraftIds}
-        editingDraftId={editingDraftId}
-        editingDraftText={editingDraftText}
-        setEditingDraftText={setEditingDraftText}
-        startEditingDraft={startEditingDraft}
-        cancelEditingDraft={cancelEditingDraft}
-        handleSaveDraftEdit={handleSaveDraftEdit}
-        handleDiscardDraft={handleDiscardDraft}
-        handleRegenerateDraft={handleRegenerateDraft}
-        handleSendDraft={handleSendDraft}
-        showRegenerateConfirm={showRegenerateConfirm}
-        setShowRegenerateConfirm={setShowRegenerateConfirm}
-        AudioPlayer={AudioPlayer}
-        SentimentIndicator={SentimentIndicator}
-      />
+      <div ref={messageRef}>
+        <SingleMessage
+          msg={node.message}
+          isReply={isReply}
+          isOrphan={node.isOrphan}
+          platformStyles={platformStyles}
+          onStartReply={onStartReply}
+          onGenerateDraft={onGenerateDraft}
+          generatingDraftIds={generatingDraftIds}
+          editingDraftId={editingDraftId}
+          editingDraftText={editingDraftText}
+          setEditingDraftText={setEditingDraftText}
+          startEditingDraft={startEditingDraft}
+          cancelEditingDraft={cancelEditingDraft}
+          handleSaveDraftEdit={handleSaveDraftEdit}
+          handleDiscardDraft={handleDiscardDraft}
+          handleRegenerateDraft={handleRegenerateDraft}
+          handleSendDraft={handleSendDraft}
+          showRegenerateConfirm={showRegenerateConfirm}
+          setShowRegenerateConfirm={setShowRegenerateConfirm}
+          AudioPlayer={AudioPlayer}
+          SentimentIndicator={SentimentIndicator}
+        />
+      </div>
 
       {hasChildren && canNest && (
         <div 
-          ref={childrenContainerRef}
           className="thread-children relative"
           style={{
             marginLeft: `${INDENT}px`,
@@ -726,6 +713,7 @@ function ThreadNode({
               node={childNode}
               depth={depth + 1}
               isLastChild={index === node.children.length - 1}
+              parentMessageHeight={myMessageHeight}
               platformStyles={platformStyles}
               onStartReply={onStartReply}
               onGenerateDraft={onGenerateDraft}
