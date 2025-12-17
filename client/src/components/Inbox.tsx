@@ -694,7 +694,7 @@ export function Inbox() {
     <div className="h-full flex bg-background overflow-hidden relative">
       {/* COLUMN 2: Message List */}
       <div className={cn(
-          "w-[400px] border-r flex flex-col bg-white relative z-10 shadow-sm",
+          "w-[400px] border-r flex flex-col bg-white relative z-10",
           isMobile ? "w-full" : "",
           isMobile && activeConversation ? "hidden" : "flex"
       )}>
