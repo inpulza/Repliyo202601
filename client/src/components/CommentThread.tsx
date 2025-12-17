@@ -619,7 +619,7 @@ function ThreadNode({
   const parentAvatarCenter = parentAvatarSize / 2;
   const childAvatarCenter = AVATAR_SIZE_REPLY / 2;
   const siblingGap = 12;
-  const extraReach = (parentAvatarCenter - 2) * 2.5; // extend line much closer to parent avatar
+  const extraReach = (parentAvatarCenter - 2) * 4; // extend line to almost touch parent avatar
   
   const connectorLeftOffset = INDENT - parentAvatarCenter;
   const connectorWidth = connectorLeftOffset + childAvatarCenter;
