@@ -79,7 +79,7 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
           )}>
             <Play className="h-6 w-6 text-gray-500 fill-gray-400/50" />
           </div>
-          <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5">
+          <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 ring-1 ring-gray-300">
             <PlatformIcon platform={platform} className="h-4 w-4" />
           </div>
         </div>
@@ -94,7 +94,7 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
             {(conversation.customerName || 'U').substring(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
-        <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5">
+        <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 ring-1 ring-gray-300">
           <PlatformIcon platform={platform} className="h-4 w-4" />
         </div>
       </div>
