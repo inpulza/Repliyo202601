@@ -100,7 +100,7 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
       onClick={onClick}
       data-testid={`conversation-card-${conversation.id}`}
       className={cn(
-        "w-full max-w-full text-left bg-transparent rounded-lg hover:bg-white/50 transition-all duration-200 relative overflow-hidden group pl-3 py-3 pr-3",
+        "w-full max-w-full text-left bg-transparent rounded-lg hover:bg-white/50 transition-all duration-200 relative overflow-hidden group pl-3 py-5 pr-3",
         isSelected && "bg-white/80"
       )}
     >
