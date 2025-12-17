@@ -618,28 +618,72 @@ function ThreadNode({
   const parentAvatarSize = depth === 1 ? AVATAR_SIZE_ROOT : AVATAR_SIZE_REPLY;
   const parentAvatarCenter = parentAvatarSize / 2;
   const childAvatarCenter = AVATAR_SIZE_REPLY / 2;
-  const siblingGap = 12;
-  const extraReach = (parentAvatarCenter - 2) * 4; // extend line to almost touch parent avatar
   
-  const connectorLeftOffset = INDENT - parentAvatarCenter;
-  const connectorWidth = connectorLeftOffset + childAvatarCenter;
-  const verticalOffset = siblingGap + parentAvatarCenter + AVATAR_MT + extraReach;
+  // Horizontal connector: from the vertical line to the child avatar
+  const horizontalConnectorLeft = INDENT - parentAvatarCenter;
+  const horizontalConnectorWidth = horizontalConnectorLeft + childAvatarCenter;
+  
+  // Reference to measure the container and position the vertical line dynamically
+  const nodeRef = React.useRef<HTMLDivElement>(null);
+  const childrenContainerRef = React.useRef<HTMLDivElement>(null);
+  const [verticalLineHeight, setVerticalLineHeight] = React.useState<number | null>(null);
+  
+  // Calculate the avatar center position for this node (used by children to draw their horizontal connector)
+  const thisAvatarCenter = isReply ? AVATAR_SIZE_REPLY / 2 : AVATAR_SIZE_ROOT / 2;
+  const currentAvatarSize = isReply ? AVATAR_SIZE_REPLY : AVATAR_SIZE_ROOT;
+  
+  // Measure children container to calculate vertical line height
+  React.useLayoutEffect(() => {
+    if (hasChildren && canNest && nodeRef.current && childrenContainerRef.current) {
+      const nodeRect = nodeRef.current.getBoundingClientRect();
+      const childrenRect = childrenContainerRef.current.getBoundingClientRect();
+      
+      // The vertical line starts from the avatar center (after avatar top margin)
+      // and ends at the last child's horizontal connector position
+      const avatarTopPosition = AVATAR_MT + thisAvatarCenter;
+      
+      // Calculate where the children container starts relative to this node
+      const childrenStartRelative = childrenRect.top - nodeRect.top;
+      
+      // The line should end at the last child's connector (childAvatarCenter + AVATAR_MT from bottom of container)
+      const lineEndFromTop = childrenRect.height - childAvatarCenter - AVATAR_MT + childrenStartRelative;
+      
+      // Total line height from avatar center to last child connector
+      const totalHeight = lineEndFromTop - avatarTopPosition;
+      
+      setVerticalLineHeight(Math.max(0, totalHeight));
+    }
+  }, [hasChildren, canNest, thisAvatarCenter, childAvatarCenter, node.children.length]);
   
   return (
-    <div className={cn("thread-node relative", isReply && "mt-3")}>
+    <div ref={nodeRef} className={cn("thread-node relative", isReply && "mt-3")}>
+      {/* Horizontal connector with rounded corner - only for replies */}
       {isReply && (
         <span 
           className="absolute pointer-events-none"
           style={{
-            left: `-${connectorLeftOffset}px`,
-            top: `-${verticalOffset}px`,
-            width: `${connectorWidth}px`,
-            height: isLastChild 
-              ? `${verticalOffset + childAvatarCenter + AVATAR_MT}px`
-              : `calc(100% + ${verticalOffset}px)`,
+            left: `-${horizontalConnectorLeft}px`,
+            top: `${AVATAR_MT}px`,
+            width: `${horizontalConnectorWidth}px`,
+            height: `${childAvatarCenter}px`,
             borderLeft: '1px solid rgba(156, 163, 175, 0.5)',
             borderBottom: '1px solid rgba(156, 163, 175, 0.5)',
             borderBottomLeftRadius: '8px',
+          }}
+          aria-hidden="true"
+        />
+      )}
+      
+      {/* Vertical line from this node's avatar down to children - dynamically measured */}
+      {hasChildren && canNest && verticalLineHeight !== null && verticalLineHeight > 0 && (
+        <span 
+          className="absolute pointer-events-none"
+          style={{
+            left: `${thisAvatarCenter - 0.5}px`, // Center of the avatar
+            top: `${AVATAR_MT + thisAvatarCenter}px`, // Start from avatar center
+            width: '1px',
+            height: `${verticalLineHeight}px`,
+            backgroundColor: 'rgba(156, 163, 175, 0.5)',
           }}
           aria-hidden="true"
         />
@@ -669,7 +713,13 @@ function ThreadNode({
       />
 
       {hasChildren && canNest && (
-        <div className="thread-children">
+        <div 
+          ref={childrenContainerRef}
+          className="thread-children relative"
+          style={{
+            marginLeft: `${INDENT}px`,
+          }}
+        >
           {node.children.map((childNode, index) => (
             <ThreadNode
               key={childNode.message.id}
