@@ -686,7 +686,7 @@ function ThreadNode({
             borderLeft: '1px solid rgba(156, 163, 175, 0.5)',
             borderBottom: '1px solid rgba(156, 163, 175, 0.5)',
             borderBottomLeftRadius: '8px',
-            zIndex: 0,
+            zIndex: -1,
           }}
           aria-hidden="true"
         />
