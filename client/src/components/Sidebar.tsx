@@ -250,18 +250,11 @@ export function Sidebar() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               {isCollapsed ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" className="w-full h-10 p-0 hover:bg-gray-100 rounded-lg">
-                      <Avatar className="h-7 w-7 ring-1 ring-black/5">
-                        <AvatarFallback className="bg-gray-200 text-gray-600 text-[10px]">{user?.name?.substring(0, 2).toUpperCase() || 'US'}</AvatarFallback>
-                      </Avatar>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    <p>{user?.name || 'Usuario'}</p>
-                  </TooltipContent>
-                </Tooltip>
+                <Button variant="ghost" className="w-full h-10 p-0 hover:bg-gray-100 rounded-lg">
+                  <Avatar className="h-7 w-7 ring-1 ring-black/5">
+                    <AvatarFallback className="bg-gray-200 text-gray-600 text-[10px]">{user?.name?.substring(0, 2).toUpperCase() || 'US'}</AvatarFallback>
+                  </Avatar>
+                </Button>
               ) : (
                 <div className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer group select-none">
                   <Avatar className="h-8 w-8 ring-2 ring-black/5 group-hover:ring-black/10 transition-all">
