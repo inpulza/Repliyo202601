@@ -428,12 +428,12 @@ function DraftCard({
           "rounded-lg border border-gray-200 transition-all overflow-hidden bg-transparent",
           isOverLimit && "border-red-300"
         )}>
-          <div className="px-3 py-2 flex items-center justify-between border-b border-gray-200">
+          <div className="px-3 py-2 flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <div className={cn("h-4 w-4 rounded-full bg-gradient-to-br flex items-center justify-center", platformDraftStyles.iconBg)}>
+              <div className="h-4 w-4 rounded-full bg-[#1877F2] flex items-center justify-center">
                 <Brain className="h-2 w-2 text-white" />
               </div>
-              <span className={cn("text-[10px] font-bold", platformDraftStyles.accent)}>Borrador IA</span>
+              <span className="text-[10px] font-bold text-[#1877F2]">Borrador IA</span>
               {wasEdited && (
                 <Badge variant="outline" className="h-3.5 text-[8px] px-1 text-amber-600 border-amber-200 bg-amber-50">
                   Editado
@@ -485,7 +485,7 @@ function DraftCard({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 w-6 p-0 text-gray-300 hover:text-red-500 hover:bg-transparent"
+                className="h-6 w-6 p-0 text-[#8BB8F2] hover:text-[#1877F2] hover:bg-transparent"
                 title="Descartar"
                 onClick={() => handleDiscardDraft(msg.id)}
                 data-testid={`button-discard-draft-${msg.id}`}
@@ -495,7 +495,7 @@ function DraftCard({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 w-6 p-0 text-gray-300 hover:text-purple-500 hover:bg-transparent"
+                className="h-6 w-6 p-0 text-[#8BB8F2] hover:text-[#1877F2] hover:bg-transparent"
                 title="Regenerar"
                 onClick={() => handleRegenerateDraft(msg.id)}
                 disabled={isGeneratingDraft}
@@ -512,13 +512,13 @@ function DraftCard({
             <div className="flex items-center gap-1">
               {isEditingThis ? (
                 <>
-                  <Button variant="ghost" size="sm" className="h-6 text-[10px] text-gray-400 px-2 hover:bg-transparent" onClick={cancelEditingDraft}>
+                  <Button variant="ghost" size="sm" className="h-6 text-[10px] text-[#8BB8F2] px-2 hover:text-[#1877F2] hover:bg-transparent" onClick={cancelEditingDraft}>
                     Cancelar
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 text-[10px] text-gray-500 border border-gray-200 px-2 hover:bg-gray-50"
+                    className="h-6 text-[10px] text-[#1877F2] border border-[#8BB8F2] px-2 hover:bg-blue-50"
                     onClick={() => handleSaveDraftEdit(msg.id)}
                     data-testid={`button-save-draft-${msg.id}`}
                   >
@@ -530,7 +530,7 @@ function DraftCard({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 text-[10px] text-gray-400 hover:text-gray-600 hover:bg-transparent px-2"
+                  className="h-6 text-[10px] text-[#8BB8F2] hover:text-[#1877F2] hover:bg-transparent px-2"
                   onClick={() => startEditingDraft(msg.id, draftContent)}
                   data-testid={`button-edit-draft-${msg.id}`}
                 >
@@ -546,7 +546,7 @@ function DraftCard({
                     "h-6 text-[10px] font-medium px-2 transition-all",
                     isOverLimit
                       ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-gray-200 hover:bg-gray-300 text-gray-600"
+                      : "bg-[#1877F2] hover:bg-[#1565D8] text-white"
                   )}
                   onClick={() => handleSendDraft(msg.id, draftContent)}
                   disabled={isOverLimit}
