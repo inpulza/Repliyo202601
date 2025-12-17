@@ -683,8 +683,8 @@ function ThreadNode({
             top: `-${verticalLineHeight - AVATAR_MT - thisAvatarCenter}px`,
             width: `${horizontalConnectorWidth}px`,
             height: `${verticalLineHeight}px`,
-            borderLeft: '1px solid rgba(156, 163, 175, 0.5)',
-            borderBottom: '1px solid rgba(156, 163, 175, 0.5)',
+            borderLeft: '1px solid rgba(120, 130, 140, 0.7)',
+            borderBottom: '1px solid rgba(120, 130, 140, 0.7)',
             borderBottomLeftRadius: '8px',
             zIndex: -1,
           }}
