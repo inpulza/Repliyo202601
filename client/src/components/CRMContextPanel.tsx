@@ -112,10 +112,7 @@ function CRMPanelContent({ contact, onClose, className }: { contact?: CRMContact
 
           {/* Empty State Content */}
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center relative z-0">
-             {/* Decorative background elements */}
-             <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-indigo-100/50 rounded-full blur-3xl -z-10" />
-             
-             <div className="bg-white p-4 rounded-2xl shadow-lg mb-6 ring-1 ring-gray-100 relative group">
+             <div className="bg-white p-4 rounded-2xl mb-6 ring-1 ring-gray-200 relative group border border-gray-200">
                 <div className="absolute -top-2 -right-2 bg-red-500 h-4 w-4 rounded-full border-2 border-white animate-pulse" />
                 <div className="bg-indigo-50 p-3 rounded-xl">
                     <Plus className="h-8 w-8 text-indigo-600" />
@@ -129,7 +126,7 @@ function CRMPanelContent({ contact, onClose, className }: { contact?: CRMContact
              
              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="w-full bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                  <Button className="w-full bg-indigo-600 hover:bg-indigo-700 transition-all hover:scale-[1.02] active:scale-[0.98]">
                       <Plus className="h-4 w-4 mr-2" />
                       Create Contact in CRM
                   </Button>
@@ -294,7 +291,7 @@ function CRMPanelContent({ contact, onClose, className }: { contact?: CRMContact
                     </Dialog>
                 </div>
 
-                <Card className="shadow-sm overflow-hidden">
+                <Card className="overflow-hidden border border-gray-200">
                     <CardContent className="p-3">
                         <div className="flex justify-between items-start mb-2">
                             <h5 className="text-sm font-semibold text-gray-900 leading-tight">Enterprise License 2024</h5>
@@ -329,7 +326,7 @@ function CRMPanelContent({ contact, onClose, className }: { contact?: CRMContact
                                 <div className="space-y-2">
                                     <Label>Note Content</Label>
                                     <textarea 
-                                        className="w-full min-h-[100px] rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                        className="w-full min-h-[100px] rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                                         placeholder="Type your note here..."
                                         defaultValue="Spoke with the client, they are interested in the Q4 plan."
                                     />
@@ -368,7 +365,7 @@ export function CRMContextPanel({ contact, isOpen, onClose }: CRMContextPanelPro
       <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DrawerContent className="h-[85vh] outline-none">
            <div className="h-full overflow-hidden flex flex-col bg-white rounded-t-[10px]">
-              <CRMPanelContent contact={contact} onClose={onClose} className={!contact ? "bg-gray-50/30" : "bg-white"} />
+              <CRMPanelContent contact={contact} onClose={onClose} className="bg-white" />
            </div>
         </DrawerContent>
       </Drawer>
@@ -377,10 +374,10 @@ export function CRMContextPanel({ contact, isOpen, onClose }: CRMContextPanelPro
 
   return (
     <div className={cn(
-        "w-[320px] border-l flex flex-col h-full shrink-0 shadow-xl z-30 transition-all duration-300 ease-in-out",
-        !contact ? "bg-gray-50/30" : "bg-white"
+        "w-[320px] border-l flex flex-col h-full shrink-0 z-30 transition-all duration-300 ease-in-out",
+        "bg-white"
     )}>
-       <CRMPanelContent contact={contact} onClose={onClose} className={!contact ? "bg-transparent" : "bg-white"} />
+       <CRMPanelContent contact={contact} onClose={onClose} className="bg-white" />
     </div>
   );
 }
