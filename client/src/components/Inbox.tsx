@@ -964,7 +964,7 @@ export function Inbox() {
                 filteredConversations.map((conv, index) => (
                   <React.Fragment key={conv.id}>
                     {index > 0 && (
-                      <div className="h-px bg-gray-300 mx-3" />
+                      <div className="h-px bg-gray-300 mx-3 my-2" />
                     )}
                     <ConversationCard 
                       conversation={conv} 
