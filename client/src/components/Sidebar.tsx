@@ -75,7 +75,7 @@ export function Sidebar() {
       
       {/* Header / Branding */}
       <div className="p-5 flex items-center gap-3">
-        <div className="h-8 w-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-900/20">
+        <div className="h-8 w-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center">
           <Command className="h-4 w-4 text-white" />
         </div>
         <span className="font-bold text-base text-gray-900 tracking-tight">Repliyo</span>
@@ -149,8 +149,8 @@ export function Sidebar() {
             className={cn(
               "w-full justify-start gap-3 h-9 px-3 text-sm font-medium transition-all rounded-lg", 
               location === "/overview" 
-                ? "bg-white text-gray-900 shadow-sm border border-gray-200" 
-                : "hover:bg-black/5 hover:text-gray-900 text-gray-600"
+                ? "bg-gray-100 text-gray-900 border border-gray-200" 
+                : "hover:bg-gray-100 hover:text-gray-900 text-gray-600"
             )}
           >
             <BarChart3 className="h-4 w-4" />
@@ -164,8 +164,8 @@ export function Sidebar() {
             className={cn(
               "w-full justify-start gap-3 h-9 px-3 text-sm font-medium transition-all rounded-lg", 
               location === "/" 
-                ? "bg-white text-gray-900 shadow-sm border border-gray-200" 
-                : "hover:bg-black/5 hover:text-gray-900 text-gray-600"
+                ? "bg-gray-100 text-gray-900 border border-gray-200" 
+                : "hover:bg-gray-100 hover:text-gray-900 text-gray-600"
             )}
           >
             <Inbox className="h-4 w-4" />
@@ -180,8 +180,8 @@ export function Sidebar() {
             className={cn(
               "w-full justify-start gap-3 h-9 px-3 text-sm font-medium transition-all rounded-lg", 
               location === "/connections" 
-                ? "bg-white text-gray-900 shadow-sm border border-gray-200" 
-                : "hover:bg-black/5 hover:text-gray-900 text-gray-600"
+                ? "bg-gray-100 text-gray-900 border border-gray-200" 
+                : "hover:bg-gray-100 hover:text-gray-900 text-gray-600"
             )}
           >
             <LayoutDashboard className="h-4 w-4" />
@@ -195,8 +195,8 @@ export function Sidebar() {
             className={cn(
               "w-full justify-start gap-3 h-9 px-3 text-sm font-medium transition-all rounded-lg", 
               location === "/integrations" 
-                ? "bg-white text-gray-900 shadow-sm border border-gray-200" 
-                : "hover:bg-black/5 hover:text-gray-900 text-gray-600"
+                ? "bg-gray-100 text-gray-900 border border-gray-200" 
+                : "hover:bg-gray-100 hover:text-gray-900 text-gray-600"
             )}
           >
             <Command className="h-4 w-4" />
@@ -210,8 +210,8 @@ export function Sidebar() {
             className={cn(
               "w-full justify-start gap-3 h-9 px-3 text-sm font-medium transition-all rounded-lg", 
               location === "/settings" 
-                ? "bg-white text-gray-900 shadow-sm border border-gray-200" 
-                : "hover:bg-black/5 hover:text-gray-900 text-gray-600"
+                ? "bg-gray-100 text-gray-900 border border-gray-200" 
+                : "hover:bg-gray-100 hover:text-gray-900 text-gray-600"
             )}
           >
             <Settings className="h-4 w-4" />
@@ -225,8 +225,8 @@ export function Sidebar() {
             className={cn(
               "w-full justify-start gap-3 h-9 px-3 text-sm font-medium transition-all rounded-lg", 
               location === "/ai-metrics" 
-                ? "bg-white text-gray-900 shadow-sm border border-gray-200" 
-                : "hover:bg-black/5 hover:text-gray-900 text-gray-600"
+                ? "bg-gray-100 text-gray-900 border border-gray-200" 
+                : "hover:bg-gray-100 hover:text-gray-900 text-gray-600"
             )}
           >
             <Bot className="h-4 w-4" />
