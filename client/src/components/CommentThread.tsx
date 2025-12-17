@@ -272,7 +272,7 @@ function SingleMessage({
         </div>
         
         {!isOwner && msg.direction === 'inbound' && (
-          <div className="flex items-center gap-3 mt-2 pt-2 border-t border-gray-200">
+          <div className="flex items-center gap-3 mt-1 pt-1 border-t border-gray-200">
             <button
               onClick={() => onStartReply(msg)}
               data-testid={`button-reply-${msg.id}`}
