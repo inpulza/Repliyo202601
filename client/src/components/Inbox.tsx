@@ -800,11 +800,11 @@ export function Inbox() {
                 placeholder="Search..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 bg-white border-gray-200 focus:ring-offset-0 h-9" 
+                className="pl-9 bg-white border-gray-200 focus:ring-offset-0 h-9 shadow-none" 
                 />
             </div>
             
-            <div className={cn("flex items-center gap-2 shrink-0 px-3 py-1.5 rounded-md border shadow-sm transition-colors", fireMode ? "bg-red-50 border-red-200" : "bg-white border-gray-200")} title="Fire Mode: Show High & Medium Urgency">
+            <div className={cn("flex items-center gap-2 shrink-0 px-3 py-1.5 rounded-md border transition-colors", fireMode ? "bg-transparent border-red-200" : "bg-transparent border-gray-200")} title="Fire Mode: Show High & Medium Urgency">
                 <Switch 
                     id="fire-mode" 
                     checked={fireMode} 
@@ -829,7 +829,7 @@ export function Inbox() {
                 active={platformFilter === 'instagram'} 
                 onClick={() => setPlatformFilter('instagram')}
                 label="Instagram"
-                icon={<FaInstagram className="h-3.5 w-3.5" />}
+                icon={<FaInstagram className="h-4 w-4" />}
                 activeColorClass="bg-pink-600"
                 hoverColorClass="hover:text-pink-600 hover:border-pink-200 hover:bg-pink-50"
                 count={platformCounts.instagram}
@@ -838,7 +838,7 @@ export function Inbox() {
                 active={platformFilter === 'tiktok'} 
                 onClick={() => setPlatformFilter('tiktok')}
                 label="TikTok"
-                icon={<FaTiktok className="h-3.5 w-3.5" />}
+                icon={<FaTiktok className="h-4 w-4" />}
                 activeColorClass="bg-black"
                 hoverColorClass="hover:text-black hover:border-gray-300 hover:bg-gray-100"
                 count={platformCounts.tiktok}
@@ -847,7 +847,7 @@ export function Inbox() {
                 active={platformFilter === 'facebook'} 
                 onClick={() => setPlatformFilter('facebook')}
                 label="Facebook"
-                icon={<FaFacebook className="h-3.5 w-3.5" />}
+                icon={<FaFacebook className="h-4 w-4" />}
                 activeColorClass="bg-blue-600"
                 hoverColorClass="hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50"
                 count={platformCounts.facebook}
@@ -856,7 +856,7 @@ export function Inbox() {
                 active={platformFilter === 'linkedin'} 
                 onClick={() => setPlatformFilter('linkedin')}
                 label="LinkedIn"
-                icon={<FaLinkedin className="h-3.5 w-3.5" />}
+                icon={<FaLinkedin className="h-4 w-4" />}
                 activeColorClass="bg-[#0077b5]"
                 hoverColorClass="hover:text-[#0077b5] hover:border-[#0077b5]/30 hover:bg-[#0077b5]/10"
                 count={platformCounts.linkedin}
@@ -865,7 +865,7 @@ export function Inbox() {
                 active={platformFilter === 'youtube'} 
                 onClick={() => setPlatformFilter('youtube')}
                 label="YouTube"
-                icon={<FaYoutube className="h-3.5 w-3.5" />}
+                icon={<FaYoutube className="h-4 w-4" />}
                 activeColorClass="bg-red-600"
                 hoverColorClass="hover:text-red-600 hover:border-red-200 hover:bg-red-50"
                 count={platformCounts.youtube}
@@ -874,7 +874,7 @@ export function Inbox() {
                 active={platformFilter === 'google-business'} 
                 onClick={() => setPlatformFilter('google-business')}
                 label="Google Business"
-                icon={<GoogleBusinessIcon className="h-3.5 w-3.5" />}
+                icon={<GoogleBusinessIcon className="h-4 w-4" />}
                 activeColorClass="bg-blue-500"
                 hoverColorClass="hover:text-blue-500 hover:border-blue-200 hover:bg-blue-50"
                 count={platformCounts['google-business']}
@@ -883,7 +883,7 @@ export function Inbox() {
                 active={platformFilter === 'whatsapp'} 
                 onClick={() => setPlatformFilter('whatsapp')}
                 label="WhatsApp"
-                icon={<FaWhatsapp className="h-3.5 w-3.5" />}
+                icon={<FaWhatsapp className="h-4 w-4" />}
                 activeColorClass="bg-green-500"
                 hoverColorClass="hover:text-green-500 hover:border-green-200 hover:bg-green-50"
                 count={platformCounts.whatsapp}
@@ -893,7 +893,7 @@ export function Inbox() {
            {/* Row 3: Intent Filter & Type Filter */}
            <div className="flex gap-2">
              <Select value={intentFilter} onValueChange={(val: any) => setIntentFilter(val)}>
-                  <SelectTrigger className="flex-1 bg-white border-gray-200 h-8 text-xs">
+                  <SelectTrigger className="flex-1 bg-white border-gray-200 h-8 text-xs shadow-none">
                       <div className="flex items-center gap-2 text-muted-foreground">
                           <Filter className="h-3 w-3" />
                           <SelectValue placeholder="Filter by Intent" />
@@ -909,7 +909,7 @@ export function Inbox() {
               </Select>
 
               <Select value={typeFilter} onValueChange={(val: any) => setTypeFilter(val)}>
-                  <SelectTrigger className="w-[130px] bg-white border-gray-200 h-8 text-xs">
+                  <SelectTrigger className="w-[130px] bg-white border-gray-200 h-8 text-xs shadow-none">
                       <div className="flex items-center gap-2 text-muted-foreground">
                           <MessageCircle className="h-3 w-3" />
                           <SelectValue placeholder="Type" />
@@ -925,10 +925,10 @@ export function Inbox() {
            </div>
 
            {inactiveProviders.length > 0 && (
-             <div className="flex items-center justify-between px-1 py-1.5 bg-amber-50 rounded-md border border-amber-100">
+             <div className="flex items-center justify-between px-1 py-1.5 rounded-md border border-gray-200">
                <div className="flex items-center gap-2">
-                 <Archive className="h-3.5 w-3.5 text-amber-600" />
-                 <span className="text-xs text-amber-700">
+                 <Archive className="h-3.5 w-3.5 text-gray-500" />
+                 <span className="text-xs text-gray-600">
                    {inactiveProviders.length} redes desactivadas
                  </span>
                </div>
@@ -937,9 +937,9 @@ export function Inbox() {
                    id="show-inactive"
                    checked={showInactiveNetworks}
                    onCheckedChange={setShowInactiveNetworks}
-                   className="h-4 w-7 data-[state=checked]:bg-amber-500"
+                   className="h-4 w-7 data-[state=checked]:bg-gray-600"
                  />
-                 <Label htmlFor="show-inactive" className="text-xs text-amber-600 cursor-pointer">
+                 <Label htmlFor="show-inactive" className="text-xs text-gray-500 cursor-pointer">
                    Mostrar
                  </Label>
                </div>
