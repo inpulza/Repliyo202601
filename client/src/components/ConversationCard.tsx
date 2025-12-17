@@ -109,9 +109,9 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
 
         <div className="flex-1 min-w-0 max-w-full overflow-hidden">
           <div className="flex items-center justify-between mb-2 min-w-0 max-w-full">
-            <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
+            <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden mr-3">
               <span className={cn(
-                "text-sm font-bold truncate text-gray-900 max-w-full",
+                "text-sm font-bold truncate text-gray-900",
                 conversation.unreadCount && conversation.unreadCount > 0 && "text-gray-900"
               )}>
                 {isComment 
