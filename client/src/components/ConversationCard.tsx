@@ -186,7 +186,7 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
               </Badge>
             ) : (
               <span className="text-[10px] text-gray-400 whitespace-nowrap shrink-0 ml-2">
-                No new
+                no new messages
               </span>
             )}
           </div>
