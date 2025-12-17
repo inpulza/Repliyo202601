@@ -425,10 +425,10 @@ function DraftCard({
 
       {draftContent && (
         <div className={cn(
-          "rounded-lg border border-gray-200 transition-all overflow-hidden bg-white/60",
+          "rounded-lg border border-gray-200 transition-all overflow-hidden bg-transparent",
           isOverLimit && "border-red-300"
         )}>
-          <div className="px-3 py-2 flex items-center justify-between border-b border-gray-50 bg-gray-50/30">
+          <div className="px-3 py-2 flex items-center justify-between border-b border-gray-200">
             <div className="flex items-center gap-1.5">
               <div className={cn("h-4 w-4 rounded-full bg-gradient-to-br flex items-center justify-center", platformDraftStyles.iconBg)}>
                 <Brain className="h-2 w-2 text-white" />
