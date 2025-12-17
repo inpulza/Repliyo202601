@@ -458,7 +458,7 @@ function DraftCard({
                 data-testid={`textarea-edit-draft-${msg.id}`}
               />
             ) : (
-              <div className="text-xs text-gray-800 leading-relaxed whitespace-pre-wrap">
+              <div className="text-xs text-[#4A7CB8] leading-relaxed whitespace-pre-wrap">
                 {draftContent}
               </div>
             )}
