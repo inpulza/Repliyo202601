@@ -172,7 +172,7 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mt-2">
             <div className="flex items-center gap-1 text-[10px] text-gray-400 shrink-0">
               {isDM && (
                 <>
