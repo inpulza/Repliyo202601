@@ -177,7 +177,7 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
           </div>
 
           <p className={cn(
-            "text-sm line-clamp-2 leading-relaxed text-gray-600 min-w-0 max-w-full break-words", 
+            "text-sm truncate leading-relaxed text-gray-600 min-w-0 max-w-[180px] break-words", 
             conversation.unreadCount && conversation.unreadCount > 0 ? "font-medium text-gray-900" : ""
           )}>
             {conversation.lastMessagePreview || 'No messages yet'}
