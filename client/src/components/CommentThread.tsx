@@ -618,7 +618,7 @@ function ThreadNode({
 
   const FLEX_GAP = 12; // gap-3 in the message flex container
   const AVATAR_MT = 4; // mt-1 on avatar
-  const siblingGap = 40; // mt-10 between siblings
+  const siblingGap = 60; // mt-[60px] between siblings
   
   // This node's avatar size
   const thisAvatarSize = isReply ? AVATAR_SIZE_REPLY : AVATAR_SIZE_ROOT;
@@ -674,7 +674,7 @@ function ThreadNode({
     : 0;
   
   return (
-    <div className={cn("thread-node relative", isReply && "mt-10")}>
+    <div className={cn("thread-node relative")} style={isReply ? { marginTop: '60px' } : undefined}>
       {/* L-shaped connector for replies - above background, behind content */}
       {isReply && verticalLineHeight > 0 && (
         <span 
@@ -720,7 +720,7 @@ function ThreadNode({
 
       {hasChildren && canNest && (
         <div 
-          className="thread-children relative mt-6"
+          className="thread-children relative mt-8"
           style={{
             marginLeft: `${CHILD_MARGIN_LEFT}px`,
           }}
@@ -828,7 +828,7 @@ export function CommentThread({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-12">
       {nodesWithDateInfo.map(({ node: rootNode, index, dateKey, dateDisplay, showSeparator }) => (
         <div key={rootNode.message.id} data-testid={`thread-root-${rootNode.message.id}`}>
           {showSeparator && dateDisplay && (
