@@ -441,8 +441,8 @@ function DraftCard({
               )}
             </div>
             <div className={cn(
-              "text-[9px] font-medium px-1 py-0.5 rounded-full border",
-              isOverLimit ? "bg-red-50 text-red-600 border-red-200" : "bg-gray-50 text-gray-500 border-gray-200"
+              "text-[9px] font-medium",
+              isOverLimit ? "text-red-600" : "text-gray-500"
             )}>
               {draftContent.length}/{charLimit}
             </div>
@@ -541,12 +541,13 @@ function DraftCard({
 
               {!isEditingThis && (
                 <Button
+                  variant="ghost"
                   size="sm"
                   className={cn(
-                    "h-6 text-[10px] font-medium px-2 transition-all",
+                    "h-6 text-[10px] font-medium px-2 transition-all hover:bg-transparent",
                     isOverLimit
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-[#1877F2] hover:bg-[#1565D8] text-white"
+                      ? "text-gray-400 cursor-not-allowed"
+                      : "text-[#1877F2] hover:text-[#1565D8]"
                   )}
                   onClick={() => handleSendDraft(msg.id, draftContent)}
                   disabled={isOverLimit}
