@@ -169,8 +169,8 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
 
           <div className="flex items-center justify-between">
             <p className={cn(
-              "text-sm truncate leading-relaxed text-gray-600 min-w-0 max-w-[180px] break-words", 
-              conversation.unreadCount && conversation.unreadCount > 0 ? "font-medium text-gray-900" : ""
+              "text-xs truncate leading-relaxed text-gray-400 min-w-0 max-w-[180px] break-words", 
+              conversation.unreadCount && conversation.unreadCount > 0 ? "font-medium text-gray-700" : ""
             )}>
               {conversation.lastMessagePreview || 'No messages yet'}
             </p>
