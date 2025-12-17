@@ -200,7 +200,7 @@ function SingleMessage({
         </div>
         
         <div className={cn(
-          "p-4 rounded-2xl text-sm leading-relaxed shadow-sm relative rounded-tl-none",
+          "py-2 text-sm leading-relaxed relative",
           (() => {
             if (msg.direction === 'inbound') {
               return platformStyles.userBubble;
@@ -258,7 +258,7 @@ function SingleMessage({
           )}
           
           {isSentFromRepliyo && (
-            <div className="mt-2 pt-2 border-t border-white/20 flex items-center gap-1.5 text-[10px] font-medium text-white/80">
+            <div className="mt-2 pt-2 border-t border-gray-200 flex items-center gap-1.5 text-[10px] font-medium text-gray-500">
               {isSentByAI ? (
                 <Bot className="h-3 w-3" />
               ) : (
@@ -388,21 +388,21 @@ function DraftCard({
       className="mt-3"
     >
       {isGeneratingDraft && !draftContent && (
-        <div className={cn("rounded-2xl bg-gradient-to-r border p-4 shadow-sm flex items-center gap-3 animate-pulse", platformDraftStyles.bg, platformDraftStyles.border.replace('border-l-', 'border-'))}>
-          <div className={cn("h-7 w-7 rounded-full bg-gradient-to-br flex items-center justify-center", platformDraftStyles.iconBg)}>
-            <Brain className="h-3.5 w-3.5 text-white" />
+        <div className={cn("rounded-lg border border-gray-200 p-3 flex items-center gap-3 animate-pulse bg-white/50", platformDraftStyles.border)}>
+          <div className={cn("h-6 w-6 rounded-full bg-gradient-to-br flex items-center justify-center", platformDraftStyles.iconBg)}>
+            <Brain className="h-3 w-3 text-white" />
           </div>
           <div className="space-y-1.5 flex-1">
-            <div className="h-2.5 bg-white/60 rounded w-1/4"></div>
-            <div className="h-2 bg-white/40 rounded w-1/2"></div>
+            <div className="h-2.5 bg-gray-200 rounded w-1/4"></div>
+            <div className="h-2 bg-gray-100 rounded w-1/2"></div>
           </div>
         </div>
       )}
 
       {hasError && !draftContent && (
-        <div className="rounded-2xl bg-white border border-red-200 p-3 shadow-sm">
+        <div className="rounded-lg border border-red-200 p-3">
           <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-full bg-red-50 flex items-center justify-center">
+            <div className="h-5 w-5 rounded-full bg-red-50 flex items-center justify-center">
               <AlertCircle className="h-3 w-3 text-red-500" />
             </div>
             <div className="flex-1">
@@ -423,10 +423,9 @@ function DraftCard({
 
       {draftContent && (
         <div className={cn(
-          "rounded-xl bg-gradient-to-r border-l-4 border-y border-r shadow-sm transition-all overflow-hidden",
-          platformDraftStyles.bg,
+          "rounded-lg border-l-4 border border-gray-200 transition-all overflow-hidden bg-white/60",
           platformDraftStyles.border,
-          isOverLimit ? "border-y-red-300 border-r-red-300 border-l-red-500 ring-1 ring-red-100" : "border-y-gray-100 border-r-gray-100"
+          isOverLimit && "border-red-300 border-l-red-500"
         )}>
           <div className="px-3 py-2 flex items-center justify-between border-b border-gray-50 bg-gray-50/30">
             <div className="flex items-center gap-1.5">

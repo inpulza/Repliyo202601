@@ -43,7 +43,7 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
       if (isImageThumbnail) {
         return (
           <div className="relative shrink-0 self-center">
-            <div className="h-16 w-12 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 shadow-sm">
+            <div className="h-16 w-12 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
               <img 
                 src={thumbnailUrl} 
                 alt="Post thumbnail"
@@ -55,7 +55,7 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
                 }}
               />
             </div>
-            <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
+            <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5">
               <PlatformIcon platform={platform} className="h-4 w-4" />
             </div>
           </div>
@@ -74,12 +74,12 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
       return (
         <div className="relative shrink-0 self-center">
           <div className={cn(
-            "h-16 w-12 rounded-lg border border-gray-200 flex items-center justify-center shadow-sm bg-gradient-to-br",
+            "h-16 w-12 rounded-lg border border-gray-200 flex items-center justify-center bg-gradient-to-br",
             gradient
           )}>
             <Play className="h-6 w-6 text-gray-500 fill-gray-400/50" />
           </div>
-          <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
+          <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5">
             <PlatformIcon platform={platform} className="h-4 w-4" />
           </div>
         </div>
@@ -94,7 +94,7 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
             {(conversation.customerName || 'U').substring(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
-        <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
+        <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5">
           <PlatformIcon platform={platform} className="h-4 w-4" />
         </div>
       </div>
@@ -109,8 +109,8 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
       onClick={onClick}
       data-testid={`conversation-card-${conversation.id}`}
       className={cn(
-        "w-full max-w-full text-left bg-white rounded-lg border border-gray-100 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 relative overflow-hidden group pl-3 py-3 pr-3",
-        isSelected && "ring-1 ring-indigo-500 ring-offset-1 border-transparent bg-gray-50 z-10"
+        "w-full max-w-full text-left bg-transparent rounded-lg hover:bg-white/50 transition-all duration-200 relative overflow-hidden group pl-3 py-3 pr-3 border-b border-gray-200/60",
+        isSelected && "bg-white/70 border-l-2 border-l-indigo-500"
       )}
     >
       <div className="flex items-start gap-3 min-w-0 max-w-full overflow-hidden">

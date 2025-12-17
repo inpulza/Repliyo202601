@@ -92,119 +92,40 @@ import { CommentThread } from './CommentThread';
 //   - manualBubble: mensajes enviados manualmente desde Repliyo (outbound, internalOrigin=manual)
 //   - draftBubble: borradores de IA pendientes de enviar
 const getPlatformStyles = (platform: Platform) => {
+    // Estilos unificados sin fondos para look minimalista
+    // Todos los comentarios sin fondo (transparente), solo texto sobre fondo gris
+    const baseStyles = {
+        container: "bg-[#EEF2F6]",
+        userBubble: "bg-transparent text-gray-900",
+        ownerBubble: "bg-transparent text-gray-900",
+        aiBubble: "bg-transparent text-gray-900",
+        manualBubble: "bg-transparent text-gray-900",
+        draftBubble: "bg-transparent text-gray-900",
+        draftCard: { bg: "bg-transparent", border: "border-l-gray-300", accent: "text-gray-600", iconBg: "from-gray-400 to-gray-500" },
+        badge: "bg-gray-100 text-gray-700 border-gray-200",
+        commentBadge: "text-gray-500",
+        bubble: "bg-transparent text-gray-900",
+        replyBubble: "bg-transparent text-gray-900"
+    };
+    
+    // Colores de badge/accent por plataforma (solo para badges, no fondos)
     switch (platform) {
         case 'whatsapp':
-            return {
-                container: "bg-[#efeae2]/60",
-                userBubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
-                ownerBubble: "bg-[#25D366] border-[#128C7E] text-white",
-                aiBubble: "bg-[#25D366] border-[#128C7E] text-white",
-                manualBubble: "bg-[#25D366] border-[#128C7E] text-white",
-                draftBubble: "bg-[#dcf8c6] border-[#25D366] text-gray-900",
-                draftCard: { bg: "from-green-50 to-slate-50", border: "border-l-[#25D366]", accent: "text-green-600", iconBg: "from-[#25D366] to-[#128C7E]" },
-                badge: "bg-[#dcf8c6] text-green-800 border-green-200",
-                commentBadge: "text-green-600",
-                bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
-                replyBubble: "bg-[#25D366] border-[#128C7E] text-white"
-            };
+            return { ...baseStyles, badge: "bg-green-50 text-green-700 border-green-200", commentBadge: "text-green-600", draftCard: { ...baseStyles.draftCard, border: "border-l-[#25D366]", accent: "text-green-600", iconBg: "from-[#25D366] to-[#128C7E]" } };
         case 'facebook':
-            return {
-                container: "bg-[#f0f2f5]",
-                userBubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
-                ownerBubble: "bg-[#1877F2] border-[#1565D8] text-white",
-                aiBubble: "bg-[#1877F2] border-[#1565D8] text-white",
-                manualBubble: "bg-[#1877F2] border-[#1565D8] text-white",
-                draftBubble: "bg-blue-50 border-[#1877F2] text-gray-900",
-                draftCard: { bg: "from-blue-50 to-slate-50", border: "border-l-[#1877F2]", accent: "text-blue-600", iconBg: "from-[#1877F2] to-[#1565D8]" },
-                badge: "bg-blue-100 text-blue-700 border-blue-200",
-                commentBadge: "text-blue-600",
-                bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
-                replyBubble: "bg-[#1877F2] border-[#1565D8] text-white"
-            };
+            return { ...baseStyles, badge: "bg-blue-50 text-blue-700 border-blue-200", commentBadge: "text-blue-600", draftCard: { ...baseStyles.draftCard, border: "border-l-[#1877F2]", accent: "text-blue-600", iconBg: "from-[#1877F2] to-[#1565D8]" } };
         case 'instagram':
-            return {
-                container: "bg-gradient-to-br from-pink-50/50 via-white to-purple-50/50",
-                userBubble: "bg-white border-gray-100 text-gray-900 shadow-sm",
-                ownerBubble: "bg-gradient-to-r from-[#833AB4] via-[#E1306C] to-[#F77737] border-pink-500 text-white",
-                aiBubble: "bg-gradient-to-r from-[#833AB4] via-[#E1306C] to-[#F77737] border-pink-500 text-white",
-                manualBubble: "bg-gradient-to-r from-[#833AB4] via-[#E1306C] to-[#F77737] border-pink-500 text-white",
-                draftBubble: "bg-gradient-to-r from-pink-50 via-purple-50 to-orange-50 border-pink-300 text-gray-900",
-                draftCard: { bg: "from-pink-50 via-purple-50 to-orange-50", border: "border-l-pink-400", accent: "text-pink-600", iconBg: "from-[#833AB4] via-[#E1306C] to-[#F77737]" },
-                badge: "bg-pink-100 text-pink-700 border-pink-200",
-                commentBadge: "text-pink-600",
-                bubble: "bg-white border-gray-100 text-gray-900 shadow-sm",
-                replyBubble: "bg-gradient-to-r from-[#833AB4] via-[#E1306C] to-[#F77737] border-pink-500 text-white"
-            };
+            return { ...baseStyles, badge: "bg-pink-50 text-pink-700 border-pink-200", commentBadge: "text-pink-600", draftCard: { ...baseStyles.draftCard, border: "border-l-pink-400", accent: "text-pink-600", iconBg: "from-[#833AB4] via-[#E1306C] to-[#F77737]" } };
         case 'linkedin':
-            return {
-                container: "bg-[#f3f6f8]",
-                userBubble: "bg-white border-gray-200 text-slate-800 shadow-sm",
-                ownerBubble: "bg-[#0A66C2] border-[#004182] text-white",
-                aiBubble: "bg-[#0A66C2] border-[#004182] text-white",
-                manualBubble: "bg-[#0A66C2] border-[#004182] text-white",
-                draftBubble: "bg-sky-50 border-[#0A66C2] text-gray-900",
-                draftCard: { bg: "from-sky-50 to-slate-50", border: "border-l-[#0A66C2]", accent: "text-sky-700", iconBg: "from-[#0A66C2] to-[#004182]" },
-                badge: "bg-slate-100 text-slate-700 border-slate-200",
-                commentBadge: "text-slate-600",
-                bubble: "bg-white border-gray-200 text-slate-800 shadow-sm",
-                replyBubble: "bg-[#0A66C2] border-[#004182] text-white"
-            };
+            return { ...baseStyles, badge: "bg-sky-50 text-sky-700 border-sky-200", commentBadge: "text-sky-600", draftCard: { ...baseStyles.draftCard, border: "border-l-[#0A66C2]", accent: "text-sky-700", iconBg: "from-[#0A66C2] to-[#004182]" } };
         case 'youtube':
-            return {
-                container: "bg-red-50/20",
-                userBubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
-                ownerBubble: "bg-red-600 border-red-500 text-white",
-                aiBubble: "bg-red-600 border-red-500 text-white",
-                manualBubble: "bg-red-600 border-red-500 text-white",
-                draftBubble: "bg-red-50 border-red-400 text-gray-900",
-                draftCard: { bg: "from-red-50 to-slate-50", border: "border-l-red-500", accent: "text-red-600", iconBg: "from-red-600 to-red-500" },
-                badge: "bg-red-100 text-red-700 border-red-200",
-                commentBadge: "text-red-600",
-                bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
-                replyBubble: "bg-red-600 border-red-500 text-white"
-            };
+            return { ...baseStyles, badge: "bg-red-50 text-red-700 border-red-200", commentBadge: "text-red-600", draftCard: { ...baseStyles.draftCard, border: "border-l-red-500", accent: "text-red-600", iconBg: "from-red-600 to-red-500" } };
         case 'tiktok':
-            return {
-                container: "bg-gray-50",
-                userBubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
-                ownerBubble: "bg-[#121212] border-[#2F2F2F] text-white",
-                aiBubble: "bg-[#121212] border-[#2F2F2F] text-white",
-                manualBubble: "bg-[#121212] border-[#2F2F2F] text-white",
-                draftBubble: "bg-gray-100 border-[#121212] text-gray-900",
-                draftCard: { bg: "from-gray-100 to-slate-50", border: "border-l-[#121212]", accent: "text-gray-800", iconBg: "from-[#121212] to-[#2F2F2F]" },
-                badge: "bg-gray-200 text-gray-800 border-gray-300",
-                commentBadge: "text-gray-800",
-                bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
-                replyBubble: "bg-[#121212] border-[#2F2F2F] text-white"
-            };
+            return { ...baseStyles, badge: "bg-gray-100 text-gray-800 border-gray-300", commentBadge: "text-gray-700", draftCard: { ...baseStyles.draftCard, border: "border-l-[#121212]", accent: "text-gray-800", iconBg: "from-[#121212] to-[#2F2F2F]" } };
         case 'google-business':
-            return {
-                container: "bg-blue-50/20",
-                userBubble: "bg-white border-blue-100 text-gray-900 shadow-sm",
-                ownerBubble: "bg-[#4285F4] border-[#3367D6] text-white",
-                aiBubble: "bg-[#4285F4] border-[#3367D6] text-white",
-                manualBubble: "bg-[#4285F4] border-[#3367D6] text-white",
-                draftBubble: "bg-blue-50 border-[#4285F4] text-gray-900",
-                draftCard: { bg: "from-blue-50 to-slate-50", border: "border-l-[#4285F4]", accent: "text-blue-600", iconBg: "from-[#4285F4] to-[#3367D6]" },
-                badge: "bg-blue-100 text-blue-700 border-blue-200",
-                commentBadge: "text-blue-600",
-                bubble: "bg-white border-blue-100 text-gray-900 shadow-sm",
-                replyBubble: "bg-[#4285F4] border-[#3367D6] text-white"
-            };
+            return { ...baseStyles, badge: "bg-blue-50 text-blue-700 border-blue-200", commentBadge: "text-blue-600", draftCard: { ...baseStyles.draftCard, border: "border-l-[#4285F4]", accent: "text-blue-600", iconBg: "from-[#4285F4] to-[#3367D6]" } };
         default:
-            return {
-                container: "bg-indigo-50/30",
-                userBubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
-                ownerBubble: "bg-indigo-600 border-indigo-700 text-white",
-                aiBubble: "bg-indigo-600 border-indigo-700 text-white",
-                manualBubble: "bg-indigo-600 border-indigo-700 text-white",
-                draftBubble: "bg-indigo-50 border-indigo-400 text-gray-900",
-                draftCard: { bg: "from-indigo-50 to-slate-50", border: "border-l-indigo-400", accent: "text-indigo-600", iconBg: "from-indigo-500 to-purple-600" },
-                badge: "bg-gray-100 text-gray-700 border-gray-200",
-                commentBadge: "text-gray-600",
-                bubble: "bg-white border-gray-200 text-gray-900 shadow-sm",
-                replyBubble: "bg-indigo-600 border-indigo-700 text-white"
-            };
+            return { ...baseStyles, badge: "bg-indigo-50 text-indigo-700 border-indigo-200", commentBadge: "text-indigo-600", draftCard: { ...baseStyles.draftCard, border: "border-l-indigo-400", accent: "text-indigo-600", iconBg: "from-indigo-500 to-purple-600" } };
     }
 };
 
@@ -1027,8 +948,8 @@ export function Inbox() {
         </div>
 
         {/* Conversations List */}
-        <ScrollArea className="flex-1 bg-gray-200/70">
-          <div className="flex flex-col p-2 gap-2 w-full max-w-full min-w-0 overflow-hidden">
+        <ScrollArea className="flex-1 bg-[#EEF2F6]">
+          <div className="flex flex-col p-2 gap-0 w-full max-w-full min-w-0 overflow-hidden">
             <AnimatePresence mode="sync">
               {isLoadingConversations ? (
                 <div className="p-8 text-center text-muted-foreground text-sm flex items-center justify-center gap-2">
@@ -1062,7 +983,7 @@ export function Inbox() {
         {activeConversation ? (
           <>
             {/* Chat Header - AI Summary */}
-            <header className="h-auto min-h-[64px] md:min-h-[80px] border-b px-4 md:px-6 py-3 md:py-4 flex flex-col justify-center shrink-0 bg-white z-20 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+            <header className="h-auto min-h-[64px] md:min-h-[80px] border-b px-4 md:px-6 py-3 md:py-4 flex flex-col justify-center shrink-0 bg-white z-20">
                <div className="flex items-center justify-between gap-3">
                  <div className="flex items-center gap-3 overflow-hidden flex-1">
                     {isMobile && (
@@ -1200,12 +1121,12 @@ export function Inbox() {
                       {/* Thread Header - Show if multiple messages in thread */}
                       {threadMessages.length > 1 && (
                         <div className="flex items-center justify-center gap-2 mb-4">
-                          <div className="h-px flex-1 bg-gray-200" />
-                          <span className="text-[10px] font-medium text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200 flex items-center gap-1.5">
+                          <div className="h-px flex-1 bg-gray-300" />
+                          <span className="text-[10px] font-medium text-gray-500 px-3 py-1 flex items-center gap-1.5">
                             <MessageCircle className="h-3 w-3" />
                             Thread · {threadMessages.length} messages
                           </span>
-                          <div className="h-px flex-1 bg-gray-200" />
+                          <div className="h-px flex-1 bg-gray-300" />
                         </div>
                       )}
 
@@ -1245,7 +1166,7 @@ export function Inbox() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 20 }}
-                  className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg p-4"
+                  className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4"
                 >
                   {/* Quoted Message Preview */}
                   <div className="mb-3 flex items-start gap-2">
