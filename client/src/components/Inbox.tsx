@@ -831,7 +831,7 @@ export function Inbox() {
                 label="Instagram"
                 icon={<FaInstagram className="h-4 w-4" />}
                 activeColorClass="bg-pink-600"
-                hoverColorClass="hover:text-pink-600 hover:border-pink-200 hover:bg-pink-50"
+                hoverColorClass="hover:text-pink-600 hover:bg-pink-50"
                 count={platformCounts.instagram}
               />
               <FilterButton 
@@ -840,7 +840,7 @@ export function Inbox() {
                 label="TikTok"
                 icon={<FaTiktok className="h-4 w-4" />}
                 activeColorClass="bg-black"
-                hoverColorClass="hover:text-black hover:border-gray-300 hover:bg-gray-100"
+                hoverColorClass="hover:text-black hover:bg-gray-100"
                 count={platformCounts.tiktok}
               />
               <FilterButton 
@@ -849,7 +849,7 @@ export function Inbox() {
                 label="Facebook"
                 icon={<FaFacebook className="h-4 w-4" />}
                 activeColorClass="bg-blue-600"
-                hoverColorClass="hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50"
+                hoverColorClass="hover:text-blue-600 hover:bg-blue-50"
                 count={platformCounts.facebook}
               />
               <FilterButton 
@@ -858,7 +858,7 @@ export function Inbox() {
                 label="LinkedIn"
                 icon={<FaLinkedin className="h-4 w-4" />}
                 activeColorClass="bg-[#0077b5]"
-                hoverColorClass="hover:text-[#0077b5] hover:border-[#0077b5]/30 hover:bg-[#0077b5]/10"
+                hoverColorClass="hover:text-[#0077b5] hover:bg-[#0077b5]/10"
                 count={platformCounts.linkedin}
               />
                <FilterButton 
@@ -867,7 +867,7 @@ export function Inbox() {
                 label="YouTube"
                 icon={<FaYoutube className="h-4 w-4" />}
                 activeColorClass="bg-red-600"
-                hoverColorClass="hover:text-red-600 hover:border-red-200 hover:bg-red-50"
+                hoverColorClass="hover:text-red-600 hover:bg-red-50"
                 count={platformCounts.youtube}
               />
               <FilterButton 
@@ -876,7 +876,7 @@ export function Inbox() {
                 label="Google Business"
                 icon={<GoogleBusinessIcon className="h-4 w-4" />}
                 activeColorClass="bg-blue-500"
-                hoverColorClass="hover:text-blue-500 hover:border-blue-200 hover:bg-blue-50"
+                hoverColorClass="hover:text-blue-500 hover:bg-blue-50"
                 count={platformCounts['google-business']}
               />
               <FilterButton 
@@ -885,7 +885,7 @@ export function Inbox() {
                 label="WhatsApp"
                 icon={<FaWhatsapp className="h-4 w-4" />}
                 activeColorClass="bg-green-500"
-                hoverColorClass="hover:text-green-500 hover:border-green-200 hover:bg-green-50"
+                hoverColorClass="hover:text-green-500 hover:bg-green-50"
                 count={platformCounts.whatsapp}
               />
            </div>
@@ -1667,10 +1667,10 @@ function FilterButton({ active, onClick, label, icon, activeColorClass, hoverCol
       title={label}
       type="button"
       className={cn(
-        "relative flex items-center justify-center h-10 w-10 rounded-full text-xs font-medium transition-all border shrink-0 touch-manipulation",
+        "relative flex items-center justify-center h-10 w-10 rounded-full text-xs font-medium transition-all shrink-0 touch-manipulation",
         active 
-          ? cn("text-white border-transparent shadow-sm", activeColorClass || "bg-gray-900") 
-          : cn("bg-white text-gray-500 border-gray-200", hoverColorClass || "hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900")
+          ? cn("text-white", activeColorClass || "bg-gray-900") 
+          : cn("bg-white text-gray-500", hoverColorClass || "hover:bg-gray-100 hover:text-gray-900")
       )}
     >
       {icon}
