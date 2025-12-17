@@ -800,11 +800,11 @@ export function Inbox() {
                 placeholder="Search..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 bg-white border-gray-200 focus:ring-offset-0 h-9 shadow-none" 
+                className="pl-9 bg-white border-transparent focus:ring-offset-0 h-9 shadow-none" 
                 />
             </div>
             
-            <div className={cn("flex items-center gap-2 shrink-0 px-3 py-1.5 rounded-md border transition-colors", fireMode ? "bg-transparent border-red-200" : "bg-transparent border-gray-200")} title="Fire Mode: Show High & Medium Urgency">
+            <div className={cn("flex items-center gap-2 shrink-0 px-3 py-1.5 rounded-md transition-colors", fireMode ? "bg-white" : "bg-white")} title="Fire Mode: Show High & Medium Urgency">
                 <Switch 
                     id="fire-mode" 
                     checked={fireMode} 
@@ -893,7 +893,7 @@ export function Inbox() {
            {/* Row 3: Intent Filter & Type Filter */}
            <div className="flex gap-2">
              <Select value={intentFilter} onValueChange={(val: any) => setIntentFilter(val)}>
-                  <SelectTrigger className="flex-1 bg-white border-gray-200 h-8 text-xs shadow-none">
+                  <SelectTrigger className="flex-1 bg-white border-transparent h-8 text-xs shadow-none">
                       <div className="flex items-center gap-2 text-muted-foreground">
                           <Filter className="h-3 w-3" />
                           <SelectValue placeholder="Filter by Intent" />
@@ -909,7 +909,7 @@ export function Inbox() {
               </Select>
 
               <Select value={typeFilter} onValueChange={(val: any) => setTypeFilter(val)}>
-                  <SelectTrigger className="w-[130px] bg-white border-gray-200 h-8 text-xs shadow-none">
+                  <SelectTrigger className="w-[130px] bg-white border-transparent h-8 text-xs shadow-none">
                       <div className="flex items-center gap-2 text-muted-foreground">
                           <MessageCircle className="h-3 w-3" />
                           <SelectValue placeholder="Type" />
@@ -925,7 +925,7 @@ export function Inbox() {
            </div>
 
            {inactiveProviders.length > 0 && (
-             <div className="flex items-center justify-between px-1 py-1.5 rounded-md border border-gray-200">
+             <div className="flex items-center justify-between px-1 py-1.5 rounded-md bg-white">
                <div className="flex items-center gap-2">
                  <Archive className="h-3.5 w-3.5 text-gray-500" />
                  <span className="text-xs text-gray-600">
