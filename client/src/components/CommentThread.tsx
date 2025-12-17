@@ -613,11 +613,14 @@ function ThreadNode({
   const hasChildren = node.children.length > 0;
   const canNest = depth < MAX_DEPTH;
 
+  const INDENT = 32;
   const parentAvatarSize = depth === 1 ? AVATAR_SIZE_ROOT : AVATAR_SIZE_REPLY;
   const parentAvatarCenter = parentAvatarSize / 2;
   const childAvatarCenter = AVATAR_SIZE_REPLY / 2;
-  const connectorLeft = 24;
   const siblingGap = 12;
+  
+  const connectorLeftOffset = INDENT - parentAvatarCenter;
+  const connectorWidth = connectorLeftOffset + childAvatarCenter;
   
   return (
     <div className={cn("thread-node relative", isReply && "mt-3")}>
@@ -625,9 +628,9 @@ function ThreadNode({
         <span 
           className="absolute pointer-events-none"
           style={{
-            left: `-${connectorLeft}px`,
+            left: `-${connectorLeftOffset}px`,
             top: `-${siblingGap + parentAvatarCenter}px`,
-            width: `${connectorLeft}px`,
+            width: `${connectorWidth}px`,
             height: isLastChild 
               ? `${siblingGap + parentAvatarCenter + childAvatarCenter}px`
               : `calc(100% + ${siblingGap + parentAvatarCenter}px)`,

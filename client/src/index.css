@@ -160,4 +160,4 @@
 
 /* Thread Connector Lines - Per-child L-shaped segments */
 .thread-node { position: relative; }
-.thread-children { padding-left: 24px; }
+.thread-children { padding-left: 32px; }
