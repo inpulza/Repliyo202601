@@ -657,16 +657,15 @@ function ThreadNode({
     return () => observer.disconnect();
   }, []);
   
-  // L-connector horizontal positioning
-  // The connector must span from parent avatar center to child avatar center
-  // Using fixed values that work with the actual layout:
-  // - Root avatar (32px) center = 16px, Reply avatar (24px) center = 12px
-  // - Gap between avatar and content = 12px (gap-3)
-  // - Child indentation = avatar + gap = 44px (for root parent) or 36px (for reply parent)
-  const horizontalConnectorLeft = INDENT_FROM_PARENT - parentAvatarCenter;
-  // Increase width to ensure it reaches the parent avatar center
-  // Adding extra pixels to compensate for any layout discrepancies
-  const horizontalConnectorWidth = horizontalConnectorLeft + thisAvatarCenter + 4;
+  // L-connector horizontal positioning using correct offset math
+  // Parent avatar center is at parentAvatarCenter (16px for 32px avatar, 12px for 24px avatar)
+  // Child container is indented by INDENT_FROM_PARENT (44px for root parent, 36px for reply parent)
+  // So parent avatar center is at (parentAvatarCenter - INDENT_FROM_PARENT) from child container
+  // For depth 1: 16 - 44 = -28px (28px to the LEFT of child container)
+  const parentCenterOffset = parentAvatarCenter - INDENT_FROM_PARENT; // negative value, e.g. -28
+  // Width spans from parent avatar center to child avatar center
+  // For depth 1: 12 - (-28) = 40px
+  const horizontalConnectorWidth = thisAvatarCenter - parentCenterOffset;
   
   // Vertical line height: from child avatar UP to parent avatar level
   // This accounts for: parent message height + sibling gap + distance to reach parent avatar center
@@ -681,10 +680,10 @@ function ThreadNode({
         <span 
           className="absolute pointer-events-none"
           style={{
-            // Position the vertical line (borderLeft) exactly below parent avatar center
-            // Parent avatar center is at (INDENT - parentAvatarCenter) pixels to the LEFT of child container
-            left: `-${horizontalConnectorLeft}px`,
-            top: `-${verticalLineHeight - AVATAR_MT - childAvatarCenter}px`,
+            // Position at parent avatar center (negative value positions to the left)
+            // For depth 1: -28px
+            left: `${parentCenterOffset}px`,
+            top: `-${verticalLineHeight - AVATAR_MT - thisAvatarCenter}px`,
             width: `${horizontalConnectorWidth}px`,
             height: `${verticalLineHeight}px`,
             borderLeft: '1px solid rgba(156, 163, 175, 0.5)',
