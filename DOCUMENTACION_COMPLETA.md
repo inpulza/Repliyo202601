@@ -3426,3 +3426,134 @@ if (totalCharacters < 200 || averageLength < 20) {
 | 3 | Cold Start | 🟢 Baja | UX para clientes históricos | Alto (8h) |
 
 ---
+
+## DEPLOYMENT Y ESCALABILIDAD (17 Diciembre 2025)
+
+### Análisis de la Aplicación
+
+**Repliyo** es un Sistema de Gestión de Inbox Social Media que:
+- Se integra con **Metricool** para centralizar DMs y comentarios de múltiples marcas
+- Soporta **6 redes sociales**: Instagram, Facebook, TikTok, YouTube, LinkedIn, Google Business
+- Tiene **agentes de IA** (OpenAI/Gemini) que generan respuestas automáticas
+- Usa arquitectura **multi-tenant**: Admins ven todo, clientes solo su marca
+- **Sincronización cada 2 minutos** para obtener nuevos mensajes
+- **Auto-reply automático** cuando está configurado
+
+---
+
+### Recomendación de Deployment en Replit
+
+#### Opción Recomendada: Reserved VM Deployment
+
+| Característica | Reserved VM | Autoscale | Scheduled |
+|----------------|-------------|-----------|-----------|
+| **Siempre activo 24/7** | ✅ SÍ | ❌ Se duerme sin tráfico | ❌ Solo ejecuta en horario |
+| **Sincronización cada 2 min** | ✅ Perfecto | ⚠️ Podría fallar dormido | ✅ Funciona |
+| **Procesos en background** | ✅ Ideal | ❌ No recomendado | ✅ Diseñado para esto |
+| **Costo predecible** | ✅ Mensual fijo | ⚠️ Variable por uso | ✅ Por ejecución |
+| **SLA 99.9% uptime** | ✅ Garantizado | ✅ Garantizado | ⚠️ No aplica |
+
+#### Veredicto
+
+La app necesita **Reserved VM** porque:
+1. **Sincronización cada 2 minutos** = proceso continuo que requiere que el servidor esté siempre vivo
+2. **Auto-reply instantáneo** = no puede esperar a que el servidor "despierte"
+3. **WebSockets** para notificaciones en tiempo real = conexión persistente
+
+---
+
+### Precios de Reserved VM (Replit)
+
+| Configuración | vCPU | RAM | Precio/Mes |
+|---------------|------|-----|------------|
+| **Shared VM** | 0.5 | 2GB | **$20/mes** |
+| **Dedicated 1** | 1 | 4GB | **$40/mes** |
+| **Dedicated 2** | 2 | 8GB | **$80/mes** |
+| **Dedicated 4** | 4 | 16GB | **$160/mes** |
+
+#### Recomendación para iniciar:
+- **Dedicated 1 (1 vCPU / 4GB RAM) = $40/mes**
+- Suficiente para ~25 usuarios + ~10 marcas + sincronización cada 2 min
+
+---
+
+### Escalabilidad y Datos
+
+#### Base de Datos PostgreSQL (Replit/Neon)
+
+| Aspecto | Límite | Uso Actual | Estado |
+|---------|--------|------------|--------|
+| **Almacenamiento** | 10 GB | ~170+ mensajes | ✅ OK |
+| **Conexiones concurrentes** | Ilimitado (serverless) | Bajo uso | ✅ OK |
+| **Serverless auto-escala** | Sí | Activo | ✅ OK |
+
+#### Proyección de Crecimiento
+
+Basado en la documentación:
+- **Mensajes actuales**: ~173 mensajes → 67 conversaciones
+- **Sync cada 2 min** = 720 ciclos/día × ~10 marcas = ~7,200 verificaciones/día
+- **Estimación 6 meses**: Con 25 usuarios activos:
+  - ~50,000-100,000 mensajes
+  - ~500 MB de datos (incluyendo rawData JSON)
+  - **Muy dentro del límite de 10 GB** ✅
+
+---
+
+### Consideraciones Críticas para 24/7
+
+#### 1. Rate Limiting de Metricool
+El código ya lo maneja en `server/services/syncService.ts`:
+```typescript
+private readonly COOLDOWN_DURATION_MS = 5 * 60 * 1000; // 5 min cooldown for 429
+private readonly DELAY_BETWEEN_BRANDS_MS = 2000; // 2 seg entre marcas
+```
+
+#### 2. WebSocket para Tiempo Real
+Implementado en `websocketService.ts` - notifica nuevos mensajes instantáneamente.
+
+#### 3. Procesos de Background Actuales
+
+| Proceso | Intervalo | Función |
+|---------|-----------|---------|
+| `syncAllBrands()` | 2 minutos | Obtiene mensajes de Metricool |
+| `syncAvailableBrands()` | 12 horas | Detecta nuevas marcas en Metricool |
+| `autoReplyService` | Por evento | Responde automáticamente si está activado |
+| `transcriptionService` | Por evento | Transcribe audios de WhatsApp/Instagram |
+
+---
+
+### Arquitectura Híbrida Opcional (Futuro)
+
+Si el proyecto crece significativamente (+100 marcas, +500 usuarios), considerar:
+
+```
+┌─────────────────────────────────────────┐
+│  Reserved VM (Frontend + API)           │ ← $40-80/mes
+│  - Sirve la interfaz web                │
+│  - Maneja peticiones HTTP               │
+│  - WebSockets para notificaciones       │
+└─────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────┐
+│  Scheduled Deployment (Background Jobs) │ ← Pago por uso
+│  - Sincronización Metricool             │
+│  - Procesamiento de IA                  │
+│  - Transcripciones de audio             │
+└─────────────────────────────────────────┘
+```
+
+**Para la escala actual (~25 usuarios, ~10 marcas), Reserved VM único es suficiente y más simple.**
+
+---
+
+### Resumen Ejecutivo de Deployment
+
+| Aspecto | Recomendación |
+|---------|---------------|
+| **Tipo de Deployment** | **Reserved VM** |
+| **Configuración inicial** | **1 vCPU / 4GB RAM ($40/mes)** |
+| **Base de datos** | PostgreSQL de Replit (OK hasta 10GB) |
+| **SLA** | 99.9% uptime garantizado |
+| **Escalado futuro** | Subir a 2 vCPU si crece |
+
+---
