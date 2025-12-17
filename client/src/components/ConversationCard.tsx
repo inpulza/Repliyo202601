@@ -42,7 +42,7 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
       
       if (isImageThumbnail) {
         return (
-          <div className="relative shrink-0 self-center">
+          <div className="shrink-0 self-center">
             <div className="h-16 w-12 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
               <img 
                 src={thumbnailUrl} 
@@ -54,9 +54,6 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
                   (e.target as HTMLImageElement).parentElement!.innerHTML = '<span class="text-gray-400"><svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></span>';
                 }}
               />
-            </div>
-            <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5">
-              <PlatformIcon platform={platform} className="h-4 w-4" />
             </div>
           </div>
         );
@@ -72,31 +69,25 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
       const gradient = platformGradients[platform] || 'from-gray-100 to-gray-200';
       
       return (
-        <div className="relative shrink-0 self-center">
+        <div className="shrink-0 self-center">
           <div className={cn(
             "h-16 w-12 rounded-lg border border-gray-200 flex items-center justify-center bg-gradient-to-br",
             gradient
           )}>
             <Play className="h-6 w-6 text-gray-500 fill-gray-400/50" />
           </div>
-          <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 ring-1 ring-gray-300">
-            <PlatformIcon platform={platform} className="h-4 w-4" />
-          </div>
         </div>
       );
     }
 
     return (
-      <div className="relative shrink-0">
+      <div className="shrink-0">
         <Avatar className="h-10 w-10 border border-gray-100">
           <AvatarImage src={conversation.customerAvatar || undefined} alt={conversation.customerName || 'User'} className="bg-white" />
           <AvatarFallback className="text-xs font-bold text-gray-600 bg-[#E5E7EB]">
             {(conversation.customerName || 'U').substring(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
-        <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 ring-1 ring-gray-300">
-          <PlatformIcon platform={platform} className="h-4 w-4" />
-        </div>
       </div>
     );
   };
@@ -161,7 +152,10 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
           </div>
           
           <div className="flex items-center gap-1.5 mb-2.5 flex-wrap min-w-0 max-w-full">
-            <Badge variant="outline" className="text-[10px] font-normal h-5 px-1.5 text-gray-500 border-gray-200 shrink-0">
+            <div className="flex items-center gap-1 bg-white rounded-full px-1.5 py-0.5 border border-gray-200 shrink-0">
+              <PlatformIcon platform={platform} className="h-3.5 w-3.5" />
+            </div>
+            <Badge variant="outline" className="text-[10px] font-normal h-5 px-1.5 text-gray-500 border-gray-200 bg-white shrink-0">
               {isDM && (
                 <>
                   <MessageCircle className="h-3 w-3 mr-1" />
