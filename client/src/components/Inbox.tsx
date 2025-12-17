@@ -949,7 +949,7 @@ export function Inbox() {
 
         {/* Conversations List */}
         <ScrollArea className="flex-1 bg-[#EEF2F6]">
-          <div className="flex flex-col p-2 w-full max-w-full min-w-0 overflow-hidden divide-y divide-gray-300">
+          <div className="flex flex-col p-2 w-full max-w-full min-w-0 overflow-hidden">
             <AnimatePresence mode="sync">
               {isLoadingConversations ? (
                 <div className="p-8 text-center text-muted-foreground text-sm flex items-center justify-center gap-2">
@@ -961,13 +961,17 @@ export function Inbox() {
                     No conversations match your filters.
                  </div>
               ) : (
-                filteredConversations.map((conv) => (
-                  <ConversationCard 
-                    key={conv.id} 
-                    conversation={conv} 
-                    isSelected={activeConversation?.id === conv.id} 
-                    onClick={() => setActiveConversation(conv)} 
-                  />
+                filteredConversations.map((conv, index) => (
+                  <React.Fragment key={conv.id}>
+                    {index > 0 && (
+                      <div className="h-px bg-gray-300 mx-3" />
+                    )}
+                    <ConversationCard 
+                      conversation={conv} 
+                      isSelected={activeConversation?.id === conv.id} 
+                      onClick={() => setActiveConversation(conv)} 
+                    />
+                  </React.Fragment>
                 ))
               )}
             </AnimatePresence>
