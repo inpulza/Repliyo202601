@@ -658,14 +658,13 @@ function ThreadNode({
     return () => observer.disconnect();
   }, []);
   
-  // L-connector: two separate lines for precise positioning
-  // 1. Horizontal line: starts at child avatar center, extends left (2x length for visibility)
-  const baseWidth = (CHILD_MARGIN_LEFT - parentAvatarCenter) + thisAvatarCenter; // 28px
-  const horizontalConnectorWidth = baseWidth * 2; // 56px (2x extended)
-  const horizontalConnectorLeft = horizontalConnectorWidth - thisAvatarCenter; // 44px (right edge at child avatar)
-  
-  // 2. Vertical line: positioned exactly at parent avatar center
-  const verticalLineLeft = CHILD_MARGIN_LEFT - parentAvatarCenter; // 32 - 16 = 16px from child container
+  // L-connector: horizontal line starts at child avatar, extends left toward parent
+  // Base width from parent avatar center to child avatar center = 28px
+  const baseWidth = (CHILD_MARGIN_LEFT - parentAvatarCenter) + thisAvatarCenter;
+  // Extend horizontal line 2x for better visibility (user approved this)
+  const horizontalConnectorWidth = baseWidth * 2; // 56px
+  // Position so right edge stays at child avatar center
+  const horizontalConnectorLeft = horizontalConnectorWidth - thisAvatarCenter; // 56 - 12 = 44px
   
   // Vertical line height: from child avatar UP to parent avatar level
   // This accounts for: parent message height + sibling gap + distance to reach parent avatar center
@@ -675,36 +674,22 @@ function ThreadNode({
   
   return (
     <div className={cn("thread-node relative", isReply && "mt-3")}>
-      {/* L-shaped connector: two separate elements for precise positioning */}
+      {/* L-shaped connector for replies - z-index 0 to stay behind message bubbles */}
       {isReply && verticalLineHeight > 0 && (
-        <>
-          {/* Vertical line: positioned at parent avatar center */}
-          <span 
-            className="absolute pointer-events-none"
-            style={{
-              left: `-${verticalLineLeft}px`,
-              top: `-${verticalLineHeight - AVATAR_MT - thisAvatarCenter}px`,
-              width: '1px',
-              height: `${verticalLineHeight}px`,
-              backgroundColor: 'rgba(120, 130, 140, 0.7)',
-              zIndex: -1,
-            }}
-            aria-hidden="true"
-          />
-          {/* Horizontal line: from child avatar center extending left */}
-          <span 
-            className="absolute pointer-events-none"
-            style={{
-              left: `-${horizontalConnectorLeft}px`,
-              top: `${AVATAR_MT + thisAvatarCenter}px`,
-              width: `${horizontalConnectorWidth}px`,
-              height: '1px',
-              backgroundColor: 'rgba(120, 130, 140, 0.7)',
-              zIndex: -1,
-            }}
-            aria-hidden="true"
-          />
-        </>
+        <span 
+          className="absolute pointer-events-none"
+          style={{
+            left: `-${horizontalConnectorLeft}px`,
+            top: `-${verticalLineHeight - AVATAR_MT - thisAvatarCenter}px`,
+            width: `${horizontalConnectorWidth}px`,
+            height: `${verticalLineHeight}px`,
+            borderLeft: '1px solid rgba(120, 130, 140, 0.7)',
+            borderBottom: '1px solid rgba(120, 130, 140, 0.7)',
+            borderBottomLeftRadius: '8px',
+            zIndex: -1,
+          }}
+          aria-hidden="true"
+        />
       )}
 
       <div ref={messageRef}>
