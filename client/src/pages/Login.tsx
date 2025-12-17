@@ -115,12 +115,6 @@ export function Login() {
               )}
             </Button>
           </form>
-
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-xs text-blue-800 font-medium mb-1">Credenciales de prueba:</p>
-            <p className="text-xs text-blue-700">Email: <code className="bg-white px-1 rounded">admin@test.com</code></p>
-            <p className="text-xs text-blue-700">Password: <code className="bg-white px-1 rounded">admin123</code></p>
-          </div>
         </CardContent>
       </Card>
     </div>
