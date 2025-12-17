@@ -57,7 +57,7 @@ export function Sidebar() {
   };
 
   return (
-    <div className="h-screen w-[260px] bg-[#EEF2F6] text-gray-600 flex flex-col border-r border-gray-200 shrink-0 transition-all duration-300">
+    <div className="h-screen w-[260px] bg-white text-gray-600 flex flex-col border-r border-gray-200 shrink-0 transition-all duration-300">
       <Dialog open={isClientManagerOpen} onOpenChange={setIsClientManagerOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
