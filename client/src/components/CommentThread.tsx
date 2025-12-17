@@ -425,7 +425,7 @@ function DraftCard({
 
       {draftContent && (
         <div className={cn(
-          "rounded-lg border border-gray-200 transition-all overflow-hidden bg-transparent",
+          "rounded-lg border border-[#8BB8F2] transition-all overflow-hidden bg-transparent",
           isOverLimit && "border-red-300"
         )}>
           <div className="px-3 py-2 flex items-center justify-between">
@@ -480,7 +480,7 @@ function DraftCard({
             </div>
           )}
 
-          <div className="px-2 py-2 flex items-center justify-between gap-1 border-t border-gray-200">
+          <div className="px-2 py-2 flex items-center justify-between gap-1 border-t border-[#8BB8F2]">
             <div className="flex items-center gap-0.5">
               <Button
                 variant="ghost"
