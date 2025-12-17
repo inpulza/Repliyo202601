@@ -149,6 +149,8 @@ function SingleMessage({
   const isSentFromRepliyo = isRepliyoMessage(msg.source, msg.internalOrigin);
   const isSentByAI = isAutoReply(msg.source, msg.internalOrigin);
 
+  const avatarSize = isReply ? AVATAR_SIZE_REPLY : AVATAR_SIZE_ROOT;
+
   return (
     <div className="flex gap-3 group transition-all">
       <Avatar className={cn(
@@ -583,7 +585,6 @@ interface ThreadNodeProps {
   setShowRegenerateConfirm: (id: string | null) => void;
   AudioPlayer: CommentThreadProps['AudioPlayer'];
   SentimentIndicator: CommentThreadProps['SentimentIndicator'];
-  parentAvatarRef?: React.RefObject<HTMLDivElement>;
 }
 
 function ThreadNode({
@@ -607,59 +608,38 @@ function ThreadNode({
   setShowRegenerateConfirm,
   AudioPlayer,
   SentimentIndicator,
-  parentAvatarRef,
 }: ThreadNodeProps) {
   const isReply = depth > 0;
   const hasChildren = node.children.length > 0;
   const canNest = depth < MAX_DEPTH;
-  
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const avatarRef = React.useRef<HTMLDivElement>(null);
-  const [connectorStyle, setConnectorStyle] = React.useState<React.CSSProperties>({});
 
   const INDENT = 32;
+  const AVATAR_MT = 4; // mt-1 on avatar
   const parentAvatarSize = depth === 1 ? AVATAR_SIZE_ROOT : AVATAR_SIZE_REPLY;
   const parentAvatarCenter = parentAvatarSize / 2;
   const childAvatarCenter = AVATAR_SIZE_REPLY / 2;
+  const siblingGap = 12;
   
-  React.useLayoutEffect(() => {
-    if (!isReply || !containerRef.current || !parentAvatarRef?.current) return;
-    
-    const container = containerRef.current;
-    const parentAvatar = parentAvatarRef.current;
-    const childAvatar = avatarRef.current;
-    
-    const containerRect = container.getBoundingClientRect();
-    const parentRect = parentAvatar.getBoundingClientRect();
-    const childRect = childAvatar?.getBoundingClientRect();
-    
-    const parentCenterY = parentRect.top + parentRect.height / 2;
-    const childCenterY = childRect ? childRect.top + childRect.height / 2 : containerRect.top + childAvatarCenter;
-    
-    const topOffset = containerRect.top - parentCenterY;
-    const leftOffset = INDENT - parentAvatarCenter;
-    const width = leftOffset + childAvatarCenter;
-    const height = isLastChild 
-      ? (childCenterY - parentCenterY)
-      : (containerRect.bottom - parentCenterY + 20);
-    
-    setConnectorStyle({
-      left: `-${leftOffset}px`,
-      top: `${topOffset}px`,
-      width: `${width}px`,
-      height: `${Math.max(height, 0)}px`,
-      borderLeft: '1px solid rgba(156, 163, 175, 0.5)',
-      borderBottom: '1px solid rgba(156, 163, 175, 0.5)',
-      borderBottomLeftRadius: '8px',
-    });
-  }, [isReply, isLastChild, parentAvatarRef, depth]);
+  const connectorLeftOffset = INDENT - parentAvatarCenter;
+  const connectorWidth = connectorLeftOffset + childAvatarCenter;
+  const verticalOffset = siblingGap + parentAvatarCenter + AVATAR_MT;
   
   return (
-    <div ref={containerRef} className={cn("thread-node relative", isReply && "mt-3")}>
+    <div className={cn("thread-node relative", isReply && "mt-3")}>
       {isReply && (
         <span 
           className="absolute pointer-events-none"
-          style={connectorStyle}
+          style={{
+            left: `-${connectorLeftOffset}px`,
+            top: `-${verticalOffset}px`,
+            width: `${connectorWidth}px`,
+            height: isLastChild 
+              ? `${verticalOffset + childAvatarCenter + AVATAR_MT}px`
+              : `calc(100% + ${verticalOffset}px)`,
+            borderLeft: '1px solid rgba(156, 163, 175, 0.5)',
+            borderBottom: '1px solid rgba(156, 163, 175, 0.5)',
+            borderBottomLeftRadius: '8px',
+          }}
           aria-hidden="true"
         />
       )}
