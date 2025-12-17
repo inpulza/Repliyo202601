@@ -163,7 +163,20 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
                   on: {conversation.socialPost.caption.substring(0, 20)}...
                 </span>
               )}
-              <PlatformIcon platform={platform} className="h-4 w-4" />
+              {/* Unread count badge */}
+              {conversation.unreadCount && conversation.unreadCount > 0 ? (
+                <Badge 
+                  variant="default" 
+                  className="h-5 min-w-[20px] px-1.5 text-[10px] font-bold bg-indigo-600 shrink-0"
+                  data-testid={`badge-unread-${conversation.id}`}
+                >
+                  {conversation.unreadCount}
+                </Badge>
+              ) : (
+                <span className="text-[10px] text-gray-400 whitespace-nowrap shrink-0">
+                  no new messages
+                </span>
+              )}
             </div>
           </div>
 
@@ -175,20 +188,8 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
               {conversation.lastMessagePreview || 'No messages yet'}
             </p>
             
-            {/* Unread count badge - bottom right */}
-            {conversation.unreadCount && conversation.unreadCount > 0 ? (
-              <Badge 
-                variant="default" 
-                className="h-5 min-w-[20px] px-1.5 text-[10px] font-bold bg-indigo-600 shrink-0 ml-2"
-                data-testid={`badge-unread-${conversation.id}`}
-              >
-                {conversation.unreadCount}
-              </Badge>
-            ) : (
-              <span className="text-[10px] text-gray-400 whitespace-nowrap shrink-0 ml-2">
-                no new messages
-              </span>
-            )}
+            {/* Platform icon - bottom right */}
+            <PlatformIcon platform={platform} className="h-4 w-4 shrink-0 ml-2" />
           </div>
         </div>
       </div>
