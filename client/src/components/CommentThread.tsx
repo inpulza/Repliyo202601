@@ -648,16 +648,18 @@ function ThreadNode({
   }, []);
   
   // Calculate the L-connector dimensions for replies
-  // Layout: parent avatar center is at parentAvatarCenter (16px for 32px avatar)
-  // Child is indented by INDENT (32px), so child container left edge is at 32px from parent container
-  // Child avatar center is at childAvatarCenter (12px) from child container left edge
-  // So child avatar center is at 32 + 12 = 44px from parent container left edge
-  // Distance from child avatar center back to parent avatar center = 44 - 16 = 28px
-  // But we position from child container left edge, not avatar center
-  // So: horizontalConnectorLeft = INDENT - parentAvatarCenter = 32 - 16 = 16px (from child container edge to parent avatar center)
+  // Center-to-center distance calculation:
+  // - Parent avatar center: parentAvatarCenter (16px for 32px avatar) from parent container left
+  // - Child container left edge: INDENT (44px = avatar + gap) from parent container left  
+  // - Child avatar center: childAvatarCenter (12px) from child container left
+  // - So child avatar center is at: INDENT + childAvatarCenter = 56px from parent container left
+  // - Center-to-center distance = (INDENT + childAvatarCenter) - parentAvatarCenter = 44 + 12 - 16 = 40px
+  //
+  // For positioning the span (absolute, inside child node):
+  // - horizontalConnectorLeft = INDENT - parentAvatarCenter = 44 - 16 = 28px (from child left edge back to parent avatar center)
+  // - horizontalConnectorWidth = INDENT + childAvatarCenter - parentAvatarCenter = center-to-center distance = 40px
   const horizontalConnectorLeft = INDENT - parentAvatarCenter;
-  // The horizontal part extends from the vertical line to the child avatar center
-  const horizontalConnectorWidth = horizontalConnectorLeft + childAvatarCenter;
+  const horizontalConnectorWidth = INDENT + childAvatarCenter - parentAvatarCenter;
   
   // Vertical line height: from child avatar UP to parent avatar level
   // This accounts for: parent message height + sibling gap + distance to reach parent avatar center
