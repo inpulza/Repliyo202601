@@ -1170,7 +1170,7 @@ export function Inbox() {
                 >
                   {/* Quoted Message Preview */}
                   <div className="mb-3 flex items-start gap-2">
-                    <div className="flex-1 bg-gray-50 rounded-lg p-3 border-l-4 border-indigo-500">
+                    <div className="flex-1 bg-gray-50 rounded-lg p-3 border border-gray-200">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs font-semibold text-gray-700">
                           Respondiendo a {replyToMessage.author}

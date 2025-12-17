@@ -425,9 +425,8 @@ function DraftCard({
 
       {draftContent && (
         <div className={cn(
-          "rounded-lg border-l-4 border border-gray-200 transition-all overflow-hidden bg-white/60",
-          platformDraftStyles.border,
-          isOverLimit && "border-red-300 border-l-red-500"
+          "rounded-lg border border-gray-200 transition-all overflow-hidden bg-white/60",
+          isOverLimit && "border-red-300"
         )}>
           <div className="px-3 py-2 flex items-center justify-between border-b border-gray-50 bg-gray-50/30">
             <div className="flex items-center gap-1.5">

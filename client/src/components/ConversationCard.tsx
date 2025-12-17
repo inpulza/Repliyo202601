@@ -110,7 +110,7 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
       data-testid={`conversation-card-${conversation.id}`}
       className={cn(
         "w-full max-w-full text-left bg-transparent rounded-lg hover:bg-white/50 transition-all duration-200 relative overflow-hidden group pl-3 py-3 pr-3 border-b border-gray-200/60",
-        isSelected && "bg-white/70 border-l-2 border-l-indigo-500"
+        isSelected && "bg-white/80"
       )}
     >
       <div className="flex items-start gap-3 min-w-0 max-w-full overflow-hidden">
