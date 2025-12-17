@@ -116,7 +116,7 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
               )}>
                 {isComment 
                   ? (conversation.socialPost?.caption 
-                      ? conversation.socialPost.caption.substring(0, 40) + (conversation.socialPost.caption.length > 40 ? '...' : '')
+                      ? conversation.socialPost.caption.substring(0, 20) + (conversation.socialPost.caption.length > 20 ? '...' : '')
                       : 'Post comments')
                   : (conversation.customerName || 'Unknown User')
                 }
