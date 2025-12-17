@@ -16,11 +16,7 @@ import {
   Bot,
   ChevronLeft,
   ChevronRight,
-  Menu,
-  Key,
-  Eye,
-  EyeOff,
-  Loader2
+  Menu
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -40,8 +36,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Link, useLocation } from 'wouter';
 import { BrandImportWizard } from './BrandImportWizard';
 import { useToast } from '@/hooks/use-toast';
@@ -53,72 +47,7 @@ export function Sidebar() {
   const [location, setLocation] = useLocation();
   const [isClientManagerOpen, setIsClientManagerOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true);
-  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const { toast } = useToast();
-
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (newPassword !== confirmPassword) {
-      toast({
-        title: "Error",
-        description: "Las contraseñas nuevas no coinciden",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      toast({
-        title: "Error",
-        description: "La nueva contraseña debe tener al menos 6 caracteres",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsChangingPassword(true);
-    try {
-      const res = await fetch('/api/auth/change-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          currentPassword,
-          newPassword,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Error al cambiar la contraseña');
-      }
-
-      toast({
-        title: "Contraseña actualizada",
-        description: "Tu contraseña ha sido cambiada correctamente",
-      });
-      setIsChangePasswordOpen(false);
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsChangingPassword(false);
-    }
-  };
 
   const activeClients = React.useMemo(() => {
     return clients.filter(client => client.status !== 'archived');
@@ -159,106 +88,6 @@ export function Sidebar() {
               onComplete={() => setIsClientManagerOpen(false)}
               onCancel={() => setIsClientManagerOpen(false)}
             />
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={isChangePasswordOpen} onOpenChange={(open) => {
-          setIsChangePasswordOpen(open);
-          if (!open) {
-            setCurrentPassword('');
-            setNewPassword('');
-            setConfirmPassword('');
-          }
-        }}>
-          <DialogContent className="sm:max-w-[400px]">
-            <DialogHeader>
-              <DialogTitle>Cambiar Contraseña</DialogTitle>
-              <DialogDescription>
-                Ingresa tu contraseña actual y la nueva contraseña.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleChangePassword} className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label htmlFor="currentPassword">Contraseña Actual</Label>
-                <div className="relative">
-                  <Input
-                    id="currentPassword"
-                    type={showCurrentPassword ? "text" : "password"}
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    data-testid="input-current-password"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  >
-                    {showCurrentPassword ? <EyeOff className="h-4 w-4 text-gray-400" /> : <Eye className="h-4 w-4 text-gray-400" />}
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="newPassword">Nueva Contraseña</Label>
-                <div className="relative">
-                  <Input
-                    id="newPassword"
-                    type={showNewPassword ? "text" : "password"}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    minLength={6}
-                    data-testid="input-new-password"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                  >
-                    {showNewPassword ? <EyeOff className="h-4 w-4 text-gray-400" /> : <Eye className="h-4 w-4 text-gray-400" />}
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirmar Nueva Contraseña</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  minLength={6}
-                  data-testid="input-confirm-password"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsChangePasswordOpen(false)}
-                  disabled={isChangingPassword}
-                >
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={isChangingPassword} data-testid="button-save-password">
-                  {isChangingPassword ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Guardando...
-                    </>
-                  ) : (
-                    'Guardar'
-                  )}
-                </Button>
-              </div>
-            </form>
           </DialogContent>
         </Dialog>
         
@@ -451,11 +280,13 @@ export function Sidebar() {
               <DropdownMenuSeparator className="bg-gray-100" />
               <DropdownMenuItem 
                 className="gap-2 cursor-pointer focus:bg-gray-50 focus:text-gray-900"
-                onClick={() => setIsChangePasswordOpen(true)}
-                data-testid="button-change-password"
+                onClick={() => setLocation('/profile')}
+                data-testid="button-profile-settings"
               >
-                <Key className="h-4 w-4" />
-                <span className="text-sm">Cambiar Contraseña</span>
+                <span className="text-sm">Profile Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2 cursor-pointer focus:bg-gray-50 focus:text-gray-900">
+                <span className="text-sm">Billing & Usage</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-gray-100" />
               <DropdownMenuItem 

@@ -15,6 +15,7 @@ import { AiMetrics } from "@/pages/AiMetrics";
 import { Connections } from "@/pages/Connections";
 import { IntegrationsPage } from "@/pages/Integrations";
 import { Login } from "@/pages/Login";
+import { ProfileSettings } from "@/pages/ProfileSettings";
 
 function Router() {
   return (
@@ -52,6 +53,13 @@ function Router() {
         {() => (
           <DashboardLayout>
             <AiMetrics />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/profile">
+        {() => (
+          <DashboardLayout>
+            <ProfileSettings />
           </DashboardLayout>
         )}
       </Route>
