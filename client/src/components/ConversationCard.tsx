@@ -151,24 +151,24 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
             </div>
           </div>
           
-          <div className="flex items-center gap-1.5 mb-2.5 flex-wrap min-w-0 max-w-full">
-            <div className="flex items-center gap-1 bg-white rounded-full px-1.5 py-0.5 border border-gray-200 shrink-0">
-              <PlatformIcon platform={platform} className="h-3.5 w-3.5" />
+          <div className="flex items-center gap-2 mb-2.5 flex-wrap min-w-0 max-w-full">
+            <div className="flex items-center shrink-0">
+              <PlatformIcon platform={platform} className="h-4 w-4" />
             </div>
-            <Badge variant="outline" className="text-[10px] font-normal h-5 px-1.5 text-gray-500 border-gray-200 bg-white shrink-0">
+            <div className="flex items-center gap-1 text-[11px] text-gray-500 shrink-0">
               {isDM && (
                 <>
-                  <MessageCircle className="h-3 w-3 mr-1" />
-                  DM
+                  <MessageCircle className="h-3.5 w-3.5" />
+                  <span>DM</span>
                 </>
               )}
               {isComment && (
                 <>
-                  <MessageSquare className="h-3 w-3 mr-1" />
-                  Comments
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  <span>Comments</span>
                 </>
               )}
-            </Badge>
+            </div>
             {isDM && conversation.socialPost?.caption && (
               <span className="text-[10px] text-gray-400 truncate max-w-[150px]" title={conversation.socialPost.caption}>
                 on: {conversation.socialPost.caption.substring(0, 30)}...
