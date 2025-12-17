@@ -154,7 +154,7 @@ function SingleMessage({
   return (
     <div className="flex gap-3 group transition-all">
       <Avatar className={cn(
-        "mt-1 opacity-80 group-hover:opacity-100 transition-opacity flex-shrink-0",
+        "mt-1 flex-shrink-0 bg-white",
         isReply ? "h-6 w-6" : "h-8 w-8"
       )}>
         <AvatarImage 
