@@ -615,7 +615,7 @@ function ThreadNode({
   const hasChildren = node.children.length > 0;
   const canNest = depth < MAX_DEPTH;
 
-  const INDENT = 32;
+  const INDENT = 24; // Reduced for better visual alignment
   const AVATAR_MT = 4; // mt-1 on avatar
   const siblingGap = 12; // mt-3 between siblings
   const parentAvatarSize = depth === 1 ? AVATAR_SIZE_ROOT : AVATAR_SIZE_REPLY;
@@ -646,8 +646,15 @@ function ThreadNode({
   }, []);
   
   // Calculate the L-connector dimensions for replies
-  // The vertical part needs to go UP from child avatar to connect with parent avatar
+  // Layout: parent avatar center is at parentAvatarCenter (16px for 32px avatar)
+  // Child is indented by INDENT (32px), so child container left edge is at 32px from parent container
+  // Child avatar center is at childAvatarCenter (12px) from child container left edge
+  // So child avatar center is at 32 + 12 = 44px from parent container left edge
+  // Distance from child avatar center back to parent avatar center = 44 - 16 = 28px
+  // But we position from child container left edge, not avatar center
+  // So: horizontalConnectorLeft = INDENT - parentAvatarCenter = 32 - 16 = 16px (from child container edge to parent avatar center)
   const horizontalConnectorLeft = INDENT - parentAvatarCenter;
+  // The horizontal part extends from the vertical line to the child avatar center
   const horizontalConnectorWidth = horizontalConnectorLeft + childAvatarCenter;
   
   // Vertical line height: from child avatar UP to parent avatar level
@@ -658,11 +665,13 @@ function ThreadNode({
   
   return (
     <div className={cn("thread-node relative", isReply && "mt-3")}>
-      {/* L-shaped connector for replies - single continuous line */}
+      {/* L-shaped connector for replies */}
       {isReply && verticalLineHeight > 0 && (
         <span 
           className="absolute pointer-events-none"
           style={{
+            // Position the vertical line (borderLeft) exactly below parent avatar center
+            // Parent avatar center is at (INDENT - parentAvatarCenter) pixels to the LEFT of child container
             left: `-${horizontalConnectorLeft}px`,
             top: `-${verticalLineHeight - AVATAR_MT - childAvatarCenter}px`,
             width: `${horizontalConnectorWidth}px`,
