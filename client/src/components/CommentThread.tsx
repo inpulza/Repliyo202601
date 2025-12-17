@@ -154,15 +154,17 @@ function SingleMessage({
   return (
     <div className="flex gap-3 group transition-all">
       <Avatar className={cn(
-        "mt-1 flex-shrink-0 bg-white",
+        "mt-1 flex-shrink-0 relative z-10",
         isReply ? "h-6 w-6" : "h-8 w-8"
       )}>
         <AvatarImage 
           src={isSentFromRepliyo ? repliyoLogo : (msg.authorAvatar || undefined)} 
-          alt={isSentFromRepliyo ? "Repliyo" : msg.author} 
+          alt={isSentFromRepliyo ? "Repliyo" : msg.author}
+          className="bg-white"
         />
         <AvatarFallback className={cn(
-          isOwner ? platformStyles.badge : "bg-gray-200 text-gray-600",
+          "bg-[#E5E7EB]",
+          isOwner ? "text-gray-700" : "text-gray-600",
           isReply ? "text-[10px]" : "text-xs font-medium"
         )}>
           {msg.author?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || <User className={isReply ? "h-3 w-3" : "h-4 w-4"} />}

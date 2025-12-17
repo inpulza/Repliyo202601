@@ -992,8 +992,8 @@ export function Inbox() {
                         </Button>
                     )}
                     <Avatar className="h-10 w-10 ring-2 ring-offset-2 ring-gray-50 shrink-0">
-                        <AvatarImage src={activeConversation.customerAvatar || undefined} alt={activeConversation.customerName || 'User'} />
-                        <AvatarFallback className="bg-gray-100 font-bold text-gray-600">{(activeConversation.customerName || 'U').substring(0,2).toUpperCase()}</AvatarFallback>
+                        <AvatarImage src={activeConversation.customerAvatar || undefined} alt={activeConversation.customerName || 'User'} className="bg-white" />
+                        <AvatarFallback className="bg-[#E5E7EB] font-bold text-gray-600">{(activeConversation.customerName || 'U').substring(0,2).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     
                     <div className="min-w-0 flex-1">
@@ -1312,12 +1312,12 @@ function MessageCard({ message, isSelected, onClick, onOpenCRM }: { message: Mes
                 {/* Avatar & Icon */}
                 <div className="relative shrink-0">
                     <Avatar className="h-10 w-10 border border-gray-100">
-                        <AvatarImage src={message.authorAvatar || undefined} alt={message.author} />
-                        <AvatarFallback className="text-xs font-bold text-gray-600 bg-gray-100">
+                        <AvatarImage src={message.authorAvatar || undefined} alt={message.author} className="bg-white" />
+                        <AvatarFallback className="text-xs font-bold text-gray-600 bg-[#E5E7EB]">
                             {message.author.substring(0,2).toUpperCase()}
                         </AvatarFallback>
                     </Avatar>
-                    <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
+                    <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5">
                         <PlatformIcon platform={(message.platform || 'instagram') as Platform} className="h-4 w-4" />
                     </div>
                 </div>

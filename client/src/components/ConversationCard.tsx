@@ -89,8 +89,8 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
     return (
       <div className="relative shrink-0">
         <Avatar className="h-10 w-10 border border-gray-100">
-          <AvatarImage src={conversation.customerAvatar || undefined} alt={conversation.customerName || 'User'} />
-          <AvatarFallback className="text-xs font-bold text-gray-600 bg-gray-100">
+          <AvatarImage src={conversation.customerAvatar || undefined} alt={conversation.customerName || 'User'} className="bg-white" />
+          <AvatarFallback className="text-xs font-bold text-gray-600 bg-[#E5E7EB]">
             {(conversation.customerName || 'U').substring(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
