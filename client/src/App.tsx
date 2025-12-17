@@ -63,12 +63,18 @@ function Router() {
           </DashboardLayout>
         )}
       </Route>
-      <Route path="/">
+      <Route path="/inbox">
         {() => (
           <DashboardLayout>
             <Inbox />
           </DashboardLayout>
         )}
+      </Route>
+      <Route path="/">
+        {() => {
+          window.location.href = '/inbox';
+          return null;
+        }}
       </Route>
       <Route component={NotFound} />
     </Switch>

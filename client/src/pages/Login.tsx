@@ -42,7 +42,7 @@ export function Login() {
 
       // Refresh auth state before navigating
       await refreshAuth();
-      setLocation('/');
+      setLocation('/inbox');
     } catch (error: any) {
       console.error('Login error:', error);
       toast({

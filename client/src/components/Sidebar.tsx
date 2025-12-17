@@ -63,7 +63,7 @@ export function Sidebar() {
 
   const navItems = [
     { href: "/overview", icon: BarChart3, label: "Overview" },
-    { href: "/", icon: Inbox, label: "Smart Inbox" },
+    { href: "/inbox", icon: Inbox, label: "Smart Inbox" },
     { href: "/connections", icon: LayoutDashboard, label: "Connections" },
     { href: "/integrations", icon: Command, label: "Integrations" },
     { href: "/settings", icon: Settings, label: "Agent Settings" },

@@ -9,7 +9,7 @@ export function BottomNav() {
 
   const navItems = [
     { href: '/overview', icon: BarChart3, label: 'Overview' },
-    { href: '/', icon: Inbox, label: 'Inbox' },
+    { href: '/inbox', icon: Inbox, label: 'Inbox' },
     { href: '/ai-metrics', icon: Bot, label: 'IA Metrics' },
     { href: '/connections', icon: LayoutDashboard, label: 'Connect' },
     { href: '/settings', icon: Settings, label: 'Settings' },
