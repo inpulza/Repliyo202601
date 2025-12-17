@@ -658,13 +658,13 @@ function ThreadNode({
     return () => observer.disconnect();
   }, []);
   
-  // L-connector: connects child avatar center to parent avatar center exactly
-  // horizontalConnectorLeft = distance from child container to parent avatar center
-  // For depth 1: 32 - 16 = 16px (parent avatar center is 16px to the left)
-  const horizontalConnectorLeft = CHILD_MARGIN_LEFT - parentAvatarCenter;
-  // horizontalConnectorWidth = from parent avatar center to child avatar center
-  // For depth 1: 16 + 12 = 28px
-  const horizontalConnectorWidth = horizontalConnectorLeft + thisAvatarCenter;
+  // L-connector: horizontal line starts at child avatar, extends left toward parent
+  // Base width from parent avatar center to child avatar center = 28px
+  const baseWidth = (CHILD_MARGIN_LEFT - parentAvatarCenter) + thisAvatarCenter;
+  // Extend horizontal line 2x for better visibility (user approved this)
+  const horizontalConnectorWidth = baseWidth * 2; // 56px
+  // Position so right edge stays at child avatar center
+  const horizontalConnectorLeft = horizontalConnectorWidth - thisAvatarCenter; // 56 - 12 = 44px
   
   // Vertical line height: from child avatar UP to parent avatar level
   // This accounts for: parent message height + sibling gap + distance to reach parent avatar center
