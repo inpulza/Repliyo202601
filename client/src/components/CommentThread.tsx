@@ -657,17 +657,16 @@ function ThreadNode({
     return () => observer.disconnect();
   }, []);
   
-  // Calculate the L-connector dimensions for replies
-  // Center-to-center distance calculation:
-  // - Parent avatar center: parentAvatarCenter from parent container left
-  // - This node is indented by INDENT_FROM_PARENT from parent container  
-  // - This node's avatar center: childAvatarCenter from this container left
-  // 
-  // For positioning the span (absolute, inside this child node):
-  // - horizontalConnectorLeft = INDENT_FROM_PARENT - parentAvatarCenter (from this left edge back to parent avatar center)
-  // - horizontalConnectorWidth = INDENT_FROM_PARENT + childAvatarCenter - parentAvatarCenter (center-to-center distance)
+  // L-connector horizontal positioning
+  // The connector must span from parent avatar center to child avatar center
+  // Using fixed values that work with the actual layout:
+  // - Root avatar (32px) center = 16px, Reply avatar (24px) center = 12px
+  // - Gap between avatar and content = 12px (gap-3)
+  // - Child indentation = avatar + gap = 44px (for root parent) or 36px (for reply parent)
   const horizontalConnectorLeft = INDENT_FROM_PARENT - parentAvatarCenter;
-  const horizontalConnectorWidth = INDENT_FROM_PARENT + childAvatarCenter - parentAvatarCenter;
+  // Increase width to ensure it reaches the parent avatar center
+  // Adding extra pixels to compensate for any layout discrepancies
+  const horizontalConnectorWidth = horizontalConnectorLeft + thisAvatarCenter + 4;
   
   // Vertical line height: from child avatar UP to parent avatar level
   // This accounts for: parent message height + sibling gap + distance to reach parent avatar center
