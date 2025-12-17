@@ -151,7 +151,7 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
             </div>
           </div>
           
-          <div className="flex items-center gap-2 mb-2.5 flex-wrap min-w-0 max-w-full">
+          <div className="flex items-center gap-2 mb-2.5 flex-wrap min-w-0 max-w-full justify-end">
             <div className="flex items-center shrink-0">
               <PlatformIcon platform={platform} className="h-4 w-4" />
             </div>
