@@ -167,25 +167,27 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
             )}
           </div>
 
-          <p className={cn(
-            "text-sm truncate leading-relaxed text-gray-600 min-w-0 max-w-[180px] break-words", 
-            conversation.unreadCount && conversation.unreadCount > 0 ? "font-medium text-gray-900" : ""
-          )}>
-            {conversation.lastMessagePreview || 'No messages yet'}
-          </p>
+          <div className="flex items-center justify-between">
+            <p className={cn(
+              "text-sm truncate leading-relaxed text-gray-600 min-w-0 max-w-[180px] break-words", 
+              conversation.unreadCount && conversation.unreadCount > 0 ? "font-medium text-gray-900" : ""
+            )}>
+              {conversation.lastMessagePreview || 'No messages yet'}
+            </p>
+            
+            {/* Unread count badge - bottom right */}
+            {conversation.unreadCount && conversation.unreadCount > 0 && (
+              <Badge 
+                variant="default" 
+                className="h-5 min-w-[20px] px-1.5 text-[10px] font-bold bg-indigo-600 shrink-0 ml-2"
+                data-testid={`badge-unread-${conversation.id}`}
+              >
+                {conversation.unreadCount}
+              </Badge>
+            )}
+          </div>
         </div>
       </div>
-      
-      {/* Unread count badge - bottom right */}
-      {conversation.unreadCount && conversation.unreadCount > 0 && (
-        <Badge 
-          variant="default" 
-          className="absolute bottom-3 right-3 h-5 min-w-[20px] px-1.5 text-[10px] font-bold bg-indigo-600 z-10"
-          data-testid={`badge-unread-${conversation.id}`}
-        >
-          {conversation.unreadCount}
-        </Badge>
-      )}
     </motion.button>
   );
 }
