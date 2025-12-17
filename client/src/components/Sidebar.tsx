@@ -16,7 +16,11 @@ import {
   Bot,
   ChevronLeft,
   ChevronRight,
-  Menu
+  Menu,
+  Key,
+  Eye,
+  EyeOff,
+  Loader2
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -36,6 +40,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Link, useLocation } from 'wouter';
 import { BrandImportWizard } from './BrandImportWizard';
 import { useToast } from '@/hooks/use-toast';
@@ -43,11 +49,76 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 export function Sidebar() {
   const { activeClient, clients, setActiveClientId } = useNexus();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const [location, setLocation] = useLocation();
   const [isClientManagerOpen, setIsClientManagerOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const { toast } = useToast();
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Las contraseñas nuevas no coinciden",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: "Error",
+        description: "La nueva contraseña debe tener al menos 6 caracteres",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Error al cambiar la contraseña');
+      }
+
+      toast({
+        title: "Contraseña actualizada",
+        description: "Tu contraseña ha sido cambiada correctamente",
+      });
+      setIsChangePasswordOpen(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
 
   const activeClients = React.useMemo(() => {
     return clients.filter(client => client.status !== 'archived');
@@ -88,6 +159,106 @@ export function Sidebar() {
               onComplete={() => setIsClientManagerOpen(false)}
               onCancel={() => setIsClientManagerOpen(false)}
             />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isChangePasswordOpen} onOpenChange={(open) => {
+          setIsChangePasswordOpen(open);
+          if (!open) {
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+          }
+        }}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>Cambiar Contraseña</DialogTitle>
+              <DialogDescription>
+                Ingresa tu contraseña actual y la nueva contraseña.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleChangePassword} className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword">Contraseña Actual</Label>
+                <div className="relative">
+                  <Input
+                    id="currentPassword"
+                    type={showCurrentPassword ? "text" : "password"}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    data-testid="input-current-password"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  >
+                    {showCurrentPassword ? <EyeOff className="h-4 w-4 text-gray-400" /> : <Eye className="h-4 w-4 text-gray-400" />}
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">Nueva Contraseña</Label>
+                <div className="relative">
+                  <Input
+                    id="newPassword"
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    minLength={6}
+                    data-testid="input-new-password"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                  >
+                    {showNewPassword ? <EyeOff className="h-4 w-4 text-gray-400" /> : <Eye className="h-4 w-4 text-gray-400" />}
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirmar Nueva Contraseña</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  minLength={6}
+                  data-testid="input-confirm-password"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsChangePasswordOpen(false)}
+                  disabled={isChangingPassword}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={isChangingPassword} data-testid="button-save-password">
+                  {isChangingPassword ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Guardando...
+                    </>
+                  ) : (
+                    'Guardar'
+                  )}
+                </Button>
+              </div>
+            </form>
           </DialogContent>
         </Dialog>
         
@@ -254,35 +425,37 @@ export function Sidebar() {
                   <TooltipTrigger asChild>
                     <Button variant="ghost" className="w-full h-10 p-0 hover:bg-gray-100 rounded-lg">
                       <Avatar className="h-7 w-7 ring-1 ring-black/5">
-                        <AvatarFallback className="bg-gray-200 text-gray-600 text-[10px]">US</AvatarFallback>
+                        <AvatarFallback className="bg-gray-200 text-gray-600 text-[10px]">{user?.name?.substring(0, 2).toUpperCase() || 'US'}</AvatarFallback>
                       </Avatar>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="right">
-                    <p>User Account</p>
+                    <p>{user?.name || 'Usuario'}</p>
                   </TooltipContent>
                 </Tooltip>
               ) : (
                 <div className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer group select-none">
                   <Avatar className="h-8 w-8 ring-2 ring-black/5 group-hover:ring-black/10 transition-all">
-                    <AvatarFallback className="bg-gray-200 text-gray-600">US</AvatarFallback>
+                    <AvatarFallback className="bg-gray-200 text-gray-600">{user?.name?.substring(0, 2).toUpperCase() || 'US'}</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col overflow-hidden">
-                    <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">User Account</span>
-                    <span className="text-xs text-gray-500 truncate">user@agency.com</span>
+                    <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">{user?.name || 'Usuario'}</span>
+                    <span className="text-xs text-gray-500 truncate">{user?.email || 'user@agency.com'}</span>
                   </div>
                   <ChevronsUpDown className="h-4 w-4 text-gray-400 ml-auto group-hover:text-gray-600 transition-colors" />
                 </div>
               )}
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56 bg-white border-gray-200 text-gray-700" align="start" side="top">
-              <DropdownMenuLabel className="text-xs text-gray-500 uppercase tracking-wider">My Account</DropdownMenuLabel>
+              <DropdownMenuLabel className="text-xs text-gray-500 uppercase tracking-wider">Mi Cuenta</DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-gray-100" />
-              <DropdownMenuItem className="gap-2 cursor-pointer focus:bg-gray-50 focus:text-gray-900">
-                <span className="text-sm">Profile Settings</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="gap-2 cursor-pointer focus:bg-gray-50 focus:text-gray-900">
-                <span className="text-sm">Billing & Usage</span>
+              <DropdownMenuItem 
+                className="gap-2 cursor-pointer focus:bg-gray-50 focus:text-gray-900"
+                onClick={() => setIsChangePasswordOpen(true)}
+                data-testid="button-change-password"
+              >
+                <Key className="h-4 w-4" />
+                <span className="text-sm">Cambiar Contraseña</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-gray-100" />
               <DropdownMenuItem 

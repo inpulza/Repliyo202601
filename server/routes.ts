@@ -186,6 +186,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(req.user);
   });
 
+  const changePasswordSchema = z.object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: z.string().min(6, "New password must be at least 6 characters"),
+  });
+
+  app.post("/api/auth/change-password", requireAuth, async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
+
+      const user = await storage.getUser(req.user!.id);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const isValid = await verifyPassword(currentPassword, user.password);
+      if (!isValid) {
+        return res.status(401).json({ error: "La contraseña actual es incorrecta" });
+      }
+
+      const hashedNewPassword = await hashPassword(newPassword);
+      await storage.updateUserPassword(user.id, hashedNewPassword);
+
+      res.json({ message: "Contraseña actualizada correctamente" });
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ error: "Datos inválidos" });
+      }
+      console.error('Error changing password:', error);
+      res.status(500).json({ error: "Error al cambiar la contraseña" });
+    }
+  });
+
   app.get("/api/metricool/brands", requireAuth, async (req, res) => {
     try {
       if (req.user!.role !== 'admin') {
