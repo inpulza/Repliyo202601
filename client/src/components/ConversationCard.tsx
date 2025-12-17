@@ -176,7 +176,7 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
             </p>
             
             {/* Unread count badge - bottom right */}
-            {conversation.unreadCount && conversation.unreadCount > 0 && (
+            {conversation.unreadCount && conversation.unreadCount > 0 ? (
               <Badge 
                 variant="default" 
                 className="h-5 min-w-[20px] px-1.5 text-[10px] font-bold bg-indigo-600 shrink-0 ml-2"
@@ -184,6 +184,10 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
               >
                 {conversation.unreadCount}
               </Badge>
+            ) : (
+              <span className="text-[10px] text-gray-400 whitespace-nowrap shrink-0 ml-2">
+                No new
+              </span>
             )}
           </div>
         </div>
