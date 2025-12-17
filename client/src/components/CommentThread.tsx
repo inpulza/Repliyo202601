@@ -618,12 +618,22 @@ function ThreadNode({
   const FLEX_GAP = 12; // gap-3 in the message flex container
   const AVATAR_MT = 4; // mt-1 on avatar
   const siblingGap = 12; // mt-3 between siblings
+  
+  // This node's avatar size
+  const thisAvatarSize = isReply ? AVATAR_SIZE_REPLY : AVATAR_SIZE_ROOT;
+  const thisAvatarCenter = thisAvatarSize / 2;
+  
+  // For connector positioning (used when this node is a reply):
+  // Parent's avatar size depends on if parent is root (depth-1 == 0) or also a reply
   const parentAvatarSize = depth === 1 ? AVATAR_SIZE_ROOT : AVATAR_SIZE_REPLY;
   const parentAvatarCenter = parentAvatarSize / 2;
   const childAvatarCenter = AVATAR_SIZE_REPLY / 2;
-  const thisAvatarSize = isReply ? AVATAR_SIZE_REPLY : AVATAR_SIZE_ROOT;
-  // The actual indent includes the parent avatar width + the flex gap
-  const INDENT = parentAvatarSize + FLEX_GAP;
+  
+  // INDENT for children: based on THIS node's avatar size (we are the parent of children)
+  const INDENT_FOR_CHILDREN = thisAvatarSize + FLEX_GAP;
+  
+  // INDENT for connector calculation: based on PARENT's avatar size (our parent)
+  const INDENT_FROM_PARENT = parentAvatarSize + FLEX_GAP;
   
   // Ref to measure this node's message height for passing to children
   const messageRef = React.useRef<HTMLDivElement>(null);
@@ -649,17 +659,15 @@ function ThreadNode({
   
   // Calculate the L-connector dimensions for replies
   // Center-to-center distance calculation:
-  // - Parent avatar center: parentAvatarCenter (16px for 32px avatar) from parent container left
-  // - Child container left edge: INDENT (44px = avatar + gap) from parent container left  
-  // - Child avatar center: childAvatarCenter (12px) from child container left
-  // - So child avatar center is at: INDENT + childAvatarCenter = 56px from parent container left
-  // - Center-to-center distance = (INDENT + childAvatarCenter) - parentAvatarCenter = 44 + 12 - 16 = 40px
-  //
-  // For positioning the span (absolute, inside child node):
-  // - horizontalConnectorLeft = INDENT - parentAvatarCenter = 44 - 16 = 28px (from child left edge back to parent avatar center)
-  // - horizontalConnectorWidth = INDENT + childAvatarCenter - parentAvatarCenter = center-to-center distance = 40px
-  const horizontalConnectorLeft = INDENT - parentAvatarCenter;
-  const horizontalConnectorWidth = INDENT + childAvatarCenter - parentAvatarCenter;
+  // - Parent avatar center: parentAvatarCenter from parent container left
+  // - This node is indented by INDENT_FROM_PARENT from parent container  
+  // - This node's avatar center: childAvatarCenter from this container left
+  // 
+  // For positioning the span (absolute, inside this child node):
+  // - horizontalConnectorLeft = INDENT_FROM_PARENT - parentAvatarCenter (from this left edge back to parent avatar center)
+  // - horizontalConnectorWidth = INDENT_FROM_PARENT + childAvatarCenter - parentAvatarCenter (center-to-center distance)
+  const horizontalConnectorLeft = INDENT_FROM_PARENT - parentAvatarCenter;
+  const horizontalConnectorWidth = INDENT_FROM_PARENT + childAvatarCenter - parentAvatarCenter;
   
   // Vertical line height: from child avatar UP to parent avatar level
   // This accounts for: parent message height + sibling gap + distance to reach parent avatar center
@@ -717,7 +725,7 @@ function ThreadNode({
         <div 
           className="thread-children relative"
           style={{
-            marginLeft: `${INDENT}px`,
+            marginLeft: `${INDENT_FOR_CHILDREN}px`,
           }}
         >
           {node.children.map((childNode, index) => (
