@@ -425,7 +425,7 @@ function DraftCard({
 
       {draftContent && (
         <div className={cn(
-          "rounded-lg border border-[#8BB8F2] transition-all overflow-hidden bg-transparent",
+          "rounded-lg border border-[#C5D9F5] transition-all overflow-hidden bg-transparent",
           isOverLimit && "border-red-300"
         )}>
           <div className="px-3 py-2 flex items-center justify-between">
@@ -480,12 +480,12 @@ function DraftCard({
             </div>
           )}
 
-          <div className="px-2 py-2 flex items-center justify-between gap-1 border-t border-[#8BB8F2]">
+          <div className="px-2 py-2 flex items-center justify-between gap-1 border-t border-[#C5D9F5]">
             <div className="flex items-center gap-0.5">
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 w-6 p-0 text-[#8BB8F2] hover:text-[#1877F2] hover:bg-transparent"
+                className="h-6 w-6 p-0 text-[#A8C8E8] hover:text-[#1877F2] hover:bg-transparent"
                 title="Descartar"
                 onClick={() => handleDiscardDraft(msg.id)}
                 data-testid={`button-discard-draft-${msg.id}`}
@@ -495,7 +495,7 @@ function DraftCard({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 w-6 p-0 text-[#8BB8F2] hover:text-[#1877F2] hover:bg-transparent"
+                className="h-6 w-6 p-0 text-[#A8C8E8] hover:text-[#1877F2] hover:bg-transparent"
                 title="Regenerar"
                 onClick={() => handleRegenerateDraft(msg.id)}
                 disabled={isGeneratingDraft}
@@ -512,13 +512,13 @@ function DraftCard({
             <div className="flex items-center gap-1">
               {isEditingThis ? (
                 <>
-                  <Button variant="ghost" size="sm" className="h-6 text-[10px] text-[#8BB8F2] px-2 hover:text-[#1877F2] hover:bg-transparent" onClick={cancelEditingDraft}>
+                  <Button variant="ghost" size="sm" className="h-6 text-[10px] text-[#A8C8E8] px-2 hover:text-[#1877F2] hover:bg-transparent" onClick={cancelEditingDraft}>
                     Cancelar
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 text-[10px] text-[#1877F2] border border-[#8BB8F2] px-2 hover:bg-blue-50"
+                    className="h-6 text-[10px] text-[#1877F2] border border-[#C5D9F5] px-2 hover:bg-blue-50"
                     onClick={() => handleSaveDraftEdit(msg.id)}
                     data-testid={`button-save-draft-${msg.id}`}
                   >
@@ -530,7 +530,7 @@ function DraftCard({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 text-[10px] text-[#8BB8F2] hover:text-[#1877F2] hover:bg-transparent px-2"
+                  className="h-6 text-[10px] text-[#A8C8E8] hover:text-[#1877F2] hover:bg-transparent px-2"
                   onClick={() => startEditingDraft(msg.id, draftContent)}
                   data-testid={`button-edit-draft-${msg.id}`}
                 >
