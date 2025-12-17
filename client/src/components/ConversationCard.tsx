@@ -146,7 +146,7 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
             <div className="flex items-center shrink-0">
               <PlatformIcon platform={platform} className="h-4 w-4" />
             </div>
-            <div className="flex items-center gap-1 text-[11px] text-gray-500 shrink-0">
+            <div className="flex items-center gap-1 text-[10px] text-gray-400 shrink-0">
               {isDM && (
                 <>
                   <MessageCircle className="h-3.5 w-3.5" />
