@@ -947,6 +947,9 @@ export function Inbox() {
            )}
         </div>
 
+        {/* Fade gradient for smooth transition */}
+        <div className="h-4 bg-gradient-to-b from-[#F5F7FA] to-[#EEF2F6] shrink-0" />
+
         {/* Conversations List */}
         <ScrollArea className="flex-1 bg-[#EEF2F6]">
           <div className="flex flex-col p-2 pb-6 w-full max-w-full min-w-0 overflow-hidden">
