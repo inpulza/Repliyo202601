@@ -673,7 +673,7 @@ function ThreadNode({
   
   return (
     <div className={cn("thread-node relative", isReply && "mt-5")}>
-      {/* L-shaped connector for replies - z-index 0 to stay behind message bubbles */}
+      {/* L-shaped connector for replies - must be above background but behind content */}
       {isReply && verticalLineHeight > 0 && (
         <span 
           className="absolute pointer-events-none"
@@ -685,7 +685,7 @@ function ThreadNode({
             borderLeft: '2px solid #9CA3AF',
             borderBottom: '2px solid #9CA3AF',
             borderBottomLeftRadius: '8px',
-            zIndex: -1,
+            zIndex: 1,
           }}
           aria-hidden="true"
         />
