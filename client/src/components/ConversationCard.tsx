@@ -180,7 +180,7 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
       {conversation.unreadCount && conversation.unreadCount > 0 && (
         <Badge 
           variant="default" 
-          className="absolute bottom-2 right-2 h-5 min-w-[20px] px-1.5 text-[10px] font-bold bg-indigo-600"
+          className="absolute bottom-3 right-3 h-5 min-w-[20px] px-1.5 text-[10px] font-bold bg-indigo-600 z-10"
           data-testid={`badge-unread-${conversation.id}`}
         >
           {conversation.unreadCount}
