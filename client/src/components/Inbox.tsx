@@ -790,7 +790,7 @@ export function Inbox() {
         </div>
 
         {/* Filter Bar (The "Playground" for AI) */}
-        <div className="p-3 border-b space-y-3 bg-gray-50/50">
+        <div className="p-3 border-b space-y-3 bg-[#F5F7FA]">
 
           {/* Row 1: Search & Fire Mode */}
           <div className="flex gap-2">
