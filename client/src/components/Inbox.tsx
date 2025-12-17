@@ -949,7 +949,7 @@ export function Inbox() {
 
         {/* Conversations List */}
         <ScrollArea className="flex-1 bg-[#EEF2F6]">
-          <div className="flex flex-col p-2 gap-0 w-full max-w-full min-w-0 overflow-hidden">
+          <div className="flex flex-col p-2 gap-1 w-full max-w-full min-w-0 overflow-hidden">
             <AnimatePresence mode="sync">
               {isLoadingConversations ? (
                 <div className="p-8 text-center text-muted-foreground text-sm flex items-center justify-center gap-2">

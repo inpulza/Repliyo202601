@@ -616,7 +616,7 @@ function ThreadNode({
 
   const FLEX_GAP = 12; // gap-3 in the message flex container
   const AVATAR_MT = 4; // mt-1 on avatar
-  const siblingGap = 12; // mt-3 between siblings
+  const siblingGap = 20; // mt-5 between siblings
   
   // This node's avatar size
   const thisAvatarSize = isReply ? AVATAR_SIZE_REPLY : AVATAR_SIZE_ROOT;
@@ -672,7 +672,7 @@ function ThreadNode({
     : 0;
   
   return (
-    <div className={cn("thread-node relative", isReply && "mt-3")}>
+    <div className={cn("thread-node relative", isReply && "mt-5")}>
       {/* L-shaped connector for replies - z-index 0 to stay behind message bubbles */}
       {isReply && verticalLineHeight > 0 && (
         <span 
@@ -682,8 +682,8 @@ function ThreadNode({
             top: `-${verticalLineHeight - AVATAR_MT - thisAvatarCenter}px`,
             width: `${horizontalConnectorWidth}px`,
             height: `${verticalLineHeight}px`,
-            borderLeft: '1px solid rgba(120, 130, 140, 0.7)',
-            borderBottom: '1px solid rgba(120, 130, 140, 0.7)',
+            borderLeft: '2px solid #9CA3AF',
+            borderBottom: '2px solid #9CA3AF',
             borderBottomLeftRadius: '8px',
             zIndex: -1,
           }}
@@ -830,8 +830,8 @@ export function CommentThread({
       {nodesWithDateInfo.map(({ node: rootNode, index, dateKey, dateDisplay, showSeparator }) => (
         <div key={rootNode.message.id} data-testid={`thread-root-${rootNode.message.id}`}>
           {showSeparator && dateDisplay && (
-            <div className="flex justify-center my-4" data-testid={`date-separator-${dateKey}`}>
-              <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
+            <div className="flex justify-center my-6" data-testid={`date-separator-${dateKey}`}>
+              <span className="text-[10px] font-medium text-gray-500 bg-white px-4 py-1.5 rounded-full border border-gray-200">
                 {dateDisplay}
               </span>
             </div>
