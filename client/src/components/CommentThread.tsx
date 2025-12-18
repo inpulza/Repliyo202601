@@ -15,8 +15,11 @@ import {
   AlertCircle, 
   Check, 
   Loader2,
-  Video 
+  Video,
+  Square,
+  CheckSquare
 } from 'lucide-react';
+import { Checkbox } from "@/components/ui/checkbox";
 import { Platform, MessageType, Sentiment } from '@/lib/types';
 import { isRepliyoMessage, isAutoReply } from '@/lib/mockData';
 import type { Message } from '@shared/schema';
@@ -58,6 +61,9 @@ interface CommentThreadProps {
   highlightedMessageId?: string | null;
   AudioPlayer: React.ComponentType<{ src: string; transcription?: string; isOutbound?: boolean }>;
   SentimentIndicator: React.ComponentType<{ sentiment: Sentiment }>;
+  isSelectionMode?: boolean;
+  selectedMessageIds?: Set<string>;
+  onToggleSelection?: (messageId: string) => void;
 }
 
 const MAX_DEPTH = 4;
@@ -122,6 +128,9 @@ interface SingleMessageProps {
   setShowRegenerateConfirm: (id: string | null) => void;
   AudioPlayer: CommentThreadProps['AudioPlayer'];
   SentimentIndicator: CommentThreadProps['SentimentIndicator'];
+  isSelectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelection?: (messageId: string) => void;
 }
 
 function SingleMessage({
@@ -146,11 +155,16 @@ function SingleMessage({
   setShowRegenerateConfirm,
   AudioPlayer,
   SentimentIndicator,
+  isSelectionMode = false,
+  isSelected = false,
+  onToggleSelection,
 }: SingleMessageProps) {
   const isOutbound = msg.direction === 'outbound';
   const isOwner = isOutbound;
   const isSentFromRepliyo = isRepliyoMessage(msg.source, msg.internalOrigin);
   const isSentByAI = isAutoReply(msg.source, msg.internalOrigin);
+  const isInbound = msg.direction === 'inbound';
+  const canSelect = isInbound && !msg.aiSuggestedReply && msg.aiReplyStatus !== 'drafted' && !generatingDraftIds.has(msg.id);
 
   const avatarSize = isReply ? AVATAR_SIZE_REPLY : AVATAR_SIZE_ROOT;
 
@@ -158,10 +172,23 @@ function SingleMessage({
     <div 
       className={cn(
         "flex gap-3 group transition-all rounded-lg p-2 -m-2",
-        isHighlighted && "ring-2 ring-amber-400 bg-amber-50/50 animate-pulse"
+        isHighlighted && "ring-2 ring-amber-400 bg-amber-50/50 animate-pulse",
+        isSelected && "ring-2 ring-purple-400 bg-purple-50/30"
       )}
       data-testid={`message-${msg.id}`}
     >
+      {/* Selection Checkbox - Only for inbound messages without drafts */}
+      {canSelect && (
+        <div className="flex items-start pt-1">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => onToggleSelection?.(msg.id)}
+            data-testid={`checkbox-select-${msg.id}`}
+            className="h-4 w-4 border-gray-300 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
+          />
+        </div>
+      )}
+      
       <Avatar className={cn(
         "mt-1 flex-shrink-0 relative z-10 ring-[3px] ring-white",
         isReply ? "h-6 w-6" : "h-8 w-8"
@@ -602,6 +629,9 @@ interface ThreadNodeProps {
   AudioPlayer: CommentThreadProps['AudioPlayer'];
   SentimentIndicator: CommentThreadProps['SentimentIndicator'];
   highlightedMessageId?: string | null;
+  isSelectionMode?: boolean;
+  selectedMessageIds?: Set<string>;
+  onToggleSelection?: (messageId: string) => void;
 }
 
 function ThreadNode({
@@ -627,6 +657,9 @@ function ThreadNode({
   AudioPlayer,
   SentimentIndicator,
   highlightedMessageId,
+  isSelectionMode,
+  selectedMessageIds,
+  onToggleSelection,
 }: ThreadNodeProps) {
   const isReply = depth > 0;
   const hasChildren = node.children.length > 0;
@@ -732,6 +765,9 @@ function ThreadNode({
           setShowRegenerateConfirm={setShowRegenerateConfirm}
           AudioPlayer={AudioPlayer}
           SentimentIndicator={SentimentIndicator}
+          isSelectionMode={isSelectionMode}
+          isSelected={selectedMessageIds?.has(node.message.id) ?? false}
+          onToggleSelection={onToggleSelection}
         />
       </div>
 
@@ -767,6 +803,9 @@ function ThreadNode({
               highlightedMessageId={highlightedMessageId}
               AudioPlayer={AudioPlayer}
               SentimentIndicator={SentimentIndicator}
+              isSelectionMode={isSelectionMode}
+              selectedMessageIds={selectedMessageIds}
+              onToggleSelection={onToggleSelection}
             />
           ))}
         </div>
@@ -803,6 +842,9 @@ export function CommentThread({
   highlightedMessageId,
   AudioPlayer,
   SentimentIndicator,
+  isSelectionMode,
+  selectedMessageIds,
+  onToggleSelection,
 }: CommentThreadProps) {
   const tree = React.useMemo(() => buildMessageTree(messages), [messages]);
 
@@ -879,6 +921,9 @@ export function CommentThread({
               highlightedMessageId={highlightedMessageId}
               AudioPlayer={AudioPlayer}
               SentimentIndicator={SentimentIndicator}
+              isSelectionMode={isSelectionMode}
+              selectedMessageIds={selectedMessageIds}
+              onToggleSelection={onToggleSelection}
             />
         </div>
       ))}

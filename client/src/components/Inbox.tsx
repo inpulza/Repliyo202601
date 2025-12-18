@@ -60,6 +60,7 @@ import { GoogleBusinessIcon } from './GoogleBusinessIcon';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
@@ -177,6 +178,40 @@ export function Inbox() {
   const [editingDraftText, setEditingDraftText] = useState("");
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState<string | null>(null);
   const [localDraftOverrides, setLocalDraftOverrides] = useState<Map<string, { aiSuggestedReply: string | null; aiReplyStatus: string; draftWasEdited: boolean }>>(new Map());
+  
+  // Bulk draft generation - selection state
+  const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set());
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  
+  const toggleMessageSelection = (messageId: string) => {
+    setSelectedMessageIds(prev => {
+      const next = new Set(prev);
+      if (next.has(messageId)) {
+        next.delete(messageId);
+      } else {
+        next.add(messageId);
+      }
+      return next;
+    });
+  };
+  
+  const clearSelection = () => {
+    setSelectedMessageIds(new Set());
+    setIsSelectionMode(false);
+  };
+  
+  const selectAllInboundMessages = () => {
+    if (!activeConversationMessages) return;
+    const inboundIds = activeConversationMessages
+      .filter(m => m.direction === 'inbound' && !m.aiSuggestedReply && m.aiReplyStatus !== 'drafted')
+      .map(m => m.id);
+    setSelectedMessageIds(new Set(inboundIds));
+  };
+  
+  // Clear selection when conversation changes
+  useEffect(() => {
+    clearSelection();
+  }, [activeConversation?.id]);
 
   const { data: syncStatus } = useQuery<SyncStatus>({
     queryKey: ['/api/sync/status'],
@@ -1318,6 +1353,9 @@ export function Inbox() {
                         highlightedMessageId={highlightedMessageId}
                         AudioPlayer={AudioPlayer}
                         SentimentIndicator={SentimentIndicator}
+                        isSelectionMode={isSelectionMode}
+                        selectedMessageIds={selectedMessageIds}
+                        onToggleSelection={toggleMessageSelection}
                       />
 
                       {/* Spacer to prevent content from being hidden behind the floating card */}
