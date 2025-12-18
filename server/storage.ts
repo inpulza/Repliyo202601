@@ -22,6 +22,8 @@ export interface IStorage {
   updateBrand(id: string, updates: Partial<InsertBrand>): Promise<Brand | undefined>;
   archiveBrand(id: string): Promise<Brand | undefined>;
   unarchiveBrand(id: string): Promise<Brand | undefined>;
+  getSyncPausedStatus(brandId: string): Promise<boolean>;
+  updateSyncPaused(brandId: string, paused: boolean): Promise<Brand | undefined>;
   
   getUsers(): Promise<User[]>;
   getUser(id: string): Promise<User | undefined>;
@@ -175,6 +177,20 @@ export class DatabaseStorage implements IStorage {
       .update(brands)
       .set({ status: 'active' })
       .where(eq(brands.id, id))
+      .returning();
+    return brand || undefined;
+  }
+
+  async getSyncPausedStatus(brandId: string): Promise<boolean> {
+    const brand = await this.getBrand(brandId);
+    return brand?.syncPaused ?? false;
+  }
+
+  async updateSyncPaused(brandId: string, paused: boolean): Promise<Brand | undefined> {
+    const [brand] = await db
+      .update(brands)
+      .set({ syncPaused: paused })
+      .where(eq(brands.id, brandId))
       .returning();
     return brand || undefined;
   }
