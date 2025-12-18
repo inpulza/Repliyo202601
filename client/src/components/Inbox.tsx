@@ -182,6 +182,39 @@ export function Inbox() {
     refetchInterval: 30000,
   });
 
+  const { data: brandSyncStatus, refetch: refetchSyncStatus } = useQuery({
+    queryKey: ['brandSyncStatus', activeClientId],
+    queryFn: () => activeClientId ? api.metricool.getSyncStatus(activeClientId) : Promise.resolve({ syncPaused: false }),
+    enabled: !!activeClientId,
+  });
+
+  const [isUpdatingSyncPause, setIsUpdatingSyncPause] = useState(false);
+
+  const handleToggleSyncPause = async () => {
+    if (!activeClientId || isUpdatingSyncPause) return;
+    
+    setIsUpdatingSyncPause(true);
+    try {
+      const newPausedState = !brandSyncStatus?.syncPaused;
+      await api.metricool.updateSyncStatus(activeClientId, newPausedState);
+      await refetchSyncStatus();
+      toast({
+        title: newPausedState ? "Sincronización pausada" : "Sincronización reanudada",
+        description: newPausedState 
+          ? "No se harán llamadas automáticas a Metricool para esta marca" 
+          : "Las llamadas automáticas a Metricool se han reanudado",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo actualizar el estado de sincronización",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingSyncPause(false);
+    }
+  };
+
   const getTimeSinceSync = () => {
     if (!syncStatus?.lastSyncTime) return null;
     const lastSync = new Date(syncStatus.lastSyncTime);
@@ -703,22 +736,52 @@ export function Inbox() {
         <div className="h-16 border-b px-4 flex items-center justify-between shrink-0 bg-white">
           <div className="flex items-center gap-3">
             <h1 className="font-bold text-xl tracking-tight text-gray-900">Inbox</h1>
-            <div className="flex items-center gap-1">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={handleSyncData} 
-                disabled={isSyncing || syncStatus?.isSyncing}
-                className="h-8 w-8 text-muted-foreground"
-                data-testid="button-sync"
-                title={syncStatus?.lastSyncTime ? `Última sync: ${new Date(syncStatus.lastSyncTime).toLocaleTimeString()}` : 'Sincronizar'}
-              >
-                <RefreshCw className={cn("h-4 w-4", (isSyncing || syncStatus?.isSyncing) && "animate-spin")} />
-              </Button>
-              {getTimeSinceSync() && (
-                <span className="text-xs text-muted-foreground" data-testid="text-sync-time">
-                  {getTimeSinceSync()}
-                </span>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                <Switch
+                  id="sync-toggle"
+                  checked={!brandSyncStatus?.syncPaused}
+                  onCheckedChange={() => handleToggleSyncPause()}
+                  disabled={isUpdatingSyncPause}
+                  data-testid="switch-sync-toggle"
+                  className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-amber-400"
+                />
+                <Label 
+                  htmlFor="sync-toggle" 
+                  className={cn(
+                    "text-xs font-medium cursor-pointer select-none",
+                    brandSyncStatus?.syncPaused ? "text-amber-600" : "text-green-600"
+                  )}
+                  data-testid="label-sync-status"
+                >
+                  {isUpdatingSyncPause ? (
+                    <Loader2 className="h-3 w-3 animate-spin inline" />
+                  ) : brandSyncStatus?.syncPaused ? (
+                    "Pausado"
+                  ) : (
+                    "Sync"
+                  )}
+                </Label>
+              </div>
+              {!brandSyncStatus?.syncPaused && (
+                <>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={handleSyncData} 
+                    disabled={isSyncing || syncStatus?.isSyncing}
+                    className="h-8 w-8 text-muted-foreground"
+                    data-testid="button-sync"
+                    title={syncStatus?.lastSyncTime ? `Última sync: ${new Date(syncStatus.lastSyncTime).toLocaleTimeString()}` : 'Sincronizar'}
+                  >
+                    <RefreshCw className={cn("h-4 w-4", (isSyncing || syncStatus?.isSyncing) && "animate-spin")} />
+                  </Button>
+                  {getTimeSinceSync() && (
+                    <span className="text-xs text-muted-foreground" data-testid="text-sync-time">
+                      {getTimeSinceSync()}
+                    </span>
+                  )}
+                </>
               )}
             </div>
             <Badge variant="outline" className="font-normal text-gray-500">

@@ -122,6 +122,28 @@ export const api = {
       }
       return res.json();
     },
+
+    getSyncStatus: async (brandId: string): Promise<{ syncPaused: boolean }> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/sync-status`);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to get sync status');
+      }
+      return res.json();
+    },
+
+    updateSyncStatus: async (brandId: string, syncPaused: boolean): Promise<{ message: string; syncPaused: boolean }> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/sync-status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ syncPaused }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to update sync status');
+      }
+      return res.json();
+    },
   },
 
   socialAccounts: {
