@@ -64,6 +64,7 @@ interface CommentThreadProps {
   isSelectionMode?: boolean;
   selectedMessageIds?: Set<string>;
   onToggleSelection?: (messageId: string) => void;
+  bulkResults?: Map<string, { success: boolean; error?: string }>;
 }
 
 const MAX_DEPTH = 4;
@@ -131,6 +132,7 @@ interface SingleMessageProps {
   isSelectionMode?: boolean;
   isSelected?: boolean;
   onToggleSelection?: (messageId: string) => void;
+  bulkResult?: { success: boolean; error?: string };
 }
 
 function SingleMessage({
@@ -158,6 +160,7 @@ function SingleMessage({
   isSelectionMode = false,
   isSelected = false,
   onToggleSelection,
+  bulkResult,
 }: SingleMessageProps) {
   const isOutbound = msg.direction === 'outbound';
   const isOwner = isOutbound;
@@ -177,8 +180,8 @@ function SingleMessage({
       )}
       data-testid={`message-${msg.id}`}
     >
-      {/* Selection Checkbox - Only for inbound messages without drafts */}
-      {canSelect && (
+      {/* Selection Checkbox with Bulk Result Indicator */}
+      {(canSelect || bulkResult) && (
         <motion.div 
           className="flex items-start pt-1"
           initial={{ opacity: 0, scale: 0.8 }}
@@ -186,12 +189,28 @@ function SingleMessage({
           exit={{ opacity: 0, scale: 0.8 }}
           transition={{ duration: 0.15, ease: "easeOut" }}
         >
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={() => onToggleSelection?.(msg.id)}
-            data-testid={`checkbox-select-${msg.id}`}
-            className="h-4 w-4 border-gray-300 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600 transition-all duration-150"
-          />
+          {bulkResult ? (
+            <div 
+              className={cn(
+                "h-4 w-4 rounded-full flex items-center justify-center",
+                bulkResult.success ? "bg-green-100" : "bg-red-100"
+              )}
+              title={bulkResult.error || (bulkResult.success ? "Borrador generado" : "Error")}
+            >
+              {bulkResult.success ? (
+                <Check className="h-2.5 w-2.5 text-green-600" />
+              ) : (
+                <AlertCircle className="h-2.5 w-2.5 text-red-600" />
+              )}
+            </div>
+          ) : canSelect ? (
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={() => onToggleSelection?.(msg.id)}
+              data-testid={`checkbox-select-${msg.id}`}
+              className="h-4 w-4 border-gray-300 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600 transition-all duration-150"
+            />
+          ) : null}
         </motion.div>
       )}
       
@@ -638,6 +657,7 @@ interface ThreadNodeProps {
   isSelectionMode?: boolean;
   selectedMessageIds?: Set<string>;
   onToggleSelection?: (messageId: string) => void;
+  bulkResults?: Map<string, { success: boolean; error?: string }>;
 }
 
 function ThreadNode({
@@ -666,6 +686,7 @@ function ThreadNode({
   isSelectionMode,
   selectedMessageIds,
   onToggleSelection,
+  bulkResults,
 }: ThreadNodeProps) {
   const isReply = depth > 0;
   const hasChildren = node.children.length > 0;
@@ -774,6 +795,7 @@ function ThreadNode({
           isSelectionMode={isSelectionMode}
           isSelected={selectedMessageIds?.has(node.message.id) ?? false}
           onToggleSelection={onToggleSelection}
+          bulkResult={bulkResults?.get(node.message.id)}
         />
       </div>
 
@@ -812,6 +834,7 @@ function ThreadNode({
               isSelectionMode={isSelectionMode}
               selectedMessageIds={selectedMessageIds}
               onToggleSelection={onToggleSelection}
+              bulkResults={bulkResults}
             />
           ))}
         </div>
@@ -851,6 +874,7 @@ export function CommentThread({
   isSelectionMode,
   selectedMessageIds,
   onToggleSelection,
+  bulkResults,
 }: CommentThreadProps) {
   const tree = React.useMemo(() => buildMessageTree(messages), [messages]);
 
@@ -930,6 +954,7 @@ export function CommentThread({
               isSelectionMode={isSelectionMode}
               selectedMessageIds={selectedMessageIds}
               onToggleSelection={onToggleSelection}
+              bulkResults={bulkResults}
             />
         </div>
       ))}

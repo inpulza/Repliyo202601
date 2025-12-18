@@ -226,9 +226,19 @@ export function Inbox() {
     clearSelection();
   }, [activeConversation?.id]);
   
+  // Track bulk generation results for per-message feedback
+  const [bulkResults, setBulkResults] = useState<Map<string, { success: boolean; error?: string }>>(new Map());
+  
   // Bulk draft queue hook
   const bulkQueue = useBulkDraftQueue({
     onMessageComplete: (result) => {
+      // Store result for per-message feedback
+      setBulkResults(prev => {
+        const next = new Map(prev);
+        next.set(result.messageId, { success: result.success, error: result.error });
+        return next;
+      });
+      
       if (result.success && result.draft) {
         // Update local state immediately for real-time feedback with actual draft text
         setLocalDraftOverrides(prev => {
@@ -266,6 +276,36 @@ export function Inbox() {
       clearSelection();
     },
   });
+  
+  // Sync current bulk message with generatingDraftIds for spinner display
+  useEffect(() => {
+    if (bulkQueue.currentMessageId) {
+      // Add current message to generating set
+      setGeneratingDraftIds(prev => new Set(prev).add(bulkQueue.currentMessageId!));
+      
+      // Clean up when message changes - remove previous messages that are complete
+      return () => {
+        setGeneratingDraftIds(prev => {
+          const next = new Set(prev);
+          next.delete(bulkQueue.currentMessageId!);
+          return next;
+        });
+      };
+    }
+  }, [bulkQueue.currentMessageId]);
+  
+  // Clear bulk results when queue resets to idle or when starting a new batch
+  useEffect(() => {
+    if (bulkQueue.status === 'idle' || bulkQueue.status === 'completed' || bulkQueue.status === 'cancelled') {
+      // Delay clearing results so user can see final state briefly
+      const timer = setTimeout(() => {
+        setBulkResults(new Map());
+        // Also clear any stale generating IDs
+        setGeneratingDraftIds(new Set());
+      }, bulkQueue.status === 'idle' ? 0 : 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [bulkQueue.status]);
   
   const handleStartBulkGeneration = () => {
     if (!activeClientId || selectedMessageIds.size === 0) return;
@@ -1417,6 +1457,7 @@ export function Inbox() {
                         isSelectionMode={isSelectionMode}
                         selectedMessageIds={selectedMessageIds}
                         onToggleSelection={toggleMessageSelection}
+                        bulkResults={bulkResults}
                       />
 
                       {/* Spacer to prevent content from being hidden behind the floating card */}
@@ -1426,9 +1467,70 @@ export function Inbox() {
                </div>
             </ScrollArea>
 
-            {/* Floating Bulk Actions Bar */}
+            {/* Floating Bulk Actions Bar OR Progress Bar */}
             <AnimatePresence>
-              {selectedMessageIds.size > 0 && (
+              {bulkQueue.status === 'processing' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute bottom-0 left-0 right-0 bg-white border-t border-purple-200 shadow-lg p-3 z-10"
+                  data-testid="bulk-progress-bar"
+                >
+                  <div className="max-w-3xl mx-auto">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
+                        <span className="text-sm font-medium text-gray-700">
+                          Generando borradores...
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-gray-500">
+                          {bulkQueue.currentIndex + 1} de {bulkQueue.totalCount}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={bulkQueue.cancelQueue}
+                          className="h-7 text-xs text-red-500 hover:text-red-700 hover:bg-red-50"
+                          data-testid="button-cancel-bulk"
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <motion.div 
+                        className="bg-purple-600 h-2 rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: bulkQueue.totalCount > 0 ? `${((bulkQueue.currentIndex + 1) / bulkQueue.totalCount) * 100}%` : '0%' }}
+                        transition={{ duration: 0.3 }}
+                      />
+                    </div>
+                    <div className="flex items-center gap-4 mt-2 text-xs">
+                      {bulkQueue.successCount > 0 && (
+                        <span className="text-green-600 flex items-center gap-1">
+                          <Check className="h-3 w-3" />
+                          {bulkQueue.successCount} generado{bulkQueue.successCount !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {bulkQueue.errorCount > 0 && (
+                        <span className="text-red-600 flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {bulkQueue.errorCount} error{bulkQueue.errorCount !== 1 ? 'es' : ''}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
+            <AnimatePresence>
+              {selectedMessageIds.size > 0 && bulkQueue.status !== 'processing' && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
