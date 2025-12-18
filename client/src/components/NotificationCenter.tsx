@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNexus } from '@/context/NexusContext';
 import { 
   Bell, Check, CheckCheck, MessageSquare, AlertCircle, Bot, Settings, 
-  ExternalLink, X, Loader2, RefreshCw
+  ExternalLink, Loader2
 } from 'lucide-react';
 import { FaInstagram, FaTiktok, FaFacebook, FaLinkedin, FaYoutube, FaWhatsapp } from 'react-icons/fa';
 import { Button } from '@/components/ui/button';
@@ -206,17 +206,6 @@ export function NotificationCenter({ isCollapsed = false }: NotificationCenterPr
                 {unreadCount > 0 ? `${unreadCount} sin leer` : 'Todas leídas'}
               </p>
             </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-gray-400 hover:text-gray-600"
-              onClick={() => refetch()}
-              title="Actualizar"
-            >
-              <RefreshCw className="h-4 w-4" />
-            </Button>
           </div>
         </div>
         
