@@ -3,6 +3,13 @@ import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   User, 
   Send, 
@@ -17,7 +24,10 @@ import {
   Loader2,
   Video,
   Square,
-  CheckSquare
+  CheckSquare,
+  MoreVertical,
+  Reply,
+  CheckSquare2
 } from 'lucide-react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Platform, MessageType, Sentiment } from '@/lib/types';
@@ -64,6 +74,7 @@ interface CommentThreadProps {
   isSelectionMode?: boolean;
   selectedMessageIds?: Set<string>;
   onToggleSelection?: (messageId: string) => void;
+  onEnterSelectionMode?: (messageId: string) => void;
   bulkResults?: Map<string, { success: boolean; error?: string }>;
 }
 
@@ -132,6 +143,7 @@ interface SingleMessageProps {
   isSelectionMode?: boolean;
   isSelected?: boolean;
   onToggleSelection?: (messageId: string) => void;
+  onEnterSelectionMode?: (messageId: string) => void;
   bulkResult?: { success: boolean; error?: string };
 }
 
@@ -160,6 +172,7 @@ function SingleMessage({
   isSelectionMode = false,
   isSelected = false,
   onToggleSelection,
+  onEnterSelectionMode,
   bulkResult,
 }: SingleMessageProps) {
   const isOutbound = msg.direction === 'outbound';
@@ -180,37 +193,46 @@ function SingleMessage({
       )}
       data-testid={`message-${msg.id}`}
     >
-      {/* Selection Checkbox with Bulk Result Indicator */}
-      {(canSelect || bulkResult) && (
+      {/* Selection Checkbox - Only visible in selection mode */}
+      {isSelectionMode && canSelect && (
         <motion.div 
-          className="flex items-start pt-1 mr-1"
+          className="flex items-start pt-1 mr-2"
+          initial={{ opacity: 0, scale: 0.8, x: -10 }}
+          animate={{ opacity: 1, scale: 1, x: 0 }}
+          exit={{ opacity: 0, scale: 0.8, x: -10 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+        >
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => onToggleSelection?.(msg.id)}
+            data-testid={`checkbox-select-${msg.id}`}
+            className="h-5 w-5 border-gray-300 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600 transition-all duration-150"
+          />
+        </motion.div>
+      )}
+      
+      {/* Bulk Result Indicator - Shows after bulk generation */}
+      {bulkResult && !isSelectionMode && (
+        <motion.div 
+          className="flex items-start pt-1 mr-2"
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.8 }}
           transition={{ duration: 0.15, ease: "easeOut" }}
         >
-          {bulkResult ? (
-            <div 
-              className={cn(
-                "h-4 w-4 rounded-full flex items-center justify-center",
-                bulkResult.success ? "bg-green-100" : "bg-red-100"
-              )}
-              title={bulkResult.error || (bulkResult.success ? "Borrador generado" : "Error")}
-            >
-              {bulkResult.success ? (
-                <Check className="h-2.5 w-2.5 text-green-600" />
-              ) : (
-                <AlertCircle className="h-2.5 w-2.5 text-red-600" />
-              )}
-            </div>
-          ) : canSelect ? (
-            <Checkbox
-              checked={isSelected}
-              onCheckedChange={() => onToggleSelection?.(msg.id)}
-              data-testid={`checkbox-select-${msg.id}`}
-              className="h-4 w-4 border-gray-300 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600 transition-all duration-150"
-            />
-          ) : null}
+          <div 
+            className={cn(
+              "h-5 w-5 rounded-full flex items-center justify-center",
+              bulkResult.success ? "bg-green-100" : "bg-red-100"
+            )}
+            title={bulkResult.error || (bulkResult.success ? "Borrador generado" : "Error")}
+          >
+            {bulkResult.success ? (
+              <Check className="h-3 w-3 text-green-600" />
+            ) : (
+              <AlertCircle className="h-3 w-3 text-red-600" />
+            )}
+          </div>
         </motion.div>
       )}
       
@@ -338,39 +360,72 @@ function SingleMessage({
         </div>
         
         {!isOwner && msg.direction === 'inbound' && (
-          <div className="flex items-center gap-3 mt-1 pt-1 border-t border-gray-200">
-            <button
-              onClick={() => onStartReply(msg)}
-              data-testid={`button-reply-${msg.id}`}
-              title="Reply to this message"
-              className="flex items-center gap-1 text-gray-400 hover:text-indigo-600 transition-colors"
-            >
-              <svg 
-                className="h-4 w-4" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              >
-                <path d="M3 10h10a5 5 0 0 1 5 5v6" />
-                <path d="M7 6l-4 4 4 4" />
-              </svg>
-              <span className="text-[10px] font-medium">Reply</span>
-            </button>
-            
-            {!msg.aiSuggestedReply && msg.aiReplyStatus !== 'drafted' && !generatingDraftIds.has(msg.id) && (
+          <div className="flex items-center justify-between mt-1 pt-1 border-t border-gray-200">
+            <div className="flex items-center gap-3">
               <button
-                onClick={() => onGenerateDraft(msg.id)}
-                disabled={generatingDraftIds.has(msg.id)}
-                data-testid={`button-generate-draft-${msg.id}`}
-                title="Generar borrador IA"
-                className="flex items-center gap-1 transition-colors text-gray-400 hover:text-purple-600"
+                onClick={() => onStartReply(msg)}
+                data-testid={`button-reply-${msg.id}`}
+                title="Reply to this message"
+                className="flex items-center gap-1 text-gray-400 hover:text-indigo-600 transition-colors"
               >
-                <Sparkles className="h-3.5 w-3.5" />
-                <span className="text-[10px] font-medium">Generar Borrador</span>
+                <svg 
+                  className="h-4 w-4" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                >
+                  <path d="M3 10h10a5 5 0 0 1 5 5v6" />
+                  <path d="M7 6l-4 4 4 4" />
+                </svg>
+                <span className="text-[10px] font-medium">Reply</span>
               </button>
+              
+              {!msg.aiSuggestedReply && msg.aiReplyStatus !== 'drafted' && !generatingDraftIds.has(msg.id) && (
+                <button
+                  onClick={() => onGenerateDraft(msg.id)}
+                  disabled={generatingDraftIds.has(msg.id)}
+                  data-testid={`button-generate-draft-${msg.id}`}
+                  title="Generar borrador IA"
+                  className="flex items-center gap-1 transition-colors text-gray-400 hover:text-purple-600"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span className="text-[10px] font-medium">Generar Borrador</span>
+                </button>
+              )}
+            </div>
+            
+            {/* Three-dot menu for selection - always visible on inbound messages */}
+            {!isSelectionMode && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                    data-testid={`button-more-options-${msg.id}`}
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {canSelect && (
+                    <DropdownMenuItem 
+                      onClick={() => onEnterSelectionMode?.(msg.id)}
+                      data-testid={`menu-select-${msg.id}`}
+                    >
+                      <CheckSquare2 className="h-4 w-4 mr-2" />
+                      Seleccionar
+                    </DropdownMenuItem>
+                  )}
+                  {!canSelect && (
+                    <DropdownMenuItem disabled className="text-gray-400">
+                      <CheckSquare2 className="h-4 w-4 mr-2" />
+                      Ya tiene borrador
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
         )}
@@ -657,6 +712,7 @@ interface ThreadNodeProps {
   isSelectionMode?: boolean;
   selectedMessageIds?: Set<string>;
   onToggleSelection?: (messageId: string) => void;
+  onEnterSelectionMode?: (messageId: string) => void;
   bulkResults?: Map<string, { success: boolean; error?: string }>;
 }
 
@@ -686,6 +742,7 @@ function ThreadNode({
   isSelectionMode,
   selectedMessageIds,
   onToggleSelection,
+  onEnterSelectionMode,
   bulkResults,
 }: ThreadNodeProps) {
   const isReply = depth > 0;
@@ -795,6 +852,7 @@ function ThreadNode({
           isSelectionMode={isSelectionMode}
           isSelected={selectedMessageIds?.has(node.message.id) ?? false}
           onToggleSelection={onToggleSelection}
+          onEnterSelectionMode={onEnterSelectionMode}
           bulkResult={bulkResults?.get(node.message.id)}
         />
       </div>
@@ -834,6 +892,7 @@ function ThreadNode({
               isSelectionMode={isSelectionMode}
               selectedMessageIds={selectedMessageIds}
               onToggleSelection={onToggleSelection}
+              onEnterSelectionMode={onEnterSelectionMode}
               bulkResults={bulkResults}
             />
           ))}
@@ -874,6 +933,7 @@ export function CommentThread({
   isSelectionMode,
   selectedMessageIds,
   onToggleSelection,
+  onEnterSelectionMode,
   bulkResults,
 }: CommentThreadProps) {
   const tree = React.useMemo(() => buildMessageTree(messages), [messages]);
@@ -954,6 +1014,7 @@ export function CommentThread({
               isSelectionMode={isSelectionMode}
               selectedMessageIds={selectedMessageIds}
               onToggleSelection={onToggleSelection}
+              onEnterSelectionMode={onEnterSelectionMode}
               bulkResults={bulkResults}
             />
         </div>

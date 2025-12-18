@@ -208,6 +208,11 @@ export function Inbox() {
     });
   };
   
+  const enterSelectionMode = (messageId: string) => {
+    setIsSelectionMode(true);
+    setSelectedMessageIds(new Set([messageId]));
+  };
+  
   const clearSelection = () => {
     setSelectedMessageIds(new Set());
     setIsSelectionMode(false);
@@ -1457,6 +1462,7 @@ export function Inbox() {
                         isSelectionMode={isSelectionMode}
                         selectedMessageIds={selectedMessageIds}
                         onToggleSelection={toggleMessageSelection}
+                        onEnterSelectionMode={enterSelectionMode}
                         bulkResults={bulkResults}
                       />
 
