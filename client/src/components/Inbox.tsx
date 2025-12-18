@@ -785,24 +785,17 @@ export function Inbox() {
                 </Label>
               </div>
               {!brandSyncStatus?.syncPaused && (
-                <>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={handleSyncData} 
-                    disabled={isSyncing || syncStatus?.isSyncing}
-                    className="h-8 w-8 text-muted-foreground"
-                    data-testid="button-sync"
-                    title={syncStatus?.lastSyncTime ? `Última sync: ${new Date(syncStatus.lastSyncTime).toLocaleTimeString()}` : 'Sincronizar'}
-                  >
-                    <RefreshCw className={cn("h-4 w-4", (isSyncing || syncStatus?.isSyncing) && "animate-spin")} />
-                  </Button>
-                  {getTimeSinceSync() && (
-                    <span className="text-xs text-muted-foreground" data-testid="text-sync-time">
-                      {getTimeSinceSync()}
-                    </span>
-                  )}
-                </>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={handleSyncData} 
+                  disabled={isSyncing || syncStatus?.isSyncing}
+                  className="h-8 w-8 text-muted-foreground"
+                  data-testid="button-sync"
+                  title={syncStatus?.lastSyncTime ? `Última sync: ${new Date(syncStatus.lastSyncTime).toLocaleTimeString()}` : 'Sincronizar'}
+                >
+                  <RefreshCw className={cn("h-4 w-4", (isSyncing || syncStatus?.isSyncing) && "animate-spin")} />
+                </Button>
               )}
             </div>
             {!brandSyncStatus?.syncPaused && (
