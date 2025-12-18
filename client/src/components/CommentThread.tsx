@@ -696,7 +696,7 @@ function ThreadNode({
         <span 
           className="absolute pointer-events-none"
           style={{
-            left: `-${horizontalConnectorLeft}px`,
+            left: `-${horizontalConnectorLeft - 2}px`,
             top: `-${verticalLineHeight - AVATAR_MT - thisAvatarCenter - 5}px`,
             width: `${horizontalConnectorWidth}px`,
             height: `${verticalLineHeight}px`,
