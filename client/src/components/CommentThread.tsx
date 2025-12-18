@@ -183,7 +183,7 @@ function SingleMessage({
       {/* Selection Checkbox with Bulk Result Indicator */}
       {(canSelect || bulkResult) && (
         <motion.div 
-          className="flex items-start pt-1"
+          className="flex items-start pt-1 mr-1"
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.8 }}
