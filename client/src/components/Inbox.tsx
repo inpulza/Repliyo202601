@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNexus, type ConversationWithPost } from '@/context/NexusContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { useBulkDraftQueue } from '@/hooks/useBulkDraftQueue';
 import { useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
 import { CRMContextPanel } from './CRMContextPanel';
@@ -224,6 +225,54 @@ export function Inbox() {
   useEffect(() => {
     clearSelection();
   }, [activeConversation?.id]);
+  
+  // Bulk draft queue hook
+  const bulkQueue = useBulkDraftQueue({
+    onMessageComplete: (result) => {
+      if (result.success && result.draft) {
+        // Update local state immediately for real-time feedback with actual draft text
+        setLocalDraftOverrides(prev => {
+          const next = new Map(prev);
+          next.set(result.messageId, {
+            aiSuggestedReply: result.draft,
+            aiReplyStatus: 'drafted',
+            draftWasEdited: false,
+          });
+          return next;
+        });
+      }
+    },
+    onAllComplete: async (results) => {
+      const successCount = results.filter(r => r.success).length;
+      const errorCount = results.filter(r => !r.success).length;
+      
+      // Refresh to sync with server
+      await refreshFeed();
+      if (activeConversation) {
+        queryClient.invalidateQueries({ queryKey: ['conversationMessages', activeConversation.id] });
+      }
+      
+      // Clear overrides after refresh
+      setLocalDraftOverrides(new Map());
+      
+      toast({
+        title: "Generación completada",
+        description: errorCount > 0 
+          ? `${successCount} borradores generados, ${errorCount} errores`
+          : `${successCount} borradores generados exitosamente`,
+        variant: errorCount > 0 ? "destructive" : "default",
+      });
+      
+      clearSelection();
+    },
+  });
+  
+  const handleStartBulkGeneration = () => {
+    if (!activeClientId || selectedMessageIds.size === 0) return;
+    
+    setShowBulkConfirmModal(false);
+    bulkQueue.startQueue(activeClientId, Array.from(selectedMessageIds));
+  };
 
   const { data: syncStatus } = useQuery<SyncStatus>({
     queryKey: ['/api/sync/status'],
@@ -1598,6 +1647,7 @@ export function Inbox() {
             </AlertDialogCancel>
             <AlertDialogAction
               className="bg-purple-600 hover:bg-purple-700"
+              onClick={handleStartBulkGeneration}
               data-testid="button-confirm-bulk"
             >
               <Sparkles className="h-4 w-4 mr-1.5" />
