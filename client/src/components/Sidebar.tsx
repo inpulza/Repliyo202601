@@ -105,12 +105,14 @@ export function Sidebar() {
               </div>
             </>
           )}
-          {isCollapsed && (
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 mt-12">
-              <NotificationCenter isCollapsed={isCollapsed} />
-            </div>
-          )}
         </div>
+        
+        {/* Notification Bell - Collapsed State */}
+        {isCollapsed && (
+          <div className="px-2 mb-2 flex justify-center">
+            <NotificationCenter isCollapsed={isCollapsed} />
+          </div>
+        )}
 
         {/* Collapse Toggle */}
         <div className={cn("px-2 mb-2", isCollapsed ? "flex justify-center" : "flex justify-end px-3")}>
