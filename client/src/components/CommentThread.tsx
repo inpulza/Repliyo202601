@@ -189,9 +189,11 @@ function SingleMessage({
       className={cn(
         "flex gap-3 group transition-all rounded-lg p-2 -m-2",
         isHighlighted && "ring-2 ring-amber-400 bg-amber-50/50 animate-pulse",
-        isSelected && "bg-indigo-50/50 border-l-2 border-indigo-500"
+        isSelected && "bg-indigo-50/60 border-l-2 border-indigo-500",
+        isSelectionMode && canSelect && "cursor-pointer hover:bg-gray-50"
       )}
       data-testid={`message-${msg.id}`}
+      onClick={isSelectionMode && canSelect ? () => onToggleSelection?.(msg.id) : undefined}
     >
       {/* Avatar Container - maintains fixed position for thread connectors */}
       <div className="relative flex-shrink-0 mt-1">
@@ -214,36 +216,19 @@ function SingleMessage({
           </AvatarFallback>
         </Avatar>
         
-        {/* Selection Overlay - circular check centered over avatar (WhatsApp-style) */}
+        {/* Selection Badge - small check badge outside avatar (bottom-right) */}
         <AnimatePresence>
-          {isSelectionMode && canSelect && (
-            <motion.div 
-              className={cn(
-                "absolute inset-0 z-20 flex items-center justify-center rounded-full cursor-pointer",
-                isSelected 
-                  ? "bg-indigo-600" 
-                  : "bg-black/40 hover:bg-black/50"
-              )}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+          {isSelectionMode && canSelect && isSelected && (
+            <motion.span 
+              className="absolute -bottom-1 -right-1 z-20 h-4 w-4 rounded-full bg-indigo-500 border-2 border-white flex items-center justify-center shadow-sm"
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.5 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
-              onClick={() => onToggleSelection?.(msg.id)}
-              data-testid={`checkbox-select-${msg.id}`}
+              data-testid={`badge-selected-${msg.id}`}
             >
-              {isSelected && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ duration: 0.1, ease: "easeOut" }}
-                >
-                  <Check className={cn(
-                    "text-white",
-                    isReply ? "h-3 w-3" : "h-4 w-4"
-                  )} />
-                </motion.div>
-              )}
-            </motion.div>
+              <Check className="h-2.5 w-2.5 text-white" />
+            </motion.span>
           )}
         </AnimatePresence>
         
