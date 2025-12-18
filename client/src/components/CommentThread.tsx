@@ -33,7 +33,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Platform, MessageType, Sentiment } from '@/lib/types';
 import { isRepliyoMessage, isAutoReply } from '@/lib/mockData';
 import type { Message } from '@shared/schema';
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { getCharacterLimit } from '@/utils/platformLimits';
 import repliyoLogo from '@/assets/repliyo-logo.jpg';
 
@@ -189,70 +189,78 @@ function SingleMessage({
       className={cn(
         "flex gap-3 group transition-all rounded-lg p-2 -m-2",
         isHighlighted && "ring-2 ring-amber-400 bg-amber-50/50 animate-pulse",
-        isSelected && "ring-2 ring-purple-400 bg-purple-50/30"
+        isSelected && "bg-indigo-50/50 border-l-2 border-indigo-500"
       )}
       data-testid={`message-${msg.id}`}
     >
-      {/* Selection Checkbox - Only visible in selection mode */}
-      {isSelectionMode && canSelect && (
-        <motion.div 
-          className="flex items-start pt-1 mr-2"
-          initial={{ opacity: 0, scale: 0.8, x: -10 }}
-          animate={{ opacity: 1, scale: 1, x: 0 }}
-          exit={{ opacity: 0, scale: 0.8, x: -10 }}
-          transition={{ duration: 0.2, ease: "easeOut" }}
-        >
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={() => onToggleSelection?.(msg.id)}
-            data-testid={`checkbox-select-${msg.id}`}
-            className="h-5 w-5 border-gray-300 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600 transition-all duration-150"
-          />
-        </motion.div>
-      )}
-      
-      {/* Bulk Result Indicator - Shows after bulk generation */}
-      {bulkResult && !isSelectionMode && (
-        <motion.div 
-          className="flex items-start pt-1 mr-2"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
-          transition={{ duration: 0.15, ease: "easeOut" }}
-        >
-          <div 
-            className={cn(
-              "h-5 w-5 rounded-full flex items-center justify-center",
-              bulkResult.success ? "bg-green-100" : "bg-red-100"
-            )}
-            title={bulkResult.error || (bulkResult.success ? "Borrador generado" : "Error")}
-          >
-            {bulkResult.success ? (
-              <Check className="h-3 w-3 text-green-600" />
-            ) : (
-              <AlertCircle className="h-3 w-3 text-red-600" />
-            )}
-          </div>
-        </motion.div>
-      )}
-      
-      <Avatar className={cn(
-        "mt-1 flex-shrink-0 relative z-10 ring-[3px] ring-white",
-        isReply ? "h-6 w-6" : "h-8 w-8"
-      )}>
-        <AvatarImage 
-          src={isSentFromRepliyo ? repliyoLogo : (msg.authorAvatar || undefined)} 
-          alt={isSentFromRepliyo ? "Repliyo" : msg.author}
-          className="bg-white"
-        />
-        <AvatarFallback className={cn(
-          "bg-[#E5E7EB]",
-          isOwner ? "text-gray-700" : "text-gray-600",
-          isReply ? "text-[10px]" : "text-xs font-medium"
+      {/* Avatar Container - maintains fixed position for thread connectors */}
+      <div className="relative flex-shrink-0">
+        {/* Avatar */}
+        <Avatar className={cn(
+          "relative z-10 ring-[3px] ring-white mt-1",
+          isReply ? "h-6 w-6" : "h-8 w-8"
         )}>
-          {msg.author?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || <User className={isReply ? "h-3 w-3" : "h-4 w-4"} />}
-        </AvatarFallback>
-      </Avatar>
+          <AvatarImage 
+            src={isSentFromRepliyo ? repliyoLogo : (msg.authorAvatar || undefined)} 
+            alt={isSentFromRepliyo ? "Repliyo" : msg.author}
+            className="bg-white"
+          />
+          <AvatarFallback className={cn(
+            "bg-[#E5E7EB]",
+            isOwner ? "text-gray-700" : "text-gray-600",
+            isReply ? "text-[10px]" : "text-xs font-medium"
+          )}>
+            {msg.author?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || <User className={isReply ? "h-3 w-3" : "h-4 w-4"} />}
+          </AvatarFallback>
+        </Avatar>
+        
+        {/* Selection Checkbox Overlay - positioned over avatar */}
+        <AnimatePresence>
+          {isSelectionMode && canSelect && (
+            <motion.div 
+              className="absolute -top-1 -left-1 z-20"
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.5 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+            >
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={() => onToggleSelection?.(msg.id)}
+                data-testid={`checkbox-select-${msg.id}`}
+                className="h-5 w-5 bg-white border-2 border-gray-300 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 shadow-sm transition-all duration-150"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
+        {/* Bulk Result Badge Overlay - positioned bottom-right of avatar */}
+        <AnimatePresence>
+          {bulkResult && !isSelectionMode && (
+            <motion.div 
+              className="absolute -bottom-1 -right-1 z-20"
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.5 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+            >
+              <div 
+                className={cn(
+                  "h-4 w-4 rounded-full flex items-center justify-center shadow-sm border border-white",
+                  bulkResult.success ? "bg-green-500" : "bg-red-500"
+                )}
+                title={bulkResult.error || (bulkResult.success ? "Borrador generado" : "Error")}
+              >
+                {bulkResult.success ? (
+                  <Check className="h-2.5 w-2.5 text-white" />
+                ) : (
+                  <AlertCircle className="h-2.5 w-2.5 text-white" />
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
       
       <div className="flex flex-col gap-1 min-w-0 flex-1">
         <div className="flex items-baseline gap-2 mb-1 flex-wrap">
