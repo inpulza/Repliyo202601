@@ -248,6 +248,11 @@ class SyncService {
               participants.find((p: any) => p.self !== true);
             
             customerId = customerParticipant?.id || fromId || author;
+            
+            // Warn if customerId matches brandAccountId (potential bug)
+            if (customerId === brandAccountId) {
+              console.warn(`[SyncService] WARNING: customerId matches brandAccountId for conversation ${conv.id}. This may cause DM send failures. Brand: ${brandName}, participants:`, JSON.stringify(participants));
+            }
           } else {
             author = msg.from?.name || msg.sender?.name || 'Unknown';
             authorAvatar = msg.from?.picture || msg.sender?.picture || null;
