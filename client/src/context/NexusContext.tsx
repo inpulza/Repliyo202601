@@ -215,6 +215,8 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
         description: `${importedBrand.name} agregado con ${activeCount}/${totalCount} redes activas.`,
       });
 
+      setActiveClientId(importedBrand.id);
+
       if (activeCount > 0) {
         toast({
           title: "Sincronizando Mensajes",
@@ -223,8 +225,9 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
 
         await api.metricool.syncBrand(importedBrand.id);
 
-        queryClient.invalidateQueries({ queryKey: ['messages'] });
-        queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        queryClient.invalidateQueries({ queryKey: ['messages', importedBrand.id] });
+        queryClient.invalidateQueries({ queryKey: ['conversations', importedBrand.id] });
+        queryClient.invalidateQueries({ queryKey: ['conversationMessages'] });
         
         toast({
           title: "¡Sincronización Completada!",
@@ -236,8 +239,6 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
           description: "No se seleccionaron redes para sincronizar. Puedes activarlas en la configuración.",
         });
       }
-
-      setActiveClientId(importedBrand.id);
 
     } catch (error: any) {
       console.error('Error importing brand:', error);
@@ -282,8 +283,11 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refreshFeed = () => {
-    queryClient.invalidateQueries({ queryKey: ['messages'] });
-    queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    if (activeClientId) {
+      queryClient.invalidateQueries({ queryKey: ['messages', activeClientId] });
+      queryClient.invalidateQueries({ queryKey: ['conversations', activeClientId] });
+      queryClient.invalidateQueries({ queryKey: ['conversationMessages'] });
+    }
     toast({ title: "Feed Refreshed", description: "Checking for new messages..." });
   };
 
