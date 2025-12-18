@@ -1,6 +1,81 @@
 import type { AiAgent, Message, Conversation, Brand, SocialPost, ConversationUserSummary } from "@shared/schema";
 import { PLATFORM_CHARACTER_LIMITS, getCharacterLimit } from "./types";
 
+/**
+ * Instrucciones de longitud óptima por plataforma.
+ * Define cómo la IA debe aprovechar los caracteres disponibles en cada red social.
+ */
+const PLATFORM_LENGTH_GUIDELINES: Record<string, { minWords: number; maxWords: number; style: string }> = {
+  youtube: {
+    minWords: 50,
+    maxWords: 300,
+    style: `YOUTUBE permite respuestas AMPLIAS y EXPLICATIVAS (hasta 10,000 caracteres).
+- Aprovecha para dar respuestas completas y detalladas.
+- Incluye contexto del video cuando sea relevante.
+- Puedes usar múltiples párrafos si es necesario.
+- Objetivo: 50-300 palabras. Sé informativo y útil.
+- No tengas miedo de extenderte si la pregunta lo amerita.`
+  },
+  facebook: {
+    minWords: 30,
+    maxWords: 200,
+    style: `FACEBOOK permite respuestas moderadamente extensas (hasta 8,000 caracteres para comentarios).
+- Puedes dar explicaciones detalladas cuando sea necesario.
+- Usa un tono conversacional y cercano.
+- Objetivo: 30-200 palabras según la complejidad de la pregunta.`
+  },
+  instagram: {
+    minWords: 20,
+    maxWords: 100,
+    style: `INSTAGRAM prefiere respuestas concisas pero completas (hasta 2,200 caracteres).
+- Sé directo pero amable.
+- Puedes usar emojis con moderación si el tono lo permite.
+- Objetivo: 20-100 palabras.`
+  },
+  tiktok: {
+    minWords: 5,
+    maxWords: 30,
+    style: `TIKTOK requiere respuestas MUY CORTAS (máximo 150 caracteres).
+- Sé ultra conciso y directo.
+- Una o dos frases máximo.
+- Objetivo: 5-30 palabras. Sin rodeos.`
+  },
+  twitter: {
+    minWords: 10,
+    maxWords: 50,
+    style: `TWITTER/X requiere brevedad (máximo 280 caracteres).
+- Respuestas puntuales y directas.
+- Objetivo: 10-50 palabras.`
+  },
+  linkedin: {
+    minWords: 30,
+    maxWords: 150,
+    style: `LINKEDIN permite respuestas profesionales y detalladas.
+- Tono profesional y constructivo.
+- Objetivo: 30-150 palabras.`
+  },
+  "google-business": {
+    minWords: 30,
+    maxWords: 150,
+    style: `GOOGLE BUSINESS permite respuestas informativas (hasta 4,000 caracteres).
+- Sé profesional y útil.
+- Incluye información práctica cuando sea relevante.
+- Objetivo: 30-150 palabras.`
+  },
+  default: {
+    minWords: 20,
+    maxWords: 100,
+    style: `Responde de manera completa pero concisa.
+- Objetivo: 20-100 palabras según la complejidad.`
+  }
+};
+
+function getPlatformLengthGuideline(platform: string): string {
+  const normalizedPlatform = platform.toLowerCase().trim();
+  const guidelines = PLATFORM_LENGTH_GUIDELINES[normalizedPlatform] || PLATFORM_LENGTH_GUIDELINES.default;
+  return guidelines.style;
+}
+
 interface PromptContext {
   agent: AiAgent;
   message: Message;
@@ -317,6 +392,7 @@ Por favor, genera una respuesta apropiada para este mensaje.`);
 
 function buildSystemPromptV53(context: VariableContext, brand?: Brand, useJsonMode: boolean = false): string {
   const parts: string[] = [];
+  const platformGuideline = getPlatformLengthGuideline(context.platform);
 
   if (useJsonMode) {
     parts.push(`<system_core>
@@ -337,14 +413,19 @@ function buildSystemPromptV53(context: VariableContext, brand?: Brand, useJsonMo
     LÍMITE TÉCNICO: ${context.dynamicLimit} caracteres.
   </context_layer>
 
+  <platform_length_guidelines>
+    ${platformGuideline}
+  </platform_length_guidelines>
+
   <knowledge_base>
     ${context.knowledgeBase || 'Sin base de conocimiento configurada.'}
   </knowledge_base>
 
   <thinking_protocol>
-    1. CHECK LÍMITE: Tu respuesta < ${context.dynamicLimit} caracteres.
-    2. CHECK CONTEXTO: Si falta info del post, sé genérico.
-    3. REDACCIÓN: Escribe y valida longitud.
+    1. CHECK PLATAFORMA: Ajusta la longitud según las guías de ${context.platform}.
+    2. CHECK LÍMITE: Tu respuesta < ${context.dynamicLimit} caracteres.
+    3. CHECK CONTEXTO: Si falta info del post, sé genérico pero informativo.
+    4. REDACCIÓN: Escribe aprovechando el espacio disponible según la plataforma.
   </thinking_protocol>
 
   <output_schema>
@@ -388,9 +469,13 @@ function buildSystemPromptV53(context: VariableContext, brand?: Brand, useJsonMo
       parts.push(`\n--- CONTEXTO DEL NEGOCIO ---\n${brand.businessContext}`);
     }
 
+    parts.push(`\n--- GUÍA DE LONGITUD PARA ${context.platform.toUpperCase()} ---
+${platformGuideline}`);
+
     parts.push(`\n--- LÍMITES TÉCNICOS ---
-- El límite de caracteres para ${context.platform} es ${context.dynamicLimit} caracteres.
+- El límite máximo de caracteres para ${context.platform} es ${context.dynamicLimit} caracteres.
 - Tu respuesta DEBE ser menor a ${context.dynamicLimit} caracteres.
+- APROVECHA el espacio disponible según las guías de la plataforma.
 - Mantén el idioma del mensaje original.
 - IMPORTANTE: Completa siempre tus oraciones. No dejes frases a medias.`);
 
