@@ -260,13 +260,18 @@ function SingleMessage({
           )}
           
           {isSentFromRepliyo && (
-            <div className="mt-2 pt-2 border-t border-gray-200 flex items-center gap-1.5 text-[10px] font-medium text-gray-500">
-              {isSentByAI ? (
-                <Bot className="h-3 w-3" />
-              ) : (
-                <Send className="h-2.5 w-2.5" />
-              )}
-              <span>{isSentByAI ? "Respondido con IA" : "Enviado desde Repliyo"}</span>
+            <div className="mt-2 pt-2 border-t border-gray-200 flex items-center justify-between text-[10px] font-medium text-gray-500">
+              <div className="flex items-center gap-1.5">
+                {isSentByAI ? (
+                  <Bot className="h-3 w-3" />
+                ) : (
+                  <Send className="h-2.5 w-2.5" />
+                )}
+                <span>{isSentByAI ? "Respondido con IA" : "Enviado desde Repliyo"}</span>
+              </div>
+              <span className="text-[9px] text-gray-400">
+                {(msg.content || '').length}/{getCharacterLimit((msg.platform || 'instagram') as Platform, (msg.type || 'comment') as MessageType)}
+              </span>
             </div>
           )}
         </div>
