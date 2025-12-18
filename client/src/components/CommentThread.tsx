@@ -179,14 +179,20 @@ function SingleMessage({
     >
       {/* Selection Checkbox - Only for inbound messages without drafts */}
       {canSelect && (
-        <div className="flex items-start pt-1">
+        <motion.div 
+          className="flex items-start pt-1"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          transition={{ duration: 0.15, ease: "easeOut" }}
+        >
           <Checkbox
             checked={isSelected}
             onCheckedChange={() => onToggleSelection?.(msg.id)}
             data-testid={`checkbox-select-${msg.id}`}
-            className="h-4 w-4 border-gray-300 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
+            className="h-4 w-4 border-gray-300 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600 transition-all duration-150"
           />
-        </div>
+        </motion.div>
       )}
       
       <Avatar className={cn(
