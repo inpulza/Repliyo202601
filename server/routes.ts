@@ -2153,26 +2153,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: brand.metricoolUserId,
       });
       
-      // Helper to normalize YouTube comment IDs for nested replies
-      // YouTube nested reply IDs have format: PARENT_THREAD_ID.REPLY_ID
-      // When replying to a nested comment, we must use only the parent thread ID
-      const normalizeYoutubeCommentId = (objectId: string, platform: string): string => {
-        if (platform.toLowerCase() === 'youtube' && objectId.includes('.')) {
-          const parentThreadId = objectId.split('.')[0];
-          console.log(`[SendDraft] Normalized YouTube nested comment ID: ${objectId} -> ${parentThreadId}`);
-          return parentThreadId;
-        }
-        return objectId;
-      };
-      
-      const originalMetricoolId = message.metricoolId || '';
-      const normalizedObjectId = normalizeYoutubeCommentId(originalMetricoolId, message.platform);
-      
       console.log(`[SendDraft] Sending draft for message ${messageId}:`, {
         platform: message.platform,
         type: message.type,
-        metricoolId: originalMetricoolId,
-        normalizedObjectId: normalizedObjectId,
+        metricoolId: message.metricoolId,
         draft: message.aiSuggestedReply?.substring(0, 50) + '...',
         characterCount: message.aiSuggestedReply?.length || 0,
       });
@@ -2182,7 +2166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (message.type === 'comment' || message.type === 'mention' || message.type === 'story_reply') {
         replyResult = await metricoolService.replyToComment({
           provider: message.platform,
-          objectId: normalizedObjectId,
+          objectId: message.metricoolId || '',
           text: message.aiSuggestedReply,
           blogId: brand.metricoolBlogId,
           mentionUsername: message.author || undefined,
@@ -2257,8 +2241,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         rawData: { 
           draftSent: true, 
           metricoolResponse: replyResult.rawResponse,
-          originalMetricoolId: originalMetricoolId,
-          normalizedObjectId: normalizedObjectId,
         },
         threadId: conversation.threadExternalId,
       });
