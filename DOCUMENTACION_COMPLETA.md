@@ -3690,3 +3690,80 @@ if (newInboundCount > 0) {
 | **Escalado futuro** | Subir a 2 vCPU si crece |
 
 ---
+
+## CORRECCIÓN DE BUG - 18 Diciembre 2025 (YouTube Nested Comments)
+
+### Bug: Error al Responder a Comentarios Anidados de YouTube
+
+#### Problema Reportado:
+Al intentar enviar un borrador de respuesta a un comentario anidado (reply dentro de otro comentario) en YouTube a través de Metricool, el sistema devolvía un error 500 `ReplyCommentException` con el mensaje "input is invalid".
+
+**Ejemplo del error:**
+```
+Metricool API POST error (500): {"status":"INTERNAL_SERVER_ERROR","code":"500","title":"ReplyCommentException","detail":{"error":"The API server failed to successfully process the request..."}}
+```
+
+#### Causa Raíz:
+En YouTube, los comentarios anidados tienen dos IDs diferentes:
+- **ID del reply**: Formato `{parentId}.{replyId}` (ej: `Ugy7KLef5okGiv95Hgt4AaABAg.AGf9rWQjsi4`)
+- **ID del parent**: Formato `{parentId}` (ej: `Ugy7KLef5okGiv95Hgt4AaABAg`)
+
+Cuando el sistema almacenaba un comentario anidado, guardaba el ID completo del reply como `metricoolId`. Pero la API de Metricool/YouTube requiere que las respuestas se envíen al **parent thread ID**, no al ID del reply individual.
+
+```typescript
+// ANTES (problema):
+replyToComment({
+  objectId: message.metricoolId, // ← Usaba el ID del reply completo
+  // ...
+});
+```
+
+#### Solución Implementada:
+
+1. **Detección de comentarios anidados de YouTube**: El campo `rawData` de los mensajes almacena el `parentId` cuando es un reply anidado.
+
+2. **Parseo seguro del rawData**: Se agregó lógica para parsear `rawData` de forma segura (puede ser string JSON o objeto).
+
+3. **Uso del parentId correcto**: Para YouTube, si existe `parentId` en rawData, se usa ese ID en lugar del `metricoolId`.
+
+```typescript
+// DESPUÉS (correcto):
+// Safely parse rawData - it may be stored as JSON string in database
+let parsedRawData: Record<string, any> | null = null;
+try {
+  if (message.rawData) {
+    parsedRawData = typeof message.rawData === 'string' 
+      ? JSON.parse(message.rawData) 
+      : message.rawData as Record<string, any>;
+  }
+} catch (parseError) {
+  console.warn(`[SendDraft] Failed to parse rawData for message ${messageId}:`, parseError);
+}
+
+if (message.platform?.toLowerCase() === 'youtube' && parsedRawData?.parentId) {
+  objectIdToUse = parsedRawData.parentId;
+  console.log(`[SendDraft] YouTube nested comment detected, using parentId: ${objectIdToUse}`);
+}
+```
+
+#### Archivos Modificados:
+- `server/routes.ts` - Endpoint `POST /api/ai-agent/:brandId/send-draft/:messageId` (líneas ~2193-2212)
+
+#### Estructura del rawData de YouTube:
+```json
+{
+  "id": "Ugy7KLef5okGiv95Hgt4AaABAg.AGWERfOdgxLAGf9rWQjsi4",
+  "text": "Contenido del comentario...",
+  "owner": "UCZqLcvCzdvNp8m-drjIsJlw",
+  "parentId": "Ugy7KLef5okGiv95Hgt4AaABAg",  // ← Este se usa para responder
+  "creationDate": "2025-04-08T21:43:40+0200"
+}
+```
+
+#### Resultado:
+- Las respuestas a comentarios anidados de YouTube ahora se envían correctamente
+- El sistema detecta automáticamente si es un reply anidado y usa el ID del hilo padre
+- Compatible con todas las marcas que tengan YouTube conectado
+- No afecta a otras plataformas (Instagram, TikTok, Facebook, etc.)
+
+---
