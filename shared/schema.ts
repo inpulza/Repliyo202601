@@ -10,6 +10,7 @@ export const brands = pgTable("brands", {
   industry: text("industry"),
   avatar: text("avatar"),
   status: text("status").notNull().default('active'),
+  syncPaused: boolean("sync_paused").notNull().default(false),
   metricoolToken: text("metricool_token").notNull(),
   metricoolUserId: text("metricool_user_id").notNull(),
   metricoolBlogId: text("metricool_blog_id").notNull(),
