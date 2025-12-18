@@ -550,6 +550,11 @@ class SyncService {
     
     this.triggerPendingTranscriptions(brandId, brandName);
     
+    // Create aggregated notification for new messages (if any)
+    if (savedCount > 0) {
+      this.createSyncNotification(brandId, 'new_messages', savedCount, null);
+    }
+    
     return savedCount;
   }
 
@@ -763,6 +768,37 @@ class SyncService {
     if (videoExtensions.some(ext => lowerUrl.includes(ext))) return 'video';
     
     return null;
+  }
+
+  private createSyncNotification(
+    brandId: string, 
+    type: 'new_messages' | 'sync_error' | 'sync_success', 
+    count: number, 
+    platform: string | null
+  ): void {
+    const titles: Record<string, string> = {
+      'new_messages': 'Nuevos mensajes sincronizados',
+      'sync_error': 'Error de sincronización',
+      'sync_success': 'Sincronización completada',
+    };
+    
+    const descriptions: Record<string, string> = {
+      'new_messages': `Se sincronizaron ${count} mensaje${count > 1 ? 's' : ''} nuevo${count > 1 ? 's' : ''}`,
+      'sync_error': 'Hubo un problema al sincronizar con Metricool',
+      'sync_success': 'La sincronización se completó exitosamente',
+    };
+
+    storage.createOrUpdateNotification({
+      brandId,
+      type,
+      title: titles[type],
+      description: descriptions[type],
+      platform,
+      count,
+      clickUrl: '/inbox',
+    }).catch(err => {
+      log(`[SyncService] Error creating notification: ${err.message}`, "sync");
+    });
   }
 }
 

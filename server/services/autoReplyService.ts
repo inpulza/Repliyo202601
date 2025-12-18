@@ -347,6 +347,17 @@ class AutoReplyService {
 
       log(`${logPrefix} Auto-reply sent successfully (${sentMessages.length} part(s))`, "sync");
 
+      // Create notification for auto-reply success (grouped by 6 hours)
+      storage.createOrUpdateNotification({
+        brandId: brand.id,
+        type: 'ai_auto_reply',
+        title: 'Respuesta automática enviada',
+        description: `IA respondió a ${message.author} en ${message.platform}`,
+        platform: message.platform,
+        count: 1,
+        clickUrl: `/inbox?conversationId=${conversation.id}`,
+      }).catch(err => log(`${logPrefix} Error creating notification: ${err.message}`, "sync"));
+
       // Trigger async summary update for this user (Phase 2: Persistent Memory)
       if (message.conversationId && message.author) {
         triggerSummaryUpdateAsync(message.conversationId, message.author);
