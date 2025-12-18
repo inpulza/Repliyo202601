@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Menu
 } from 'lucide-react';
+import { NotificationCenter } from './NotificationCenter';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -97,7 +98,17 @@ export function Sidebar() {
             <Command className="h-4 w-4 text-white" />
           </div>
           {!isCollapsed && (
-            <span className="font-bold text-base text-gray-900 tracking-tight">Repliyo</span>
+            <>
+              <span className="font-bold text-base text-gray-900 tracking-tight">Repliyo</span>
+              <div className="ml-auto">
+                <NotificationCenter isCollapsed={isCollapsed} />
+              </div>
+            </>
+          )}
+          {isCollapsed && (
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 mt-12">
+              <NotificationCenter isCollapsed={isCollapsed} />
+            </div>
           )}
         </div>
 
