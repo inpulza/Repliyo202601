@@ -445,6 +445,7 @@ export const notificationTypeEnum = z.enum([
   'config_change',   // Cambio en configuración del agente
   'brand_connected', // Nueva marca conectada
   'platform_toggle', // Plataforma activada/desactivada
+  'draft_pending',   // Borrador sin enviar (individual, persistente hasta envío)
   'error'            // Error genérico
 ]);
 export type NotificationType = z.infer<typeof notificationTypeEnum>;

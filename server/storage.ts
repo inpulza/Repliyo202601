@@ -145,6 +145,12 @@ export interface IStorage {
   markNotificationAsRead(id: string): Promise<Notification | undefined>;
   markAllNotificationsAsRead(brandId: string): Promise<number>;
   cleanupOldNotifications(): Promise<number>;
+  
+  // Draft pending notifications
+  getNotificationByMessageId(messageId: string): Promise<Notification | undefined>;
+  deleteNotificationByMessageId(messageId: string): Promise<boolean>;
+  createDraftNotification(brandId: string, messageId: string, conversationId: string, platform: string, author: string, draftPreview: string): Promise<Notification>;
+  getMessagesWithPendingDrafts(brandId: string): Promise<Array<{ messageId: string; conversationId: string; platform: string; author: string; draftPreview: string }>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1752,13 +1758,15 @@ export class DatabaseStorage implements IStorage {
     // RETENTION POLICY:
     // - Delete read notifications older than 7 days
     // - Delete unread notifications older than 30 days
+    // - NEVER delete draft_pending notifications (they persist until draft is sent/discarded)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     
     const result = await db.execute(sql`
       DELETE FROM notifications
-      WHERE (is_read = true AND created_at < ${sevenDaysAgo})
-         OR (is_read = false AND created_at < ${thirtyDaysAgo})
+      WHERE type != 'draft_pending'
+        AND ((is_read = true AND created_at < ${sevenDaysAgo})
+         OR (is_read = false AND created_at < ${thirtyDaysAgo}))
     `);
     
     const deleted = result.rowCount || 0;
@@ -1766,6 +1774,107 @@ export class DatabaseStorage implements IStorage {
       console.log(`[Notifications] Cleanup: deleted ${deleted} old notifications`);
     }
     return deleted;
+  }
+
+  async getNotificationByMessageId(messageId: string): Promise<Notification | undefined> {
+    const [notification] = await db
+      .select()
+      .from(notifications)
+      .where(
+        and(
+          eq(notifications.type, 'draft_pending'),
+          sql`metadata->>'messageId' = ${messageId}`
+        )
+      )
+      .limit(1);
+    return notification || undefined;
+  }
+
+  async deleteNotificationByMessageId(messageId: string): Promise<boolean> {
+    const result = await db.execute(sql`
+      DELETE FROM notifications
+      WHERE type = 'draft_pending'
+        AND metadata->>'messageId' = ${messageId}
+    `);
+    const deleted = result.rowCount || 0;
+    if (deleted > 0) {
+      console.log(`[Notifications] Deleted draft notification for message ${messageId}`);
+    }
+    return deleted > 0;
+  }
+
+  async createDraftNotification(
+    brandId: string, 
+    messageId: string, 
+    conversationId: string, 
+    platform: string, 
+    author: string, 
+    draftPreview: string
+  ): Promise<Notification> {
+    // Check if notification already exists for this message
+    const existing = await this.getNotificationByMessageId(messageId);
+    if (existing) {
+      // Update the existing notification with new draft preview
+      const [updated] = await db
+        .update(notifications)
+        .set({
+          description: draftPreview.substring(0, 100) + (draftPreview.length > 100 ? '...' : ''),
+          updatedAt: new Date(),
+          isRead: false,
+        })
+        .where(eq(notifications.id, existing.id))
+        .returning();
+      return updated;
+    }
+
+    // Create new draft notification
+    const clickUrl = `/inbox?conversation=${conversationId}&messageId=${messageId}&highlight=true`;
+    const [created] = await db
+      .insert(notifications)
+      .values({
+        brandId,
+        type: 'draft_pending',
+        title: `Borrador sin enviar de @${author}`,
+        description: draftPreview.substring(0, 100) + (draftPreview.length > 100 ? '...' : ''),
+        platform,
+        clickUrl,
+        isRead: false,
+        count: 1,
+        metadata: {
+          messageId,
+          conversationId,
+          author,
+          platform,
+        },
+      })
+      .returning();
+    
+    console.log(`[Notifications] Created draft notification for message ${messageId}`);
+    return created;
+  }
+
+  async getMessagesWithPendingDrafts(brandId: string): Promise<Array<{ messageId: string; conversationId: string; platform: string; author: string; draftPreview: string }>> {
+    const result = await db.execute(sql`
+      SELECT 
+        m.id as message_id,
+        m.conversation_id,
+        m.platform,
+        m.author,
+        COALESCE(SUBSTRING(m.ai_suggested_reply, 1, 100), '') as draft_preview
+      FROM messages m
+      JOIN conversations c ON m.conversation_id = c.id
+      WHERE c.brand_id = ${brandId}
+        AND m.ai_suggested_reply IS NOT NULL
+        AND m.ai_reply_status IN ('drafted', 'suggested')
+    `);
+    
+    return (result.rows as any[]).map(row => ({
+      messageId: row.message_id,
+      conversationId: row.conversation_id,
+      platform: row.platform || 'unknown',
+      author: row.author || 'Usuario',
+      draftPreview: row.draft_preview || '',
+    }));
   }
 }
 
