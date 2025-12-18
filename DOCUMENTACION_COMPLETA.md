@@ -21,6 +21,7 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 - **Agentes IA - Paso 4**: ✅ Frontend AIAgentConfig.tsx con 6 tabs completos
 - **Agentes IA - Paso 5**: ✅ Playground conectado a IA real (endpoint test-generate)
 - **Agentes IA - Paso 6**: ✅ Botón "Generar con IA" en Inbox (endpoint generate-reply)
+- **Generación Masiva**: ✅ Selección múltiple de mensajes con generación secuencial en cola
 - **Notificaciones**: ✅ Sistema central con panel deslizante estilo Instagram
 - **Smart Digest**: ✅ Notificaciones humanizadas con nombres de autores
 - **Deep Links**: ✅ Click en notificación navega a conversación con scroll + highlight
@@ -324,6 +325,60 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 - ✅ Pre-llena caja de respuesta con sugerencia de la IA
 - ✅ Toast con información del provider/model/caracteres generados
 - ✅ Opción de editar antes de enviar
+
+#### Paso 7: Generación Masiva de Borradores ✅ COMPLETADA - 18 Diciembre 2025
+**Objetivo:** Permitir generar borradores IA para múltiples mensajes a la vez, priorizando seguridad y UX sobre velocidad.
+
+**Arquitectura:**
+- **Procesamiento secuencial** (1 mensaje a la vez) para evitar rate limits de APIs
+- **Cola frontend** usando hook `useBulkDraftQueue` que reutiliza el endpoint individual existente
+- **Delay de 500ms** entre mensajes para proteger contra throttling
+- **Sin endpoint bulk** - se evitó crear nuevo endpoint para mantener simplicidad
+
+**Implementación:**
+1. ✅ **Estado de selección múltiple** (`Inbox.tsx`):
+   - `isSelectionMode` toggle con botón en header
+   - `selectedMessageIds` Set para tracking de mensajes seleccionados
+   - Checkboxes con animación suave solo en mensajes inbound
+   - Highlight púrpura en mensajes seleccionados
+
+2. ✅ **Barra de acciones flotante**:
+   - Aparece sticky cuando hay mensajes seleccionados
+   - Muestra contador de mensajes seleccionados
+   - Botones "Generar Borradores" y "Limpiar selección"
+   - Badge informativo sobre costo estimado (~$0.002/mensaje)
+
+3. ✅ **Modal de confirmación**:
+   - Muestra cantidad de mensajes a procesar
+   - Estimación de costo total
+   - Advertencia sobre tiempo de procesamiento
+   - Botones Confirmar/Cancelar
+
+4. ✅ **Hook `useBulkDraftQueue`** (`client/src/hooks/useBulkDraftQueue.ts`):
+   - Estados: idle, processing, completed, cancelled
+   - Procesa mensajes uno por uno secuencialmente
+   - Tracking de progreso (processedCount, successCount, errorCount)
+   - Callbacks: onMessageComplete, onAllComplete
+   - Método cancel() para detener procesamiento
+
+5. ✅ **Feedback visual**:
+   - Barra de progreso animada durante procesamiento
+   - Spinner en mensaje siendo procesado actualmente
+   - Check verde (✓) para mensajes exitosos
+   - Icono rojo (!) para mensajes con error
+   - Toast final con resumen de éxitos/errores
+   - Auto-limpieza de indicadores después de 3 segundos
+
+6. ✅ **Manejo de errores**:
+   - Continúa procesando si un mensaje falla
+   - Registra errores por mensaje en `bulkResults` Map
+   - Resumen final incluye count de errores
+
+**Archivos involucrados:**
+- `client/src/components/Inbox.tsx` - UI y estado de selección
+- `client/src/components/CommentThread.tsx` - Propagación de props
+- `client/src/components/SingleMessage.tsx` - Checkboxes e indicadores
+- `client/src/hooks/useBulkDraftQueue.ts` - Lógica de cola
 
 **FASE 9: Sistema de Notificaciones Central ✅ COMPLETADA - 18 Diciembre 2025**
 
