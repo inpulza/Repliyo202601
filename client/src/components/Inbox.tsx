@@ -3,7 +3,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNexus, type ConversationWithPost } from '@/context/NexusContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import { useBulkDraftQueue } from '@/hooks/useBulkDraftQueue';
 import { useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
 import { CRMContextPanel } from './CRMContextPanel';
@@ -55,14 +54,12 @@ import {
   Pencil,
   RotateCw,
   AlertCircle,
-  CheckSquare,
 } from 'lucide-react';
 import { FaInstagram, FaFacebook, FaLinkedin, FaTiktok, FaYoutube, FaWhatsapp } from 'react-icons/fa';
 import { GoogleBusinessIcon } from './GoogleBusinessIcon';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
@@ -75,16 +72,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { formatDistanceToNow } from 'date-fns';
 import { Platform, MessageType, Urgency, Intent, Sentiment, MessageStatus, CRMContact } from '@/lib/types';
 import { isRepliyoMessage, isAutoReply, isManualReply, isSyncedMessage } from '@/lib/mockData';
@@ -190,134 +177,6 @@ export function Inbox() {
   const [editingDraftText, setEditingDraftText] = useState("");
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState<string | null>(null);
   const [localDraftOverrides, setLocalDraftOverrides] = useState<Map<string, { aiSuggestedReply: string | null; aiReplyStatus: string; draftWasEdited: boolean }>>(new Map());
-  
-  // Bulk draft generation - selection state
-  const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set());
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [showBulkConfirmModal, setShowBulkConfirmModal] = useState(false);
-  
-  const toggleMessageSelection = (messageId: string) => {
-    setSelectedMessageIds(prev => {
-      const next = new Set(prev);
-      if (next.has(messageId)) {
-        next.delete(messageId);
-      } else {
-        next.add(messageId);
-      }
-      return next;
-    });
-  };
-  
-  const enterSelectionMode = (messageId: string) => {
-    setIsSelectionMode(true);
-    setSelectedMessageIds(new Set([messageId]));
-  };
-  
-  const clearSelection = () => {
-    setSelectedMessageIds(new Set());
-    setIsSelectionMode(false);
-  };
-  
-  const selectAllInboundMessages = () => {
-    if (!activeConversationMessages) return;
-    const inboundIds = activeConversationMessages
-      .filter(m => m.direction === 'inbound' && !m.aiSuggestedReply && m.aiReplyStatus !== 'drafted')
-      .map(m => m.id);
-    setSelectedMessageIds(new Set(inboundIds));
-  };
-  
-  // Clear selection when conversation changes
-  useEffect(() => {
-    clearSelection();
-  }, [activeConversation?.id]);
-  
-  // Track bulk generation results for per-message feedback
-  const [bulkResults, setBulkResults] = useState<Map<string, { success: boolean; error?: string }>>(new Map());
-  
-  // Bulk draft queue hook
-  const bulkQueue = useBulkDraftQueue({
-    onMessageComplete: (result) => {
-      // Store result for per-message feedback
-      setBulkResults(prev => {
-        const next = new Map(prev);
-        next.set(result.messageId, { success: result.success, error: result.error });
-        return next;
-      });
-      
-      if (result.success && result.draft) {
-        // Update local state immediately for real-time feedback with actual draft text
-        setLocalDraftOverrides(prev => {
-          const next = new Map(prev);
-          next.set(result.messageId, {
-            aiSuggestedReply: result.draft,
-            aiReplyStatus: 'drafted',
-            draftWasEdited: false,
-          });
-          return next;
-        });
-      }
-    },
-    onAllComplete: async (results) => {
-      const successCount = results.filter(r => r.success).length;
-      const errorCount = results.filter(r => !r.success).length;
-      
-      // Refresh to sync with server
-      await refreshFeed();
-      if (activeConversation) {
-        queryClient.invalidateQueries({ queryKey: ['conversationMessages', activeConversation.id] });
-      }
-      
-      // Clear overrides after refresh
-      setLocalDraftOverrides(new Map());
-      
-      toast({
-        title: "Generación completada",
-        description: errorCount > 0 
-          ? `${successCount} borradores generados, ${errorCount} errores`
-          : `${successCount} borradores generados exitosamente`,
-        variant: errorCount > 0 ? "destructive" : "default",
-      });
-      
-      clearSelection();
-    },
-  });
-  
-  // Sync current bulk message with generatingDraftIds for spinner display
-  useEffect(() => {
-    if (bulkQueue.currentMessageId) {
-      // Add current message to generating set
-      setGeneratingDraftIds(prev => new Set(prev).add(bulkQueue.currentMessageId!));
-      
-      // Clean up when message changes - remove previous messages that are complete
-      return () => {
-        setGeneratingDraftIds(prev => {
-          const next = new Set(prev);
-          next.delete(bulkQueue.currentMessageId!);
-          return next;
-        });
-      };
-    }
-  }, [bulkQueue.currentMessageId]);
-  
-  // Clear bulk results when queue resets to idle or when starting a new batch
-  useEffect(() => {
-    if (bulkQueue.status === 'idle' || bulkQueue.status === 'completed' || bulkQueue.status === 'cancelled') {
-      // Delay clearing results so user can see final state briefly
-      const timer = setTimeout(() => {
-        setBulkResults(new Map());
-        // Also clear any stale generating IDs
-        setGeneratingDraftIds(new Set());
-      }, bulkQueue.status === 'idle' ? 0 : 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [bulkQueue.status]);
-  
-  const handleStartBulkGeneration = () => {
-    if (!activeClientId || selectedMessageIds.size === 0) return;
-    
-    setShowBulkConfirmModal(false);
-    bulkQueue.startQueue(activeClientId, Array.from(selectedMessageIds));
-  };
 
   const { data: syncStatus } = useQuery<SyncStatus>({
     queryKey: ['/api/sync/status'],
@@ -1459,11 +1318,6 @@ export function Inbox() {
                         highlightedMessageId={highlightedMessageId}
                         AudioPlayer={AudioPlayer}
                         SentimentIndicator={SentimentIndicator}
-                        isSelectionMode={isSelectionMode}
-                        selectedMessageIds={selectedMessageIds}
-                        onToggleSelection={toggleMessageSelection}
-                        onEnterSelectionMode={enterSelectionMode}
-                        bulkResults={bulkResults}
                       />
 
                       {/* Spacer to prevent content from being hidden behind the floating card */}
@@ -1472,115 +1326,6 @@ export function Inbox() {
                   )}
                </div>
             </ScrollArea>
-
-            {/* Floating Bulk Actions Bar OR Progress Bar */}
-            <AnimatePresence>
-              {bulkQueue.status === 'processing' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 20 }}
-                  transition={{ duration: 0.2 }}
-                  className="absolute bottom-0 left-0 right-0 bg-white border-t border-purple-200 shadow-lg p-3 z-10"
-                  data-testid="bulk-progress-bar"
-                >
-                  <div className="max-w-3xl mx-auto">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
-                        <span className="text-sm font-medium text-gray-700">
-                          Generando borradores...
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-gray-500">
-                          {bulkQueue.currentIndex + 1} de {bulkQueue.totalCount}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={bulkQueue.cancelQueue}
-                          className="h-7 text-xs text-red-500 hover:text-red-700 hover:bg-red-50"
-                          data-testid="button-cancel-bulk"
-                        >
-                          <X className="h-3 w-3 mr-1" />
-                          Cancelar
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <motion.div 
-                        className="bg-purple-600 h-2 rounded-full"
-                        initial={{ width: 0 }}
-                        animate={{ width: bulkQueue.totalCount > 0 ? `${((bulkQueue.currentIndex + 1) / bulkQueue.totalCount) * 100}%` : '0%' }}
-                        transition={{ duration: 0.3 }}
-                      />
-                    </div>
-                    <div className="flex items-center gap-4 mt-2 text-xs">
-                      {bulkQueue.successCount > 0 && (
-                        <span className="text-green-600 flex items-center gap-1">
-                          <Check className="h-3 w-3" />
-                          {bulkQueue.successCount} generado{bulkQueue.successCount !== 1 ? 's' : ''}
-                        </span>
-                      )}
-                      {bulkQueue.errorCount > 0 && (
-                        <span className="text-red-600 flex items-center gap-1">
-                          <AlertCircle className="h-3 w-3" />
-                          {bulkQueue.errorCount} error{bulkQueue.errorCount !== 1 ? 'es' : ''}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-            
-            <AnimatePresence>
-              {selectedMessageIds.size > 0 && bulkQueue.status !== 'processing' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 20 }}
-                  transition={{ duration: 0.2 }}
-                  className="absolute bottom-0 left-0 right-0 bg-white border-t border-purple-200 shadow-lg p-3 z-10"
-                  data-testid="bulk-actions-bar"
-                >
-                  <div className="flex items-center justify-between max-w-3xl mx-auto">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
-                          <CheckSquare className="h-4 w-4 text-purple-600" />
-                        </div>
-                        <span className="text-sm font-medium text-gray-700">
-                          {selectedMessageIds.size} mensaje{selectedMessageIds.size !== 1 ? 's' : ''} seleccionado{selectedMessageIds.size !== 1 ? 's' : ''}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={clearSelection}
-                        className="h-8 text-xs text-gray-500 hover:text-gray-700"
-                        data-testid="button-clear-selection"
-                      >
-                        <X className="h-4 w-4 mr-1" />
-                        Limpiar
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="h-8 text-xs bg-purple-600 hover:bg-purple-700 text-white"
-                        onClick={() => setShowBulkConfirmModal(true)}
-                        data-testid="button-bulk-generate"
-                      >
-                        <Sparkles className="h-4 w-4 mr-1.5" />
-                        Generar {selectedMessageIds.size} borrador{selectedMessageIds.size !== 1 ? 'es' : ''}
-                      </Button>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
 
             {/* Floating Reply Input Box */}
             <AnimatePresence>
@@ -1713,57 +1458,6 @@ export function Inbox() {
           isOpen={isCRMOpen}
           onClose={() => setIsCRMOpen(false)}
       />
-
-      {/* Bulk Generation Confirmation Modal */}
-      <AlertDialog open={showBulkConfirmModal} onOpenChange={setShowBulkConfirmModal}>
-        <AlertDialogContent className="max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-purple-600" />
-              </div>
-              <span>Generar borradores con IA</span>
-            </AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="space-y-4 pt-2">
-                <p>
-                  Vas a generar borradores de respuesta automática para{' '}
-                  <span className="font-semibold text-gray-900">{selectedMessageIds.size} mensaje{selectedMessageIds.size !== 1 ? 's' : ''}</span>.
-                </p>
-                
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-purple-700">Costo estimado:</span>
-                    <span className="font-semibold text-purple-900">~${(selectedMessageIds.size * 0.002).toFixed(3)} USD</span>
-                  </div>
-                  <p className="text-xs text-purple-600 mt-1">
-                    Aproximadamente $0.002 por mensaje usando IA generativa
-                  </p>
-                </div>
-                
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                  <p className="text-xs text-amber-700">
-                    <strong>Nota:</strong> Los mensajes se procesarán uno por uno para evitar límites de la API. Puedes continuar navegando mientras se generan.
-                  </p>
-                </div>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel data-testid="button-cancel-bulk">
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-purple-600 hover:bg-purple-700"
-              onClick={handleStartBulkGeneration}
-              data-testid="button-confirm-bulk"
-            >
-              <Sparkles className="h-4 w-4 mr-1.5" />
-              Generar {selectedMessageIds.size} borrador{selectedMessageIds.size !== 1 ? 'es' : ''}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
