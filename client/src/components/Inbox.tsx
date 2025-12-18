@@ -54,6 +54,7 @@ import {
   Pencil,
   RotateCw,
   AlertCircle,
+  CheckSquare,
 } from 'lucide-react';
 import { FaInstagram, FaFacebook, FaLinkedin, FaTiktok, FaYoutube, FaWhatsapp } from 'react-icons/fa';
 import { GoogleBusinessIcon } from './GoogleBusinessIcon';
@@ -1364,6 +1365,53 @@ export function Inbox() {
                   )}
                </div>
             </ScrollArea>
+
+            {/* Floating Bulk Actions Bar */}
+            <AnimatePresence>
+              {selectedMessageIds.size > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute bottom-0 left-0 right-0 bg-white border-t border-purple-200 shadow-lg p-3 z-10"
+                  data-testid="bulk-actions-bar"
+                >
+                  <div className="flex items-center justify-between max-w-3xl mx-auto">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
+                          <CheckSquare className="h-4 w-4 text-purple-600" />
+                        </div>
+                        <span className="text-sm font-medium text-gray-700">
+                          {selectedMessageIds.size} mensaje{selectedMessageIds.size !== 1 ? 's' : ''} seleccionado{selectedMessageIds.size !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearSelection}
+                        className="h-8 text-xs text-gray-500 hover:text-gray-700"
+                        data-testid="button-clear-selection"
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Limpiar
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="h-8 text-xs bg-purple-600 hover:bg-purple-700 text-white"
+                        data-testid="button-bulk-generate"
+                      >
+                        <Sparkles className="h-4 w-4 mr-1.5" />
+                        Generar {selectedMessageIds.size} borrador{selectedMessageIds.size !== 1 ? 'es' : ''}
+                      </Button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Floating Reply Input Box */}
             <AnimatePresence>
