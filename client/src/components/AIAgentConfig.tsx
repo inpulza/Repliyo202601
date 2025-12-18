@@ -30,7 +30,7 @@ import {
   Bot, Settings, MessageSquare, Zap, Shield, History, 
   Play, Save, Loader2, Sparkles, Brain, BookOpen,
   Clock, AlertTriangle, CheckCircle, XCircle, Share2, Variable, Copy,
-  ChevronDown, ChevronUp, Filter, RotateCcw, Eye, Info
+  ChevronDown, ChevronUp, Filter, RotateCcw, Eye, Info, Pencil, X
 } from 'lucide-react';
 import { FaFacebook, FaInstagram, FaTwitter, FaTiktok, FaLinkedin, FaYoutube } from 'react-icons/fa';
 import { format } from 'date-fns';
@@ -97,6 +97,34 @@ export function AIAgentConfig() {
   const [filterPlatform, setFilterPlatform] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [expandedLogs, setExpandedLogs] = useState<Set<string>>(new Set());
+  
+  const [editModal, setEditModal] = useState<{
+    isOpen: boolean;
+    field: 'systemPrompt' | 'knowledgeBase' | 'guardrailPrompt' | null;
+    title: string;
+    value: string;
+  }>({ isOpen: false, field: null, title: '', value: '' });
+
+  const openEditModal = (field: 'systemPrompt' | 'knowledgeBase' | 'guardrailPrompt', title: string) => {
+    setEditModal({
+      isOpen: true,
+      field,
+      title,
+      value: formData[field] || '',
+    });
+  };
+
+  const closeEditModal = () => {
+    setEditModal({ isOpen: false, field: null, title: '', value: '' });
+  };
+
+  const saveEditModal = () => {
+    if (editModal.field) {
+      setFormData({ ...formData, [editModal.field]: editModal.value });
+      toast({ title: "Actualizado", description: `${editModal.title} actualizado. Recuerda guardar los cambios.` });
+    }
+    closeEditModal();
+  };
 
   const [formData, setFormData] = useState<Partial<AiAgent>>({
     provider: 'openai',
@@ -536,22 +564,34 @@ export function AIAgentConfig() {
                       <MessageSquare className="h-4 w-4 text-muted-foreground" />
                       System Prompt
                     </CardTitle>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        if (formData.systemPrompt) {
-                          navigator.clipboard.writeText(formData.systemPrompt);
-                          toast({ title: "Copiado", description: "System Prompt copiado al portapapeles" });
-                        }
-                      }}
-                      disabled={!formData.systemPrompt}
-                      className="h-8 gap-2 text-xs"
-                      data-testid="button-copy-system-prompt"
-                    >
-                      <Copy className="h-3.5 w-3.5" />
-                      Copiar
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEditModal('systemPrompt', 'System Prompt')}
+                        className="h-8 gap-2 text-xs"
+                        data-testid="button-edit-system-prompt"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        Editar
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          if (formData.systemPrompt) {
+                            navigator.clipboard.writeText(formData.systemPrompt);
+                            toast({ title: "Copiado", description: "System Prompt copiado al portapapeles" });
+                          }
+                        }}
+                        disabled={!formData.systemPrompt}
+                        className="h-8 gap-2 text-xs"
+                        data-testid="button-copy-system-prompt"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                        Copiar
+                      </Button>
+                    </div>
                   </div>
                   <CardDescription className="text-xs">
                     Define la personalidad, tono, estructura de respuesta y ejemplos (Few-Shot). Puedes incluir prompts extensos con múltiples secciones.
@@ -579,22 +619,34 @@ export function AIAgentConfig() {
                       <BookOpen className="h-4 w-4 text-muted-foreground" />
                       Knowledge Base
                     </CardTitle>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        if (formData.knowledgeBase) {
-                          navigator.clipboard.writeText(formData.knowledgeBase);
-                          toast({ title: "Copiado", description: "Knowledge Base copiado al portapapeles" });
-                        }
-                      }}
-                      disabled={!formData.knowledgeBase}
-                      className="h-8 gap-2 text-xs"
-                      data-testid="button-copy-knowledge-base"
-                    >
-                      <Copy className="h-3.5 w-3.5" />
-                      Copiar
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEditModal('knowledgeBase', 'Knowledge Base')}
+                        className="h-8 gap-2 text-xs"
+                        data-testid="button-edit-knowledge-base"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        Editar
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          if (formData.knowledgeBase) {
+                            navigator.clipboard.writeText(formData.knowledgeBase);
+                            toast({ title: "Copiado", description: "Knowledge Base copiado al portapapeles" });
+                          }
+                        }}
+                        disabled={!formData.knowledgeBase}
+                        className="h-8 gap-2 text-xs"
+                        data-testid="button-copy-knowledge-base"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                        Copiar
+                      </Button>
+                    </div>
                   </div>
                   <CardDescription className="text-xs">
                     Información del negocio, FAQs, horarios, políticas que el agente debe conocer
@@ -618,22 +670,34 @@ export function AIAgentConfig() {
                       <Shield className="h-4 w-4 text-muted-foreground" />
                       Guardrails
                     </CardTitle>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        if (formData.guardrailPrompt) {
-                          navigator.clipboard.writeText(formData.guardrailPrompt);
-                          toast({ title: "Copiado", description: "Guardrails copiado al portapapeles" });
-                        }
-                      }}
-                      disabled={!formData.guardrailPrompt}
-                      className="h-8 gap-2 text-xs"
-                      data-testid="button-copy-guardrails"
-                    >
-                      <Copy className="h-3.5 w-3.5" />
-                      Copiar
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEditModal('guardrailPrompt', 'Guardrails')}
+                        className="h-8 gap-2 text-xs"
+                        data-testid="button-edit-guardrails"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        Editar
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          if (formData.guardrailPrompt) {
+                            navigator.clipboard.writeText(formData.guardrailPrompt);
+                            toast({ title: "Copiado", description: "Guardrails copiado al portapapeles" });
+                          }
+                        }}
+                        disabled={!formData.guardrailPrompt}
+                        className="h-8 gap-2 text-xs"
+                        data-testid="button-copy-guardrails"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                        Copiar
+                      </Button>
+                    </div>
                   </div>
                   <CardDescription className="text-xs">
                     Restricciones de seguridad y límites para las respuestas del agente
@@ -1187,6 +1251,68 @@ export function AIAgentConfig() {
           </div>
         </ScrollArea>
       </Tabs>
+
+      {/* Modal de edición a pantalla completa */}
+      <Dialog open={editModal.isOpen} onOpenChange={(open) => !open && closeEditModal()}>
+        <DialogContent className="max-w-4xl w-[90vw] h-[85vh] flex flex-col p-0">
+          <DialogHeader className="px-6 py-4 border-b shrink-0">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                {editModal.field === 'systemPrompt' && <MessageSquare className="h-5 w-5" />}
+                {editModal.field === 'knowledgeBase' && <BookOpen className="h-5 w-5" />}
+                {editModal.field === 'guardrailPrompt' && <Shield className="h-5 w-5" />}
+                Editar {editModal.title}
+              </DialogTitle>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(editModal.value);
+                    toast({ title: "Copiado", description: `${editModal.title} copiado al portapapeles` });
+                  }}
+                  className="gap-2"
+                  data-testid="button-modal-copy"
+                >
+                  <Copy className="h-4 w-4" />
+                  Copiar
+                </Button>
+              </div>
+            </div>
+          </DialogHeader>
+          <div className="flex-1 p-6 overflow-hidden">
+            <Textarea
+              value={editModal.value}
+              onChange={(e) => setEditModal({ ...editModal, value: e.target.value })}
+              className="w-full h-full font-mono text-sm resize-none"
+              style={{ minHeight: '100%' }}
+              data-testid="textarea-modal-edit"
+            />
+          </div>
+          <div className="px-6 py-4 border-t flex items-center justify-between shrink-0 bg-muted/30">
+            <p className="text-xs text-muted-foreground">
+              {editModal.value.length.toLocaleString()} caracteres
+            </p>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={closeEditModal}
+                data-testid="button-modal-cancel"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={saveEditModal}
+                className="gap-2"
+                data-testid="button-modal-save"
+              >
+                <Save className="h-4 w-4" />
+                Aplicar Cambios
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
