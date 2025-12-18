@@ -238,9 +238,15 @@ class SyncService {
               isFromBrand = true;
             }
             
-            const customerParticipant = participants.find((p: any) => 
-              p.id !== brandAccountId
-            ) || participants[0];
+            // Find customer participant: look for participant that is NOT the brand
+            // First try to find by self=false flag, then by excluding brandAccountId
+            const customerParticipant = participants.find((p: any) => p.self === false) ||
+              (brandAccountId ? participants.find((p: any) => p.id !== brandAccountId && p.id) : null) ||
+              // If we still can't find, and message is inbound, use the sender
+              (!isFromBrand ? fromParticipant : null) ||
+              // Last resort: find any participant that is not marked as self
+              participants.find((p: any) => p.self !== true);
+            
             customerId = customerParticipant?.id || fromId || author;
           } else {
             author = msg.from?.name || msg.sender?.name || 'Unknown';
