@@ -260,6 +260,18 @@ export function Inbox() {
   const [highlightedConversationId, setHighlightedConversationId] = useState<string | null>(null);
   const [location, setLocation] = useLocation();
 
+  // Handler for platform filter clicks - activates unread filter if platform has unread messages
+  const handlePlatformFilterClick = (platform: Platform | 'all', hasUnread: boolean) => {
+    setPlatformFilter(platform);
+    // If clicking on a platform with unread messages, automatically filter to unread only
+    // If clicking a platform WITHOUT unread, or clicking "All", reset the unread filter
+    if (platform !== 'all' && hasUnread) {
+      setShowOnlyUnread(true);
+    } else {
+      setShowOnlyUnread(false);
+    }
+  };
+
   // Deep Link: Handle URL params for direct navigation from notifications
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -343,15 +355,15 @@ export function Inbox() {
   const opportunityCount = 0;
   const pendingCount = totalUnread;
 
-  // Calculate conversation counts per platform
-  const platformCounts = React.useMemo(() => ({
-    instagram: conversations.filter(c => c.platform === 'instagram').length,
-    tiktok: conversations.filter(c => c.platform === 'tiktok').length,
-    facebook: conversations.filter(c => c.platform === 'facebook').length,
-    linkedin: conversations.filter(c => c.platform === 'linkedin').length,
-    youtube: conversations.filter(c => c.platform === 'youtube').length,
-    'google-business': conversations.filter(c => c.platform === 'google-business').length,
-    whatsapp: conversations.filter(c => c.platform === 'whatsapp').length,
+  // Calculate UNREAD conversation counts per platform (only conversations with unread messages)
+  const platformUnreadCounts = React.useMemo(() => ({
+    instagram: conversations.filter(c => c.platform === 'instagram' && (c.unreadCount || 0) > 0).length,
+    tiktok: conversations.filter(c => c.platform === 'tiktok' && (c.unreadCount || 0) > 0).length,
+    facebook: conversations.filter(c => c.platform === 'facebook' && (c.unreadCount || 0) > 0).length,
+    linkedin: conversations.filter(c => c.platform === 'linkedin' && (c.unreadCount || 0) > 0).length,
+    youtube: conversations.filter(c => c.platform === 'youtube' && (c.unreadCount || 0) > 0).length,
+    'google-business': conversations.filter(c => c.platform === 'google-business' && (c.unreadCount || 0) > 0).length,
+    whatsapp: conversations.filter(c => c.platform === 'whatsapp' && (c.unreadCount || 0) > 0).length,
   }), [conversations]);
 
   // Thread messages - recursive approach for multi-level threading
@@ -904,72 +916,72 @@ export function Inbox() {
           <div className="flex gap-1.5 overflow-x-auto pt-2 pb-1 no-scrollbar items-center">
               <FilterButton 
                 active={platformFilter === 'all'} 
-                onClick={() => setPlatformFilter('all')}
+                onClick={() => handlePlatformFilterClick('all', false)}
                 label="All" 
                 icon={<LayoutGrid className="h-3.5 w-3.5" />}
               />
               <FilterButton 
                 active={platformFilter === 'instagram'} 
-                onClick={() => setPlatformFilter('instagram')}
+                onClick={() => handlePlatformFilterClick('instagram', platformUnreadCounts.instagram > 0)}
                 label="Instagram"
                 icon={<FaInstagram className="h-4 w-4" />}
                 activeColorClass="bg-pink-600"
                 hoverColorClass="hover:text-pink-600 hover:bg-pink-50"
-                count={platformCounts.instagram}
+                count={platformUnreadCounts.instagram}
               />
               <FilterButton 
                 active={platformFilter === 'tiktok'} 
-                onClick={() => setPlatformFilter('tiktok')}
+                onClick={() => handlePlatformFilterClick('tiktok', platformUnreadCounts.tiktok > 0)}
                 label="TikTok"
                 icon={<FaTiktok className="h-4 w-4" />}
                 activeColorClass="bg-black"
                 hoverColorClass="hover:text-black hover:bg-gray-100"
-                count={platformCounts.tiktok}
+                count={platformUnreadCounts.tiktok}
               />
               <FilterButton 
                 active={platformFilter === 'facebook'} 
-                onClick={() => setPlatformFilter('facebook')}
+                onClick={() => handlePlatformFilterClick('facebook', platformUnreadCounts.facebook > 0)}
                 label="Facebook"
                 icon={<FaFacebook className="h-4 w-4" />}
                 activeColorClass="bg-blue-600"
                 hoverColorClass="hover:text-blue-600 hover:bg-blue-50"
-                count={platformCounts.facebook}
+                count={platformUnreadCounts.facebook}
               />
               <FilterButton 
                 active={platformFilter === 'linkedin'} 
-                onClick={() => setPlatformFilter('linkedin')}
+                onClick={() => handlePlatformFilterClick('linkedin', platformUnreadCounts.linkedin > 0)}
                 label="LinkedIn"
                 icon={<FaLinkedin className="h-4 w-4" />}
                 activeColorClass="bg-[#0077b5]"
                 hoverColorClass="hover:text-[#0077b5] hover:bg-[#0077b5]/10"
-                count={platformCounts.linkedin}
+                count={platformUnreadCounts.linkedin}
               />
                <FilterButton 
                 active={platformFilter === 'youtube'} 
-                onClick={() => setPlatformFilter('youtube')}
+                onClick={() => handlePlatformFilterClick('youtube', platformUnreadCounts.youtube > 0)}
                 label="YouTube"
                 icon={<FaYoutube className="h-4 w-4" />}
                 activeColorClass="bg-red-600"
                 hoverColorClass="hover:text-red-600 hover:bg-red-50"
-                count={platformCounts.youtube}
+                count={platformUnreadCounts.youtube}
               />
               <FilterButton 
                 active={platformFilter === 'google-business'} 
-                onClick={() => setPlatformFilter('google-business')}
+                onClick={() => handlePlatformFilterClick('google-business', platformUnreadCounts['google-business'] > 0)}
                 label="Google Business"
                 icon={<GoogleBusinessIcon className="h-4 w-4" />}
                 activeColorClass="bg-blue-500"
                 hoverColorClass="hover:text-blue-500 hover:bg-blue-50"
-                count={platformCounts['google-business']}
+                count={platformUnreadCounts['google-business']}
               />
               <FilterButton 
                 active={platformFilter === 'whatsapp'} 
-                onClick={() => setPlatformFilter('whatsapp')}
+                onClick={() => handlePlatformFilterClick('whatsapp', platformUnreadCounts.whatsapp > 0)}
                 label="WhatsApp"
                 icon={<FaWhatsapp className="h-4 w-4" />}
                 activeColorClass="bg-green-500"
                 hoverColorClass="hover:text-green-500 hover:bg-green-50"
-                count={platformCounts.whatsapp}
+                count={platformUnreadCounts.whatsapp}
               />
            </div>
 
