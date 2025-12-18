@@ -785,32 +785,30 @@ export function Inbox() {
                 </Label>
               </div>
               {!brandSyncStatus?.syncPaused && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
+                <span className="text-[10px] text-gray-400 whitespace-nowrap" data-testid="text-sync-countdown">
+                  {syncStatus?.isSyncing ? (
+                    "Sincronizando..."
+                  ) : syncCountdown !== null ? (
+                    syncCountdown >= 60 
+                      ? `${Math.floor(syncCountdown / 60)}:${String(syncCountdown % 60).padStart(2, '0')}` 
+                      : `${syncCountdown}s`
+                  ) : (
+                    "--:--"
+                  )}
+                </span>
+              )}
+              {!brandSyncStatus?.syncPaused && (
+                <button 
                   onClick={handleSyncData} 
                   disabled={isSyncing || syncStatus?.isSyncing}
-                  className="h-8 w-8 text-muted-foreground"
+                  className="h-4 w-4 flex items-center justify-center text-gray-400 hover:text-gray-600 disabled:opacity-50"
                   data-testid="button-sync"
                   title={syncStatus?.lastSyncTime ? `Última sync: ${new Date(syncStatus.lastSyncTime).toLocaleTimeString()}` : 'Sincronizar'}
                 >
-                  <RefreshCw className={cn("h-4 w-4", (isSyncing || syncStatus?.isSyncing) && "animate-spin")} />
-                </Button>
+                  <RefreshCw className={cn("h-3 w-3", (isSyncing || syncStatus?.isSyncing) && "animate-spin")} />
+                </button>
               )}
             </div>
-            {!brandSyncStatus?.syncPaused && (
-              <span className="text-[10px] text-gray-400 whitespace-nowrap" data-testid="text-sync-countdown">
-                {syncStatus?.isSyncing ? (
-                  "Sincronizando..."
-                ) : syncCountdown !== null ? (
-                  syncCountdown >= 60 
-                    ? `${Math.floor(syncCountdown / 60)}:${String(syncCountdown % 60).padStart(2, '0')}` 
-                    : `${syncCountdown}s`
-                ) : (
-                  "--:--"
-                )}
-              </span>
-            )}
           </div>
           
           {/* Inbox Filter Button */}
