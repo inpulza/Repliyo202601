@@ -805,9 +805,17 @@ export function Inbox() {
                 </>
               )}
             </div>
-            {syncCountdown !== null && !brandSyncStatus?.syncPaused && (
+            {!brandSyncStatus?.syncPaused && (
               <span className="text-xs font-mono text-gray-500 tabular-nums" data-testid="text-sync-countdown">
-                {syncCountdown}s
+                {syncStatus?.isSyncing ? (
+                  <span className="text-gray-400">Sincronizando...</span>
+                ) : syncCountdown !== null ? (
+                  syncCountdown >= 60 
+                    ? `${Math.floor(syncCountdown / 60)}:${String(syncCountdown % 60).padStart(2, '0')}` 
+                    : `${syncCountdown}s`
+                ) : (
+                  "--:--"
+                )}
               </span>
             )}
           </div>
