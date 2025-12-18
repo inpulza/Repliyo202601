@@ -161,7 +161,13 @@ class AutoReplyService {
           return { success: false, error: "Missing conversation/recipient data" };
         }
       } else {
-        objectId = rawData?.id || rawData?.root?.id || message.metricoolId?.split("_")[0];
+        // For YouTube nested comments, use parentId instead of the reply's own ID
+        if (message.platform?.toLowerCase() === 'youtube' && rawData?.parentId) {
+          objectId = rawData.parentId;
+          log(`${logPrefix} YouTube nested comment detected, using parentId: ${objectId}`, "sync");
+        } else {
+          objectId = rawData?.id || rawData?.root?.id || message.metricoolId?.split("_")[0];
+        }
 
         if (!objectId) {
           log(`${logPrefix} Missing objectId for comment reply`, "sync");

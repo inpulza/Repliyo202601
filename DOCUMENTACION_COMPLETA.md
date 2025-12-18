@@ -3746,8 +3746,10 @@ if (message.platform?.toLowerCase() === 'youtube' && parsedRawData?.parentId) {
 }
 ```
 
-#### Archivos Modificados:
-- `server/routes.ts` - Endpoint `POST /api/ai-agent/:brandId/send-draft/:messageId` (líneas ~2193-2212)
+#### Archivos Modificados (3 lugares - cobertura completa):
+1. `server/routes.ts` - Endpoint `POST /api/ai-agent/:brandId/send-draft/:messageId` (envío de borradores IA)
+2. `server/routes.ts` - Endpoint `POST /api/messages/:messageId/reply` (respuestas manuales desde inbox)
+3. `server/services/autoReplyService.ts` - Función `processMessage()` (auto-respuestas automáticas)
 
 #### Estructura del rawData de YouTube:
 ```json

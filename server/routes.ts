@@ -853,12 +853,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const metricool = new MetricoolService({ userToken, userId });
       
-      const rawData = message.rawData as any;
+      // Safely parse rawData - it may be stored as JSON string in database
+      let rawData: any = null;
+      try {
+        if (message.rawData) {
+          rawData = typeof message.rawData === 'string' 
+            ? JSON.parse(message.rawData) 
+            : message.rawData;
+        }
+      } catch (parseError) {
+        console.warn(`[Reply] Failed to parse rawData for message ${messageId}:`, parseError);
+      }
+      
       if (!rawData) {
         return res.status(400).json({ error: "Message does not have raw data for reply. This message may have been imported without full metadata." });
       }
       
-      const metricoolId = rawData.id || message.metricoolId;
+      // For YouTube nested comments, use parentId instead of the reply's own ID
+      let metricoolId = rawData.id || message.metricoolId;
+      if (message.platform?.toLowerCase() === 'youtube' && rawData.parentId) {
+        metricoolId = rawData.parentId;
+        console.log(`[Reply] YouTube nested comment detected, using parentId: ${metricoolId}`);
+      }
+      
       if (!metricoolId) {
         return res.status(400).json({ error: "Cannot determine Metricool comment ID for reply" });
       }
