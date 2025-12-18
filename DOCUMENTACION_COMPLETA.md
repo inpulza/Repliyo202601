@@ -4,8 +4,8 @@
 Sistema de gestión de mensajes de redes sociales que se integra con Metricool para centralizar y gestionar DMs y comentarios de múltiples marcas/empresas. El sistema permite a usuarios admin y clientes gestionar sus interacciones sociales de forma organizada.
 
 ## Estado Actual
-- **Fase Actual**: ✅ FASE 8 COMPLETADA - Integración de IA en Inbox
-- **Última Actualización**: 9 de Diciembre 2025
+- **Fase Actual**: ✅ FASE 9 COMPLETADA - Sistema de Notificaciones Central
+- **Última Actualización**: 18 de Diciembre 2025
 - **Login/Logout**: ✅ Completamente funcional (página de login creada, logout en sidebar)
 - **Sistema de Roles**: ✅ Admin vs Client funcionando correctamente
 - **Marca de Prueba**: ✅ Inpulza Testing conectada (blogId: 4074962)
@@ -21,7 +21,11 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 - **Agentes IA - Paso 4**: ✅ Frontend AIAgentConfig.tsx con 6 tabs completos
 - **Agentes IA - Paso 5**: ✅ Playground conectado a IA real (endpoint test-generate)
 - **Agentes IA - Paso 6**: ✅ Botón "Generar con IA" en Inbox (endpoint generate-reply)
-- **Próximo Paso**: FASE 9 - Características Avanzadas (notificaciones, tests, rate limiting, dashboard métricas)
+- **Notificaciones**: ✅ Sistema central con panel deslizante estilo Instagram
+- **Smart Digest**: ✅ Notificaciones humanizadas con nombres de autores
+- **Deep Links**: ✅ Click en notificación navega a conversación con scroll + highlight
+- **Filtros Mejorados**: ✅ Badges muestran solo no leídos, filtro conjunto automático
+- **Próximo Paso**: Tests unitarios, rate limiting, dashboard de métricas IA
 
 ---
 
@@ -321,8 +325,55 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 - ✅ Toast con información del provider/model/caracteres generados
 - ✅ Opción de editar antes de enviar
 
-**FASE 9: Características Avanzadas (Próxima)**
-- ⚪ Sistema de notificaciones en tiempo real
+**FASE 9: Sistema de Notificaciones Central ✅ COMPLETADA - 18 Diciembre 2025**
+
+#### 9.1 Infraestructura de Notificaciones
+- ✅ Tabla `notifications` en base de datos (id, userId, brandId, type, title, message, isRead, clickUrl, metadata, createdAt)
+- ✅ Tipos de notificación: `new_messages`, `sync_error`, `sync_success`, `ai_auto_reply`, `config_change`
+- ✅ Endpoints API: GET /notifications, POST /notifications/mark-read, POST /notifications/mark-all-read
+- ✅ Cleanup probabilístico (5% en cada insert) para mantener DB performante
+
+#### 9.2 Centro de Notificaciones UI (NotificationCenter.tsx)
+- ✅ Panel deslizante de 400px (Sheet) estilo Instagram en lugar de popover pequeño
+- ✅ Iconos de tipo de notificación (MessageSquare, AlertTriangle, CheckCircle, Bot, Settings)
+- ✅ Badges de plataforma coloreados (Instagram rosa, TikTok negro, Facebook azul, etc.)
+- ✅ Borde izquierdo azul para notificaciones no leídas
+- ✅ Botón "Marcar todas como leídas" y limpieza individual
+- ✅ Tooltip funcional cuando sidebar está colapsado (Tooltip envuelve SheetTrigger asChild)
+
+#### 9.3 Smart Digest
+- ✅ Notificaciones humanizadas mostrando nombres de autores: "Juan y 4 más te enviaron 5 mensajes"
+- ✅ Tracking de `firstInboundAuthor` durante sincronización (DMs y comments)
+- ✅ Metadata incluye: platform, count, firstAuthor, conversationId
+
+#### 9.4 Deep Links con Scroll + Highlight
+- ✅ clickUrl incluye conversationId: `/inbox?conversation=xxx&highlight=true`
+- ✅ Inbox.tsx lee URL params y auto-selecciona la conversación
+- ✅ scrollIntoView smooth después de 100ms delay para centrar en viewport
+- ✅ ConversationCard.tsx muestra animación de resaltado (amber ring + fade de fondo amarillo)
+- ✅ Highlight se limpia después de 3 segundos, URL params se limpian tras navegación
+
+#### 9.5 Optimización de Toasts
+- ✅ Toasts desactivados para `new_messages` (evita colapso de UI cuando llegan muchos mensajes)
+- ✅ Toasts mantenidos para acciones del usuario (enviar mensaje, generar IA, etc.)
+
+#### 9.6 Filtros de Plataforma Mejorados
+- ✅ Badges rojos ahora muestran solo conversaciones con mensajes NO LEÍDOS (`platformUnreadCounts`)
+- ✅ Filtro conjunto: al pinchar plataforma con badge, se activa automáticamente `showOnlyUnread=true`
+- ✅ Al pinchar plataforma sin mensajes nuevos o "All", se desactiva el filtro de no leídos
+- ✅ Comportamiento sincronizado con el botón de bandeja de entrada del header
+
+#### Archivos Principales Modificados:
+- `shared/schema.ts` - Tabla notifications
+- `server/storage.ts` - CRUD de notificaciones
+- `server/routes.ts` - Endpoints de notificaciones
+- `server/services/syncService.ts` - Creación de Smart Digest con firstInboundAuthor
+- `client/src/components/NotificationCenter.tsx` - Panel deslizante completo
+- `client/src/components/Inbox.tsx` - Deep links, filtros mejorados
+- `client/src/components/ConversationCard.tsx` - Prop isHighlighted con animación
+- `client/src/hooks/useWebSocket.ts` - Toasts desactivados para new_messages
+
+**FASE 9.1: Características Avanzadas Pendientes**
 - ⚪ Tests unitarios para MetricoolService
 - ⚪ Rate limiting para API endpoints
 - ⚪ Dashboard de métricas de uso de IA
