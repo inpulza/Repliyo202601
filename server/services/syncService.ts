@@ -158,6 +158,7 @@ class SyncService {
     const inboxData = await metricoolService.getAllInboxData(blogId, activeProviders);
 
     let savedCount = 0;
+    let newInboundCount = 0; // Counter for truly NEW inbound messages (for notifications)
     let firstInboundAuthor: string | null = null;
     let lastConversationId: string | null = null;
     let lastPlatform: string | null = null;
@@ -323,6 +324,8 @@ class SyncService {
           const isReallyNew = isNewMessage && savedMessage.brandId === brandId;
           
           if (isReallyNew && isInbound) {
+            newInboundCount++; // Increment counter for truly new inbound messages
+            
             // Track first inbound author for Smart Digest notifications
             if (!firstInboundAuthor) {
               firstInboundAuthor = author;
@@ -474,6 +477,8 @@ class SyncService {
         
         // Only notify and trigger auto-reply for NEW INBOUND comments (not from brand)
         if (isReallyNew && !isCommentFromBrand) {
+          newInboundCount++; // Increment counter for truly new inbound comments
+          
           // Track first inbound author for Smart Digest notifications
           if (!firstInboundAuthor) {
             firstInboundAuthor = comment.author;
@@ -523,6 +528,7 @@ class SyncService {
             
             // Update conversation unread count only if this is a NEW inbound reply
             if (isNewReply && !isReplyFromBrand) {
+              newInboundCount++; // Increment counter for truly new inbound replies
               await storage.updateConversation(conversationRecord.id, {
                 unreadCount: (conversationRecord.unreadCount || 0) + 1,
               });
@@ -563,13 +569,14 @@ class SyncService {
       }
     }
 
-    log(`[SyncService] Brand ${brandName}: saved ${savedCount} messages`, "sync");
+    log(`[SyncService] Brand ${brandName}: saved ${savedCount} messages (${newInboundCount} new inbound)`, "sync");
     
     this.triggerPendingTranscriptions(brandId, brandName);
     
-    // Create aggregated notification for new messages (if any)
-    if (savedCount > 0) {
-      this.createSyncNotification(brandId, 'new_messages', savedCount, lastPlatform, {
+    // Create aggregated notification ONLY for truly NEW inbound messages
+    // This prevents duplicate notifications when switching brands and re-syncing
+    if (newInboundCount > 0) {
+      this.createSyncNotification(brandId, 'new_messages', newInboundCount, lastPlatform, {
         firstAuthor: firstInboundAuthor,
         conversationId: lastConversationId,
       });
