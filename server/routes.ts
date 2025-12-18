@@ -2419,6 +2419,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==========================================
+  // NOTIFICATIONS - Sistema Central
+  // ==========================================
+  
+  // GET /api/notifications - Get notifications for brand
+  app.get("/api/notifications", requireAuth, async (req, res) => {
+    try {
+      const brandId = req.query.brandId as string || req.user?.brandId;
+      
+      if (!brandId) {
+        return res.status(400).json({ error: "Brand ID required" });
+      }
+      
+      // Validate brand access
+      if (req.user?.role !== 'admin' && req.user?.brandId !== brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const limit = parseInt(req.query.limit as string) || 50;
+      const notifications = await storage.getNotifications(brandId, limit);
+      const unreadCount = await storage.getUnreadNotificationCount(brandId);
+      
+      res.json({ notifications, unreadCount });
+    } catch (error: any) {
+      console.error('Error fetching notifications:', error);
+      res.status(500).json({ error: "Failed to fetch notifications" });
+    }
+  });
+  
+  // GET /api/notifications/count - Get unread count only
+  app.get("/api/notifications/count", requireAuth, async (req, res) => {
+    try {
+      const brandId = req.query.brandId as string || req.user?.brandId;
+      
+      if (!brandId) {
+        return res.status(400).json({ error: "Brand ID required" });
+      }
+      
+      if (req.user?.role !== 'admin' && req.user?.brandId !== brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const count = await storage.getUnreadNotificationCount(brandId);
+      res.json({ count });
+    } catch (error: any) {
+      console.error('Error fetching notification count:', error);
+      res.status(500).json({ error: "Failed to fetch notification count" });
+    }
+  });
+  
+  // PATCH /api/notifications/:id/read - Mark single notification as read
+  app.patch("/api/notifications/:id/read", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const notification = await storage.markNotificationAsRead(id);
+      
+      if (!notification) {
+        return res.status(404).json({ error: "Notification not found" });
+      }
+      
+      res.json(notification);
+    } catch (error: any) {
+      console.error('Error marking notification as read:', error);
+      res.status(500).json({ error: "Failed to mark notification as read" });
+    }
+  });
+  
+  // PATCH /api/notifications/read-all - Mark all notifications as read for brand
+  app.patch("/api/notifications/read-all", requireAuth, async (req, res) => {
+    try {
+      const brandId = req.body.brandId || req.user?.brandId;
+      
+      if (!brandId) {
+        return res.status(400).json({ error: "Brand ID required" });
+      }
+      
+      if (req.user?.role !== 'admin' && req.user?.brandId !== brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const count = await storage.markAllNotificationsAsRead(brandId);
+      res.json({ success: true, markedAsRead: count });
+    } catch (error: any) {
+      console.error('Error marking all notifications as read:', error);
+      res.status(500).json({ error: "Failed to mark all as read" });
+    }
+  });
+  
+  // POST /api/admin/notifications/cleanup - Manual cleanup (admin only)
+  app.post("/api/admin/notifications/cleanup", requireAuth, async (req, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      
+      const deleted = await storage.cleanupOldNotifications();
+      res.json({ success: true, deletedCount: deleted });
+    } catch (error: any) {
+      console.error('Error during notification cleanup:', error);
+      res.status(500).json({ error: "Failed to cleanup notifications" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   websocketService.initialize(httpServer);
