@@ -74,6 +74,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { formatDistanceToNow } from 'date-fns';
 import { Platform, MessageType, Urgency, Intent, Sentiment, MessageStatus, CRMContact } from '@/lib/types';
 import { isRepliyoMessage, isAutoReply, isManualReply, isSyncedMessage } from '@/lib/mockData';
@@ -183,6 +193,7 @@ export function Inbox() {
   // Bulk draft generation - selection state
   const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [showBulkConfirmModal, setShowBulkConfirmModal] = useState(false);
   
   const toggleMessageSelection = (messageId: string) => {
     setSelectedMessageIds(prev => {
@@ -1402,6 +1413,7 @@ export function Inbox() {
                       <Button
                         size="sm"
                         className="h-8 text-xs bg-purple-600 hover:bg-purple-700 text-white"
+                        onClick={() => setShowBulkConfirmModal(true)}
                         data-testid="button-bulk-generate"
                       >
                         <Sparkles className="h-4 w-4 mr-1.5" />
@@ -1544,6 +1556,56 @@ export function Inbox() {
           isOpen={isCRMOpen}
           onClose={() => setIsCRMOpen(false)}
       />
+
+      {/* Bulk Generation Confirmation Modal */}
+      <AlertDialog open={showBulkConfirmModal} onOpenChange={setShowBulkConfirmModal}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
+                <Sparkles className="h-5 w-5 text-purple-600" />
+              </div>
+              <span>Generar borradores con IA</span>
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4 pt-2">
+                <p>
+                  Vas a generar borradores de respuesta automática para{' '}
+                  <span className="font-semibold text-gray-900">{selectedMessageIds.size} mensaje{selectedMessageIds.size !== 1 ? 's' : ''}</span>.
+                </p>
+                
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-purple-700">Costo estimado:</span>
+                    <span className="font-semibold text-purple-900">~${(selectedMessageIds.size * 0.002).toFixed(3)} USD</span>
+                  </div>
+                  <p className="text-xs text-purple-600 mt-1">
+                    Aproximadamente $0.002 por mensaje usando IA generativa
+                  </p>
+                </div>
+                
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-xs text-amber-700">
+                    <strong>Nota:</strong> Los mensajes se procesarán uno por uno para evitar límites de la API. Puedes continuar navegando mientras se generan.
+                  </p>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel data-testid="button-cancel-bulk">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-purple-600 hover:bg-purple-700"
+              data-testid="button-confirm-bulk"
+            >
+              <Sparkles className="h-4 w-4 mr-1.5" />
+              Generar {selectedMessageIds.size} borrador{selectedMessageIds.size !== 1 ? 'es' : ''}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
