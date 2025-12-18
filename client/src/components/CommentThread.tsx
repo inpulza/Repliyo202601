@@ -194,10 +194,10 @@ function SingleMessage({
       data-testid={`message-${msg.id}`}
     >
       {/* Avatar Container - maintains fixed position for thread connectors */}
-      <div className="relative flex-shrink-0">
+      <div className="relative flex-shrink-0 mt-1">
         {/* Avatar */}
         <Avatar className={cn(
-          "relative z-10 ring-[3px] ring-white mt-1",
+          "relative z-10 ring-[3px] ring-white",
           isReply ? "h-6 w-6" : "h-8 w-8"
         )}>
           <AvatarImage 
