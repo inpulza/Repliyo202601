@@ -10,7 +10,10 @@ import {
   AlertCircle,
   CheckCircle2,
   Loader2,
-  Calendar
+  Calendar,
+  DollarSign,
+  TrendingUp,
+  Cpu
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { 
@@ -36,9 +39,15 @@ interface AiMetrics {
   successCount: number;
   errorCount: number;
   totalTokens: number;
+  totalPromptTokens: number;
+  totalCompletionTokens: number;
+  totalCostUsd: number;
+  totalPromptCostUsd: number;
+  totalCompletionCostUsd: number;
   byPlatform: Record<string, number>;
   byAction: Record<string, number>;
-  dailyStats: Array<{ date: string; count: number; tokens: number }>;
+  byModel: Record<string, { count: number; tokens: number; costUsd: number }>;
+  dailyStats: Array<{ date: string; count: number; tokens: number; costUsd: number }>;
 }
 
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6'];
@@ -219,6 +228,71 @@ export function AiMetrics() {
               </Card>
             </div>
 
+            {/* Tarjetas de Costos */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <Card data-testid="card-total-cost" className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-green-800">Gasto Total</CardTitle>
+                  <DollarSign className="h-4 w-4 text-green-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-700" data-testid="text-total-cost">
+                    ${metrics?.totalCostUsd?.toFixed(4) || '0.0000'}
+                  </div>
+                  <p className="text-xs text-green-600">
+                    USD en los últimos {days} días
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card data-testid="card-prompt-cost">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Costo Entrada</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-blue-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-600" data-testid="text-prompt-cost">
+                    ${metrics?.totalPromptCostUsd?.toFixed(4) || '0.0000'}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {metrics?.totalPromptTokens?.toLocaleString() || 0} tokens de entrada
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card data-testid="card-completion-cost">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Costo Salida</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-purple-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-purple-600" data-testid="text-completion-cost">
+                    ${metrics?.totalCompletionCostUsd?.toFixed(4) || '0.0000'}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {metrics?.totalCompletionTokens?.toLocaleString() || 0} tokens de salida
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card data-testid="card-avg-cost">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Costo Promedio</CardTitle>
+                  <Cpu className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" data-testid="text-avg-cost">
+                    ${metrics && metrics.totalRequests > 0 
+                      ? (metrics.totalCostUsd / metrics.totalRequests).toFixed(6) 
+                      : '0.000000'}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    USD por solicitud
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
             <div className="grid gap-6 md:grid-cols-2">
               <Card data-testid="card-daily-chart">
                 <CardHeader>
@@ -302,6 +376,122 @@ export function AiMetrics() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Gráfica de Costos Diarios */}
+            <Card data-testid="card-daily-cost-chart">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-green-600" />
+                  Gasto Diario
+                </CardTitle>
+                <CardDescription>Costo en USD por día</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  {metrics && metrics.dailyStats.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={metrics.dailyStats}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" />
+                        <XAxis 
+                          dataKey="date" 
+                          tick={{ fontSize: 12 }}
+                          tickFormatter={(value) => {
+                            const d = new Date(value);
+                            return `${d.getDate()}/${d.getMonth() + 1}`;
+                          }}
+                        />
+                        <YAxis 
+                          tick={{ fontSize: 12 }} 
+                          tickFormatter={(value) => `$${value.toFixed(4)}`}
+                        />
+                        <Tooltip 
+                          labelFormatter={(value) => new Date(value).toLocaleDateString('es-ES')}
+                          formatter={(value: number) => [`$${value.toFixed(6)}`, 'Costo']}
+                        />
+                        <Area 
+                          type="monotone" 
+                          dataKey="costUsd" 
+                          name="Costo USD"
+                          stroke="#10b981" 
+                          fill="#10b981" 
+                          fillOpacity={0.3} 
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-gray-400">
+                      Sin datos de costos disponibles
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Tabla de Uso por Modelo */}
+            {metrics?.byModel && Object.keys(metrics.byModel).length > 0 && (
+              <Card data-testid="card-model-usage">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Cpu className="h-5 w-5" />
+                    Uso por Modelo
+                  </CardTitle>
+                  <CardDescription>Desglose de solicitudes, tokens y costos por modelo de IA</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-3 px-2 font-medium text-gray-600">Modelo</th>
+                          <th className="text-right py-3 px-2 font-medium text-gray-600">Solicitudes</th>
+                          <th className="text-right py-3 px-2 font-medium text-gray-600">Tokens</th>
+                          <th className="text-right py-3 px-2 font-medium text-gray-600">Costo USD</th>
+                          <th className="text-right py-3 px-2 font-medium text-gray-600">Costo/Solicitud</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.entries(metrics.byModel)
+                          .sort(([, a], [, b]) => b.costUsd - a.costUsd)
+                          .map(([model, data]) => (
+                            <tr key={model} className="border-b hover:bg-gray-50" data-testid={`row-model-${model}`}>
+                              <td className="py-3 px-2">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="font-mono text-xs">
+                                    {model}
+                                  </Badge>
+                                </div>
+                              </td>
+                              <td className="text-right py-3 px-2 font-medium">
+                                {data.count.toLocaleString()}
+                              </td>
+                              <td className="text-right py-3 px-2 text-gray-600">
+                                {data.tokens.toLocaleString()}
+                              </td>
+                              <td className="text-right py-3 px-2 text-green-600 font-medium">
+                                ${data.costUsd.toFixed(4)}
+                              </td>
+                              <td className="text-right py-3 px-2 text-gray-500">
+                                ${data.count > 0 ? (data.costUsd / data.count).toFixed(6) : '0.000000'}
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-gray-50 font-medium">
+                          <td className="py-3 px-2">Total</td>
+                          <td className="text-right py-3 px-2">{metrics.totalRequests.toLocaleString()}</td>
+                          <td className="text-right py-3 px-2">{metrics.totalTokens.toLocaleString()}</td>
+                          <td className="text-right py-3 px-2 text-green-700">${metrics.totalCostUsd.toFixed(4)}</td>
+                          <td className="text-right py-3 px-2 text-gray-600">
+                            ${metrics.totalRequests > 0 ? (metrics.totalCostUsd / metrics.totalRequests).toFixed(6) : '0.000000'}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <div className="grid gap-6 md:grid-cols-2">
               <Card data-testid="card-platform-distribution">

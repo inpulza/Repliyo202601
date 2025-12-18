@@ -151,6 +151,12 @@ export const aiAgentAuditLog = pgTable("ai_agent_audit_log", {
   platform: text("platform"),
   characterCount: integer("character_count"),
   wasCharacterLimited: boolean("was_character_limited").default(false),
+  // Campos para tracking de costos
+  provider: text("provider"), // openai, gemini, anthropic
+  model: text("model"), // gpt-4o, gemini-2.5-flash, etc.
+  promptCostUsd: real("prompt_cost_usd"), // Costo de tokens de entrada en USD
+  completionCostUsd: real("completion_cost_usd"), // Costo de tokens de salida en USD
+  totalCostUsd: real("total_cost_usd"), // Costo total de la solicitud en USD
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -375,8 +381,27 @@ export type ApprovalWorkflow = z.infer<typeof approvalWorkflowEnum>;
 export const characterLimitStrategyEnum = z.enum(['truncate', 'reject', 'summarize']);
 export type CharacterLimitStrategy = z.infer<typeof characterLimitStrategyEnum>;
 
-export const llmProviderEnum = z.enum(['openai', 'gemini']);
+export const llmProviderEnum = z.enum(['openai', 'gemini', 'anthropic']);
 export type LlmProvider = z.infer<typeof llmProviderEnum>;
+
+// Tabla de precios de modelos de IA
+// Precios en USD por 1 millón de tokens
+export const aiModelPricing = pgTable("ai_model_pricing", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  provider: text("provider").notNull(), // openai, gemini, anthropic
+  model: text("model").notNull(), // gpt-4o, gemini-2.5-flash, etc.
+  displayName: text("display_name").notNull(), // Nombre amigable para UI
+  inputPricePerMillion: real("input_price_per_million").notNull(), // USD por 1M tokens de entrada
+  outputPricePerMillion: real("output_price_per_million").notNull(), // USD por 1M tokens de salida
+  isActive: boolean("is_active").notNull().default(true), // Si el modelo está disponible
+  effectiveFrom: timestamp("effective_from").defaultNow().notNull(), // Desde cuándo aplica este precio
+  sourceUrl: text("source_url"), // URL de la fuente oficial de precios
+  lastVerifiedAt: timestamp("last_verified_at").defaultNow().notNull(), // Última vez que se verificó
+  notes: text("notes"), // Notas adicionales (ej: contexto >200K tiene precio diferente)
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueProviderModel: unique().on(table.provider, table.model),
+}));
 
 export const internalOriginEnum = z.enum(['manual', 'ai']);
 export type InternalOrigin = z.infer<typeof internalOriginEnum>;
@@ -394,3 +419,17 @@ export const updateConversationUserSummarySchema = insertConversationUserSummary
 export type InsertConversationUserSummary = z.infer<typeof insertConversationUserSummarySchema>;
 export type ConversationUserSummary = typeof conversationUserSummaries.$inferSelect;
 export type UpdateConversationUserSummary = z.infer<typeof updateConversationUserSummarySchema>;
+
+// Schemas y tipos para ai_model_pricing
+export const insertAiModelPricingSchema = createInsertSchema(aiModelPricing).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const selectAiModelPricingSchema = createSelectSchema(aiModelPricing);
+
+export const updateAiModelPricingSchema = insertAiModelPricingSchema.partial();
+
+export type InsertAiModelPricing = z.infer<typeof insertAiModelPricingSchema>;
+export type AiModelPricing = typeof aiModelPricing.$inferSelect;
+export type UpdateAiModelPricing = z.infer<typeof updateAiModelPricingSchema>;

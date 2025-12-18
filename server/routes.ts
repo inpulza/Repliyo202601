@@ -2259,6 +2259,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ========== AI MODEL PRICING ENDPOINTS ==========
+  
+  // GET /api/admin/ai-pricing - Obtener todos los precios de modelos
+  app.get("/api/admin/ai-pricing", requireAuth, async (req, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: "Solo administradores pueden ver los precios" });
+      }
+      
+      const pricing = await storage.getAllModelPricing();
+      res.json(pricing);
+    } catch (error: any) {
+      console.error('Error getting model pricing:', error);
+      res.status(500).json({ error: "Failed to get model pricing" });
+    }
+  });
+
+  // PUT /api/admin/ai-pricing/:id - Actualizar precio de un modelo
+  app.put("/api/admin/ai-pricing/:id", requireAuth, async (req, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: "Solo administradores pueden actualizar precios" });
+      }
+      
+      const { id } = req.params;
+      const updates = req.body;
+      
+      const updated = await storage.updateModelPricing(id, {
+        inputPricePerMillion: updates.inputPricePerMillion,
+        outputPricePerMillion: updates.outputPricePerMillion,
+        isActive: updates.isActive,
+        notes: updates.notes,
+      });
+      
+      if (!updated) {
+        return res.status(404).json({ error: "Precio de modelo no encontrado" });
+      }
+      
+      res.json(updated);
+    } catch (error: any) {
+      console.error('Error updating model pricing:', error);
+      res.status(500).json({ error: "Failed to update model pricing" });
+    }
+  });
+
+  // POST /api/admin/ai-pricing - Crear o actualizar precio de un modelo
+  app.post("/api/admin/ai-pricing", requireAuth, async (req, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: "Solo administradores pueden crear precios" });
+      }
+      
+      const pricing = await storage.upsertModelPricing(req.body);
+      res.json(pricing);
+    } catch (error: any) {
+      console.error('Error creating model pricing:', error);
+      res.status(500).json({ error: "Failed to create model pricing" });
+    }
+  });
+
+  // GET /api/admin/ai-pricing/summary - Resumen de precios por proveedor
+  app.get("/api/admin/ai-pricing/summary", requireAuth, async (req, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: "Solo administradores pueden ver el resumen" });
+      }
+      
+      const allPricing = await storage.getActiveModelPricing();
+      
+      const summary: Record<string, { 
+        models: number; 
+        cheapestInput: { model: string; price: number }; 
+        cheapestOutput: { model: string; price: number };
+        lastVerified: Date | null;
+      }> = {};
+      
+      for (const p of allPricing) {
+        if (!summary[p.provider]) {
+          summary[p.provider] = {
+            models: 0,
+            cheapestInput: { model: p.model, price: p.inputPricePerMillion },
+            cheapestOutput: { model: p.model, price: p.outputPricePerMillion },
+            lastVerified: p.lastVerifiedAt,
+          };
+        }
+        
+        summary[p.provider].models++;
+        
+        if (p.inputPricePerMillion < summary[p.provider].cheapestInput.price) {
+          summary[p.provider].cheapestInput = { model: p.model, price: p.inputPricePerMillion };
+        }
+        
+        if (p.outputPricePerMillion < summary[p.provider].cheapestOutput.price) {
+          summary[p.provider].cheapestOutput = { model: p.model, price: p.outputPricePerMillion };
+        }
+        
+        if (p.lastVerifiedAt && (!summary[p.provider].lastVerified || p.lastVerifiedAt > summary[p.provider].lastVerified)) {
+          summary[p.provider].lastVerified = p.lastVerifiedAt;
+        }
+      }
+      
+      res.json({
+        providers: summary,
+        totalModels: allPricing.length,
+        lastGlobalUpdate: allPricing.reduce((latest, p) => 
+          !latest || p.lastVerifiedAt > latest ? p.lastVerifiedAt : latest, 
+          null as Date | null
+        ),
+      });
+    } catch (error: any) {
+      console.error('Error getting pricing summary:', error);
+      res.status(500).json({ error: "Failed to get pricing summary" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   websocketService.initialize(httpServer);

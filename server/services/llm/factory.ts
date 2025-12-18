@@ -58,10 +58,24 @@ export function createLLMProvider(
 }
 
 export function getAvailableModels(provider: "openai" | "gemini"): string[] {
-  if (provider === "openai") {
-    return ["gpt-5", "gpt-4o", "gpt-4o-mini", "gpt-4-turbo"];
+  switch (provider) {
+    case "openai":
+      return [
+        "gpt-5.2", "gpt-5.1", "gpt-5", "gpt-5-mini", "gpt-5-nano",
+        "gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4",
+        "o1", "o1-mini", "o1-pro",
+        "gpt-3.5-turbo"
+      ];
+    case "gemini":
+      return [
+        "gemini-3-pro", "gemini-3-flash",
+        "gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite",
+        "gemini-2.0-flash", "gemini-2.0-flash-lite",
+        "gemini-1.5-pro", "gemini-1.5-flash"
+      ];
+    default:
+      return [];
   }
-  return ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash", "gemini-1.5-pro"];
 }
 
 export function getDefaultModel(provider: "openai" | "gemini"): string {

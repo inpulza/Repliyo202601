@@ -1,5 +1,5 @@
 import { 
-  brands, users, messages, socialPosts, conversations, socialAccounts, aiAgents, aiAgentAuditLog, conversationUserSummaries,
+  brands, users, messages, socialPosts, conversations, socialAccounts, aiAgents, aiAgentAuditLog, conversationUserSummaries, aiModelPricing,
   type Brand, type InsertBrand, 
   type User, type InsertUser, 
   type Message, type InsertMessage, type UpdateMessage,
@@ -8,7 +8,8 @@ import {
   type SocialAccount, type InsertSocialAccount, type UpdateSocialAccount,
   type AiAgent, type InsertAiAgent, type UpdateAiAgent,
   type AiAgentAuditLog, type InsertAiAgentAuditLog,
-  type ConversationUserSummary, type InsertConversationUserSummary, type UpdateConversationUserSummary
+  type ConversationUserSummary, type InsertConversationUserSummary, type UpdateConversationUserSummary,
+  type AiModelPricing, type InsertAiModelPricing, type UpdateAiModelPricing
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, isNull, gte, lte, sql } from "drizzle-orm";
@@ -82,10 +83,24 @@ export interface IStorage {
     successCount: number;
     errorCount: number;
     totalTokens: number;
+    totalPromptTokens: number;
+    totalCompletionTokens: number;
+    totalCostUsd: number;
+    totalPromptCostUsd: number;
+    totalCompletionCostUsd: number;
     byPlatform: Record<string, number>;
     byAction: Record<string, number>;
-    dailyStats: Array<{ date: string; count: number; tokens: number }>;
+    byModel: Record<string, { count: number; tokens: number; costUsd: number }>;
+    dailyStats: Array<{ date: string; count: number; tokens: number; costUsd: number }>;
   }>;
+  
+  // Métodos para precios de modelos de IA
+  getModelPricing(provider: string, model: string): Promise<AiModelPricing | undefined>;
+  getAllModelPricing(): Promise<AiModelPricing[]>;
+  getActiveModelPricing(): Promise<AiModelPricing[]>;
+  upsertModelPricing(pricing: InsertAiModelPricing): Promise<AiModelPricing>;
+  updateModelPricing(id: string, updates: UpdateAiModelPricing): Promise<AiModelPricing | undefined>;
+  calculateTokenCost(provider: string, model: string, promptTokens: number, completionTokens: number): Promise<{ promptCost: number; completionCost: number; totalCost: number } | null>;
   
   // Conversation User Summaries (memoria persistente para resúmenes por usuario)
   getConversationUserSummary(conversationId: string, author: string): Promise<ConversationUserSummary | undefined>;
@@ -1087,9 +1102,15 @@ export class DatabaseStorage implements IStorage {
     successCount: number;
     errorCount: number;
     totalTokens: number;
+    totalPromptTokens: number;
+    totalCompletionTokens: number;
+    totalCostUsd: number;
+    totalPromptCostUsd: number;
+    totalCompletionCostUsd: number;
     byPlatform: Record<string, number>;
     byAction: Record<string, number>;
-    dailyStats: Array<{ date: string; count: number; tokens: number }>;
+    byModel: Record<string, { count: number; tokens: number; costUsd: number }>;
+    dailyStats: Array<{ date: string; count: number; tokens: number; costUsd: number }>;
   }> {
     const agent = await this.getAiAgentByBrand(brandId);
     if (!agent) {
@@ -1098,8 +1119,14 @@ export class DatabaseStorage implements IStorage {
         successCount: 0,
         errorCount: 0,
         totalTokens: 0,
+        totalPromptTokens: 0,
+        totalCompletionTokens: 0,
+        totalCostUsd: 0,
+        totalPromptCostUsd: 0,
+        totalCompletionCostUsd: 0,
         byPlatform: {},
         byAction: {},
+        byModel: {},
         dailyStats: [],
       };
     }
@@ -1119,19 +1146,58 @@ export class DatabaseStorage implements IStorage {
       )
       .orderBy(desc(aiAgentAuditLog.createdAt));
 
+    // Cargar precios para cálculo de costos históricos
+    const pricingCache = new Map<string, AiModelPricing>();
+    const allPricing = await this.getActiveModelPricing();
+    for (const p of allPricing) {
+      pricingCache.set(`${p.provider}:${p.model}`, p);
+    }
+
     const byPlatform: Record<string, number> = {};
     const byAction: Record<string, number> = {};
-    const dailyMap: Record<string, { count: number; tokens: number }> = {};
+    const byModel: Record<string, { count: number; tokens: number; costUsd: number }> = {};
+    const dailyMap: Record<string, { count: number; tokens: number; costUsd: number }> = {};
 
     let successCount = 0;
     let errorCount = 0;
     let totalTokens = 0;
+    let totalPromptTokens = 0;
+    let totalCompletionTokens = 0;
+    let totalCostUsd = 0;
+    let totalPromptCostUsd = 0;
+    let totalCompletionCostUsd = 0;
 
     for (const log of logs) {
       if (log.status === 'success') successCount++;
       else if (log.status === 'error') errorCount++;
 
-      totalTokens += (log.promptTokens || 0) + (log.completionTokens || 0);
+      const promptTokens = log.promptTokens || 0;
+      const completionTokens = log.completionTokens || 0;
+      totalPromptTokens += promptTokens;
+      totalCompletionTokens += completionTokens;
+      totalTokens += promptTokens + completionTokens;
+
+      // Calcular costos: usar costos guardados o calcular desde precios
+      let logPromptCost = log.promptCostUsd || 0;
+      let logCompletionCost = log.completionCostUsd || 0;
+      let logTotalCost = log.totalCostUsd || 0;
+
+      // Si no hay costos guardados, calcular desde la tabla de precios
+      if (logTotalCost === 0 && (promptTokens > 0 || completionTokens > 0)) {
+        const provider = log.provider || agent.provider || 'openai';
+        const model = log.model || agent.model || 'gpt-4o-mini';
+        const pricing = pricingCache.get(`${provider}:${model}`);
+        
+        if (pricing) {
+          logPromptCost = (promptTokens / 1_000_000) * pricing.inputPricePerMillion;
+          logCompletionCost = (completionTokens / 1_000_000) * pricing.outputPricePerMillion;
+          logTotalCost = logPromptCost + logCompletionCost;
+        }
+      }
+
+      totalPromptCostUsd += logPromptCost;
+      totalCompletionCostUsd += logCompletionCost;
+      totalCostUsd += logTotalCost;
 
       if (log.platform) {
         byPlatform[log.platform] = (byPlatform[log.platform] || 0) + 1;
@@ -1141,12 +1207,22 @@ export class DatabaseStorage implements IStorage {
         byAction[log.action] = (byAction[log.action] || 0) + 1;
       }
 
+      // Agregar métricas por modelo
+      const modelKey = log.model || agent.model || 'unknown';
+      if (!byModel[modelKey]) {
+        byModel[modelKey] = { count: 0, tokens: 0, costUsd: 0 };
+      }
+      byModel[modelKey].count++;
+      byModel[modelKey].tokens += promptTokens + completionTokens;
+      byModel[modelKey].costUsd += logTotalCost;
+
       const dateStr = log.createdAt.toISOString().split('T')[0];
       if (!dailyMap[dateStr]) {
-        dailyMap[dateStr] = { count: 0, tokens: 0 };
+        dailyMap[dateStr] = { count: 0, tokens: 0, costUsd: 0 };
       }
       dailyMap[dateStr].count++;
-      dailyMap[dateStr].tokens += (log.promptTokens || 0) + (log.completionTokens || 0);
+      dailyMap[dateStr].tokens += promptTokens + completionTokens;
+      dailyMap[dateStr].costUsd += logTotalCost;
     }
 
     const dailyStats = Object.entries(dailyMap)
@@ -1158,9 +1234,109 @@ export class DatabaseStorage implements IStorage {
       successCount,
       errorCount,
       totalTokens,
+      totalPromptTokens,
+      totalCompletionTokens,
+      totalCostUsd: Math.round(totalCostUsd * 10000) / 10000, // Redondear a 4 decimales
+      totalPromptCostUsd: Math.round(totalPromptCostUsd * 10000) / 10000,
+      totalCompletionCostUsd: Math.round(totalCompletionCostUsd * 10000) / 10000,
       byPlatform,
       byAction,
-      dailyStats,
+      byModel,
+      dailyStats: dailyStats.map(s => ({
+        ...s,
+        costUsd: Math.round(s.costUsd * 10000) / 10000
+      })),
+    };
+  }
+
+  // ========== MÉTODOS PARA PRECIOS DE MODELOS DE IA ==========
+  
+  async getModelPricing(provider: string, model: string): Promise<AiModelPricing | undefined> {
+    const [pricing] = await db
+      .select()
+      .from(aiModelPricing)
+      .where(
+        and(
+          eq(aiModelPricing.provider, provider),
+          eq(aiModelPricing.model, model)
+        )
+      );
+    return pricing || undefined;
+  }
+
+  async getAllModelPricing(): Promise<AiModelPricing[]> {
+    return await db
+      .select()
+      .from(aiModelPricing)
+      .orderBy(aiModelPricing.provider, aiModelPricing.model);
+  }
+
+  async getActiveModelPricing(): Promise<AiModelPricing[]> {
+    return await db
+      .select()
+      .from(aiModelPricing)
+      .where(eq(aiModelPricing.isActive, true))
+      .orderBy(aiModelPricing.provider, aiModelPricing.model);
+  }
+
+  async upsertModelPricing(pricing: InsertAiModelPricing): Promise<AiModelPricing> {
+    const existing = await this.getModelPricing(pricing.provider, pricing.model);
+    
+    if (existing) {
+      const [updated] = await db
+        .update(aiModelPricing)
+        .set({
+          displayName: pricing.displayName,
+          inputPricePerMillion: pricing.inputPricePerMillion,
+          outputPricePerMillion: pricing.outputPricePerMillion,
+          isActive: pricing.isActive,
+          effectiveFrom: pricing.effectiveFrom || new Date(),
+          sourceUrl: pricing.sourceUrl,
+          lastVerifiedAt: new Date(),
+          notes: pricing.notes,
+        })
+        .where(eq(aiModelPricing.id, existing.id))
+        .returning();
+      return updated;
+    }
+
+    const [created] = await db
+      .insert(aiModelPricing)
+      .values(pricing)
+      .returning();
+    return created;
+  }
+
+  async updateModelPricing(id: string, updates: UpdateAiModelPricing): Promise<AiModelPricing | undefined> {
+    const [updated] = await db
+      .update(aiModelPricing)
+      .set({
+        ...updates,
+        lastVerifiedAt: new Date(),
+      })
+      .where(eq(aiModelPricing.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async calculateTokenCost(
+    provider: string, 
+    model: string, 
+    promptTokens: number, 
+    completionTokens: number
+  ): Promise<{ promptCost: number; completionCost: number; totalCost: number } | null> {
+    const pricing = await this.getModelPricing(provider, model);
+    if (!pricing) {
+      return null;
+    }
+
+    const promptCost = (promptTokens / 1_000_000) * pricing.inputPricePerMillion;
+    const completionCost = (completionTokens / 1_000_000) * pricing.outputPricePerMillion;
+    
+    return {
+      promptCost: Math.round(promptCost * 1_000_000) / 1_000_000, // 6 decimales
+      completionCost: Math.round(completionCost * 1_000_000) / 1_000_000,
+      totalCost: Math.round((promptCost + completionCost) * 1_000_000) / 1_000_000,
     };
   }
 
