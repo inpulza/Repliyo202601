@@ -361,13 +361,29 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 - ✅ Nuevo tipo de notificación `draft_pending` para borradores sin enviar
 - ✅ Icono FileEdit con esquema de colores ámbar (bg-amber-500, border-amber-200)
 - ✅ Notificaciones individuales por cada borrador (no agrupadas)
-- ✅ Creación automática cuando se genera un borrador (generate-draft, regenerate-draft, bulk-generate-drafts)
-- ✅ Eliminación automática cuando el borrador es enviado o descartado
-- ✅ Deep-link con `messageId` para navegar directamente al mensaje con borrador
-- ✅ Notificaciones persistentes (excluidas del cleanup automático) hasta que el usuario tome acción
-- ✅ Función idempotente `createDraftNotification` (verifica existencia, actualiza si existe, crea si no)
-- ✅ Endpoint de backfill: `POST /api/ai-agent/:brandId/backfill-draft-notifications`
-- ✅ Storage functions: `getNotificationByMessageId`, `deleteNotificationByMessageId`, `createDraftNotification`, `getMessagesWithPendingDrafts`
+- ✅ **Ciclo de vida completo:**
+  - **Creación**: Automática cuando se genera un borrador en:
+    - `POST /api/ai-agent/:brandId/generate-draft` (generación individual)
+    - `POST /api/ai-agent/:brandId/regenerate-draft` (regeneración de borrador existente)
+    - `POST /api/ai-agent/:brandId/bulk-generate-drafts` (generación masiva)
+  - **Eliminación**: Automática cuando el borrador es enviado o descartado en:
+    - `POST /api/ai-agent/:brandId/send-draft` (envío del borrador)
+    - `POST /api/ai-agent/:brandId/discard-draft` (descarte del borrador)
+- ✅ Deep-link con `messageId`: `/inbox?conversation={id}&messageId={id}&highlight=true`
+- ✅ Notificaciones persistentes (excluidas del cleanup automático con `type != 'draft_pending'`)
+- ✅ Función idempotente `createDraftNotification`:
+  - Verifica si existe notificación para el messageId
+  - Si existe: actualiza descripción, fecha y marca como no leída
+  - Si no existe: crea nueva notificación
+- ✅ **Endpoint de backfill**: `POST /api/ai-agent/:brandId/backfill-draft-notifications`
+  - Busca mensajes con `aiReplyStatus` en ('drafted', 'suggested')
+  - Crea notificaciones para borradores existentes sin notificación
+- ✅ **Storage functions implementadas:**
+  - `getNotificationByMessageId(messageId)` - Busca notificación por messageId en metadata
+  - `deleteNotificationByMessageId(messageId)` - Elimina notificación al enviar/descartar
+  - `createDraftNotification(brandId, messageId, conversationId, platform, author, draftPreview)` - Crea/actualiza notificación
+  - `getMessagesWithPendingDrafts(brandId)` - Lista mensajes con borradores pendientes para backfill
+- ✅ **Cleanup policy actualizada**: `cleanupOldNotifications()` excluye `draft_pending` para persistencia indefinida
 
 #### 9.6 Optimización de Toasts
 - ✅ Toasts desactivados para `new_messages` (evita colapso de UI cuando llegan muchos mensajes)
@@ -380,12 +396,12 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 - ✅ Comportamiento sincronizado con el botón de bandeja de entrada del header
 
 #### Archivos Principales Modificados:
-- `shared/schema.ts` - Tabla notifications
-- `server/storage.ts` - CRUD de notificaciones
-- `server/routes.ts` - Endpoints de notificaciones
+- `shared/schema.ts` - Tabla notifications con tipos de notificación
+- `server/storage.ts` - CRUD de notificaciones + funciones draft_pending (createDraftNotification, deleteNotificationByMessageId, getNotificationByMessageId, getMessagesWithPendingDrafts, cleanupOldNotifications con exclusión draft_pending)
+- `server/routes.ts` - Endpoints de notificaciones + integración draft_pending en generate-draft, regenerate-draft, bulk-generate-drafts, send-draft, discard-draft, backfill-draft-notifications
 - `server/services/syncService.ts` - Creación de Smart Digest con firstInboundAuthor
 - `server/services/autoReplyService.ts` - clickUrl incluye messageId para deep-link a mensaje específico
-- `client/src/components/NotificationCenter.tsx` - Panel deslizante completo
+- `client/src/components/NotificationCenter.tsx` - Panel deslizante completo + tipo draft_pending con icono FileEdit y colores ámbar
 - `client/src/components/Inbox.tsx` - Deep links a mensajes, filtros mejorados, retry scroll logic
 - `client/src/components/CommentThread.tsx` - Prop highlightedMessageId propagado a SingleMessage
 - `client/src/components/ConversationCard.tsx` - Prop isHighlighted con animación
