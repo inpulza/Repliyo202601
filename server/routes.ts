@@ -2187,10 +2187,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: brand.metricoolUserId,
       });
       
+      // For YouTube nested comments, we need to use the parent thread ID, not the reply ID
+      // YouTube API requires replies to go to the parent comment thread
+      let objectIdToUse = message.metricoolId || '';
+      
+      // Safely parse rawData - it may be stored as JSON string in database
+      let parsedRawData: Record<string, any> | null = null;
+      try {
+        if (message.rawData) {
+          parsedRawData = typeof message.rawData === 'string' 
+            ? JSON.parse(message.rawData) 
+            : message.rawData as Record<string, any>;
+        }
+      } catch (parseError) {
+        console.warn(`[SendDraft] Failed to parse rawData for message ${messageId}:`, parseError);
+      }
+      
+      if (message.platform?.toLowerCase() === 'youtube' && parsedRawData?.parentId) {
+        objectIdToUse = parsedRawData.parentId;
+        console.log(`[SendDraft] YouTube nested comment detected, using parentId: ${objectIdToUse} instead of ${message.metricoolId}`);
+      }
+      
       console.log(`[SendDraft] Sending draft for message ${messageId}:`, {
         platform: message.platform,
         type: message.type,
         metricoolId: message.metricoolId,
+        objectIdToUse,
+        isNestedYouTubeComment: !!(message.platform?.toLowerCase() === 'youtube' && parsedRawData?.parentId),
         draft: message.aiSuggestedReply?.substring(0, 50) + '...',
         characterCount: message.aiSuggestedReply?.length || 0,
       });
@@ -2200,7 +2223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (message.type === 'comment' || message.type === 'mention' || message.type === 'story_reply') {
         replyResult = await metricoolService.replyToComment({
           provider: message.platform,
-          objectId: message.metricoolId || '',
+          objectId: objectIdToUse,
           text: message.aiSuggestedReply,
           blogId: brand.metricoolBlogId,
           mentionUsername: message.author || undefined,
