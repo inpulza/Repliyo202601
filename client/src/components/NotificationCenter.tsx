@@ -1,19 +1,26 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNexus } from '@/context/NexusContext';
-import { Bell, Check, CheckCheck, MessageSquare, AlertCircle, Bot, Settings, ExternalLink } from 'lucide-react';
+import { 
+  Bell, Check, CheckCheck, MessageSquare, AlertCircle, Bot, Settings, 
+  ExternalLink, X, Loader2, RefreshCw
+} from 'lucide-react';
+import { FaInstagram, FaTiktok, FaFacebook, FaLinkedin, FaYoutube, FaWhatsapp } from 'react-icons/fa';
 import { Button } from '@/components/ui/button';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Link } from 'wouter';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Notification {
   id: string;
@@ -35,20 +42,52 @@ interface NotificationsResponse {
   unreadCount: number;
 }
 
-const typeIcons: Record<string, React.ReactNode> = {
-  'new_messages': <MessageSquare className="h-4 w-4 text-blue-500" />,
-  'sync_error': <AlertCircle className="h-4 w-4 text-red-500" />,
-  'sync_success': <Check className="h-4 w-4 text-green-500" />,
-  'ai_auto_reply': <Bot className="h-4 w-4 text-violet-500" />,
-  'config_change': <Settings className="h-4 w-4 text-gray-500" />,
+const typeConfig: Record<string, { icon: React.ReactNode; bgColor: string; borderColor: string }> = {
+  'new_messages': { 
+    icon: <MessageSquare className="h-4 w-4" />, 
+    bgColor: 'bg-blue-500',
+    borderColor: 'border-blue-200'
+  },
+  'sync_error': { 
+    icon: <AlertCircle className="h-4 w-4" />, 
+    bgColor: 'bg-red-500',
+    borderColor: 'border-red-200'
+  },
+  'sync_success': { 
+    icon: <Check className="h-4 w-4" />, 
+    bgColor: 'bg-green-500',
+    borderColor: 'border-green-200'
+  },
+  'ai_auto_reply': { 
+    icon: <Bot className="h-4 w-4" />, 
+    bgColor: 'bg-violet-500',
+    borderColor: 'border-violet-200'
+  },
+  'config_change': { 
+    icon: <Settings className="h-4 w-4" />, 
+    bgColor: 'bg-gray-500',
+    borderColor: 'border-gray-200'
+  },
 };
 
-const typeColors: Record<string, string> = {
-  'new_messages': 'bg-blue-50 border-blue-100',
-  'sync_error': 'bg-red-50 border-red-100',
-  'sync_success': 'bg-green-50 border-green-100',
-  'ai_auto_reply': 'bg-violet-50 border-violet-100',
-  'config_change': 'bg-gray-50 border-gray-100',
+const platformIcons: Record<string, React.ReactNode> = {
+  'instagram': <FaInstagram className="h-3 w-3" />,
+  'tiktok': <FaTiktok className="h-3 w-3" />,
+  'facebook': <FaFacebook className="h-3 w-3" />,
+  'linkedin': <FaLinkedin className="h-3 w-3" />,
+  'youtube': <FaYoutube className="h-3 w-3" />,
+  'whatsapp': <FaWhatsapp className="h-3 w-3" />,
+  'google-business': <span className="text-[10px] font-bold">G</span>,
+};
+
+const platformColors: Record<string, string> = {
+  'instagram': 'bg-gradient-to-br from-purple-500 to-pink-500',
+  'tiktok': 'bg-black',
+  'facebook': 'bg-blue-600',
+  'linkedin': 'bg-[#0077b5]',
+  'youtube': 'bg-red-600',
+  'whatsapp': 'bg-green-500',
+  'google-business': 'bg-blue-500',
 };
 
 interface NotificationCenterProps {
@@ -60,11 +99,11 @@ export function NotificationCenter({ isCollapsed = false }: NotificationCenterPr
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = React.useState(false);
 
-  const { data, isLoading } = useQuery<NotificationsResponse>({
+  const { data, isLoading, refetch } = useQuery<NotificationsResponse>({
     queryKey: ['notifications', activeClient?.id],
     queryFn: async () => {
       if (!activeClient?.id) return { notifications: [], unreadCount: 0 };
-      const res = await fetch(`/api/notifications?brandId=${activeClient.id}&limit=30`);
+      const res = await fetch(`/api/notifications?brandId=${activeClient.id}&limit=50`);
       if (!res.ok) throw new Error('Failed to fetch notifications');
       return res.json();
     },
@@ -134,55 +173,86 @@ export function NotificationCenter({ isCollapsed = false }: NotificationCenterPr
   );
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
-        {isCollapsed ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+      {isCollapsed ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <SheetTrigger asChild>
               {bellButton}
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              <p>Notificaciones {unreadCount > 0 && `(${unreadCount})`}</p>
-            </TooltipContent>
-          </Tooltip>
-        ) : (
-          bellButton
-        )}
-      </PopoverTrigger>
-      <PopoverContent 
-        className="w-80 p-0" 
-        align={isCollapsed ? "start" : "end"}
-        side={isCollapsed ? "right" : "bottom"}
+            </SheetTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            <p>Notificaciones {unreadCount > 0 && `(${unreadCount})`}</p>
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        <SheetTrigger asChild>
+          {bellButton}
+        </SheetTrigger>
+      )}
+      
+      <SheetContent 
+        side="right" 
+        className="w-[400px] sm:w-[400px] p-0 flex flex-col"
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b">
-          <h3 className="font-semibold text-sm">Notificaciones</h3>
-          {unreadCount > 0 && (
+        <div className="flex items-center justify-between px-5 py-4 border-b bg-white">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
+              <Bell className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <SheetTitle className="text-base font-semibold">Notificaciones</SheetTitle>
+              <p className="text-xs text-gray-500">
+                {unreadCount > 0 ? `${unreadCount} sin leer` : 'Todas leídas'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-gray-400 hover:text-gray-600"
+              onClick={() => refetch()}
+              title="Actualizar"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        
+        {unreadCount > 0 && (
+          <div className="px-5 py-2 border-b bg-blue-50/50">
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 text-xs text-gray-500 hover:text-gray-700"
+              className="h-7 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-100 w-full justify-center gap-1.5"
               onClick={() => markAllAsReadMutation.mutate()}
               disabled={markAllAsReadMutation.isPending}
               data-testid="button-mark-all-read"
             >
-              <CheckCheck className="h-3.5 w-3.5 mr-1" />
-              Marcar todas leídas
+              <CheckCheck className="h-3.5 w-3.5" />
+              Marcar todas como leídas
             </Button>
-          )}
-        </div>
+          </div>
+        )}
         
-        <ScrollArea className="h-[320px]">
+        <ScrollArea className="flex-1">
           {isLoading ? (
-            <div className="flex items-center justify-center h-20">
-              <div className="animate-spin h-5 w-5 border-2 border-gray-300 border-t-gray-600 rounded-full" />
+            <div className="flex items-center justify-center h-32">
+              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
             </div>
           ) : notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-32 text-gray-400">
-              <Bell className="h-8 w-8 mb-2 opacity-50" />
-              <p className="text-sm">Sin notificaciones</p>
+            <div className="flex flex-col items-center justify-center h-64 text-gray-400 px-8">
+              <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                <Bell className="h-8 w-8 text-gray-300" />
+              </div>
+              <p className="text-sm font-medium text-gray-500">Sin notificaciones</p>
+              <p className="text-xs text-gray-400 text-center mt-1">
+                Las notificaciones de nuevos mensajes, respuestas IA y errores aparecerán aquí
+              </p>
             </div>
           ) : (
-            <div className="divide-y">
+            <div className="divide-y divide-gray-100">
               {notifications.map((notification) => (
                 <NotificationItem
                   key={notification.id}
@@ -193,8 +263,8 @@ export function NotificationCenter({ isCollapsed = false }: NotificationCenterPr
             </div>
           )}
         </ScrollArea>
-      </PopoverContent>
-    </Popover>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -205,61 +275,92 @@ function NotificationItem({
   notification: Notification; 
   onClick: () => void;
 }) {
-  const icon = typeIcons[notification.type] || <Bell className="h-4 w-4 text-gray-400" />;
-  const bgColor = typeColors[notification.type] || 'bg-gray-50 border-gray-100';
+  const config = typeConfig[notification.type] || { 
+    icon: <Bell className="h-4 w-4" />, 
+    bgColor: 'bg-gray-500',
+    borderColor: 'border-gray-200'
+  };
   
   const timeAgo = formatDistanceToNow(new Date(notification.updatedAt), {
     addSuffix: true,
     locale: es,
   });
 
+  const platformIcon = notification.platform ? platformIcons[notification.platform] : null;
+  const platformColor = notification.platform ? platformColors[notification.platform] : null;
+
   const content = (
     <div
       className={cn(
-        "flex gap-3 p-3 cursor-pointer transition-colors hover:bg-gray-50",
-        !notification.isRead && "bg-blue-50/50"
+        "flex gap-4 px-5 py-4 cursor-pointer transition-all hover:bg-gray-50",
+        !notification.isRead && "bg-blue-50/30 border-l-2 border-l-blue-500"
       )}
       onClick={onClick}
       data-testid={`notification-item-${notification.id}`}
     >
-      <div className={cn(
-        "h-8 w-8 rounded-full flex items-center justify-center shrink-0 border",
-        bgColor
-      )}>
-        {icon}
+      <div className="relative shrink-0">
+        <div className={cn(
+          "h-10 w-10 rounded-full flex items-center justify-center text-white",
+          config.bgColor
+        )}>
+          {config.icon}
+        </div>
+        {platformIcon && (
+          <div className={cn(
+            "absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full flex items-center justify-center text-white ring-2 ring-white",
+            platformColor || 'bg-gray-500'
+          )}>
+            {platformIcon}
+          </div>
+        )}
       </div>
       
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <p className={cn(
-            "text-sm leading-tight",
-            !notification.isRead && "font-medium text-gray-900"
-          )}>
-            {notification.title}
-            {notification.count > 1 && (
-              <span className="ml-1 text-xs text-gray-500">
-                ({notification.count})
-              </span>
+          <div className="flex-1 min-w-0">
+            <p className={cn(
+              "text-sm leading-tight",
+              !notification.isRead ? "font-semibold text-gray-900" : "font-medium text-gray-700"
+            )}>
+              {notification.title}
+              {notification.count > 1 && (
+                <span className="ml-1.5 text-xs font-normal text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full">
+                  {notification.count}
+                </span>
+              )}
+            </p>
+            
+            {notification.description && (
+              <p className="text-xs text-gray-500 mt-1 line-clamp-2 leading-relaxed">
+                {notification.description}
+              </p>
             )}
-          </p>
+          </div>
+          
           {!notification.isRead && (
-            <div className="h-2 w-2 rounded-full bg-blue-500 shrink-0 mt-1.5" />
+            <div className="h-2.5 w-2.5 rounded-full bg-blue-500 shrink-0 mt-1" />
           )}
         </div>
         
-        {notification.description && (
-          <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
-            {notification.description}
-          </p>
-        )}
-        
-        <div className="flex items-center gap-2 mt-1">
-          <span className="text-[10px] text-gray-400">{timeAgo}</span>
+        <div className="flex items-center gap-2 mt-2">
+          <span className="text-[11px] text-gray-400 font-medium">{timeAgo}</span>
+          
           {notification.platform && (
-            <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 rounded text-gray-500 capitalize">
+            <span className={cn(
+              "text-[10px] px-2 py-0.5 rounded-full capitalize font-medium",
+              notification.platform === 'instagram' && "bg-pink-100 text-pink-700",
+              notification.platform === 'tiktok' && "bg-gray-100 text-gray-700",
+              notification.platform === 'facebook' && "bg-blue-100 text-blue-700",
+              notification.platform === 'youtube' && "bg-red-100 text-red-700",
+              notification.platform === 'linkedin' && "bg-sky-100 text-sky-700",
+              notification.platform === 'whatsapp' && "bg-green-100 text-green-700",
+              notification.platform === 'google-business' && "bg-blue-100 text-blue-700",
+              !['instagram', 'tiktok', 'facebook', 'youtube', 'linkedin', 'whatsapp', 'google-business'].includes(notification.platform) && "bg-gray-100 text-gray-600"
+            )}>
               {notification.platform}
             </span>
           )}
+          
           {notification.clickUrl && (
             <ExternalLink className="h-3 w-3 text-gray-400" />
           )}
