@@ -697,7 +697,7 @@ function ThreadNode({
           className="absolute pointer-events-none"
           style={{
             left: `-${horizontalConnectorLeft}px`,
-            top: `-${verticalLineHeight - AVATAR_MT - thisAvatarCenter}px`,
+            top: `-${verticalLineHeight - AVATAR_MT - thisAvatarCenter - 5}px`,
             width: `${horizontalConnectorWidth}px`,
             height: `${verticalLineHeight}px`,
             borderLeft: '1px solid #D1D5DB',
