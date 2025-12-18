@@ -27,9 +27,10 @@ interface ConversationCardProps {
   conversation: ConversationWithPost;
   isSelected: boolean;
   onClick: () => void;
+  isHighlighted?: boolean;
 }
 
-export function ConversationCard({ conversation, isSelected, onClick }: ConversationCardProps) {
+export function ConversationCard({ conversation, isSelected, onClick, isHighlighted = false }: ConversationCardProps) {
   const platform = conversation.platform as Platform;
   const isComment = conversation.type === 'comment';
   const isDM = conversation.type === 'dm';
@@ -95,13 +96,21 @@ export function ConversationCard({ conversation, isSelected, onClick }: Conversa
   return (
     <motion.button
       initial={{ opacity: 0, y: 5 }}
-      animate={{ opacity: 1, y: 0 }}
+      animate={{ 
+        opacity: 1, 
+        y: 0,
+        backgroundColor: isHighlighted ? ['rgba(251, 191, 36, 0.4)', 'rgba(251, 191, 36, 0.1)', 'transparent'] : undefined
+      }}
+      transition={{
+        backgroundColor: { duration: 2, ease: 'easeOut' }
+      }}
       exit={{ opacity: 0, scale: 0.95 }}
       onClick={onClick}
       data-testid={`conversation-card-${conversation.id}`}
       className={cn(
         "w-full max-w-full text-left bg-transparent rounded-lg hover:bg-white/50 transition-all duration-200 relative overflow-hidden group pl-3 py-5 pr-3",
-        isSelected && "bg-white/80"
+        isSelected && "bg-white/80",
+        isHighlighted && "ring-2 ring-amber-400 ring-offset-1"
       )}
     >
       <div className="flex items-start gap-3 min-w-0 max-w-full overflow-hidden">

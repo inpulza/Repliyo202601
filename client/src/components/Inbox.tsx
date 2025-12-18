@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNexus, type ConversationWithPost } from '@/context/NexusContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
 import { CRMContextPanel } from './CRMContextPanel';
 import { ConversationCard } from './ConversationCard';
@@ -256,6 +257,40 @@ export function Inbox() {
   const [isCRMOpen, setIsCRMOpen] = useState(false);
   const [showInactiveNetworks, setShowInactiveNetworks] = useState(false);
   const [showOnlyUnread, setShowOnlyUnread] = useState(false);
+  const [highlightedConversationId, setHighlightedConversationId] = useState<string | null>(null);
+  const [location, setLocation] = useLocation();
+
+  // Deep Link: Handle URL params for direct navigation from notifications
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const conversationId = params.get('conversation');
+    const shouldHighlight = params.get('highlight') === 'true';
+    
+    if (conversationId && conversations.length > 0) {
+      const targetConversation = conversations.find(c => c.id === conversationId);
+      if (targetConversation) {
+        setActiveConversation(targetConversation);
+        
+        if (shouldHighlight) {
+          setHighlightedConversationId(conversationId);
+          
+          // Scroll to the conversation card after a brief delay for render
+          setTimeout(() => {
+            const cardElement = document.querySelector(`[data-testid="conversation-card-${conversationId}"]`);
+            if (cardElement) {
+              cardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 100);
+          
+          // Clear highlight after 3 seconds
+          setTimeout(() => setHighlightedConversationId(null), 3000);
+        }
+        
+        // Clear URL params after navigation
+        window.history.replaceState({}, '', '/inbox');
+      }
+    }
+  }, [conversations, setActiveConversation]);
 
   const { data: socialAccounts = [] } = useQuery({
     queryKey: ['socialAccounts', activeClientId],
@@ -1020,7 +1055,8 @@ export function Inbox() {
                     <ConversationCard 
                       conversation={conv} 
                       isSelected={activeConversation?.id === conv.id} 
-                      onClick={() => setActiveConversation(conv)} 
+                      onClick={() => setActiveConversation(conv)}
+                      isHighlighted={highlightedConversationId === conv.id}
                     />
                   </React.Fragment>
                 ))

@@ -158,6 +158,9 @@ class SyncService {
     const inboxData = await metricoolService.getAllInboxData(blogId, activeProviders);
 
     let savedCount = 0;
+    let firstInboundAuthor: string | null = null;
+    let lastConversationId: string | null = null;
+    let lastPlatform: string | null = null;
 
     for (const conversation of inboxData.conversations) {
       const conv = conversation as any;
@@ -320,6 +323,13 @@ class SyncService {
           const isReallyNew = isNewMessage && savedMessage.brandId === brandId;
           
           if (isReallyNew && isInbound) {
+            // Track first inbound author for Smart Digest notifications
+            if (!firstInboundAuthor) {
+              firstInboundAuthor = author;
+            }
+            lastConversationId = conversationRecord.id;
+            lastPlatform = platform;
+
             websocketService.notifyNewMessage(brandId, {
               id: savedMessage.id,
               platform,
@@ -464,6 +474,13 @@ class SyncService {
         
         // Only notify and trigger auto-reply for NEW INBOUND comments (not from brand)
         if (isReallyNew && !isCommentFromBrand) {
+          // Track first inbound author for Smart Digest notifications
+          if (!firstInboundAuthor) {
+            firstInboundAuthor = comment.author;
+          }
+          lastConversationId = conversationRecord.id;
+          lastPlatform = platform;
+
           websocketService.notifyNewMessage(brandId, {
             id: savedComment.id,
             platform,
@@ -552,7 +569,10 @@ class SyncService {
     
     // Create aggregated notification for new messages (if any)
     if (savedCount > 0) {
-      this.createSyncNotification(brandId, 'new_messages', savedCount, null);
+      this.createSyncNotification(brandId, 'new_messages', savedCount, lastPlatform, {
+        firstAuthor: firstInboundAuthor,
+        conversationId: lastConversationId,
+      });
     }
     
     return savedCount;
@@ -774,28 +794,52 @@ class SyncService {
     brandId: string, 
     type: 'new_messages' | 'sync_error' | 'sync_success', 
     count: number, 
-    platform: string | null
+    platform: string | null,
+    extra?: { firstAuthor?: string | null; conversationId?: string | null }
   ): void {
-    const titles: Record<string, string> = {
-      'new_messages': 'Nuevos mensajes sincronizados',
-      'sync_error': 'Error de sincronización',
-      'sync_success': 'Sincronización completada',
-    };
+    // Smart Digest: Show author name like Instagram does
+    let title: string;
+    let description: string;
     
-    const descriptions: Record<string, string> = {
-      'new_messages': `Se sincronizaron ${count} mensaje${count > 1 ? 's' : ''} nuevo${count > 1 ? 's' : ''}`,
-      'sync_error': 'Hubo un problema al sincronizar con Metricool',
-      'sync_success': 'La sincronización se completó exitosamente',
-    };
+    if (type === 'new_messages') {
+      const author = extra?.firstAuthor;
+      const othersCount = count - 1;
+      
+      if (author && othersCount > 0) {
+        // "Juan y 4 más enviaron mensajes"
+        title = `${author} y ${othersCount} más`;
+        description = `te enviaron ${count} mensaje${count > 1 ? 's' : ''}`;
+      } else if (author) {
+        // "Juan te envió un mensaje"
+        title = author;
+        description = `te envió ${count} mensaje${count > 1 ? 's' : ''}`;
+      } else {
+        title = 'Nuevos mensajes';
+        description = `${count} mensaje${count > 1 ? 's' : ''} nuevo${count > 1 ? 's' : ''}`;
+      }
+    } else if (type === 'sync_error') {
+      title = 'Error de sincronización';
+      description = 'Hubo un problema al sincronizar con Metricool';
+    } else {
+      title = 'Sincronización completada';
+      description = 'La sincronización se completó exitosamente';
+    }
+
+    // Deep Link: Include conversationId for direct navigation
+    const conversationId = extra?.conversationId;
+    const clickUrl = conversationId 
+      ? `/inbox?conversation=${conversationId}&highlight=true`
+      : '/inbox';
 
     storage.createOrUpdateNotification({
       brandId,
       type,
-      title: titles[type],
-      description: descriptions[type],
+      title,
+      description,
       platform,
       count,
-      clickUrl: '/inbox',
+      clickUrl,
+      metadata: extra ? { firstAuthor: extra.firstAuthor, conversationId: extra.conversationId } : null,
     }).catch(err => {
       log(`[SyncService] Error creating notification: ${err.message}`, "sync");
     });

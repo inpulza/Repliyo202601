@@ -61,12 +61,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
                 break;
               }
               onNewMessage?.(payload.data);
-              if (showToasts) {
-                toast({
-                  title: 'Nuevo mensaje',
-                  description: `${payload.data?.author}: ${payload.data?.content?.substring(0, 50)}...`,
-                });
-              }
+              // Toasts disabled - notifications now appear in the notification center panel
               break;
             case 'sync_complete':
               onSyncComplete?.(payload.data);
