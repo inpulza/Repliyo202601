@@ -805,72 +805,37 @@ export function Inbox() {
                 </>
               )}
             </div>
-            <Badge variant="outline" className="font-normal text-gray-500">
-              {filteredConversations.length}
-            </Badge>
+            {syncCountdown !== null && !brandSyncStatus?.syncPaused && (
+              <span className="text-xs font-mono text-gray-500 tabular-nums" data-testid="text-sync-countdown">
+                {syncCountdown}s
+              </span>
+            )}
           </div>
           
-          {/* Integrated Quick Stats (Moved from Widget) */}
-          <div className="flex items-center gap-1">
-                {/* Critical Button */}
-                <button 
-                    onClick={() => setFireMode(!fireMode)}
-                    className={cn(
-                        "relative h-8 w-8 flex items-center justify-center rounded-full transition-all",
-                        fireMode ? "bg-red-100 text-red-600" : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                    )}
-                    title="Critical Messages"
-                >
-                    <Flame className={cn("h-4 w-4", fireMode && "fill-red-600")} />
-                    {criticalCount > 0 && (
-                        <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold h-3.5 min-w-[14px] flex items-center justify-center rounded-full px-0.5 shadow-sm ring-2 ring-white z-10">
-                            {criticalCount}
-                        </div>
-                    )}
-                </button>
-
-                {/* Opportunities Button */}
-                <button 
-                    onClick={() => setIntentFilter(intentFilter === 'sales' ? 'all' : 'sales')}
-                    className={cn(
-                        "relative h-8 w-8 flex items-center justify-center rounded-full transition-all",
-                        intentFilter === 'sales' ? "bg-emerald-100 text-emerald-600" : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                    )}
-                    title="Sales Opportunities"
-                >
-                    <Banknote className="h-4 w-4" />
-                    {opportunityCount > 0 && (
-                        <div className="absolute -top-1 -right-1 bg-emerald-500 text-white text-[9px] font-bold h-3.5 min-w-[14px] flex items-center justify-center rounded-full px-0.5 shadow-sm ring-2 ring-white z-10">
-                            {opportunityCount}
-                        </div>
-                    )}
-                </button>
-
-                {/* Pending Button - Filter for unread messages */}
-                <button 
-                    onClick={() => setShowOnlyUnread(!showOnlyUnread)}
-                    className={cn(
-                        "relative h-8 w-8 flex items-center justify-center rounded-full transition-all",
-                        showOnlyUnread 
-                            ? "bg-blue-500 text-white hover:bg-blue-600" 
-                            : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                    )}
-                    title={showOnlyUnread ? "Show All Conversations" : "Show Only Unread"}
-                    data-testid="button-filter-unread"
-                >
-                    <InboxIcon className="h-4 w-4" />
-                    {pendingCount > 0 && (
-                        <div className={cn(
-                            "absolute -top-1 -right-1 text-[9px] font-bold h-3.5 min-w-[14px] flex items-center justify-center rounded-full px-0.5 shadow-sm ring-2 z-10",
-                            showOnlyUnread 
-                                ? "bg-white text-blue-500 ring-blue-500" 
-                                : "bg-blue-500 text-white ring-white"
-                        )}>
-                            {pendingCount}
-                        </div>
-                    )}
-                </button>
-          </div>
+          {/* Inbox Filter Button */}
+          <button 
+              onClick={() => setShowOnlyUnread(!showOnlyUnread)}
+              className={cn(
+                  "relative h-8 w-8 flex items-center justify-center rounded-full transition-all",
+                  showOnlyUnread 
+                      ? "bg-blue-500 text-white hover:bg-blue-600" 
+                      : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              )}
+              title={showOnlyUnread ? "Mostrar todas" : "Solo no leídos"}
+              data-testid="button-filter-unread"
+          >
+              <InboxIcon className="h-4 w-4" />
+              {pendingCount > 0 && (
+                  <div className={cn(
+                      "absolute -top-1 -right-1 text-[9px] font-bold h-3.5 min-w-[14px] flex items-center justify-center rounded-full px-0.5 shadow-sm ring-2 z-10",
+                      showOnlyUnread 
+                          ? "bg-white text-blue-500 ring-blue-500" 
+                          : "bg-blue-500 text-white ring-white"
+                  )}>
+                      {pendingCount}
+                  </div>
+              )}
+          </button>
         </div>
 
         {/* Filter Bar (The "Playground" for AI) */}
