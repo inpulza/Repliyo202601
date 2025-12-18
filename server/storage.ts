@@ -1,5 +1,5 @@
 import { 
-  brands, users, messages, socialPosts, conversations, socialAccounts, aiAgents, aiAgentAuditLog, conversationUserSummaries, aiModelPricing,
+  brands, users, messages, socialPosts, conversations, socialAccounts, aiAgents, aiAgentAuditLog, conversationUserSummaries, aiModelPricing, notifications,
   type Brand, type InsertBrand, 
   type User, type InsertUser, 
   type Message, type InsertMessage, type UpdateMessage,
@@ -9,7 +9,8 @@ import {
   type AiAgent, type InsertAiAgent, type UpdateAiAgent,
   type AiAgentAuditLog, type InsertAiAgentAuditLog,
   type ConversationUserSummary, type InsertConversationUserSummary, type UpdateConversationUserSummary,
-  type AiModelPricing, type InsertAiModelPricing, type UpdateAiModelPricing
+  type AiModelPricing, type InsertAiModelPricing, type UpdateAiModelPricing,
+  type Notification, type InsertNotification, type UpdateNotification
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, isNull, gte, lte, sql } from "drizzle-orm";
@@ -136,6 +137,14 @@ export interface IStorage {
   getMessagesNeedingDrafts(brandId: string, limit?: number): Promise<Message[]>;
   getMessagesNeedingDraftsCount(brandId: string): Promise<number>;
   getConversationsWithDrafts(brandId: string): Promise<string[]>;
+  
+  // Notifications
+  getNotifications(brandId: string, limit?: number): Promise<Notification[]>;
+  getUnreadNotificationCount(brandId: string): Promise<number>;
+  createOrUpdateNotification(notification: InsertNotification): Promise<Notification>;
+  markNotificationAsRead(id: string): Promise<Notification | undefined>;
+  markAllNotificationsAsRead(brandId: string): Promise<number>;
+  cleanupOldNotifications(): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1630,6 +1639,133 @@ export class DatabaseStorage implements IStorage {
   async backfillBrandMessageDirections(): Promise<number> {
     console.log(`[Storage] Backfill disabled - direction detection handled in syncService.ts`);
     return 0;
+  }
+
+  // ==========================================
+  // NOTIFICATIONS - Sistema Central
+  // ==========================================
+  
+  async getNotifications(brandId: string, limit: number = 50): Promise<Notification[]> {
+    return await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.brandId, brandId))
+      .orderBy(desc(notifications.updatedAt))
+      .limit(limit);
+  }
+
+  async getUnreadNotificationCount(brandId: string): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(notifications)
+      .where(
+        and(
+          eq(notifications.brandId, brandId),
+          eq(notifications.isRead, false)
+        )
+      );
+    return result[0]?.count || 0;
+  }
+
+  async createOrUpdateNotification(notification: InsertNotification): Promise<Notification> {
+    // GROUPING LOGIC: For "new_messages" type, check if an unread notification
+    // of the same type, brand, and platform exists within the last 6 hours
+    const groupableTypes = ['new_messages', 'sync_success'];
+    
+    if (groupableTypes.includes(notification.type)) {
+      const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
+      
+      // Find existing unread notification of same type/brand/platform
+      const existing = await db
+        .select()
+        .from(notifications)
+        .where(
+          and(
+            eq(notifications.brandId, notification.brandId),
+            eq(notifications.type, notification.type),
+            eq(notifications.isRead, false),
+            notification.platform 
+              ? eq(notifications.platform, notification.platform) 
+              : isNull(notifications.platform),
+            gte(notifications.updatedAt, sixHoursAgo)
+          )
+        )
+        .limit(1);
+      
+      if (existing.length > 0) {
+        // Update existing notification: increment count and update timestamp
+        const [updated] = await db
+          .update(notifications)
+          .set({
+            count: existing[0].count + (notification.count || 1),
+            description: notification.description,
+            updatedAt: new Date(),
+          })
+          .where(eq(notifications.id, existing[0].id))
+          .returning();
+        return updated;
+      }
+    }
+    
+    // Create new notification
+    const [created] = await db
+      .insert(notifications)
+      .values({
+        ...notification,
+        count: notification.count || 1,
+      })
+      .returning();
+    
+    // Trigger cleanup on insert (probabilistic - 5% chance)
+    if (Math.random() < 0.05) {
+      this.cleanupOldNotifications().catch(err => 
+        console.error('[Notifications] Cleanup error:', err)
+      );
+    }
+    
+    return created;
+  }
+
+  async markNotificationAsRead(id: string): Promise<Notification | undefined> {
+    const [updated] = await db
+      .update(notifications)
+      .set({ isRead: true, updatedAt: new Date() })
+      .where(eq(notifications.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async markAllNotificationsAsRead(brandId: string): Promise<number> {
+    const result = await db
+      .update(notifications)
+      .set({ isRead: true, updatedAt: new Date() })
+      .where(
+        and(
+          eq(notifications.brandId, brandId),
+          eq(notifications.isRead, false)
+        )
+      );
+    return result.rowCount || 0;
+  }
+
+  async cleanupOldNotifications(): Promise<number> {
+    // RETENTION POLICY:
+    // - Delete read notifications older than 7 days
+    // - Delete unread notifications older than 30 days
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    
+    const result = await db.execute(sql`
+      DELETE FROM notifications
+      WHERE (is_read = true AND created_at < ${sevenDaysAgo})
+         OR (is_read = false AND created_at < ${thirtyDaysAgo})
+    `);
+    
+    const deleted = result.rowCount || 0;
+    if (deleted > 0) {
+      console.log(`[Notifications] Cleanup: deleted ${deleted} old notifications`);
+    }
+    return deleted;
   }
 }
 
