@@ -88,6 +88,11 @@ class SyncService {
           continue;
         }
 
+        if (brand.syncPaused) {
+          log(`[SyncService] Brand ${brand.name} sync paused, skipping`, "sync");
+          continue;
+        }
+
         if (this.isInCooldown(brand.id)) {
           log(`[SyncService] Brand ${brand.name} in cooldown, skipping`, "sync");
           continue;

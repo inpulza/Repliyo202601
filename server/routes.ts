@@ -537,6 +537,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/brands/:id/sync-status", requireAuth, filterByBrand("id"), async (req, res) => {
+    try {
+      const brand = await storage.getBrand(req.params.id);
+      if (!brand) {
+        return res.status(404).json({ error: "Marca no encontrada" });
+      }
+      res.json({ syncPaused: brand.syncPaused });
+    } catch (error) {
+      res.status(500).json({ error: "Error al obtener el estado de sincronización" });
+    }
+  });
+
+  app.put("/api/brands/:id/sync-status", requireAuth, filterByBrand("id"), async (req, res) => {
+    try {
+      const { syncPaused } = req.body;
+      if (typeof syncPaused !== 'boolean') {
+        return res.status(400).json({ error: "syncPaused debe ser un valor booleano" });
+      }
+
+      const brand = await storage.getBrand(req.params.id);
+      if (!brand) {
+        return res.status(404).json({ error: "Marca no encontrada" });
+      }
+
+      const updated = await storage.updateSyncPaused(req.params.id, syncPaused);
+      res.json({ 
+        message: syncPaused ? "Sincronización pausada" : "Sincronización reanudada",
+        syncPaused: updated?.syncPaused 
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Error al actualizar el estado de sincronización" });
+    }
+  });
+
   app.get("/api/users", requireAuth, async (req, res) => {
     try {
       if (req.user!.role !== 'admin') {
@@ -1118,6 +1152,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!brand.metricoolToken || !brand.metricoolUserId || !brand.metricoolBlogId) {
         return res.status(400).json({ error: "Brand not properly configured with Metricool credentials" });
+      }
+
+      if (brand.syncPaused) {
+        return res.status(400).json({ error: "Sincronización pausada para esta marca. Reanuda la sincronización para continuar." });
       }
 
       console.log(`🔄 Starting sync for brand: ${brand.name} (${brand.metricoolBlogId})`);
