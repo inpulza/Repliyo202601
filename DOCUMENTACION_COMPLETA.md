@@ -356,16 +356,24 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 - ✅ **Deep Link a Mensaje Específico (Diciembre 2025):**
   - El parámetro `messageId` permite navegar directamente a un mensaje específico dentro de la conversación
   - Sistema de retry con 15 intentos x 300ms para esperar que los mensajes carguen antes del scroll
-  - Espera explícita a que `isLoadingConversationMessages === false` antes de iniciar scroll
-  - SingleMessage recibe prop `isHighlighted` para mostrar ring amber + animate-pulse
-  - Highlight del mensaje dura 5 segundos después del scroll exitoso
-  - CommentThread propaga `highlightedMessageId` a través de ThreadNode → SingleMessage
 
-#### 9.5 Optimización de Toasts
+#### 9.5 Notificaciones de Borradores Pendientes (Diciembre 2025)
+- ✅ Nuevo tipo de notificación `draft_pending` para borradores sin enviar
+- ✅ Icono FileEdit con esquema de colores ámbar (bg-amber-500, border-amber-200)
+- ✅ Notificaciones individuales por cada borrador (no agrupadas)
+- ✅ Creación automática cuando se genera un borrador (generate-draft, regenerate-draft, bulk-generate-drafts)
+- ✅ Eliminación automática cuando el borrador es enviado o descartado
+- ✅ Deep-link con `messageId` para navegar directamente al mensaje con borrador
+- ✅ Notificaciones persistentes (excluidas del cleanup automático) hasta que el usuario tome acción
+- ✅ Función idempotente `createDraftNotification` (verifica existencia, actualiza si existe, crea si no)
+- ✅ Endpoint de backfill: `POST /api/ai-agent/:brandId/backfill-draft-notifications`
+- ✅ Storage functions: `getNotificationByMessageId`, `deleteNotificationByMessageId`, `createDraftNotification`, `getMessagesWithPendingDrafts`
+
+#### 9.6 Optimización de Toasts
 - ✅ Toasts desactivados para `new_messages` (evita colapso de UI cuando llegan muchos mensajes)
 - ✅ Toasts mantenidos para acciones del usuario (enviar mensaje, generar IA, etc.)
 
-#### 9.6 Filtros de Plataforma Mejorados
+#### 9.7 Filtros de Plataforma Mejorados
 - ✅ Badges rojos ahora muestran solo conversaciones con mensajes NO LEÍDOS (`platformUnreadCounts`)
 - ✅ Filtro conjunto: al pinchar plataforma con badge, se activa automáticamente `showOnlyUnread=true`
 - ✅ Al pinchar plataforma sin mensajes nuevos o "All", se desactiva el filtro de no leídos
