@@ -348,10 +348,18 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 
 #### 9.4 Deep Links con Scroll + Highlight
 - ✅ clickUrl incluye conversationId: `/inbox?conversation=xxx&highlight=true`
+- ✅ clickUrl para AI auto-reply incluye messageId: `/inbox?conversation=xxx&messageId=yyy&highlight=true`
 - ✅ Inbox.tsx lee URL params y auto-selecciona la conversación
 - ✅ scrollIntoView smooth después de 100ms delay para centrar en viewport
 - ✅ ConversationCard.tsx muestra animación de resaltado (amber ring + fade de fondo amarillo)
 - ✅ Highlight se limpia después de 3 segundos, URL params se limpian tras navegación
+- ✅ **Deep Link a Mensaje Específico (Diciembre 2025):**
+  - El parámetro `messageId` permite navegar directamente a un mensaje específico dentro de la conversación
+  - Sistema de retry con 15 intentos x 300ms para esperar que los mensajes carguen antes del scroll
+  - Espera explícita a que `isLoadingConversationMessages === false` antes de iniciar scroll
+  - SingleMessage recibe prop `isHighlighted` para mostrar ring amber + animate-pulse
+  - Highlight del mensaje dura 5 segundos después del scroll exitoso
+  - CommentThread propaga `highlightedMessageId` a través de ThreadNode → SingleMessage
 
 #### 9.5 Optimización de Toasts
 - ✅ Toasts desactivados para `new_messages` (evita colapso de UI cuando llegan muchos mensajes)
@@ -368,8 +376,10 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 - `server/storage.ts` - CRUD de notificaciones
 - `server/routes.ts` - Endpoints de notificaciones
 - `server/services/syncService.ts` - Creación de Smart Digest con firstInboundAuthor
+- `server/services/autoReplyService.ts` - clickUrl incluye messageId para deep-link a mensaje específico
 - `client/src/components/NotificationCenter.tsx` - Panel deslizante completo
-- `client/src/components/Inbox.tsx` - Deep links, filtros mejorados
+- `client/src/components/Inbox.tsx` - Deep links a mensajes, filtros mejorados, retry scroll logic
+- `client/src/components/CommentThread.tsx` - Prop highlightedMessageId propagado a SingleMessage
 - `client/src/components/ConversationCard.tsx` - Prop isHighlighted con animación
 - `client/src/hooks/useWebSocket.ts` - Toasts desactivados para new_messages
 

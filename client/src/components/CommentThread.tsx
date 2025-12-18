@@ -55,6 +55,7 @@ interface CommentThreadProps {
   handleSendDraft: (messageId: string, content: string) => void;
   showRegenerateConfirm: string | null;
   setShowRegenerateConfirm: (id: string | null) => void;
+  highlightedMessageId?: string | null;
   AudioPlayer: React.ComponentType<{ src: string; transcription?: string; isOutbound?: boolean }>;
   SentimentIndicator: React.ComponentType<{ sentiment: Sentiment }>;
 }
@@ -103,6 +104,7 @@ interface SingleMessageProps {
   msg: Message;
   isReply: boolean;
   isOrphan?: boolean;
+  isHighlighted?: boolean;
   platformStyles: CommentThreadProps['platformStyles'];
   onStartReply: CommentThreadProps['onStartReply'];
   onGenerateDraft: CommentThreadProps['onGenerateDraft'];
@@ -126,6 +128,7 @@ function SingleMessage({
   msg,
   isReply,
   isOrphan = false,
+  isHighlighted = false,
   platformStyles,
   onStartReply,
   onGenerateDraft,
@@ -152,7 +155,13 @@ function SingleMessage({
   const avatarSize = isReply ? AVATAR_SIZE_REPLY : AVATAR_SIZE_ROOT;
 
   return (
-    <div className="flex gap-3 group transition-all">
+    <div 
+      className={cn(
+        "flex gap-3 group transition-all rounded-lg p-2 -m-2",
+        isHighlighted && "ring-2 ring-amber-400 bg-amber-50/50 animate-pulse"
+      )}
+      data-testid={`message-${msg.id}`}
+    >
       <Avatar className={cn(
         "mt-1 flex-shrink-0 relative z-10 ring-[3px] ring-white",
         isReply ? "h-6 w-6" : "h-8 w-8"
@@ -592,6 +601,7 @@ interface ThreadNodeProps {
   setShowRegenerateConfirm: (id: string | null) => void;
   AudioPlayer: CommentThreadProps['AudioPlayer'];
   SentimentIndicator: CommentThreadProps['SentimentIndicator'];
+  highlightedMessageId?: string | null;
 }
 
 function ThreadNode({
@@ -616,6 +626,7 @@ function ThreadNode({
   setShowRegenerateConfirm,
   AudioPlayer,
   SentimentIndicator,
+  highlightedMessageId,
 }: ThreadNodeProps) {
   const isReply = depth > 0;
   const hasChildren = node.children.length > 0;
@@ -703,6 +714,7 @@ function ThreadNode({
           msg={node.message}
           isReply={isReply}
           isOrphan={node.isOrphan}
+          isHighlighted={highlightedMessageId === node.message.id}
           platformStyles={platformStyles}
           onStartReply={onStartReply}
           onGenerateDraft={onGenerateDraft}
@@ -752,6 +764,7 @@ function ThreadNode({
               handleSendDraft={handleSendDraft}
               showRegenerateConfirm={showRegenerateConfirm}
               setShowRegenerateConfirm={setShowRegenerateConfirm}
+              highlightedMessageId={highlightedMessageId}
               AudioPlayer={AudioPlayer}
               SentimentIndicator={SentimentIndicator}
             />
@@ -787,6 +800,7 @@ export function CommentThread({
   handleSendDraft,
   showRegenerateConfirm,
   setShowRegenerateConfirm,
+  highlightedMessageId,
   AudioPlayer,
   SentimentIndicator,
 }: CommentThreadProps) {
@@ -862,6 +876,7 @@ export function CommentThread({
               handleSendDraft={handleSendDraft}
               showRegenerateConfirm={showRegenerateConfirm}
               setShowRegenerateConfirm={setShowRegenerateConfirm}
+              highlightedMessageId={highlightedMessageId}
               AudioPlayer={AudioPlayer}
               SentimentIndicator={SentimentIndicator}
             />

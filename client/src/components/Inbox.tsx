@@ -258,6 +258,7 @@ export function Inbox() {
   const [showInactiveNetworks, setShowInactiveNetworks] = useState(false);
   const [showOnlyUnread, setShowOnlyUnread] = useState(false);
   const [highlightedConversationId, setHighlightedConversationId] = useState<string | null>(null);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const [location, setLocation] = useLocation();
 
   // Handler for platform filter clicks - activates unread filter if platform has unread messages
@@ -272,10 +273,14 @@ export function Inbox() {
     }
   };
 
+  // State to track pending message scroll (set from URL params, cleared after scroll)
+  const [pendingScrollMessageId, setPendingScrollMessageId] = useState<string | null>(null);
+
   // Deep Link: Handle URL params for direct navigation from notifications
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const conversationId = params.get('conversation');
+    const messageId = params.get('messageId');
     const shouldHighlight = params.get('highlight') === 'true';
     
     if (conversationId && conversations.length > 0) {
@@ -286,15 +291,21 @@ export function Inbox() {
         if (shouldHighlight) {
           setHighlightedConversationId(conversationId);
           
-          // Scroll to the conversation card after a brief delay for render
-          setTimeout(() => {
-            const cardElement = document.querySelector(`[data-testid="conversation-card-${conversationId}"]`);
-            if (cardElement) {
-              cardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-          }, 100);
+          // If messageId is provided, set up for highlighting and pending scroll
+          if (messageId) {
+            setHighlightedMessageId(messageId);
+            setPendingScrollMessageId(messageId);
+          } else {
+            // Scroll to the conversation card after a brief delay for render
+            setTimeout(() => {
+              const cardElement = document.querySelector(`[data-testid="conversation-card-${conversationId}"]`);
+              if (cardElement) {
+                cardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }, 100);
+          }
           
-          // Clear highlight after 3 seconds
+          // Clear conversation highlight after 3 seconds
           setTimeout(() => setHighlightedConversationId(null), 3000);
         }
         
@@ -303,6 +314,59 @@ export function Inbox() {
       }
     }
   }, [conversations, setActiveConversation]);
+
+  // Deep Link: Scroll to message once it's loaded and rendered
+  // This effect waits for messages to load before attempting to scroll
+  // Ref to track if scroll was already attempted to avoid duplicate scrolls
+  const scrollAttemptedRef = React.useRef<string | null>(null);
+  
+  useEffect(() => {
+    if (!pendingScrollMessageId) {
+      return;
+    }
+    
+    // Treat undefined or true as "still loading" - wait for explicit false
+    if (isLoadingConversationMessages !== false) {
+      return;
+    }
+
+    // Prevent duplicate scroll attempts for the same message
+    if (scrollAttemptedRef.current === pendingScrollMessageId) {
+      return;
+    }
+    scrollAttemptedRef.current = pendingScrollMessageId;
+
+    // Messages are loaded, now wait for DOM to render and retry scrolling
+    let attempts = 0;
+    const maxAttempts = 15; // More attempts for slower networks
+    const retryInterval = 300; // ms between attempts
+
+    const attemptScroll = () => {
+      const messageElement = document.querySelector(`[data-testid="message-${pendingScrollMessageId}"]`);
+      if (messageElement) {
+        messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setPendingScrollMessageId(null);
+        scrollAttemptedRef.current = null; // Reset for future deep-links
+        
+        // Clear message highlight 5 seconds after successful scroll
+        setTimeout(() => setHighlightedMessageId(null), 5000);
+        return;
+      }
+
+      attempts++;
+      if (attempts < maxAttempts) {
+        setTimeout(attemptScroll, retryInterval);
+      } else {
+        // Give up after max attempts, clear pending state
+        setPendingScrollMessageId(null);
+        scrollAttemptedRef.current = null; // Reset for future deep-links
+        setTimeout(() => setHighlightedMessageId(null), 5000);
+      }
+    };
+
+    // Start attempting to scroll after a brief delay for initial render
+    setTimeout(attemptScroll, 100);
+  }, [pendingScrollMessageId, isLoadingConversationMessages]);
 
   const { data: socialAccounts = [] } = useQuery({
     queryKey: ['socialAccounts', activeClientId],
@@ -1251,6 +1315,7 @@ export function Inbox() {
                         handleSendDraft={handleSendDraft}
                         showRegenerateConfirm={showRegenerateConfirm}
                         setShowRegenerateConfirm={setShowRegenerateConfirm}
+                        highlightedMessageId={highlightedMessageId}
                         AudioPlayer={AudioPlayer}
                         SentimentIndicator={SentimentIndicator}
                       />
