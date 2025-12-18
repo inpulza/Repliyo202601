@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNexus } from '@/context/NexusContext';
 import { 
   Bell, Check, CheckCheck, MessageSquare, AlertCircle, Bot, Settings, 
-  ExternalLink, Loader2
+  ExternalLink, Loader2, FileEdit
 } from 'lucide-react';
 import { FaInstagram, FaTiktok, FaFacebook, FaLinkedin, FaYoutube, FaWhatsapp } from 'react-icons/fa';
 import { Button } from '@/components/ui/button';
@@ -67,6 +67,11 @@ const typeConfig: Record<string, { icon: React.ReactNode; bgColor: string; borde
     icon: <Settings className="h-4 w-4" />, 
     bgColor: 'bg-gray-500',
     borderColor: 'border-gray-200'
+  },
+  'draft_pending': { 
+    icon: <FileEdit className="h-4 w-4" />, 
+    bgColor: 'bg-amber-500',
+    borderColor: 'border-amber-200'
   },
 };
 

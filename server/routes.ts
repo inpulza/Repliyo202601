@@ -1871,6 +1871,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               draftWasEdited: false,
             });
             
+            // Create draft pending notification
+            await storage.createDraftNotification(
+              brandId,
+              messageId,
+              conversation.id,
+              message.platform || 'unknown',
+              message.author || 'Usuario',
+              result.reply
+            );
+            
             return res.json({
               success: true,
               draft: result.reply,
@@ -1947,6 +1957,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           aiReplyStatus: 'drafted',
           draftWasEdited: false,
         });
+        
+        // Create/update draft pending notification
+        await storage.createDraftNotification(
+          brandId,
+          messageId,
+          conversation.id,
+          message.platform || 'unknown',
+          message.author || 'Usuario',
+          result.reply
+        );
         
         return res.json({
           success: true,
@@ -2026,6 +2046,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               aiReplyStatus: 'drafted',
               draftWasEdited: false,
             });
+            
+            // Create draft pending notification
+            await storage.createDraftNotification(
+              brandId,
+              messageId,
+              conversation.id,
+              message.platform || 'unknown',
+              message.author || 'Usuario',
+              result.reply
+            );
+            
             results.push({ messageId, success: true });
           } else {
             await storage.updateMessage(messageId, { aiReplyStatus: 'draft_error' });
@@ -2112,6 +2143,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         aiReplyStatus: 'none',
         draftWasEdited: false,
       });
+      
+      // Delete draft notification when discarding
+      await storage.deleteNotificationByMessageId(messageId);
       
       res.json({ success: true, messageId });
       
@@ -2252,6 +2286,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         draftWasEdited: false,
       });
       
+      // Delete draft notification when sending
+      await storage.deleteNotificationByMessageId(messageId);
+      
       // Log success to audit log (wrapped in try/catch to not fail the response)
       if (agent) {
         try {
@@ -2301,6 +2338,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error getting drafts count:', error);
       res.status(500).json({ error: "Failed to get drafts count" });
+    }
+  });
+
+  // POST /api/ai-agent/:brandId/backfill-draft-notifications - Backfill notifications for existing pending drafts
+  app.post("/api/ai-agent/:brandId/backfill-draft-notifications", requireAuth, filterByBrand("brandId"), async (req, res) => {
+    try {
+      const { brandId } = req.params;
+      
+      // Get all messages with pending drafts
+      const pendingDrafts = await storage.getMessagesWithPendingDrafts(brandId);
+      
+      if (pendingDrafts.length === 0) {
+        return res.json({
+          success: true,
+          message: "No pending drafts found",
+          created: 0,
+        });
+      }
+      
+      let created = 0;
+      for (const draft of pendingDrafts) {
+        try {
+          // Check if notification already exists
+          const existing = await storage.getNotificationByMessageId(draft.messageId);
+          if (!existing) {
+            await storage.createDraftNotification(
+              brandId,
+              draft.messageId,
+              draft.conversationId,
+              draft.platform,
+              draft.author,
+              draft.draftPreview
+            );
+            created++;
+          }
+        } catch (err: any) {
+          console.error(`[Backfill] Error creating notification for message ${draft.messageId}:`, err.message);
+        }
+      }
+      
+      console.log(`[Backfill] Created ${created} draft notifications for brand ${brandId}`);
+      
+      res.json({
+        success: true,
+        message: `Created ${created} notifications for ${pendingDrafts.length} pending drafts`,
+        created,
+        total: pendingDrafts.length,
+      });
+      
+    } catch (error: any) {
+      console.error('Error backfilling draft notifications:', error);
+      res.status(500).json({ error: "Failed to backfill draft notifications" });
     }
   });
 
