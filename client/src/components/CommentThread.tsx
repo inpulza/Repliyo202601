@@ -214,22 +214,35 @@ function SingleMessage({
           </AvatarFallback>
         </Avatar>
         
-        {/* Selection Checkbox Overlay - positioned over avatar */}
+        {/* Selection Overlay - circular check centered over avatar (WhatsApp-style) */}
         <AnimatePresence>
           {isSelectionMode && canSelect && (
             <motion.div 
-              className="absolute -top-1 -left-1 z-20"
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.5 }}
+              className={cn(
+                "absolute inset-0 z-20 flex items-center justify-center rounded-full cursor-pointer",
+                isSelected 
+                  ? "bg-indigo-600" 
+                  : "bg-black/40 hover:bg-black/50"
+              )}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
+              onClick={() => onToggleSelection?.(msg.id)}
+              data-testid={`checkbox-select-${msg.id}`}
             >
-              <Checkbox
-                checked={isSelected}
-                onCheckedChange={() => onToggleSelection?.(msg.id)}
-                data-testid={`checkbox-select-${msg.id}`}
-                className="h-5 w-5 bg-white border-2 border-gray-300 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 shadow-sm transition-all duration-150"
-              />
+              {isSelected && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.1, ease: "easeOut" }}
+                >
+                  <Check className={cn(
+                    "text-white",
+                    isReply ? "h-3 w-3" : "h-4 w-4"
+                  )} />
+                </motion.div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
