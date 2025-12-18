@@ -531,10 +531,28 @@ export function AIAgentConfig() {
 
               <Card className="border border-border shadow-none">
                 <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-base font-semibold">
-                    <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                    System Prompt
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                      System Prompt
+                    </CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (formData.systemPrompt) {
+                          navigator.clipboard.writeText(formData.systemPrompt);
+                          toast({ title: "Copiado", description: "System Prompt copiado al portapapeles" });
+                        }
+                      }}
+                      disabled={!formData.systemPrompt}
+                      className="h-8 gap-2 text-xs"
+                      data-testid="button-copy-system-prompt"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      Copiar
+                    </Button>
+                  </div>
                   <CardDescription className="text-xs">
                     Define la personalidad, tono, estructura de respuesta y ejemplos (Few-Shot). Puedes incluir prompts extensos con múltiples secciones.
                   </CardDescription>
@@ -556,10 +574,28 @@ export function AIAgentConfig() {
 
               <Card className="border border-border shadow-none">
                 <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-base font-semibold">
-                    <BookOpen className="h-4 w-4 text-muted-foreground" />
-                    Knowledge Base
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                      <BookOpen className="h-4 w-4 text-muted-foreground" />
+                      Knowledge Base
+                    </CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (formData.knowledgeBase) {
+                          navigator.clipboard.writeText(formData.knowledgeBase);
+                          toast({ title: "Copiado", description: "Knowledge Base copiado al portapapeles" });
+                        }
+                      }}
+                      disabled={!formData.knowledgeBase}
+                      className="h-8 gap-2 text-xs"
+                      data-testid="button-copy-knowledge-base"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      Copiar
+                    </Button>
+                  </div>
                   <CardDescription className="text-xs">
                     Información del negocio, FAQs, horarios, políticas que el agente debe conocer
                   </CardDescription>
@@ -577,10 +613,28 @@ export function AIAgentConfig() {
 
               <Card className="border border-border shadow-none">
                 <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-base font-semibold">
-                    <Shield className="h-4 w-4 text-muted-foreground" />
-                    Guardrails
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                      <Shield className="h-4 w-4 text-muted-foreground" />
+                      Guardrails
+                    </CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (formData.guardrailPrompt) {
+                          navigator.clipboard.writeText(formData.guardrailPrompt);
+                          toast({ title: "Copiado", description: "Guardrails copiado al portapapeles" });
+                        }
+                      }}
+                      disabled={!formData.guardrailPrompt}
+                      className="h-8 gap-2 text-xs"
+                      data-testid="button-copy-guardrails"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      Copiar
+                    </Button>
+                  </div>
                   <CardDescription className="text-xs">
                     Restricciones de seguridad y límites para las respuestas del agente
                   </CardDescription>
