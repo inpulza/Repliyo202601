@@ -3597,6 +3597,54 @@ Si el proyecto crece significativamente (+100 marcas, +500 usuarios), considerar
 
 ---
 
+## CORRECCIÓN DE BUG - 18 Diciembre 2025
+
+### Bug: Notificaciones Duplicadas al Cambiar de Marca
+
+#### Problema Reportado:
+Cuando el usuario cambiaba de marca y volvía a la marca original, aparecían notificaciones de mensajes como si fueran nuevos, aunque ya estaban guardados en la base de datos.
+
+#### Causa Raíz:
+En `server/services/syncService.ts`, la variable `savedCount` contaba TODOS los mensajes procesados durante la sincronización (incluyendo mensajes ya existentes que simplemente se actualizaban). La notificación usaba este contador inflado, causando alertas falsas.
+
+```typescript
+// ANTES (problema):
+savedCount++; // Se incrementaba para TODOS los mensajes procesados
+if (savedCount > 0) {
+  this.createSyncNotification(brandId, 'new_messages', savedCount, ...);
+}
+```
+
+#### Solución Implementada:
+
+1. **Nuevo contador `newInboundCount`**: Cuenta solo mensajes realmente nuevos e inbound (de clientes)
+2. **Incremento solo cuando es nuevo**: Se incrementa únicamente dentro de los bloques `if (isReallyNew && isInbound)`
+3. **Notificación corregida**: Ahora usa `newInboundCount` en lugar de `savedCount`
+
+```typescript
+// DESPUÉS (correcto):
+let newInboundCount = 0;
+// ...
+if (isReallyNew && isInbound) {
+  newInboundCount++; // Solo mensajes NUEVOS e INBOUND
+  // ...
+}
+// ...
+if (newInboundCount > 0) {
+  this.createSyncNotification(brandId, 'new_messages', newInboundCount, ...);
+}
+```
+
+#### Archivos Modificados:
+- `server/services/syncService.ts` - Añadido contador `newInboundCount` y actualizada lógica de notificación
+
+#### Resultado:
+- Al cambiar de marca y volver, no aparecen notificaciones falsas de mensajes ya existentes
+- Solo se notifican mensajes verdaderamente nuevos recibidos de clientes
+- El log ahora muestra ambos contadores: `saved X messages (Y new inbound)`
+
+---
+
 ### Resumen Ejecutivo de Deployment
 
 | Aspecto | Recomendación |
