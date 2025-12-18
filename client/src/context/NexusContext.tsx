@@ -41,13 +41,34 @@ interface NexusContextType {
 
 const NexusContext = createContext<NexusContextType | undefined>(undefined);
 
+const ACTIVE_BRAND_KEY = 'repliyo_active_brand_id';
+
 export const NexusProvider = ({ children }: { children: ReactNode }) => {
   const queryClient = useQueryClient();
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
-  const [activeClientId, setActiveClientId] = useState<string | null>(null);
+  const [activeClientId, setActiveClientIdState] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(ACTIVE_BRAND_KEY);
+    } catch {
+      return null;
+    }
+  });
   const [activeConversation, setActiveConversationState] = useState<ConversationWithPost | null>(null);
   const [metricoolBrands, setMetricoolBrands] = useState<any[]>([]);
   const [isLoadingMetricool, setIsLoadingMetricool] = useState(false);
+
+  const setActiveClientId = React.useCallback((id: string | null) => {
+    setActiveClientIdState(id);
+    try {
+      if (id) {
+        localStorage.setItem(ACTIVE_BRAND_KEY, id);
+      } else {
+        localStorage.removeItem(ACTIVE_BRAND_KEY);
+      }
+    } catch (e) {
+      console.warn('Failed to persist active brand to localStorage:', e);
+    }
+  }, []);
 
   const { data: clients = [], isLoading: isLoadingClients } = useQuery({
     queryKey: ['clients'],
@@ -78,17 +99,24 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
   });
 
   React.useEffect(() => {
-    if (isAuthenticated && !isAuthLoading && !activeClientId && activeClients.length > 0 && !isLoadingClients) {
-      setActiveClientId(activeClients[0].id);
+    if (isAuthenticated && !isAuthLoading && activeClients.length > 0 && !isLoadingClients) {
+      if (activeClientId) {
+        const savedClientExists = activeClients.some(c => c.id === activeClientId);
+        if (!savedClientExists) {
+          setActiveClientId(activeClients[0].id);
+        }
+      } else {
+        setActiveClientId(activeClients[0].id);
+      }
     }
-  }, [isAuthenticated, isAuthLoading, activeClients.length, activeClientId, isLoadingClients]);
+  }, [isAuthenticated, isAuthLoading, activeClients, activeClientId, isLoadingClients, setActiveClientId]);
 
   const activeClient = React.useMemo(
     () => clients.find(c => c.id === activeClientId),
     [clients, activeClientId]
   );
 
-  const handleSetActiveClientId = (id: string) => {
+  const handleSetActiveClientId = React.useCallback((id: string) => {
     const client = clients.find(c => c.id === id);
     if (client && client.status === 'archived') {
       toast({
@@ -98,16 +126,14 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
       });
       return;
     }
-    // Clear active conversation when switching brands to prevent cross-brand data bleed
     if (id !== activeClientId) {
       setActiveConversationState(null);
-      // Remove cached data for the previous brand to ensure fresh fetch
       queryClient.removeQueries({ queryKey: ['conversations', activeClientId] });
       queryClient.removeQueries({ queryKey: ['messages', activeClientId] });
       queryClient.removeQueries({ queryKey: ['conversationMessages'] });
     }
     setActiveClientId(id);
-  };
+  }, [clients, activeClientId, setActiveClientId, queryClient]);
 
   const setActiveConversation = (conversation: ConversationWithPost | null) => {
     setActiveConversationState(conversation);
