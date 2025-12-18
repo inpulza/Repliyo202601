@@ -2145,16 +2145,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Brand not configured with Metricool" });
       }
       
+      // Get the AI agent for audit logging
+      const agent = await storage.getAiAgentByBrand(brandId);
+      
       const metricoolService = new MetricoolService({
         userToken: brand.metricoolToken,
         userId: brand.metricoolUserId,
       });
       
+      // Helper to normalize YouTube comment IDs for nested replies
+      // YouTube nested reply IDs have format: PARENT_THREAD_ID.REPLY_ID
+      // When replying to a nested comment, we must use only the parent thread ID
+      const normalizeYoutubeCommentId = (objectId: string, platform: string): string => {
+        if (platform.toLowerCase() === 'youtube' && objectId.includes('.')) {
+          const parentThreadId = objectId.split('.')[0];
+          console.log(`[SendDraft] Normalized YouTube nested comment ID: ${objectId} -> ${parentThreadId}`);
+          return parentThreadId;
+        }
+        return objectId;
+      };
+      
+      const originalMetricoolId = message.metricoolId || '';
+      const normalizedObjectId = normalizeYoutubeCommentId(originalMetricoolId, message.platform);
+      
       console.log(`[SendDraft] Sending draft for message ${messageId}:`, {
         platform: message.platform,
         type: message.type,
-        metricoolId: message.metricoolId,
+        metricoolId: originalMetricoolId,
+        normalizedObjectId: normalizedObjectId,
         draft: message.aiSuggestedReply?.substring(0, 50) + '...',
+        characterCount: message.aiSuggestedReply?.length || 0,
       });
       
       let replyResult;
@@ -2162,7 +2182,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (message.type === 'comment' || message.type === 'mention' || message.type === 'story_reply') {
         replyResult = await metricoolService.replyToComment({
           provider: message.platform,
-          objectId: message.metricoolId || '',
+          objectId: normalizedObjectId,
           text: message.aiSuggestedReply,
           blogId: brand.metricoolBlogId,
           mentionUsername: message.author || undefined,
@@ -2181,6 +2201,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!replyResult.success) {
         console.error(`[SendDraft] Failed to send:`, replyResult.error);
+        
+        // Log the error to audit log (wrapped in try/catch to not fail the response)
+        if (agent) {
+          try {
+            await storage.createAuditLog({
+              agentId: agent.id,
+              messageId: message.id,
+              conversationId: message.conversationId || null,
+              action: 'send_draft',
+              inputContent: message.content,
+              outputContent: message.aiSuggestedReply,
+              status: 'error',
+              errorReason: replyResult.error || 'Failed to send reply',
+              platform: message.platform,
+            });
+          } catch (auditError) {
+            console.error('[SendDraft] Failed to create audit log entry:', auditError);
+          }
+        }
+        
         return res.status(500).json({ error: replyResult.error || 'Failed to send reply' });
       }
       
@@ -2214,7 +2254,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contextType: null,
         crmData: null,
         metricoolId: null,
-        rawData: { draftSent: true, metricoolResponse: replyResult.rawResponse },
+        rawData: { 
+          draftSent: true, 
+          metricoolResponse: replyResult.rawResponse,
+          originalMetricoolId: originalMetricoolId,
+          normalizedObjectId: normalizedObjectId,
+        },
         threadId: conversation.threadExternalId,
       });
       
@@ -2224,6 +2269,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         aiReplyStatus: 'none',
         draftWasEdited: false,
       });
+      
+      // Log success to audit log (wrapped in try/catch to not fail the response)
+      if (agent) {
+        try {
+          await storage.createAuditLog({
+            agentId: agent.id,
+            messageId: message.id,
+            conversationId: message.conversationId || null,
+            action: 'send_draft',
+            inputContent: message.content,
+            outputContent: message.aiSuggestedReply,
+            status: 'success',
+            platform: message.platform,
+          });
+        } catch (auditError) {
+          console.error('[SendDraft] Failed to create audit log entry:', auditError);
+        }
+      }
       
       console.log(`[SendDraft] Successfully sent draft for message ${messageId}, created reply message ${replyMessage.id}`);
       
