@@ -162,23 +162,26 @@ function SingleMessage({
       )}
       data-testid={`message-${msg.id}`}
     >
-      <Avatar className={cn(
-        "mt-1 flex-shrink-0 relative z-10 ring-[3px] ring-white",
-        isReply ? "h-6 w-6" : "h-8 w-8"
-      )}>
-        <AvatarImage 
-          src={isSentFromRepliyo ? repliyoLogo : (msg.authorAvatar || undefined)} 
-          alt={isSentFromRepliyo ? "Repliyo" : msg.author}
-          className="bg-white"
-        />
-        <AvatarFallback className={cn(
-          "bg-[#E5E7EB]",
-          isOwner ? "text-gray-700" : "text-gray-600",
-          isReply ? "text-[10px]" : "text-xs font-medium"
+      {/* Avatar Container - maintains fixed position for thread connectors */}
+      <div className="relative flex-shrink-0 mt-1">
+        <Avatar className={cn(
+          "relative z-10 ring-[3px] ring-white",
+          isReply ? "h-6 w-6" : "h-8 w-8"
         )}>
-          {msg.author?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || <User className={isReply ? "h-3 w-3" : "h-4 w-4"} />}
-        </AvatarFallback>
-      </Avatar>
+          <AvatarImage 
+            src={isSentFromRepliyo ? repliyoLogo : (msg.authorAvatar || undefined)} 
+            alt={isSentFromRepliyo ? "Repliyo" : msg.author}
+            className="bg-white"
+          />
+          <AvatarFallback className={cn(
+            "bg-[#E5E7EB]",
+            isOwner ? "text-gray-700" : "text-gray-600",
+            isReply ? "text-[10px]" : "text-xs font-medium"
+          )}>
+            {msg.author?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || <User className={isReply ? "h-3 w-3" : "h-4 w-4"} />}
+          </AvatarFallback>
+        </Avatar>
+      </div>
       
       <div className="flex flex-col gap-1 min-w-0 flex-1">
         <div className="flex items-baseline gap-2 mb-1 flex-wrap">
