@@ -225,6 +225,27 @@ export function Inbox() {
     if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}m`;
     return `${Math.floor(diffSeconds / 3600)}h`;
   };
+
+  const [syncCountdown, setSyncCountdown] = useState<number | null>(null);
+
+  React.useEffect(() => {
+    if (!syncStatus?.lastSyncTime || brandSyncStatus?.syncPaused) {
+      setSyncCountdown(null);
+      return;
+    }
+
+    const updateCountdown = () => {
+      const lastSync = new Date(syncStatus.lastSyncTime!);
+      const nextSync = new Date(lastSync.getTime() + 2 * 60 * 1000);
+      const now = new Date();
+      const remaining = Math.max(0, Math.floor((nextSync.getTime() - now.getTime()) / 1000));
+      setSyncCountdown(remaining);
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [syncStatus?.lastSyncTime, brandSyncStatus?.syncPaused]);
   
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
