@@ -433,3 +433,54 @@ export const updateAiModelPricingSchema = insertAiModelPricingSchema.partial();
 export type InsertAiModelPricing = z.infer<typeof insertAiModelPricingSchema>;
 export type AiModelPricing = typeof aiModelPricing.$inferSelect;
 export type UpdateAiModelPricing = z.infer<typeof updateAiModelPricingSchema>;
+
+// Sistema de Notificaciones Central
+// Tipos: new_messages, sync_error, sync_success, auto_reply, config_change, error
+export const notificationTypeEnum = z.enum([
+  'new_messages',    // Nuevos mensajes entrantes (agrupables)
+  'sync_error',      // Error de sincronización
+  'sync_success',    // Sincronización exitosa
+  'auto_reply',      // Respuesta automática enviada
+  'auto_reply_error', // Error al enviar respuesta automática
+  'config_change',   // Cambio en configuración del agente
+  'brand_connected', // Nueva marca conectada
+  'platform_toggle', // Plataforma activada/desactivada
+  'error'            // Error genérico
+]);
+export type NotificationType = z.infer<typeof notificationTypeEnum>;
+
+export const notifications = pgTable("notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brandId: varchar("brand_id").notNull().references(() => brands.id, { onDelete: 'cascade' }),
+  type: text("type").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  isRead: boolean("is_read").notNull().default(false),
+  clickUrl: text("click_url"),
+  platform: text("platform"),
+  count: integer("count").notNull().default(1),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  brand: one(brands, {
+    fields: [notifications.brandId],
+    references: [brands.id],
+  }),
+}));
+
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const selectNotificationSchema = createSelectSchema(notifications);
+
+export const updateNotificationSchema = insertNotificationSchema.partial();
+
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type Notification = typeof notifications.$inferSelect;
+export type UpdateNotification = z.infer<typeof updateNotificationSchema>;
