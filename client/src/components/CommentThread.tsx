@@ -166,7 +166,7 @@ function SingleMessage({
     <div 
       ref={messageRef}
       className={cn(
-        "flex gap-3 group transition-all rounded-lg p-2 -m-2",
+        "flex gap-3 group transition-all rounded-lg p-3 -m-3",
         isHighlighted && "bg-gray-200/60"
       )}
       data-testid={`message-${msg.id}`}
