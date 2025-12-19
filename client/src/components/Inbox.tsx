@@ -1101,13 +1101,13 @@ export function Inbox() {
 
         {/* Focus Mode Banner */}
         {focusedConversationId && (
-          <div className="mx-3 mb-1 flex items-center justify-end">
+          <div className="flex items-center justify-center py-2">
             <button
-              className="text-xs text-gray-500 hover:text-indigo-600 flex items-center gap-1 py-1"
+              className="text-[10px] text-indigo-500 hover:text-indigo-700 flex items-center gap-1"
               onClick={exitFocusMode}
               data-testid="button-exit-focus-mode"
             >
-              <ArrowLeft className="h-3 w-3" />
+              <ArrowLeft className="h-2.5 w-2.5" />
               Ver todas las conversaciones
             </button>
           </div>
