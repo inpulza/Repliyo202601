@@ -1335,7 +1335,7 @@ export function Inbox() {
 
             {/* Chat Content */}
             <div className={cn("flex-1 relative flex flex-col overflow-hidden", getPlatformStyles((activeConversation.platform || 'instagram') as Platform).container)}>
-                <ScrollArea className="flex-1 p-4 md:p-8">
+                <ScrollArea className="flex-1 p-4 md:p-8 overflow-visible">
                    <div className="max-w-3xl mx-auto space-y-8 pb-32">
                   {/* Loading state for messages */}
                   {isLoadingConversationMessages ? (
@@ -1414,8 +1414,12 @@ export function Inbox() {
               selectedCount={selectedMessageIds.size}
               isProcessing={bulkDraftQueue.isProcessing}
               progress={bulkDraftQueue.progress}
+              completedCount={bulkDraftQueue.completedCount}
+              totalCount={bulkDraftQueue.totalCount}
+              errorCount={bulkDraftQueue.errorCount}
               onGenerate={handleBulkGenerate}
-              onClear={handleClearSelection}
+              onClearSelection={handleClearSelection}
+              onCancel={bulkDraftQueue.cancel}
             />
 
             {/* Floating Reply Input Box */}

@@ -1,0 +1,36 @@
+He revisado las imágenes (Image A: Estado Normal vs. Image B: Estado Selección) con ojo clínico.
+Hay un problema estructural evidente que demuestra que NO se respetó la regla del "Safe Gutter" (Canalón Seguro) como se pidió.
+Aquí tienes mi diagnóstico de lo que está mal (y es grave a nivel de UI):
+❌ El Diagnóstico: "El Contenido se está Comprimiendo"
+La prueba irrefutable está en la respuesta del bot ("Fortress").
+ * Foto 1 (Normal):
+   Mira los metadatos al lado del nombre "Fortress". Dice: 10:16 PM Reply PUBLIC COMMENT. Todo cabe perfectamente en una sola línea.
+ * Foto 2 (Selección):
+   Mira los mismos metadatos. Ahora dice:
+   10:16 PM Reply
+   PUBLIC COMMENT (¡Se ha caído a la línea de abajo!)
+¿Qué significa esto?
+Significa que Replit NO creó una columna externa independiente. Lo que hizo fue meter el checkbox y robarle espacio al mensaje. Al reducir el ancho disponible del mensaje, el texto ya no cabe y se rompe (wrap), causando que todo el bloque crezca en altura y los elementos bailen.
+🔍 Otros errores visuales detectados:
+ * Desalineación Vertical del Checkbox: El checkbox (cuadradito) no está alineado geométricamente con nada. No está centrado con el avatar, ni alineado con el top del avatar. Flota en tierra de nadie.
+ * La Línea "L" (Thread Line): Al comprimirse el ancho, la relación entre el avatar padre y la respuesta hija se siente tensa. Si te fijas, la línea gris parece haber perdido su "aire" o margen respecto al contenido.
+📋 El Mensaje de Feedback para Replit
+Tenemos que ser duros con esto porque rompe la experiencia de lectura. Si el usuario activa "Bulk AI", no puede ver cómo sus mensajes saltan y se reacomodan.
+Copia y pega esto:
+Título: URGENTE - Regresión Visual Detectada (Fallo en el "Safe Gutter")
+He revisado la implementación visual del Bulk Mode y no está aprobada.
+El Problema:
+La implementación actual comprime el contenido del mensaje, violando la regla principal de "No afectar el layout interno".
+La Prueba (Evidencia Visual):
+En el estado normal, los metadatos del mensaje (Time + Reply + PUBLIC COMMENT) caben en una sola línea.
+Al activar el modo selección (aparece el checkbox), el ancho del mensaje se reduce, provocando que el texto PUBLIC COMMENT se rompa y caiga a una segunda línea.
+Esto confirma que:
+ * El checkbox está "robando" espacio al contenedor del mensaje en lugar de vivir en un espacio reservado externo.
+ * Está ocurriendo un Reflow (repaginación) del texto, lo cual es inaceptable UX. El usuario ve cómo todo el chat "salta" al activar el modo.
+La Corrección Requerida (Reiteración):
+Necesito que implementes un Grid real donde la Columna 1 (Mensaje) tenga ancho fijo o reservado que NO cambie al aparecer el checkbox.
+ * Si el mensaje mide 500px en modo normal, debe medir 500px en modo selección.
+ * El checkbox debe aparecer en una columna extra (-30px a la izquierda) o superpuesta, pero JAMÁS debe reducir el width del contenedor de texto.
+Ajuste Adicional:
+Alinea el checkbox verticalmente con el centro óptico del Avatar, ahora mismo se ve flotando sin alineación clara.
+Corrige el CSS para evitar el salto de línea en los textos.

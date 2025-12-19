@@ -180,20 +180,29 @@ function SingleMessage({
   }, [isHighlighted]);
 
   // IMPORTANT: Do NOT change p-2 -m-2 values - they affect L-shape connector positioning
+  // overflow-visible ensures absolutely positioned gutter checkbox is visible outside this element
   return (
     <div 
       ref={messageRef}
       className={cn(
-        "group transition-all rounded-lg p-2 -m-2",
-        selectionEnabled ? "grid grid-cols-[28px_1fr] gap-1" : "flex gap-3",
+        "group transition-all rounded-lg p-2 -m-2 relative overflow-visible",
         isHighlighted && "bg-gray-200/60",
         isSelected && "bg-indigo-50/50"
       )}
       data-testid={`message-${msg.id}`}
     >
-      {/* Selection Gutter (Col 0) - Only shown when selection mode is active */}
+      {/* Selection Checkbox - Positioned absolutely in external gutter to NOT affect message layout */}
+      {/* Uses the existing p-8 (32px) padding of ScrollArea as gutter space */}
       {selectionEnabled && (
-        <div className="flex items-start justify-center pt-1">
+        <div 
+          className="absolute flex items-center justify-center pointer-events-auto"
+          style={{
+            left: '-28px',
+            top: isReply ? '4px' : '2px',
+            width: '24px',
+            height: isReply ? '24px' : '32px',
+          }}
+        >
           {isSelectable ? (
             bulkStatus === 'running' || bulkStatus === 'queued' ? (
               <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />
@@ -216,8 +225,8 @@ function SingleMessage({
         </div>
       )}
 
-      {/* Message Content (Col 1 when selection enabled, full width otherwise) */}
-      <div className={cn("flex gap-3", !selectionEnabled && "flex-1")}>
+      {/* Message Content - Always uses flex layout, width unchanged */}
+      <div className="flex gap-3 flex-1">
       <Avatar className={cn(
         "mt-1 flex-shrink-0 relative z-10 ring-[3px] ring-white",
         isReply ? "h-6 w-6" : "h-8 w-8"
