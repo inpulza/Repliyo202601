@@ -120,119 +120,159 @@ export function AgentSettings() {
 
   return (
     <div className="h-full flex flex-col bg-white overflow-y-auto">
-      {/* Mobile View */}
-      <MobileContainer>
-        <MobilePageHeader title="Settings" subtitle={activeClient?.name} />
-        
-        <MobileSpacer size="sm" />
-        
-        <MobileSectionDivider title="Agent Identity" />
-        <MobileListGroup>
-          <MobileListRow
-            icon={<Bot className="h-4 w-4 text-indigo-500" />}
-            title="Nombre del Agente"
-            subtitle={form.watch('agentName') || 'Sin configurar'}
-            onClick={() => setMobileSheet('name')}
-            testId="mobile-row-agent-name"
-          />
-          <MobileListRow
-            icon={<MessageSquare className="h-4 w-4 text-purple-500" />}
-            title="Tono de Voz"
-            subtitle={toneLabels[form.watch('tone')] || 'Formal'}
-            onClick={() => setMobileSheet('tone')}
-            testId="mobile-row-tone"
-          />
-        </MobileListGroup>
-        
-        <MobileSpacer size="md" />
-        
-        <MobileSectionDivider title="Automatización" />
-        <MobileListGroup>
-          <MobileListRow
-            icon={<Zap className="h-4 w-4 text-amber-500" />}
-            title="Auto-Draft Responses"
-            subtitle="Generar borradores automáticos"
-            showChevron={false}
-            rightElement={
+      {/* Mobile View - Instagram Style */}
+      <div className="md:hidden flex flex-col min-h-full bg-white">
+        {/* Instagram-style sticky header */}
+        <div className="sticky top-0 z-50 bg-white border-b border-gray-100">
+          <div className="flex items-center justify-center h-11 relative">
+            <h1 className="text-base font-semibold text-gray-900">Configuración</h1>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto">
+          {/* Brand indicator */}
+          <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
+            <p className="text-xs text-gray-500">{activeClient?.name}</p>
+          </div>
+
+          {/* AGENTE section */}
+          <div className="pt-6 pb-2 px-4">
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Agente</p>
+          </div>
+          <div className="bg-white">
+            <button
+              onClick={() => setMobileSheet('name')}
+              className="w-full flex items-center justify-between px-4 py-3.5 border-b border-gray-100 active:bg-gray-50"
+              data-testid="mobile-row-agent-name"
+            >
+              <span className="text-[15px] text-gray-900">Nombre</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[15px] text-gray-400">{form.watch('agentName') || 'Agregar'}</span>
+                <ChevronRight className="h-4 w-4 text-gray-300" />
+              </div>
+            </button>
+            <button
+              onClick={() => setMobileSheet('tone')}
+              className="w-full flex items-center justify-between px-4 py-3.5 border-b border-gray-100 active:bg-gray-50"
+              data-testid="mobile-row-tone"
+            >
+              <span className="text-[15px] text-gray-900">Tono de voz</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[15px] text-gray-400">{toneLabels[form.watch('tone')]?.split(' ')[0] || 'Formal'}</span>
+                <ChevronRight className="h-4 w-4 text-gray-300" />
+              </div>
+            </button>
+          </div>
+
+          {/* AUTOMATIZACIÓN section */}
+          <div className="pt-8 pb-2 px-4">
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Automatización</p>
+          </div>
+          <div className="bg-white">
+            <div className="w-full flex items-center justify-between px-4 py-3.5 border-b border-gray-100">
+              <div className="flex-1">
+                <span className="text-[15px] text-gray-900">Auto-borrador</span>
+                <p className="text-xs text-gray-400 mt-0.5">Generar respuestas automáticamente</p>
+              </div>
               <Switch
                 checked={form.watch('autoDraft')}
                 onCheckedChange={(val) => form.setValue('autoDraft', val)}
               />
-            }
-            testId="mobile-row-autodraft"
-          />
-        </MobileListGroup>
-        
-        <MobileSpacer size="md" />
-        
-        <MobileSectionDivider title="Base de Conocimiento" />
-        <MobileListGroup>
-          <MobileListRow
-            icon={<BookOpen className="h-4 w-4 text-blue-500" />}
-            title="Contexto del Negocio"
-            subtitle={form.watch('businessContext') ? (form.watch('businessContext').length > 40 ? form.watch('businessContext').substring(0, 40) + '...' : form.watch('businessContext')) : 'Sin configurar'}
-            onClick={() => setMobileSheet('context')}
-            testId="mobile-row-context"
-          />
-        </MobileListGroup>
-        
-        <MobileSpacer size="lg" />
-        
-        <div className="md:hidden px-4 pb-4">
+            </div>
+          </div>
+
+          {/* CONOCIMIENTO section */}
+          <div className="pt-8 pb-2 px-4">
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Conocimiento</p>
+          </div>
+          <div className="bg-white">
+            <button
+              onClick={() => setMobileSheet('context')}
+              className="w-full flex items-center justify-between px-4 py-3.5 border-b border-gray-100 active:bg-gray-50"
+              data-testid="mobile-row-context"
+            >
+              <div className="flex-1 text-left">
+                <span className="text-[15px] text-gray-900">Contexto del negocio</span>
+                <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">
+                  {form.watch('businessContext') 
+                    ? (form.watch('businessContext').length > 50 
+                        ? form.watch('businessContext').substring(0, 50) + '...' 
+                        : form.watch('businessContext'))
+                    : 'Toca para agregar información'}
+                </p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-gray-300 shrink-0 ml-2" />
+            </button>
+          </div>
+
+          {/* Spacer for bottom button */}
+          <div className="h-24" />
+        </div>
+
+        {/* Sticky bottom save button */}
+        <div className="fixed bottom-0 left-0 right-0 md:hidden bg-white border-t border-gray-100 p-4 pb-safe">
           <Button 
             onClick={form.handleSubmit(onSubmit)}
-            className="w-full h-12 bg-black hover:bg-gray-800 text-white rounded-xl"
+            className="w-full h-11 bg-[#0095F6] hover:bg-[#1877F2] text-white font-semibold rounded-lg text-sm"
             data-testid="mobile-button-save"
           >
-            Guardar Cambios
+            Guardar
           </Button>
         </div>
-      </MobileContainer>
+      </div>
 
-      {/* Mobile Sheets */}
+      {/* Mobile Sheets - Instagram Style */}
       <Sheet open={mobileSheet === 'name'} onOpenChange={() => setMobileSheet(null)}>
-        <SheetContent side="bottom" className="md:hidden rounded-t-2xl flex flex-col">
-          <SheetHeader className="text-left pb-2">
-            <SheetTitle>Nombre del Agente</SheetTitle>
-          </SheetHeader>
-          <div className="flex-1 py-4">
+        <SheetContent side="bottom" className="md:hidden rounded-t-3xl p-0">
+          {/* Sheet header */}
+          <div className="flex items-center justify-center h-12 border-b border-gray-100 relative">
+            <div className="absolute left-0 top-0 bottom-0 flex items-center pl-4">
+              <button onClick={() => setMobileSheet(null)} className="text-[15px] text-gray-500">
+                Cancelar
+              </button>
+            </div>
+            <span className="text-base font-semibold text-gray-900">Nombre</span>
+            <div className="absolute right-0 top-0 bottom-0 flex items-center pr-4">
+              <button onClick={() => setMobileSheet(null)} className="text-[15px] font-semibold text-[#0095F6]">
+                Listo
+              </button>
+            </div>
+          </div>
+          <div className="p-4">
             <Input
               value={form.watch('agentName')}
               onChange={(e) => form.setValue('agentName', e.target.value)}
-              placeholder="e.g. SupportBot"
-              className="h-12 text-base"
+              placeholder="Nombre del agente"
+              className="h-11 text-[15px] border-gray-200 focus:border-gray-400 focus:ring-0"
             />
-            <p className="text-xs text-muted-foreground mt-2">El nombre que los usuarios verán en el chat</p>
-            {form.formState.errors.agentName && (
-              <p className="text-xs text-red-500 mt-2">{form.formState.errors.agentName.message}</p>
-            )}
-          </div>
-          <div className="pb-safe pt-2">
-            <Button onClick={() => setMobileSheet(null)} className="w-full h-12 bg-black hover:bg-gray-800 rounded-xl">Listo</Button>
+            <p className="text-xs text-gray-400 mt-3">El nombre que los usuarios verán en las respuestas.</p>
           </div>
         </SheetContent>
       </Sheet>
 
       <Sheet open={mobileSheet === 'tone'} onOpenChange={() => setMobileSheet(null)}>
-        <SheetContent side="bottom" className="md:hidden rounded-t-2xl flex flex-col max-h-[70vh]">
-          <SheetHeader className="text-left pb-2">
-            <SheetTitle>Tono de Voz</SheetTitle>
-          </SheetHeader>
-          <div className="flex-1 overflow-y-auto py-4 space-y-2">
-            {(['formal', 'casual', 'funny', 'empathetic'] as const).map(tone => (
+        <SheetContent side="bottom" className="md:hidden rounded-t-3xl p-0 max-h-[60vh]">
+          {/* Sheet header */}
+          <div className="flex items-center justify-center h-12 border-b border-gray-100">
+            <span className="text-base font-semibold text-gray-900">Tono de voz</span>
+          </div>
+          <div className="overflow-y-auto">
+            {(['formal', 'casual', 'funny', 'empathetic'] as const).map((tone, idx) => (
               <button
                 key={tone}
                 onClick={() => {
                   form.setValue('tone', tone);
                   setMobileSheet(null);
                 }}
-                className={`w-full p-4 text-left rounded-xl border transition-colors ${
-                  form.watch('tone') === tone 
-                    ? 'border-primary bg-primary/5' 
-                    : 'border-border hover:bg-muted/50'
-                }`}
+                className={`w-full flex items-center justify-between px-4 py-3.5 border-b border-gray-100 active:bg-gray-50`}
               >
-                <p className="font-medium text-foreground">{toneLabels[tone]}</p>
+                <span className="text-[15px] text-gray-900">{toneLabels[tone]}</span>
+                {form.watch('tone') === tone && (
+                  <svg className="h-5 w-5 text-[#0095F6]" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                )}
               </button>
             ))}
           </div>
@@ -240,24 +280,29 @@ export function AgentSettings() {
       </Sheet>
 
       <Sheet open={mobileSheet === 'context'} onOpenChange={() => setMobileSheet(null)}>
-        <SheetContent side="bottom" className="md:hidden rounded-t-2xl h-[85vh] flex flex-col">
-          <SheetHeader className="text-left pb-2">
-            <SheetTitle>Contexto del Negocio</SheetTitle>
-          </SheetHeader>
-          <div className="flex-1 overflow-y-auto py-4">
+        <SheetContent side="bottom" className="md:hidden rounded-t-3xl p-0 h-[90vh] flex flex-col">
+          {/* Sheet header */}
+          <div className="flex items-center justify-center h-12 border-b border-gray-100 relative shrink-0">
+            <div className="absolute left-0 top-0 bottom-0 flex items-center pl-4">
+              <button onClick={() => setMobileSheet(null)} className="text-[15px] text-gray-500">
+                Cancelar
+              </button>
+            </div>
+            <span className="text-base font-semibold text-gray-900">Contexto</span>
+            <div className="absolute right-0 top-0 bottom-0 flex items-center pr-4">
+              <button onClick={() => setMobileSheet(null)} className="text-[15px] font-semibold text-[#0095F6]">
+                Listo
+              </button>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4">
             <Textarea
               value={form.watch('businessContext')}
               onChange={(e) => form.setValue('businessContext', e.target.value)}
-              placeholder="Describe el negocio, políticas clave, y lo que el agente debería saber..."
-              className="min-h-[250px] text-base leading-relaxed"
+              placeholder="Describe tu negocio, productos, políticas de atención, horarios, y cualquier información que el agente deba conocer para responder correctamente..."
+              className="min-h-[300px] text-[15px] leading-relaxed border-gray-200 focus:border-gray-400 focus:ring-0 resize-none"
             />
-            <p className="text-xs text-muted-foreground mt-2">La IA usa este contexto para fundamentar sus respuestas (mínimo 10 caracteres)</p>
-            {form.formState.errors.businessContext && (
-              <p className="text-xs text-red-500 mt-2">{form.formState.errors.businessContext.message}</p>
-            )}
-          </div>
-          <div className="pb-safe pt-2">
-            <Button onClick={() => setMobileSheet(null)} className="w-full h-12 bg-black hover:bg-gray-800 rounded-xl">Listo</Button>
+            <p className="text-xs text-gray-400 mt-3">La IA usará esta información para fundamentar sus respuestas.</p>
           </div>
         </SheetContent>
       </Sheet>
