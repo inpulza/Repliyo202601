@@ -1335,8 +1335,8 @@ export function Inbox() {
 
             {/* Chat Content */}
             <div className={cn("flex-1 relative flex flex-col overflow-hidden", getPlatformStyles((activeConversation.platform || 'instagram') as Platform).container)}>
-                <ScrollArea className="flex-1 p-4 md:p-8 overflow-visible">
-                   <div className="max-w-3xl mx-auto space-y-8 pb-32">
+                <ScrollArea className="flex-1 p-4 md:p-8">
+                   <div className="max-w-3xl mx-auto space-y-8 pb-32 relative">
                   {/* Loading state for messages */}
                   {isLoadingConversationMessages ? (
                     <div className="flex items-center justify-center py-8">
