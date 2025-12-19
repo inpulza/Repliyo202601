@@ -69,15 +69,15 @@ interface MobileSectionDividerProps {
 
 export function MobileSectionDivider({ title, className }: MobileSectionDividerProps) {
   return (
-    <div className={cn("md:hidden", className)}>
+    <div className={cn("md:hidden -mx-4", className)}>
       {title ? (
-        <div className="px-4 py-3 bg-muted/30">
+        <div className="px-4 py-2.5 bg-muted/40">
           <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
             {title}
           </h3>
         </div>
       ) : (
-        <div className="h-2 bg-muted/30" />
+        <div className="h-2 bg-muted/40" />
       )}
     </div>
   );
@@ -194,7 +194,7 @@ interface MobileListGroupProps {
 
 export function MobileListGroup({ children, className }: MobileListGroupProps) {
   return (
-    <div className={cn("md:hidden bg-background divide-y divide-border", className)}>
+    <div className={cn("md:hidden bg-background divide-y divide-border rounded-xl border border-border overflow-hidden -mx-4", className)}>
       {children}
     </div>
   );
@@ -263,7 +263,7 @@ interface MobileStatGridProps {
 export function MobileStatGrid({ children, columns = 2, className }: MobileStatGridProps) {
   return (
     <div className={cn(
-      "md:hidden grid gap-3 px-4",
+      "md:hidden grid gap-3",
       columns === 2 ? "grid-cols-2" : "grid-cols-1",
       className
     )}>
@@ -320,7 +320,7 @@ interface MobileContainerProps {
 
 export function MobileContainer({ children, className }: MobileContainerProps) {
   return (
-    <div className={cn("md:hidden flex flex-col min-h-full pb-20", className)}>
+    <div className={cn("md:hidden flex flex-col min-h-full pb-20 gap-4", className)}>
       {children}
     </div>
   );
