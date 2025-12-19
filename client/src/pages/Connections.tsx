@@ -12,7 +12,8 @@ import {
   RefreshCw,
   ExternalLink,
   LayoutGrid,
-  List
+  List,
+  Link2
 } from "lucide-react";
 import { 
   FaFacebook, 
@@ -35,6 +36,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import {
+  MobilePageHeader,
+  MobileListRow,
+  MobileListGroup,
+  MobileSectionDivider,
+  MobileContainer,
+  MobileSpacer
+} from '@/components/ui/mobile-primitives';
 
 export function Connections() {
   const [accounts, setAccounts] = useState<SocialAccount[]>(mockSocialAccounts);
@@ -163,35 +172,132 @@ export function Connections() {
   ];
 
   return (
-    <div className="h-full bg-background p-6 md:p-10 flex flex-col max-w-7xl mx-auto space-y-8 overflow-y-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Connections</h1>
-          <p className="text-muted-foreground text-base">
-            Manage your social profiles and connected channels.
-          </p>
+    <div className="h-full bg-background overflow-y-auto">
+      {/* Mobile View */}
+      <MobileContainer>
+        <MobilePageHeader 
+          title="Connections" 
+          subtitle={`${accounts.length} cuentas conectadas`}
+        />
+        
+        {accounts.length > 0 && (
+          <>
+            <MobileSpacer size="sm" />
+            <MobileSectionDivider title="Cuentas Activas" />
+            <MobileListGroup>
+              {accounts.map((account) => (
+                <MobileListRow
+                  key={account.id}
+                  icon={
+                    <div className="relative">
+                      <Avatar className="h-8 w-8 border-0">
+                        <AvatarImage src={account.avatarUrl} />
+                        <AvatarFallback className="bg-primary/5 text-primary text-xs font-semibold">
+                          {account.accountName.substring(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                  }
+                  title={account.accountName}
+                  subtitle={
+                    <span className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                      {getPlatformName(account.platform)}
+                    </span>
+                  }
+                  rightElement={
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Sync
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          className="text-destructive" 
+                          onClick={() => handleDisconnect(account.id)}
+                        >
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Disconnect
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  }
+                  showChevron={false}
+                  testId={`mobile-connection-${account.id}`}
+                />
+              ))}
+            </MobileListGroup>
+          </>
+        )}
+        
+        <MobileSpacer size="lg" />
+        
+        <MobileSectionDivider title="Conectar Canal" />
+        <MobileListGroup>
+          {socialPlatforms.map((platform) => (
+            <MobileListRow
+              key={platform.id}
+              icon={
+                <div className={cn("p-2 rounded-lg", platform.color)}>
+                  {platform.icon}
+                </div>
+              }
+              title={platform.name}
+              subtitle={platform.description}
+              rightElement={
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={() => handleConnectMock(platform.name)}
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Connect
+                </Button>
+              }
+              showChevron={false}
+              testId={`mobile-platform-${platform.id}`}
+            />
+          ))}
+        </MobileListGroup>
+      </MobileContainer>
+
+      {/* Desktop View */}
+      <div className="hidden md:flex flex-col p-6 md:p-10 max-w-7xl mx-auto space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">Connections</h1>
+            <p className="text-muted-foreground text-base">
+              Manage your social profiles and connected channels.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
+            <Button 
+              variant={viewMode === 'grid' ? 'secondary' : 'ghost'} 
+              size="sm" 
+              className="h-8 px-2.5"
+              onClick={() => setViewMode('grid')}
+            >
+              <LayoutGrid className="h-4 w-4 mr-2" />
+              Grid
+            </Button>
+            <Button 
+              variant={viewMode === 'list' ? 'secondary' : 'ghost'} 
+              size="sm" 
+              className="h-8 px-2.5"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="h-4 w-4 mr-2" />
+              List
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
-          <Button 
-            variant={viewMode === 'grid' ? 'secondary' : 'ghost'} 
-            size="sm" 
-            className="h-8 px-2.5"
-            onClick={() => setViewMode('grid')}
-          >
-            <LayoutGrid className="h-4 w-4 mr-2" />
-            Grid
-          </Button>
-          <Button 
-            variant={viewMode === 'list' ? 'secondary' : 'ghost'} 
-            size="sm" 
-            className="h-8 px-2.5"
-            onClick={() => setViewMode('list')}
-          >
-            <List className="h-4 w-4 mr-2" />
-            List
-          </Button>
-        </div>
-      </div>
 
       {/* Active Connections Section */}
       {accounts.length > 0 && (
@@ -327,6 +433,7 @@ export function Connections() {
           ))}
         </div>
       </section>
+      </div>
     </div>
   );
 }

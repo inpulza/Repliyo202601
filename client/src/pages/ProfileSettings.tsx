@@ -6,7 +6,21 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, User, Mail, Shield, Key, ChevronRight } from 'lucide-react';
+import {
+  MobilePageHeader,
+  MobileListRow,
+  MobileListGroup,
+  MobileSectionDivider,
+  MobileContainer,
+  MobileSpacer
+} from '@/components/ui/mobile-primitives';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 export function ProfileSettings() {
   const { user } = useAuth();
@@ -76,9 +90,155 @@ export function ProfileSettings() {
     }
   };
 
+  const [showPasswordSheet, setShowPasswordSheet] = useState(false);
+
   return (
-    <div className="flex-1 p-6 overflow-auto">
-      <div className="max-w-4xl mx-auto">
+    <div className="flex-1 overflow-auto">
+      {/* Mobile View */}
+      <MobileContainer>
+        <MobilePageHeader title="Profile" />
+        
+        <MobileSpacer size="sm" />
+        
+        <div className="md:hidden px-4 pb-4">
+          <div className="flex items-center gap-3 p-4 bg-background rounded-xl border border-border">
+            <Avatar className="h-14 w-14 border border-border">
+              <AvatarFallback className="bg-gray-100 text-gray-600 text-lg font-medium">
+                {user?.name?.substring(0, 2).toUpperCase() || 'US'}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-semibold text-foreground" data-testid="mobile-user-name">{user?.name || 'Usuario'}</p>
+              <p className="text-sm text-muted-foreground">{user?.role === 'admin' ? 'Administrador' : 'Cliente'}</p>
+            </div>
+          </div>
+        </div>
+        
+        <MobileSectionDivider title="Información" />
+        <MobileListGroup>
+          <MobileListRow
+            icon={<Mail className="h-4 w-4 text-muted-foreground" />}
+            title="Email"
+            subtitle={user?.email || 'Sin email'}
+            showChevron={false}
+            testId="mobile-row-email"
+          />
+          <MobileListRow
+            icon={<Shield className="h-4 w-4 text-muted-foreground" />}
+            title="Rol"
+            subtitle={user?.role === 'admin' ? 'Administrador' : 'Cliente'}
+            showChevron={false}
+            testId="mobile-row-role"
+          />
+        </MobileListGroup>
+        
+        <MobileSpacer size="md" />
+        
+        <MobileSectionDivider title="Seguridad" />
+        <MobileListGroup>
+          <MobileListRow
+            icon={<Key className="h-4 w-4 text-muted-foreground" />}
+            title="Cambiar Contraseña"
+            subtitle="Actualiza tu contraseña de acceso"
+            onClick={() => setShowPasswordSheet(true)}
+            testId="mobile-row-password"
+          />
+        </MobileListGroup>
+      </MobileContainer>
+
+      {/* Mobile Password Sheet */}
+      <Sheet open={showPasswordSheet} onOpenChange={setShowPasswordSheet}>
+        <SheetContent side="bottom" className="md:hidden rounded-t-2xl h-[85vh]">
+          <SheetHeader className="text-left">
+            <SheetTitle>Cambiar Contraseña</SheetTitle>
+          </SheetHeader>
+          <form onSubmit={handleChangePassword} className="py-4 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="mobileCurrentPassword" className="text-sm font-medium">Contraseña Actual</Label>
+              <div className="relative">
+                <Input
+                  id="mobileCurrentPassword"
+                  type={showCurrentPassword ? "text" : "password"}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="pr-10 h-12"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                >
+                  {showCurrentPassword ? <EyeOff className="h-4 w-4 text-gray-400" /> : <Eye className="h-4 w-4 text-gray-400" />}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="mobileNewPassword" className="text-sm font-medium">Nueva Contraseña</Label>
+              <div className="relative">
+                <Input
+                  id="mobileNewPassword"
+                  type={showNewPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="pr-10 h-12"
+                  required
+                  minLength={6}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                >
+                  {showNewPassword ? <EyeOff className="h-4 w-4 text-gray-400" /> : <Eye className="h-4 w-4 text-gray-400" />}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Mínimo 6 caracteres</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="mobileConfirmPassword" className="text-sm font-medium">Confirmar Contraseña</Label>
+              <Input
+                id="mobileConfirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                className="h-12"
+                required
+                minLength={6}
+              />
+            </div>
+
+            <div className="pt-4">
+              <Button 
+                type="submit" 
+                disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword}
+                className="w-full h-12 bg-black hover:bg-gray-800"
+              >
+                {isChangingPassword ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  'Actualizar Contraseña'
+                )}
+              </Button>
+            </div>
+          </form>
+        </SheetContent>
+      </Sheet>
+
+      {/* Desktop View */}
+      <div className="hidden md:block p-6 max-w-4xl mx-auto">
         <div className="mb-6">
           <h1 className="text-xl font-semibold text-gray-900">Profile Settings</h1>
           <p className="text-sm text-gray-500 mt-1">Gestiona tu información personal y seguridad</p>

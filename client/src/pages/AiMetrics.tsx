@@ -13,7 +13,8 @@ import {
   Calendar,
   DollarSign,
   TrendingUp,
-  Cpu
+  Cpu,
+  ChevronDown
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { 
@@ -33,6 +34,24 @@ import {
 } from 'recharts';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  MobilePageHeader,
+  MobileStatCard,
+  MobileStatGrid,
+  MobileCard,
+  MobileCardHeader,
+  MobileSpacer,
+  MobileContainer,
+  MobileSectionDivider,
+  MobileListRow,
+  MobileListGroup
+} from '@/components/ui/mobile-primitives';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface AiMetrics {
   totalRequests: number;
@@ -108,9 +127,169 @@ export function AiMetrics() {
     ? ((metrics.successCount / metrics.totalRequests) * 100).toFixed(1) 
     : '0';
 
+  const periodOptions = [
+    { label: '7 días', value: '7' },
+    { label: '14 días', value: '14' },
+    { label: '30 días', value: '30' },
+    { label: '60 días', value: '60' },
+    { label: '90 días', value: '90' },
+  ];
+
+  const periodSelector = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="gap-1 h-8 px-2 text-xs" data-testid="button-period-selector-mobile">
+          {periodOptions.find(p => p.value === days)?.label || '30 días'}
+          <ChevronDown className="h-3 w-3" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {periodOptions.map(option => (
+          <DropdownMenuItem 
+            key={option.value}
+            onClick={() => setDays(option.value)}
+          >
+            Últimos {option.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <div className="h-full flex flex-col bg-gray-50/50 overflow-y-auto">
-      <div className="p-6 md:p-8 max-w-7xl mx-auto w-full space-y-8">
+      {/* Mobile View */}
+      <MobileContainer>
+        <MobilePageHeader 
+          title="Métricas de IA" 
+          subtitle={activeClient.name}
+          rightElement={periodSelector}
+        />
+        
+        {isLoading ? (
+          <div className="md:hidden flex items-center justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
+          </div>
+        ) : error ? (
+          <div className="md:hidden p-4 text-center">
+            <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">Error al cargar métricas</p>
+          </div>
+        ) : metrics && metrics.totalRequests === 0 ? (
+          <div className="md:hidden p-8 text-center">
+            <Bot className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+            <p className="text-sm font-medium text-foreground">Sin datos de IA</p>
+            <p className="text-xs text-muted-foreground mt-1">No hay solicitudes en los últimos {days} días</p>
+          </div>
+        ) : (
+          <>
+            <MobileSpacer size="md" />
+            
+            <MobileStatGrid columns={2}>
+              <MobileStatCard
+                icon={<Activity className="h-4 w-4" />}
+                iconColor="text-indigo-500"
+                label="Solicitudes"
+                value={(metrics?.totalRequests || 0).toLocaleString()}
+                testId="mobile-stat-requests"
+              />
+              <MobileStatCard
+                icon={<CheckCircle2 className="h-4 w-4" />}
+                iconColor="text-green-500"
+                label="Tasa Éxito"
+                value={`${successRate}%`}
+                subtitle={`${metrics?.errorCount || 0} errores`}
+                testId="mobile-stat-success"
+              />
+              <MobileStatCard
+                icon={<Zap className="h-4 w-4" />}
+                iconColor="text-yellow-500"
+                label="Tokens"
+                value={(metrics?.totalTokens || 0).toLocaleString()}
+                testId="mobile-stat-tokens"
+              />
+              <MobileStatCard
+                icon={<DollarSign className="h-4 w-4" />}
+                iconColor="text-green-600"
+                label="Gasto Total"
+                value={`$${metrics?.totalCostUsd?.toFixed(4) || '0.00'}`}
+                testId="mobile-stat-cost"
+              />
+            </MobileStatGrid>
+            
+            <MobileSpacer size="lg" />
+            
+            <div className="md:hidden px-4">
+              <MobileCard noPadding>
+                <div className="p-4 border-b border-border">
+                  <MobileCardHeader 
+                    title="Actividad Diaria" 
+                    icon={<BarChart3 className="h-4 w-4" />}
+                  />
+                </div>
+                <div className="h-[180px] p-2">
+                  {metrics && metrics.dailyStats.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={metrics.dailyStats} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                        <XAxis 
+                          dataKey="date" 
+                          tick={{ fontSize: 9 }}
+                          tickFormatter={(value) => {
+                            const d = new Date(value);
+                            return `${d.getDate()}/${d.getMonth() + 1}`;
+                          }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <YAxis tick={{ fontSize: 9 }} axisLine={false} tickLine={false} />
+                        <Area 
+                          type="monotone" 
+                          dataKey="count" 
+                          name="Solicitudes"
+                          stroke="#6366f1" 
+                          fill="#6366f1" 
+                          fillOpacity={0.2} 
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                      Sin datos
+                    </div>
+                  )}
+                </div>
+              </MobileCard>
+            </div>
+            
+            <MobileSpacer size="lg" />
+            
+            {metrics?.byModel && Object.keys(metrics.byModel).length > 0 && (
+              <>
+                <MobileSectionDivider title="Uso por Modelo" />
+                <MobileListGroup>
+                  {Object.entries(metrics.byModel)
+                    .sort(([, a], [, b]) => b.costUsd - a.costUsd)
+                    .map(([model, data]) => (
+                      <MobileListRow
+                        key={model}
+                        icon={<Cpu className="h-4 w-4 text-muted-foreground" />}
+                        title={model}
+                        subtitle={`${data.count.toLocaleString()} solicitudes • ${data.tokens.toLocaleString()} tokens`}
+                        rightText={`$${data.costUsd.toFixed(4)}`}
+                        showChevron={false}
+                        testId={`mobile-model-${model}`}
+                      />
+                    ))}
+                </MobileListGroup>
+              </>
+            )}
+          </>
+        )}
+      </MobileContainer>
+
+      {/* Desktop View */}
+      <div className="hidden md:block p-6 md:p-8 max-w-7xl mx-auto w-full space-y-8">
         
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNexus } from '@/context/NexusContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,8 +25,22 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Save, Bot, Zap, BookOpen, ArrowRight, Loader2 } from 'lucide-react';
+import { Save, Bot, Zap, BookOpen, ArrowRight, Loader2, ChevronRight, User, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
+import {
+  MobilePageHeader,
+  MobileListRow,
+  MobileListGroup,
+  MobileSectionDivider,
+  MobileContainer,
+  MobileSpacer
+} from '@/components/ui/mobile-primitives';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 const formSchema = z.object({
   agentName: z.string().min(2, {
@@ -95,10 +109,151 @@ export function AgentSettings() {
 
   if (!activeClient) return null;
 
+  const [mobileSheet, setMobileSheet] = useState<'name' | 'tone' | 'context' | null>(null);
+  
+  const toneLabels: Record<string, string> = {
+    'formal': 'Formal & Professional',
+    'casual': 'Casual & Friendly', 
+    'funny': 'Humorous & Witty',
+    'empathetic': 'Empathetic & Supportive'
+  };
+
   return (
     <div className="h-full flex flex-col bg-white overflow-y-auto">
-      {/* Header */}
-      <div className="py-10 px-8 max-w-4xl mx-auto w-full">
+      {/* Mobile View */}
+      <MobileContainer>
+        <MobilePageHeader title="Settings" subtitle={activeClient?.name} />
+        
+        <MobileSpacer size="sm" />
+        
+        <MobileSectionDivider title="Agent Identity" />
+        <MobileListGroup>
+          <MobileListRow
+            icon={<Bot className="h-4 w-4 text-indigo-500" />}
+            title="Nombre del Agente"
+            subtitle={form.watch('agentName') || 'Sin configurar'}
+            onClick={() => setMobileSheet('name')}
+            testId="mobile-row-agent-name"
+          />
+          <MobileListRow
+            icon={<MessageSquare className="h-4 w-4 text-purple-500" />}
+            title="Tono de Voz"
+            subtitle={toneLabels[form.watch('tone')] || 'Formal'}
+            onClick={() => setMobileSheet('tone')}
+            testId="mobile-row-tone"
+          />
+        </MobileListGroup>
+        
+        <MobileSpacer size="md" />
+        
+        <MobileSectionDivider title="Automatización" />
+        <MobileListGroup>
+          <MobileListRow
+            icon={<Zap className="h-4 w-4 text-amber-500" />}
+            title="Auto-Draft Responses"
+            subtitle="Generar borradores automáticos"
+            showChevron={false}
+            rightElement={
+              <Switch
+                checked={form.watch('autoDraft')}
+                onCheckedChange={(val) => form.setValue('autoDraft', val)}
+              />
+            }
+            testId="mobile-row-autodraft"
+          />
+        </MobileListGroup>
+        
+        <MobileSpacer size="md" />
+        
+        <MobileSectionDivider title="Base de Conocimiento" />
+        <MobileListGroup>
+          <MobileListRow
+            icon={<BookOpen className="h-4 w-4 text-blue-500" />}
+            title="Contexto del Negocio"
+            subtitle={form.watch('businessContext') ? form.watch('businessContext').substring(0, 40) + '...' : 'Sin configurar'}
+            onClick={() => setMobileSheet('context')}
+            testId="mobile-row-context"
+          />
+        </MobileListGroup>
+        
+        <MobileSpacer size="lg" />
+        
+        <div className="md:hidden px-4 pb-4">
+          <Button 
+            onClick={form.handleSubmit(onSubmit)}
+            className="w-full h-12 bg-black hover:bg-gray-800 text-white rounded-xl"
+            data-testid="mobile-button-save"
+          >
+            Guardar Cambios
+          </Button>
+        </div>
+      </MobileContainer>
+
+      {/* Mobile Sheets */}
+      <Sheet open={mobileSheet === 'name'} onOpenChange={() => setMobileSheet(null)}>
+        <SheetContent side="bottom" className="md:hidden rounded-t-2xl">
+          <SheetHeader className="text-left">
+            <SheetTitle>Nombre del Agente</SheetTitle>
+          </SheetHeader>
+          <div className="py-4">
+            <Input
+              value={form.watch('agentName')}
+              onChange={(e) => form.setValue('agentName', e.target.value)}
+              placeholder="e.g. SupportBot"
+              className="h-12"
+            />
+            <p className="text-xs text-muted-foreground mt-2">El nombre que los usuarios verán en el chat</p>
+          </div>
+          <Button onClick={() => setMobileSheet(null)} className="w-full h-12">Listo</Button>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={mobileSheet === 'tone'} onOpenChange={() => setMobileSheet(null)}>
+        <SheetContent side="bottom" className="md:hidden rounded-t-2xl">
+          <SheetHeader className="text-left">
+            <SheetTitle>Tono de Voz</SheetTitle>
+          </SheetHeader>
+          <div className="py-4 space-y-2">
+            {(['formal', 'casual', 'funny', 'empathetic'] as const).map(tone => (
+              <button
+                key={tone}
+                onClick={() => {
+                  form.setValue('tone', tone);
+                  setMobileSheet(null);
+                }}
+                className={`w-full p-4 text-left rounded-xl border transition-colors ${
+                  form.watch('tone') === tone 
+                    ? 'border-primary bg-primary/5' 
+                    : 'border-border hover:bg-muted/50'
+                }`}
+              >
+                <p className="font-medium text-foreground">{toneLabels[tone]}</p>
+              </button>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={mobileSheet === 'context'} onOpenChange={() => setMobileSheet(null)}>
+        <SheetContent side="bottom" className="md:hidden rounded-t-2xl h-[80vh]">
+          <SheetHeader className="text-left">
+            <SheetTitle>Contexto del Negocio</SheetTitle>
+          </SheetHeader>
+          <div className="py-4 flex-1">
+            <Textarea
+              value={form.watch('businessContext')}
+              onChange={(e) => form.setValue('businessContext', e.target.value)}
+              placeholder="Describe el negocio, políticas clave, y lo que el agente debería saber..."
+              className="min-h-[200px] text-sm"
+            />
+            <p className="text-xs text-muted-foreground mt-2">La IA usa este contexto para fundamentar sus respuestas</p>
+          </div>
+          <Button onClick={() => setMobileSheet(null)} className="w-full h-12">Listo</Button>
+        </SheetContent>
+      </Sheet>
+
+      {/* Desktop View */}
+      <div className="hidden md:block py-10 px-8 max-w-4xl mx-auto w-full">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

@@ -13,7 +13,8 @@ import {
     Calendar,
     Loader2,
     Inbox,
-    Send
+    Send,
+    ChevronDown
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { 
@@ -34,6 +35,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { 
+  MobilePageHeader, 
+  MobileStatCard, 
+  MobileStatGrid, 
+  MobileCard, 
+  MobileCardHeader,
+  MobileSpacer,
+  MobileContainer,
+  MobileSectionDivider
+} from '@/components/ui/mobile-primitives';
 
 interface InboxStats {
   totalMessages: number;
@@ -140,9 +151,161 @@ export function Overview() {
 
   const selectedPeriod = periodOptions.find(p => p.value === days);
 
+  const periodSelector = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="gap-1 h-8 px-2 text-xs" data-testid="button-period-selector-mobile">
+          {selectedPeriod?.label?.replace('Últimos ', '')}
+          <ChevronDown className="h-3 w-3" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {periodOptions.map(option => (
+          <DropdownMenuItem 
+            key={option.value}
+            onClick={() => setDays(option.value)}
+            data-testid={`menu-item-period-mobile-${option.value}`}
+          >
+            {option.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <div className="h-full flex flex-col bg-gray-50/50 overflow-y-auto">
-      <div className="p-6 md:p-8 max-w-7xl mx-auto w-full space-y-8">
+      {/* Mobile View */}
+      <MobileContainer>
+        <MobilePageHeader 
+          title="Overview" 
+          subtitle={activeClient?.name}
+          rightElement={periodSelector}
+        />
+        
+        <MobileSpacer size="md" />
+        
+        <MobileStatGrid columns={2}>
+          <MobileStatCard
+            icon={<MessageSquare className="h-4 w-4" />}
+            iconColor="text-indigo-500"
+            label="Mensajes"
+            value={(stats?.totalMessages ?? 0).toLocaleString()}
+            subtitle={`${stats?.inboundMessages || 0} recibidos`}
+            testId="mobile-stat-messages"
+          />
+          <MobileStatCard
+            icon={<Clock className="h-4 w-4" />}
+            iconColor="text-amber-500"
+            label="Tiempo Resp."
+            value={formatResponseTime(stats?.avgResponseTimeMs ?? null)}
+            subtitle="promedio"
+            testId="mobile-stat-response-time"
+          />
+          <MobileStatCard
+            icon={<Smile className="h-4 w-4" />}
+            iconColor="text-emerald-500"
+            label="Sentimiento"
+            value={sentimentScore !== null ? `${sentimentScore}%` : '--'}
+            subtitle={`${stats?.bySentiment?.['positive'] || 0} positivos`}
+            testId="mobile-stat-sentiment"
+          />
+          <MobileStatCard
+            icon={<Users className="h-4 w-4" />}
+            iconColor="text-blue-500"
+            label="Contactos"
+            value={(stats?.uniqueContacts ?? 0).toLocaleString()}
+            subtitle={`${stats?.openConversations || 0} activas`}
+            testId="mobile-stat-contacts"
+          />
+        </MobileStatGrid>
+        
+        <MobileSpacer size="lg" />
+        
+        <div className="md:hidden px-4">
+          <MobileCard noPadding>
+            <div className="p-4 border-b border-border">
+              <MobileCardHeader 
+                title="Volumen de Mensajes" 
+                icon={<BarChart3 className="h-4 w-4" />}
+              />
+            </div>
+            <div className="h-[200px] p-2">
+              {chartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorMessagesMobile" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                    <XAxis 
+                      dataKey="name" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: '#6b7280', fontSize: 10 }}
+                    />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: '#6b7280', fontSize: 10 }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="messages" 
+                      name="Recibidos"
+                      stroke="#6366f1" 
+                      strokeWidth={2}
+                      fillOpacity={1} 
+                      fill="url(#colorMessagesMobile)" 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                  Sin datos disponibles
+                </div>
+              )}
+            </div>
+          </MobileCard>
+        </div>
+        
+        <MobileSpacer size="lg" />
+        
+        <MobileSectionDivider title="Actividad Reciente" />
+        
+        <div className="md:hidden bg-background">
+          {stats?.recentActivity && stats.recentActivity.length > 0 ? (
+            stats.recentActivity.slice(0, 5).map((item) => (
+              <div key={item.id} className="flex items-start gap-3 px-4 py-3 border-b border-border last:border-b-0" data-testid={`mobile-activity-${item.id}`}>
+                <Avatar className="h-8 w-8 border shrink-0">
+                  <AvatarFallback className="text-xs">
+                    {getPlatformIcon(item.platform)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">
+                    {item.author}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">{item.content}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true, locale: es })}
+                  </p>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="py-8 text-center text-muted-foreground text-sm">
+              No hay actividad reciente
+            </div>
+          )}
+        </div>
+      </MobileContainer>
+
+      {/* Desktop View */}
+      <div className="hidden md:block p-6 md:p-8 max-w-7xl mx-auto w-full space-y-8">
         
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
