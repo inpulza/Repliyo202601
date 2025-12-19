@@ -275,78 +275,85 @@ export function Inbox() {
 
   // State to track pending message scroll (set from URL params, cleared after scroll)
   const [pendingScrollMessageId, setPendingScrollMessageId] = useState<string | null>(null);
+  const [isNavigatingToMessage, setIsNavigatingToMessage] = useState(false);
+  
+  // Ref to store URL params for processing after conversations load
+  const pendingDeepLinkRef = React.useRef<{ conversationId: string; messageId: string | null; highlight: boolean } | null>(null);
 
-  // Deep Link: Handle URL params for direct navigation from notifications
+  // Deep Link: Capture URL params immediately on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const conversationId = params.get('conversation');
     const messageId = params.get('messageId');
     const shouldHighlight = params.get('highlight') === 'true';
     
-    if (conversationId && conversations.length > 0) {
-      const targetConversation = conversations.find(c => c.id === conversationId);
-      if (targetConversation) {
-        setActiveConversation(targetConversation);
+    if (conversationId) {
+      pendingDeepLinkRef.current = { conversationId, messageId, highlight: shouldHighlight };
+      setIsNavigatingToMessage(true);
+      // Clear URL params immediately to prevent re-triggering
+      window.history.replaceState({}, '', '/inbox');
+    }
+  }, []);
+
+  // Deep Link: Process when conversations are loaded
+  useEffect(() => {
+    const pending = pendingDeepLinkRef.current;
+    if (!pending || conversations.length === 0) return;
+    
+    const targetConversation = conversations.find(c => c.id === pending.conversationId);
+    if (targetConversation) {
+      setActiveConversation(targetConversation);
+      
+      if (pending.highlight) {
+        setHighlightedConversationId(pending.conversationId);
         
-        if (shouldHighlight) {
-          setHighlightedConversationId(conversationId);
-          
-          // If messageId is provided, set up for highlighting and pending scroll
-          if (messageId) {
-            setHighlightedMessageId(messageId);
-            setPendingScrollMessageId(messageId);
-          } else {
-            // Scroll to the conversation card after a brief delay for render
-            setTimeout(() => {
-              const cardElement = document.querySelector(`[data-testid="conversation-card-${conversationId}"]`);
-              if (cardElement) {
-                cardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }
-            }, 100);
-          }
-          
-          // Clear conversation highlight after 3 seconds
-          setTimeout(() => setHighlightedConversationId(null), 3000);
+        if (pending.messageId) {
+          setHighlightedMessageId(pending.messageId);
+          setPendingScrollMessageId(pending.messageId);
+        } else {
+          // Scroll to the conversation card
+          requestAnimationFrame(() => {
+            const cardElement = document.querySelector(`[data-testid="conversation-card-${pending.conversationId}"]`);
+            if (cardElement) {
+              cardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            setIsNavigatingToMessage(false);
+          });
         }
         
-        // Clear URL params after navigation
-        window.history.replaceState({}, '', '/inbox');
+        // Clear conversation highlight after 3 seconds
+        setTimeout(() => setHighlightedConversationId(null), 3000);
+      } else {
+        setIsNavigatingToMessage(false);
       }
+      
+      // Clear the pending ref
+      pendingDeepLinkRef.current = null;
     }
   }, [conversations, setActiveConversation]);
 
   // Deep Link: Scroll to message once it's loaded and rendered
-  // This effect waits for messages to load before attempting to scroll
-  // Ref to track if scroll was already attempted to avoid duplicate scrolls
   const scrollAttemptedRef = React.useRef<string | null>(null);
   
   useEffect(() => {
-    if (!pendingScrollMessageId) {
-      return;
-    }
+    if (!pendingScrollMessageId) return;
+    if (isLoadingConversationMessages !== false) return;
+    if (scrollAttemptedRef.current === pendingScrollMessageId) return;
     
-    // Treat undefined or true as "still loading" - wait for explicit false
-    if (isLoadingConversationMessages !== false) {
-      return;
-    }
-
-    // Prevent duplicate scroll attempts for the same message
-    if (scrollAttemptedRef.current === pendingScrollMessageId) {
-      return;
-    }
     scrollAttemptedRef.current = pendingScrollMessageId;
 
-    // Messages are loaded, now wait for DOM to render and retry scrolling
+    // Use faster polling with requestAnimationFrame for smoother UX
     let attempts = 0;
-    const maxAttempts = 15; // More attempts for slower networks
-    const retryInterval = 300; // ms between attempts
+    const maxAttempts = 30; // More attempts but faster
+    const retryInterval = 100; // Faster checks (100ms instead of 300ms)
 
     const attemptScroll = () => {
       const messageElement = document.querySelector(`[data-testid="message-${pendingScrollMessageId}"]`);
       if (messageElement) {
         messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
         setPendingScrollMessageId(null);
-        scrollAttemptedRef.current = null; // Reset for future deep-links
+        scrollAttemptedRef.current = null;
+        setIsNavigatingToMessage(false);
         
         // Clear message highlight 5 seconds after successful scroll
         setTimeout(() => setHighlightedMessageId(null), 5000);
@@ -357,15 +364,16 @@ export function Inbox() {
       if (attempts < maxAttempts) {
         setTimeout(attemptScroll, retryInterval);
       } else {
-        // Give up after max attempts, clear pending state
+        // Give up after max attempts
         setPendingScrollMessageId(null);
-        scrollAttemptedRef.current = null; // Reset for future deep-links
+        scrollAttemptedRef.current = null;
+        setIsNavigatingToMessage(false);
         setTimeout(() => setHighlightedMessageId(null), 5000);
       }
     };
 
-    // Start attempting to scroll after a brief delay for initial render
-    setTimeout(attemptScroll, 100);
+    // Start immediately with requestAnimationFrame for faster first attempt
+    requestAnimationFrame(() => attemptScroll());
   }, [pendingScrollMessageId, isLoadingConversationMessages]);
 
   const { data: socialAccounts = [] } = useQuery({
