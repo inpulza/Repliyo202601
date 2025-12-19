@@ -259,6 +259,7 @@ export function Inbox() {
   const [showOnlyUnread, setShowOnlyUnread] = useState(false);
   const [highlightedConversationId, setHighlightedConversationId] = useState<string | null>(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [focusedConversationId, setFocusedConversationId] = useState<string | null>(null);
   const [location, setLocation] = useLocation();
 
   // Handler for platform filter clicks - activates unread filter if platform has unread messages
@@ -273,14 +274,7 @@ export function Inbox() {
     }
   };
 
-  // State to track pending message scroll (set from URL params, cleared after scroll)
-  const [pendingScrollMessageId, setPendingScrollMessageId] = useState<string | null>(null);
-  const [isNavigatingToMessage, setIsNavigatingToMessage] = useState(false);
-  
-  // Ref to store URL params for processing after conversations load
-  const pendingDeepLinkRef = React.useRef<{ conversationId: string; messageId: string | null; highlight: boolean } | null>(null);
-
-  // Deep Link: Capture URL params immediately on mount
+  // Deep Link: Capture URL params immediately on mount and set focus mode
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const conversationId = params.get('conversation');
@@ -288,93 +282,46 @@ export function Inbox() {
     const shouldHighlight = params.get('highlight') === 'true';
     
     if (conversationId) {
-      pendingDeepLinkRef.current = { conversationId, messageId, highlight: shouldHighlight };
-      setIsNavigatingToMessage(true);
-      // Clear URL params immediately to prevent re-triggering
+      // Set focus mode immediately - this filters the conversation list instantly
+      setFocusedConversationId(conversationId);
+      
+      if (shouldHighlight) {
+        setHighlightedConversationId(conversationId);
+        if (messageId) {
+          setHighlightedMessageId(messageId);
+        }
+        // Clear highlights after delay
+        setTimeout(() => setHighlightedConversationId(null), 3000);
+      }
+      
+      // Clear URL params immediately
       window.history.replaceState({}, '', '/inbox');
     }
   }, []);
 
-  // Deep Link: Process when conversations are loaded
+  // Deep Link: When focus mode is active and conversations load, select the target
   useEffect(() => {
-    const pending = pendingDeepLinkRef.current;
-    if (!pending || conversations.length === 0) return;
+    if (!focusedConversationId || conversations.length === 0) return;
     
-    const targetConversation = conversations.find(c => c.id === pending.conversationId);
-    if (targetConversation) {
+    const targetConversation = conversations.find(c => c.id === focusedConversationId);
+    if (targetConversation && activeConversation?.id !== focusedConversationId) {
       setActiveConversation(targetConversation);
-      
-      if (pending.highlight) {
-        setHighlightedConversationId(pending.conversationId);
-        
-        if (pending.messageId) {
-          setHighlightedMessageId(pending.messageId);
-          setPendingScrollMessageId(pending.messageId);
-        } else {
-          // Scroll to the conversation card
-          requestAnimationFrame(() => {
-            const cardElement = document.querySelector(`[data-testid="conversation-card-${pending.conversationId}"]`);
-            if (cardElement) {
-              cardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-            setIsNavigatingToMessage(false);
-          });
-        }
-        
-        // Clear conversation highlight after 3 seconds
-        setTimeout(() => setHighlightedConversationId(null), 3000);
-      } else {
-        setIsNavigatingToMessage(false);
-      }
-      
-      // Clear the pending ref
-      pendingDeepLinkRef.current = null;
     }
-  }, [conversations, setActiveConversation]);
+  }, [focusedConversationId, conversations, activeConversation, setActiveConversation]);
 
-  // Deep Link: Scroll to message once it's loaded and rendered
-  const scrollAttemptedRef = React.useRef<string | null>(null);
-  
+  // Function to exit focus mode
+  const exitFocusMode = () => {
+    setFocusedConversationId(null);
+    setHighlightedConversationId(null);
+    setHighlightedMessageId(null);
+  };
+
+  // Clear message highlight after 5 seconds (after scroll completes)
   useEffect(() => {
-    if (!pendingScrollMessageId) return;
-    if (isLoadingConversationMessages !== false) return;
-    if (scrollAttemptedRef.current === pendingScrollMessageId) return;
-    
-    scrollAttemptedRef.current = pendingScrollMessageId;
-
-    // Use faster polling with requestAnimationFrame for smoother UX
-    let attempts = 0;
-    const maxAttempts = 30; // More attempts but faster
-    const retryInterval = 100; // Faster checks (100ms instead of 300ms)
-
-    const attemptScroll = () => {
-      const messageElement = document.querySelector(`[data-testid="message-${pendingScrollMessageId}"]`);
-      if (messageElement) {
-        messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setPendingScrollMessageId(null);
-        scrollAttemptedRef.current = null;
-        setIsNavigatingToMessage(false);
-        
-        // Clear message highlight 5 seconds after successful scroll
-        setTimeout(() => setHighlightedMessageId(null), 5000);
-        return;
-      }
-
-      attempts++;
-      if (attempts < maxAttempts) {
-        setTimeout(attemptScroll, retryInterval);
-      } else {
-        // Give up after max attempts
-        setPendingScrollMessageId(null);
-        scrollAttemptedRef.current = null;
-        setIsNavigatingToMessage(false);
-        setTimeout(() => setHighlightedMessageId(null), 5000);
-      }
-    };
-
-    // Start immediately with requestAnimationFrame for faster first attempt
-    requestAnimationFrame(() => attemptScroll());
-  }, [pendingScrollMessageId, isLoadingConversationMessages]);
+    if (!highlightedMessageId) return;
+    const timer = setTimeout(() => setHighlightedMessageId(null), 5000);
+    return () => clearTimeout(timer);
+  }, [highlightedMessageId]);
 
   const { data: socialAccounts = [] } = useQuery({
     queryKey: ['socialAccounts', activeClientId],
@@ -399,9 +346,14 @@ export function Inbox() {
     return socialAccounts.filter(acc => !acc.isActive).map(acc => normalizeProviderToPlatform(acc.provider));
   }, [socialAccounts]);
 
-  // Filter Conversations
+  // Filter Conversations - Focus mode takes priority (instant filter from notifications)
   const filteredConversations = conversations
     .filter(c => {
+      // Focus mode: show only the focused conversation (instant, like search)
+      if (focusedConversationId) {
+        return c.id === focusedConversationId;
+      }
+      // Normal filters
       if (showOnlyUnread && (c.unreadCount || 0) === 0) return false;
       if (platformFilter !== 'all' && c.platform !== platformFilter) return false;
       if (typeFilter !== 'all') {
@@ -1116,6 +1068,25 @@ export function Inbox() {
 
         {/* Fade gradient for smooth transition */}
         <div className="h-4 bg-gradient-to-b from-[#F5F7FA] to-[#EEF2F6] shrink-0" />
+
+        {/* Focus Mode Banner */}
+        {focusedConversationId && (
+          <div className="mx-2 mb-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between">
+            <span className="text-xs text-amber-700 font-medium">
+              Viendo notificación
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs text-amber-700 hover:text-amber-900 hover:bg-amber-100"
+              onClick={exitFocusMode}
+              data-testid="button-exit-focus-mode"
+            >
+              <X className="h-3 w-3 mr-1" />
+              Ver todo
+            </Button>
+          </div>
+        )}
 
         {/* Conversations List */}
         <ScrollArea className="flex-1 bg-[#EEF2F6]">

@@ -154,8 +154,17 @@ function SingleMessage({
 
   const avatarSize = isReply ? AVATAR_SIZE_REPLY : AVATAR_SIZE_ROOT;
 
+  // Auto-scroll to this message when highlighted (from notification deep-link)
+  const messageRef = React.useRef<HTMLDivElement>(null);
+  React.useLayoutEffect(() => {
+    if (isHighlighted && messageRef.current) {
+      messageRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [isHighlighted]);
+
   return (
     <div 
+      ref={messageRef}
       className={cn(
         "flex gap-3 group transition-all rounded-lg p-2 -m-2",
         isHighlighted && "ring-2 ring-amber-400 bg-amber-50/50 animate-pulse"
