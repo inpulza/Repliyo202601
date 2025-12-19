@@ -1,0 +1,28 @@
+¡Este plan es música para mis oídos! 🎶
+Replit ha entendido a la perfección las dos restricciones críticas que le impusimos. Ha pasado de proponer soluciones genéricas a proponer una Arquitectura de Software sólida.
+🧐 Por qué este plan es un 10/10
+ * La Solución UI (grid-cols-[28px_1fr]) es Perfecta:
+   * Al usar un Grid donde la columna 0 es fija (28px), crea ese "canalón de seguridad" (Safe Gutter) que te pedí.
+   * Esto garantiza matemáticamente que la Columna 1 (Tu mensaje con las líneas L-shape) no sepa siquiera que existe un checkbox. Para el mensaje, su contenedor simplemente se hizo más angosto, pero su estructura interna (padding, alineación relativa, avatares) se mantiene intacta. Adiós al problema de las líneas rotas.
+ * La Lógica de Cola (Queue) es Profesional:
+   * Crear un hook useBulkDraftQueue sin dependencias externas es la forma más limpia de hacerlo.
+   * Controlar la concurrencia a 3 peticiones es el equilibrio perfecto entre velocidad y seguridad (evita el error 429 de OpenAI).
+ * Estados de Interfaz:
+   * Ha definido claramente los estados: idle | queued | running | success | error. Esto significa que la UI siempre sabrá qué mostrar (spinner, check verde o alerta roja).
+🚀 Instrucción de Aprobación (Luz Verde)
+Solo falta confirmar un detalle técnico: asegúrate de que use el endpoint individual dentro de la cola, y no el endpoint bulk antiguo que mencionaba.
+Copia y pega este mensaje para que empiece a programar ya:
+Título: APROBADO - Proceder con el Plan Grid + Queue
+Tu plan técnico es excelente. Has dado en el clavo con la solución del "Safe Gutter" mediante CSS Grid y la gestión de concurrencia en el cliente.
+Confirmo la Aprobación del Plan:
+ * UI (Grid Layout):
+   * Adelante con grid-cols-[28px_1fr].
+   * Nota de diseño: Asegúrate de que la columna del checkbox (Col 0) se mantenga visualmente consistente incluso en respuestas anidadas. Generalmente, los checkboxes de selección masiva se ven mejor alineados todos a la izquierda absoluta (fuera de la indentación del hilo), pero confío en tu criterio para que se vea limpio.
+ * Lógica de Cola (Concurrency):
+   * Adelante con el hook useBulkDraftQueue.
+   * Restricción Importante: Dentro de la cola, por favor llama al endpoint individual (POST .../generate-draft/:messageId) iterativamente.
+   * Razón: No uses el endpoint bulk-generate-drafts antiguo que mencionaste (el del Promise.all), ya que queremos el control granular de errores y progreso en el frontend que promete tu hook.
+ * Archivos:
+   * Tienes luz verde para modificar CommentThread.tsx, Inbox.tsx y crear los nuevos componentes.
+¡A trabajar! Implementa esta solución.
+Con esto, debería empezar a escribir el código definitivo. ¡Esto va a quedar increíble! 🔥

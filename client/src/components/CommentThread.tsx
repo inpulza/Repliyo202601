@@ -30,6 +30,8 @@ interface MessageNode {
   isOrphan?: boolean;
 }
 
+import type { DraftStatus } from '@/hooks/useBulkDraftQueue';
+
 interface CommentThreadProps {
   messages: Message[];
   platformStyles: {
@@ -58,6 +60,10 @@ interface CommentThreadProps {
   highlightedMessageId?: string | null;
   AudioPlayer: React.ComponentType<{ src: string; transcription?: string; isOutbound?: boolean }>;
   SentimentIndicator: React.ComponentType<{ sentiment: Sentiment }>;
+  selectionEnabled?: boolean;
+  selectedMessageIds?: Set<string>;
+  onToggleSelection?: (messageId: string) => void;
+  bulkQueueStatusById?: Map<string, DraftStatus>;
 }
 
 const MAX_DEPTH = 4;
@@ -122,6 +128,10 @@ interface SingleMessageProps {
   setShowRegenerateConfirm: (id: string | null) => void;
   AudioPlayer: CommentThreadProps['AudioPlayer'];
   SentimentIndicator: CommentThreadProps['SentimentIndicator'];
+  selectionEnabled?: boolean;
+  isSelected?: boolean;
+  onToggleSelection?: (messageId: string) => void;
+  bulkStatus?: DraftStatus;
 }
 
 function SingleMessage({
@@ -146,6 +156,10 @@ function SingleMessage({
   setShowRegenerateConfirm,
   AudioPlayer,
   SentimentIndicator,
+  selectionEnabled = false,
+  isSelected = false,
+  onToggleSelection,
+  bulkStatus,
 }: SingleMessageProps) {
   const isOutbound = msg.direction === 'outbound';
   const isOwner = isOutbound;
@@ -153,6 +167,9 @@ function SingleMessage({
   const isSentByAI = isAutoReply(msg.source, msg.internalOrigin);
 
   const avatarSize = isReply ? AVATAR_SIZE_REPLY : AVATAR_SIZE_ROOT;
+
+  // Can this message be selected for bulk draft generation?
+  const isSelectable = selectionEnabled && msg.direction === 'inbound' && !msg.aiSuggestedReply && msg.aiReplyStatus !== 'drafted';
 
   // Auto-scroll to this message when highlighted (from notification deep-link)
   const messageRef = React.useRef<HTMLDivElement>(null);
@@ -167,11 +184,40 @@ function SingleMessage({
     <div 
       ref={messageRef}
       className={cn(
-        "flex gap-3 group transition-all rounded-lg p-2 -m-2",
-        isHighlighted && "bg-gray-200/60"
+        "group transition-all rounded-lg p-2 -m-2",
+        selectionEnabled ? "grid grid-cols-[28px_1fr] gap-1" : "flex gap-3",
+        isHighlighted && "bg-gray-200/60",
+        isSelected && "bg-indigo-50/50"
       )}
       data-testid={`message-${msg.id}`}
     >
+      {/* Selection Gutter (Col 0) - Only shown when selection mode is active */}
+      {selectionEnabled && (
+        <div className="flex items-start justify-center pt-1">
+          {isSelectable ? (
+            bulkStatus === 'running' || bulkStatus === 'queued' ? (
+              <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />
+            ) : bulkStatus === 'success' ? (
+              <Check className="h-4 w-4 text-green-500" />
+            ) : bulkStatus === 'error' ? (
+              <AlertCircle className="h-4 w-4 text-red-500" />
+            ) : (
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={() => onToggleSelection?.(msg.id)}
+                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                data-testid={`checkbox-select-${msg.id}`}
+              />
+            )
+          ) : (
+            <div className="h-4 w-4" />
+          )}
+        </div>
+      )}
+
+      {/* Message Content (Col 1 when selection enabled, full width otherwise) */}
+      <div className={cn("flex gap-3", !selectionEnabled && "flex-1")}>
       <Avatar className={cn(
         "mt-1 flex-shrink-0 relative z-10 ring-[3px] ring-white",
         isReply ? "h-6 w-6" : "h-8 w-8"
@@ -351,6 +397,7 @@ function SingleMessage({
           setShowRegenerateConfirm={setShowRegenerateConfirm}
           onGenerateDraft={onGenerateDraft}
         />
+      </div>
       </div>
     </div>
   );
@@ -612,6 +659,10 @@ interface ThreadNodeProps {
   AudioPlayer: CommentThreadProps['AudioPlayer'];
   SentimentIndicator: CommentThreadProps['SentimentIndicator'];
   highlightedMessageId?: string | null;
+  selectionEnabled?: boolean;
+  selectedMessageIds?: Set<string>;
+  onToggleSelection?: (messageId: string) => void;
+  bulkQueueStatusById?: Map<string, DraftStatus>;
 }
 
 function ThreadNode({
@@ -637,6 +688,10 @@ function ThreadNode({
   AudioPlayer,
   SentimentIndicator,
   highlightedMessageId,
+  selectionEnabled,
+  selectedMessageIds,
+  onToggleSelection,
+  bulkQueueStatusById,
 }: ThreadNodeProps) {
   const isReply = depth > 0;
   const hasChildren = node.children.length > 0;
@@ -742,6 +797,10 @@ function ThreadNode({
           setShowRegenerateConfirm={setShowRegenerateConfirm}
           AudioPlayer={AudioPlayer}
           SentimentIndicator={SentimentIndicator}
+          selectionEnabled={selectionEnabled}
+          isSelected={selectedMessageIds?.has(node.message.id)}
+          onToggleSelection={onToggleSelection}
+          bulkStatus={bulkQueueStatusById?.get(node.message.id)}
         />
       </div>
 
@@ -777,6 +836,10 @@ function ThreadNode({
               highlightedMessageId={highlightedMessageId}
               AudioPlayer={AudioPlayer}
               SentimentIndicator={SentimentIndicator}
+              selectionEnabled={selectionEnabled}
+              selectedMessageIds={selectedMessageIds}
+              onToggleSelection={onToggleSelection}
+              bulkQueueStatusById={bulkQueueStatusById}
             />
           ))}
         </div>
@@ -813,6 +876,10 @@ export function CommentThread({
   highlightedMessageId,
   AudioPlayer,
   SentimentIndicator,
+  selectionEnabled,
+  selectedMessageIds,
+  onToggleSelection,
+  bulkQueueStatusById,
 }: CommentThreadProps) {
   const tree = React.useMemo(() => buildMessageTree(messages), [messages]);
 
@@ -889,6 +956,10 @@ export function CommentThread({
               highlightedMessageId={highlightedMessageId}
               AudioPlayer={AudioPlayer}
               SentimentIndicator={SentimentIndicator}
+              selectionEnabled={selectionEnabled}
+              selectedMessageIds={selectedMessageIds}
+              onToggleSelection={onToggleSelection}
+              bulkQueueStatusById={bulkQueueStatusById}
             />
         </div>
       ))}

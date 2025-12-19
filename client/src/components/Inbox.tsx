@@ -82,6 +82,8 @@ import { Reply, X } from 'lucide-react';
 import repliyoLogo from '@/assets/repliyo-logo.jpg';
 import { toast } from '@/hooks/use-toast';
 import { CommentThread } from './CommentThread';
+import { useBulkDraftQueue } from '@/hooks/useBulkDraftQueue';
+import { BulkDraftActionBar } from './BulkDraftActionBar';
 
 
 // --- Helper: Platform Styles ---
@@ -177,6 +179,60 @@ export function Inbox() {
   const [editingDraftText, setEditingDraftText] = useState("");
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState<string | null>(null);
   const [localDraftOverrides, setLocalDraftOverrides] = useState<Map<string, { aiSuggestedReply: string | null; aiReplyStatus: string; draftWasEdited: boolean }>>(new Map());
+  
+  // Bulk Draft Selection State
+  const [selectionEnabled, setSelectionEnabled] = useState(false);
+  const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set());
+
+  // Bulk Draft Queue Hook
+  const bulkDraftQueue = useBulkDraftQueue({
+    brandId: activeClientId || '',
+    maxConcurrency: 3,
+    onComplete: (results) => {
+      // Clear selection after successful completion
+      if (results.errorCount === 0) {
+        setSelectedMessageIds(new Set());
+        setSelectionEnabled(false);
+      }
+      // Refresh data
+      queryClient.invalidateQueries({ queryKey: ['conversationMessages'] });
+    },
+    onMessageComplete: (messageId, success) => {
+      if (success) {
+        setSelectedMessageIds(prev => {
+          const next = new Set(prev);
+          next.delete(messageId);
+          return next;
+        });
+      }
+    },
+  });
+
+  // Clear selection when conversation changes
+  React.useEffect(() => {
+    setSelectedMessageIds(new Set());
+  }, [activeConversation?.id]);
+
+  const handleToggleSelection = (messageId: string) => {
+    setSelectedMessageIds(prev => {
+      const next = new Set(prev);
+      if (next.has(messageId)) {
+        next.delete(messageId);
+      } else {
+        next.add(messageId);
+      }
+      return next;
+    });
+  };
+
+  const handleBulkGenerate = () => {
+    if (selectedMessageIds.size === 0) return;
+    bulkDraftQueue.enqueueMany(Array.from(selectedMessageIds));
+  };
+
+  const handleClearSelection = () => {
+    setSelectedMessageIds(new Set());
+  };
 
   const { data: syncStatus } = useQuery<SyncStatus>({
     queryKey: ['/api/sync/status'],
@@ -1297,6 +1353,24 @@ export function Inbox() {
                             <MessageCircle className="h-3 w-3" />
                             Thread · {threadMessages.length} messages
                           </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectionEnabled(!selectionEnabled);
+                              if (selectionEnabled) {
+                                setSelectedMessageIds(new Set());
+                              }
+                            }}
+                            className={cn(
+                              "h-6 text-[10px] px-2",
+                              selectionEnabled ? "text-blue-600 bg-blue-50" : "text-gray-500"
+                            )}
+                            data-testid="button-toggle-selection-mode"
+                          >
+                            <Sparkles className="h-3 w-3 mr-1" />
+                            {selectionEnabled ? 'Cancelar' : 'Bulk AI'}
+                          </Button>
                           <div className="h-px flex-1 bg-gray-300" />
                         </div>
                       )}
@@ -1322,6 +1396,10 @@ export function Inbox() {
                         highlightedMessageId={highlightedMessageId}
                         AudioPlayer={AudioPlayer}
                         SentimentIndicator={SentimentIndicator}
+                        selectionEnabled={selectionEnabled}
+                        selectedMessageIds={selectedMessageIds}
+                        onToggleSelection={handleToggleSelection}
+                        bulkQueueStatusById={bulkDraftQueue.statusById}
                       />
 
                       {/* Spacer to prevent content from being hidden behind the floating card */}
@@ -1330,6 +1408,15 @@ export function Inbox() {
                   )}
                </div>
             </ScrollArea>
+
+            {/* Bulk Draft Action Bar */}
+            <BulkDraftActionBar
+              selectedCount={selectedMessageIds.size}
+              isProcessing={bulkDraftQueue.isProcessing}
+              progress={bulkDraftQueue.progress}
+              onGenerate={handleBulkGenerate}
+              onClear={handleClearSelection}
+            />
 
             {/* Floating Reply Input Box */}
             <AnimatePresence>
