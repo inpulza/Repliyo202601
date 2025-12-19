@@ -1101,14 +1101,14 @@ export function Inbox() {
 
         {/* Focus Mode Banner */}
         {focusedConversationId && (
-          <div className="mx-2 mb-2 px-3 py-2 bg-gray-100/80 rounded-lg flex items-center justify-between">
-            <span className="text-xs text-gray-600 font-medium">
+          <div className="mx-2 mb-1 px-3 py-1 flex items-center justify-between">
+            <span className="text-xs text-gray-500">
               Viendo notificación
             </span>
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 px-2 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-200/50"
+              className="h-5 px-2 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100"
               onClick={exitFocusMode}
               data-testid="button-exit-focus-mode"
             >
