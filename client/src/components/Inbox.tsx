@@ -274,30 +274,60 @@ export function Inbox() {
     }
   };
 
-  // Deep Link: Capture URL params immediately on mount and set focus mode
-  useEffect(() => {
+  // Deep Link: Process URL params and activate focus mode
+  const processDeepLink = React.useCallback(() => {
     const params = new URLSearchParams(window.location.search);
-    const conversationId = params.get('conversation');
+    // Support both 'conversation' (new) and 'conversationId' (legacy) param names
+    const conversationId = params.get('conversation') || params.get('conversationId');
     const messageId = params.get('messageId');
     const shouldHighlight = params.get('highlight') === 'true';
     
     if (conversationId) {
+      console.log('[DeepLink] Activating focus mode for conversation:', conversationId, 'messageId:', messageId);
       // Set focus mode immediately - this filters the conversation list instantly
       setFocusedConversationId(conversationId);
-      
-      if (shouldHighlight) {
-        setHighlightedConversationId(conversationId);
-        if (messageId) {
-          setHighlightedMessageId(messageId);
-        }
-        // Clear highlights after delay
-        setTimeout(() => setHighlightedConversationId(null), 3000);
+      setHighlightedConversationId(conversationId);
+      if (messageId) {
+        setHighlightedMessageId(messageId);
       }
+      // Clear conversation highlight after delay
+      setTimeout(() => setHighlightedConversationId(null), 3000);
       
       // Clear URL params immediately
       window.history.replaceState({}, '', '/inbox');
     }
   }, []);
+
+  // Run on mount and listen for navigation events (for notification clicks while already on /inbox)
+  useEffect(() => {
+    // Process on mount
+    processDeepLink();
+    
+    // Listen for link clicks that change URL (wouter uses pushState)
+    const handleNavigation = () => {
+      // Small delay to let URL update complete
+      setTimeout(processDeepLink, 50);
+    };
+    
+    // Listen for both popstate (back/forward) and custom navigation event
+    window.addEventListener('popstate', handleNavigation);
+    
+    // Also listen for click events on notification links to catch them before URL updates
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const link = target.closest('a[href*="conversation"]');
+      if (link) {
+        // Small delay to let wouter update the URL
+        setTimeout(processDeepLink, 100);
+      }
+    };
+    document.addEventListener('click', handleClick);
+    
+    return () => {
+      window.removeEventListener('popstate', handleNavigation);
+      document.removeEventListener('click', handleClick);
+    };
+  }, [processDeepLink]);
 
   // Deep Link: When focus mode is active and conversations load, select the target
   useEffect(() => {
