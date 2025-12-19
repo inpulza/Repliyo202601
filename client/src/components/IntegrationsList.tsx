@@ -12,10 +12,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { Check, ExternalLink, PlugZap, Loader2, AlertCircle, Lock, Search, Filter, BarChart3 } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
+import { Check, ExternalLink, PlugZap, Loader2, AlertCircle, Lock, Search, Filter, BarChart3, ChevronRight, ArrowLeft } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { MetricoolConnection } from "@/components/MetricoolConnection";
+import { MobileContainer, MobilePageHeader, MobileListGroup, MobileListRow, MobileSpacer, MobileSectionDivider } from "@/components/ui/mobile-primitives";
 
 export interface IntegrationConfig {
     fieldLabel: string;
@@ -325,8 +327,13 @@ export function IntegrationsList() {
   const [activeCategory, setActiveCategory] = useState<IntegrationCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Dynamic form state
+  // Dynamic form state (desktop)
   const [formValues, setFormValues] = useState<Record<string, string>>({});
+  
+  // Mobile sheet state (separate from desktop)
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+  const [mobileSelectedIntegration, setMobileSelectedIntegration] = useState<Integration | null>(null);
+  const [mobileFormValues, setMobileFormValues] = useState<Record<string, string>>({});
 
   const handleConnectClick = (integration: Integration) => {
       setSelectedIntegration(integration);
@@ -384,44 +391,315 @@ export function IntegrationsList() {
       return matchesCategory && matchesSearch;
   });
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                <PlugZap className="h-6 w-6 text-indigo-500" />
-                Integrations
-            </h1>
-            <p className="text-muted-foreground">Connect your favorite tools to enhance your workflow.</p>
-        </div>
-        <div className="relative w-full sm:w-64">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-                type="search"
-                placeholder="Search integrations..."
-                className="pl-9 h-9"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-            />
-        </div>
-      </div>
+  const handleMobileConnect = (integration: Integration) => {
+    setMobileSelectedIntegration(integration);
+    setMobileFormValues({});
+    setMobileSheetOpen(true);
+  };
 
-      <div className="flex flex-wrap gap-2 pb-2">
-          {CATEGORIES.map((category) => (
+  const handleMobileSheetClose = (open: boolean) => {
+    setMobileSheetOpen(open);
+    if (!open) {
+      setMobileSelectedIntegration(null);
+      setMobileFormValues({});
+    }
+  };
+
+  const handleMobileInputChange = (label: string, value: string) => {
+    setMobileFormValues(prev => ({
+      ...prev,
+      [label]: value
+    }));
+  };
+
+  const handleMobileConfirmConnect = () => {
+    if (!mobileSelectedIntegration) return;
+    setIsConnecting(true);
+    setTimeout(() => {
+      setConnectedState(prev => ({
+        ...prev,
+        [mobileSelectedIntegration.id]: true
+      }));
+      setIsConnecting(false);
+      handleMobileSheetClose(false);
+      toast({
+        title: "Integración Conectada",
+        description: `Conectado exitosamente a ${mobileSelectedIntegration.name}`,
+      });
+    }, 1500);
+  };
+
+  const isMobileFormValid = mobileSelectedIntegration?.config.every(field => mobileFormValues[field.fieldLabel]?.length > 0);
+
+  // Get connected integrations for mobile
+  const connectedIntegrations = filteredIntegrations.filter(i => connectedState[i.id]);
+  const availableIntegrations = filteredIntegrations.filter(i => !connectedState[i.id]);
+
+  return (
+    <>
+      {/* Mobile View */}
+      <MobileContainer>
+        <MobilePageHeader 
+          title="Integraciones" 
+          subtitle="Conecta tus herramientas favoritas"
+        />
+        
+        {/* Mobile Search */}
+        <div className="px-4 pb-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Buscar integraciones..."
+              className="pl-9 h-10 bg-gray-100 border-0"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              data-testid="mobile-input-search"
+            />
+          </div>
+        </div>
+
+        {/* Mobile Category Pills - Horizontal Scroll */}
+        <div className="px-4 pb-4 overflow-x-auto">
+          <div className="flex gap-2 min-w-max">
+            {CATEGORIES.map((category) => (
               <button
-                  key={category.id}
-                  onClick={() => setActiveCategory(category.id)}
-                  className={cn(
-                      "px-3 py-1.5 text-xs font-medium rounded-full transition-colors",
-                      activeCategory === category.id
-                          ? "bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  )}
+                key={category.id}
+                onClick={() => setActiveCategory(category.id)}
+                className={cn(
+                  "px-3 py-1.5 text-xs font-medium rounded-full transition-colors whitespace-nowrap",
+                  activeCategory === category.id
+                    ? "bg-indigo-500 text-white"
+                    : "bg-gray-100 text-gray-600"
+                )}
+                data-testid={`mobile-btn-category-${category.id}`}
               >
-                  {category.label}
+                {category.label}
               </button>
-          ))}
-      </div>
+            ))}
+          </div>
+        </div>
+
+        <MobileSpacer size="sm" />
+
+        {/* Connected Integrations Section */}
+        {connectedIntegrations.length > 0 && (
+          <>
+            <MobileSectionDivider title="Conectadas" />
+            <MobileListGroup>
+              {connectedIntegrations.map((integration) => (
+                <MobileListRow
+                  key={integration.id}
+                  icon={
+                    <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                      <img 
+                        src={integration.logo} 
+                        alt={integration.name} 
+                        className="h-8 w-8 object-contain"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  }
+                  title={integration.name}
+                  subtitle={integration.description.substring(0, 40) + '...'}
+                  onClick={() => handleMobileConnect(integration)}
+                  rightElement={
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                    </div>
+                  }
+                  testId={`mobile-row-integration-${integration.id}`}
+                />
+              ))}
+            </MobileListGroup>
+            <MobileSpacer size="md" />
+          </>
+        )}
+
+        {/* Available Integrations Section */}
+        {availableIntegrations.length > 0 && (
+          <>
+            <MobileSectionDivider title="Disponibles" />
+            <MobileListGroup>
+              {availableIntegrations.map((integration) => (
+                <MobileListRow
+                  key={integration.id}
+                  icon={
+                    <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                      <img 
+                        src={integration.logo} 
+                        alt={integration.name} 
+                        className="h-8 w-8 object-contain"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  }
+                  title={integration.name}
+                  subtitle={integration.description.substring(0, 40) + '...'}
+                  onClick={() => handleMobileConnect(integration)}
+                  showChevron={true}
+                  testId={`mobile-row-integration-${integration.id}`}
+                />
+              ))}
+            </MobileListGroup>
+          </>
+        )}
+
+        {/* Empty State */}
+        {filteredIntegrations.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+            <div className="bg-gray-100 p-3 rounded-full mb-3">
+              <Filter className="h-6 w-6 text-gray-400" />
+            </div>
+            <h3 className="text-sm font-semibold text-gray-900">Sin resultados</h3>
+            <p className="text-xs text-gray-500 mt-1">
+              No encontramos integraciones que coincidan con tu búsqueda.
+            </p>
+            <Button 
+              variant="link" 
+              className="mt-2 text-indigo-600 text-xs"
+              onClick={() => {
+                setActiveCategory('all');
+                setSearchQuery('');
+              }}
+              data-testid="mobile-btn-clear-filters"
+            >
+              Limpiar filtros
+            </Button>
+          </div>
+        )}
+
+        <MobileSpacer size="lg" />
+
+        {/* Mobile Sheet for Integration Config */}
+        <Sheet open={mobileSheetOpen} onOpenChange={handleMobileSheetClose}>
+          <SheetContent side="bottom" className="h-[85vh] rounded-t-xl">
+            <SheetHeader className="text-left pb-4">
+              <div className="flex items-center gap-3">
+                {mobileSelectedIntegration && (
+                  <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                    <img 
+                      src={mobileSelectedIntegration.logo} 
+                      alt={mobileSelectedIntegration.name} 
+                      className="h-10 w-10 object-contain"
+                    />
+                  </div>
+                )}
+                <div>
+                  <SheetTitle>{mobileSelectedIntegration?.name}</SheetTitle>
+                  <SheetDescription className="text-xs">
+                    {connectedState[mobileSelectedIntegration?.id || ''] ? 'Configurar integración' : 'Conectar integración'}
+                  </SheetDescription>
+                </div>
+              </div>
+            </SheetHeader>
+            
+            {mobileSelectedIntegration?.id === 'metricool' ? (
+              <MetricoolConnection onClose={() => handleMobileSheetClose(false)} />
+            ) : (
+              <div className="space-y-4 py-4">
+                {mobileSelectedIntegration?.config.map((field, idx) => (
+                  <div key={idx} className="space-y-2">
+                    <Label htmlFor={`mobile-field-${idx}`}>{field.fieldLabel}</Label>
+                    <Input 
+                      id={`mobile-field-${idx}`} 
+                      type={field.type || 'text'}
+                      placeholder={field.placeholder}
+                      value={mobileFormValues[field.fieldLabel] || ''}
+                      onChange={(e) => handleMobileInputChange(field.fieldLabel, e.target.value)}
+                      className="font-mono text-xs h-11"
+                      data-testid={`mobile-input-field-${idx}`}
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      {field.helpText}
+                    </p>
+                  </div>
+                ))}
+                
+                <div className="bg-blue-50 p-3 rounded-md border border-blue-100 mt-4">
+                  <p className="text-[10px] text-blue-700 flex items-start gap-2">
+                    <Lock className="h-3 w-3 mt-0.5 shrink-0" />
+                    Tus credenciales se almacenan de forma segura con encriptación AES-256.
+                  </p>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  {connectedState[mobileSelectedIntegration?.id || ''] && (
+                    <Button 
+                      variant="destructive" 
+                      className="flex-1 h-12"
+                      onClick={() => {
+                        handleDisconnect(mobileSelectedIntegration?.id || '');
+                        handleMobileSheetClose(false);
+                      }}
+                      data-testid="mobile-btn-disconnect"
+                    >
+                      Desconectar
+                    </Button>
+                  )}
+                  <Button 
+                    className="flex-1 h-12 bg-indigo-600 hover:bg-indigo-700"
+                    onClick={handleMobileConfirmConnect}
+                    disabled={!isMobileFormValid || isConnecting}
+                    data-testid="mobile-btn-connect"
+                  >
+                    {isConnecting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Conectando...
+                      </>
+                    ) : (
+                      connectedState[mobileSelectedIntegration?.id || ''] ? 'Guardar' : 'Conectar'
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </SheetContent>
+        </Sheet>
+      </MobileContainer>
+
+      {/* Desktop View */}
+      <div className="hidden md:block space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-1">
+              <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                  <PlugZap className="h-6 w-6 text-indigo-500" />
+                  Integrations
+              </h1>
+              <p className="text-muted-foreground">Connect your favorite tools to enhance your workflow.</p>
+          </div>
+          <div className="relative w-full sm:w-64">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                  type="search"
+                  placeholder="Search integrations..."
+                  className="pl-9 h-9"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+              />
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2 pb-2">
+            {CATEGORIES.map((category) => (
+                <button
+                    key={category.id}
+                    onClick={() => setActiveCategory(category.id)}
+                    className={cn(
+                        "px-3 py-1.5 text-xs font-medium rounded-full transition-colors",
+                        activeCategory === category.id
+                            ? "bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    )}
+                >
+                    {category.label}
+                </button>
+            ))}
+        </div>
       
       {filteredIntegrations.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg bg-gray-50/50 border-dashed">
@@ -590,6 +868,7 @@ export function IntegrationsList() {
             )}
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </>
   );
 }
