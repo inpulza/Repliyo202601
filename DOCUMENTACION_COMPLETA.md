@@ -3769,3 +3769,90 @@ if (message.platform?.toLowerCase() === 'youtube' && parsedRawData?.parentId) {
 - No afecta a otras plataformas (Instagram, TikTok, Facebook, etc.)
 
 ---
+
+## Sistema Bulk AI Draft (Diciembre 2024)
+
+### Descripción General
+Sistema de generación masiva de borradores de IA que permite a los usuarios seleccionar múltiples mensajes y generar respuestas de IA de forma concurrente (máximo 3 a la vez) con seguimiento de progreso en tiempo real.
+
+### Componentes Implementados
+
+#### 1. Hook `useBulkDraftQueue.ts`
+Cola de procesamiento con concurrencia controlada:
+- **Máximo 3 solicitudes concurrentes** para evitar sobrecarga de la API
+- **Contador de éxitos con useRef** para evitar problemas de stale closures
+- **Estados por mensaje**: `idle`, `queued`, `running`, `success`, `error`
+- **Progreso en tiempo real**: `completed`, `total`, `successCount`, `errorCount`
+
+```typescript
+interface BulkDraftQueueOptions {
+  brandId: string;
+  maxConcurrency?: number; // default: 3
+  onComplete?: (results: { successCount: number; errorCount: number }) => void;
+  onMessageComplete?: (messageId: string, success: boolean) => void;
+}
+```
+
+#### 2. Componente `BulkDraftActionBar.tsx`
+Barra flotante que aparece cuando hay mensajes seleccionados:
+- Muestra cantidad de mensajes seleccionados
+- Botón "Generar Borradores" para iniciar procesamiento
+- Barra de progreso durante procesamiento
+- Contadores de éxito/error en tiempo real
+- Se oculta automáticamente al completar
+
+#### 3. Integración en `Inbox.tsx`
+- Estado de selección: `selectionEnabled`, `selectedMessageIds`
+- Botón "Bulk AI" en el header del thread para activar modo selección
+- Limpieza automática al cambiar de conversación
+
+#### 4. Checkboxes en `CommentThread.tsx`
+- Checkbox posicionado en "gutter" izquierdo (padding pl-8)
+- Solo visible para mensajes elegibles (de clientes, sin borrador existente)
+- Estados visuales: checkbox, loading spinner, check de éxito, X de error
+
+### Correcciones de Bugs (19 Diciembre 2024)
+
+#### Bug 1: Checkboxes no visibles en móvil
+**Problema:** Los checkboxes no aparecían en la vista móvil al activar Bulk AI.
+
+**Causa:** El ScrollArea de Radix tiene `overflow: hidden` en su viewport. En móvil, el padding era solo 16px (p-4), y el checkbox posicionado en `left:-12px` quedaba fuera del área visible y era cortado.
+
+**Solución:** 
+1. Agregar `pl-8` (32px padding-left) al contenedor `max-w-3xl` cuando `selectionEnabled` está activo
+2. Posicionar el checkbox en `left:-28px` (dentro del nuevo padding)
+
+```typescript
+// Inbox.tsx - Contenedor con gutter dinámico
+<div className={cn(
+  "max-w-3xl mx-auto space-y-8 pb-32 relative",
+  selectionEnabled && "pl-8"  // ← Gutter para checkboxes
+)}>
+```
+
+#### Bug 2: Modo Bulk AI global (no aislado por POST)
+**Problema:** Al activar Bulk AI en un post y luego navegar a otro post, el modo seguía activo mostrando checkboxes en todas las conversaciones.
+
+**Causa:** `selectionEnabled` era un estado global. El `useEffect` que detectaba cambios de conversación solo limpiaba `selectedMessageIds`, pero no reseteaba `selectionEnabled`.
+
+**Solución:** Resetear ambos estados cuando cambia la conversación:
+
+```typescript
+// Inbox.tsx
+// Clear selection AND disable selection mode when conversation changes
+// This ensures Bulk AI mode is scoped per conversation/post
+React.useEffect(() => {
+  setSelectedMessageIds(new Set());
+  setSelectionEnabled(false);  // ← AGREGADO
+}, [activeConversation?.id]);
+```
+
+**Resultado:** Cada post/conversación ahora tiene su propio modo Bulk AI independiente.
+
+### Archivos Principales del Sistema Bulk AI
+- `client/src/hooks/useBulkDraftQueue.ts` - Hook de cola de procesamiento
+- `client/src/components/BulkDraftActionBar.tsx` - Barra flotante de acciones
+- `client/src/components/CommentThread.tsx` - Checkboxes de selección
+- `client/src/components/Inbox.tsx` - Estado y lógica de integración
+
+---
