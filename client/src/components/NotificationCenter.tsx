@@ -286,28 +286,20 @@ function NotificationItem({
   const content = (
     <div
       className={cn(
-        "flex gap-4 px-5 py-4 cursor-pointer transition-all hover:bg-gray-50",
+        "flex gap-3 px-5 py-4 cursor-pointer transition-all hover:bg-gray-50",
         !notification.isRead && "bg-blue-50/30 border-l-2 border-l-blue-500"
       )}
       onClick={onClick}
       data-testid={`notification-item-${notification.id}`}
     >
-      <div className="relative shrink-0">
+      {platformIcon && (
         <div className={cn(
-          "h-10 w-10 rounded-full flex items-center justify-center text-white",
-          config.bgColor
+          "h-6 w-6 rounded-full flex items-center justify-center text-white shrink-0 mt-0.5",
+          platformColor || 'bg-gray-500'
         )}>
-          {config.icon}
+          {platformIcon}
         </div>
-        {platformIcon && (
-          <div className={cn(
-            "absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full flex items-center justify-center text-white ring-2 ring-white",
-            platformColor || 'bg-gray-500'
-          )}>
-            {platformIcon}
-          </div>
-        )}
-      </div>
+      )}
       
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
