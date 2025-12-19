@@ -162,6 +162,7 @@ class SyncService {
     let firstInboundAuthor: string | null = null;
     let lastConversationId: string | null = null;
     let lastPlatform: string | null = null;
+    let lastMessageId: string | null = null; // Track last message ID for deep linking
 
     for (const conversation of inboxData.conversations) {
       const conv = conversation as any;
@@ -332,6 +333,7 @@ class SyncService {
             }
             lastConversationId = conversationRecord.id;
             lastPlatform = platform;
+            lastMessageId = savedMessage.id;
 
             websocketService.notifyNewMessage(brandId, {
               id: savedMessage.id,
@@ -485,6 +487,7 @@ class SyncService {
           }
           lastConversationId = conversationRecord.id;
           lastPlatform = platform;
+          lastMessageId = savedComment.id;
 
           websocketService.notifyNewMessage(brandId, {
             id: savedComment.id,
@@ -579,6 +582,7 @@ class SyncService {
       this.createSyncNotification(brandId, 'new_messages', newInboundCount, lastPlatform, {
         firstAuthor: firstInboundAuthor,
         conversationId: lastConversationId,
+        messageId: lastMessageId,
       });
     }
     
@@ -802,7 +806,7 @@ class SyncService {
     type: 'new_messages' | 'sync_error' | 'sync_success', 
     count: number, 
     platform: string | null,
-    extra?: { firstAuthor?: string | null; conversationId?: string | null }
+    extra?: { firstAuthor?: string | null; conversationId?: string | null; messageId?: string | null }
   ): void {
     // Smart Digest: Show author name like Instagram does
     let title: string;
@@ -832,11 +836,16 @@ class SyncService {
       description = 'La sincronización se completó exitosamente';
     }
 
-    // Deep Link: Include conversationId for direct navigation
+    // Deep Link: Include conversationId and messageId for direct navigation
     const conversationId = extra?.conversationId;
-    const clickUrl = conversationId 
-      ? `/inbox?conversation=${conversationId}&highlight=true`
-      : '/inbox';
+    const messageId = extra?.messageId;
+    let clickUrl = '/inbox';
+    if (conversationId) {
+      clickUrl = `/inbox?conversation=${conversationId}&highlight=true`;
+      if (messageId) {
+        clickUrl += `&messageId=${messageId}`;
+      }
+    }
 
     storage.createOrUpdateNotification({
       brandId,
@@ -846,7 +855,11 @@ class SyncService {
       platform,
       count,
       clickUrl,
-      metadata: extra ? { firstAuthor: extra.firstAuthor, conversationId: extra.conversationId } : null,
+      metadata: extra ? { 
+        firstAuthor: extra.firstAuthor, 
+        conversationId: extra.conversationId,
+        messageId: extra.messageId 
+      } : null,
     }).catch(err => {
       log(`[SyncService] Error creating notification: ${err.message}`, "sync");
     });
