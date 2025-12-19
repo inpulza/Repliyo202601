@@ -9,7 +9,7 @@ import { NexusProvider } from "@/context/NexusContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Inbox } from "@/components/Inbox";
 import { Overview } from "@/pages/Overview";
-import { AgentSettings } from "@/components/AgentSettings";
+import { AIAgentConfig } from "@/components/AIAgentConfig";
 import { AiMetrics } from "@/pages/AiMetrics";
 
 import { Connections } from "@/pages/Connections";
@@ -45,7 +45,7 @@ function Router() {
       <Route path="/settings">
         {() => (
           <DashboardLayout>
-            <AgentSettings />
+            <AIAgentConfig />
           </DashboardLayout>
         )}
       </Route>
