@@ -167,7 +167,7 @@ function SingleMessage({
       ref={messageRef}
       className={cn(
         "flex gap-3 group transition-all rounded-lg p-2 -m-2",
-        isHighlighted && "ring-2 ring-amber-400 bg-amber-50/50 animate-pulse"
+        isHighlighted && "bg-gray-200/60"
       )}
       data-testid={`message-${msg.id}`}
     >
