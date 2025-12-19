@@ -87,7 +87,7 @@ interface MobileListRowProps {
   icon?: React.ReactNode;
   iconBgColor?: string;
   title: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   rightText?: string;
   rightElement?: React.ReactNode;
   showChevron?: boolean;
