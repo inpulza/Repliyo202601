@@ -1,0 +1,51 @@
+Esta es una funcionalidad potente pero peligrosa si se implementa mal. Tienes toda la razón: hacer procesos en "Batch" (Lote) es la forma más fácil de tumbar un servidor o bloquear el navegador si no se controla la concurrencia.
+Aquí tienes mi análisis estratégico y el mensaje para Replit.
+🧠 Análisis Estratégico: El Peligro del "Batch" y la Solución
+El Problema:
+Si seleccionas 20 comentarios y lanzas 20 peticiones a OpenAI al mismo tiempo:
+ * Rate Limits: OpenAI te bloqueará (Error 429).
+ * Server Crash: Tu servidor Node.js se saturará de conexiones pendientes.
+ * UI Freeze: El navegador del cliente se pondrá lento intentando manejar 20 respuestas a la vez.
+La Solución: "Cola de Concurrencia Limitada" (The Queue)
+No enviaremos los 20 a la vez. Implementaremos un Buffer Inteligente.
+ * Seleccionas 20 mensajes.
+ * El sistema procesa de 3 en 3.
+ * Conforme termina uno, entra el siguiente de la fila.
+ * Visualmente: El usuario ve cómo los spinners de carga se van encendiendo y apagando en cascada (progresivamente).
+🎨 Propuesta UX (Basada en tu foto)
+Vi tu imagen (image_dbef89.png) y los checkboxes están perfectos.
+ * Barra Flotante de Acciones:
+   * Al seleccionar uno o más mensajes, debe aparecer una barra flotante (tipo Gmail o Notion) en la parte inferior o superior.
+   * Botón: ✨ Generar Borradores (5 seleccionados).
+ * Feedback Visual:
+   * Al hacer clic, los checkboxes se convierten en Spinners.
+   * Aparece un Toast global: "Generando borradores: 3/20 completados...".
+📋 Instrucciones Maestras para Replit
+Copia y pega este mensaje. Está diseñado para prevenir el desastre técnico del "Batch" imponiendo una arquitectura de cola.
+Título: Implementación de Generación Masiva de Borradores (Bulk Drafts) con Cola de Concurrencia
+Contexto:
+Quiero implementar la funcionalidad de seleccionar múltiples comentarios (usando los checkboxes que ya existen en el diseño) y generar borradores de IA para todos ellos en una sola acción.
+Revisa Documentacion_Completa.md para entender el esquema de datos actual (messages, ai_suggested_reply).
+El Reto Técnico:
+Esta acción puede implicar procesar 20, 30 o 50 mensajes. Si enviamos todas las peticiones a la API de OpenAI simultáneamente, causaremos problemas de Rate Limiting (429) y saturación del servidor.
+Requerimientos de Implementación (Arquitectura de Cola):
+ * Frontend (Lógica de Cola - Client-Side Queue):
+   * No quiero un Promise.all masivo.
+   * Implementa una Cola de Concurrencia Limitada (Concurrency Queue).
+   * Lógica: Procesa la lista de seleccionados con un máximo de 3 peticiones simultáneas (Concurrency = 3).
+   * Cuando una petición termina, lanza la siguiente inmediatamente.
+   * Esto crea un efecto visual "progresivo" y protege la API.
+ * UX / UI (Feedback):
+   * Action Bar: Cuando haya items seleccionados (selectedIds.length > 0), muestra una barra flotante con el botón "✨ Generar Borradores".
+   * Estado de Carga: Al iniciar, reemplaza los checkboxes de los items afectados por un Spinner de carga individual.
+   * Progreso: Muestra un indicador global (ej. Toast): "Procesando 4 de 12...".
+   * Manejo de Errores Parciales: Si 1 de los 10 falla, NO detengas el proceso. Marca ese mensaje con error y continúa con el siguiente. Al final, reporta el resultado: "9 generados, 1 error".
+ * Backend:
+   * Reutiliza el endpoint individual POST /api/messages/:id/generate-draft que ya creamos (o crea uno bulk si lo consideras más eficiente para la DB, pero prefiero reutilizar la lógica segura del individual para mantener la consistencia del prompt).
+Pregunta para ti:
+¿Consideras mejor manejar esta cola en el Frontend (React Query / P-Queue) para tener feedback visual inmediato en cada tarjeta, o prefieres una implementación de Background Job en el backend (BullMQ)?
+Nota: Prefiero la opción que dé mejor feedback visual progresivo al usuario.
+Por favor, dame tu plan técnico antes de escribir código.
+💡 Por qué le damos estas opciones
+Le estoy guiando hacia la Cola en Frontend.
+ * Por qué: Es mucho más fácil de implementar hoy. Un "Background Job" (BullMQ + Redis) es arquitectura de nivel empresarial que requiere configurar Redis, workers, sockets, etc. Para tu fase actual, que el navegador gestione la cola de 3 en 3 es perfecto y se ve genial.

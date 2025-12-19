@@ -1,0 +1,30 @@
+Entiendo perfectamente el problema. Es un error clásico de maquetación: tratar de meter un elemento nuevo (el checkbox) dentro del flujo del contenedor existente, lo que "empuja" y rompe toda la geometría interna (especialmente esas líneas de hilo "L-Shape" que dependen de alineaciones exactas con el avatar).
+Lo que necesitamos es una arquitectura de "Canaleta de Selección" (Selection Gutter). Es decir, el checkbox debe vivir en una columna fantasma a la izquierda que no perturbe el ancho ni el posicionamiento del bloque del mensaje.
+Aquí tienes el mensaje redactado para Replit. Es muy específico sobre NO TOCAR el layout interno del mensaje y propone la arquitectura de Cola (Queue) para el backend.
+Título: Nueva Funcionalidad: Generación de Borradores en Masa (Bulk Drafts) + Restricción Crítica de UI
+Quiero implementar la funcionalidad de seleccionar múltiples mensajes y generar sus borradores de IA en lote.
+⚠️ CONTEXTO CRÍTICO DE UI (LEER ANTES DE PENSAR):
+Actualmente, el diseño de los mensajes tiene una estructura visual muy delicada, específicamente las Líneas de Hilo (Thread Lines) que conectan el avatar padre con el hijo mediante una forma de "L". Estas líneas dependen de una alineación pixel-perfect.
+En intentos previos, al agregar un checkbox de selección, este se insertó dentro del contenedor del mensaje, lo que comprimió el contenido, movió los avatares y rompió la alineación de las líneas conectoras.
+Requerimiento Visual (The "Safe Gutter" Strategy):
+Para esta implementación, el checkbox de selección NO DEBE afectar el layout interno de la tarjeta del mensaje ni de los hilos.
+ * Espacio Independiente: Necesitamos implementar un contenedor lateral o "gutter" a la izquierda de la estructura actual del mensaje.
+ * Comportamiento:
+   * El checkbox debe vivir en este espacio reservado (fuera del MessageThread container).
+   * Si activamos el "Modo Selección", este espacio se hace visible o se ocupa, pero sin repaginar o mover los elementos internos (avatar, texto, hora, líneas) del mensaje.
+   * Piensa en una tabla: El checkbox es la Columna 0, y el mensaje con sus hilos complejos es la Columna 1. Lo que pase en la Columna 0 no debe deformar la geometría interna de la Columna 1.
+Requerimiento Funcional (Lógica de Cola/Queue):
+Al seleccionar, por ejemplo, 20 mensajes y dar click en "Generar Borradores":
+ * No satures la API: No envíes 20 peticiones simultáneas.
+ * Client-Side Queue: Implementa una cola de concurrencia limitada (máximo 3 peticiones a la vez).
+ * Feedback Progresivo: Conforme se generan los borradores, los spinners de carga individuales deben desaparecer y mostrar el borrador generado en tiempo real.
+ * Manejo de Errores: Si uno falla, la cola continúa con el siguiente.
+Tu Tarea:
+Por favor, analiza este requerimiento. Antes de escribir código, explícame:
+ * ¿Cómo planeas implementar el checkbox para garantizar que no mueva ni un píxel la estructura actual de los hilos y avatares? (¿Grid, Flex con ancho fijo, Absolute positioning?)
+ * Confirma que entiendes la lógica de la cola de concurrencia para evitar errores 429.
+Espero tu análisis.
+💡 Por qué este mensaje es mejor:
+ * Separa la Culpa: Deja claro que el checkbox es un "vecino" del mensaje, no un "inquilino". Al llamarlo "Columna 0", le obligas a pensar en una estructura externa.
+ * Protege tu trabajo: Menciona explícitamente las "L-Shape Thread Lines" y el "Pixel-perfect alignment" como zonas prohibidas de tocar.
+ * Pide Permiso: Al pedirle que te explique su plan antes de codificar, evitas que rompa el CSS y tengas que gastar tiempo revirtiéndolo.
