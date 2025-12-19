@@ -341,6 +341,7 @@ export function AIAgentConfig() {
               size="sm"
               className="gap-2 shadow-none border-border hover:border-primary hover:text-primary hover:bg-primary/5"
               data-testid="button-save-config"
+              aria-label="Guardar configuración"
             >
               {saveMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -1310,17 +1311,19 @@ export function AIAgentConfig() {
                 size="sm"
                 onClick={closeEditModal}
                 data-testid="button-modal-cancel"
+                aria-label="Cancelar edición"
               >
                 <span className="hidden sm:inline">Cancelar</span>
-                <X className="h-4 w-4 sm:hidden" />
+                <X className="h-4 w-4 sm:hidden" aria-hidden="true" />
               </Button>
               <Button
                 onClick={saveEditModal}
                 size="sm"
                 className="gap-1.5 md:gap-2"
                 data-testid="button-modal-save"
+                aria-label="Guardar cambios"
               >
-                <Save className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <Save className="h-3.5 w-3.5 md:h-4 md:w-4" aria-hidden="true" />
                 <span className="hidden sm:inline">Aplicar Cambios</span>
                 <span className="sm:hidden">Guardar</span>
               </Button>
