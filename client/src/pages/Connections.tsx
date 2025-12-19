@@ -174,15 +174,15 @@ export function Connections() {
   return (
     <div className="h-full bg-background overflow-y-auto">
       {/* Mobile View */}
-      <MobileContainer className="px-4">
+      <MobileContainer>
         <MobilePageHeader 
           title="Connections" 
           subtitle={`${accounts.length} cuentas conectadas`}
-          className="-mx-4"
         />
         
         {accounts.length > 0 && (
           <>
+            <MobileSpacer size="sm" />
             <MobileSectionDivider title="Cuentas Activas" />
             <MobileListGroup>
               {accounts.map((account) => (
@@ -235,6 +235,8 @@ export function Connections() {
             </MobileListGroup>
           </>
         )}
+        
+        <MobileSpacer size="lg" />
         
         <MobileSectionDivider title="Conectar Canal" />
         <MobileListGroup>

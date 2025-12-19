@@ -159,12 +159,11 @@ export function AiMetrics() {
   return (
     <div className="h-full flex flex-col bg-gray-50/50 overflow-y-auto">
       {/* Mobile View */}
-      <MobileContainer className="px-4">
+      <MobileContainer>
         <MobilePageHeader 
           title="Métricas de IA" 
           subtitle={activeClient.name}
           rightElement={periodSelector}
-          className="-mx-4"
         />
         
         {isLoading ? (
@@ -172,18 +171,20 @@ export function AiMetrics() {
             <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
           </div>
         ) : error ? (
-          <div className="md:hidden py-8 text-center">
+          <div className="md:hidden p-4 text-center">
             <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
             <p className="text-sm text-muted-foreground">Error al cargar métricas</p>
           </div>
         ) : metrics && metrics.totalRequests === 0 ? (
-          <div className="md:hidden py-8 text-center">
+          <div className="md:hidden p-8 text-center">
             <Bot className="h-10 w-10 text-gray-400 mx-auto mb-3" />
             <p className="text-sm font-medium text-foreground">Sin datos de IA</p>
             <p className="text-xs text-muted-foreground mt-1">No hay solicitudes en los últimos {days} días</p>
           </div>
         ) : (
           <>
+            <MobileSpacer size="md" />
+            
             <MobileStatGrid columns={2}>
               <MobileStatCard
                 icon={<Activity className="h-4 w-4" />}
@@ -216,44 +217,52 @@ export function AiMetrics() {
               />
             </MobileStatGrid>
             
-            <MobileCard>
-              <MobileCardHeader 
-                title="Actividad Diaria" 
-                icon={<BarChart3 className="h-4 w-4" />}
-              />
-              <div className="h-[180px] -mx-2">
-                {metrics && metrics.dailyStats.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={metrics.dailyStats} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                      <XAxis 
-                        dataKey="date" 
-                        tick={{ fontSize: 9 }}
-                        tickFormatter={(value) => {
-                          const d = new Date(value);
-                          return `${d.getDate()}/${d.getMonth() + 1}`;
-                        }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis tick={{ fontSize: 9 }} axisLine={false} tickLine={false} />
-                      <Area 
-                        type="monotone" 
-                        dataKey="count" 
-                        name="Solicitudes"
-                        stroke="#6366f1" 
-                        fill="#6366f1" 
-                        fillOpacity={0.2} 
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
-                    Sin datos
-                  </div>
-                )}
-              </div>
-            </MobileCard>
+            <MobileSpacer size="lg" />
+            
+            <div className="md:hidden px-4">
+              <MobileCard noPadding>
+                <div className="p-4 border-b border-border">
+                  <MobileCardHeader 
+                    title="Actividad Diaria" 
+                    icon={<BarChart3 className="h-4 w-4" />}
+                  />
+                </div>
+                <div className="h-[180px] p-2">
+                  {metrics && metrics.dailyStats.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={metrics.dailyStats} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                        <XAxis 
+                          dataKey="date" 
+                          tick={{ fontSize: 9 }}
+                          tickFormatter={(value) => {
+                            const d = new Date(value);
+                            return `${d.getDate()}/${d.getMonth() + 1}`;
+                          }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <YAxis tick={{ fontSize: 9 }} axisLine={false} tickLine={false} />
+                        <Area 
+                          type="monotone" 
+                          dataKey="count" 
+                          name="Solicitudes"
+                          stroke="#6366f1" 
+                          fill="#6366f1" 
+                          fillOpacity={0.2} 
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                      Sin datos
+                    </div>
+                  )}
+                </div>
+              </MobileCard>
+            </div>
+            
+            <MobileSpacer size="lg" />
             
             {metrics?.byModel && Object.keys(metrics.byModel).length > 0 && (
               <>
