@@ -208,9 +208,11 @@ export function Inbox() {
     },
   });
 
-  // Clear selection when conversation changes
+  // Clear selection AND disable selection mode when conversation changes
+  // This ensures Bulk AI mode is scoped per conversation/post
   React.useEffect(() => {
     setSelectedMessageIds(new Set());
+    setSelectionEnabled(false);
   }, [activeConversation?.id]);
 
   const handleToggleSelection = (messageId: string) => {
