@@ -295,8 +295,10 @@ export function AIAgentConfig() {
 
   return (
     <div className="h-full flex flex-col bg-background overflow-hidden" data-testid="ai-agent-config">
-      <div className="border-b bg-background px-6 py-4">
-        <div className="flex items-center justify-between">
+      {/* Header - Responsive */}
+      <div className="border-b bg-background px-4 md:px-6 py-3 md:py-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          {/* Brand info */}
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 relative flex items-center justify-center bg-muted/30 rounded-xl p-2 border border-border shrink-0">
               {activeClient.avatar ? (
@@ -310,16 +312,17 @@ export function AIAgentConfig() {
                 <Bot className="h-5 w-5 text-muted-foreground" />
               )}
             </div>
-            <div>
-              <h1 className="text-xl font-semibold tracking-tight text-foreground" data-testid="brand-name">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-base md:text-xl font-semibold tracking-tight text-foreground truncate" data-testid="brand-name">
                 Agente IA: {activeClient.name}
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs md:text-sm text-muted-foreground hidden md:block">
                 Configura cómo responderá la IA a los mensajes
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          {/* Actions */}
+          <div className="flex items-center justify-between md:justify-end gap-3 md:gap-4">
             <div className="flex items-center gap-2">
               <Switch
                 id="agent-active"
@@ -327,7 +330,7 @@ export function AIAgentConfig() {
                 onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
                 data-testid="switch-agent-active"
               />
-              <Label htmlFor="agent-active" className="text-sm text-muted-foreground">
+              <Label htmlFor="agent-active" className="text-xs md:text-sm text-muted-foreground">
                 {formData.isActive ? 'Activo' : 'Inactivo'}
               </Label>
             </div>
@@ -335,6 +338,7 @@ export function AIAgentConfig() {
               onClick={handleSave} 
               disabled={saveMutation.isPending}
               variant="outline"
+              size="sm"
               className="gap-2 shadow-none border-border hover:border-primary hover:text-primary hover:bg-primary/5"
               data-testid="button-save-config"
             >
@@ -343,44 +347,51 @@ export function AIAgentConfig() {
               ) : (
                 <Save className="h-4 w-4" />
               )}
-              Guardar
+              <span className="hidden sm:inline">Guardar</span>
             </Button>
           </div>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-        <div className="border-b px-6 bg-background">
-          <TabsList className="h-12 bg-transparent gap-1 p-0">
-            <TabsTrigger value="general" className="gap-2 data-[state=active]:bg-muted rounded-md px-3" data-testid="tab-general">
-              <Settings className="h-4 w-4" />
-              General
-            </TabsTrigger>
-            <TabsTrigger value="prompts" className="gap-2 data-[state=active]:bg-muted rounded-md px-3" data-testid="tab-prompts">
-              <Brain className="h-4 w-4" />
-              Prompts
-            </TabsTrigger>
-            <TabsTrigger value="automation" className="gap-2 data-[state=active]:bg-muted rounded-md px-3" data-testid="tab-automation">
-              <Zap className="h-4 w-4" />
-              Automatización
-            </TabsTrigger>
-            <TabsTrigger value="platforms" className="gap-2 data-[state=active]:bg-muted rounded-md px-3" data-testid="tab-platforms">
-              <Share2 className="h-4 w-4" />
-              Plataformas
-            </TabsTrigger>
-            <TabsTrigger value="playground" className="gap-2 data-[state=active]:bg-muted rounded-md px-3" data-testid="tab-playground">
-              <Play className="h-4 w-4" />
-              Playground
-            </TabsTrigger>
-            <TabsTrigger value="history" className="gap-2 data-[state=active]:bg-muted rounded-md px-3" data-testid="tab-history">
-              <History className="h-4 w-4" />
-              Historial
-            </TabsTrigger>
-          </TabsList>
+        {/* Tabs - Horizontal scroll on mobile */}
+        <div className="border-b bg-background overflow-x-auto">
+          <div className="px-4 md:px-6 min-w-max">
+            <TabsList className="h-11 md:h-12 bg-transparent gap-0.5 md:gap-1 p-0">
+              <TabsTrigger value="general" className="gap-1.5 md:gap-2 data-[state=active]:bg-muted rounded-md px-2.5 md:px-3 text-xs md:text-sm" data-testid="tab-general">
+                <Settings className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                General
+              </TabsTrigger>
+              <TabsTrigger value="prompts" className="gap-1.5 md:gap-2 data-[state=active]:bg-muted rounded-md px-2.5 md:px-3 text-xs md:text-sm" data-testid="tab-prompts">
+                <Brain className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                Prompts
+              </TabsTrigger>
+              <TabsTrigger value="automation" className="gap-1.5 md:gap-2 data-[state=active]:bg-muted rounded-md px-2.5 md:px-3 text-xs md:text-sm" data-testid="tab-automation">
+                <Zap className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Automatización</span>
+                <span className="sm:hidden">Auto</span>
+              </TabsTrigger>
+              <TabsTrigger value="platforms" className="gap-1.5 md:gap-2 data-[state=active]:bg-muted rounded-md px-2.5 md:px-3 text-xs md:text-sm" data-testid="tab-platforms">
+                <Share2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Plataformas</span>
+                <span className="sm:hidden">Redes</span>
+              </TabsTrigger>
+              <TabsTrigger value="playground" className="gap-1.5 md:gap-2 data-[state=active]:bg-muted rounded-md px-2.5 md:px-3 text-xs md:text-sm" data-testid="tab-playground">
+                <Play className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Playground</span>
+                <span className="sm:hidden">Test</span>
+              </TabsTrigger>
+              <TabsTrigger value="history" className="gap-1.5 md:gap-2 data-[state=active]:bg-muted rounded-md px-2.5 md:px-3 text-xs md:text-sm" data-testid="tab-history">
+                <History className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Historial</span>
+                <span className="sm:hidden">Hist</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
         </div>
 
         <ScrollArea className="flex-1">
-          <div className="p-6 max-w-4xl mx-auto">
+          <div className="p-4 md:p-6 max-w-4xl mx-auto">
             <TabsContent value="general" className="mt-0 space-y-6">
               <Card className="border border-border shadow-none">
                 <CardHeader className="pb-4">
@@ -393,7 +404,7 @@ export function AIAgentConfig() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="grid grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                     <div className="space-y-2">
                       <Label className="text-sm">Proveedor</Label>
                       <Select
@@ -439,7 +450,7 @@ export function AIAgentConfig() {
                   <Separator />
 
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <div>
                         <Label className="text-sm">Transcripción de Audio</Label>
                         <p className="text-xs text-muted-foreground mt-0.5">
@@ -450,7 +461,7 @@ export function AIAgentConfig() {
                         value={formData.transcriptionProvider || 'gemini'}
                         onValueChange={(value) => setFormData({ ...formData, transcriptionProvider: value })}
                       >
-                        <SelectTrigger data-testid="select-transcription" className="w-48 shadow-none">
+                        <SelectTrigger data-testid="select-transcription" className="w-full sm:w-48 shadow-none">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -525,7 +536,7 @@ export function AIAgentConfig() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {DYNAMIC_VARIABLES.map((variable) => (
                       <div
                         key={variable.key}
@@ -727,7 +738,7 @@ export function AIAgentConfig() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
                     {[
                       { value: 'off', label: 'Desactivado', desc: 'Sin respuestas automáticas', icon: XCircle },
                       { value: 'draft', label: 'Borrador', desc: 'Genera borradores para revisar', icon: MessageSquare },
@@ -737,7 +748,7 @@ export function AIAgentConfig() {
                         key={mode.value}
                         type="button"
                         onClick={() => setFormData({ ...formData, autoReplyMode: mode.value })}
-                        className={`p-4 rounded-lg border text-left transition-all ${
+                        className={`p-3 md:p-4 rounded-lg border text-left transition-all ${
                           formData.autoReplyMode === mode.value
                             ? 'border-primary bg-primary/5'
                             : 'border-border hover:border-muted-foreground/30'
@@ -756,7 +767,7 @@ export function AIAgentConfig() {
                   <Separator />
 
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <div>
                         <Label className="text-sm">Workflow de Aprobación</Label>
                         <p className="text-xs text-muted-foreground">Requiere revisión humana antes de enviar</p>
@@ -765,7 +776,7 @@ export function AIAgentConfig() {
                         value={formData.approvalWorkflow}
                         onValueChange={(value) => setFormData({ ...formData, approvalWorkflow: value })}
                       >
-                        <SelectTrigger className="w-48 shadow-none" data-testid="select-approval-workflow">
+                        <SelectTrigger className="w-full sm:w-48 shadow-none" data-testid="select-approval-workflow">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -775,7 +786,7 @@ export function AIAgentConfig() {
                       </Select>
                     </div>
 
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <div>
                         <Label className="text-sm">Estrategia de Límite de Caracteres</Label>
                         <p className="text-xs text-muted-foreground">Qué hacer si la respuesta excede el límite</p>
@@ -784,7 +795,7 @@ export function AIAgentConfig() {
                         value={formData.characterLimitStrategy}
                         onValueChange={(value) => setFormData({ ...formData, characterLimitStrategy: value })}
                       >
-                        <SelectTrigger className="w-48 shadow-none" data-testid="select-char-limit-strategy">
+                        <SelectTrigger className="w-full sm:w-48 shadow-none" data-testid="select-char-limit-strategy">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -795,8 +806,8 @@ export function AIAgentConfig() {
                       </Select>
                     </div>
 
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
+                    <div className="space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                         <div>
                           <Label className="text-sm">Cooldown entre respuestas</Label>
                           <p className="text-xs text-muted-foreground">
@@ -853,18 +864,18 @@ export function AIAgentConfig() {
                         return (
                           <div 
                             key={account.id}
-                            className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/30 transition-colors"
+                            className="flex flex-col sm:flex-row sm:items-center justify-between p-3 md:p-4 border border-border rounded-lg hover:bg-muted/30 transition-colors gap-3"
                             data-testid={`platform-card-${account.provider}`}
                           >
-                            <div className="flex items-center gap-4">
-                              <div className="p-2 rounded-lg bg-muted/30 border border-border">
+                            <div className="flex items-center gap-3 md:gap-4">
+                              <div className="p-2 rounded-lg bg-muted/30 border border-border shrink-0">
                                 <Icon className={`h-5 w-5 ${config.color}`} />
                               </div>
-                              <div>
-                                <div className="font-medium text-sm flex items-center gap-2">
+                              <div className="min-w-0">
+                                <div className="font-medium text-sm flex items-center gap-2 flex-wrap">
                                   {config.name}
                                   {account.accountName && (
-                                    <span className="text-xs text-muted-foreground">
+                                    <span className="text-xs text-muted-foreground truncate">
                                       @{account.accountName}
                                     </span>
                                   )}
@@ -874,13 +885,13 @@ export function AIAgentConfig() {
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center justify-between sm:justify-end gap-3 md:gap-4 ml-11 sm:ml-0">
                               <Badge 
                                 variant="outline"
-                                className={account.isActive 
+                                className={`text-xs ${account.isActive 
                                   ? "bg-green-50 text-green-700 border-green-200" 
                                   : "bg-muted text-muted-foreground border-border"
-                                }
+                                }`}
                               >
                                 {account.isActive ? 'IA Activa' : 'IA Inactiva'}
                               </Badge>
@@ -915,7 +926,7 @@ export function AIAgentConfig() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-3">
                     {Object.entries(PLATFORM_CONFIG).map(([key, config]) => {
                       const Icon = config.icon;
                       return (
@@ -988,25 +999,25 @@ export function AIAgentConfig() {
             </TabsContent>
 
             <TabsContent value="history" className="mt-0 space-y-4">
-              <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-4 border-b border-border">
-                <div className="flex items-center justify-between mb-3">
+              <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-3 md:pb-4 border-b border-border">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                   <div className="flex items-center gap-2">
                     <History className="h-4 w-4 text-muted-foreground" />
-                    <h3 className="text-base font-semibold">Historial de Actividad</h3>
+                    <h3 className="text-sm md:text-base font-semibold">Historial de Actividad</h3>
                     <Badge variant="secondary" className="text-xs">
-                      {filteredAuditLogs.length} registros
+                      {filteredAuditLogs.length}
                     </Badge>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-3 flex-wrap">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+                  <div className="hidden sm:flex items-center gap-2">
                     <Filter className="h-4 w-4 text-muted-foreground" />
                     <span className="text-xs text-muted-foreground">Filtros:</span>
                   </div>
                   
                   <Select value={filterPlatform} onValueChange={setFilterPlatform}>
-                    <SelectTrigger className="w-[140px] h-8 text-xs shadow-none" data-testid="filter-platform">
+                    <SelectTrigger className="w-[120px] sm:w-[140px] h-8 text-xs shadow-none" data-testid="filter-platform">
                       <SelectValue placeholder="Plataforma" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1023,7 +1034,7 @@ export function AIAgentConfig() {
                   </Select>
                   
                   <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="w-[130px] h-8 text-xs shadow-none" data-testid="filter-status">
+                    <SelectTrigger className="w-[100px] sm:w-[130px] h-8 text-xs shadow-none" data-testid="filter-status">
                       <SelectValue placeholder="Estado" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1095,16 +1106,16 @@ export function AIAgentConfig() {
                         className="border border-border shadow-none hover:border-muted-foreground/30 transition-colors"
                         data-testid={`audit-log-${log.id}`}
                       >
-                        <CardHeader className="pb-3 pt-4 px-4">
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 rounded-lg bg-muted/50">
+                        <CardHeader className="pb-2 md:pb-3 pt-3 md:pt-4 px-3 md:px-4">
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                            <div className="flex items-start gap-2 md:gap-3">
+                              <div className="p-1.5 md:p-2 rounded-lg bg-muted/50 shrink-0">
                                 {log.platform ? getPlatformIcon(log.platform) : <Bot className="h-4 w-4 text-muted-foreground" />}
                               </div>
-                              <div>
-                                <div className="flex items-center gap-2">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
                                   <code 
-                                    className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded font-mono text-xs font-semibold cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                    className="px-1.5 md:px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded font-mono text-[10px] md:text-xs font-semibold cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                                     onClick={() => {
                                       const code = log.shortCode || log.id.slice(0, 8);
                                       navigator.clipboard.writeText(code);
@@ -1115,25 +1126,25 @@ export function AIAgentConfig() {
                                   >
                                     {log.shortCode || log.id.slice(0, 8)}
                                   </code>
-                                  <span className="font-medium text-sm">{log.action}</span>
+                                  <span className="font-medium text-xs md:text-sm">{log.action}</span>
                                   {log.platform && (
-                                    <Badge variant="outline" className="text-xs capitalize">
+                                    <Badge variant="outline" className="text-[10px] md:text-xs capitalize">
                                       {log.platform}
                                     </Badge>
                                   )}
                                 </div>
-                                <span className="text-xs text-muted-foreground">
+                                <span className="text-[10px] md:text-xs text-muted-foreground">
                                   {format(new Date(log.createdAt), "d MMM yyyy, HH:mm", { locale: es })}
                                 </span>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 ml-8 sm:ml-0">
                               <Badge 
                                 variant={log.status === 'success' ? 'default' : 'destructive'}
-                                className={`text-xs ${log.status === 'success' ? 'bg-green-100 text-green-700 hover:bg-green-100' : ''}`}
+                                className={`text-[10px] md:text-xs ${log.status === 'success' ? 'bg-green-100 text-green-700 hover:bg-green-100' : ''}`}
                               >
                                 {log.status === 'success' ? (
-                                  <><CheckCircle className="h-3 w-3 mr-1" /> Exitoso</>
+                                  <><CheckCircle className="h-3 w-3 mr-1" /> <span className="hidden sm:inline">Exitoso</span><span className="sm:hidden">OK</span></>
                                 ) : (
                                   <><XCircle className="h-3 w-3 mr-1" /> Error</>
                                 )}
@@ -1142,7 +1153,7 @@ export function AIAgentConfig() {
                           </div>
                         </CardHeader>
                         
-                        <CardContent className="px-4 pb-4 pt-0 space-y-3">
+                        <CardContent className="px-3 md:px-4 pb-3 md:pb-4 pt-0 space-y-2 md:space-y-3">
                           {log.inputContent && (
                             <div className="space-y-1">
                               <Label className="text-xs text-muted-foreground">Mensaje recibido</Label>
@@ -1252,16 +1263,16 @@ export function AIAgentConfig() {
         </ScrollArea>
       </Tabs>
 
-      {/* Modal de edición a pantalla completa */}
+      {/* Modal de edición a pantalla completa - Responsive */}
       <Dialog open={editModal.isOpen} onOpenChange={(open) => !open && closeEditModal()}>
-        <DialogContent className="max-w-4xl w-[90vw] h-[85vh] flex flex-col p-0">
-          <DialogHeader className="px-6 py-4 border-b shrink-0">
-            <div className="flex items-center justify-between">
-              <DialogTitle className="flex items-center gap-2">
-                {editModal.field === 'systemPrompt' && <MessageSquare className="h-5 w-5" />}
-                {editModal.field === 'knowledgeBase' && <BookOpen className="h-5 w-5" />}
-                {editModal.field === 'guardrailPrompt' && <Shield className="h-5 w-5" />}
-                Editar {editModal.title}
+        <DialogContent className="max-w-4xl w-[95vw] md:w-[90vw] h-[90vh] md:h-[85vh] flex flex-col p-0">
+          <DialogHeader className="px-4 md:px-6 py-3 md:py-4 border-b shrink-0">
+            <div className="flex items-center justify-between gap-2">
+              <DialogTitle className="flex items-center gap-2 text-sm md:text-base">
+                {editModal.field === 'systemPrompt' && <MessageSquare className="h-4 w-4 md:h-5 md:w-5" />}
+                {editModal.field === 'knowledgeBase' && <BookOpen className="h-4 w-4 md:h-5 md:w-5" />}
+                {editModal.field === 'guardrailPrompt' && <Shield className="h-4 w-4 md:h-5 md:w-5" />}
+                <span className="hidden sm:inline">Editar</span> {editModal.title}
               </DialogTitle>
               <div className="flex items-center gap-2">
                 <Button
@@ -1271,43 +1282,47 @@ export function AIAgentConfig() {
                     navigator.clipboard.writeText(editModal.value);
                     toast({ title: "Copiado", description: `${editModal.title} copiado al portapapeles` });
                   }}
-                  className="gap-2"
+                  className="gap-1.5 md:gap-2 h-8"
                   data-testid="button-modal-copy"
                 >
-                  <Copy className="h-4 w-4" />
-                  Copiar
+                  <Copy className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                  <span className="hidden sm:inline">Copiar</span>
                 </Button>
               </div>
             </div>
           </DialogHeader>
-          <div className="flex-1 p-6 overflow-hidden">
+          <div className="flex-1 p-3 md:p-6 overflow-hidden">
             <Textarea
               value={editModal.value}
               onChange={(e) => setEditModal({ ...editModal, value: e.target.value })}
-              className="w-full h-full font-mono text-sm resize-none"
+              className="w-full h-full font-mono text-xs md:text-sm resize-none"
               style={{ minHeight: '100%' }}
               data-testid="textarea-modal-edit"
             />
           </div>
-          <div className="px-6 py-4 border-t flex items-center justify-between shrink-0 bg-muted/30">
-            <p className="text-xs text-muted-foreground">
-              {editModal.value.length.toLocaleString()} caracteres
+          <div className="px-3 md:px-6 py-3 md:py-4 border-t flex items-center justify-between shrink-0 bg-muted/30 gap-2">
+            <p className="text-[10px] md:text-xs text-muted-foreground">
+              {editModal.value.length.toLocaleString()} <span className="hidden sm:inline">caracteres</span><span className="sm:hidden">chars</span>
             </p>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
               <Button
                 variant="outline"
+                size="sm"
                 onClick={closeEditModal}
                 data-testid="button-modal-cancel"
               >
-                Cancelar
+                <span className="hidden sm:inline">Cancelar</span>
+                <X className="h-4 w-4 sm:hidden" />
               </Button>
               <Button
                 onClick={saveEditModal}
-                className="gap-2"
+                size="sm"
+                className="gap-1.5 md:gap-2"
                 data-testid="button-modal-save"
               >
-                <Save className="h-4 w-4" />
-                Aplicar Cambios
+                <Save className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Aplicar Cambios</span>
+                <span className="sm:hidden">Guardar</span>
               </Button>
             </div>
           </div>
