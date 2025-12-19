@@ -162,6 +162,7 @@ function SingleMessage({
     }
   }, [isHighlighted]);
 
+  // IMPORTANT: Do NOT change p-2 -m-2 values - they affect L-shape connector positioning
   return (
     <div 
       ref={messageRef}
