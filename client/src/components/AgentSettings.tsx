@@ -170,7 +170,7 @@ export function AgentSettings() {
           <MobileListRow
             icon={<BookOpen className="h-4 w-4 text-blue-500" />}
             title="Contexto del Negocio"
-            subtitle={form.watch('businessContext') ? form.watch('businessContext').substring(0, 40) + '...' : 'Sin configurar'}
+            subtitle={form.watch('businessContext') ? (form.watch('businessContext').length > 40 ? form.watch('businessContext').substring(0, 40) + '...' : form.watch('businessContext')) : 'Sin configurar'}
             onClick={() => setMobileSheet('context')}
             testId="mobile-row-context"
           />
@@ -191,29 +191,34 @@ export function AgentSettings() {
 
       {/* Mobile Sheets */}
       <Sheet open={mobileSheet === 'name'} onOpenChange={() => setMobileSheet(null)}>
-        <SheetContent side="bottom" className="md:hidden rounded-t-2xl">
-          <SheetHeader className="text-left">
+        <SheetContent side="bottom" className="md:hidden rounded-t-2xl flex flex-col">
+          <SheetHeader className="text-left pb-2">
             <SheetTitle>Nombre del Agente</SheetTitle>
           </SheetHeader>
-          <div className="py-4">
+          <div className="flex-1 py-4">
             <Input
               value={form.watch('agentName')}
               onChange={(e) => form.setValue('agentName', e.target.value)}
               placeholder="e.g. SupportBot"
-              className="h-12"
+              className="h-12 text-base"
             />
             <p className="text-xs text-muted-foreground mt-2">El nombre que los usuarios verán en el chat</p>
+            {form.formState.errors.agentName && (
+              <p className="text-xs text-red-500 mt-2">{form.formState.errors.agentName.message}</p>
+            )}
           </div>
-          <Button onClick={() => setMobileSheet(null)} className="w-full h-12">Listo</Button>
+          <div className="pb-safe pt-2">
+            <Button onClick={() => setMobileSheet(null)} className="w-full h-12 bg-black hover:bg-gray-800 rounded-xl">Listo</Button>
+          </div>
         </SheetContent>
       </Sheet>
 
       <Sheet open={mobileSheet === 'tone'} onOpenChange={() => setMobileSheet(null)}>
-        <SheetContent side="bottom" className="md:hidden rounded-t-2xl">
-          <SheetHeader className="text-left">
+        <SheetContent side="bottom" className="md:hidden rounded-t-2xl flex flex-col max-h-[70vh]">
+          <SheetHeader className="text-left pb-2">
             <SheetTitle>Tono de Voz</SheetTitle>
           </SheetHeader>
-          <div className="py-4 space-y-2">
+          <div className="flex-1 overflow-y-auto py-4 space-y-2">
             {(['formal', 'casual', 'funny', 'empathetic'] as const).map(tone => (
               <button
                 key={tone}
@@ -235,20 +240,25 @@ export function AgentSettings() {
       </Sheet>
 
       <Sheet open={mobileSheet === 'context'} onOpenChange={() => setMobileSheet(null)}>
-        <SheetContent side="bottom" className="md:hidden rounded-t-2xl h-[80vh]">
-          <SheetHeader className="text-left">
+        <SheetContent side="bottom" className="md:hidden rounded-t-2xl h-[85vh] flex flex-col">
+          <SheetHeader className="text-left pb-2">
             <SheetTitle>Contexto del Negocio</SheetTitle>
           </SheetHeader>
-          <div className="py-4 flex-1">
+          <div className="flex-1 overflow-y-auto py-4">
             <Textarea
               value={form.watch('businessContext')}
               onChange={(e) => form.setValue('businessContext', e.target.value)}
               placeholder="Describe el negocio, políticas clave, y lo que el agente debería saber..."
-              className="min-h-[200px] text-sm"
+              className="min-h-[250px] text-base leading-relaxed"
             />
-            <p className="text-xs text-muted-foreground mt-2">La IA usa este contexto para fundamentar sus respuestas</p>
+            <p className="text-xs text-muted-foreground mt-2">La IA usa este contexto para fundamentar sus respuestas (mínimo 10 caracteres)</p>
+            {form.formState.errors.businessContext && (
+              <p className="text-xs text-red-500 mt-2">{form.formState.errors.businessContext.message}</p>
+            )}
           </div>
-          <Button onClick={() => setMobileSheet(null)} className="w-full h-12">Listo</Button>
+          <div className="pb-safe pt-2">
+            <Button onClick={() => setMobileSheet(null)} className="w-full h-12 bg-black hover:bg-gray-800 rounded-xl">Listo</Button>
+          </div>
         </SheetContent>
       </Sheet>
 
