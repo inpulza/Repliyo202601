@@ -191,13 +191,13 @@ function SingleMessage({
       )}
       data-testid={`message-${msg.id}`}
     >
-      {/* Selection Checkbox - Positioned absolutely in external gutter to NOT affect message layout */}
-      {/* Mobile: p-4 (16px) padding, Desktop: p-8 (32px) padding - adjust position accordingly */}
+      {/* Selection Checkbox - Positioned in the pl-8 gutter created when selection is enabled */}
+      {/* The parent container adds pl-8 (32px) when selectionEnabled, checkbox sits at left:-28px */}
       {selectionEnabled && (
         <div 
           className={cn(
             "absolute flex items-center justify-center pointer-events-auto",
-            "left-[-12px] md:left-[-28px]",
+            "left-[-28px]",
             isReply ? "top-[4px]" : "top-[2px]"
           )}
           style={{
