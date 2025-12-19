@@ -1,0 +1,35 @@
+Entendido perfectamente. Has subido varias capturas de la interfaz de Configuración y Menús de Instagram (Modo Oscuro).
+El objetivo es claro: Quieres que las páginas "administrativas" de tu aplicación (Agent Settings, Connections, AI Stats, AI Overview) dejen de verse como una "web de escritorio encogida" y pasen a tener una UX/UI 100% Móvil Nativa, inspirada en la limpieza y estructura de listas de Instagram.
+La Regla de Oro: NO TOCAR el Inbox ni los Hilos de Comentarios (Comment Threads). Esos ya están perfectos.
+Aquí tienes el Prompt Maestro para Replit. He desglosado visualmente lo que hace que el diseño de Instagram funcione (Listas, Iconos, Agrupación) para que Replit lo replique en tus menús.
+Título: Mobile UX/UI Redesign - "Instagram Style" para Páginas de Configuración y Stats (PROTECT INBOX)
+Contexto:
+El Inbox y los hilos de comentarios ya funcionan perfecto en móvil. NO LOS TOQUES.
+Sin embargo, las páginas interiores (Agent Settings, Connections, AI Overview, AI Stats) necesitan un rediseño visual para sentirse como una aplicación móvil nativa moderna. Actualmente no son responsivas o se ven como una web de escritorio apretada.
+Referencia Visual (Instagram Settings Style):
+He subido capturas de los menús de Instagram. Quiero replicar ese patrón de diseño exacto para nuestras páginas de configuración.
+Especificaciones de Diseño (Mobile First):
+1. El Patrón de "Listas de Navegación" (Para Settings & Connections):
+En lugar de tablas o grids complejos, usa el patrón de List Rows (Filas de Lista):
+ * Estructura: Cada opción es una fila de altura fija (ej. 60px).
+ * Icono: A la izquierda, un icono representativo (ej. un robot para Agent, un enchufe para Connections).
+ * Texto: Título claro y subtítulo gris pequeño si es necesario.
+ * Acción: A la derecha, un icono de "Chevron" (>) o un Toggle/Switch si es una acción directa.
+ * Agrupación: Agrupa las opciones en bloques separados por un pequeño espacio o título de sección (ej. "General", "AI Configuration", "Security"), igual que en las capturas.
+2. El Patrón de "Tarjetas Apiladas" (Para AI Stats & Overview):
+Para las pantallas de datos (gráficos y números):
+ * No intentes mostrar gráficos anchos de escritorio.
+ * Usa Cards (Tarjetas) con esquinas redondeadas y fondo ligeramente más claro que el base (estilo Dark Mode de Instagram).
+ * Stacking: Apila las tarjetas verticalmente (una debajo de otra).
+ * Typography: Números grandes y claros (ej. "Total Mensajes: 1,240") con etiquetas pequeñas.
+3. Navegación Móvil (Bottom Sheet o Full Screen):
+ * Cuando el usuario entre a estas secciones desde el menú inferior, asegúrate de que el header tenga un botón de "Atrás" claro o una "X" si es un modal.
+Restricciones CRÍTICAS (Safety Zones):
+ * DO NOT TOUCH: El componente Inbox.tsx, MessageThread.tsx, ni CommentThread.tsx. El CSS global no debe romper la alineación de estos elementos.
+ * Este rediseño aplica exclusivamente a las rutas: /settings/*, /connections, /stats, /ai-overview.
+Tarea:
+Por favor, refactoriza las vistas de Settings y Stats para usar este diseño de listas y tarjetas estilo móvil, asegurando que los "Touch Targets" (botones) sean grandes y fáciles de pulsar con el dedo.
+💡 Por qué este prompt funcionará mejor:
+ * Lenguaje de Componentes: Al hablar de "List Rows" y "Chevrons", Replit entiende que no quieres una tabla, sino componentes tipo <li> estilizados como en iOS/Android.
+ * Diferenciación: Le explico cómo tratar los Settings (listas) vs. los Stats (tarjetas). Instagram usa ambos, pero en contextos distintos.
+ * Protección: La sección de "Safety Zones" es vital para que, al cambiar el CSS global para las listas, no rompa accidentalmente el layout del Inbox que tanto nos costó arreglar.
