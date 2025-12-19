@@ -282,6 +282,9 @@ function NotificationItem({
 
   const platformIcon = notification.platform ? platformIcons[notification.platform] : null;
   const platformColor = notification.platform ? platformColors[notification.platform] : null;
+  
+  const displayIcon = platformIcon || config.icon;
+  const displayColor = platformColor || config.bgColor;
 
   const content = (
     <div
@@ -292,14 +295,12 @@ function NotificationItem({
       onClick={onClick}
       data-testid={`notification-item-${notification.id}`}
     >
-      {platformIcon && (
-        <div className={cn(
-          "h-6 w-6 rounded-full flex items-center justify-center text-white shrink-0 mt-0.5",
-          platformColor || 'bg-gray-500'
-        )}>
-          {platformIcon}
-        </div>
-      )}
+      <div className={cn(
+        "h-6 w-6 rounded-full flex items-center justify-center text-white shrink-0 mt-0.5",
+        displayColor
+      )}>
+        {displayIcon}
+      </div>
       
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
