@@ -192,13 +192,15 @@ function SingleMessage({
       data-testid={`message-${msg.id}`}
     >
       {/* Selection Checkbox - Positioned absolutely in external gutter to NOT affect message layout */}
-      {/* Uses the existing p-8 (32px) padding of ScrollArea as gutter space */}
+      {/* Mobile: p-4 (16px) padding, Desktop: p-8 (32px) padding - adjust position accordingly */}
       {selectionEnabled && (
         <div 
-          className="absolute flex items-center justify-center pointer-events-auto"
+          className={cn(
+            "absolute flex items-center justify-center pointer-events-auto",
+            "left-[-12px] md:left-[-28px]",
+            isReply ? "top-[4px]" : "top-[2px]"
+          )}
           style={{
-            left: '-28px',
-            top: isReply ? '4px' : '2px',
             width: '24px',
             height: isReply ? '24px' : '32px',
           }}
