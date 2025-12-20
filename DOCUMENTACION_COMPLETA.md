@@ -232,6 +232,12 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 ### Idioma
 - Comunicación en **español**
 
+### Iconos y UI
+- **NO usar el icono Sparkles (✨)** - No se considera apropiado para esta aplicación
+- Preferir iconos más simples y profesionales como `Wand` (varita mágica) para funciones de IA
+- Los iconos de lucide-react disponibles incluyen: `Wand`, `Star`, `Sparkle` (singular)
+- Las notificaciones Toast deben ser compactas, centradas en la parte inferior de la pantalla
+
 ### Desarrollo
 - **NO cambiar el diseño UI** sin consultar primero
 - Si falta funcionalidad en la interfaz, preguntar antes de implementar

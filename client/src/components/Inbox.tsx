@@ -26,6 +26,7 @@ import {
   Frown,
   Send,
   Sparkles,
+  Wand,
   MessageCircle,
   MessageSquare,
   Check,
@@ -64,6 +65,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -1337,27 +1339,34 @@ export function Inbox() {
 
             {/* Chat Content */}
             <div className={cn("flex-1 relative flex flex-col overflow-hidden", getPlatformStyles((activeConversation.platform || 'instagram') as Platform).container)}>
-                {/* Floating Bulk AI Button */}
+                {/* Floating Bulk AI Button - Activar selección múltiple para generar borradores en masa */}
+                {/* NOTA: No usar el icono Sparkles (✨) - preferir iconos más simples como Wand */}
                 {threadMessages.length > 1 && (
-                  <Button
-                    onClick={() => {
-                      setSelectionEnabled(!selectionEnabled);
-                      if (selectionEnabled) {
-                        setSelectedMessageIds(new Set());
-                      }
-                    }}
-                    size="icon"
-                    className={cn(
-                      "absolute top-3 right-3 z-20 h-10 w-10 rounded-full shadow-lg transition-all",
-                      selectionEnabled 
-                        ? "bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white ring-2 ring-purple-300" 
-                        : "bg-white hover:bg-gray-50 text-gray-600 border border-gray-200"
-                    )}
-                    title={selectionEnabled ? "Cancelar selección" : "Selección múltiple para IA"}
-                    data-testid="button-toggle-selection-mode"
-                  >
-                    <Sparkles className={cn("h-5 w-5", selectionEnabled && "animate-pulse")} />
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => {
+                          setSelectionEnabled(!selectionEnabled);
+                          if (selectionEnabled) {
+                            setSelectedMessageIds(new Set());
+                          }
+                        }}
+                        size="icon"
+                        className={cn(
+                          "absolute top-3 right-3 z-20 h-10 w-10 rounded-full shadow-lg transition-all",
+                          selectionEnabled 
+                            ? "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50" 
+                            : "bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white"
+                        )}
+                        data-testid="button-toggle-selection-mode"
+                      >
+                        <Wand className="h-5 w-5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      <p>{selectionEnabled ? "Cancelar selección" : "Borradores en masa"}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 )}
                 <ScrollArea className="flex-1 p-4 md:p-8">
                    <div className={cn(
