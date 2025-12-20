@@ -1337,6 +1337,28 @@ export function Inbox() {
 
             {/* Chat Content */}
             <div className={cn("flex-1 relative flex flex-col overflow-hidden", getPlatformStyles((activeConversation.platform || 'instagram') as Platform).container)}>
+                {/* Floating Bulk AI Button */}
+                {threadMessages.length > 1 && (
+                  <Button
+                    onClick={() => {
+                      setSelectionEnabled(!selectionEnabled);
+                      if (selectionEnabled) {
+                        setSelectedMessageIds(new Set());
+                      }
+                    }}
+                    size="icon"
+                    className={cn(
+                      "absolute top-3 right-3 z-20 h-10 w-10 rounded-full shadow-lg transition-all",
+                      selectionEnabled 
+                        ? "bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white ring-2 ring-purple-300" 
+                        : "bg-white hover:bg-gray-50 text-gray-600 border border-gray-200"
+                    )}
+                    title={selectionEnabled ? "Cancelar selección" : "Selección múltiple para IA"}
+                    data-testid="button-toggle-selection-mode"
+                  >
+                    <Sparkles className={cn("h-5 w-5", selectionEnabled && "animate-pulse")} />
+                  </Button>
+                )}
                 <ScrollArea className="flex-1 p-4 md:p-8">
                    <div className={cn(
                      "max-w-3xl mx-auto space-y-8 pb-32 relative",
@@ -1358,24 +1380,6 @@ export function Inbox() {
                             <MessageCircle className="h-3 w-3" />
                             Thread · {threadMessages.length} messages
                           </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setSelectionEnabled(!selectionEnabled);
-                              if (selectionEnabled) {
-                                setSelectedMessageIds(new Set());
-                              }
-                            }}
-                            className={cn(
-                              "h-6 text-[10px] px-2",
-                              selectionEnabled ? "text-blue-600 bg-blue-50" : "text-gray-500"
-                            )}
-                            data-testid="button-toggle-selection-mode"
-                          >
-                            <Sparkles className="h-3 w-3 mr-1" />
-                            {selectionEnabled ? 'Cancelar' : 'Bulk AI'}
-                          </Button>
                           <div className="h-px flex-1 bg-gray-300" />
                         </div>
                       )}
