@@ -39,6 +39,7 @@ import {
   Inbox as InboxIcon,
   ExternalLink,
   ArrowLeft,
+  ArrowUp,
   Info,
   ChevronDown,
   Archive,
@@ -320,6 +321,8 @@ export function Inbox() {
   const [highlightedConversationId, setHighlightedConversationId] = useState<string | null>(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const [focusedConversationId, setFocusedConversationId] = useState<string | null>(null);
+  const [showScrollToTop, setShowScrollToTop] = useState(false);
+  const threadScrollRef = React.useRef<HTMLDivElement>(null);
   const [location, setLocation] = useLocation();
 
   // Handler for platform filter clicks - activates unread filter if platform has unread messages
@@ -1368,7 +1371,16 @@ export function Inbox() {
                     </TooltipContent>
                   </Tooltip>
                 )}
-                <ScrollArea className="flex-1 p-4 md:p-8">
+                <div className="flex-1 relative overflow-hidden">
+                  <div 
+                    ref={threadScrollRef}
+                    className="absolute inset-0 overflow-y-auto p-4 md:p-8"
+                    onScroll={(e) => {
+                      const target = e.currentTarget;
+                      const scrollPercentage = target.scrollTop / (target.scrollHeight - target.clientHeight);
+                      setShowScrollToTop(scrollPercentage > 0.15);
+                    }}
+                  >
                    <div className={cn(
                      "max-w-3xl mx-auto space-y-8 pb-32 relative",
                      selectionEnabled && "pl-8"
@@ -1424,8 +1436,40 @@ export function Inbox() {
                       <div className="h-16"></div>
                     </>
                   )}
-               </div>
-            </ScrollArea>
+                   </div>
+                  </div>
+                  
+                  {/* Scroll to Top Button */}
+                  <AnimatePresence>
+                    {showScrollToTop && threadMessages.length > 3 && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute bottom-24 right-6 z-30"
+                      >
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              onClick={() => {
+                                threadScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                              size="icon"
+                              className="h-10 w-10 rounded-full bg-white/80 hover:bg-white text-gray-600 hover:text-gray-800 shadow-lg border border-gray-200/50 backdrop-blur-sm transition-all"
+                              data-testid="button-scroll-to-top"
+                            >
+                              <ArrowUp className="h-5 w-5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="left">
+                            <p>Ir arriba</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
 
             {/* Bulk Draft Action Bar */}
             <BulkDraftActionBar
