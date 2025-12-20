@@ -126,8 +126,10 @@ export const aiAgents = pgTable("ai_agents", {
   guardrailPrompt: text("guardrail_prompt"),
   autoReplyMode: text("auto_reply_mode").notNull().default('off'),
   approvalWorkflow: text("approval_workflow").notNull().default('none'),
-  characterLimitStrategy: text("character_limit_strategy").notNull().default('truncate'),
+  characterLimitStrategy: text("character_limit_strategy").notNull().default('reject'),
+  cooldownEnabled: boolean("cooldown_enabled").notNull().default(false),
   cooldownSeconds: integer("cooldown_seconds").notNull().default(0),
+  cooldownRandomness: integer("cooldown_randomness").notNull().default(0),
   lastAutoReplyAt: timestamp("last_auto_reply_at"),
   platformSettings: jsonb("platform_settings"),
   isActive: boolean("is_active").notNull().default(true),
@@ -372,13 +374,10 @@ export type UpdateAiAgentAuditLog = z.infer<typeof updateAiAgentAuditLogSchema>;
 export const aiReplyStatusEnum = z.enum(['none', 'suggested', 'approved', 'sent', 'rejected', 'drafting', 'drafted', 'draft_error']);
 export type AiReplyStatus = z.infer<typeof aiReplyStatusEnum>;
 
-export const autoReplyModeEnum = z.enum(['off', 'draft', 'auto']);
+export const autoReplyModeEnum = z.enum(['off', 'auto']);
 export type AutoReplyMode = z.infer<typeof autoReplyModeEnum>;
 
-export const approvalWorkflowEnum = z.enum(['none', 'human_review']);
-export type ApprovalWorkflow = z.infer<typeof approvalWorkflowEnum>;
-
-export const characterLimitStrategyEnum = z.enum(['truncate', 'reject', 'summarize']);
+export const characterLimitStrategyEnum = z.enum(['reject', 'summarize']);
 export type CharacterLimitStrategy = z.infer<typeof characterLimitStrategyEnum>;
 
 export const llmProviderEnum = z.enum(['openai', 'gemini', 'anthropic']);

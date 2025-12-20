@@ -52,8 +52,20 @@ class AutoReplyService {
         return { success: false, skippedReason: `mode_${agent.autoReplyMode}` };
       }
 
-      if (!this.checkCooldown(agent)) {
-        log(`${logPrefix} Still in cooldown period, skipping auto-reply`, "sync");
+      const cooldownResult = this.checkCooldown(agent);
+      if (!cooldownResult.canReply) {
+        log(`${logPrefix} Still in cooldown period (${cooldownResult.remainingSeconds}s remaining), skipping auto-reply`, "sync");
+        
+        // Notify via websocket that message was skipped due to cooldown (only if brandId is valid)
+        if (brand.id && message.id && conversation.id) {
+          websocketService.notifyAgentCooldown(brand.id, {
+            messageId: message.id,
+            conversationId: conversation.id,
+            remainingSeconds: cooldownResult.remainingSeconds || 0,
+            platform: message.platform || 'unknown',
+          });
+        }
+        
         return { success: false, skippedReason: "cooldown" };
       }
 
@@ -388,21 +400,42 @@ class AutoReplyService {
     }
   }
 
-  private checkCooldown(agent: AiAgent): boolean {
-    if (!agent.cooldownSeconds || agent.cooldownSeconds === 0) {
-      return true;
+  private checkCooldown(agent: AiAgent): { canReply: boolean; remainingSeconds: number } {
+    // If cooldown is disabled, always allow
+    if (!agent.cooldownEnabled) {
+      return { canReply: true, remainingSeconds: 0 };
     }
 
+    // If no cooldown seconds configured, allow
+    if (!agent.cooldownSeconds || agent.cooldownSeconds === 0) {
+      return { canReply: true, remainingSeconds: 0 };
+    }
+
+    // If never replied before, allow
     if (!agent.lastAutoReplyAt) {
-      return true;
+      return { canReply: true, remainingSeconds: 0 };
     }
 
     const now = new Date();
     const lastReply = new Date(agent.lastAutoReplyAt);
     const diffMs = now.getTime() - lastReply.getTime();
-    const cooldownMs = agent.cooldownSeconds * 1000;
+    
+    // Calculate effective cooldown with randomness
+    let effectiveCooldownSeconds = agent.cooldownSeconds;
+    if (agent.cooldownRandomness && agent.cooldownRandomness > 0) {
+      // Add random variation: -randomness to +randomness
+      const variation = Math.floor(Math.random() * (agent.cooldownRandomness * 2 + 1)) - agent.cooldownRandomness;
+      effectiveCooldownSeconds = Math.max(0, effectiveCooldownSeconds + variation);
+    }
+    
+    const cooldownMs = effectiveCooldownSeconds * 1000;
+    const remainingMs = cooldownMs - diffMs;
+    const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
 
-    return diffMs >= cooldownMs;
+    return { 
+      canReply: diffMs >= cooldownMs, 
+      remainingSeconds 
+    };
   }
 
   private async logAuditEntry(

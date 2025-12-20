@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 interface NotificationPayload {
-  type: 'new_message' | 'sync_complete' | 'agent_reply' | 'subscribed' | 'connected' | 'error';
+  type: 'new_message' | 'sync_complete' | 'agent_reply' | 'agent_cooldown' | 'subscribed' | 'connected' | 'error';
   brandId?: string;
   data?: any;
   message?: string;
@@ -15,11 +15,12 @@ interface UseWebSocketOptions {
   onNewMessage?: (data: any) => void;
   onSyncComplete?: (data: any) => void;
   onAgentReply?: (data: any) => void;
+  onAgentCooldown?: (data: any) => void;
   showToasts?: boolean;
 }
 
 export function useWebSocket(options: UseWebSocketOptions = {}) {
-  const { brandId, userId, onNewMessage, onSyncComplete, onAgentReply, showToasts = true } = options;
+  const { brandId, userId, onNewMessage, onSyncComplete, onAgentReply, onAgentCooldown, showToasts = true } = options;
   const [isConnected, setIsConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState<NotificationPayload | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -69,6 +70,16 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
             case 'agent_reply':
               onAgentReply?.(payload.data);
               break;
+            case 'agent_cooldown':
+              onAgentCooldown?.(payload.data);
+              if (showToasts && payload.data?.remainingSeconds !== undefined) {
+                toast({
+                  title: "Mensaje omitido por cooldown",
+                  description: `El agente esperará ${payload.data.remainingSeconds ?? 0}s antes de responder`,
+                  variant: "default",
+                });
+              }
+              break;
             case 'subscribed':
             case 'connected':
               break;
@@ -96,7 +107,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     } catch (error) {
       console.error('[WebSocket] Failed to connect:', error);
     }
-  }, [brandId, userId, onNewMessage, onSyncComplete, onAgentReply, showToasts, toast]);
+  }, [brandId, userId, onNewMessage, onSyncComplete, onAgentReply, onAgentCooldown, showToasts, toast]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {

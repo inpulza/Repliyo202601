@@ -136,9 +136,10 @@ export function AIAgentConfig() {
     knowledgeBase: '',
     guardrailPrompt: DEFAULT_GUARDRAIL,
     autoReplyMode: 'off',
-    approvalWorkflow: 'none',
-    characterLimitStrategy: 'truncate',
+    characterLimitStrategy: 'reject',
+    cooldownEnabled: false,
     cooldownSeconds: 0,
+    cooldownRandomness: 0,
     isActive: true,
   });
 
@@ -233,9 +234,10 @@ export function AIAgentConfig() {
         knowledgeBase: agent.knowledgeBase || '',
         guardrailPrompt: agent.guardrailPrompt || DEFAULT_GUARDRAIL,
         autoReplyMode: agent.autoReplyMode || 'off',
-        approvalWorkflow: agent.approvalWorkflow || 'none',
-        characterLimitStrategy: agent.characterLimitStrategy || 'truncate',
+        characterLimitStrategy: agent.characterLimitStrategy || 'reject',
+        cooldownEnabled: agent.cooldownEnabled ?? false,
         cooldownSeconds: agent.cooldownSeconds || 0,
+        cooldownRandomness: agent.cooldownRandomness || 0,
         isActive: agent.isActive ?? true,
       });
     }
@@ -739,10 +741,9 @@ export function AIAgentConfig() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                     {[
                       { value: 'off', label: 'Desactivado', desc: 'Sin respuestas automáticas', icon: XCircle },
-                      { value: 'draft', label: 'Borrador', desc: 'Genera borradores para revisar', icon: MessageSquare },
                       { value: 'auto', label: 'Automático', desc: 'Responde automáticamente', icon: Zap },
                     ].map((mode) => (
                       <button
@@ -770,27 +771,8 @@ export function AIAgentConfig() {
                   <div className="space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <div>
-                        <Label className="text-sm">Workflow de Aprobación</Label>
-                        <p className="text-xs text-muted-foreground">Requiere revisión humana antes de enviar</p>
-                      </div>
-                      <Select
-                        value={formData.approvalWorkflow}
-                        onValueChange={(value) => setFormData({ ...formData, approvalWorkflow: value })}
-                      >
-                        <SelectTrigger className="w-full sm:w-48 shadow-none" data-testid="select-approval-workflow">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Sin aprobación</SelectItem>
-                          <SelectItem value="human_review">Revisión humana</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                      <div>
                         <Label className="text-sm">Estrategia de Límite de Caracteres</Label>
-                        <p className="text-xs text-muted-foreground">Qué hacer si la respuesta excede el límite</p>
+                        <p className="text-xs text-muted-foreground">Qué hacer si la respuesta excede el límite de la plataforma</p>
                       </div>
                       <Select
                         value={formData.characterLimitStrategy}
@@ -800,31 +782,67 @@ export function AIAgentConfig() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="truncate">Truncar</SelectItem>
-                          <SelectItem value="summarize">Resumir</SelectItem>
-                          <SelectItem value="reject">Rechazar</SelectItem>
+                          <SelectItem value="summarize">Resumir con IA</SelectItem>
+                          <SelectItem value="reject">Rechazar y registrar error</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
-                    <div className="space-y-3">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                    <Separator />
+
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
                         <div>
                           <Label className="text-sm">Cooldown entre respuestas</Label>
                           <p className="text-xs text-muted-foreground">
-                            Segundos de espera entre respuestas automáticas
+                            Tiempo de espera entre respuestas automáticas
                           </p>
                         </div>
-                        <span className="text-sm font-medium">{formData.cooldownSeconds}s</span>
+                        <Switch
+                          checked={formData.cooldownEnabled || false}
+                          onCheckedChange={(checked) => setFormData({ ...formData, cooldownEnabled: checked })}
+                          data-testid="switch-cooldown-enabled"
+                        />
                       </div>
-                      <Slider
-                        value={[formData.cooldownSeconds || 0]}
-                        min={0}
-                        max={300}
-                        step={10}
-                        onValueChange={([value]) => setFormData({ ...formData, cooldownSeconds: value })}
-                        data-testid="slider-cooldown"
-                      />
+
+                      {formData.cooldownEnabled && (
+                        <div className="space-y-4 pl-0 sm:pl-4 border-l-0 sm:border-l-2 border-border">
+                          <div className="space-y-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                              <Label className="text-sm">Segundos de espera</Label>
+                              <span className="text-sm font-medium">{formData.cooldownSeconds}s</span>
+                            </div>
+                            <Slider
+                              value={[formData.cooldownSeconds || 0]}
+                              min={0}
+                              max={60}
+                              step={1}
+                              onValueChange={([value]) => setFormData({ ...formData, cooldownSeconds: value })}
+                              data-testid="slider-cooldown"
+                            />
+                          </div>
+
+                          <div className="space-y-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                              <div>
+                                <Label className="text-sm">Variación aleatoria</Label>
+                                <p className="text-xs text-muted-foreground">
+                                  Añade ±{formData.cooldownRandomness || 0}s de variación
+                                </p>
+                              </div>
+                              <span className="text-sm font-medium">±{formData.cooldownRandomness || 0}s</span>
+                            </div>
+                            <Slider
+                              value={[formData.cooldownRandomness || 0]}
+                              min={0}
+                              max={30}
+                              step={1}
+                              onValueChange={([value]) => setFormData({ ...formData, cooldownRandomness: value })}
+                              data-testid="slider-cooldown-randomness"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>

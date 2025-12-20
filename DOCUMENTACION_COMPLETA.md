@@ -4,8 +4,8 @@
 Sistema de gestión de mensajes de redes sociales que se integra con Metricool para centralizar y gestionar DMs y comentarios de múltiples marcas/empresas. El sistema permite a usuarios admin y clientes gestionar sus interacciones sociales de forma organizada.
 
 ## Estado Actual
-- **Fase Actual**: ✅ FASE 9 COMPLETADA - Sistema de Notificaciones Central
-- **Última Actualización**: 18 de Diciembre 2025
+- **Fase Actual**: ✅ FASE 10 EN PROGRESO - Simplificación de Automatización
+- **Última Actualización**: 20 de Diciembre 2025
 - **Login/Logout**: ✅ Completamente funcional (página de login creada, logout en sidebar)
 - **Sistema de Roles**: ✅ Admin vs Client funcionando correctamente
 - **Marca de Prueba**: ✅ Inpulza Testing conectada (blogId: 4074962)
@@ -429,6 +429,74 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 - ✅ Registro en audit log con action='auto_reply' (éxito o error)
 - ✅ Notificación WebSocket cuando se envía respuesta automática
 - ✅ Actualización de lastAutoReplyAt en el agente para cooldown
+
+**FASE 10.1: Simplificación de Automatización ✅ COMPLETADA - 20 Diciembre 2025**
+
+#### 10.1.1 Diagnóstico y Limpieza de Opciones No Funcionales
+Se realizó un diagnóstico completo de las opciones de automatización del agente IA, identificando que varias opciones estaban en la UI pero sin lógica real implementada en el backend:
+
+**Opciones Eliminadas:**
+- ❌ **Modo "Borrador" (draft)**: Estaba en la UI pero no generaba borradores automáticamente al recibir mensajes. Solo permitía generación manual.
+- ❌ **Workflow de Aprobación (approvalWorkflow)**: Las opciones "none" y "human_review" no tenían lógica implementada. El modo "auto" siempre enviaba directamente sin esperar aprobación.
+- ❌ **Estrategia "Truncar" (truncate)**: Eliminada por ser redundante con "Resumir".
+
+**Opciones que Sí Funcionan (mantenidas):**
+- ✅ **Modo "Desactivado" (off)**: No hace nada, correcto
+- ✅ **Modo "Automático" (auto)**: Responde automáticamente, funciona correctamente
+- ✅ **Estrategia "Resumir" (summarize)**: Ahora corta inteligentemente en fin de oración o palabra
+- ✅ **Estrategia "Rechazar" (reject)**: Lanza error que se registra en audit log
+
+#### 10.1.2 Mejoras en el Sistema de Cooldown
+Se mejoró significativamente el sistema de cooldown entre respuestas automáticas:
+
+**Nuevos campos en tabla `ai_agents`:**
+- `cooldownEnabled` (boolean, default false): Toggle para activar/desactivar el cooldown
+- `cooldownRandomness` (integer, default 0): Variación aleatoria en segundos (±N)
+
+**Cambios en UI (AIAgentConfig.tsx):**
+- ✅ Switch para activar/desactivar cooldown
+- ✅ Slider granular de 0-60 segundos (step de 1 segundo, no de 10)
+- ✅ Slider para variación aleatoria de 0-30 segundos
+- ✅ UI condicional: sliders solo aparecen si cooldown está activado
+- ✅ Indicación visual de la variación actual (±Ns)
+
+**Cambios en Backend (autoReplyService.ts):**
+- ✅ Respeta el nuevo flag `cooldownEnabled`
+- ✅ Aplica variación aleatoria: `effectiveCooldown = base ± random(randomness)`
+- ✅ Envía notificación WebSocket cuando un mensaje se salta por cooldown
+- ✅ Retorna segundos restantes en el resultado de cooldown
+
+**Notificación Toast para Cooldown:**
+- ✅ Nuevo evento WebSocket `agent_cooldown`
+- ✅ Frontend muestra toast: "Mensaje omitido por cooldown - El agente esperará Xs antes de responder"
+- ✅ Hook `useWebSocket.ts` actualizado con handler `onAgentCooldown`
+
+#### 10.1.3 Estrategia de Límite de Caracteres Mejorada
+La función `truncateResponse` en `prompt-composer.ts` fue refactorizada:
+
+**Estrategia "summarize" (Resumir con IA):**
+- Corta preferentemente en fin de oración (., ?, !)
+- Si no hay fin de oración en el último 60%, corta en espacio
+- Último recurso: corta directamente con "..."
+
+**Estrategia "reject" (Rechazar):**
+- Lanza error descriptivo con caracteres generados vs límite
+- Error se registra en audit log para debugging
+
+#### 10.1.4 Archivos Modificados
+- `shared/schema.ts`: Nuevos campos cooldownEnabled, cooldownRandomness; enums simplificados
+- `client/src/components/AIAgentConfig.tsx`: UI simplificada con solo 2 modos, cooldown mejorado
+- `server/services/autoReplyService.ts`: Cooldown con randomness, notificación WebSocket
+- `server/services/websocketService.ts`: Nuevo método notifyAgentCooldown
+- `client/src/hooks/useWebSocket.ts`: Handler para agent_cooldown con toast
+- `server/services/llm/prompt-composer.ts`: truncateResponse mejorado
+
+#### 10.1.5 Migración de Base de Datos
+```sql
+ALTER TABLE "ai_agents" ALTER COLUMN "character_limit_strategy" SET DEFAULT 'reject';
+ALTER TABLE "ai_agents" ADD COLUMN IF NOT EXISTS "cooldown_enabled" boolean DEFAULT false NOT NULL;
+ALTER TABLE "ai_agents" ADD COLUMN IF NOT EXISTS "cooldown_randomness" integer DEFAULT 0 NOT NULL;
+```
 
 ---
 

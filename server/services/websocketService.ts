@@ -6,7 +6,7 @@ import cookie from 'cookie';
 import signature from 'cookie-signature';
 
 interface NotificationPayload {
-  type: 'new_message' | 'sync_complete' | 'agent_reply';
+  type: 'new_message' | 'sync_complete' | 'agent_reply' | 'agent_cooldown';
   brandId: string;
   data: any;
 }
@@ -190,6 +190,19 @@ class WebSocketService {
       type: 'agent_reply',
       brandId,
       data: replyData
+    });
+  }
+
+  notifyAgentCooldown(brandId: string, cooldownData: {
+    messageId: string;
+    conversationId: string;
+    remainingSeconds: number;
+    platform: string;
+  }): void {
+    this.broadcast({
+      type: 'agent_cooldown',
+      brandId,
+      data: cooldownData
     });
   }
 

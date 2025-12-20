@@ -500,7 +500,7 @@ ${platformGuideline}`);
 export function truncateResponse(
   text: string,
   characterLimit: number,
-  strategy: "truncate" | "reject" | "summarize"
+  strategy: "reject" | "summarize"
 ): { text: string; wasLimited: boolean } {
   if (text.length <= characterLimit) {
     return { text, wasLimited: false };
@@ -508,17 +508,32 @@ export function truncateResponse(
 
   switch (strategy) {
     case "reject":
-      throw new Error(`La respuesta excede el límite de ${characterLimit} caracteres`);
+      throw new Error(`La respuesta excede el límite de ${characterLimit} caracteres (${text.length} caracteres generados). Ajusta el prompt o reduce maxTokens.`);
     
     case "summarize":
-      const truncated = text.substring(0, characterLimit - 3) + "...";
-      return { text: truncated, wasLimited: true };
-    
-    case "truncate":
     default:
-      const lastSpace = text.lastIndexOf(" ", characterLimit - 3);
-      const cutPoint = lastSpace > characterLimit * 0.7 ? lastSpace : characterLimit - 3;
-      return { text: text.substring(0, cutPoint) + "...", wasLimited: true };
+      // Estrategia inteligente: cortar en punto o espacio natural
+      const maxLen = characterLimit - 3;
+      
+      // Intentar cortar en un punto final de oración
+      const lastPeriod = text.lastIndexOf(".", maxLen);
+      const lastQuestion = text.lastIndexOf("?", maxLen);
+      const lastExclamation = text.lastIndexOf("!", maxLen);
+      const lastSentenceEnd = Math.max(lastPeriod, lastQuestion, lastExclamation);
+      
+      // Si hay un fin de oración en el último 60% del texto, cortar ahí
+      if (lastSentenceEnd > maxLen * 0.6) {
+        return { text: text.substring(0, lastSentenceEnd + 1), wasLimited: true };
+      }
+      
+      // Si no, cortar en el último espacio
+      const lastSpace = text.lastIndexOf(" ", maxLen);
+      if (lastSpace > maxLen * 0.7) {
+        return { text: text.substring(0, lastSpace) + "...", wasLimited: true };
+      }
+      
+      // Último recurso: cortar directamente
+      return { text: text.substring(0, maxLen) + "...", wasLimited: true };
   }
 }
 

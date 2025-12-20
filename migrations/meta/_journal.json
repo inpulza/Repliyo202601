@@ -43,6 +43,13 @@
       "when": 1766074096106,
       "tag": "0005_short_sandman",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1766227267338,
+      "tag": "0006_productive_havok",
+      "breakpoints": true
     }
   ]
 }
