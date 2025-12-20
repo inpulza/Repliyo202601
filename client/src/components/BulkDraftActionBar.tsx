@@ -39,7 +39,9 @@ export function BulkDraftActionBar({
           exit={{ y: 100, opacity: 0 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
           className={cn(
-            "fixed bottom-6 left-1/2 -translate-x-1/2 z-50",
+            "fixed z-50",
+            "bottom-20 md:bottom-6",
+            "left-1/2 -translate-x-1/2 md:left-[calc(50%+130px)]",
             "bg-white border border-gray-200 rounded-xl shadow-lg",
             "px-4 py-3 flex items-center gap-4",
             "min-w-[320px] max-w-[500px]"
