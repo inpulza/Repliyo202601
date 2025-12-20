@@ -167,7 +167,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       req.session.userId = user.id;
-      res.json(sanitizeUser(user));
+      
+      // Force session save before responding
+      req.session.save((err) => {
+        if (err) {
+          console.error('[Auth] Session save error:', err);
+          return res.status(500).json({ error: "Failed to create session" });
+        }
+        console.log(`[Auth] Login successful - userId: ${user.id}, sessionID: ${req.sessionID}`);
+        res.json(sanitizeUser(user));
+      });
     } catch (error) {
       res.status(400).json({ error: "Invalid login data" });
     }
