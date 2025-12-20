@@ -322,6 +322,7 @@ export function Inbox() {
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const [focusedConversationId, setFocusedConversationId] = useState<string | null>(null);
   const [showScrollToTop, setShowScrollToTop] = useState(false);
+  const [isBulkButtonHovered, setIsBulkButtonHovered] = useState(false);
   const threadScrollRef = React.useRef<HTMLDivElement>(null);
   const [location, setLocation] = useLocation();
 
@@ -1342,34 +1343,49 @@ export function Inbox() {
 
             {/* Chat Content */}
             <div className={cn("flex-1 relative flex flex-col overflow-hidden", getPlatformStyles((activeConversation.platform || 'instagram') as Platform).container)}>
-                {/* Floating Bulk AI Button - Activar selección múltiple para generar borradores en masa */}
-                {/* NOTA: No usar el icono Sparkles (✨) - preferir iconos más simples como Wand */}
+                {/* Floating Bulk AI Button - Expandable pill animation */}
                 {threadMessages.length > 1 && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        onClick={() => {
-                          setSelectionEnabled(!selectionEnabled);
-                          if (selectionEnabled) {
-                            setSelectedMessageIds(new Set());
-                          }
-                        }}
-                        size="icon"
-                        className={cn(
-                          "absolute top-3 right-6 z-20 h-10 w-10 rounded-full shadow-lg transition-all",
-                          selectionEnabled 
-                            ? "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50" 
-                            : "bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white"
-                        )}
-                        data-testid="button-toggle-selection-mode"
-                      >
-                        <Sparkle className="h-5 w-5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="left">
-                      <p>{selectionEnabled ? "Cancelar selección" : "Borradores en masa"}</p>
-                    </TooltipContent>
-                  </Tooltip>
+                  <motion.button
+                    onClick={() => {
+                      setSelectionEnabled(!selectionEnabled);
+                      if (selectionEnabled) {
+                        setSelectedMessageIds(new Set());
+                      }
+                    }}
+                    onPointerEnter={() => setIsBulkButtonHovered(true)}
+                    onPointerLeave={() => setIsBulkButtonHovered(false)}
+                    initial={false}
+                    animate={{
+                      width: isBulkButtonHovered ? 'auto' : 40,
+                    }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                    className={cn(
+                      "absolute top-3 right-6 z-20 h-10 rounded-full shadow-lg overflow-hidden flex items-center justify-end cursor-pointer",
+                      selectionEnabled 
+                        ? "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50" 
+                        : "bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white"
+                    )}
+                    style={{ originX: 1 }}
+                    data-testid="button-toggle-selection-mode"
+                    aria-pressed={selectionEnabled}
+                  >
+                    <AnimatePresence mode="wait">
+                      {isBulkButtonHovered && (
+                        <motion.span
+                          initial={{ opacity: 0, x: 10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 10 }}
+                          transition={{ duration: 0.15 }}
+                          className="text-[10px] font-medium whitespace-nowrap pl-3 pr-1"
+                        >
+                          {selectionEnabled ? "Cancelar" : "Generar borradores"}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                    <span className="h-10 w-10 flex items-center justify-center shrink-0">
+                      <Sparkle className="h-5 w-5" />
+                    </span>
+                  </motion.button>
                 )}
                 <div className="flex-1 relative overflow-hidden">
                   <div 
