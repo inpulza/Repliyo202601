@@ -332,22 +332,6 @@ function NotificationItem({
         <div className="flex items-center gap-2 mt-2">
           <span className="text-[11px] text-gray-400 font-medium">{timeAgo}</span>
           
-          {notification.platform && (
-            <span className={cn(
-              "text-[10px] px-2 py-0.5 rounded-full capitalize font-medium",
-              notification.platform === 'instagram' && "bg-pink-100 text-pink-700",
-              notification.platform === 'tiktok' && "bg-gray-100 text-gray-700",
-              notification.platform === 'facebook' && "bg-blue-100 text-blue-700",
-              notification.platform === 'youtube' && "bg-red-100 text-red-700",
-              notification.platform === 'linkedin' && "bg-sky-100 text-sky-700",
-              notification.platform === 'whatsapp' && "bg-green-100 text-green-700",
-              notification.platform === 'google-business' && "bg-blue-100 text-blue-700",
-              !['instagram', 'tiktok', 'facebook', 'youtube', 'linkedin', 'whatsapp', 'google-business'].includes(notification.platform) && "bg-gray-100 text-gray-600"
-            )}>
-              {notification.platform}
-            </span>
-          )}
-          
           {notification.clickUrl && (
             <ExternalLink className="h-3 w-3 text-gray-400" />
           )}
