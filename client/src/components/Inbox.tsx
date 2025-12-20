@@ -1360,7 +1360,7 @@ export function Inbox() {
                     }}
                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                     className={cn(
-                      "absolute top-3 right-6 z-20 h-10 rounded-full shadow-lg overflow-hidden flex items-center justify-end cursor-pointer",
+                      "absolute top-9 right-6 z-20 h-10 rounded-full shadow-lg overflow-hidden flex items-center justify-end cursor-pointer",
                       selectionEnabled 
                         ? "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50" 
                         : "bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white"
