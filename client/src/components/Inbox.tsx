@@ -1356,7 +1356,7 @@ export function Inbox() {
                         }}
                         size="icon"
                         className={cn(
-                          "absolute top-3 right-3 z-20 h-10 w-10 rounded-full shadow-lg transition-all",
+                          "absolute top-3 right-6 z-20 h-10 w-10 rounded-full shadow-lg transition-all",
                           selectionEnabled 
                             ? "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50" 
                             : "bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white"
