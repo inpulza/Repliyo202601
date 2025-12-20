@@ -25,8 +25,8 @@ import {
   Meh,
   Frown,
   Send,
+  Sparkle,
   Sparkles,
-  Wand,
   MessageCircle,
   MessageSquare,
   Check,
@@ -1360,7 +1360,7 @@ export function Inbox() {
                         )}
                         data-testid="button-toggle-selection-mode"
                       >
-                        <Wand className="h-5 w-5" />
+                        <Sparkle className="h-5 w-5" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="left">
