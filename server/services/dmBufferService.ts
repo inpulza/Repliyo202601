@@ -31,15 +31,15 @@ class DmBufferService {
   ): Promise<void> {
     const key = this.getBufferKey(conversation.id);
     const delay = delayMs || this.defaultDelayMs;
+    const activeBufferCount = this.buffers.size;
 
-    log(`[DmBuffer] Buffering DM from ${message.author} in conversation ${conversation.id}`, "sync");
+    log(`[DmBuffer] 🟡 BUFFER_ENTRY - author: ${message.author}, msgId: ${message.id}, convId: ${conversation.id}, delay: ${delay}ms, activeBuffers: ${activeBufferCount}`, "sync");
 
     const existingEntry = this.buffers.get(key);
 
     if (existingEntry) {
       if (existingEntry.timer) {
         clearTimeout(existingEntry.timer);
-        log(`[DmBuffer] Timer reset for conversation ${conversation.id}`, "sync");
       }
 
       existingEntry.messages.push({
@@ -48,6 +48,8 @@ class DmBufferService {
         brand,
         receivedAt: Date.now(),
       });
+
+      log(`[DmBuffer] 🔵 ADDED_TO_EXISTING - convId: ${conversation.id}, totalMsgs: ${existingEntry.messages.length}, resetting timer to ${delay}ms`, "sync");
 
       existingEntry.timer = setTimeout(() => {
         this.flushBuffer(key);
@@ -67,7 +69,7 @@ class DmBufferService {
       };
 
       this.buffers.set(key, newEntry);
-      log(`[DmBuffer] New buffer created for conversation ${conversation.id}, waiting ${delay}ms`, "sync");
+      log(`[DmBuffer] 🟢 NEW_BUFFER - convId: ${conversation.id}, waiting ${delay}ms before processing`, "sync");
     }
   }
 
@@ -75,16 +77,18 @@ class DmBufferService {
     const entry = this.buffers.get(key);
     
     if (!entry) {
-      log(`[DmBuffer] No buffer found for key ${key}`, "sync");
+      log(`[DmBuffer] ❌ FLUSH_SKIP - No buffer found for key ${key}`, "sync");
       return;
     }
 
     if (entry.messages.length === 0) {
       this.buffers.delete(key);
+      log(`[DmBuffer] ❌ FLUSH_SKIP - Empty buffer for key ${key}`, "sync");
       return;
     }
 
-    log(`[DmBuffer] Flushing ${entry.messages.length} messages for conversation ${key}`, "sync");
+    const authors = entry.messages.map(m => m.message.author).join(', ');
+    log(`[DmBuffer] 🚀 FLUSH_START - convId: ${key}, msgCount: ${entry.messages.length}, authors: ${authors}`, "sync");
 
     const messages = [...entry.messages];
     const callback = entry.processingCallback;

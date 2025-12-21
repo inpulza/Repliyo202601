@@ -330,6 +330,9 @@ class SyncService {
           if (isReallyNew && isInbound) {
             newInboundCount++; // Increment counter for truly new inbound messages
             
+            // DIAGNOSTIC: Log when we're about to trigger auto-reply for a NEW INBOUND DM
+            log(`[SyncService] ⚡ NEW_INBOUND_DM - msgId: ${savedMessage.id}, author: ${author}, convId: ${conversationRecord.id}, will call triggerAutoReply`, "sync");
+            
             // Track first inbound author for Smart Digest notifications
             if (!firstInboundAuthor) {
               firstInboundAuthor = author;
