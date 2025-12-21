@@ -150,7 +150,9 @@ export function Inbox() {
     activeConversationMessages,
     setActiveConversation,
     activeClientId, 
-    activeClient, 
+    activeClient,
+    activeClients,
+    setActiveClientId,
     approveMessage, 
     updateMessageDraft, 
     refreshFeed,
@@ -921,7 +923,58 @@ export function Inbox() {
         {/* Header / Title */}
         <div className="h-16 border-b px-4 flex items-center justify-between shrink-0 bg-white">
           <div className="flex items-center gap-3">
-            <h1 className="font-bold text-xl tracking-tight text-gray-900">Inbox</h1>
+            {/* Mobile Brand Selector */}
+            {isMobile && activeClients.length > 0 ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    className="flex items-center gap-2 px-2 py-1 h-auto hover:bg-gray-100"
+                    data-testid="button-mobile-brand-selector"
+                  >
+                    <Avatar className="h-6 w-6 rounded-md ring-1 ring-black/5">
+                      <AvatarImage src={activeClient?.avatar || undefined} />
+                      <AvatarFallback className="rounded-md bg-gray-200 text-gray-600 text-[10px]">
+                        {activeClient?.name?.substring(0,2) || 'C'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="font-bold text-lg text-gray-900 max-w-[120px] truncate">
+                      {activeClient?.name || 'Inbox'}
+                    </span>
+                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 bg-white border-gray-200" align="start">
+                  <DropdownMenuLabel className="text-xs text-gray-500 uppercase tracking-wider">
+                    Cambiar Marca
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-gray-100" />
+                  <ScrollArea className="max-h-[200px]">
+                    {activeClients.map((client) => (
+                      <DropdownMenuItem 
+                        key={client.id}
+                        onClick={() => setActiveClientId(client.id)}
+                        className="gap-2 cursor-pointer focus:bg-gray-50"
+                        data-testid={`menu-item-brand-${client.id}`}
+                      >
+                        <Avatar className="h-5 w-5 rounded-sm">
+                          <AvatarImage src={client.avatar || undefined} />
+                          <AvatarFallback className="text-[10px] bg-gray-100 text-gray-600">
+                            {client.name?.substring(0,2) || 'C'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="truncate text-sm">{client.name}</span>
+                        {activeClient?.id === client.id && (
+                          <div className="ml-auto h-1.5 w-1.5 bg-indigo-500 rounded-full" />
+                        )}
+                      </DropdownMenuItem>
+                    ))}
+                  </ScrollArea>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <h1 className="font-bold text-xl tracking-tight text-gray-900">Inbox</h1>
+            )}
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1.5">
                 <Switch

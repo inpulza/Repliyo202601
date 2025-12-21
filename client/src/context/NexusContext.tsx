@@ -17,6 +17,7 @@ interface NexusContextType {
   activeClientId: string | null;
   activeClient: Client | undefined;
   clients: Client[];
+  activeClients: Client[];
   conversations: ConversationWithPost[];
   activeConversation: ConversationWithPost | null;
   activeConversationMessages: Message[];
@@ -322,6 +323,7 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
       activeClientId,
       activeClient,
       clients,
+      activeClients,
       conversations,
       activeConversation,
       activeConversationMessages,
