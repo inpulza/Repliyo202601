@@ -36,8 +36,11 @@ class AutoReplyService {
     brand: Brand
   ): Promise<AutoReplyResult> {
     const isDm = message.type === 'conversation';
+    
+    log(`[AutoReply] processNewMessageWithBuffering called - isDm: ${isDm}, messageType: ${message.type}, author: ${message.author}`, "sync");
 
     if (!isDm) {
+      log(`[AutoReply] Not a DM, processing immediately (comment flow)`, "sync");
       return this.processNewMessage(message, conversation, brand);
     }
 
@@ -46,7 +49,7 @@ class AutoReplyService {
       return this.processNewMessage(message, conversation, brand);
     }
 
-    log(`[AutoReply] DM detected, adding to buffer for conversation ${conversation.id}`, "sync");
+    log(`[AutoReply] 🔵 DM DETECTED - Activating Buffer. ConversationId: ${conversation.id}, Agent autoReplyMode: ${agent.autoReplyMode}, BufferDelay: ${this.dmBufferDelayMs}ms`, "sync");
 
     await dmBufferService.bufferMessage(
       message,
@@ -67,7 +70,7 @@ class AutoReplyService {
     const lastMessage = bufferedMessages[bufferedMessages.length - 1];
     const { conversation, brand } = lastMessage;
     
-    log(`[AutoReply] Processing ${bufferedMessages.length} buffered DM messages for conversation ${conversation.id}`, "sync");
+    log(`[AutoReply] 🟢 BUFFER FLUSHED - Processing ${bufferedMessages.length} buffered DM message(s) for conversation ${conversation.id}`, "sync");
 
     const combinedContent = bufferedMessages
       .map(bm => bm.message.content)

@@ -416,6 +416,15 @@ export function composePrompt(context: PromptContext): {
   const systemPrompt = buildSystemPromptV53(variableContext, brand, useJsonMode);
   
   const situationCard = buildSituationCard(variableContext);
+  
+  console.log(`[PromptComposer] 📋 FICHA DE SITUACIÓN generada para ${message.author || 'usuario'}:
+━━━━━━━━━━━━━━━━━━━━━━━━
+Tipo: ${variableContext.messageType}
+Estado: ${variableContext.relationshipStatus}
+Profundidad: ${variableContext.conversationDepth} mensajes
+Última respuesta: hace ${variableContext.timeSinceLastInteraction} min
+isDM: ${variableContext.isDm}
+━━━━━━━━━━━━━━━━━━━━━━━━`);
 
   let summaryContext = "";
   if (userSummary && userSummary.summary) {
