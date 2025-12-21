@@ -133,6 +133,10 @@ export const aiAgents = pgTable("ai_agents", {
   lastAutoReplyAt: timestamp("last_auto_reply_at"),
   platformSettings: jsonb("platform_settings"),
   isActive: boolean("is_active").notNull().default(true),
+  // DM Buffer Configuration (Punto 6 del plan)
+  dmBatchDelaySeconds: integer("dm_batch_delay_seconds").notNull().default(15),
+  dmReplyMode: text("dm_reply_mode").notNull().default('auto'), // 'auto' | 'first_only' | 'batch'
+  cooldownPerConversation: boolean("cooldown_per_conversation").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
