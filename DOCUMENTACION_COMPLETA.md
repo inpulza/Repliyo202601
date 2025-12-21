@@ -4177,3 +4177,82 @@ React.useEffect(() => {
 - `client/src/components/Inbox.tsx` - Estado y lógica de integración
 
 ---
+
+## Fix Crítico: Race Condition en Buffer de DMs (21 Diciembre 2025)
+
+### Problema Detectado
+El sistema de buffer de DMs funcionaba inconsistentemente: la primera ráfaga de mensajes se acumulaba correctamente (4 mensajes → 1 respuesta), pero la segunda ráfaga fallaba (3 mensajes → 3 respuestas separadas).
+
+### Diagnóstico
+**Causa raíz: Race Condition**
+
+En `syncService.ts`, la función `triggerAutoReply()` es **"fire-and-forget"** (no usa `await`). Cuando Metricool retorna múltiples mensajes nuevos en la misma sincronización:
+
+```
+Mensaje 1 → triggerAutoReply() → retorna inmediatamente (no espera)
+Mensaje 2 → triggerAutoReply() → retorna inmediatamente
+Mensaje 3 → triggerAutoReply() → retorna inmediatamente
+```
+
+Las 3 llamadas a `dmBufferService.bufferMessage()` se ejecutaban **en paralelo**. Todas podían ver `existingEntry = undefined` porque la primera aún no había terminado de insertar su entrada en el Map.
+
+**Resultado:** Cada mensaje creaba su propio buffer independiente en lugar de agregarse al existente.
+
+### Solución Implementada
+Agregamos un **mecanismo de lock por conversación** en `dmBufferService.ts`:
+
+```typescript
+class DmBufferService {
+  private buffers: Map<string, BufferEntry> = new Map();
+  private locks: Map<string, Promise<void>> = new Map(); // ← NUEVO
+
+  async bufferMessage(...): Promise<void> {
+    const key = this.getBufferKey(conversation.id);
+    
+    // Esperar si hay otro mensaje procesándose para la misma conversación
+    const existingLock = this.locks.get(key);
+    if (existingLock) {
+      log(`[DmBuffer] 🔒 WAITING_FOR_LOCK - msgId: ${message.id}`, "sync");
+      await existingLock;
+    }
+    
+    // Crear lock para esta operación
+    let unlockResolve: () => void;
+    const lockPromise = new Promise<void>(resolve => {
+      unlockResolve = resolve;
+    });
+    this.locks.set(key, lockPromise);
+    
+    try {
+      // ... lógica de buffer existente ...
+    } finally {
+      this.locks.delete(key);
+      unlockResolve!();
+    }
+  }
+}
+```
+
+### Flujo Corregido
+Con el lock, los mensajes ahora se procesan secuencialmente:
+1. **Mensaje 1** → adquiere lock → crea NEW_BUFFER → libera lock
+2. **Mensaje 2** → espera lock (🔒 WAITING_FOR_LOCK) → adquiere → ADDED_TO_EXISTING → libera
+3. **Mensaje 3** → espera lock → adquiere → ADDED_TO_EXISTING → libera
+4. **Timer expira** → 🚀 FLUSH_START → procesa 3 mensajes combinados → 1 sola respuesta
+
+### Logs de Diagnóstico
+```
+🔒 WAITING_FOR_LOCK - Mensaje esperando su turno
+🟡 BUFFER_ENTRY - Mensaje entrando al sistema de buffer
+🟢 NEW_BUFFER - Primer mensaje, se crea buffer nuevo
+🔵 ADDED_TO_EXISTING - Mensaje agregado a buffer existente
+🚀 FLUSH_START - Buffer expira, procesa todos los mensajes
+```
+
+### Archivos Modificados
+- `server/services/dmBufferService.ts` - Lock mechanism agregado
+
+### Commit
+`3204bad368c7aba117730fbe1d37c0ade5333616` - Add a lock to prevent simultaneous message processing race conditions
+
+---
