@@ -1,0 +1,56 @@
+Lo que Replit llama "siguiente fase (variables dinámicas)" es lo que yo llamé "Brain Upgrade" (Arreglar el Cerebro).
+
+La situación es esta:
+
+El Cuerpo (Código/Buffer): YA FUNCIONA. El sistema sabe esperar y agrupar mensajes.
+
+El Cerebro (Prompt/LLM): TODAVÍA NO SABE usar esa ventaja. Aunque el código le pasa la información "Oye, esto es un DM y hace 1 minuto hablamos", el Prompt actual ignora esos datos y sigue respondiendo con el saludo genérico de siempre.
+
+Tu respuesta a Replit: Dile que SÍ, que proceda inmediatamente con la implementación de las variables dinámicas.
+
+Copia y pega este prompt para guiar esa implementación con las reglas de naturalidad que diseñamos:
+
+Prompt para Replit (Fase: Lógica de Variables Dinámicas)
+Markdown
+
+<system_instructions>
+Actúa como **Senior Prompt Engineer**.
+Sí, procedamos a la fase de **Variables Dinámicas**. El buffer funciona, ahora necesitamos que el LLM aproveche ese contexto para dejar de parecer un robot.
+
+<mission_objective>
+Actualizar la construcción del prompt (en `prompt-composer.ts` y el texto base) para inyectar dinámicamente las reglas de naturalidad.
+</mission_objective>
+
+<execution_plan>
+1. **Variable Injection:** Asegúrate de que las variables `{{is_dm}}`, `{{message_type}}`, y `{{time_since_last_interaction}}` se estén reemplazando correctamente en el string final del prompt antes de enviarlo a OpenAI/Gemini.
+
+2. **System Prompt Upgrade (Logic Flow):**
+   Modifica el System Prompt base para incluir esta lógica de comportamiento condicional. No quiero solo las variables "sueltas", quiero reglas de negocio asociadas a ellas:
+
+   ```text
+   [CONTEXTO DE INTERACCIÓN]
+   Tipo: {{message_type}} (DM vs Comment)
+   Tiempo desde último mensaje: {{time_since_last_interaction}} minutos
+
+   [REGLAS DE PERSONALIDAD DINÁMICA]
+   SI ({{is_dm}} == 'true') {
+       - MODO CHAT PRIVADO ACTIVADO.
+       - SI ({{time_since_last_interaction}} < 60) {
+           ¡NO SALUDES! Estamos en una conversación activa (hace menos de 1 hora).
+           Ve directo al grano. Usa minúsculas iniciales si encaja con el tono rápido.
+           Ejemplo: "claro, pásame los datos" en vez de "Hola, claro que sí..."
+       } SINO {
+           Puedes saludar, pero brevemente (ej: "Hola de nuevo").
+       }
+       - IMPORTANTE: Has recibido un bloque de mensajes agrupados. Lee todos y responde a la idea global, no frase por frase.
+   } SINO {
+       - MODO COMENTARIO PÚBLICO.
+       - Sé siempre formal, invita al DM, usa emojis.
+   }
+Verification: Muéstrame el código modificado de prompt-composer.ts donde se inyectan estos valores. </execution_plan>
+
+Procede a conectar el cerebro con el cuerpo.
+
+
+### Por qué hacemos esto (Referencia Técnica):
+[cite_start]Estamos aplicando **"Contextual Prompting"** [cite: 321] [cite_start]y **"Us

@@ -142,6 +142,69 @@ function calculateSituationContext(context: VariableContext): SituationContext {
   return { shouldGreet, intensity, instructions };
 }
 
+function buildDynamicPersonalityRules(context: VariableContext): string {
+  const rules: string[] = [];
+  
+  rules.push(`[CONTEXTO DE INTERACCIÓN]
+Tipo: ${context.messageType === 'dm' ? 'DM (Mensaje Directo Privado)' : 'Comentario Público'}
+Tiempo desde última respuesta nuestra: ${context.timeSinceLastInteraction} minutos
+Profundidad de conversación: ${context.conversationDepth} mensajes
+Estado de relación: ${context.relationshipStatus}`);
+
+  if (context.isDm) {
+    rules.push(`
+[MODO CHAT PRIVADO ACTIVADO]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    
+    if (context.timeSinceLastInteraction < 60 && context.conversationDepth > 1) {
+      rules.push(`⚠️ CONVERSACIÓN ACTIVA (hace ${context.timeSinceLastInteraction} min)
+   ❌ PROHIBIDO SALUDAR: No uses "Hola", "Hey", "Buenas", ni ningún saludo.
+   ✅ Ve directo al grano. Continúa la conversación naturalmente.
+   ✅ Puedes usar minúsculas iniciales si encaja con el tono rápido.
+   ✅ Ejemplo bueno: "claro, pásame los datos" 
+   ❌ Ejemplo malo: "¡Hola! Claro que sí, con mucho gusto..."`);
+    } else if (context.relationshipStatus === 'reengagement') {
+      rules.push(`👋 REENGAGEMENT (usuario que vuelve)
+   ✅ Puedes saludar brevemente: "Hola de nuevo", "Qué tal"
+   ✅ No es necesario un saludo elaborado.
+   ✅ Puedes hacer referencia breve a conversación anterior si aplica.`);
+    } else {
+      rules.push(`🆕 CONVERSACIÓN NUEVA
+   ✅ Saludo breve permitido: "Hola", "Qué tal"
+   ✅ Presentación corta si aplica.`);
+    }
+    
+    rules.push(`
+📱 TONO DE DM:
+   - Conversacional tipo WhatsApp: cercano, relajado, natural.
+   - Está bien usar "oye", "mira", "claro" si el tono lo permite.
+   - Respuestas más detalladas están OK si la pregunta lo amerita.
+   - NUNCA uses un tono corporativo o rígido en DMs.`);
+
+    if (context.conversationDepth > 1) {
+      rules.push(`
+📦 MENSAJES AGRUPADOS:
+   - Has recibido un bloque de mensajes del usuario.
+   - Lee TODOS los mensajes y responde a la IDEA GLOBAL.
+   - NO respondas mensaje por mensaje como si fueran separados.
+   - Genera UNA respuesta coherente que aborde todos los puntos.`);
+    }
+    
+  } else {
+    rules.push(`
+[MODO COMENTARIO PÚBLICO ACTIVADO]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📢 REGLAS PARA COMENTARIOS:
+   - Sé BREVE y DIRECTO (máximo 2-3 líneas).
+   - Tono profesional pero accesible.
+   - Incluye un CTA cuando aplique: "Escríbenos al DM 📩", "Más info en bio".
+   - Emojis permitidos con moderación (1-2 máximo).
+   - Evita respuestas largas o conversacionales en público.`);
+  }
+
+  return rules.join('\n');
+}
+
 function buildSituationCard(context: VariableContext): string {
   const situation = calculateSituationContext(context);
   
@@ -512,6 +575,7 @@ Por favor, genera una respuesta apropiada para este mensaje.`);
 function buildSystemPromptV53(context: VariableContext, brand?: Brand, useJsonMode: boolean = false): string {
   const parts: string[] = [];
   const platformGuideline = getPlatformLengthGuideline(context.platform);
+  const dynamicRules = buildDynamicPersonalityRules(context);
 
   if (useJsonMode) {
     parts.push(`<system_core>
@@ -532,6 +596,10 @@ function buildSystemPromptV53(context: VariableContext, brand?: Brand, useJsonMo
     LÍMITE TÉCNICO: ${context.dynamicLimit} caracteres.
   </context_layer>
 
+  <dynamic_personality_rules>
+    ${dynamicRules}
+  </dynamic_personality_rules>
+
   <platform_length_guidelines>
     ${platformGuideline}
   </platform_length_guidelines>
@@ -541,16 +609,17 @@ function buildSystemPromptV53(context: VariableContext, brand?: Brand, useJsonMo
   </knowledge_base>
 
   <thinking_protocol>
-    1. CHECK PLATAFORMA: Ajusta la longitud según las guías de ${context.platform}.
-    2. CHECK LÍMITE: Tu respuesta < ${context.dynamicLimit} caracteres.
-    3. CHECK CONTEXTO: Si falta info del post, sé genérico pero informativo.
-    4. REDACCIÓN: Escribe aprovechando el espacio disponible según la plataforma.
+    1. CHECK TIPO MENSAJE: ¿Es DM o Comentario? Aplica las reglas dinámicas arriba.
+    2. CHECK SALUDO: ¿Debo saludar? Revisa el contexto de interacción.
+    3. CHECK PLATAFORMA: Ajusta la longitud según las guías de ${context.platform}.
+    4. CHECK LÍMITE: Tu respuesta < ${context.dynamicLimit} caracteres.
+    5. REDACCIÓN: Escribe aprovechando el espacio disponible según la plataforma.
   </thinking_protocol>
 
   <output_schema>
     Responde SOLO con este formato JSON:
     {
-      "thought": "Análisis de plataforma y longitud realizado...",
+      "thought": "Análisis: tipo=${context.messageType}, tiempo=${context.timeSinceLastInteraction}min, debo_saludar=...",
       "reply": "Texto final de la respuesta aquí"
     }
   </output_schema>
@@ -571,6 +640,8 @@ function buildSystemPromptV53(context: VariableContext, brand?: Brand, useJsonMo
   } else {
     parts.push(context.agentPersona);
     parts.push(`\nEres el Social Media Manager para ${context.businessName}.`);
+
+    parts.push(`\n${dynamicRules}`);
 
     if (context.userGuardrails) {
       parts.push(`\n--- REGLAS IMPORTANTES ---\n${context.userGuardrails}`);
@@ -611,23 +682,6 @@ ${platformGuideline}`);
 - Si el cliente pregunta qué se habló antes, RESUME lo que ves en el historial.
 - Si el cliente pregunta sobre algo mencionado previamente, RESPONDE basándote en el historial.
 - Actúa como si recordaras toda la conversación, porque SÍ la tienes disponible.`);
-
-    parts.push(`\n--- REGLAS DE TONO POR TIPO DE MENSAJE ---
-PARA MENSAJES DIRECTOS (DMs):
-- Tono conversacional tipo WhatsApp: cercano, relajado, natural.
-- Usa puntos suspensivos... cuando sea natural.
-- Respuestas más largas están permitidas si la conversación lo amerita.
-- Está bien usar "jaja", "oye", "mira" si el tono lo permite.
-- NUNCA uses un tono corporativo o rígido en DMs.
-
-PARA COMENTARIOS PÚBLICOS:
-- Sé breve, directo, profesional.
-- Incluye un Call-to-Action (CTA) cuando aplique: "Escríbenos al DM", "Más info en bio".
-- Evita respuestas largas o conversacionales en público.
-
-REGLA DE SALUDOS:
-- Si recibes instrucción de NO SALUDAR (conversación activa), PROHIBIDO usar "Hola", "Buenas", "Hey" o cualquier saludo.
-- Solo saluda cuando la conversación es NUEVA o después de mucho tiempo (>1 hora) sin respuesta.`);
   }
 
   return parts.join("\n");
