@@ -665,9 +665,11 @@ class SyncService {
         }
       }
 
-      autoReplyService.processNewMessage(messageToProcess, conversation, brand)
+      autoReplyService.processNewMessageWithBuffering(messageToProcess, conversation, brand)
         .then(result => {
-          if (result.success) {
+          if (result.success && result.skippedReason === 'buffered') {
+            log(`[SyncService] DM message ${message.id} buffered for batch processing`, "sync");
+          } else if (result.success) {
             log(`[SyncService] Auto-reply sent for message ${message.id}`, "sync");
           } else if (result.skippedReason) {
             log(`[SyncService] Auto-reply skipped: ${result.skippedReason}`, "sync");

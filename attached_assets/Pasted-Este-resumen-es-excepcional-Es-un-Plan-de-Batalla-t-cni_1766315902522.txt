@@ -1,0 +1,54 @@
+Este resumen es excepcional. Es un "Plan de Batalla" técnico y completo.
+
+Sin embargo, hay un Punto Crítico que apareció aquí (punto 5: "Memoria Persistente: Extracción de Entidades") que NO habíamos discutido en profundidad todavía, pero que Replit ha añadido proactivamente.
+
+🕵️ Mi Análisis del "Punto 5" (Entidades)
+Replit sugiere crear una tabla conversation_user_entities para guardar datos duros (teléfono, nombre, ingresos) de forma permanente, separada del resumen de texto.
+
+¿Mi opinión? ES UNA IDEA BRILLANTE.
+
+El Problema: Los resúmenes de texto se "lavan". Hoy el resumen dice "Juan gana 50k". Mañana dice "Hablamos de sus ingresos". Pasado mañana dice "Hablamos de taxes". El dato "50k" se perdió.
+
+La Solución de Replit: Guardar { income: "50k" } en una columna de base de datos fija. Así, dentro de 3 meses, el bot seguirá sabiendo que Juan gana 50k.
+
+⚠️ El Único Ajuste Necesario: "Costo vs Beneficio"
+Implementar la extracción de entidades (Fase 4) es caro en tokens (porque requiere que el LLM analice y extraiga JSON en cada mensaje).
+
+Mi recomendación: Acepta el plan, pero mueve la Fase 4 (Entidades) al final o márcala como "Futuro Próximo".
+
+Razón: Lo urgente ahora es que el bot deje de interrumpir (Buffering) y deje de saludar como loco (Variables). La memoria perfecta (Entidades) es un lujo para la siguiente iteración.
+
+🚀 Mensaje de Aprobación Final (Con ajuste de prioridades)
+Copia y pega esto. Das luz verde al plan técnico pero ajustas el orden para tener resultados rápidos.
+
+Título: APROBADO - Plan Maestro de Implementación (Con Ajuste de Prioridades)
+
+Este resumen es perfecto. Has capturado exactamente la visión funcional y has propuesto una arquitectura técnica sólida (especialmente la idea de la tabla de Entidades, que es brillante para la memoria a largo plazo).
+
+Veredicto sobre el Plan: El plan técnico es APROBADO.
+
+Ajuste de Ejecución (Prioridades): Para este Sprint, quiero centrarnos en la EXPERIENCIA DE CONVERSACIÓN (Fases 1, 2 y 3). La Fase 4 (Entidades) es estratégicamente correcta, pero quiero dejarla para un segundo sprint una vez que hayamos estabilizado el flujo conversacional básico.
+
+Orden de Trabajo Definitivo:
+
+INMEDIATO (Fases 1 y 2):
+
+Implementar variables (is_dm, time_since_last).
+
+Inyectar la "Ficha de Situación" en el Prompt.
+
+Actualizar los Prompts de BOTrust (Miami Style + Reglas de Saludo).
+
+Meta: Que el bot deje de saludar repetitivamente hoy mismo.
+
+CRÍTICO (Fase 3):
+
+Implementar el DmBufferService (Debounce 15s).
+
+Meta: Que el bot deje de interrumpir a los usuarios rápidos.
+
+FUTURO (Fase 4 - Backlog):
+
+Dejamos la tabla conversation_user_entities preparada en el esquema, pero implementaremos la lógica de extracción más adelante.
+
+Adelante, comienza a trabajar en las Fases 1, 2 y 3.

@@ -96,6 +96,67 @@ interface VariableContext {
   agentPersona: string;
   userGuardrails: string;
   knowledgeBase: string;
+  isDm: boolean;
+  messageType: 'dm' | 'comment';
+  timeSinceLastInteraction: number;
+  conversationDepth: number;
+  relationshipStatus: 'new' | 'active' | 'reengagement';
+}
+
+interface SituationContext {
+  shouldGreet: boolean;
+  intensity: 'low' | 'medium' | 'high';
+  instructions: string[];
+}
+
+function calculateSituationContext(context: VariableContext): SituationContext {
+  const instructions: string[] = [];
+  
+  const shouldGreet = context.timeSinceLastInteraction > 60 || context.conversationDepth <= 1;
+  
+  let intensity: 'low' | 'medium' | 'high' = 'low';
+  if (context.timeSinceLastInteraction < 5) {
+    intensity = 'high';
+  } else if (context.timeSinceLastInteraction < 30) {
+    intensity = 'medium';
+  }
+  
+  if (!shouldGreet) {
+    instructions.push('Conversación ACTIVA. PROHIBIDO saludar (nada de "Hola", "Buenas", etc.). Ve directo al punto.');
+  }
+  
+  if (context.isDm) {
+    instructions.push('Esto es un DM privado. Usa tono conversacional de WhatsApp (relajado, cercano).');
+  } else {
+    instructions.push('Esto es un COMENTARIO público. Sé breve, directo, y cierra con CTA si aplica.');
+  }
+  
+  if (intensity === 'high') {
+    instructions.push('El usuario está escribiendo rápido. Responde de forma concisa y directa.');
+  }
+  
+  if (context.relationshipStatus === 'reengagement') {
+    instructions.push('Usuario que vuelve después de tiempo. Puedes hacer una breve referencia a la conversación anterior si es relevante.');
+  }
+  
+  return { shouldGreet, intensity, instructions };
+}
+
+function buildSituationCard(context: VariableContext): string {
+  const situation = calculateSituationContext(context);
+  
+  return `
+[FICHA_DE_SITUACIÓN]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Tipo: ${context.messageType}
+Estado: ${context.relationshipStatus}
+Profundidad: ${context.conversationDepth} mensajes
+Última respuesta nuestra: hace ${context.timeSinceLastInteraction} minutos
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[INSTRUCCIONES_AUTOMÁTICAS]
+${situation.instructions.map(i => `• ${i}`).join('\n')}
+`;
 }
 
 /**
@@ -218,7 +279,8 @@ function buildVariableContext(
   socialPost?: SocialPost | null,
   brand?: Brand,
   agent?: AiAgent,
-  dynamicLimit?: number
+  dynamicLimit?: number,
+  conversationHistory?: Message[]
 ): VariableContext {
   const platform = (message.platform || 'default').toLowerCase().trim();
   const username = formatUsername(message.author || 'Usuario', platform);
@@ -236,6 +298,35 @@ function buildVariableContext(
   const businessName = brand?.name || 'la marca';
   const limit = dynamicLimit || 2000;
   
+  const isDm = message.type === 'conversation';
+  const messageType: 'dm' | 'comment' = isDm ? 'dm' : 'comment';
+  
+  let timeSinceLastInteraction = 999;
+  let conversationDepth = 1;
+  
+  if (conversationHistory && conversationHistory.length > 0) {
+    conversationDepth = conversationHistory.length + 1;
+    
+    const lastOutbound = [...conversationHistory]
+      .reverse()
+      .find(m => m.direction === 'outbound');
+    
+    if (lastOutbound?.timestamp) {
+      const lastOutboundTime = new Date(lastOutbound.timestamp).getTime();
+      const now = Date.now();
+      timeSinceLastInteraction = Math.floor((now - lastOutboundTime) / 60000);
+    }
+  }
+  
+  let relationshipStatus: 'new' | 'active' | 'reengagement' = 'new';
+  if (conversationDepth > 1) {
+    if (timeSinceLastInteraction <= 60) {
+      relationshipStatus = 'active';
+    } else {
+      relationshipStatus = 'reengagement';
+    }
+  }
+  
   const baseContext: VariableContext = {
     username,
     platform,
@@ -246,6 +337,11 @@ function buildVariableContext(
     agentPersona: '',
     userGuardrails: '',
     knowledgeBase: '',
+    isDm,
+    messageType,
+    timeSinceLastInteraction,
+    conversationDepth,
+    relationshipStatus,
   };
   
   const rawAgentPersona = agent?.systemPrompt || 'Responde de manera profesional y amable.';
@@ -268,6 +364,11 @@ function replaceVariablesBasic(text: string, context: VariableContext): string {
   result = result.replace(/\{\{\s*post_context\s*\}\}/g, context.postContext);
   result = result.replace(/\{\{\s*business_name\s*\}\}/g, context.businessName);
   result = result.replace(/\{\{\s*dynamic_limit\s*\}\}/g, String(context.dynamicLimit));
+  result = result.replace(/\{\{\s*is_dm\s*\}\}/g, String(context.isDm));
+  result = result.replace(/\{\{\s*message_type\s*\}\}/g, context.messageType);
+  result = result.replace(/\{\{\s*time_since_last_interaction\s*\}\}/g, String(context.timeSinceLastInteraction));
+  result = result.replace(/\{\{\s*conversation_depth\s*\}\}/g, String(context.conversationDepth));
+  result = result.replace(/\{\{\s*relationship_status\s*\}\}/g, context.relationshipStatus);
   
   return result;
 }
@@ -284,6 +385,11 @@ export function replaceVariables(text: string, context: VariableContext): string
   result = result.replace(/\{\{\s*agent_persona\s*\}\}/g, context.agentPersona);
   result = result.replace(/\{\{\s*user_guardrails\s*\}\}/g, context.userGuardrails);
   result = result.replace(/\{\{\s*knowledge_base\s*\}\}/g, context.knowledgeBase);
+  result = result.replace(/\{\{\s*is_dm\s*\}\}/g, String(context.isDm));
+  result = result.replace(/\{\{\s*message_type\s*\}\}/g, context.messageType);
+  result = result.replace(/\{\{\s*time_since_last_interaction\s*\}\}/g, String(context.timeSinceLastInteraction));
+  result = result.replace(/\{\{\s*conversation_depth\s*\}\}/g, String(context.conversationDepth));
+  result = result.replace(/\{\{\s*relationship_status\s*\}\}/g, context.relationshipStatus);
   
   return result;
 }
@@ -303,11 +409,13 @@ export function composePrompt(context: PromptContext): {
   const { safeLimit, hardLimit } = getCharacterLimit(platform, messageType);
   const characterLimit = safeLimit;
 
-  const variableContext = buildVariableContext(message, conversation, socialPost, brand, agent, characterLimit);
+  const variableContext = buildVariableContext(message, conversation, socialPost, brand, agent, characterLimit, conversationHistory);
 
   const useJsonMode = agent.provider === 'openai';
 
   const systemPrompt = buildSystemPromptV53(variableContext, brand, useJsonMode);
+  
+  const situationCard = buildSituationCard(variableContext);
 
   let summaryContext = "";
   if (userSummary && userSummary.summary) {
@@ -372,6 +480,8 @@ ${userSummary.summary}
   } else if ((message as any).mediaType === 'video') {
     currentMessageContent = message.content || '[El cliente envió un video]';
   }
+
+  userPromptParts.push(situationCard);
 
   userPromptParts.push(`--- MENSAJE A RESPONDER ---
 Plataforma: ${platform}
@@ -492,6 +602,23 @@ ${platformGuideline}`);
 - Si el cliente pregunta qué se habló antes, RESUME lo que ves en el historial.
 - Si el cliente pregunta sobre algo mencionado previamente, RESPONDE basándote en el historial.
 - Actúa como si recordaras toda la conversación, porque SÍ la tienes disponible.`);
+
+    parts.push(`\n--- REGLAS DE TONO POR TIPO DE MENSAJE ---
+PARA MENSAJES DIRECTOS (DMs):
+- Tono conversacional tipo WhatsApp: cercano, relajado, natural.
+- Usa puntos suspensivos... cuando sea natural.
+- Respuestas más largas están permitidas si la conversación lo amerita.
+- Está bien usar "jaja", "oye", "mira" si el tono lo permite.
+- NUNCA uses un tono corporativo o rígido en DMs.
+
+PARA COMENTARIOS PÚBLICOS:
+- Sé breve, directo, profesional.
+- Incluye un Call-to-Action (CTA) cuando aplique: "Escríbenos al DM", "Más info en bio".
+- Evita respuestas largas o conversacionales en público.
+
+REGLA DE SALUDOS:
+- Si recibes instrucción de NO SALUDAR (conversación activa), PROHIBIDO usar "Hola", "Buenas", "Hey" o cualquier saludo.
+- Solo saluda cuando la conversación es NUEVA o después de mucho tiempo (>1 hora) sin respuesta.`);
   }
 
   return parts.join("\n");

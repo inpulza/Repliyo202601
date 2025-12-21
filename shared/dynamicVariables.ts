@@ -30,6 +30,36 @@ export const DYNAMIC_VARIABLES: DynamicVariable[] = [
     description: 'Contexto del post original (vacío si es DM)',
     example: 'Post sobre nuevos productos de verano',
   },
+  {
+    key: 'is_dm',
+    placeholder: '{{is_dm}}',
+    description: 'Si es mensaje directo (true) o comentario (false)',
+    example: 'true',
+  },
+  {
+    key: 'message_type',
+    placeholder: '{{message_type}}',
+    description: 'Tipo de mensaje: "dm" para mensajes directos, "comment" para comentarios',
+    example: 'dm',
+  },
+  {
+    key: 'time_since_last_interaction',
+    placeholder: '{{time_since_last_interaction}}',
+    description: 'Minutos desde la última respuesta de la marca en esta conversación',
+    example: '15',
+  },
+  {
+    key: 'conversation_depth',
+    placeholder: '{{conversation_depth}}',
+    description: 'Número total de mensajes en la conversación',
+    example: '8',
+  },
+  {
+    key: 'relationship_status',
+    placeholder: '{{relationship_status}}',
+    description: 'Estado de la relación: "new" (nuevo), "active" (activo), "reengagement" (retomando)',
+    example: 'active',
+  },
 ];
 
 export type VariableKey = typeof DYNAMIC_VARIABLES[number]['key'];

@@ -4,6 +4,7 @@ import { websocketService } from "./websocketService";
 import { createLLMProvider } from "./llm/factory";
 import { getCharacterLimit, splitMessageForDelivery, type MessageChunk } from "./llm/types";
 import { triggerSummaryUpdateAsync } from "./summaryService";
+import { dmBufferService, type BufferedMessage } from "./dmBufferService";
 import { log } from "../app";
 import type { Message, Conversation, Brand, AiAgent } from "@shared/schema";
 import { randomUUID } from "crypto";
@@ -26,6 +27,64 @@ class AutoReplyService {
     openaiApiKey: process.env.OPENAI_API_KEY,
     geminiApiKey: process.env.GEMINI_API_KEY,
   };
+
+  private dmBufferDelayMs: number = 15000;
+
+  async processNewMessageWithBuffering(
+    message: Message,
+    conversation: Conversation,
+    brand: Brand
+  ): Promise<AutoReplyResult> {
+    const isDm = message.type === 'conversation';
+
+    if (!isDm) {
+      return this.processNewMessage(message, conversation, brand);
+    }
+
+    const agent = await storage.getAiAgentByBrand(brand.id);
+    if (!agent || !agent.isActive || agent.autoReplyMode !== 'auto') {
+      return this.processNewMessage(message, conversation, brand);
+    }
+
+    log(`[AutoReply] DM detected, adding to buffer for conversation ${conversation.id}`, "sync");
+
+    await dmBufferService.bufferMessage(
+      message,
+      conversation,
+      brand,
+      async (bufferedMessages: BufferedMessage[]) => {
+        await this.processBufferedDmMessages(bufferedMessages);
+      },
+      this.dmBufferDelayMs
+    );
+
+    return { success: true, skippedReason: "buffered" };
+  }
+
+  private async processBufferedDmMessages(bufferedMessages: BufferedMessage[]): Promise<void> {
+    if (bufferedMessages.length === 0) return;
+
+    const lastMessage = bufferedMessages[bufferedMessages.length - 1];
+    const { conversation, brand } = lastMessage;
+    
+    log(`[AutoReply] Processing ${bufferedMessages.length} buffered DM messages for conversation ${conversation.id}`, "sync");
+
+    const combinedContent = bufferedMessages
+      .map(bm => bm.message.content)
+      .join('\n');
+
+    const syntheticMessage: Message = {
+      ...lastMessage.message,
+      content: combinedContent,
+    };
+
+    for (let i = 0; i < bufferedMessages.length - 1; i++) {
+      const msg = bufferedMessages[i].message;
+      await storage.updateMessage(msg.id, { aiReplyStatus: 'skipped_batched' });
+    }
+
+    await this.processNewMessage(syntheticMessage, conversation, brand);
+  }
 
   async processNewMessage(
     message: Message,
