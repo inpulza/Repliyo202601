@@ -28,8 +28,6 @@ class AutoReplyService {
     geminiApiKey: process.env.GEMINI_API_KEY,
   };
 
-  private dmBufferDelayMs: number = 15000;
-
   async processNewMessageWithBuffering(
     message: Message,
     conversation: Conversation,
@@ -49,7 +47,10 @@ class AutoReplyService {
       return this.processNewMessage(message, conversation, brand);
     }
 
-    log(`[AutoReply] 🔵 DM DETECTED - Activating Buffer. ConversationId: ${conversation.id}, Agent autoReplyMode: ${agent.autoReplyMode}, BufferDelay: ${this.dmBufferDelayMs}ms`, "sync");
+    // Read buffer delay from database (dmBatchDelaySeconds) or use default of 15 seconds
+    const bufferDelayMs = (agent.dmBatchDelaySeconds ?? 15) * 1000;
+    
+    log(`[AutoReply] 🔵 DM DETECTED - Activating Buffer. ConversationId: ${conversation.id}, Agent autoReplyMode: ${agent.autoReplyMode}, BufferDelay: ${bufferDelayMs}ms (from DB: ${agent.dmBatchDelaySeconds}s)`, "sync");
 
     await dmBufferService.bufferMessage(
       message,
@@ -58,7 +59,7 @@ class AutoReplyService {
       async (bufferedMessages: BufferedMessage[]) => {
         await this.processBufferedDmMessages(bufferedMessages);
       },
-      this.dmBufferDelayMs
+      bufferDelayMs
     );
 
     return { success: true, skippedReason: "buffered" };
