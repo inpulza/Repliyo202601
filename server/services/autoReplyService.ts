@@ -6,8 +6,20 @@ import { getCharacterLimit, splitMessageForDelivery, type MessageChunk } from ".
 import { triggerSummaryUpdateAsync } from "./summaryService";
 import { dmBufferService, type BufferedMessage } from "./dmBufferService";
 import { log } from "../app";
-import type { Message, Conversation, Brand, AiAgent } from "@shared/schema";
+import type { Message, Conversation, Brand, AiAgent, SocialProvider } from "@shared/schema";
+import { getEffectiveChannelSettings, socialProviderEnum } from "@shared/schema";
 import { randomUUID } from "crypto";
+
+const VALID_PROVIDERS = new Set(socialProviderEnum.options);
+
+function normalizeProvider(platform: string | undefined | null): SocialProvider | null {
+  if (!platform) return null;
+  const normalized = platform.toLowerCase();
+  if (VALID_PROVIDERS.has(normalized as SocialProvider)) {
+    return normalized as SocialProvider;
+  }
+  return null;
+}
 
 interface AutoReplyResult {
   success: boolean;
@@ -47,10 +59,17 @@ class AutoReplyService {
       return this.processNewMessage(message, conversation, brand);
     }
 
-    // Read buffer delay from database (dmBatchDelaySeconds) or use default of 15 seconds
-    const bufferDelayMs = (agent.dmBatchDelaySeconds ?? 15) * 1000;
+    // Read buffer delay from database - supports per-channel overrides
+    const provider = normalizeProvider(message.platform);
+    const bufferDelayMs = provider 
+      ? getEffectiveChannelSettings(agent, provider).bufferDelaySeconds * 1000
+      : agent.dmBatchDelaySeconds * 1000; // Fallback to global if unknown provider
     
-    log(`[AutoReply] 🔵 DM DETECTED - Activating Buffer. ConversationId: ${conversation.id}, Agent autoReplyMode: ${agent.autoReplyMode}, BufferDelay: ${bufferDelayMs}ms (from DB: ${agent.dmBatchDelaySeconds}s)`, "sync");
+    if (!provider) {
+      log(`[AutoReply] ⚠️ Unknown platform "${message.platform}", using global buffer delay`, "sync");
+    }
+    
+    log(`[AutoReply] 🔵 DM DETECTED - Activating Buffer. ConversationId: ${conversation.id}, Agent autoReplyMode: ${agent.autoReplyMode}, BufferDelay: ${bufferDelayMs}ms (channel: ${provider || 'global'})`, "sync");
 
     await dmBufferService.bufferMessage(
       message,
@@ -128,9 +147,14 @@ class AutoReplyService {
         return { success: false, skippedReason: `mode_${agent.autoReplyMode}` };
       }
 
-      const cooldownResult = this.checkCooldown(agent, conversation);
+      // Normalize and validate platform
+      const normalizedProvider = normalizeProvider(message.platform);
+      const cooldownResult = this.checkCooldown(agent, conversation, normalizedProvider || undefined);
       if (!cooldownResult.canReply) {
-        const cooldownScope = agent.cooldownPerConversation ? 'conversation' : 'brand';
+        const channelSettings = normalizedProvider 
+          ? getEffectiveChannelSettings(agent, normalizedProvider)
+          : { cooldownPerConversation: agent.cooldownPerConversation };
+        const cooldownScope = channelSettings.cooldownPerConversation ? 'conversation' : 'brand';
         log(`${logPrefix} Still in cooldown period (${cooldownResult.remainingSeconds}s remaining, scope: ${cooldownScope}), skipping auto-reply`, "sync");
         
         // Notify via websocket that message was skipped due to cooldown (only if brandId is valid)
@@ -479,21 +503,26 @@ class AutoReplyService {
     }
   }
 
-  private checkCooldown(agent: AiAgent, conversation?: Conversation): { canReply: boolean; remainingSeconds: number } {
+  private checkCooldown(agent: AiAgent, conversation?: Conversation, provider?: SocialProvider): { canReply: boolean; remainingSeconds: number } {
     // If cooldown is disabled, always allow
     if (!agent.cooldownEnabled) {
       return { canReply: true, remainingSeconds: 0 };
     }
 
+    // Get effective settings for this channel (with per-channel overrides)
+    const channelSettings = provider 
+      ? getEffectiveChannelSettings(agent, provider)
+      : { cooldownSeconds: agent.cooldownSeconds, cooldownRandomness: agent.cooldownRandomness, cooldownPerConversation: agent.cooldownPerConversation };
+
     // If no cooldown seconds configured, allow
-    if (!agent.cooldownSeconds || agent.cooldownSeconds === 0) {
+    if (!channelSettings.cooldownSeconds || channelSettings.cooldownSeconds === 0) {
       return { canReply: true, remainingSeconds: 0 };
     }
 
     // Determine which lastReplyAt to use based on cooldownPerConversation setting
     let lastReplyAt: Date | null = null;
     
-    if (agent.cooldownPerConversation && conversation) {
+    if (channelSettings.cooldownPerConversation && conversation) {
       // Use conversation-level cooldown
       lastReplyAt = conversation.lastAiReplyAt;
     } else {
@@ -511,10 +540,10 @@ class AutoReplyService {
     const diffMs = now.getTime() - lastReply.getTime();
     
     // Calculate effective cooldown with randomness
-    let effectiveCooldownSeconds = agent.cooldownSeconds;
-    if (agent.cooldownRandomness && agent.cooldownRandomness > 0) {
+    let effectiveCooldownSeconds = channelSettings.cooldownSeconds;
+    if (channelSettings.cooldownRandomness && channelSettings.cooldownRandomness > 0) {
       // Add random variation: -randomness to +randomness
-      const variation = Math.floor(Math.random() * (agent.cooldownRandomness * 2 + 1)) - agent.cooldownRandomness;
+      const variation = Math.floor(Math.random() * (channelSettings.cooldownRandomness * 2 + 1)) - channelSettings.cooldownRandomness;
       effectiveCooldownSeconds = Math.max(0, effectiveCooldownSeconds + variation);
     }
     
