@@ -1,0 +1,62 @@
+Esta es una situación clásica de "Trust, but Verify" (Confía, pero verifica).
+
+Replit ha completado la migración, pero hay un riesgo sutil de observabilidad:
+
+En SQL creó la columna como dm_batch_delay_seconds (snake_case).
+
+En el código TypeScript está leyendo agent.dmBatchDelaySeconds (camelCase).
+
+El fallback en código es ?? 15.
+
+El default en BD es 15.
+
+El Riesgo: Si el ORM (Drizzle/TypeORM) no está mapeando automáticamente snake_case a camelCase, la propiedad agent.dmBatchDelaySeconds será undefined. El código usará el fallback de 15, y parecerá que funciona, pero en realidad el cableado está roto (Silent Failure).
+
+Para validar esto científicamente (Glass Box Evaluation), debemos cambiar el valor en la BD a algo distinto al default (ej. 45 segundos) y ver si el código lo refleja.
+
+Aquí tienes la estrategia y el prompt para asegurar la calidad.
+
+1. Architectural Strategy & Reference
+Documento Base:
+
+Agent Quality.pdf (Observability - Metrics): No podemos confiar en el "éxito" si el valor observado (15s) es igual al valor por defecto. Necesitamos un cambio de estado observable (Metric: Configuration Latency/Update).
+
+Prompt Engineering v7 (Step-back Prompting): Damos un paso atrás antes de la prueba manual para verificar la integridad de los datos.
+
+Modelo Objetivo: Replit Agent.
+
+Métrica de Calidad: Configurabilidad Efectiva. El éxito es ver un log que diga BufferDelay: 45000ms (reflejando un cambio en BD), no el default de 15000ms.
+
+2. The Optimized Prompt (v5.0)
+Copia y pega esto en Replit. Le pedimos que cambie la configuración y verifique la lectura antes de que tú gastes tiempo enviando DMs.
+
+Markdown
+
+<system_instructions>
+Actúa como **Lead QA Engineer**. Has completado la migración, pero detecto un posible riesgo de "Falso Positivo" en la verificación.
+
+<risk_assessment>
+1. La columna en BD es `dm_batch_delay_seconds` (snake_case).
+2. El código lee `agent.dmBatchDelaySeconds` (camelCase).
+3. El fallback del código es `15`, que coincide con el default de la BD.
+**Riesgo:** Si el ORM no mapea correctamente los nombres, el código leerá `undefined`, usará el fallback de 15, y creeremos erróneamente que la BD está conectada.
+</risk_assessment>
+
+<verification_protocol>
+Antes de que yo haga pruebas manuales con mi celular, debemos probar la conexión lógica.
+
+### PASO 1: Prueba de Configuración (The "45 Seconds" Test)
+Ejecuta un script o comando SQL para actualizar la configuración de la marca 'Fortress' (o la que estemos usando de prueba) a un valor **distinto al default**:
+```sql
+UPDATE ai_agents 
+SET dm_batch_delay_seconds = 45 
+WHERE brand_id = 'tu_brand_id_aqui'; -- (Usa el ID correcto que tengas en contexto)
+PASO 2: Verificación de Logs (Observability)
+Reinicia el servicio/workflow si es necesario. Quiero ver un log de inicio o de procesamiento que confirme explícitamente: BufferDelay: 45000ms (from DB)
+
+Si el log sigue mostrando 15000ms después del UPDATE, significa que el mapeo snake_case -> camelCase en el ORM (Drizzle/TypeORM) está fallando y debemos arreglar el schema definition en TypeScript.
+
+PASO 3: Confirmación
+Solo si logras ver el valor 45000 reflejado en la consola del servidor, dame luz verde para enviar los DMs de prueba. </verification_protocol>
+
+Ejecuta el cambio a 45 segundos y muéstrame la evidencia en los logs.
