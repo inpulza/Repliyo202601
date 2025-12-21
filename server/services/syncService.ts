@@ -633,11 +633,16 @@ class SyncService {
   }
 
   private triggerAutoReply(brandId: string, message: any, conversation: any): void {
+    // DIAGNOSTIC: Log every call to triggerAutoReply
+    log(`[SyncService] 🔷 triggerAutoReply CALLED - messageId: ${message.id}, messageType: ${message.type}, author: ${message.author}`, "sync");
+    
     storage.getBrand(brandId).then(async brand => {
       if (!brand) {
         log(`[SyncService] Brand ${brandId} not found for auto-reply`, "sync");
         return;
       }
+      
+      log(`[SyncService] 🔷 Brand found: ${brand.name}, proceeding with auto-reply`, "sync");
 
       let messageToProcess = message;
 
