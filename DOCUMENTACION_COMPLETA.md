@@ -450,7 +450,7 @@ Se realizó un diagnóstico completo de las opciones de automatización del agen
 Se mejoró significativamente el sistema de cooldown entre respuestas automáticas:
 
 **Nuevos campos en tabla `ai_agents`:**
-- `cooldownEnabled` (boolean, default false): Toggle para activar/desactivar el cooldown
+- `cooldownEnabled` (boolean, default true): Toggle para activar/desactivar el cooldown
 - `cooldownRandomness` (integer, default 0): Variación aleatoria en segundos (±N)
 
 **Cambios en UI (AIAgentConfig.tsx):**
@@ -876,9 +876,39 @@ function normalizeProviderKey(provider: string): keyof typeof PLATFORM_CONFIG | 
 - **Solución:** Cambio de `setFormData({...formData, ...})` a `setFormData(prev => ({...prev, ...}))`
 - **Resultado:** Al restaurar y guardar, el override se elimina correctamente (se envía `null` a la BD)
 
-#### 11.12 Próximos Pasos (Backlog)
+#### 11.12 Consolidación UI - Pestañas Automatización y Orquestación ✅ COMPLETADA - 21 Diciembre 2025
+
+Se consolidaron todos los controles de tiempo (cooldown, buffer) en la pestaña "Orquestación" para eliminar redundancia.
+
+**Cambios en pestaña "Automatización":**
+- Ahora solo contiene: Modo de respuesta (Desactivado/Automático) + Estrategia de límite de caracteres
+- Eliminados: Toggle cooldown, slider segundos, slider variación aleatoria (movidos a Orquestación)
+
+**Cambios en pestaña "Orquestación":**
+- Toggle master "Cooldown entre respuestas" que muestra/oculta controles anidados:
+  - Slider "Segundos de cooldown" (0-60s)
+  - Slider "Variación aleatoria" (±0-30s)
+  - Toggle "Cooldown por conversación"
+- Slider "Buffer de DMs" (5-120s)
+- Select "Modo de respuesta DMs"
+- Collapsibles por red social con overrides personalizados
+
+**Nuevos valores por defecto para marcas nuevas:**
+| Configuración | Default anterior | Default nuevo |
+|---------------|------------------|---------------|
+| cooldownEnabled | false | **true** |
+| cooldownPerConversation | false | **true** |
+| dmBatchDelaySeconds | 15 | **50** |
+| dmReplyMode | 'auto' | **'batch'** |
+
+**Archivos modificados:**
+- `shared/schema.ts`: Actualizados defaults de cooldownEnabled, cooldownPerConversation, dmBatchDelaySeconds, dmReplyMode
+- `client/src/components/AIAgentConfig.tsx`: Reorganizada UI, movidos controles de cooldown a Orquestación
+
+#### 11.13 Próximos Pasos (Backlog)
 Pendiente para futuro sprint:
 - ✅ ~~**UI para Buffer y Cooldown**: Nueva pestaña en Agent Settings con configuración por red social~~ *(Completado en 11.11)*
+- ✅ ~~**Consolidación UI**: Todos los tiempos en pestaña Orquestación~~ *(Completado en 11.12)*
 - ⚪ **Tabla `conversation_user_entities`**: Extracción de datos duros (teléfono, email, nombre, ingresos) en tabla separada para memoria permanente
 - ⚪ **Vocabulario Miami**: Actualizar prompts de BOTrust con vocabulario correcto (Seguro no Aseguranza, Camionero no Troquero)
 - ⚪ **Tests de integración**: Cobertura de pruebas para flujos de DM buffereados
