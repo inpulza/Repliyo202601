@@ -1,0 +1,97 @@
+Imagina que el Agente es un empleado nuevo llamado "Carlos". Actualmente, Carlos tiene un problema de ansiedad:
+
+El Problema de Carlos (Actual): Cada vez que le llega un mensajito ("Hola"), Carlos entra en pánico, mira sus notas (los últimos 10 mensajes) y responde disparando al instante. Si el cliente escribe tres frases seguidas ("Hola", "tengo una duda", "sobre taxes"), Carlos responde tres veces interrumpiendo al cliente. Además, Carlos no sabe si ya saludó hace 5 minutos, así que vuelve a decir "Hola".
+
+La Solución (El "Carlos Relajado"): Vamos a darle a Carlos dos herramientas nuevas:
+
+Un Reloj de Arena (El Buffer): Cuando llega un mensaje ("Hola"), Carlos no responde. Voltea su reloj de arena (digamos, 20 segundos). Si el cliente escribe otra cosa antes de que caiga la arena, Carlos vuelve a girar el reloj. Solo cuando la arena termina de caer (significa que el cliente dejó de escribir), Carlos lee todo junto y responde una sola vez.
+
+Una Memoria de "Contexto Activo" (La Variable): Antes de hablar, Carlos mirará una nota adhesiva en su frente que dice: "¿Hace cuánto hablé con esta persona?". Si fue hace menos de 20 minutos, sabe que es la misma charla y no vuelve a saludar. Si fue ayer, saluda de nuevo.
+
+Resultado: El cliente siente que habla con alguien que escucha todo su párrafo antes de contestar y que recuerda que ya se saludaron.
+
+🛠️ Plan Técnico para Replit (Cómo se implementa)
+Aquí es donde se pone interesante. No es solo "cambiar el prompt". Necesitamos tocar la arquitectura de cuándo y con qué información se llama a la IA.
+
+1. El "Anti-Interrupción" (Debounce / Buffer)
+Qué es: Una técnica llamada debounce.
+
+Cómo funciona: En lugar de disparar la IA al recibir el evento message_created, lo metemos en una "sala de espera" (cola en Redis o en memoria).
+
+Regla: "Espera 15 segundos. Si llega otro mensaje de este mismo usuario, cancela el temporizador anterior y empieza uno nuevo de 15 segundos".
+
+Beneficio: La IA recibe un bloque con: "Hola" + "tengo una duda" + "sobre taxes". Y responde una sola vez: "Hola, dime qué duda tienes sobre taxes".
+
+2. Las Variables de Contexto (En el Prompt)
+Necesitamos inyectar dos datos clave en el Prompt del Sistema para que el LLM sepa cómo comportarse:
+
+{{conversation_gap}} (Tiempo de Silencio):
+
+Le dice al LLM: "Han pasado 2 minutos desde el último mensaje" o "Han pasado 24 horas".
+
+Uso: Si gap < 30 min → NO saludar. Si gap > 2 horas → Saludar de nuevo.
+
+{{message_source}} (Origen):
+
+Valor: "DM" o "COMMENT".
+
+Uso: Si es DM, usa frases cortas ("Ok", "Dale"). Si es Comentario, usa frases completas y formales.
+
+📋 El Mensaje para Replit (Instrucciones Maestras)
+Copia y pega esto. Es una instrucción técnica completa que cubre el "Buffer", las variables y la lógica de conversación natural.
+
+Título: Implementación de "Natural Conversation Flow" para DMs (Buffer + Context Variables)
+
+Objetivo: Queremos que la interacción en Mensajes Directos (DM) se sienta humana y fluida, evitando que el bot interrumpa al usuario cuando envía mensajes en ráfaga y asegurando que no repita saludos innecesariamente en una conversación activa.
+
+Requerimientos de Implementación:
+
+1. Backend: Implementación de "Message Buffering" (Anti-Interrupción) Actualmente respondemos evento a evento. Necesito cambiar esto para DMs:
+
+Lógica de Debounce: Cuando entre un mensaje entrante (DM), NO dispares la IA inmediatamente.
+
+Timer: Inicia un temporizador de espera (configurable, ej: 15-20 segundos).
+
+Acumulación: Si entra otro mensaje del mismo conversation_id antes de que expire el timer, reinicia el timer y acumula los mensajes.
+
+Ejecución: Al expirar el timer, envía todos los mensajes acumulados como un solo bloque de contexto al LLM.
+
+Resultado: El LLM responderá a todo el pensamiento del usuario de una sola vez.
+
+2. Prompt Engine: Nuevas Variables de Contexto Necesito inyectar estas nuevas variables dinámicas en el System Prompt para que el LLM decida si saludar o ser directo:
+
+{{is_dm}} (Boolean):
+
+true si es Mensaje Privado, false si es comentario público.
+
+Lógica del LLM: Si es true, usa tono chat, respuestas cortas, omite despedidas formales.
+
+{{time_since_last_interaction}} (String/Int):
+
+Tiempo en minutos desde el último mensaje saliente (del bot/humano) en esta conversación.
+
+Lógica del LLM:
+
+Si es < 60 min (Conversación Activa): PROHIBIDO SALUDAR. Ve al grano ("Entiendo", "Dime más").
+
+Si es > 60 min (Conversación Nueva): Saluda de nuevo ("Hola otra vez").
+
+3. Actualización del System Prompt (Instrucción Base): Por favor, actualiza el prompt base para incluir estas reglas lógicas:
+
+Markdown
+
+# MODO CONVERSACIÓN (DMs)
+SI {{is_dm}} ES TRUE:
+1. ANÁLISIS DE TIEMPO:
+   - Mira {{time_since_last_interaction}}.
+   - Si es MENOR a 60 mins: Estás en una charla activa. NO saludes ("Hola", "Buenas"). Responde directo (Ej: "Claro, para eso necesitas...").
+   - Si es MAYOR a 60 mins: Puedes saludar de nuevo suavemente.
+
+2. TONO:
+   - Escribe como en WhatsApp. Corto. Conciso.
+   - Evita estructuras de carta ("Espero que estés bien").
+   - Usa conectores ligeros: "Ok", "Dale", "Mira...".
+
+3. LECTURA DE RÁFAGA:
+   - El usuario puede haber enviado varios mensajes juntos. Léelos todos como un solo párrafo y responde a la idea completa.
+Pregunta para ti: ¿Para el "Message Buffering" (Punto 1), prefieres usar una cola simple en memoria (Redis/Bull) o tienes una sugerencia más ligera dada nuestra infraestructura actual en Replit?
