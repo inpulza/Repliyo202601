@@ -11,7 +11,7 @@
 
 ## Estado Actual (21 Dic 2025)
 
-### Sistema de Buffer de DMs
+### Sistema de Buffer de DMs ✅ FUNCIONANDO
 - **Problema:** Cuando usuario envía 4 DMs rápidos, la IA respondía 4 veces
 - **Solución:** Buffer que acumula mensajes y responde UNA vez
 - **Configuración:** Tabla `ai_agents` con campos:
@@ -19,12 +19,31 @@
   - `dm_reply_mode` - Modo: auto, batch, first_only
   - `cooldown_per_conversation` - Cooldown entre respuestas
 
-### Flujo del Buffer
+### Variables Dinámicas de Personalidad ✅ IMPLEMENTADO
+El LLM ahora ajusta su tono automáticamente según el contexto:
+
+| Variable | Uso |
+|----------|-----|
+| `{{is_dm}}` | true/false - Si es DM o comentario |
+| `{{time_since_last_interaction}}` | Minutos desde última respuesta |
+| `{{relationship_status}}` | new / active / reengagement |
+
+**Lógica condicional en `buildDynamicPersonalityRules()`:**
 ```
-Metricool → syncService → autoReplyService → dmBufferService → AI → Respuesta
-                              ↑
-                     Lee config de BD:
-                     agent.dmBatchDelaySeconds
+SI (DM + conversación activa < 60 min):
+   ❌ PROHIBIDO saludar → Ve directo al grano
+SI (DM + reengagement):
+   ✅ Saludo breve permitido
+SI (Comentario):
+   📢 Modo breve con CTA
+```
+
+### Flujo Completo
+```
+Metricool → syncService → autoReplyService → dmBufferService → AI
+                              ↑                      ↓
+                     Lee config de BD:      buildDynamicPersonalityRules()
+                     agent.dmBatchDelaySeconds    genera reglas contextuales
 ```
 
 ### Marca de Prueba
@@ -38,6 +57,7 @@ Metricool → syncService → autoReplyService → dmBufferService → AI → Re
 
 | Archivo | Función |
 |---------|---------|
+| `server/services/llm/prompt-composer.ts` | `buildDynamicPersonalityRules()` - Reglas SI/SINO |
 | `server/services/autoReplyService.ts` | Lee config BD, decide buffer delay |
 | `server/services/dmBufferService.ts` | Acumula mensajes, maneja timer |
 | `server/services/syncService.ts` | Sincroniza DMs de Metricool |

@@ -4,8 +4,8 @@
 Sistema de gestión de mensajes de redes sociales que se integra con Metricool para centralizar y gestionar DMs y comentarios de múltiples marcas/empresas. El sistema permite a usuarios admin y clientes gestionar sus interacciones sociales de forma organizada.
 
 ## Estado Actual
-- **Fase Actual**: ✅ FASE 10 EN PROGRESO - Simplificación de Automatización
-- **Última Actualización**: 20 de Diciembre 2025
+- **Fase Actual**: ✅ FASE 11 COMPLETADA - Mejoras Conversacionales BOTrust
+- **Última Actualización**: 21 de Diciembre 2025
 - **Login/Logout**: ✅ Completamente funcional (página de login creada, logout en sidebar)
 - **Sistema de Roles**: ✅ Admin vs Client funcionando correctamente
 - **Marca de Prueba**: ✅ Inpulza Testing conectada (blogId: 4074962)
@@ -637,9 +637,111 @@ Todos los 5 pasos fueron revisados y aprobados por el arquitecto:
 - ✅ **Paso 4 (DmBufferService)**: Debounce correcto, limpieza de memoria adecuada
 - ✅ **Paso 5 (Integración)**: Flujo de buffering correcto, sin regresiones
 
-#### 11.8 Próximos Pasos (Fase 4 - Backlog)
+#### 11.8 buildDynamicPersonalityRules() - Sistema de Personalidad Dinámica (Paso 6)
+**Implementado: 21 Diciembre 2025**
+
+Se creó la función `buildDynamicPersonalityRules()` en `prompt-composer.ts` que genera reglas de comportamiento condicionales basadas en el contexto de la conversación. Esta función "conecta el cerebro con el cuerpo" - ahora el LLM sabe usar la información del buffer.
+
+**Lógica Condicional Implementada:**
+```typescript
+SI (es DM) {
+   [MODO CHAT PRIVADO ACTIVADO]
+   
+   SI (tiempo < 60min Y conversación > 1 mensaje) {
+      ⚠️ CONVERSACIÓN ACTIVA
+      ❌ PROHIBIDO SALUDAR: No uses "Hola", "Hey", "Buenas"
+      ✅ Ve directo al grano
+      ✅ Puedes usar minúsculas iniciales
+      ✅ Ejemplo: "claro, pásame los datos"
+      ❌ Ejemplo malo: "¡Hola! Claro que sí..."
+   } SINO SI (reengagement) {
+      👋 REENGAGEMENT (usuario que vuelve)
+      ✅ Saludo breve: "Hola de nuevo", "Qué tal"
+      ✅ Referencia breve a conversación anterior
+   } SINO {
+      🆕 CONVERSACIÓN NUEVA
+      ✅ Saludo breve permitido
+   }
+   
+   📱 TONO DE DM: WhatsApp, cercano, relajado
+   📦 MENSAJES AGRUPADOS: Responde a la idea global, no mensaje por mensaje
+   
+} SINO {
+   [MODO COMENTARIO PÚBLICO ACTIVADO]
+   📢 Máximo 2-3 líneas
+   📢 CTA: "Escríbenos al DM 📩"
+   📢 Emojis con moderación
+}
+```
+
+**Inyección en System Prompt:**
+
+| Modo | Ubicación en Prompt |
+|------|---------------------|
+| OpenAI (JSON) | `<dynamic_personality_rules>` después de `<context_layer>` |
+| Gemini (texto) | Inmediatamente después de agent_identity |
+
+**Actualización del Thinking Protocol (OpenAI):**
+```xml
+<thinking_protocol>
+  1. CHECK TIPO MENSAJE: ¿Es DM o Comentario? Aplica las reglas dinámicas.
+  2. CHECK SALUDO: ¿Debo saludar? Revisa el contexto de interacción.
+  3. CHECK PLATAFORMA: Ajusta la longitud según las guías.
+  4. CHECK LÍMITE: Tu respuesta < X caracteres.
+  5. REDACCIÓN: Escribe aprovechando el espacio disponible.
+</thinking_protocol>
+```
+
+**Log de Verificación:**
+El sistema genera logs con la ficha de situación para cada mensaje:
+```
+[PromptComposer] 📋 FICHA DE SITUACIÓN generada para jordanldp:
+━━━━━━━━━━━━━━━━━━━━━━━━
+Tipo: dm
+Estado: reengagement
+Profundidad: 4 mensajes
+Última respuesta: hace 999 min
+isDM: true
+━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**Prueba Exitosa (21 Dic 2025):**
+- Usuario envió 3 DMs rápidos a @bo_trust_service
+- Buffer los acumuló (45 segundos de delay configurado)
+- LLM recibió las reglas dinámicas con `estado: reengagement`
+- Respuesta generada con saludo breve (correcto para reengagement)
+- Una sola respuesta enviada a Metricool
+
+#### 11.9 Configuración por Marca en Base de Datos (Paso 7)
+
+Se agregaron nuevos campos a la tabla `ai_agents` para configurar el comportamiento del buffer por marca:
+
+**Campos nuevos en `shared/schema.ts`:**
+```typescript
+dmBatchDelaySeconds: integer('dm_batch_delay_seconds').default(30),
+dmReplyMode: text('dm_reply_mode').default('auto'),
+cooldownPerConversation: integer('cooldown_per_conversation').default(0),
+```
+
+**Configuración de BO Trust:**
+| Campo | Valor |
+|-------|-------|
+| `dm_batch_delay_seconds` | 45 |
+| `dm_reply_mode` | 'batch' |
+| `cooldown_per_conversation` | 0 |
+
+**Flujo del Buffer con Config de BD:**
+```
+Metricool → syncService → autoReplyService → dmBufferService → AI → Respuesta
+                              ↑
+                     Lee config de BD:
+                     agent.dmBatchDelaySeconds
+```
+
+#### 11.10 Próximos Pasos (Backlog)
 Pendiente para futuro sprint:
-- ⚪ **Tabla `conversation_user_entities`**: Extracción de datos duros (teléfono, email, nombre, ingresos) en tabla separada para memoria permanente que no se degrade con resúmenes
+- ⚪ **Cooldown por conversación**: Campo existe pero no implementado (actualmente global)
+- ⚪ **Tabla `conversation_user_entities`**: Extracción de datos duros (teléfono, email, nombre, ingresos) en tabla separada para memoria permanente
 - ⚪ **Vocabulario Miami**: Actualizar prompts de BOTrust con vocabulario correcto (Seguro no Aseguranza, Camionero no Troquero)
 - ⚪ **Tests de integración**: Cobertura de pruebas para flujos de DM buffereados
 
