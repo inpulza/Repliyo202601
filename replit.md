@@ -71,13 +71,20 @@ Cada red social puede tener su propia configuración de buffer y cooldown:
 
 **Pestaña "Orquestación"** centraliza TODOS los tiempos:
 - Toggle "Cooldown entre respuestas" (master switch)
-  - Slider "Segundos de cooldown" (0-60s)
+  - Slider "Segundos de cooldown" (0-60s, default 30s)
   - Slider "Variación aleatoria" (±0-30s)
   - Toggle "Cooldown por conversación"
-- Slider "Buffer de DMs" (5-120s)
-- Select "Modo de respuesta DMs"
+- Slider "Buffer de DMs" (5-120s, default 50s)
+- Select "Modo de respuesta DMs" (default: batch)
 - Collapsibles por red social para overrides personalizados
 - Botón "Restaurar valores base" para eliminar overrides
+
+**Defaults para marcas nuevas:**
+- cooldownEnabled: true
+- cooldownSeconds: 30s
+- cooldownPerConversation: true
+- dmBatchDelaySeconds: 50s
+- dmReplyMode: batch
 
 ### Normalización de Providers ✅ CORREGIDO (21 Dic 2025)
 - **Problema:** Providers venían en formatos variados (ej: "google-business", "Instagram")

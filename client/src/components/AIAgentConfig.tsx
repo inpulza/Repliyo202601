@@ -149,7 +149,7 @@ export function AIAgentConfig() {
     autoReplyMode: 'off',
     characterLimitStrategy: 'reject',
     cooldownEnabled: true,
-    cooldownSeconds: 0,
+    cooldownSeconds: 30,
     cooldownRandomness: 0,
     cooldownPerConversation: true,
     dmBatchDelaySeconds: 50,

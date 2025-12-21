@@ -897,6 +897,7 @@ Se consolidaron todos los controles de tiempo (cooldown, buffer) en la pestaña 
 | Configuración | Default anterior | Default nuevo |
 |---------------|------------------|---------------|
 | cooldownEnabled | false | **true** |
+| cooldownSeconds | 0 | **30** |
 | cooldownPerConversation | false | **true** |
 | dmBatchDelaySeconds | 15 | **50** |
 | dmReplyMode | 'auto' | **'batch'** |

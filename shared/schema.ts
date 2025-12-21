@@ -129,7 +129,7 @@ export const aiAgents = pgTable("ai_agents", {
   approvalWorkflow: text("approval_workflow").notNull().default('none'),
   characterLimitStrategy: text("character_limit_strategy").notNull().default('reject'),
   cooldownEnabled: boolean("cooldown_enabled").notNull().default(true),
-  cooldownSeconds: integer("cooldown_seconds").notNull().default(0),
+  cooldownSeconds: integer("cooldown_seconds").notNull().default(30),
   cooldownRandomness: integer("cooldown_randomness").notNull().default(0),
   lastAutoReplyAt: timestamp("last_auto_reply_at"),
   platformSettings: jsonb("platform_settings"),
