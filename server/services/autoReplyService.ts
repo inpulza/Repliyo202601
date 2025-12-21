@@ -70,17 +70,30 @@ class AutoReplyService {
 
     const lastMessage = bufferedMessages[bufferedMessages.length - 1];
     const { conversation, brand } = lastMessage;
+    const messageCount = bufferedMessages.length;
     
-    log(`[AutoReply] 🟢 BUFFER FLUSHED - Processing ${bufferedMessages.length} buffered DM message(s) for conversation ${conversation.id}`, "sync");
+    log(`[AutoReply] 🟢 BUFFER FLUSHED - Processing ${messageCount} buffered DM message(s) for conversation ${conversation.id}`, "sync");
 
-    const combinedContent = bufferedMessages
-      .map(bm => bm.message.content)
-      .join('\n');
+    // Format combined content clearly so LLM knows these are separate messages
+    let combinedContent: string;
+    if (messageCount > 1) {
+      // Multiple messages: format with clear labels
+      combinedContent = bufferedMessages
+        .map((bm, idx) => `[Mensaje ${idx + 1} de ${messageCount}]: ${bm.message.content}`)
+        .join('\n');
+    } else {
+      // Single message: no special formatting needed
+      combinedContent = bufferedMessages[0].message.content;
+    }
 
+    // Create synthetic message with metadata about batched messages
     const syntheticMessage: Message = {
       ...lastMessage.message,
       content: combinedContent,
     };
+    
+    // Add batch metadata to rawData so prompt-composer can use it
+    (syntheticMessage as any).batchedMessageCount = messageCount;
 
     for (let i = 0; i < bufferedMessages.length - 1; i++) {
       const msg = bufferedMessages[i].message;

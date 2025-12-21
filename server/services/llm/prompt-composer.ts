@@ -142,14 +142,18 @@ function calculateSituationContext(context: VariableContext): SituationContext {
   return { shouldGreet, intensity, instructions };
 }
 
-function buildDynamicPersonalityRules(context: VariableContext): string {
+function buildDynamicPersonalityRules(context: VariableContext, batchedMessageCount?: number): string {
   const rules: string[] = [];
+  
+  const batchInfo = batchedMessageCount && batchedMessageCount > 1 
+    ? `\nMensajes en ráfaga: ${batchedMessageCount} (el usuario envió varios mensajes seguidos)` 
+    : '';
   
   rules.push(`[CONTEXTO DE INTERACCIÓN]
 Tipo: ${context.messageType === 'dm' ? 'DM (Mensaje Directo Privado)' : 'Comentario Público'}
 Tiempo desde última respuesta nuestra: ${context.timeSinceLastInteraction} minutos
 Profundidad de conversación: ${context.conversationDepth} mensajes
-Estado de relación: ${context.relationshipStatus}`);
+Estado de relación: ${context.relationshipStatus}${batchInfo}`);
 
   if (context.isDm) {
     rules.push(`
@@ -181,13 +185,24 @@ Estado de relación: ${context.relationshipStatus}`);
    - Respuestas más detalladas están OK si la pregunta lo amerita.
    - NUNCA uses un tono corporativo o rígido en DMs.`);
 
-    if (context.conversationDepth > 1) {
+    // Show batched messages rules if: 
+    // 1) batchedMessageCount > 1 (messages were combined in buffer), OR
+    // 2) conversationDepth > 1 (there's prior conversation history)
+    if (batchedMessageCount && batchedMessageCount > 1) {
       rules.push(`
-📦 MENSAJES AGRUPADOS:
-   - Has recibido un bloque de mensajes del usuario.
-   - Lee TODOS los mensajes y responde a la IDEA GLOBAL.
-   - NO respondas mensaje por mensaje como si fueran separados.
-   - Genera UNA respuesta coherente que aborde todos los puntos.`);
+📦 MENSAJES EN RÁFAGA (${batchedMessageCount} mensajes):
+   ⚠️ El usuario envió ${batchedMessageCount} mensajes seguidos antes de que respondieras.
+   - Los mensajes vienen etiquetados como [Mensaje 1 de ${batchedMessageCount}], [Mensaje 2 de ${batchedMessageCount}], etc.
+   - Lee TODOS los mensajes y comprende la IDEA COMPLETA.
+   - NO respondas a cada mensaje por separado.
+   - Genera UNA SOLA respuesta coherente que aborde todos los puntos mencionados.
+   - Prioriza responder a las preguntas o solicitudes concretas.`);
+    } else if (context.conversationDepth > 1) {
+      rules.push(`
+📦 CONTEXTO DE CONVERSACIÓN:
+   - Hay historial previo con este usuario.
+   - Lee el contexto completo antes de responder.
+   - Mantén continuidad con la conversación anterior.`);
     }
     
   } else {
@@ -475,10 +490,17 @@ export function composePrompt(context: PromptContext): {
   const variableContext = buildVariableContext(message, conversation, socialPost, brand, agent, characterLimit, conversationHistory);
 
   const useJsonMode = agent.provider === 'openai';
+  
+  // Extract batched message count if present (set by autoReplyService when combining buffered DMs)
+  const batchedMessageCount = (message as any).batchedMessageCount as number | undefined;
 
-  const systemPrompt = buildSystemPromptV53(variableContext, brand, useJsonMode);
+  const systemPrompt = buildSystemPromptV53(variableContext, brand, useJsonMode, batchedMessageCount);
   
   const situationCard = buildSituationCard(variableContext);
+  
+  const batchInfo = batchedMessageCount && batchedMessageCount > 1 
+    ? `\nMensajes agrupados: ${batchedMessageCount}` 
+    : '';
   
   console.log(`[PromptComposer] 📋 FICHA DE SITUACIÓN generada para ${message.author || 'usuario'}:
 ━━━━━━━━━━━━━━━━━━━━━━━━
@@ -486,7 +508,7 @@ Tipo: ${variableContext.messageType}
 Estado: ${variableContext.relationshipStatus}
 Profundidad: ${variableContext.conversationDepth} mensajes
 Última respuesta: hace ${variableContext.timeSinceLastInteraction} min
-isDM: ${variableContext.isDm}
+isDM: ${variableContext.isDm}${batchInfo}
 ━━━━━━━━━━━━━━━━━━━━━━━━`);
 
   let summaryContext = "";
@@ -572,10 +594,10 @@ Por favor, genera una respuesta apropiada para este mensaje.`);
   };
 }
 
-function buildSystemPromptV53(context: VariableContext, brand?: Brand, useJsonMode: boolean = false): string {
+function buildSystemPromptV53(context: VariableContext, brand?: Brand, useJsonMode: boolean = false, batchedMessageCount?: number): string {
   const parts: string[] = [];
   const platformGuideline = getPlatformLengthGuideline(context.platform);
-  const dynamicRules = buildDynamicPersonalityRules(context);
+  const dynamicRules = buildDynamicPersonalityRules(context, batchedMessageCount);
 
   if (useJsonMode) {
     parts.push(`<system_core>
