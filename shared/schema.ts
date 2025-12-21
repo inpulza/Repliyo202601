@@ -363,6 +363,43 @@ export type InsertAiAgent = z.infer<typeof insertAiAgentSchema>;
 export type AiAgent = typeof aiAgents.$inferSelect;
 export type UpdateAiAgent = z.infer<typeof updateAiAgentSchema>;
 
+export const socialProviderEnum = z.enum(['instagram', 'facebook', 'tiktok', 'youtube', 'linkedin', 'google']);
+export type SocialProvider = z.infer<typeof socialProviderEnum>;
+
+export const channelSettingsSchema = z.object({
+  enabled: z.boolean().default(false),
+  bufferDelaySeconds: z.number().int().min(0).max(300).nullable().optional(),
+  cooldownSeconds: z.number().int().min(0).max(3600).nullable().optional(),
+  cooldownRandomness: z.number().int().min(0).max(120).nullable().optional(),
+  cooldownPerConversation: z.boolean().nullable().optional(),
+});
+export type ChannelSettings = z.infer<typeof channelSettingsSchema>;
+
+export const platformSettingsSchema = z.object({
+  instagram: channelSettingsSchema.optional(),
+  facebook: channelSettingsSchema.optional(),
+  tiktok: channelSettingsSchema.optional(),
+  youtube: channelSettingsSchema.optional(),
+  linkedin: channelSettingsSchema.optional(),
+  google: channelSettingsSchema.optional(),
+});
+export type PlatformSettings = z.infer<typeof platformSettingsSchema>;
+
+export function getEffectiveChannelSettings(
+  agent: AiAgent,
+  provider: SocialProvider
+): { bufferDelaySeconds: number; cooldownSeconds: number; cooldownRandomness: number; cooldownPerConversation: boolean } {
+  const platformSettings = agent.platformSettings as PlatformSettings | null;
+  const channelOverride = platformSettings?.[provider];
+  
+  return {
+    bufferDelaySeconds: channelOverride?.bufferDelaySeconds ?? agent.dmBatchDelaySeconds,
+    cooldownSeconds: channelOverride?.cooldownSeconds ?? agent.cooldownSeconds,
+    cooldownRandomness: channelOverride?.cooldownRandomness ?? agent.cooldownRandomness,
+    cooldownPerConversation: channelOverride?.cooldownPerConversation ?? agent.cooldownPerConversation,
+  };
+}
+
 export const insertAiAgentAuditLogSchema = createInsertSchema(aiAgentAuditLog).omit({
   id: true,
   createdAt: true,
