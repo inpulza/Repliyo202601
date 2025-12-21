@@ -812,62 +812,6 @@ export function AIAgentConfig() {
                       </Select>
                     </div>
 
-                    <Separator />
-
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label className="text-sm">Cooldown entre respuestas</Label>
-                          <p className="text-xs text-muted-foreground">
-                            Tiempo de espera entre respuestas automáticas
-                          </p>
-                        </div>
-                        <Switch
-                          checked={formData.cooldownEnabled || false}
-                          onCheckedChange={(checked) => setFormData({ ...formData, cooldownEnabled: checked })}
-                          data-testid="switch-cooldown-enabled"
-                        />
-                      </div>
-
-                      {formData.cooldownEnabled && (
-                        <div className="space-y-4 pl-0 sm:pl-4 border-l-0 sm:border-l-2 border-border">
-                          <div className="space-y-3">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                              <Label className="text-sm">Segundos de espera</Label>
-                              <span className="text-sm font-medium">{formData.cooldownSeconds}s</span>
-                            </div>
-                            <Slider
-                              value={[formData.cooldownSeconds || 0]}
-                              min={0}
-                              max={60}
-                              step={1}
-                              onValueChange={([value]) => setFormData({ ...formData, cooldownSeconds: value })}
-                              data-testid="slider-cooldown"
-                            />
-                          </div>
-
-                          <div className="space-y-3">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                              <div>
-                                <Label className="text-sm">Variación aleatoria</Label>
-                                <p className="text-xs text-muted-foreground">
-                                  Añade ±{formData.cooldownRandomness || 0}s de variación
-                                </p>
-                              </div>
-                              <span className="text-sm font-medium">±{formData.cooldownRandomness || 0}s</span>
-                            </div>
-                            <Slider
-                              value={[formData.cooldownRandomness || 0]}
-                              min={0}
-                              max={30}
-                              step={1}
-                              onValueChange={([value]) => setFormData({ ...formData, cooldownRandomness: value })}
-                              data-testid="slider-cooldown-randomness"
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
                   </div>
                 </CardContent>
               </Card>
