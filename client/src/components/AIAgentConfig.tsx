@@ -140,6 +140,9 @@ export function AIAgentConfig() {
     cooldownEnabled: false,
     cooldownSeconds: 0,
     cooldownRandomness: 0,
+    cooldownPerConversation: true,
+    dmBatchDelaySeconds: 30,
+    dmReplyMode: 'batch',
     isActive: true,
   });
 
@@ -238,6 +241,9 @@ export function AIAgentConfig() {
         cooldownEnabled: agent.cooldownEnabled ?? false,
         cooldownSeconds: agent.cooldownSeconds || 0,
         cooldownRandomness: agent.cooldownRandomness || 0,
+        cooldownPerConversation: agent.cooldownPerConversation ?? true,
+        dmBatchDelaySeconds: agent.dmBatchDelaySeconds || 30,
+        dmReplyMode: agent.dmReplyMode || 'batch',
         isActive: agent.isActive ?? true,
       });
     }
@@ -378,6 +384,11 @@ export function AIAgentConfig() {
                 <Share2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">Plataformas</span>
                 <span className="sm:hidden">Redes</span>
+              </TabsTrigger>
+              <TabsTrigger value="orchestration" className="gap-1.5 md:gap-2 data-[state=active]:bg-muted rounded-md px-2.5 md:px-3 text-xs md:text-sm" data-testid="tab-orchestration">
+                <Clock className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Orquestación</span>
+                <span className="sm:hidden">Tiempo</span>
               </TabsTrigger>
               <TabsTrigger value="playground" className="gap-1.5 md:gap-2 data-[state=active]:bg-muted rounded-md px-2.5 md:px-3 text-xs md:text-sm" data-testid="tab-playground">
                 <Play className="h-3.5 w-3.5 md:h-4 md:w-4" />
@@ -962,6 +973,98 @@ export function AIAgentConfig() {
                         </div>
                       );
                     })}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="orchestration" className="mt-0 space-y-6">
+              <Card className="border border-border shadow-none">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    Orquestación de Respuestas
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Configura los tiempos de espera antes de responder para dar una experiencia más natural
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-sm">Cooldown por conversación</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Cada conversación tiene su propio cooldown independiente
+                        </p>
+                      </div>
+                      <Switch
+                        checked={formData.cooldownPerConversation || false}
+                        onCheckedChange={(checked) => setFormData({ ...formData, cooldownPerConversation: checked })}
+                        data-testid="switch-cooldown-per-conversation"
+                      />
+                    </div>
+                    
+                    <Alert className="border-border">
+                      <Info className="h-4 w-4" />
+                      <AlertDescription className="text-xs">
+                        {formData.cooldownPerConversation 
+                          ? "Cada usuario puede recibir respuestas independientemente - responder a Juan no afecta a María"
+                          : "El cooldown es global - responder a cualquier usuario bloquea respuestas a todos"
+                        }
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-sm">Buffer de DMs</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Tiempo de espera para acumular mensajes consecutivos en DMs
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                        <Label className="text-sm">Segundos de buffer (base)</Label>
+                        <span className="text-sm font-medium">{formData.dmBatchDelaySeconds || 30}s</span>
+                      </div>
+                      <Slider
+                        value={[formData.dmBatchDelaySeconds || 30]}
+                        min={5}
+                        max={120}
+                        step={5}
+                        onValueChange={([value]) => setFormData({ ...formData, dmBatchDelaySeconds: value })}
+                        data-testid="slider-dm-buffer"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Cuando el usuario envía varios mensajes seguidos en DM, el agente espera {formData.dmBatchDelaySeconds || 30}s 
+                        para acumularlos y responder una sola vez
+                      </p>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-4">
+                    <Label className="text-sm flex items-center gap-2">
+                      Modo de respuesta en DMs
+                    </Label>
+                    <Select
+                      value={formData.dmReplyMode || 'batch'}
+                      onValueChange={(value) => setFormData({ ...formData, dmReplyMode: value })}
+                    >
+                      <SelectTrigger className="w-full shadow-none" data-testid="select-dm-reply-mode">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auto">Automático - Sin buffer (responde inmediatamente)</SelectItem>
+                        <SelectItem value="batch">Buffer - Acumula mensajes antes de responder</SelectItem>
+                        <SelectItem value="first_only">Solo primero - Responde al primer mensaje, ignora resto</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </CardContent>
               </Card>
