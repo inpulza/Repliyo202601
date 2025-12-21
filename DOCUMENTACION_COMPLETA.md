@@ -500,6 +500,151 @@ ALTER TABLE "ai_agents" ADD COLUMN IF NOT EXISTS "cooldown_randomness" integer D
 
 ---
 
+**FASE 11: Mejoras Conversacionales para BOTrust ✅ COMPLETADA - 21 Diciembre 2025**
+
+Sistema de mejoras para hacer las respuestas del agente más naturales, context-aware y humanas, especialmente en mensajes directos (DMs).
+
+#### 11.1 Variables Dinámicas de Contexto (Paso 1)
+Se agregaron 5 nuevas variables dinámicas al sistema de prompts para proporcionar contexto situacional:
+
+**Nuevas variables en `shared/dynamicVariables.ts`:**
+| Variable | Placeholder | Descripción | Ejemplo |
+|----------|-------------|-------------|---------|
+| `is_dm` | `{{is_dm}}` | Si es mensaje directo (true) o comentario (false) | `true` |
+| `message_type` | `{{message_type}}` | Tipo de mensaje: "dm" o "comment" | `dm` |
+| `time_since_last_interaction` | `{{time_since_last_interaction}}` | Minutos desde la última respuesta de la marca | `15` |
+| `conversation_depth` | `{{conversation_depth}}` | Número total de mensajes en la conversación | `8` |
+| `relationship_status` | `{{relationship_status}}` | Estado: "new", "active", "reengagement" | `active` |
+
+**Cálculo de variables en `prompt-composer.ts`:**
+- `is_dm` / `message_type`: Se deriva de `message.type === 'conversation'`
+- `time_since_last_interaction`: Calcula minutos desde el último mensaje outbound de la marca
+- `conversation_depth`: Cuenta mensajes en el historial + 1
+- `relationship_status`: 
+  - `new`: Primera interacción (depth = 1)
+  - `active`: Conversación en curso (< 60 min desde última respuesta)
+  - `reengagement`: Usuario que vuelve después de tiempo (> 60 min)
+
+#### 11.2 Ficha de Situación / Situation Card (Paso 2)
+Se implementó un sistema de "Ficha de Situación" que se inyecta automáticamente en cada prompt con instrucciones contextuales.
+
+**Nueva función `calculateSituationContext()`:**
+- Determina `shouldGreet`: Solo saludar si > 60 minutos O es primer mensaje
+- Calcula `intensity`: low (> 30 min), medium (5-30 min), high (< 5 min)
+- Genera instrucciones automáticas basadas en el contexto
+
+**Nueva función `buildSituationCard()`:**
+Genera un bloque de texto que se inyecta antes del mensaje:
+```
+[FICHA_DE_SITUACIÓN]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Tipo: dm
+Estado: active
+Profundidad: 8 mensajes
+Última respuesta nuestra: hace 3 minutos
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[INSTRUCCIONES_AUTOMÁTICAS]
+• Conversación ACTIVA. PROHIBIDO saludar (nada de "Hola", "Buenas", etc.). Ve directo al punto.
+• Esto es un DM privado. Usa tono conversacional de WhatsApp (relajado, cercano).
+```
+
+#### 11.3 Reglas de Tono DM vs Comentarios (Paso 3)
+Se agregó una nueva sección de reglas de tono en `buildSystemPromptV53()`:
+
+**Para Mensajes Directos (DMs):**
+- Tono conversacional tipo WhatsApp: cercano, relajado, natural
+- Permitido usar puntos suspensivos, "jaja", "oye", "mira"
+- Respuestas más largas si la conversación lo amerita
+- PROHIBIDO tono corporativo o rígido
+
+**Para Comentarios Públicos:**
+- Breve, directo, profesional
+- Incluir Call-to-Action (CTA) cuando aplique
+- Evitar respuestas largas o conversacionales
+
+**Regla de Saludos:**
+- Si `time_since_last_interaction` < 60 min → PROHIBIDO saludar
+- Solo saludar en conversaciones NUEVAS o después de >1 hora sin respuesta
+
+#### 11.4 DmBufferService - Sistema de Debounce (Paso 4)
+Se creó un nuevo servicio `server/services/dmBufferService.ts` para evitar que el agente interrumpa a usuarios que envían múltiples mensajes seguidos.
+
+**Funcionamiento:**
+1. Llega un DM → Se agrega al buffer de esa conversación
+2. Se inicia un timer de 15 segundos
+3. Si llega otro DM antes de que termine → Se reinicia el timer
+4. Cuando el timer termina → Se procesan todos los mensajes juntos
+
+**Características:**
+- Buffers por conversación (no global)
+- Timer de 15 segundos (configurable)
+- Limpieza automática de buffers
+- Los mensajes anteriores al último se marcan como `skipped_batched`
+
+**Estructura del servicio:**
+```typescript
+class DmBufferService {
+  bufferMessage(message, conversation, brand, callback, delayMs)
+  cancelBuffer(conversationId)
+  getBufferStatus(conversationId): { isBuffering, messageCount, oldestMessageAge }
+  clearAllBuffers()
+}
+```
+
+#### 11.5 Integración con AutoReplyService (Paso 5)
+Se modificó el flujo de auto-reply para que los DMs pasen por el buffer:
+
+**Nuevo método `processNewMessageWithBuffering()`:**
+- Si el mensaje es un comentario → Procesa inmediatamente (flujo normal)
+- Si es un DM → Agrega al buffer y espera
+- Cuando el buffer se vacía → Combina contenido y procesa
+
+**Cambios en `syncService.ts`:**
+- Llamada cambiada de `processNewMessage()` a `processNewMessageWithBuffering()`
+- Log mejorado para identificar mensajes buffereados
+
+**Flujo resultante:**
+```
+ANTES:
+14:00:01 - Usuario: "Hola" → 14:00:02 - Agente responde
+14:00:05 - Usuario: "tengo duda" → 14:00:06 - Agente responde
+14:00:12 - Usuario: "sobre taxes" → 14:00:13 - Agente responde
+
+DESPUÉS:
+14:00:01 - Usuario: "Hola" → Buffereado
+14:00:05 - Usuario: "tengo duda" → Timer reiniciado
+14:00:12 - Usuario: "sobre taxes" → Timer reiniciado
+14:00:27 - (15s después) → Agente responde a todo junto
+```
+
+#### 11.6 Archivos Modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `shared/dynamicVariables.ts` | +5 nuevas variables dinámicas |
+| `server/services/llm/prompt-composer.ts` | +Interface VariableContext extendida, +calculateSituationContext(), +buildSituationCard(), +reglas de tono DM/comment |
+| `server/services/dmBufferService.ts` | **Nuevo archivo** - Servicio de buffering para DMs |
+| `server/services/autoReplyService.ts` | +processNewMessageWithBuffering(), +processBufferedDmMessages() |
+| `server/services/syncService.ts` | Llamada cambiada a processNewMessageWithBuffering() |
+
+#### 11.7 Revisión del Arquitecto
+Todos los 5 pasos fueron revisados y aprobados por el arquitecto:
+
+- ✅ **Paso 1 (Variables)**: Variables correctamente definidas y calculadas
+- ✅ **Paso 2 (Ficha de Situación)**: Lógica de greeting correcta, inyección antes del mensaje
+- ✅ **Paso 3 (Reglas de Tono)**: Bloque de reglas DM vs comentario integrado
+- ✅ **Paso 4 (DmBufferService)**: Debounce correcto, limpieza de memoria adecuada
+- ✅ **Paso 5 (Integración)**: Flujo de buffering correcto, sin regresiones
+
+#### 11.8 Próximos Pasos (Fase 4 - Backlog)
+Pendiente para futuro sprint:
+- ⚪ **Tabla `conversation_user_entities`**: Extracción de datos duros (teléfono, email, nombre, ingresos) en tabla separada para memoria permanente que no se degrade con resúmenes
+- ⚪ **Vocabulario Miami**: Actualizar prompts de BOTrust con vocabulario correcto (Seguro no Aseguranza, Camionero no Troquero)
+- ⚪ **Tests de integración**: Cobertura de pruebas para flujos de DM buffereados
+
+---
+
 ## Notas de Desarrollo
 
 ### Usuarios Actuales:
