@@ -32,7 +32,7 @@ import {
   Clock, AlertTriangle, CheckCircle, XCircle, Share2, Variable, Copy,
   ChevronDown, ChevronUp, Filter, RotateCcw, Eye, Info, Pencil, X
 } from 'lucide-react';
-import { FaFacebook, FaInstagram, FaTwitter, FaTiktok, FaLinkedin, FaYoutube } from 'react-icons/fa';
+import { FaFacebook, FaInstagram, FaTwitter, FaTiktok, FaLinkedin, FaYoutube, FaGoogle } from 'react-icons/fa';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -78,7 +78,18 @@ const PLATFORM_CONFIG = {
   tiktok: { name: 'TikTok', icon: FaTiktok, color: 'text-gray-900', charLimit: 150 },
   linkedin: { name: 'LinkedIn', icon: FaLinkedin, color: 'text-blue-700', charLimit: 3000 },
   youtube: { name: 'YouTube', icon: FaYoutube, color: 'text-red-600', charLimit: 500 },
+  google: { name: 'Google Business', icon: FaGoogle, color: 'text-red-500', charLimit: 1500 },
 };
+
+function normalizeProviderKey(provider: string): keyof typeof PLATFORM_CONFIG | null {
+  const normalized = provider.toLowerCase().replace(/-/g, '_');
+  if (normalized in PLATFORM_CONFIG) return normalized as keyof typeof PLATFORM_CONFIG;
+  if (normalized === 'google_business' || normalized === 'gmb') return 'google';
+  if (normalized === 'x') return 'twitter';
+  const baseProvider = normalized.split('_')[0];
+  if (baseProvider in PLATFORM_CONFIG) return baseProvider as keyof typeof PLATFORM_CONFIG;
+  return null;
+}
 
 const DEFAULT_GUARDRAIL = `Restricciones de seguridad:
 - No compartas información confidencial de la empresa
@@ -190,8 +201,9 @@ export function AIAgentConfig() {
 
   const getPlatformIcon = (platform: string | null) => {
     if (!platform) return null;
-    const config = PLATFORM_CONFIG[platform.toLowerCase() as keyof typeof PLATFORM_CONFIG];
-    if (!config) return null;
+    const providerKey = normalizeProviderKey(platform);
+    if (!providerKey) return null;
+    const config = PLATFORM_CONFIG[providerKey];
     const Icon = config.icon;
     return <Icon className={`h-4 w-4 ${config.color}`} />;
   };
@@ -888,15 +900,16 @@ export function AIAgentConfig() {
                   ) : (
                     <div className="space-y-3">
                       {socialAccounts.map((account) => {
-                        const config = PLATFORM_CONFIG[account.provider as keyof typeof PLATFORM_CONFIG];
-                        if (!config) return null;
+                        const providerKey = normalizeProviderKey(account.provider);
+                        if (!providerKey) return null;
+                        const config = PLATFORM_CONFIG[providerKey];
                         const Icon = config.icon;
                         
                         return (
                           <div 
                             key={account.id}
                             className="flex flex-col sm:flex-row sm:items-center justify-between p-3 md:p-4 border border-border rounded-lg hover:bg-muted/30 transition-colors gap-3"
-                            data-testid={`platform-card-${account.provider}`}
+                            data-testid={`platform-card-${providerKey}`}
                           >
                             <div className="flex items-center gap-3 md:gap-4">
                               <div className="p-2 rounded-lg bg-muted/30 border border-border shrink-0">
@@ -1096,10 +1109,11 @@ export function AIAgentConfig() {
                   ) : (
                     <div className="space-y-4">
                       {socialAccounts.map((account) => {
-                        const config = PLATFORM_CONFIG[account.provider as keyof typeof PLATFORM_CONFIG];
-                        if (!config) return null;
+                        const providerKey = normalizeProviderKey(account.provider);
+                        if (!providerKey) return null;
+                        const config = PLATFORM_CONFIG[providerKey];
                         const Icon = config.icon;
-                        const provider = account.provider.toLowerCase();
+                        const provider = providerKey;
                         const platformSettings = (formData.platformSettings as Record<string, any>) || {};
                         const channelSettings = platformSettings[provider] || {};
                         const hasOverride = Object.keys(channelSettings).length > 0;
