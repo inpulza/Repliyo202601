@@ -17,6 +17,9 @@ interface BufferEntry {
 class DmBufferService {
   private buffers: Map<string, BufferEntry> = new Map();
   private defaultDelayMs: number = 15000;
+  
+  // Lock mechanism to prevent race conditions when multiple messages arrive simultaneously
+  private locks: Map<string, Promise<void>> = new Map();
 
   private getBufferKey(conversationId: string): string {
     return conversationId;
@@ -30,46 +33,67 @@ class DmBufferService {
     delayMs?: number
   ): Promise<void> {
     const key = this.getBufferKey(conversation.id);
-    const delay = delayMs || this.defaultDelayMs;
-    const activeBufferCount = this.buffers.size;
+    
+    // Use lock to prevent race conditions when multiple messages arrive simultaneously
+    const existingLock = this.locks.get(key);
+    if (existingLock) {
+      log(`[DmBuffer] 🔒 WAITING_FOR_LOCK - msgId: ${message.id}, convId: ${conversation.id}`, "sync");
+      await existingLock;
+    }
+    
+    // Create a new lock for this operation
+    let unlockResolve: () => void;
+    const lockPromise = new Promise<void>(resolve => {
+      unlockResolve = resolve;
+    });
+    this.locks.set(key, lockPromise);
+    
+    try {
+      const delay = delayMs || this.defaultDelayMs;
+      const activeBufferCount = this.buffers.size;
 
-    log(`[DmBuffer] 🟡 BUFFER_ENTRY - author: ${message.author}, msgId: ${message.id}, convId: ${conversation.id}, delay: ${delay}ms, activeBuffers: ${activeBufferCount}`, "sync");
+      log(`[DmBuffer] 🟡 BUFFER_ENTRY - author: ${message.author}, msgId: ${message.id}, convId: ${conversation.id}, delay: ${delay}ms, activeBuffers: ${activeBufferCount}`, "sync");
 
-    const existingEntry = this.buffers.get(key);
+      const existingEntry = this.buffers.get(key);
 
-    if (existingEntry) {
-      if (existingEntry.timer) {
-        clearTimeout(existingEntry.timer);
-      }
+      if (existingEntry) {
+        if (existingEntry.timer) {
+          clearTimeout(existingEntry.timer);
+        }
 
-      existingEntry.messages.push({
-        message,
-        conversation,
-        brand,
-        receivedAt: Date.now(),
-      });
-
-      log(`[DmBuffer] 🔵 ADDED_TO_EXISTING - convId: ${conversation.id}, totalMsgs: ${existingEntry.messages.length}, resetting timer to ${delay}ms`, "sync");
-
-      existingEntry.timer = setTimeout(() => {
-        this.flushBuffer(key);
-      }, delay);
-    } else {
-      const newEntry: BufferEntry = {
-        messages: [{
+        existingEntry.messages.push({
           message,
           conversation,
           brand,
           receivedAt: Date.now(),
-        }],
-        timer: setTimeout(() => {
-          this.flushBuffer(key);
-        }, delay),
-        processingCallback: processCallback,
-      };
+        });
 
-      this.buffers.set(key, newEntry);
-      log(`[DmBuffer] 🟢 NEW_BUFFER - convId: ${conversation.id}, waiting ${delay}ms before processing`, "sync");
+        log(`[DmBuffer] 🔵 ADDED_TO_EXISTING - convId: ${conversation.id}, totalMsgs: ${existingEntry.messages.length}, resetting timer to ${delay}ms`, "sync");
+
+        existingEntry.timer = setTimeout(() => {
+          this.flushBuffer(key);
+        }, delay);
+      } else {
+        const newEntry: BufferEntry = {
+          messages: [{
+            message,
+            conversation,
+            brand,
+            receivedAt: Date.now(),
+          }],
+          timer: setTimeout(() => {
+            this.flushBuffer(key);
+          }, delay),
+          processingCallback: processCallback,
+        };
+
+        this.buffers.set(key, newEntry);
+        log(`[DmBuffer] 🟢 NEW_BUFFER - convId: ${conversation.id}, waiting ${delay}ms before processing`, "sync");
+      }
+    } finally {
+      // Release the lock
+      this.locks.delete(key);
+      unlockResolve!();
     }
   }
 
