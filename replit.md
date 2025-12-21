@@ -64,9 +64,16 @@ Cada red social puede tener su propia configuración de buffer y cooldown:
 }
 ```
 
-### Nueva Pestaña UI "Orquestación" ✅ IMPLEMENTADA
-En Agent Settings, nueva pestaña con:
-- Toggle "Cooldown por conversación"
+### Consolidación UI Completada ✅ (21 Dic 2025)
+**Pestaña "Automatización"** ahora solo contiene:
+- Modo de respuesta (Desactivado / Automático)
+- Estrategia de límite de caracteres
+
+**Pestaña "Orquestación"** centraliza TODOS los tiempos:
+- Toggle "Cooldown entre respuestas" (master switch)
+  - Slider "Segundos de cooldown" (0-60s)
+  - Slider "Variación aleatoria" (±0-30s)
+  - Toggle "Cooldown por conversación"
 - Slider "Buffer de DMs" (5-120s)
 - Select "Modo de respuesta DMs"
 - Collapsibles por red social para overrides personalizados
