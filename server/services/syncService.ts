@@ -324,6 +324,9 @@ class SyncService {
           // (upsertMessage may return an existing message from another brand if it's a global duplicate)
           const isReallyNew = isNewMessage && savedMessage.brandId === brandId;
           
+          // Log DM processing for debugging
+          log(`[SyncService] DM ${metricoolId} from ${author}: isNew=${isNewMessage}, isReallyNew=${isReallyNew}, isFromBrand=${isFromBrand}, direction=${direction}`, "sync");
+          
           if (isReallyNew && isInbound) {
             newInboundCount++; // Increment counter for truly new inbound messages
             
