@@ -72,6 +72,7 @@ export const conversations = pgTable("conversations", {
   unreadCount: integer("unread_count").default(0),
   status: text("status").notNull().default('open'),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  lastAiReplyAt: timestamp("last_ai_reply_at"),
 });
 
 export const messages = pgTable("messages", {

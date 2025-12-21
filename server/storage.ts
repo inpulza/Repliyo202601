@@ -48,6 +48,7 @@ export interface IStorage {
   createConversation(conversation: InsertConversation): Promise<Conversation>;
   updateConversation(id: string, updates: UpdateConversation): Promise<Conversation | undefined>;
   upsertConversation(conversation: InsertConversation): Promise<Conversation>;
+  updateConversationLastAiReply(id: string): Promise<Conversation | undefined>;
   
   getMessages(brandId?: string): Promise<Message[]>;
   getMessagesByConversation(conversationId: string): Promise<Message[]>;
@@ -538,6 +539,15 @@ export class DatabaseStorage implements IStorage {
       ...insertConversation,
       unreadCount: shouldIncrementUnread ? 1 : 0,
     });
+  }
+
+  async updateConversationLastAiReply(id: string): Promise<Conversation | undefined> {
+    const [conversation] = await db
+      .update(conversations)
+      .set({ lastAiReplyAt: new Date() })
+      .where(eq(conversations.id, id))
+      .returning();
+    return conversation || undefined;
   }
 
   async getMessages(brandId?: string): Promise<Message[]> {

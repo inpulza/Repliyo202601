@@ -128,9 +128,10 @@ class AutoReplyService {
         return { success: false, skippedReason: `mode_${agent.autoReplyMode}` };
       }
 
-      const cooldownResult = this.checkCooldown(agent);
+      const cooldownResult = this.checkCooldown(agent, conversation);
       if (!cooldownResult.canReply) {
-        log(`${logPrefix} Still in cooldown period (${cooldownResult.remainingSeconds}s remaining), skipping auto-reply`, "sync");
+        const cooldownScope = agent.cooldownPerConversation ? 'conversation' : 'brand';
+        log(`${logPrefix} Still in cooldown period (${cooldownResult.remainingSeconds}s remaining, scope: ${cooldownScope}), skipping auto-reply`, "sync");
         
         // Notify via websocket that message was skipped due to cooldown (only if brandId is valid)
         if (brand.id && message.id && conversation.id) {
@@ -386,11 +387,12 @@ class AutoReplyService {
           wasCharacterLimited: llmResponse.wasCharacterLimited,
         });
 
-        // Still update conversation preview with what was sent
+        // Still update conversation preview with what was sent (including cooldown timestamp)
         const sentContent = sentMessages.map(m => m.content).join(' ');
         await storage.updateConversation(conversation.id, {
           lastMessageAt: new Date(),
           lastMessagePreview: sentContent.substring(0, 100),
+          lastAiReplyAt: new Date(),
         });
 
         return {
@@ -404,15 +406,16 @@ class AutoReplyService {
       // Update original message status
       await storage.updateMessage(message.id, { aiReplyStatus: 'sent' });
 
-      // Update agent's last reply time
+      // Update agent's last reply time (global cooldown)
       await storage.updateAiAgent(agent.id, {
         lastAutoReplyAt: new Date(),
       });
 
-      // Update conversation preview with full response
+      // Update conversation preview with full response AND conversation-level cooldown timestamp
       await storage.updateConversation(conversation.id, {
         lastMessageAt: new Date(),
         lastMessagePreview: llmResponse.text.substring(0, 100),
+        lastAiReplyAt: new Date(),
       });
 
       // Log audit entry for the complete operation
@@ -476,7 +479,7 @@ class AutoReplyService {
     }
   }
 
-  private checkCooldown(agent: AiAgent): { canReply: boolean; remainingSeconds: number } {
+  private checkCooldown(agent: AiAgent, conversation?: Conversation): { canReply: boolean; remainingSeconds: number } {
     // If cooldown is disabled, always allow
     if (!agent.cooldownEnabled) {
       return { canReply: true, remainingSeconds: 0 };
@@ -487,13 +490,24 @@ class AutoReplyService {
       return { canReply: true, remainingSeconds: 0 };
     }
 
+    // Determine which lastReplyAt to use based on cooldownPerConversation setting
+    let lastReplyAt: Date | null = null;
+    
+    if (agent.cooldownPerConversation && conversation) {
+      // Use conversation-level cooldown
+      lastReplyAt = conversation.lastAiReplyAt;
+    } else {
+      // Use agent-level (global) cooldown
+      lastReplyAt = agent.lastAutoReplyAt;
+    }
+
     // If never replied before, allow
-    if (!agent.lastAutoReplyAt) {
+    if (!lastReplyAt) {
       return { canReply: true, remainingSeconds: 0 };
     }
 
     const now = new Date();
-    const lastReply = new Date(agent.lastAutoReplyAt);
+    const lastReply = new Date(lastReplyAt);
     const diffMs = now.getTime() - lastReply.getTime();
     
     // Calculate effective cooldown with randomness
