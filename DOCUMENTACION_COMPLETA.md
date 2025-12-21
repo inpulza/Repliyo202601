@@ -738,9 +738,55 @@ Metricool → syncService → autoReplyService → dmBufferService → AI → Re
                      agent.dmBatchDelaySeconds
 ```
 
-#### 11.10 Próximos Pasos (Backlog)
+#### 11.10 Cooldown por Conversación ✅ IMPLEMENTADO (21 Dic 2025)
+
+**Problema resuelto:** El cooldown anterior era GLOBAL por marca - si BO Trust respondía a un DM de Instagram, toda la marca entraba en cooldown, bloqueando respuestas en otras redes sociales (TikTok, Facebook, etc.) y otros DMs.
+
+**Solución implementada:** Cada conversación tiene su propio cooldown independiente.
+
+**Cambios en Base de Datos:**
+```sql
+-- Nueva columna en tabla conversations
+ALTER TABLE conversations ADD COLUMN IF NOT EXISTS last_ai_reply_at TIMESTAMP;
+```
+
+**Campo de configuración en ai_agents:**
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `cooldown_per_conversation` | boolean | true = cooldown por conversación, false = cooldown global |
+
+**Lógica en autoReplyService.checkCooldown():**
+```typescript
+if (agent.cooldownPerConversation && conversation) {
+  lastReplyAt = conversation.lastAiReplyAt;  // Cooldown por conversación
+} else {
+  lastReplyAt = agent.lastAutoReplyAt;       // Cooldown global (original)
+}
+```
+
+**Comportamiento:**
+```
+ANTES (cooldown global):
+Responde a Juan en Instagram → TODA la marca en cooldown 5 min
+María en Facebook → NO puede responder ❌
+Pedro en TikTok → NO puede responder ❌
+
+AHORA (cooldown por conversación):
+Responde a Juan en Instagram → Solo Juan en cooldown 5 min
+María en Facebook → Responde normalmente ✅
+Pedro en TikTok → Responde normalmente ✅
+```
+
+**Archivos modificados:**
+| Archivo | Cambio |
+|---------|--------|
+| `shared/schema.ts` | +columna `lastAiReplyAt` en conversations |
+| `server/storage.ts` | +método `updateConversationLastAiReply()` |
+| `server/services/autoReplyService.ts` | `checkCooldown()` acepta conversation, actualiza ambos timestamps |
+
+#### 11.11 Próximos Pasos (Backlog)
 Pendiente para futuro sprint:
-- ⚪ **Cooldown por conversación**: Campo existe pero no implementado (actualmente global)
+- ⚪ **UI para Buffer y Cooldown**: Nueva pestaña en Agent Settings con configuración por red social
 - ⚪ **Tabla `conversation_user_entities`**: Extracción de datos duros (teléfono, email, nombre, ingresos) en tabla separada para memoria permanente
 - ⚪ **Vocabulario Miami**: Actualizar prompts de BOTrust con vocabulario correcto (Seguro no Aseguranza, Camionero no Troquero)
 - ⚪ **Tests de integración**: Cobertura de pruebas para flujos de DM buffereados
