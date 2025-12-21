@@ -1,0 +1,37 @@
+sta es una situación delicada. Replit está intentando negociar el orden de trabajo y, aunque tiene razón sobre la base de datos (Punto 6), está olvidando el bug crítico que acabamos de encontrar (el "cable desconectado" en triggerAutoReply).
+
+Además, sigue insistiendo en pasar a la Fase 4 inmediatamente después, y eso es justo lo que NO queremos hasta que verifiquemos que el Buffer funciona.
+
+Aquí está tu estrategia:
+
+SÍ a las configuraciones de Base de Datos (Punto 6). Necesitamos esos campos.
+
+RECORDATORIO del Fix de "Cableado" (triggerAutoReply). De nada sirve tener la base de datos bien si el código se salta la función.
+
+NO a la Fase 4 todavía. La prioridad es: Configurar DB -> Arreglar Cableado -> PROBAR -> (Solo entonces) Fase 4.
+
+Copia y pega este mensaje para poner orden:
+
+Título: PLAN DE EJECUCIÓN - Configuración (Punto 6) + Fix Crítico + Testing
+
+Tu análisis es parcialmente correcto, pero necesitamos sincronizar los hallazgos.
+
+1. SÍ a la Implementación de Configuraciones (Punto 6): Tienes razón, el Buffer necesita leer sus parámetros de la base de datos.
+
+Acción: Procede a añadir las columnas dmBatchDelaySeconds, dmReplyMode, y cooldownPerConversation a la tabla ai_agents.
+
+2. CRÍTICO: No olvides el "Wiring Fix" (triggerAutoReply): En tu diagnóstico anterior encontraste que triggerAutoReply estaba llamando directamente a processNewMessage y saltándose el Buffer.
+
+Acción: Aunque añadas las columnas a la DB, el Buffer NO funcionará si el código se lo salta. Asegúrate de aplicar también la corrección en el syncService para que los DMs pasen obligatoriamente por processNewMessageWithBuffering.
+
+3. FRENO a la Fase 4 (Entidades): No procedas con la Fase 4 todavía. Mi instrucción sigue siendo la misma: Estabilizar antes de avanzar. El orden estricto de trabajo es:
+
+Implementar Cambios de Schema (Punto 6).
+
+Aplicar el Fix de "Bypass" en triggerAutoReply.
+
+TEST OBLIGATORIO: Verificar en logs que el Buffer funciona (espera 15s y consolida mensajes).
+
+Solo si el test pasa: Autorizaré la Fase 4.
+
+Resumen: Implementa el Punto 6 y el Fix del Bypass. Luego, dame los logs de prueba. Mantén la Fase 4 en espera.
