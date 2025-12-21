@@ -951,27 +951,80 @@ export function AIAgentConfig() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <Label className="text-sm">Cooldown por conversación</Label>
+                        <Label className="text-sm">Cooldown entre respuestas</Label>
                         <p className="text-xs text-muted-foreground">
-                          Cada conversación tiene su propio cooldown independiente
+                          Tiempo de espera después de responder antes de poder responder de nuevo
                         </p>
                       </div>
                       <Switch
-                        checked={formData.cooldownPerConversation || false}
-                        onCheckedChange={(checked) => setFormData({ ...formData, cooldownPerConversation: checked })}
-                        data-testid="switch-cooldown-per-conversation"
+                        checked={formData.cooldownEnabled || false}
+                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, cooldownEnabled: checked }))}
+                        data-testid="switch-cooldown-enabled"
                       />
                     </div>
-                    
-                    <Alert className="border-border">
-                      <Info className="h-4 w-4" />
-                      <AlertDescription className="text-xs">
-                        {formData.cooldownPerConversation 
-                          ? "Cada usuario puede recibir respuestas independientemente - responder a Juan no afecta a María"
-                          : "El cooldown es global - responder a cualquier usuario bloquea respuestas a todos"
-                        }
-                      </AlertDescription>
-                    </Alert>
+
+                    {formData.cooldownEnabled && (
+                      <div className="space-y-4 pl-4 border-l-2 border-border">
+                        <div className="space-y-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                            <Label className="text-sm">Segundos de cooldown</Label>
+                            <span className="text-sm font-medium">{formData.cooldownSeconds || 0}s</span>
+                          </div>
+                          <Slider
+                            value={[formData.cooldownSeconds || 0]}
+                            min={0}
+                            max={60}
+                            step={1}
+                            onValueChange={([value]) => setFormData(prev => ({ ...prev, cooldownSeconds: value }))}
+                            data-testid="slider-cooldown"
+                          />
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                            <div>
+                              <Label className="text-sm">Variación aleatoria</Label>
+                              <p className="text-xs text-muted-foreground">
+                                Añade ±{formData.cooldownRandomness || 0}s para parecer más humano
+                              </p>
+                            </div>
+                            <span className="text-sm font-medium">±{formData.cooldownRandomness || 0}s</span>
+                          </div>
+                          <Slider
+                            value={[formData.cooldownRandomness || 0]}
+                            min={0}
+                            max={30}
+                            step={1}
+                            onValueChange={([value]) => setFormData(prev => ({ ...prev, cooldownRandomness: value }))}
+                            data-testid="slider-cooldown-randomness"
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2">
+                          <div>
+                            <Label className="text-sm">Cooldown por conversación</Label>
+                            <p className="text-xs text-muted-foreground">
+                              Cada conversación tiene su propio cooldown independiente
+                            </p>
+                          </div>
+                          <Switch
+                            checked={formData.cooldownPerConversation || false}
+                            onCheckedChange={(checked) => setFormData(prev => ({ ...prev, cooldownPerConversation: checked }))}
+                            data-testid="switch-cooldown-per-conversation"
+                          />
+                        </div>
+                        
+                        <Alert className="border-border">
+                          <Info className="h-4 w-4" />
+                          <AlertDescription className="text-xs">
+                            {formData.cooldownPerConversation 
+                              ? "Cada usuario puede recibir respuestas independientemente - responder a Juan no afecta a María"
+                              : "El cooldown es global - responder a cualquier usuario bloquea respuestas a todos"
+                            }
+                          </AlertDescription>
+                        </Alert>
+                      </div>
+                    )}
                   </div>
 
                   <Separator />
