@@ -1,0 +1,144 @@
+Perfecto. Aquí tienes el resumen completo de todo lo que hemos discutido:
+
+📋 RESUMEN EJECUTIVO PARA DESARROLLADOR
+Proyecto: Mejoras de Conversación Natural para BOTrust
+1️⃣ PROBLEMA INICIAL: EL PROMPT DE BOTRUST
+Cambios acordados en el tono y estilo:
+Tema	Antes	Ahora
+Argot	"Aseguranza", "Troquero" (mexicano)	"Seguro", "Camionero" (Miami)
+Muletillas	"Totalmente", "Cierto" al inicio	Solo cuando el usuario AFIRMA algo, no cuando pregunta
+Nombres de usuario	Usar siempre {{username}}	Extraer nombre propio si es obvio (maria_perez → "María"), ignorar si es raro (bebecita_23)
+Puntuación	Muy formal, oraciones perfectas	Más relajado, puntos suspensivos, flow de WhatsApp
+DMs vs Comentarios	Mismo tono para todo	Tono diferenciado: DMs más conversacionales
+2️⃣ NUEVAS VARIABLES DINÁMICAS PARA EL PROMPT
+Variables a implementar:
+Variable	Valor	Uso
+{{message_type}}	"dm" o "comment"	Cambiar tono según tipo
+{{is_dm}}	"true" o "false"	Detectar si es mensaje directo
+{{time_since_last_interaction}}	Número de minutos	Decidir si saludar o no
+{{conversation_depth}}	Número de mensajes	Saber si es conversación nueva o larga
+{{relationship_status}}	"new" / "active" / "reengagement"	Estado de la relación
+Lógica de saludo:
+Si time_since_last_interaction < 60 minutos → NO SALUDAR (conversación activa)
+Si time_since_last_interaction > 60 minutos → Saludar de nuevo
+3️⃣ MESSAGE BUFFERING (ANTI-INTERRUPCIÓN)
+El problema:
+El sistema responde inmediatamente a cada mensaje. Si el usuario envía 3 mensajes seguidos ("Hola", "tengo una duda", "sobre taxes"), el agente interrumpe 3 veces.
+
+La solución: Debounce
+Usuario envía mensaje → Sistema espera 15-20 segundos
+Si llega otro mensaje → Reinicia el timer
+Cuando termina el timer → Envía TODOS los mensajes juntos al LLM
+Implementación recomendada:
+En memoria con Map + setTimeout (no Redis)
+Solo aplica a DMs, comentarios siguen con flujo normal
+Timer configurable por agente (ej: dmBatchDelaySeconds: 15)
+4️⃣ FICHA DE SITUACIÓN (CONTEXT HEADER)
+Bloque a inyectar en el prompt antes de cada respuesta:
+[SITUACIÓN_ACTUAL]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Tipo: dm
+Estado: active
+Profundidad: 8 mensajes
+Última respuesta nuestra: hace 3 minutos
+Intensidad: 6 mensajes en la última hora
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[INSTRUCCIONES AUTOMÁTICAS]
+Conversación activa. PROHIBIDO saludar. Ve directo al grano.
+Cálculo: Todo se hace con datos que ya existen en memoria (sin llamadas externas, sin latencia adicional).
+5️⃣ MEMORIA PERSISTENTE: EXTRACCIÓN DE ENTIDADES
+El problema:
+Los resúmenes actuales se "diluyen" con el tiempo. Resumen de resumen de resumen = pérdida de datos importantes.
+
+La solución: Nueva tabla conversation_user_entities
+CREATE TABLE conversation_user_entities (
+  id VARCHAR PRIMARY KEY,
+  conversation_id VARCHAR NOT NULL,
+  author TEXT NOT NULL,
+  phone TEXT,
+  email TEXT,
+  real_name TEXT,
+  income TEXT,
+  dependents INTEGER,
+  interests TEXT[], -- array
+  key_dates JSONB,
+  extracted_at TIMESTAMP,
+  last_message_id VARCHAR
+);
+Flujo:
+Llegan mensajes nuevos
+LLM extrae entidades (teléfono, nombre, etc.) → Se guardan en tabla (NUNCA se pierden)
+LLM genera resumen contextual → Puede cambiar, no importa
+Al responder: El agente recibe ENTIDADES + RESUMEN
+Beneficios:
+Datos importantes nunca se pierden
+Son buscables (puedes filtrar por teléfono, ingresos, etc.)
+Son editables directamente
+6️⃣ CONFIGURACIONES NUEVAS PARA AGENT SETTINGS
+Campo	Tipo	Descripción
+dmBatchDelaySeconds	Integer	Segundos a esperar antes de responder DM (15-30)
+dmReplyMode	Enum	"auto" / "first_only" / "batch"
+cooldownPerConversation	Boolean	Si el cooldown es por conversación (no global)
+7️⃣ FASES DE IMPLEMENTACIÓN
+Fase 1: Variables de Contexto (1-2 días)
+Implementar {{is_dm}}, {{message_type}}, {{time_since_last_interaction}}
+Inyectar "Ficha de Situación" en el prompt
+Sin latencia adicional (cálculos locales)
+Fase 2: Mejora de Prompts (inmediato)
+Actualizar systemPrompt con reglas de DM
+Actualizar guardrailPrompt con reglas de saludo
+Actualizar knowledgeBase con ejemplos de tono natural
+Corregir argot (Miami vs mexicano)
+Fase 3: Message Buffering (3-4 días)
+Crear DmBufferService con debounce en memoria
+Configurar delay por agente
+Solo aplicar a DMs
+Fase 4: Extracción de Entidades (3-4 días)
+Crear tabla conversation_user_entities
+Modificar summaryService para extraer y guardar entidades
+Modificar prompt para usar entidades guardadas
+Fase 5: Cooldown por Conversación (opcional)
+Cambiar cooldown de global a por conversationId
+Cada DM tiene su propio timer
+8️⃣ ARCHIVOS A MODIFICAR
+Archivo	Cambios
+shared/schema.ts	Agregar tabla conversation_user_entities
+shared/dynamicVariables.ts	Agregar nuevas variables
+server/services/llm/prompt-composer.ts	Calcular e inyectar variables + Ficha de Situación
+server/services/summaryService.ts	Extraer entidades además de resumir
+server/services/autoReplyService.ts	Integrar buffering para DMs
+Nuevo: server/services/dmBufferService.ts	Servicio de debounce
+9️⃣ RESULTADO ESPERADO
+Antes:
+14:00:01 - Usuario: "Hola"
+14:00:02 - Agente: "¡Hola! ¿En qué te ayudo?"
+14:00:05 - Usuario: "tengo una duda"
+14:00:06 - Agente: "Claro, dime tu duda"
+14:00:12 - Usuario: "sobre mis taxes"
+14:00:13 - Agente: "Hola! Para taxes..."
+Después:
+14:00:01 - Usuario: "Hola"
+14:00:05 - Usuario: "tengo una duda"
+14:00:12 - Usuario: "sobre mis taxes"
+14:00:27 - Agente: "Hola María, dime qué duda tienes sobre tus taxes 👍"
+¿Quieres que agregue algo más al resumen o que lo formatee de otra manera para tu desarrollador?
+
+Worked for 53 seconds
+Vale. Mi desarrollador ha aprobado tu mensaje y te envía otro.
+
+¿Hay algo más que quieras agregar? ¿Alguna duda que tengas? ¿Algo que creas que es contraproducente de tu propio análisis? ¿O tú estás de acuerdo ya y quieres comenzar?
+
+Respuestas??
+
+
+26 messages & 75 actions
+Excelente análisis de tu desarrollador. Estoy de acuerdo con el ajuste de prioridades. --- ## ✅ MI RESPUESTA FINAL ### ¿Dudas? Ninguna. El plan está claro. ### ¿Algo contraproducente? No. La priorización de tu desarrollador es correcta: - **Primero** arreglar la experiencia (que deje de saludar, que no interrumpa) - **Después** la memoria perfecta (entidades) ### ¿Algo que agregar? Solo una nota: Para la Fase 4 (Entidades), cuando la implementemos, sugiero que la extracción NO se haga en cada mensaje, sino **solo cuando se genera un resumen** (cada 10 mensajes). Así ahorramos tokens. --- ## 🚀 LISTO PARA COMENZAR Voy a implementar las **Fases 1, 2 y 3** en este orden: 1. **Variables nuevas** (`is_dm`, `time_since_last_interaction`, etc.) 2. **Ficha de Situación** inyectada en el prompt 3. **Actualizar prompts de BOTrust** (esto lo tienes que hacer tú en la UI con los textos que te di) 4. **DmBufferService** (debounce de 15 segundos)
+Implementé las Fases 1, 2 y 3 del plan:
+
+Variables nuevas - is_dm, message_type, time_since_last_interaction, conversation_depth, relationship_status
+
+Ficha de Situación - Se inyecta antes de cada mensaje con instrucciones automáticas (ej: "PROHIBIDO saludar" si la conversación lleva menos de 1 hora)
+
+Reglas de tono DM vs comentarios - DMs usan tono WhatsApp relajado, comentarios son breves con CTA
+
+DmBufferService - Los DMs esperan 15 segundos antes de responder, acumulando mensajes si el usuario sigue escribiendo
