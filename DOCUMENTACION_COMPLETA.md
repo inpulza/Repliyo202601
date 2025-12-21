@@ -845,6 +845,37 @@ Frontend → formData.platformSettings → API PUT → storage.updateAiAgent() �
 BD → storage.getAiAgentByBrand() → autoReplyService → getEffectiveChannelSettings() → Buffer/Cooldown
 ```
 
+**Normalización de providers en frontend (`AIAgentConfig.tsx`):**
+Función `normalizeProviderKey()` mapea variantes de providers al formato de PLATFORM_CONFIG:
+```typescript
+// Ejemplo: "google-business" → "google", "Instagram" → "instagram"
+function normalizeProviderKey(provider: string): keyof typeof PLATFORM_CONFIG | null {
+  const normalized = provider.toLowerCase().replace(/-/g, '_');
+  if (normalized in PLATFORM_CONFIG) return normalized;
+  if (normalized === 'google_business' || normalized === 'gmb') return 'google';
+  if (normalized === 'x') return 'twitter';
+  const baseProvider = normalized.split('_')[0];
+  if (baseProvider in PLATFORM_CONFIG) return baseProvider;
+  return null;
+}
+```
+
+**Redes sociales soportadas (PLATFORM_CONFIG):**
+| Provider | Nombre | Límite caracteres |
+|----------|--------|-------------------|
+| facebook | Facebook | 2000 |
+| instagram | Instagram | 2200 |
+| twitter | Twitter/X | 280 |
+| tiktok | TikTok | 150 |
+| linkedin | LinkedIn | 3000 |
+| youtube | YouTube | 500 |
+| google | Google Business | 1500 |
+
+**Bug fix - Botón "Restaurar valores base":**
+- **Problema:** El botón usaba estado desactualizado (stale closure), no eliminaba correctamente los overrides
+- **Solución:** Cambio de `setFormData({...formData, ...})` a `setFormData(prev => ({...prev, ...}))`
+- **Resultado:** Al restaurar y guardar, el override se elimina correctamente (se envía `null` a la BD)
+
 #### 11.12 Próximos Pasos (Backlog)
 Pendiente para futuro sprint:
 - ✅ ~~**UI para Buffer y Cooldown**: Nueva pestaña en Agent Settings con configuración por red social~~ *(Completado en 11.11)*

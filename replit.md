@@ -70,6 +70,12 @@ En Agent Settings, nueva pestaña con:
 - Slider "Buffer de DMs" (5-120s)
 - Select "Modo de respuesta DMs"
 - Collapsibles por red social para overrides personalizados
+- Botón "Restaurar valores base" para eliminar overrides
+
+### Normalización de Providers ✅ CORREGIDO (21 Dic 2025)
+- **Problema:** Providers venían en formatos variados (ej: "google-business", "Instagram")
+- **Solución frontend:** `normalizeProviderKey()` mapea a claves de PLATFORM_CONFIG
+- **Redes soportadas:** facebook, instagram, twitter, tiktok, linkedin, youtube, google (Business)
 
 ### Flujo Completo
 ```
