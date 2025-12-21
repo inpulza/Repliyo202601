@@ -17,7 +17,19 @@
 - **Configuración:** Tabla `ai_agents` con campos:
   - `dm_batch_delay_seconds` - Tiempo de espera (ej: 45s para BO Trust)
   - `dm_reply_mode` - Modo: auto, batch, first_only
-  - `cooldown_per_conversation` - Cooldown entre respuestas
+
+### Cooldown por Conversación ✅ IMPLEMENTADO
+- **Problema anterior:** Cooldown bloqueaba TODA la marca (todas las redes y conversaciones)
+- **Solución:** Cada conversación tiene su propio cooldown independiente
+- **Configuración:** Tabla `ai_agents` campo `cooldown_per_conversation` (true = por conversación, false = global)
+- **Datos:** Tabla `conversations` campo `last_ai_reply_at` guarda timestamp por conversación
+
+**Ejemplo del comportamiento:**
+```
+Responde a Juan en Instagram → Solo Juan entra en cooldown
+María en Facebook → Recibe respuesta normal ✅
+Pedro en TikTok → Recibe respuesta normal ✅
+```
 
 ### Variables Dinámicas de Personalidad ✅ IMPLEMENTADO
 El LLM ahora ajusta su tono automáticamente según el contexto:
