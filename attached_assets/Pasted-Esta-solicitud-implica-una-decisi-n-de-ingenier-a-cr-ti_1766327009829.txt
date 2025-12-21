@@ -1,0 +1,62 @@
+Esta solicitud implica una decisión de ingeniería crítica: priorizar la robustez (verificar el buffer y configuración) sobre la velocidad (avanzar a Fase 4).
+
+Aplicando el protocolo operativo, diseñaremos una respuesta que actúe como un Contrato de Ejecución Técnica, asegurando que el agente no solo escriba código, sino que valide su propia lógica (Trajectory Evaluation).
+
+1. Architectural Strategy & Reference
+Documento Base:
+
+Agent Quality.pdf (Capítulo 1 - Robustness): Se prioriza la confiabilidad del sistema ante entradas adversas (buffer de mensajes) sobre la funcionalidad nueva. Se aplica el principio "The Trajectory is the Truth", exigiendo que el agente valide el camino de ejecución (triggerAutoReply -> processNewMessageWithBuffering) antes de dar por completada la tarea.
+
+Prompt Engineering v7 (Chain of Thought): Se fuerza al agente a razonar paso a paso: 1. Base de datos -> 2. Lógica de Consumo -> 3. Verificación.
+
+Modelo Objetivo: Modelos de Coding/Razonamiento (Claude 3.5 Sonnet / GPT-4o) dentro de entorno IDE (Replit/Cursor).
+
+Métrica de Calidad: Integridad Estructural. El éxito no es solo que el código compile, sino que las nuevas columnas de la BD sean efectivamente leídas por la lógica del buffer (evitar "código muerto").
+
+2. The Optimized Prompt (v5.0)
+Este prompt está diseñado para ser pegado directamente en el chat con el agente (Replit). Instruye la ejecución inmediata de la migración y la auditoría de código.
+
+Markdown
+
+<system_instructions>
+Actúa como un **Senior Backend Architect**. Tu objetivo es ejecutar el plan de "Consolidación y Verificación" acordado, priorizando la integridad de los datos y la lógica del buffer sobre nuevas funcionalidades.
+
+<context>
+Hemos decidido pausar la Fase 4 para asegurar que el sistema de Buffering de DMs sea robusto y configurable desde la base de datos. Existe la sospecha de un "bypass" en la lógica, aunque el análisis estático inicial sugiere que el cableado es correcto.
+</context>
+
+<execution_protocol>
+Vas a proceder EXACTAMENTE en este orden secuencial. No saltes pasos.
+
+### PASO 1: Migración de Esquema (Database Layer)
+Genera y ejecuta el SQL necesario para alterar la tabla `ai_agents`.
+Debes agregar las siguientes columnas con valores por defecto seguros (Safety-First):
+1. `dmBatchDelaySeconds` (Integer, default e.g., 60)
+2. `dmReplyMode` (String/Enum, default 'AUTO')
+3. `dmCooldownPerConversation` (Integer, default e.g., 600)
+
+### PASO 2: Auditoría de Lógica (Code Analysis & Bonding)
+Una vez aplicados los cambios en la BD:
+1.  Localiza la función `processNewMessageWithBuffering`.
+2.  **CRÍTICO:** Verifica explícitamente si esta función está leyendo las nuevas configuraciones (`dmBatchDelaySeconds`, etc.) desde la entidad `ai_agent` recuperada.
+3.  Si la función usa "hardcoded values" o constantes, **REFFACTORÍZALA AHORA** para que obedezca las columnas recién creadas.
+4.  Confirma que `triggerAutoReply` (Línea 676) invoca incondicionalmente a la versión con buffering.
+
+### PASO 3: Estado de Espera (Human-in-the-Loop)
+No generes código de la "Fase 4" todavía.
+Reporta el éxito de la migración y confirma si tuviste que parchear la lógica de lectura de configuración.
+Queda a la espera de mis pruebas manuales (DMs reales).
+</execution_protocol>
+
+<output_requirement>
+Muestra el SQL ejecutado y, si modificaste el código TypeScript/Python para conectar las variables, muestra el diff específico de esa conexión.
+</output_requirement>
+</system_instructions>
+
+Proceder con el plan.
+Análisis de la Trayectoria (Glass Box Justification):
+Safety & Alignment: Al forzar valores por defecto (default 60) en la BD, evitamos que el agente rompa la producción si los valores son nulos.
+
+Observability: El prompt exige mostrar el "diff específico" de la conexión entre BD y Lógica. Esto nos permite auditar visualmente si el agente realmente conectó los cables o si está alucinando que el sistema funciona.
+
+Human-in-the-Loop: Detenemos explícitamente al agente antes de la Fase 4, cumpliendo con el protocolo de Agent Quality de no avanzar sobre cimientos inestables.
