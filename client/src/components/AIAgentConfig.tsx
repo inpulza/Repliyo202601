@@ -199,7 +199,7 @@ export function AIAgentConfig() {
   const { data: socialAccounts = [], isLoading: isLoadingSocialAccounts } = useQuery({
     queryKey: ['socialAccounts', activeClient?.id],
     queryFn: () => api.socialAccounts.getByBrand(activeClient!.id),
-    enabled: !!activeClient?.id && activeTab === 'platforms',
+    enabled: !!activeClient?.id && (activeTab === 'platforms' || activeTab === 'orchestration'),
   });
 
   const updateSocialAccountMutation = useMutation({
@@ -244,6 +244,7 @@ export function AIAgentConfig() {
         cooldownPerConversation: agent.cooldownPerConversation ?? true,
         dmBatchDelaySeconds: agent.dmBatchDelaySeconds || 30,
         dmReplyMode: agent.dmReplyMode || 'batch',
+        platformSettings: agent.platformSettings || undefined,
         isActive: agent.isActive ?? true,
       });
     }
@@ -1066,6 +1067,162 @@ export function AIAgentConfig() {
                       </SelectContent>
                     </Select>
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-border shadow-none">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                    <Share2 className="h-4 w-4 text-muted-foreground" />
+                    Configuración por Red Social
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Sobrescribe los tiempos de espera para redes sociales específicas. Si no se configura, usa los valores base.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingSocialAccounts ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : socialAccounts.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Share2 className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+                      <p className="text-sm text-muted-foreground">No hay cuentas sociales conectadas</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Conecta redes sociales para configurar tiempos específicos
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {socialAccounts.map((account) => {
+                        const config = PLATFORM_CONFIG[account.provider as keyof typeof PLATFORM_CONFIG];
+                        if (!config) return null;
+                        const Icon = config.icon;
+                        const provider = account.provider.toLowerCase();
+                        const platformSettings = (formData.platformSettings as Record<string, any>) || {};
+                        const channelSettings = platformSettings[provider] || {};
+                        const hasOverride = Object.keys(channelSettings).length > 0;
+                        
+                        return (
+                          <Collapsible key={account.id}>
+                            <div className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/30 transition-colors">
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-muted/30 border border-border">
+                                  <Icon className={`h-5 w-5 ${config.color}`} />
+                                </div>
+                                <div>
+                                  <div className="font-medium text-sm flex items-center gap-2">
+                                    {config.name}
+                                    {hasOverride && (
+                                      <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                        Personalizado
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {hasOverride 
+                                      ? `Buffer: ${channelSettings.bufferDelaySeconds || formData.dmBatchDelaySeconds || 30}s, Cooldown: ${channelSettings.cooldownSeconds ?? formData.cooldownSeconds ?? 0}s`
+                                      : 'Usando configuración base'
+                                    }
+                                  </div>
+                                </div>
+                              </div>
+                              <CollapsibleTrigger asChild>
+                                <Button variant="ghost" size="sm" className="gap-2" data-testid={`toggle-channel-${provider}`}>
+                                  <Pencil className="h-4 w-4" />
+                                  <span className="hidden sm:inline">Configurar</span>
+                                </Button>
+                              </CollapsibleTrigger>
+                            </div>
+                            <CollapsibleContent className="pt-3 pl-4 border-l-2 border-border ml-6 space-y-4">
+                              <div className="space-y-3">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                                  <Label className="text-sm">Buffer de DMs (segundos)</Label>
+                                  <span className="text-sm font-medium">
+                                    {channelSettings.bufferDelaySeconds ?? formData.dmBatchDelaySeconds ?? 30}s
+                                  </span>
+                                </div>
+                                <Slider
+                                  value={[channelSettings.bufferDelaySeconds ?? formData.dmBatchDelaySeconds ?? 30]}
+                                  min={5}
+                                  max={120}
+                                  step={5}
+                                  onValueChange={([value]) => {
+                                    const newSettings = {
+                                      ...platformSettings,
+                                      [provider]: { ...channelSettings, bufferDelaySeconds: value }
+                                    };
+                                    setFormData({ ...formData, platformSettings: newSettings });
+                                  }}
+                                  data-testid={`slider-buffer-${provider}`}
+                                />
+                              </div>
+                              
+                              <div className="space-y-3">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                                  <Label className="text-sm">Cooldown (segundos)</Label>
+                                  <span className="text-sm font-medium">
+                                    {channelSettings.cooldownSeconds ?? formData.cooldownSeconds ?? 0}s
+                                  </span>
+                                </div>
+                                <Slider
+                                  value={[channelSettings.cooldownSeconds ?? formData.cooldownSeconds ?? 0]}
+                                  min={0}
+                                  max={60}
+                                  step={1}
+                                  onValueChange={([value]) => {
+                                    const newSettings = {
+                                      ...platformSettings,
+                                      [provider]: { ...channelSettings, cooldownSeconds: value }
+                                    };
+                                    setFormData({ ...formData, platformSettings: newSettings });
+                                  }}
+                                  data-testid={`slider-cooldown-${provider}`}
+                                />
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <Label className="text-sm">Cooldown por conversación</Label>
+                                  <p className="text-xs text-muted-foreground">
+                                    Sobrescribir configuración base
+                                  </p>
+                                </div>
+                                <Switch
+                                  checked={channelSettings.cooldownPerConversation ?? formData.cooldownPerConversation ?? true}
+                                  onCheckedChange={(checked) => {
+                                    const newSettings = {
+                                      ...platformSettings,
+                                      [provider]: { ...channelSettings, cooldownPerConversation: checked }
+                                    };
+                                    setFormData({ ...formData, platformSettings: newSettings });
+                                  }}
+                                  data-testid={`switch-cooldown-per-conv-${provider}`}
+                                />
+                              </div>
+                              
+                              {hasOverride && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-xs text-muted-foreground hover:text-destructive"
+                                  onClick={() => {
+                                    const { [provider]: _, ...rest } = platformSettings;
+                                    setFormData({ ...formData, platformSettings: Object.keys(rest).length > 0 ? rest : undefined });
+                                  }}
+                                  data-testid={`button-reset-${provider}`}
+                                >
+                                  <RotateCcw className="h-3 w-3 mr-1" />
+                                  Restaurar valores base
+                                </Button>
+                              )}
+                            </CollapsibleContent>
+                          </Collapsible>
+                        );
+                      })}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
