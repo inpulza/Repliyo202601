@@ -128,16 +128,16 @@ export const aiAgents = pgTable("ai_agents", {
   autoReplyMode: text("auto_reply_mode").notNull().default('off'),
   approvalWorkflow: text("approval_workflow").notNull().default('none'),
   characterLimitStrategy: text("character_limit_strategy").notNull().default('reject'),
-  cooldownEnabled: boolean("cooldown_enabled").notNull().default(false),
+  cooldownEnabled: boolean("cooldown_enabled").notNull().default(true),
   cooldownSeconds: integer("cooldown_seconds").notNull().default(0),
   cooldownRandomness: integer("cooldown_randomness").notNull().default(0),
   lastAutoReplyAt: timestamp("last_auto_reply_at"),
   platformSettings: jsonb("platform_settings"),
   isActive: boolean("is_active").notNull().default(true),
   // DM Buffer Configuration (Punto 6 del plan)
-  dmBatchDelaySeconds: integer("dm_batch_delay_seconds").notNull().default(15),
-  dmReplyMode: text("dm_reply_mode").notNull().default('auto'), // 'auto' | 'first_only' | 'batch'
-  cooldownPerConversation: boolean("cooldown_per_conversation").notNull().default(false),
+  dmBatchDelaySeconds: integer("dm_batch_delay_seconds").notNull().default(50),
+  dmReplyMode: text("dm_reply_mode").notNull().default('batch'), // 'auto' | 'first_only' | 'batch'
+  cooldownPerConversation: boolean("cooldown_per_conversation").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

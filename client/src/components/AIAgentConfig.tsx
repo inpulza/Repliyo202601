@@ -148,11 +148,11 @@ export function AIAgentConfig() {
     guardrailPrompt: DEFAULT_GUARDRAIL,
     autoReplyMode: 'off',
     characterLimitStrategy: 'reject',
-    cooldownEnabled: false,
+    cooldownEnabled: true,
     cooldownSeconds: 0,
     cooldownRandomness: 0,
     cooldownPerConversation: true,
-    dmBatchDelaySeconds: 30,
+    dmBatchDelaySeconds: 50,
     dmReplyMode: 'batch',
     isActive: true,
   });
