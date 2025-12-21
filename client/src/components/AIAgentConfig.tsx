@@ -1222,8 +1222,14 @@ export function AIAgentConfig() {
                                   size="sm"
                                   className="text-xs text-muted-foreground hover:text-destructive"
                                   onClick={() => {
-                                    const { [provider]: _, ...rest } = platformSettings;
-                                    setFormData({ ...formData, platformSettings: Object.keys(rest).length > 0 ? rest : undefined });
+                                    setFormData(prev => {
+                                      const currentSettings = (prev.platformSettings as Record<string, any>) || {};
+                                      const { [provider]: _, ...rest } = currentSettings;
+                                      return { 
+                                        ...prev, 
+                                        platformSettings: Object.keys(rest).length > 0 ? rest : null 
+                                      };
+                                    });
                                   }}
                                   data-testid={`button-reset-${provider}`}
                                 >
