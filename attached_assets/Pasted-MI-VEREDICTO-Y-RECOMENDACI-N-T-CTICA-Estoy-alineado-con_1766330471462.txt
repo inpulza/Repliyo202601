@@ -1,0 +1,36 @@
+MI VEREDICTO Y RECOMENDACIÓN TÁCTICA
+Estoy alineado con la recomendación final del análisis ("Paso 1: Verificar que el buffer funciona"). Pero dado que ya sabemos que falló (tu prueba de los 4 mensajes), mi recomendación es más agresiva:
+
+No sigas probando lo mismo esperando resultados diferentes. Hay que arreglar la concurrencia primero.
+
+Siguiente Paso (Plan de Acción Inmediato)
+Copia y pega este prompt en Replit. Este es el "Parche de Emergencia" para solucionar el problema de que responda 4 veces.
+
+Markdown
+
+<system_instructions>
+Actúa como **Lead Backend Architect**. He revisado tu análisis y estoy 100% de acuerdo con tu diagnóstico.
+Específicamente, el problema de los "4 mensajes disparando 4 respuestas" confirma que tenemos una **Race Condition** en el acceso al `dmBufferService`.
+
+<mission_objective>
+Implementar un mecanismo de **bloqueo atómico** (Mutex o Lock) para asegurar que solo EL PRIMER mensaje inicie el buffer, y los siguientes 3 sean atrapados y agregados silenciosamente.
+</mission_objective>
+
+<technical_fix>
+Modifica `autoReplyService.ts` y `dmBufferService.ts`.
+
+1. **Implementa un Lock:** Antes de procesar cualquier lógica de buffer, verifica si esa `conversationId` ya está siendo procesada.
+   - *Sugerencia:* Usa una variable estática o una propiedad en la clase `DmBufferService` llamada `processingLocks = new Set<string>()`.
+
+2. **Lógica de Flujo:**
+   ```typescript
+   if (dmBufferService.hasActiveBuffer(conversationId)) {
+       // YA EXISTE UN BUFFER: Solo agregamos el mensaje y terminamos.
+       await dmBufferService.addMessageToBuffer(message);
+       console.log(`🚫 Buffer activo para ${conversationId}. Mensaje agregado, ejecución detenida.`);
+       return; // <--- ESTO ES LO QUE FALTABA. DETENER LA EJECUCIÓN DEL WEBHOOK ACTUAL.
+   } else {
+       // NO EXISTE BUFFER: Creamos uno nuevo.
+       await dmBufferService.initBuffer(message);
+   }
+Verificación de Tipo: Asegúrate de loguear message.type para confirmar que Metricool realmente está enviando 'conversation'.
