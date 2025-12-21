@@ -784,9 +784,70 @@ Pedro en TikTok → Responde normalmente ✅
 | `server/storage.ts` | +método `updateConversationLastAiReply()` |
 | `server/services/autoReplyService.ts` | `checkCooldown()` acepta conversation, actualiza ambos timestamps |
 
-#### 11.11 Próximos Pasos (Backlog)
+#### 11.11 Configuración por Canal - Backend y Frontend ✅ COMPLETADA - 21 Diciembre 2025
+
+Se implementó un sistema completo de configuración por canal social que permite sobrescribir los tiempos de buffer y cooldown para cada red social de forma independiente.
+
+**Schema Zod para overrides por canal (`shared/schema.ts`):**
+```typescript
+const channelSettingsSchema = z.object({
+  bufferDelaySeconds: z.number().int().min(5).max(300).nullable().optional(),
+  cooldownSeconds: z.number().int().min(0).max(3600).nullable().optional(),
+  cooldownRandomness: z.number().int().min(0).max(120).nullable().optional(),
+  cooldownPerConversation: z.boolean().nullable().optional(),
+});
+```
+
+**Función de merge `getEffectiveChannelSettings()`:**
+Retorna configuración efectiva combinando defaults del agente con overrides del canal:
+```typescript
+{
+  bufferDelaySeconds: channelOverride?.bufferDelaySeconds ?? agent.dmBatchDelaySeconds,
+  cooldownSeconds: channelOverride?.cooldownSeconds ?? agent.cooldownSeconds,
+  cooldownRandomness: channelOverride?.cooldownRandomness ?? agent.cooldownRandomness,
+  cooldownPerConversation: channelOverride?.cooldownPerConversation ?? agent.cooldownPerConversation,
+}
+```
+
+**Controles disponibles en la UI (pestaña Orquestación):**
+| Campo | UI | Descripción |
+|-------|-----|-------------|
+| `bufferDelaySeconds` | ✅ Slider | Tiempo buffer para DMs |
+| `cooldownSeconds` | ✅ Slider | Tiempo de cooldown |
+| `cooldownPerConversation` | ✅ Switch | Cooldown por conversación |
+| `cooldownRandomness` | ⚪ No | Disponible en schema, pendiente de UI |
+
+**Backend - `autoReplyService.ts`:**
+- Nueva función `normalizeProvider()` valida y normaliza el platform
+- Integración con `getEffectiveChannelSettings()` para buffer delay y cooldown
+- Logging de warning cuando se usa fallback por platform desconocido
+
+**Frontend - Nueva pestaña "Orquestación" en `AIAgentConfig.tsx`:**
+| Control | Descripción |
+|---------|-------------|
+| Cooldown por conversación | Toggle para activar/desactivar cooldown independiente por conversación |
+| Buffer de DMs (base) | Slider 5-120s para tiempo de acumulación de mensajes |
+| Modo de respuesta DMs | Select: auto/batch/first_only |
+| Configuración por red social | Collapsibles con overrides para cada red conectada |
+
+**Estructura de `platformSettings` (JSON en tabla `ai_agents`):**
+```json
+{
+  "instagram": { "bufferDelaySeconds": 60, "cooldownSeconds": 10 },
+  "facebook": { "cooldownPerConversation": false },
+  "tiktok": { "bufferDelaySeconds": 30, "cooldownSeconds": 15 }
+}
+```
+
+**Flujo de datos:**
+```
+Frontend → formData.platformSettings → API PUT → storage.updateAiAgent() → BD
+BD → storage.getAiAgentByBrand() → autoReplyService → getEffectiveChannelSettings() → Buffer/Cooldown
+```
+
+#### 11.12 Próximos Pasos (Backlog)
 Pendiente para futuro sprint:
-- ⚪ **UI para Buffer y Cooldown**: Nueva pestaña en Agent Settings con configuración por red social
+- ✅ ~~**UI para Buffer y Cooldown**: Nueva pestaña en Agent Settings con configuración por red social~~ *(Completado en 11.11)*
 - ⚪ **Tabla `conversation_user_entities`**: Extracción de datos duros (teléfono, email, nombre, ingresos) en tabla separada para memoria permanente
 - ⚪ **Vocabulario Miami**: Actualizar prompts de BOTrust con vocabulario correcto (Seguro no Aseguranza, Camionero no Troquero)
 - ⚪ **Tests de integración**: Cobertura de pruebas para flujos de DM buffereados

@@ -50,12 +50,33 @@ SI (Comentario):
    📢 Modo breve con CTA
 ```
 
+### Configuración por Canal Social ✅ NUEVO (21 Dic 2025)
+Cada red social puede tener su propia configuración de buffer y cooldown:
+- **platformSettings**: Campo JSON en tabla `ai_agents` con overrides por canal
+- **Función `getEffectiveChannelSettings()`**: Merge de defaults + overrides
+- **Validación de platform**: `normalizeProvider()` valida contra enum
+
+**Ejemplo de platformSettings:**
+```json
+{
+  "instagram": { "bufferDelaySeconds": 60, "cooldownSeconds": 10 },
+  "tiktok": { "bufferDelaySeconds": 30 }
+}
+```
+
+### Nueva Pestaña UI "Orquestación" ✅ IMPLEMENTADA
+En Agent Settings, nueva pestaña con:
+- Toggle "Cooldown por conversación"
+- Slider "Buffer de DMs" (5-120s)
+- Select "Modo de respuesta DMs"
+- Collapsibles por red social para overrides personalizados
+
 ### Flujo Completo
 ```
 Metricool → syncService → autoReplyService → dmBufferService → AI
                               ↑                      ↓
-                     Lee config de BD:      buildDynamicPersonalityRules()
-                     agent.dmBatchDelaySeconds    genera reglas contextuales
+                     normalizeProvider()     getEffectiveChannelSettings()
+                     valida platform         merge defaults + overrides
 ```
 
 ### Marca de Prueba
@@ -70,7 +91,8 @@ Metricool → syncService → autoReplyService → dmBufferService → AI
 | Archivo | Función |
 |---------|---------|
 | `server/services/llm/prompt-composer.ts` | `buildDynamicPersonalityRules()` - Reglas SI/SINO |
-| `server/services/autoReplyService.ts` | Lee config BD, decide buffer delay |
+| `server/services/autoReplyService.ts` | Lee config BD, `normalizeProvider()`, `getEffectiveChannelSettings()` |
 | `server/services/dmBufferService.ts` | Acumula mensajes, maneja timer |
 | `server/services/syncService.ts` | Sincroniza DMs de Metricool |
-| `shared/schema.ts` | Define columnas en tabla aiAgents |
+| `shared/schema.ts` | Define columnas, schemas Zod, `getEffectiveChannelSettings()` |
+| `client/src/components/AIAgentConfig.tsx` | UI de configuración con pestaña "Orquestación" |
