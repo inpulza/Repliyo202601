@@ -84,11 +84,28 @@ const PLATFORM_CONFIG = {
 
 function normalizeProviderKey(provider: string): keyof typeof PLATFORM_CONFIG | null {
   const normalized = provider.toLowerCase().replace(/-/g, '_');
+  
+  // Mapeo directo de alias de Metricool a claves de PLATFORM_CONFIG
+  const providerAliases: Record<string, keyof typeof PLATFORM_CONFIG> = {
+    'tiktokbusiness': 'tiktok',
+    'tiktok_business': 'tiktok',
+    'google_business': 'google',
+    'googlebusiness': 'google',
+    'gmb': 'google',
+    'x': 'twitter',
+    'twitter_x': 'twitter',
+  };
+  
+  // Verificar si es una clave directa de PLATFORM_CONFIG
   if (normalized in PLATFORM_CONFIG) return normalized as keyof typeof PLATFORM_CONFIG;
-  if (normalized === 'google_business' || normalized === 'gmb') return 'google';
-  if (normalized === 'x') return 'twitter';
+  
+  // Verificar si hay un alias definido
+  if (normalized in providerAliases) return providerAliases[normalized];
+  
+  // Intentar extraer el proveedor base (ej: "facebook_page" → "facebook")
   const baseProvider = normalized.split('_')[0];
   if (baseProvider in PLATFORM_CONFIG) return baseProvider as keyof typeof PLATFORM_CONFIG;
+  
   return null;
 }
 
