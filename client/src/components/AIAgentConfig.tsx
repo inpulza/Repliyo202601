@@ -117,6 +117,13 @@ export function AIAgentConfig() {
     value: string;
   }>({ isOpen: false, field: null, title: '', value: '' });
 
+  const [saveAsTemplateModal, setSaveAsTemplateModal] = useState<{
+    isOpen: boolean;
+    content: string;
+    title: string;
+    category: string;
+  }>({ isOpen: false, content: '', title: '', category: 'general' });
+
   const openEditModal = (field: 'systemPrompt' | 'knowledgeBase' | 'guardrailPrompt', title: string) => {
     setEditModal({
       isOpen: true,
@@ -1357,9 +1364,26 @@ export function AIAgentConfig() {
 
                   {testResponse && (
                     <div className="mt-4 p-4 bg-muted/30 rounded-lg border border-border">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Bot className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Respuesta del Agente</span>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Bot className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm font-medium">Respuesta del Agente</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-muted-foreground hover:text-primary"
+                          onClick={() => setSaveAsTemplateModal({
+                            isOpen: true,
+                            content: testResponse,
+                            title: '',
+                            category: 'general'
+                          })}
+                          data-testid="button-save-response-as-template"
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          <span className="text-xs">Guardar como plantilla</span>
+                        </Button>
                       </div>
                       <p className="text-sm whitespace-pre-wrap" data-testid="text-test-response">{testResponse}</p>
                     </div>
@@ -1877,6 +1901,83 @@ export function AIAgentConfig() {
                 <span className="sm:hidden">Guardar</span>
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de guardar respuesta como plantilla */}
+      <Dialog open={saveAsTemplateModal.isOpen} onOpenChange={(open) => !open && setSaveAsTemplateModal({ isOpen: false, content: '', title: '', category: 'general' })}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Guardar como Plantilla
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="text-sm">Título</Label>
+              <Input
+                value={saveAsTemplateModal.title}
+                onChange={(e) => setSaveAsTemplateModal({ ...saveAsTemplateModal, title: e.target.value })}
+                placeholder="Ej: Respuesta a consulta de precios"
+                data-testid="input-save-template-title"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm">Categoría</Label>
+              <Select
+                value={saveAsTemplateModal.category}
+                onValueChange={(val) => setSaveAsTemplateModal({ ...saveAsTemplateModal, category: val })}
+              >
+                <SelectTrigger data-testid="select-save-template-category">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="informacional">Información</SelectItem>
+                  <SelectItem value="comercial">Comercial</SelectItem>
+                  <SelectItem value="soporte">Soporte</SelectItem>
+                  <SelectItem value="general">General</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm">Contenido</Label>
+              <Textarea
+                value={saveAsTemplateModal.content}
+                onChange={(e) => setSaveAsTemplateModal({ ...saveAsTemplateModal, content: e.target.value })}
+                className="min-h-[100px] text-sm"
+                data-testid="textarea-save-template-content"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setSaveAsTemplateModal({ isOpen: false, content: '', title: '', category: 'general' })}
+              data-testid="button-cancel-save-template"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => {
+                if (!saveAsTemplateModal.title.trim() || !saveAsTemplateModal.content.trim()) {
+                  toast({ title: "Error", description: "Título y contenido son obligatorios.", variant: "destructive" });
+                  return;
+                }
+                createTemplateMutation.mutate({
+                  title: saveAsTemplateModal.title.trim(),
+                  category: saveAsTemplateModal.category,
+                  content: saveAsTemplateModal.content.trim(),
+                });
+                setSaveAsTemplateModal({ isOpen: false, content: '', title: '', category: 'general' });
+              }}
+              disabled={createTemplateMutation.isPending}
+              data-testid="button-confirm-save-template"
+            >
+              {createTemplateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Guardar Plantilla
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
