@@ -5,10 +5,10 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Globe, RefreshCw, Settings2, Scan } from "lucide-react";
-import { FaInstagram, FaFacebookF, FaTiktok, FaYoutube, FaLinkedinIn, FaGoogle, FaTwitter } from 'react-icons/fa';
 import { api, type SocialAccount } from '@/lib/api';
 import type { Client } from '@shared/schema';
 import { toast } from '@/hooks/use-toast';
+import { getProviderConfig } from '@/lib/providerConfig';
 
 interface SocialAccountsManagerProps {
   open: boolean;
@@ -16,16 +16,6 @@ interface SocialAccountsManagerProps {
   client: Client | null;
   onAccountsUpdated?: () => void;
 }
-
-const PROVIDER_CONFIG: Record<string, { icon: React.ComponentType<any>; label: string; color: string; bgColor: string }> = {
-  'INSTAGRAM': { icon: FaInstagram, label: 'Instagram', color: 'text-pink-500', bgColor: 'bg-pink-50' },
-  'FACEBOOK': { icon: FaFacebookF, label: 'Facebook', color: 'text-blue-600', bgColor: 'bg-blue-50' },
-  'TIKTOKBUSINESS': { icon: FaTiktok, label: 'TikTok', color: 'text-black', bgColor: 'bg-gray-100' },
-  'YOUTUBE': { icon: FaYoutube, label: 'YouTube', color: 'text-red-600', bgColor: 'bg-red-50' },
-  'LINKEDIN': { icon: FaLinkedinIn, label: 'LinkedIn', color: 'text-blue-700', bgColor: 'bg-blue-50' },
-  'GMB': { icon: FaGoogle, label: 'Google Business', color: 'text-blue-500', bgColor: 'bg-blue-50' },
-  'twitter': { icon: FaTwitter, label: 'Twitter/X', color: 'text-gray-800', bgColor: 'bg-gray-100' },
-};
 
 export function SocialAccountsManager({ open, onOpenChange, client, onAccountsUpdated }: SocialAccountsManagerProps) {
   const [accounts, setAccounts] = useState<SocialAccount[]>([]);
@@ -69,7 +59,7 @@ export function SocialAccountsManager({ open, onOpenChange, client, onAccountsUp
       
       toast({
         title: !currentStatus ? "Red Activada" : "Red Desactivada",
-        description: `${PROVIDER_CONFIG[provider]?.label || provider} ${!currentStatus ? 'se sincronizará' : 'no se sincronizará'}.`,
+        description: `${getProviderConfig(provider).label} ${!currentStatus ? 'se sincronizará' : 'no se sincronizará'}.`,
       });
       
       onAccountsUpdated?.();
@@ -203,12 +193,7 @@ export function SocialAccountsManager({ open, onOpenChange, client, onAccountsUp
             ) : (
               <div className="space-y-2 w-full max-w-full">
                 {accounts.map((account) => {
-                  const config = PROVIDER_CONFIG[account.provider] || { 
-                    icon: Globe, 
-                    label: account.provider, 
-                    color: 'text-gray-500',
-                    bgColor: 'bg-gray-100'
-                  };
+                  const config = getProviderConfig(account.provider);
                   const Icon = config.icon;
                   const isUpdating = updatingProvider === account.provider;
 
