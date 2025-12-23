@@ -124,6 +124,14 @@ export function AIAgentConfig() {
     category: string;
   }>({ isOpen: false, content: '', title: '', category: 'general' });
 
+  const [editTemplateModal, setEditTemplateModal] = useState<{
+    isOpen: boolean;
+    id: string;
+    content: string;
+    title: string;
+    category: string;
+  }>({ isOpen: false, id: '', content: '', title: '', category: 'general' });
+
   const openEditModal = (field: 'systemPrompt' | 'knowledgeBase' | 'guardrailPrompt', title: string) => {
     setEditModal({
       isOpen: true,
@@ -217,6 +225,19 @@ export function AIAgentConfig() {
     mutationFn: (id: string) => api.templates.incrementUsage(activeClient!.id, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['playgroundTemplates', activeClient?.id] });
+    },
+  });
+
+  const updateTemplateMutation = useMutation({
+    mutationFn: (data: { id: string; category: string; title: string; content: string }) => 
+      api.templates.update(activeClient!.id, data.id, { category: data.category, title: data.title, content: data.content }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['playgroundTemplates', activeClient?.id] });
+      setEditTemplateModal({ isOpen: false, id: '', content: '', title: '', category: 'general' });
+      toast({ title: "Plantilla actualizada", description: "Los cambios se han guardado correctamente." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
@@ -1550,6 +1571,21 @@ export function AIAgentConfig() {
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                className="h-7 w-7 p-0"
+                                onClick={() => setEditTemplateModal({
+                                  isOpen: true,
+                                  id: template.id,
+                                  title: template.title,
+                                  category: template.category,
+                                  content: template.content
+                                })}
+                                data-testid={`button-edit-template-${template.id}`}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
                                 onClick={() => deleteTemplateMutation.mutate(template.id)}
                                 data-testid={`button-delete-template-${template.id}`}
@@ -1901,6 +1937,82 @@ export function AIAgentConfig() {
                 <span className="sm:hidden">Guardar</span>
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de editar plantilla */}
+      <Dialog open={editTemplateModal.isOpen} onOpenChange={(open) => !open && setEditTemplateModal({ isOpen: false, id: '', content: '', title: '', category: 'general' })}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5" />
+              Editar Plantilla
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="text-sm">Título</Label>
+              <Input
+                value={editTemplateModal.title}
+                onChange={(e) => setEditTemplateModal({ ...editTemplateModal, title: e.target.value })}
+                data-testid="input-edit-template-title"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm">Categoría</Label>
+              <Select
+                value={editTemplateModal.category}
+                onValueChange={(val) => setEditTemplateModal({ ...editTemplateModal, category: val })}
+              >
+                <SelectTrigger data-testid="select-edit-template-category">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="informacional">Información</SelectItem>
+                  <SelectItem value="comercial">Comercial</SelectItem>
+                  <SelectItem value="soporte">Soporte</SelectItem>
+                  <SelectItem value="general">General</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm">Contenido</Label>
+              <Textarea
+                value={editTemplateModal.content}
+                onChange={(e) => setEditTemplateModal({ ...editTemplateModal, content: e.target.value })}
+                className="min-h-[100px] text-sm"
+                data-testid="textarea-edit-template-content"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setEditTemplateModal({ isOpen: false, id: '', content: '', title: '', category: 'general' })}
+              data-testid="button-cancel-edit-template"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => {
+                if (!editTemplateModal.title.trim() || !editTemplateModal.content.trim()) {
+                  toast({ title: "Error", description: "Título y contenido son obligatorios.", variant: "destructive" });
+                  return;
+                }
+                updateTemplateMutation.mutate({
+                  id: editTemplateModal.id,
+                  title: editTemplateModal.title.trim(),
+                  category: editTemplateModal.category,
+                  content: editTemplateModal.content.trim(),
+                });
+              }}
+              disabled={updateTemplateMutation.isPending}
+              data-testid="button-confirm-edit-template"
+            >
+              {updateTemplateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Guardar Cambios
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
