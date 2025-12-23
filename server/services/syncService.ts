@@ -170,13 +170,23 @@ class SyncService {
 
       const participants = conv.participants || [];
       // Get brand's own account ID from various Metricool fields
+      const selfParticipant = participants.find((p: any) => p.self === true);
       const brandAccountId = conv.rawData?.self || 
                              conv.rawData?.pageId || 
                              conv.rawData?.accountId ||
                              conv.self ||
-                             // Find participant marked as self
-                             participants.find((p: any) => p.self === true)?.id ||
+                             selfParticipant?.id ||
                              null;
+      
+      // Extract and save brand's avatar if available
+      const brandAvatarUrl = selfParticipant?.imageProfileUrl || selfParticipant?.picture || selfParticipant?.avatar || null;
+      if (brandAvatarUrl && conv.provider) {
+        try {
+          await storage.updateSocialAccountAvatar(brandId, conv.provider, brandAvatarUrl);
+        } catch (e) {
+          // Silently ignore avatar update errors
+        }
+      }
 
       for (const msg of conv.messages) {
         try {

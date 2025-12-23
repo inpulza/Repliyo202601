@@ -67,6 +67,7 @@ export interface IStorage {
   upsertSocialAccount(account: InsertSocialAccount): Promise<SocialAccount>;
   updateSocialAccountStatus(brandId: string, provider: string, isActive: boolean): Promise<SocialAccount | undefined>;
   updateSocialAccountSyncStatus(brandId: string, provider: string, status: string): Promise<SocialAccount | undefined>;
+  updateSocialAccountAvatar(brandId: string, provider: string, avatar: string): Promise<SocialAccount | undefined>;
   deleteSocialAccountsByBrand(brandId: string): Promise<void>;
   
   getAiAgent(id: string): Promise<AiAgent | undefined>;
@@ -965,6 +966,25 @@ export class DatabaseStorage implements IStorage {
         lastSyncAt: new Date(),
         lastSyncStatus: status 
       })
+      .where(
+        and(
+          eq(socialAccounts.brandId, brandId),
+          eq(socialAccounts.provider, provider)
+        )
+      )
+      .returning();
+    return updated || undefined;
+  }
+
+  async updateSocialAccountAvatar(brandId: string, provider: string, avatar: string): Promise<SocialAccount | undefined> {
+    const existing = await this.getSocialAccount(brandId, provider);
+    if (!existing || existing.accountAvatar) {
+      return existing;
+    }
+    
+    const [updated] = await db
+      .update(socialAccounts)
+      .set({ accountAvatar: avatar })
       .where(
         and(
           eq(socialAccounts.brandId, brandId),
