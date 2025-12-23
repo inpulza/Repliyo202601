@@ -229,8 +229,8 @@ export function Connections() {
                         icon={
                           <div className="relative">
                             <Avatar className="h-9 w-9 border-0">
-                              {account.accountAvatar ? (
-                                <AvatarImage src={account.accountAvatar} />
+                              {(account.accountAvatar || activeClient.avatar) ? (
+                                <AvatarImage src={account.accountAvatar || activeClient.avatar || undefined} />
                               ) : null}
                               <AvatarFallback className={cn("font-semibold", config.bgColor, config.color)}>
                                 <Icon className="h-4 w-4" />
@@ -284,8 +284,8 @@ export function Connections() {
                         icon={
                           <div className="relative">
                             <Avatar className="h-9 w-9 border-0 opacity-60">
-                              {account.accountAvatar ? (
-                                <AvatarImage src={account.accountAvatar} />
+                              {(account.accountAvatar || activeClient.avatar) ? (
+                                <AvatarImage src={account.accountAvatar || activeClient.avatar || undefined} />
                               ) : null}
                               <AvatarFallback className={cn("font-semibold", config.bgColor, config.color)}>
                                 <Icon className="h-4 w-4" />
@@ -512,8 +512,8 @@ export function Connections() {
                             <div className="flex items-center gap-3">
                               <div className="relative">
                                 <Avatar className="h-10 w-10 border-0">
-                                  {account.accountAvatar ? (
-                                    <AvatarImage src={account.accountAvatar} />
+                                  {(account.accountAvatar || activeClient.avatar) ? (
+                                    <AvatarImage src={account.accountAvatar || activeClient.avatar || undefined} />
                                   ) : null}
                                   <AvatarFallback className={cn("font-semibold", config.bgColor, config.color)}>
                                     <Icon className="h-5 w-5" />
@@ -622,8 +622,8 @@ export function Connections() {
                         <CardContent className="p-6 flex flex-col items-center text-center gap-4 flex-1">
                           <div className="relative">
                             <Avatar className="h-14 w-14 border-0">
-                              {account.accountAvatar ? (
-                                <AvatarImage src={account.accountAvatar} />
+                              {(account.accountAvatar || activeClient.avatar) ? (
+                                <AvatarImage src={account.accountAvatar || activeClient.avatar || undefined} />
                               ) : null}
                               <AvatarFallback className={cn("font-semibold", config.bgColor, config.color)}>
                                 <Icon className="h-6 w-6" />
