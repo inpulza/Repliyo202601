@@ -1022,37 +1022,6 @@ export function AIAgentConfig() {
                 </CardContent>
               </Card>
 
-              <Card className="border border-border shadow-none">
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-base font-semibold">
-                    <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                    Límites de Caracteres por Plataforma
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    Referencia de límites de caracteres para respuestas en cada plataforma
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-3">
-                    {Object.entries(PLATFORM_CONFIG).map(([key, config]) => {
-                      const Icon = config.icon;
-                      return (
-                        <div 
-                          key={key}
-                          className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border"
-                          data-testid={`char-limit-${key}`}
-                        >
-                          <Icon className={`h-4 w-4 ${config.color}`} />
-                          <div>
-                            <div className="text-sm font-medium">{config.name}</div>
-                            <div className="text-xs text-muted-foreground">{config.charLimit} chars</div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
             </TabsContent>
 
             <TabsContent value="orchestration" className="mt-0 space-y-6">
