@@ -526,3 +526,46 @@ export const updateNotificationSchema = insertNotificationSchema.partial();
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
 export type UpdateNotification = z.infer<typeof updateNotificationSchema>;
+
+// Plantillas de Respuestas para el Playground
+// Categorías: informacional, comercial, soporte, general
+export const templateCategoryEnum = z.enum([
+  'informacional',  // Preguntas de información general
+  'comercial',      // Preguntas sobre precios, servicios, ventas
+  'soporte',        // Problemas técnicos o de servicio
+  'general'         // Respuestas genéricas (saludos, agradecimientos)
+]);
+export type TemplateCategory = z.infer<typeof templateCategoryEnum>;
+
+export const playgroundTemplates = pgTable("playground_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brandId: varchar("brand_id").notNull().references(() => brands.id, { onDelete: 'cascade' }),
+  category: text("category").notNull().default('general'),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  usageCount: integer("usage_count").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const playgroundTemplatesRelations = relations(playgroundTemplates, ({ one }) => ({
+  brand: one(brands, {
+    fields: [playgroundTemplates.brandId],
+    references: [brands.id],
+  }),
+}));
+
+export const insertPlaygroundTemplateSchema = createInsertSchema(playgroundTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  usageCount: true,
+});
+
+export const selectPlaygroundTemplateSchema = createSelectSchema(playgroundTemplates);
+
+export const updatePlaygroundTemplateSchema = insertPlaygroundTemplateSchema.partial();
+
+export type InsertPlaygroundTemplate = z.infer<typeof insertPlaygroundTemplateSchema>;
+export type PlaygroundTemplate = typeof playgroundTemplates.$inferSelect;
+export type UpdatePlaygroundTemplate = z.infer<typeof updatePlaygroundTemplateSchema>;

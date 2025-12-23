@@ -2442,6 +2442,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ========== PLAYGROUND TEMPLATES ENDPOINTS ==========
+  
+  // GET /api/brands/:brandId/templates - Obtener plantillas de respuestas
+  app.get("/api/brands/:brandId/templates", requireAuth, filterByBrand("brandId"), async (req, res) => {
+    try {
+      const { brandId } = req.params;
+      const { category } = req.query;
+      
+      let templates;
+      if (category && typeof category === 'string' && category !== 'all') {
+        templates = await storage.getPlaygroundTemplatesByCategory(brandId, category);
+      } else {
+        templates = await storage.getPlaygroundTemplates(brandId);
+      }
+      
+      res.json(templates);
+    } catch (error: any) {
+      console.error('Error getting templates:', error);
+      res.status(500).json({ error: "Failed to get templates" });
+    }
+  });
+
+  // POST /api/brands/:brandId/templates - Crear una nueva plantilla
+  app.post("/api/brands/:brandId/templates", requireAuth, filterByBrand("brandId"), async (req, res) => {
+    try {
+      const { brandId } = req.params;
+      const { category, title, content } = req.body;
+      
+      if (!title || !content) {
+        return res.status(400).json({ error: "Title and content are required" });
+      }
+      
+      const template = await storage.createPlaygroundTemplate({
+        brandId,
+        category: category || 'general',
+        title,
+        content,
+      });
+      
+      res.status(201).json(template);
+    } catch (error: any) {
+      console.error('Error creating template:', error);
+      res.status(500).json({ error: "Failed to create template" });
+    }
+  });
+
+  // PUT /api/brands/:brandId/templates/:id - Actualizar una plantilla
+  app.put("/api/brands/:brandId/templates/:id", requireAuth, filterByBrand("brandId"), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { category, title, content } = req.body;
+      
+      const template = await storage.getPlaygroundTemplate(id);
+      if (!template) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      
+      const updated = await storage.updatePlaygroundTemplate(id, {
+        category: category || template.category,
+        title: title || template.title,
+        content: content || template.content,
+      });
+      
+      res.json(updated);
+    } catch (error: any) {
+      console.error('Error updating template:', error);
+      res.status(500).json({ error: "Failed to update template" });
+    }
+  });
+
+  // DELETE /api/brands/:brandId/templates/:id - Eliminar una plantilla
+  app.delete("/api/brands/:brandId/templates/:id", requireAuth, filterByBrand("brandId"), async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const template = await storage.getPlaygroundTemplate(id);
+      if (!template) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      
+      await storage.deletePlaygroundTemplate(id);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error deleting template:', error);
+      res.status(500).json({ error: "Failed to delete template" });
+    }
+  });
+
+  // POST /api/brands/:brandId/templates/:id/use - Incrementar contador de uso
+  app.post("/api/brands/:brandId/templates/:id/use", requireAuth, filterByBrand("brandId"), async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const template = await storage.incrementTemplateUsage(id);
+      if (!template) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      
+      res.json(template);
+    } catch (error: any) {
+      console.error('Error incrementing template usage:', error);
+      res.status(500).json({ error: "Failed to increment usage" });
+    }
+  });
+
   // ========== AI MODEL PRICING ENDPOINTS ==========
   
   // GET /api/admin/ai-pricing - Obtener todos los precios de modelos

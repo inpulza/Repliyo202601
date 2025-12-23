@@ -1,4 +1,4 @@
-import type { Client, Message, Brand, Conversation, SocialPost, SocialAccount, AiAgent, AiAgentAuditLog } from '@shared/schema';
+import type { Client, Message, Brand, Conversation, SocialPost, SocialAccount, AiAgent, AiAgentAuditLog, PlaygroundTemplate } from '@shared/schema';
 import type { Platform, MessageType, Urgency, Intent, Sentiment, MessageStatus, CRMContact } from '@/lib/types';
 
 export type { SocialAccount };
@@ -460,6 +460,65 @@ export const api = {
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || 'Failed to get drafts count');
+      }
+      return res.json();
+    },
+  },
+
+  templates: {
+    getAll: async (brandId: string, category?: string): Promise<PlaygroundTemplate[]> => {
+      const params = category && category !== 'all' ? `?category=${category}` : '';
+      const res = await fetch(`${API_BASE}/brands/${brandId}/templates${params}`);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to fetch templates');
+      }
+      return res.json();
+    },
+
+    create: async (brandId: string, data: { category: string; title: string; content: string }): Promise<PlaygroundTemplate> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/templates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to create template');
+      }
+      return res.json();
+    },
+
+    update: async (brandId: string, id: string, data: Partial<{ category: string; title: string; content: string }>): Promise<PlaygroundTemplate> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/templates/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to update template');
+      }
+      return res.json();
+    },
+
+    delete: async (brandId: string, id: string): Promise<void> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/templates/${id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to delete template');
+      }
+    },
+
+    incrementUsage: async (brandId: string, id: string): Promise<PlaygroundTemplate> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/templates/${id}/use`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to increment usage');
       }
       return res.json();
     },

@@ -1,5 +1,5 @@
 import { 
-  brands, users, messages, socialPosts, conversations, socialAccounts, aiAgents, aiAgentAuditLog, conversationUserSummaries, aiModelPricing, notifications,
+  brands, users, messages, socialPosts, conversations, socialAccounts, aiAgents, aiAgentAuditLog, conversationUserSummaries, aiModelPricing, notifications, playgroundTemplates,
   type Brand, type InsertBrand, 
   type User, type InsertUser, 
   type Message, type InsertMessage, type UpdateMessage,
@@ -10,7 +10,8 @@ import {
   type AiAgentAuditLog, type InsertAiAgentAuditLog,
   type ConversationUserSummary, type InsertConversationUserSummary, type UpdateConversationUserSummary,
   type AiModelPricing, type InsertAiModelPricing, type UpdateAiModelPricing,
-  type Notification, type InsertNotification, type UpdateNotification
+  type Notification, type InsertNotification, type UpdateNotification,
+  type PlaygroundTemplate, type InsertPlaygroundTemplate, type UpdatePlaygroundTemplate
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, isNull, gte, lte, sql } from "drizzle-orm";
@@ -152,6 +153,15 @@ export interface IStorage {
   deleteNotificationByMessageId(messageId: string): Promise<boolean>;
   createDraftNotification(brandId: string, messageId: string, conversationId: string, platform: string, author: string, draftPreview: string): Promise<Notification>;
   getMessagesWithPendingDrafts(brandId: string): Promise<Array<{ messageId: string; conversationId: string; platform: string; author: string; draftPreview: string }>>;
+  
+  // Playground Templates
+  getPlaygroundTemplates(brandId: string): Promise<PlaygroundTemplate[]>;
+  getPlaygroundTemplatesByCategory(brandId: string, category: string): Promise<PlaygroundTemplate[]>;
+  getPlaygroundTemplate(id: string): Promise<PlaygroundTemplate | undefined>;
+  createPlaygroundTemplate(template: InsertPlaygroundTemplate): Promise<PlaygroundTemplate>;
+  updatePlaygroundTemplate(id: string, updates: UpdatePlaygroundTemplate): Promise<PlaygroundTemplate | undefined>;
+  deletePlaygroundTemplate(id: string): Promise<boolean>;
+  incrementTemplateUsage(id: string): Promise<PlaygroundTemplate | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1885,6 +1895,70 @@ export class DatabaseStorage implements IStorage {
       author: row.author || 'Usuario',
       draftPreview: row.draft_preview || '',
     }));
+  }
+
+  // Playground Templates
+  async getPlaygroundTemplates(brandId: string): Promise<PlaygroundTemplate[]> {
+    return await db
+      .select()
+      .from(playgroundTemplates)
+      .where(eq(playgroundTemplates.brandId, brandId))
+      .orderBy(desc(playgroundTemplates.usageCount), desc(playgroundTemplates.createdAt));
+  }
+
+  async getPlaygroundTemplatesByCategory(brandId: string, category: string): Promise<PlaygroundTemplate[]> {
+    return await db
+      .select()
+      .from(playgroundTemplates)
+      .where(and(
+        eq(playgroundTemplates.brandId, brandId),
+        eq(playgroundTemplates.category, category)
+      ))
+      .orderBy(desc(playgroundTemplates.usageCount), desc(playgroundTemplates.createdAt));
+  }
+
+  async getPlaygroundTemplate(id: string): Promise<PlaygroundTemplate | undefined> {
+    const [template] = await db
+      .select()
+      .from(playgroundTemplates)
+      .where(eq(playgroundTemplates.id, id));
+    return template || undefined;
+  }
+
+  async createPlaygroundTemplate(template: InsertPlaygroundTemplate): Promise<PlaygroundTemplate> {
+    const [created] = await db
+      .insert(playgroundTemplates)
+      .values(template)
+      .returning();
+    return created;
+  }
+
+  async updatePlaygroundTemplate(id: string, updates: UpdatePlaygroundTemplate): Promise<PlaygroundTemplate | undefined> {
+    const [updated] = await db
+      .update(playgroundTemplates)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(playgroundTemplates.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deletePlaygroundTemplate(id: string): Promise<boolean> {
+    const result = await db
+      .delete(playgroundTemplates)
+      .where(eq(playgroundTemplates.id, id));
+    return true;
+  }
+
+  async incrementTemplateUsage(id: string): Promise<PlaygroundTemplate | undefined> {
+    const [updated] = await db
+      .update(playgroundTemplates)
+      .set({ 
+        usageCount: sql`${playgroundTemplates.usageCount} + 1`,
+        updatedAt: new Date() 
+      })
+      .where(eq(playgroundTemplates.id, id))
+      .returning();
+    return updated || undefined;
   }
 }
 

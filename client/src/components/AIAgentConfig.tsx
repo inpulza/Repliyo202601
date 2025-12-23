@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNexus } from '@/context/NexusContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import type { AiAgent, AiAgentAuditLog, SocialAccount } from '@shared/schema';
+import type { AiAgent, AiAgentAuditLog, SocialAccount, PlaygroundTemplate } from '@shared/schema';
 import { DYNAMIC_VARIABLES } from '@shared/dynamicVariables';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +30,8 @@ import {
   Bot, Settings, MessageSquare, Zap, Shield, History, 
   Play, Save, Loader2, Sparkles, Brain, BookOpen,
   Clock, AlertTriangle, CheckCircle, XCircle, Share2, Variable, Copy,
-  ChevronDown, ChevronUp, Filter, RotateCcw, Eye, Info, Pencil, X
+  ChevronDown, ChevronUp, Filter, RotateCcw, Eye, Info, Pencil, X,
+  FileText, Plus, Trash2, Tag
 } from 'lucide-react';
 import { FaFacebook, FaInstagram, FaTwitter, FaTiktok, FaLinkedin, FaYoutube, FaGoogle } from 'react-icons/fa';
 import { format } from 'date-fns';
@@ -168,6 +169,79 @@ export function AIAgentConfig() {
     queryFn: () => api.aiAgent.getAuditLog(activeClient!.id, 50),
     enabled: !!activeClient?.id && activeTab === 'history',
   });
+
+  // Templates state and queries
+  const [templateCategory, setTemplateCategory] = useState<string>('all');
+  const [showNewTemplateForm, setShowNewTemplateForm] = useState(false);
+  const [newTemplate, setNewTemplate] = useState({ category: 'general', title: '', content: '' });
+  
+  const { data: templates = [], isLoading: isLoadingTemplates } = useQuery({
+    queryKey: ['playgroundTemplates', activeClient?.id, templateCategory],
+    queryFn: () => api.templates.getAll(activeClient!.id, templateCategory),
+    enabled: !!activeClient?.id && activeTab === 'playground',
+  });
+
+  const createTemplateMutation = useMutation({
+    mutationFn: (data: { category: string; title: string; content: string }) => 
+      api.templates.create(activeClient!.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['playgroundTemplates', activeClient?.id] });
+      setShowNewTemplateForm(false);
+      setNewTemplate({ category: 'general', title: '', content: '' });
+      toast({ title: "Plantilla creada", description: "La plantilla se ha guardado correctamente." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteTemplateMutation = useMutation({
+    mutationFn: (id: string) => api.templates.delete(activeClient!.id, id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['playgroundTemplates', activeClient?.id] });
+      toast({ title: "Plantilla eliminada", description: "La plantilla se ha eliminado." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const incrementUsageMutation = useMutation({
+    mutationFn: (id: string) => api.templates.incrementUsage(activeClient!.id, id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['playgroundTemplates', activeClient?.id] });
+    },
+  });
+
+  const handleCopyTemplate = async (template: PlaygroundTemplate) => {
+    try {
+      await navigator.clipboard.writeText(template.content);
+      incrementUsageMutation.mutate(template.id);
+      toast({ title: "Copiado", description: "Respuesta copiada al portapapeles." });
+    } catch (err) {
+      toast({ title: "Error", description: "No se pudo copiar al portapapeles.", variant: "destructive" });
+    }
+  };
+
+  const getCategoryLabel = (category: string) => {
+    const labels: Record<string, string> = {
+      'informacional': 'Información',
+      'comercial': 'Comercial',
+      'soporte': 'Soporte',
+      'general': 'General'
+    };
+    return labels[category] || category;
+  };
+
+  const getCategoryColor = (category: string) => {
+    const colors: Record<string, string> = {
+      'informacional': 'bg-blue-100 text-blue-700 border-blue-200',
+      'comercial': 'bg-green-100 text-green-700 border-green-200',
+      'soporte': 'bg-amber-100 text-amber-700 border-amber-200',
+      'general': 'bg-gray-100 text-gray-700 border-gray-200'
+    };
+    return colors[category] || colors['general'];
+  };
 
   const filteredAuditLogs = useMemo(() => {
     return auditLogs.filter((log: AiAgentAuditLog) => {
@@ -1288,6 +1362,186 @@ export function AIAgentConfig() {
                         <span className="text-sm font-medium">Respuesta del Agente</span>
                       </div>
                       <p className="text-sm whitespace-pre-wrap" data-testid="text-test-response">{testResponse}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Templates Section */}
+              <Card className="border border-border shadow-none">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        Plantillas de Respuestas
+                      </CardTitle>
+                      <CardDescription className="text-xs mt-1">
+                        Respuestas pre-escritas para copiar y pegar rápidamente
+                      </CardDescription>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowNewTemplateForm(!showNewTemplateForm)}
+                      className="gap-1 shadow-none"
+                      data-testid="button-add-template"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span className="hidden sm:inline">Nueva</span>
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Category filters */}
+                  <div className="flex flex-wrap gap-2">
+                    {['all', 'informacional', 'comercial', 'soporte', 'general'].map((cat) => (
+                      <Button
+                        key={cat}
+                        variant={templateCategory === cat ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setTemplateCategory(cat)}
+                        className={`text-xs h-7 ${templateCategory === cat ? '' : 'shadow-none'}`}
+                        data-testid={`filter-category-${cat}`}
+                      >
+                        {cat === 'all' ? 'Todas' : getCategoryLabel(cat)}
+                      </Button>
+                    ))}
+                  </div>
+
+                  {/* New template form */}
+                  {showNewTemplateForm && (
+                    <div className="p-4 border border-border rounded-lg bg-muted/20 space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Título</Label>
+                          <Input
+                            value={newTemplate.title}
+                            onChange={(e) => setNewTemplate({ ...newTemplate, title: e.target.value })}
+                            placeholder="Ej: Respuesta a consulta de precios"
+                            className="h-8 text-sm shadow-none"
+                            data-testid="input-template-title"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Categoría</Label>
+                          <Select
+                            value={newTemplate.category}
+                            onValueChange={(val) => setNewTemplate({ ...newTemplate, category: val })}
+                          >
+                            <SelectTrigger className="h-8 text-sm shadow-none" data-testid="select-template-category">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="informacional">Información</SelectItem>
+                              <SelectItem value="comercial">Comercial</SelectItem>
+                              <SelectItem value="soporte">Soporte</SelectItem>
+                              <SelectItem value="general">General</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Contenido</Label>
+                        <Textarea
+                          value={newTemplate.content}
+                          onChange={(e) => setNewTemplate({ ...newTemplate, content: e.target.value })}
+                          placeholder="Escribe la respuesta que quieres guardar como plantilla..."
+                          className="min-h-[80px] text-sm shadow-none"
+                          data-testid="textarea-template-content"
+                        />
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setShowNewTemplateForm(false);
+                            setNewTemplate({ category: 'general', title: '', content: '' });
+                          }}
+                        >
+                          Cancelar
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => createTemplateMutation.mutate(newTemplate)}
+                          disabled={!newTemplate.title.trim() || !newTemplate.content.trim() || createTemplateMutation.isPending}
+                          data-testid="button-save-template"
+                        >
+                          {createTemplateMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            'Guardar'
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Templates list */}
+                  {isLoadingTemplates ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : templates.length === 0 ? (
+                    <div className="text-center py-8">
+                      <FileText className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+                      <p className="text-sm text-muted-foreground">
+                        {templateCategory === 'all' 
+                          ? 'No hay plantillas guardadas' 
+                          : `No hay plantillas de tipo "${getCategoryLabel(templateCategory)}"`}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Crea tu primera plantilla para responder más rápido
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-3">
+                      {templates.map((template) => (
+                        <div
+                          key={template.id}
+                          className="group p-3 border border-border rounded-lg hover:bg-muted/30 transition-colors"
+                          data-testid={`template-card-${template.id}`}
+                        >
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <Badge 
+                                variant="outline" 
+                                className={`text-[10px] shrink-0 ${getCategoryColor(template.category)}`}
+                              >
+                                {getCategoryLabel(template.category)}
+                              </Badge>
+                              <span className="text-sm font-medium truncate">{template.title}</span>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0"
+                                onClick={() => handleCopyTemplate(template)}
+                                data-testid={`button-copy-template-${template.id}`}
+                              >
+                                <Copy className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                                onClick={() => deleteTemplateMutation.mutate(template.id)}
+                                data-testid={`button-delete-template-${template.id}`}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                          <p className="text-xs text-muted-foreground line-clamp-2">{template.content}</p>
+                          {template.usageCount > 0 && (
+                            <p className="text-[10px] text-muted-foreground/60 mt-2">
+                              Usado {template.usageCount} {template.usageCount === 1 ? 'vez' : 'veces'}
+                            </p>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </CardContent>
