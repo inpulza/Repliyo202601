@@ -5,7 +5,9 @@ import {
   FaYoutube, 
   FaLinkedinIn, 
   FaGoogle, 
-  FaXTwitter 
+  FaXTwitter,
+  FaWhatsapp,
+  FaPinterest
 } from 'react-icons/fa6';
 import { Globe } from 'lucide-react';
 
@@ -67,6 +69,20 @@ export const PROVIDER_CONFIG: Record<string, ProviderConfig> = {
     bgColor: 'bg-gray-100',
     description: 'Posts y menciones'
   },
+  'WHATSAPP': { 
+    icon: FaWhatsapp, 
+    label: 'WhatsApp Business', 
+    color: 'text-green-600', 
+    bgColor: 'bg-green-50',
+    description: 'Mensajería empresarial'
+  },
+  'PINTEREST': { 
+    icon: FaPinterest, 
+    label: 'Pinterest', 
+    color: 'text-red-700', 
+    bgColor: 'bg-red-50',
+    description: 'Tableros de negocio'
+  },
 };
 
 export const DEFAULT_PROVIDER_CONFIG: ProviderConfig = {
@@ -78,8 +94,30 @@ export const DEFAULT_PROVIDER_CONFIG: ProviderConfig = {
 };
 
 export function getProviderConfig(provider: string): ProviderConfig {
-  return PROVIDER_CONFIG[provider] || { 
+  const normalized = provider.toUpperCase();
+  return PROVIDER_CONFIG[normalized] || PROVIDER_CONFIG[provider] || { 
     ...DEFAULT_PROVIDER_CONFIG, 
     label: provider 
   };
+}
+
+export const ALL_AVAILABLE_PROVIDERS = [
+  'INSTAGRAM',
+  'FACEBOOK', 
+  'TIKTOKBUSINESS',
+  'YOUTUBE',
+  'LINKEDIN',
+  'GMB',
+  'twitter',
+  'WHATSAPP',
+  'PINTEREST'
+] as const;
+
+export function normalizeProvider(provider: string): string {
+  return provider.toUpperCase();
+}
+
+export function getUnconnectedProviders(connectedProviders: string[]): string[] {
+  const normalizedConnected = connectedProviders.map(p => normalizeProvider(p));
+  return ALL_AVAILABLE_PROVIDERS.filter(p => !normalizedConnected.includes(normalizeProvider(p)));
 }
