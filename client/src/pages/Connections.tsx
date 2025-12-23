@@ -34,6 +34,7 @@ import {
 import { useNexus } from '@/context/NexusContext';
 import { api, type SocialAccount } from '@/lib/api';
 import { getProviderConfig, getUnconnectedProviders, normalizeProvider } from '@/lib/providerConfig';
+import { formatAccountDisplayName, getFullAccountName } from '@/lib/accountDisplay';
 import { Plus, Link2 } from "lucide-react";
 
 export function Connections() {
@@ -242,9 +243,9 @@ export function Connections() {
                         }
                         title={config.label}
                         subtitle={
-                          <span className="flex items-center gap-1">
+                          <span className="flex items-center gap-1" title={getFullAccountName(account.accountName)}>
                             <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                            {account.accountName || 'Conectado'}
+                            {formatAccountDisplayName(account.accountName) || 'Conectado'}
                           </span>
                         }
                         rightElement={
@@ -296,7 +297,11 @@ export function Connections() {
                           </div>
                         }
                         title={config.label}
-                        subtitle={account.accountName || config.description}
+                        subtitle={
+                          <span title={getFullAccountName(account.accountName)}>
+                            {formatAccountDisplayName(account.accountName) || config.description}
+                          </span>
+                        }
                         rightElement={
                           <div className="flex items-center gap-2">
                             {isUpdating && <Loader2 className="h-3 w-3 animate-spin" />}
@@ -520,8 +525,8 @@ export function Connections() {
                               </div>
                               <div>
                                 <h3 className="font-medium text-sm text-foreground">{config.label}</h3>
-                                <p className="text-xs text-muted-foreground">
-                                  {account.accountName || 'Cuenta conectada'}
+                                <p className="text-xs text-muted-foreground truncate max-w-[150px]" title={getFullAccountName(account.accountName)}>
+                                  {formatAccountDisplayName(account.accountName) || 'Cuenta conectada'}
                                 </p>
                               </div>
                             </div>
@@ -631,8 +636,8 @@ export function Connections() {
                           
                           <div className="space-y-1">
                             <h3 className="font-semibold text-foreground">{config.label}</h3>
-                            <p className="text-sm text-muted-foreground leading-relaxed">
-                              {account.accountName || config.description}
+                            <p className="text-sm text-muted-foreground leading-relaxed truncate max-w-full" title={getFullAccountName(account.accountName)}>
+                              {formatAccountDisplayName(account.accountName) || config.description}
                             </p>
                           </div>
                         </CardContent>
