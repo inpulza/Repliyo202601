@@ -31,7 +31,7 @@ import {
   Play, Save, Loader2, Sparkles, Brain, BookOpen,
   Clock, AlertTriangle, CheckCircle, XCircle, Share2, Variable, Copy,
   ChevronDown, ChevronUp, Filter, RotateCcw, Eye, Info, Pencil, X,
-  FileText, Plus, Trash2, Tag
+  FileText, Plus, Trash2, Tag, AtSign
 } from 'lucide-react';
 import { FaFacebook, FaInstagram, FaTwitter, FaTiktok, FaLinkedin, FaYoutube, FaGoogle } from 'react-icons/fa';
 import { format } from 'date-fns';
@@ -187,6 +187,7 @@ export function AIAgentConfig() {
     cooldownPerConversation: true,
     dmBatchDelaySeconds: 50,
     dmReplyMode: 'batch',
+    autoMentionEnabled: false,
     isActive: true,
   });
 
@@ -375,6 +376,7 @@ export function AIAgentConfig() {
         cooldownPerConversation: agent.cooldownPerConversation ?? true,
         dmBatchDelaySeconds: agent.dmBatchDelaySeconds || 30,
         dmReplyMode: agent.dmReplyMode || 'batch',
+        autoMentionEnabled: agent.autoMentionEnabled ?? false,
         platformSettings: agent.platformSettings || undefined,
         isActive: agent.isActive ?? true,
       });
@@ -1164,6 +1166,36 @@ export function AIAgentConfig() {
                         <SelectItem value="first_only">Solo primero - Responde al primer mensaje, ignora resto</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <AtSign className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <Label className="text-sm">Etiquetar usuario en respuestas</Label>
+                          <p className="text-xs text-muted-foreground">
+                            Agregar @usuario al inicio de cada respuesta a comentarios
+                          </p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={formData.autoMentionEnabled || false}
+                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, autoMentionEnabled: checked }))}
+                        data-testid="switch-auto-mention"
+                      />
+                    </div>
+                    <Alert className="border-border">
+                      <Info className="h-4 w-4" />
+                      <AlertDescription className="text-xs">
+                        {formData.autoMentionEnabled 
+                          ? "Las respuestas incluirán @nombreusuario al inicio, ej: '@flash_handyman Gracias por tu comentario...'"
+                          : "Las respuestas se enviarán sin etiquetar al usuario, ej: 'Gracias por tu comentario...'"
+                        }
+                      </AlertDescription>
+                    </Alert>
                   </div>
                 </CardContent>
               </Card>
