@@ -3001,9 +3001,11 @@ El sistema reemplaza estas variables antes de enviar a la IA:
 La función `extractFirstName()` en `prompt-composer.ts` procesa usernames de redes sociales para detectar el primer nombre:
 
 **Patrones soportados:**
-- `maria_perez_1985` → `María`
-- `CarlosGomez` → `Carlos`
-- `juanito_123` → `Juanito`
+- `María González Pérez` → `María` (nombres de display con espacios)
+- `Dania Fernandez Cabezas` → `Dania` (nombres de Facebook/Instagram)
+- `maria_perez_1985` → `María` (usernames con guiones bajos)
+- `CarlosGomez` → `Carlos` (CamelCase)
+- `juanito_123` → `Juanito` (usernames cortos)
 - `user12345` → (vacío, no es nombre)
 - `TheAgency_Official` → (vacío, es empresa)
 

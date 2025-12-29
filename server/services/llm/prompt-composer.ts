@@ -144,6 +144,18 @@ function extractFirstName(username: string): string {
   // Si tiene solo números o caracteres especiales, no es nombre
   if (/^[\d_\-\.]+$/.test(clean)) return '';
   
+  // ESTRATEGIA 0: Nombres de display con espacios (ej: "María González Pérez")
+  // Común en Facebook/Instagram donde author es el nombre completo
+  if (clean.includes(' ')) {
+    const words = clean.split(/\s+/);
+    const firstWord = words[0];
+    // Verificar que parece un nombre (solo letras, 2-15 chars)
+    if (firstWord && /^[a-záéíóúñü]+$/i.test(firstWord) && firstWord.length >= 2 && firstWord.length <= 15) {
+      // Capitalizar correctamente (maneja "MARÍA" → "María")
+      return firstWord.charAt(0).toUpperCase() + firstWord.slice(1).toLowerCase();
+    }
+  }
+  
   // Estrategia 1: Separar por _, -, o . y tomar el primer segmento
   const segments = clean.split(/[_\-\.]+/);
   let candidate = segments[0];

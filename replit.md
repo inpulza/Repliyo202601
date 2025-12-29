@@ -37,17 +37,26 @@ El LLM ahora ajusta su tono automáticamente según el contexto:
 | Variable | Uso |
 |----------|-----|
 | `{{is_dm}}` | true/false - Si es DM o comentario |
+| `{{first_name}}` | Primer nombre extraído del author (ej: "María") |
 | `{{time_since_last_interaction}}` | Minutos desde última respuesta |
 | `{{relationship_status}}` | new / active / reengagement |
+
+**Extracción inteligente de primer nombre:**
+- `María González Pérez` → `María` (nombres de display)
+- `maria_perez_1985` → `María` (usernames)
+- `CarlosGomez` → `Carlos` (CamelCase)
+- `user12345` → (vacío, no es nombre)
 
 **Lógica condicional en `buildDynamicPersonalityRules()`:**
 ```
 SI (DM + conversación activa < 60 min):
    ❌ PROHIBIDO saludar → Ve directo al grano
-SI (DM + reengagement):
-   ✅ Saludo breve permitido
-SI (Comentario):
-   📢 Modo breve con CTA
+SI (DM + reengagement + nombre detectado):
+   ✅ "Hola de nuevo, María"
+SI (DM nueva + nombre detectado):
+   ✅ "Hola, María, ¿en qué puedo ayudarte?"
+SI (Comentario + nombre):
+   📢 "Hola, Juan, te esperamos en DM 📩"
 ```
 
 ### Configuración por Canal Social ✅ NUEVO (21 Dic 2025)
