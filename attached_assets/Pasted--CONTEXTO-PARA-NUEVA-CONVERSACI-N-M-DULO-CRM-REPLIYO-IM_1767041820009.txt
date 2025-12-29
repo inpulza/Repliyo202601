@@ -1,0 +1,121 @@
+📋 CONTEXTO PARA NUEVA CONVERSACIÓN - MÓDULO CRM REPLIYO
+🔴 IMPORTANTE: LEER PRIMERO
+Antes de hacer cualquier cosa, lee el archivo DOCUMENTACION_COMPLETA.md que contiene todo el historial de desarrollo del proyecto desde el inicio.
+
+También lee replit.md que tiene los próximos pasos pendientes actualizados.
+
+📦 QUÉ ES REPLIYO
+Sistema de gestión de inbox para redes sociales integrado con Metricool. Centraliza DMs y comentarios de Instagram, Facebook, TikTok, YouTube, LinkedIn y Google Business en una sola interfaz. Incluye agentes de IA que responden automáticamente.
+
+✅ MÓDULO CRM COMPLETADO
+Construimos un CRM inspirado en Respond.io con las siguientes partes:
+
+Componente	Estado	Descripción
+Base de Datos	✅	3 tablas: crm_contacts (UUID PK), crm_contact_channels, crm_contact_limbo
+Traffic Controller	✅	Ruteo automático: DM → crea contacto, Comentario → va a limbo
+Function Calling IA	✅	4 funciones CRM que la IA ejecuta durante conversaciones
+API REST	✅	11 endpoints completos para CRUD de contactos
+UI CRM	✅	Tabla de contactos + tab Limbo + slide-over con perfil/historial
+Context View	✅	Timeline unificado de mensajes de todos los canales + botón "Abrir en Inbox"
+Archivos clave del CRM:
+
+shared/schema.ts - Tablas y tipos CRM (líneas ~450-550)
+server/storage.ts - 20+ métodos de persistencia CRM
+server/routes.ts - Endpoints /api/crm/*
+server/services/crmTrafficController.ts - Enrutamiento DM/comentarios
+server/services/llm/crm-functions.ts - Ejecutor de funciones IA
+client/src/pages/CRM.tsx - Vista completa del CRM
+client/src/components/CRMContextPanel.tsx - Panel lateral del Inbox (mockup a conectar)
+🎯 3 PASOS PENDIENTES (EN ORDEN)
+PASO 1: BACKFILL (Migración Histórica) 🔄
+Prioridad: PRIMERO
+
+Problema: Las tablas CRM están vacías. El Traffic Controller solo crea contactos cuando llegan mensajes NUEVOS. Pero ya tenemos miles de conversaciones históricas en la base de datos.
+
+Objetivo: Crear un script scripts/migrate-contacts.ts que:
+
+Lea todos los sender_id únicos de la tabla conversations
+Para cada usuario único:
+Verificar si ya existe en crm_contact_channels (idempotente)
+Si NO existe → Crear crm_contacts (UUID nuevo) + crm_contact_channels
+Usar display_name/avatar_url de la conversación
+Logging de cuántos contactos creados
+Referencia de lógica: Ver server/services/crmTrafficController.ts que hace algo similar pero para mensajes nuevos.
+
+PASO 2: CRMContextPanel del Inbox 🖼️
+Prioridad: SEGUNDO (después del Backfill)
+
+Problema actual: El componente CRMContextPanel.tsx es un mockup estático:
+
+Siempre muestra "New Prospect" o datos fake de HubSpot/Salesforce
+No está conectado a nuestro CRM real
+Tiene tipos incompatibles (CRMContact de lib/types.ts vs contactos reales)
+Objetivo: Cuando el usuario selecciona una conversación en el Inbox:
+
+El panel debe buscar si el participante existe en crm_contact_channels
+SI EXISTE → Mostrar perfil real (reusar UI del slide-over de CRM.tsx)
+SI NO EXISTE → Mostrar "New Prospect" + botón que llame POST /api/crm/contacts
+Cambios necesarios:
+
+Nuevo endpoint: GET /api/crm/contacts/by-channel?platform=instagram&externalId=juan_perez
+Modificar Inbox.tsx: Query que resuelva contacto CRM al seleccionar conversación
+Refactorizar componentes compartidos de CRM.tsx para reusar
+Conectar botón "Create Contact" con API real
+PASO 3: Identity Merge (Fusión de Identidades) 🔗
+Prioridad: TERCERO (refinamiento)
+
+Objetivo: Fusionar contactos duplicados. Ejemplo: "@juan_instagram" + "@juan_whatsapp" = mismo Juan.
+
+Algoritmo de Detección:
+
+Trigger: Cuando entra mensaje nuevo o se crea contacto
+Buscar coincidencias en email o phone
+UI: Mostrar alerta "Posible Duplicado"
+Algoritmo de Fusión (Transacción):
+
+Usuario selecciona primary_contact (el que se queda) y secondary_contact (el que desaparece)
+Resolver conflictos si hay datos distintos
+Consolidar historial:
+UPDATE crm_contact_channels SET contact_id = primary_id WHERE contact_id = secondary_id
+UPDATE conversations SET contact_id = primary_id WHERE contact_id = secondary_id
+Merge de customFields (JSON)
+Soft delete del secundario (marcar archived, no borrar)
+Botón "Deshacer" durante 15 min
+Reglas:
+
+Contactos marcados "spam" NO se sugieren para fusión
+Log de auditoría para todas las fusiones
+🏗️ ARQUITECTURA RELEVANTE
+┌─────────────────────────────────────────────────────────────┐
+│  INBOX (conversación seleccionada)                          │
+│  ┌───────────────────┐    ┌──────────────────────────────┐  │
+│  │ Lista de DMs      │    │ CRMContextPanel              │  │
+│  │                   │    │ (actualmente mockup)         │  │
+│  │ @juan_perez ←─────┼────┼→ Debe buscar en CRM real     │  │
+│  └───────────────────┘    └──────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  /CRM (página dedicada)                                     │
+│  ┌───────────────────┐    ┌──────────────────────────────┐  │
+│  │ Tabla Contactos   │    │ Slide-over (click en fila)   │  │
+│  │ + Tab Limbo       │    │ - Tab Perfil                 │  │
+│  │                   │    │ - Tab Historial (timeline)   │  │
+│  │                   │    │ - Botón "Abrir en Inbox"     │  │
+│  └───────────────────┘    └──────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  FLUJO DE DATOS                                             │
+│                                                             │
+│  Metricool → syncService → Traffic Controller               │
+│                              ↓                              │
+│                    DM? → crm_contacts + crm_contact_channels│
+│                    Comentario? → crm_contact_limbo          │
+│                                                             │
+│  Auto-reply → LLM + Function Calling → CRM Functions        │
+│              (extrae email, teléfono, ciudad automáticamente)│
+└─────────────────────────────────────────────────────────────┘
+🚀 COMANDO INICIAL SUGERIDO
+Lee primero los archivos:
+1. DOCUMENTACION_COMPLETA.md
+2. replit.md (sección "PRÓXIMOS PASOS PENDIENTES")
+Luego procede con el PASO 1 (Backfill).
