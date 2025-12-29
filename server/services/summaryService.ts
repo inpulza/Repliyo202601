@@ -1,10 +1,10 @@
-import { GoogleGenAI } from "@google/genai";
 import { storage } from "../storage";
 import { filterHistoryByAuthor } from "./llm/prompt-composer";
-import type { Message } from "@shared/schema";
+import { createLLMProvider } from "./llm/factory";
+import type { AgentSecrets } from "./llm/types";
+import type { Message, AiAgent } from "@shared/schema";
 
 const DEFAULT_SUMMARY_THRESHOLD = 10;
-const SUMMARY_MODEL = "gemini-2.5-flash";
 
 const SUMMARY_PROMPT = `Eres un experto en resumir conversaciones de atención al cliente. Tu tarea es crear un resumen CONSOLIDADO de la conversación entre la marca y el cliente.
 
@@ -14,6 +14,7 @@ REGLAS DE RESUMEN:
 3. ELIMINAR PAJA: Saludos repetidos, "gracias", "ok", emojis solos, etc.
 4. MANTENER CRONOLOGÍA: Ordena los eventos de más antiguo a más reciente
 5. SER CONCISO: Máximo 300 palabras
+6. ACCIONES EXTERNAS: Si el cliente menciona que envió algo por WhatsApp/email/otro canal, indicarlo como "Cliente indica que envió [X] por [canal] - NO VERIFICABLE POR NOSOTROS"
 
 FORMATO DE SALIDA:
 - Usa viñetas para cada punto importante
@@ -23,9 +24,9 @@ FORMATO DE SALIDA:
 EJEMPLO:
 • Cliente interesado en servicio de limpieza para oficina de 200m²
 • Se cotizó servicio semanal a "$150/mes" 
-• Cliente solicitó visita técnica para el "15 de enero"
+• Cliente indica que envió fotos por WhatsApp - NO VERIFICABLE POR NOSOTROS
 • Teléfono de contacto: "555-1234"
-• Estado: Pendiente confirmación de visita`;
+• Estado: Pendiente confirmación`;
 
 interface SummaryGenerationResult {
   summary: string;
@@ -33,23 +34,23 @@ interface SummaryGenerationResult {
   lastMessageId: string;
 }
 
+function getGlobalSecrets(): AgentSecrets {
+  return {
+    openaiApiKey: process.env.OPENAI_API_KEY || process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+    geminiApiKey: process.env.GEMINI_API_KEY || process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
+  };
+}
+
 async function generateSummaryWithLLM(
   messages: Message[],
+  agent: AiAgent,
   existingSummary?: string
 ): Promise<string> {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.AI_INTEGRATIONS_GEMINI_API_KEY;
-  
-  if (!apiKey) {
-    console.error("[SummaryService] No Gemini API key found");
-    throw new Error("Gemini API key not configured");
-  }
-
-  const client = new GoogleGenAI({ apiKey });
-
   const formattedHistory = messages.map(msg => {
     const role = msg.direction === "inbound" ? "Cliente" : "Marca";
     const timestamp = new Date(msg.timestamp).toLocaleDateString('es-ES');
-    return `[${timestamp}] ${role}: ${msg.content}`;
+    const source = msg.source === 'repliyo_auto' ? ' (IA)' : '';
+    return `[${timestamp}] ${role}${source}: ${msg.content}`;
   }).join("\n");
 
   let userPrompt = "";
@@ -69,15 +70,16 @@ Genera un resumen consolidado siguiendo las reglas establecidas.`;
   }
 
   try {
-    const response = await client.models.generateContent({
-      model: SUMMARY_MODEL,
-      config: {
-        systemInstruction: SUMMARY_PROMPT,
-        temperature: 0.3,
-        maxOutputTokens: 500,
-      },
-      contents: userPrompt,
-    });
+    const secrets = getGlobalSecrets();
+    const llmProvider = createLLMProvider(agent, secrets);
+    
+    console.log(`[SummaryService] Using ${agent.provider}/${agent.model} for summary generation via createLLMProvider`);
+    
+    const response = await llmProvider.generateRawCompletion(
+      SUMMARY_PROMPT,
+      userPrompt,
+      { temperature: 0.3, maxTokens: 500, model: agent.model || undefined }
+    );
 
     return response.text || "";
   } catch (error) {
@@ -86,12 +88,8 @@ Genera un resumen consolidado siguiendo las reglas establecidas.`;
   }
 }
 
-export async function generateConversationSummary(
-  conversationId: string,
-  targetAuthor: string,
-  allMessages: Message[]
-): Promise<SummaryGenerationResult> {
-  const dummyMessage: Message = {
+function createDummyMessage(conversationId: string, author: string): Message {
+  return {
     id: "",
     brandId: "",
     conversationId,
@@ -99,7 +97,7 @@ export async function generateConversationSummary(
     platform: "",
     type: "comment",
     direction: "inbound",
-    author: targetAuthor,
+    author,
     authorAvatar: null,
     content: "",
     timestamp: new Date(),
@@ -126,9 +124,24 @@ export async function generateConversationSummary(
     mediaType: null,
     mediaUrl: null,
     mediaTranscription: null,
+    draftWasEdited: null,
     createdAt: new Date(),
   };
+}
 
+export async function generateConversationSummary(
+  conversationId: string,
+  targetAuthor: string,
+  allMessages: Message[],
+  brandId: string
+): Promise<SummaryGenerationResult> {
+  const agent = await storage.getAiAgentByBrand(brandId);
+  
+  if (!agent) {
+    throw new Error(`No AI agent configured for brand ${brandId}`);
+  }
+
+  const dummyMessage = createDummyMessage(conversationId, targetAuthor);
   const filteredMessages = filterHistoryByAuthor(allMessages, dummyMessage, "comment");
 
   if (filteredMessages.length === 0) {
@@ -139,6 +152,7 @@ export async function generateConversationSummary(
 
   const summary = await generateSummaryWithLLM(
     filteredMessages,
+    agent,
     existingSummary?.summary || undefined
   );
 
@@ -153,7 +167,8 @@ export async function generateConversationSummary(
 
 export async function checkAndUpdateSummary(
   conversationId: string,
-  author: string
+  author: string,
+  brandId: string
 ): Promise<void> {
   try {
     const allMessages = await storage.getMessagesByConversation(conversationId);
@@ -163,44 +178,14 @@ export async function checkAndUpdateSummary(
       return;
     }
 
-    const dummyMessage: Message = {
-      id: "",
-      brandId: "",
-      conversationId,
-      metricoolId: null,
-      platform: "",
-      type: "comment",
-      direction: "inbound",
-      author,
-      authorAvatar: null,
-      content: "",
-      timestamp: new Date(),
-      status: "read",
-      draftResponse: null,
-      urgency: null,
-      intent: null,
-      sentiment: null,
-      aiSummary: null,
-      sourceUrl: null,
-      contextType: null,
-      crmData: null,
-      rawData: null,
-      threadId: null,
-      parentMessageId: null,
-      source: null,
-      replyGroupId: null,
-      partIndex: null,
-      totalParts: null,
-      aiSuggestedReply: null,
-      aiReplyStatus: "none",
-      aiAgentId: null,
-      internalOrigin: null,
-      mediaType: null,
-      mediaUrl: null,
-      mediaTranscription: null,
-      createdAt: new Date(),
-    };
+    const agent = await storage.getAiAgentByBrand(brandId);
+    
+    if (!agent) {
+      console.log(`[SummaryService] No AI agent for brand ${brandId}, skipping summary`);
+      return;
+    }
 
+    const dummyMessage = createDummyMessage(conversationId, author);
     const filteredMessages = filterHistoryByAuthor(allMessages, dummyMessage, "comment");
     
     const existingSummary = await storage.getConversationUserSummary(conversationId, author);
@@ -224,9 +209,9 @@ export async function checkAndUpdateSummary(
       return;
     }
 
-    console.log(`[SummaryService] Generating summary for ${author} in conversation ${conversationId}...`);
+    console.log(`[SummaryService] Generating summary for ${author} in conversation ${conversationId} using ${agent.provider}/${agent.model}...`);
     
-    const result = await generateConversationSummary(conversationId, author, allMessages);
+    const result = await generateConversationSummary(conversationId, author, allMessages, brandId);
 
     await storage.upsertConversationUserSummary({
       conversationId,
@@ -244,10 +229,11 @@ export async function checkAndUpdateSummary(
 
 export async function triggerSummaryUpdateAsync(
   conversationId: string,
-  author: string
+  author: string,
+  brandId: string
 ): Promise<void> {
   setImmediate(() => {
-    checkAndUpdateSummary(conversationId, author).catch(err => {
+    checkAndUpdateSummary(conversationId, author, brandId).catch(err => {
       console.error(`[SummaryService] Async summary update failed:`, err);
     });
   });

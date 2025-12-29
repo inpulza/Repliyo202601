@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import type { LLMProvider, LLMGenerateRequest, LLMResponse, LLMErrorCode } from "./types";
+import type { LLMProvider, LLMGenerateRequest, LLMResponse, LLMErrorCode, RawCompletionOptions, RawCompletionResponse } from "./types";
 import { LLMError } from "./types";
 import { composePrompt, truncateResponse } from "./prompt-composer";
 import type { CharacterLimitStrategy } from "@shared/schema";
@@ -127,6 +127,37 @@ export class OpenAIAdapter implements LLMProvider {
         characterCount: text.length,
         wasCharacterLimited: wasLimited,
         raw: response,
+      };
+    } catch (error) {
+      throw this.normalizeError(error);
+    }
+  }
+
+  async generateRawCompletion(
+    systemPrompt: string,
+    userPrompt: string,
+    options?: RawCompletionOptions
+  ): Promise<RawCompletionResponse> {
+    try {
+      const model = options?.model || "gpt-4o-mini";
+      
+      const response = await this.client.chat.completions.create({
+        model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: options?.temperature ?? 0.7,
+        max_tokens: options?.maxTokens || 500,
+      });
+
+      return {
+        text: response.choices[0]?.message?.content || "",
+        usage: {
+          promptTokens: response.usage?.prompt_tokens || 0,
+          completionTokens: response.usage?.completion_tokens || 0,
+          totalTokens: response.usage?.total_tokens || 0,
+        },
       };
     } catch (error) {
       throw this.normalizeError(error);

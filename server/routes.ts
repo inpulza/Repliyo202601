@@ -957,7 +957,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Trigger async summary update for this user (Phase 2: Persistent Memory)
           if (message.author) {
-            triggerSummaryUpdateAsync(message.conversationId, message.author);
+            triggerSummaryUpdateAsync(message.conversationId, message.author, message.brandId);
           }
         }
         
@@ -1057,7 +1057,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Trigger async summary update for this user (Phase 2: Persistent Memory)
           // For DMs, use the customer's author name from the inbound message
           if (message.author) {
-            triggerSummaryUpdateAsync(message.conversationId, message.author);
+            triggerSummaryUpdateAsync(message.conversationId, message.author, message.brandId);
           }
         }
         

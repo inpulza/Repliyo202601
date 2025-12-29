@@ -482,7 +482,7 @@ class AutoReplyService {
 
       // Trigger async summary update for this user (Phase 2: Persistent Memory)
       if (message.conversationId && message.author) {
-        triggerSummaryUpdateAsync(message.conversationId, message.author);
+        triggerSummaryUpdateAsync(message.conversationId, message.author, brand.id);
       }
 
       return {

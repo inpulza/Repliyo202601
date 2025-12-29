@@ -241,40 +241,15 @@ Estado de relación: ${context.relationshipStatus}${batchInfo}`);
   if (context.isDm) {
     rules.push(`
 [MODO CHAT PRIVADO ACTIVADO]
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-    
-    if (context.timeSinceLastInteraction < 60 && context.conversationDepth > 1) {
-      rules.push(`⚠️ CONVERSACIÓN ACTIVA (hace ${context.timeSinceLastInteraction} min)
-   ❌ PROHIBIDO SALUDAR: No uses "Hola", "Hey", "Buenas", ni ningún saludo.
-   ✅ Ve directo al grano. Continúa la conversación naturalmente.
-   ✅ Puedes usar minúsculas iniciales si encaja con el tono rápido.
-   ✅ Ejemplo bueno: "claro, pásame los datos" 
-   ❌ Ejemplo malo: "¡Hola! Claro que sí, con mucho gusto..."`);
-    } else if (context.relationshipStatus === 'reengagement') {
-      const greetingExample = context.firstName 
-        ? `"Hola de nuevo, ${context.firstName}", "Qué tal, ${context.firstName}"`
-        : `"Hola de nuevo", "Qué tal"`;
-      rules.push(`👋 REENGAGEMENT (usuario que vuelve)
-   ✅ Saluda usando el PRIMER NOMBRE si está disponible: ${greetingExample}
-   ✅ Nombre detectado: ${context.firstName || '(no detectado - omite el nombre)'}
-   ✅ Puedes hacer referencia breve a conversación anterior si aplica.`);
-    } else {
-      const greetingExample = context.firstName 
-        ? `"Hola, ${context.firstName}", "Qué tal, ${context.firstName}"`
-        : `"Hola", "Qué tal"`;
-      rules.push(`🆕 CONVERSACIÓN NUEVA
-   ✅ Saludo con PRIMER NOMBRE: ${greetingExample}
-   ✅ Nombre detectado: ${context.firstName || '(no detectado - omite el nombre)'}
-   ✅ Si hay nombre, SIEMPRE úsalo: "Hola, María" NO "Hola"
-   ✅ Presentación corta si aplica.`);
-    }
-    
-    rules.push(`
-📱 TONO DE DM:
-   - Conversacional tipo WhatsApp: cercano, relajado, natural.
-   - Está bien usar "oye", "mira", "claro" si el tono lo permite.
-   - Respuestas más detalladas están OK si la pregunta lo amerita.
-   - NUNCA uses un tono corporativo o rígido en DMs.`);
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 DATOS PARA TU LÓGICA DE SALUDO:
+   - Tiempo desde última interacción: ${context.timeSinceLastInteraction} minutos
+   - Profundidad de conversación: ${context.conversationDepth} mensajes
+   - Estado: ${context.relationshipStatus}
+   - Nombre detectado: ${context.firstName || '(no detectado)'}
+
+⚠️ USA LAS INSTRUCCIONES DEL PROMPT PERSONALIZADO para decidir cómo saludar.
+   Las variables {{time_since_last_interaction}}, {{relationship_status}}, {{first_name}} ya están disponibles.`);
 
     // Show batched messages rules if: 
     // 1) batchedMessageCount > 1 (messages were combined in buffer), OR

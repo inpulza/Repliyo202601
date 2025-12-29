@@ -54,8 +54,24 @@ export class LLMError extends Error {
   }
 }
 
+export interface RawCompletionOptions {
+  temperature?: number;
+  maxTokens?: number;
+  model?: string;
+}
+
+export interface RawCompletionResponse {
+  text: string;
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+}
+
 export interface LLMProvider {
   generateReply(request: LLMGenerateRequest): Promise<LLMResponse>;
+  generateRawCompletion(systemPrompt: string, userPrompt: string, options?: RawCompletionOptions): Promise<RawCompletionResponse>;
   validateConfig(): Promise<boolean>;
   getProviderName(): "openai" | "gemini";
 }

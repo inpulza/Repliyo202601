@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import type { LLMProvider, LLMGenerateRequest, LLMResponse, LLMErrorCode } from "./types";
+import type { LLMProvider, LLMGenerateRequest, LLMResponse, LLMErrorCode, RawCompletionOptions, RawCompletionResponse } from "./types";
 import { LLMError } from "./types";
 import { composePrompt, truncateResponse } from "./prompt-composer";
 import type { CharacterLimitStrategy } from "@shared/schema";
@@ -101,6 +101,39 @@ export class GeminiAdapter implements LLMProvider {
         characterCount: text.length,
         wasCharacterLimited: wasLimited,
         raw: response,
+      };
+    } catch (error) {
+      throw this.normalizeError(error);
+    }
+  }
+
+  async generateRawCompletion(
+    systemPrompt: string,
+    userPrompt: string,
+    options?: RawCompletionOptions
+  ): Promise<RawCompletionResponse> {
+    try {
+      const model = options?.model || "gemini-2.5-flash";
+      
+      const response = await this.client.models.generateContent({
+        model,
+        config: {
+          systemInstruction: systemPrompt,
+          temperature: options?.temperature ?? 0.7,
+          maxOutputTokens: options?.maxTokens || 500,
+        },
+        contents: userPrompt,
+      });
+
+      const usage = response.usageMetadata || {};
+
+      return {
+        text: response.text || "",
+        usage: {
+          promptTokens: usage.promptTokenCount || 0,
+          completionTokens: usage.candidatesTokenCount || 0,
+          totalTokens: usage.totalTokenCount || 0,
+        },
       };
     } catch (error) {
       throw this.normalizeError(error);
