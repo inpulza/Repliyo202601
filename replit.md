@@ -30,7 +30,12 @@ The user interface includes a consolidated "Orchestration" tab for managing all 
     - **Traffic Controller:** `crmTrafficController.ts` intelligently routes DMs to create contacts (lazy creation after a DM handshake) and comments to a "limbo" state.
     - **AI Function Calling:** Four CRM-specific functions (`update_contact`, `set_custom_field`, `update_status`, `update_lifecycle`) enable AI to extract and update contact information during conversations.
     - **API Endpoints:** A full suite of RESTful APIs for managing contacts, channels, custom fields, and limbo entries.
-- **Identity Merge (Planned):** An atomic transaction-based system to merge duplicate contacts, resolving conflicts and consolidating historical data. It will include detection algorithms, a primary/secondary contact selection process, and a reversible soft-delete mechanism with an undo option.
+- **Identity Merge (Completed - PASO 3):** An atomic transaction-based system to merge duplicate contacts, fully implemented with:
+    - **Detection:** `findPotentialDuplicates()` and `findAllDuplicatePairs()` methods detect contacts with matching email or phone.
+    - **Merge Transaction:** `mergeContacts()` consolidates channels, conversations, customFields, and metrics into the primary contact. Secondary is soft-deleted with `status='archived'`.
+    - **Undo Capability:** `undoMerge()` restores both contacts to pre-merge state within a 15-minute grace period. Merge metadata stored in `customFields._mergeInfo`.
+    - **API Endpoints:** `GET /api/crm/duplicates`, `POST /api/crm/merge`, `POST /api/crm/undo-merge`.
+    - **UI:** "Duplicados" tab in CRM page shows detected pairs, merge modal with primary selection, and toast with undo action.
 - **Context View - Unified History:** An endpoint (`GET /api/crm/contacts/:id/timeline`) aggregates messages from all linked channels of a contact, ordered chronologically. The UI displays this as a slide-over panel with "Profile" and "History" tabs, showing chat bubbles with platform icons.
 
 ### System Design Choices
