@@ -905,8 +905,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       provider = providerMap[provider.toLowerCase()] || provider;
       
+      const agent = await storage.getAiAgentByBrand(brand.id);
+      const autoMentionEnabled = agent?.autoMentionEnabled ?? false;
+      
       let mentionUsername: string | undefined = undefined;
-      if (includeMention) {
+      if (includeMention && autoMentionEnabled) {
         const participants = rawData.participants || [];
         const ownerId = rawData.root?.owner;
         const ownerParticipant = participants.find((p: any) => p.id === ownerId);
@@ -935,7 +938,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           platform: message.platform,
           type: message.type,
           author: brand.name,
-          content: includeMention && mentionUsername ? `@${mentionUsername} ${text}` : text,
+          content: mentionUsername ? `@${mentionUsername} ${text}` : text,
           timestamp: new Date(),
           status: 'sent',
           direction: 'outbound',

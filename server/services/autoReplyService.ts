@@ -313,7 +313,7 @@ class AutoReplyService {
             objectId: objectId!,
             text: chunk.content,
             blogId: brand.metricoolBlogId,
-            mentionUsername: chunk.partIndex === 1 ? message.author : undefined, // Only mention on first chunk
+            mentionUsername: agent.autoMentionEnabled && chunk.partIndex === 1 ? message.author : undefined,
           });
         }
 

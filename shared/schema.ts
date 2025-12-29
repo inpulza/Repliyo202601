@@ -138,6 +138,7 @@ export const aiAgents = pgTable("ai_agents", {
   dmBatchDelaySeconds: integer("dm_batch_delay_seconds").notNull().default(50),
   dmReplyMode: text("dm_reply_mode").notNull().default('batch'), // 'auto' | 'first_only' | 'batch'
   cooldownPerConversation: boolean("cooldown_per_conversation").notNull().default(true),
+  autoMentionEnabled: boolean("auto_mention_enabled").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
