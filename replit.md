@@ -37,6 +37,12 @@ The user interface includes a consolidated "Orchestration" tab for managing all 
     - **API Endpoints:** `GET /api/crm/duplicates`, `POST /api/crm/merge`, `POST /api/crm/undo-merge`.
     - **UI:** "Duplicados" tab in CRM page shows detected pairs, merge modal with primary selection, and toast with undo action.
 - **Context View - Unified History:** An endpoint (`GET /api/crm/contacts/:id/timeline`) aggregates messages from all linked channels of a contact, ordered chronologically. The UI displays this as a slide-over panel with "Profile" and "History" tabs, showing chat bubbles with platform icons.
+- **Contact Enrichment Service (Completed - Dec 2024):** Automatic extraction of phone numbers and emails from DM messages, independent of auto-reply functionality:
+    - **Regex-First Extraction:** Uses deterministic regex patterns for phones and emails (no AI cost). Multiple phone formats supported: international (+1...), US formats, WhatsApp prefixes.
+    - **Data Safety:** "Fill only if empty" logic prevents overwriting existing contact data with old message data. `!contact.phone` and `!contact.email` verified before any update.
+    - **Integration Point:** Hooked into `syncService.processInboundMessage()` as fire-and-forget async call. Runs for ALL inbound DMs regardless of auto-reply status.
+    - **Backfill Capability:** `POST /api/crm/backfill` endpoint and `scripts/run-backfill.ts` for processing historical messages. Stats tracking: messagesProcessed, phonesFound, emailsFound, contactsUpdated.
+    - **Results:** Initial backfill processed 635 messages, extracted 18 phones and 7 emails, updated 18 contacts.
 
 ### System Design Choices
 - **Multi-Tenant Architecture:** Strong isolation of data per brand via `brandId` for CRM and AI configurations.
