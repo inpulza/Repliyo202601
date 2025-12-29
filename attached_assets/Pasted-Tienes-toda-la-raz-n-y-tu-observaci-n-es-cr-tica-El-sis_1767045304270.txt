@@ -1,0 +1,74 @@
+Tienes toda la razón y tu observación es crítica! 🛑 El sistema actual tiene un "punto ciego".
+
+He analizado la situación con el "sombrero de Arquitecto" y el diagnóstico es claro: Depender únicamente de la respuesta de la IA para extraer datos es un error de diseño.
+
+Te explico exactamente por qué falló, cómo funciona ahora y cómo vamos a arreglarlo para que siempre capture los datos, te responda la IA o no.
+
+🔍 El Diagnóstico: ¿Por qué no se guardaron los teléfonos?
+Actualmente, el sistema funciona de forma "Reactiva":
+
+Llega el mensaje (DM).
+
+El sistema evalúa: "¿Debo responder automáticamente?".
+
+Solo si la respuesta es SÍ, la IA lee el mensaje y ejecuta la función update_contact.
+
+Si la respuesta es NO (porque estás en modo manual, o cooldown, o el mensaje es corto), el sistema ignora el contenido. El dato se pierde.
+
+El fallo: Es como tener una secretaria que solo anota el teléfono del cliente si decide hablar con él. Si decide quedarse callada, tira la nota a la basura.
+
+🛠️ La Solución Arquitectónica: "El Servicio de Enriquecimiento Pasivo"
+Para replicar la robustez de un CRM real (como Respond.io, que usa workflows para capturar datos independientemente de la respuesta ), debemos separar la "Extracción" de la "Respuesta".
+
+Implementaremos el Contact Enrichment Service (Servicio de Enriquecimiento). Este será un "sabueso silencioso" que huele todos los mensajes entrantes.
+
+Cómo funcionará el nuevo flujo:
+Entrada: Llega un DM (WhatsApp, Instagram, etc.).
+
+Paso Paralelo 1 (El Sabueso): El Enrichment Service escanea el texto inmediatamente.
+
+Capa 1 (Regex/Patrones): Busca patrones obvios como correos (@) o teléfonos (+52..., 600...) instantáneamente.
+
+Capa 2 (IA Extractora): Si detecta intención de datos (ej: "Me llamo Juan"), usa una IA pequeña y rápida (sólo para extracción, no para conversar) para sacar el JSON de datos.
+
+Acción: Actualiza el CRM (crm_contacts) en tiempo real.
+
+Paso Paralelo 2 (El Agente): El sistema decide si responder o no (Auto-reply), pero el dato ya está guardado.
+
+🚀 Plan de Acción Inmediato
+Vamos a pedirle a Replit que implemente esto ya mismo. No solo arreglará los futuros, sino que reparará el pasado.
+
+Aquí tienes el Prompt Técnico corregido para que Replit ejecute la solución definitiva:
+
+🧠 Prompt para Replit: Solución de Extracción de Datos y Backfill
+Rol: Arquitecto de Software Backend.
+
+Problema Crítico Detectado: La extracción de datos (teléfonos, emails) está acoplada al Auto-Reply. Si el bot no responde, perdemos los datos del cliente. Esto es inaceptable para un CRM.
+
+Objetivo: Desacoplar la extracción de datos y ejecutar un barrido histórico.
+
+Tareas a Implementar:
+
+Crear ContactEnrichmentService:
+
+Este servicio debe ejecutarse en el webhook de entrada de CADA mensaje, antes de decidir si la IA responde o no.
+
+Lógica Híbrida:
+
+Usa Regex estricto para extraer emails y números de teléfono (formatos internacionales y locales) de forma determinista y gratuita.
+
+(Opcional) Usa una llamada ligera a LLM (Function Calling puro) solo si el regex falla pero el mensaje parece contener datos de presentación.
+
+Si encuentra datos, ejecuta un PATCH al contacto en crm_contacts llenando phone, email o custom_fields.
+
+Script de Backfill (Reparación Histórica):
+
+Crea un script que recorra todos los mensajes existentes en la base de datos (messages table).
+
+Pasa cada mensaje por el ContactEnrichmentService.
+
+Si encuentra un teléfono o email en un mensaje antiguo de hace 3 meses, actualiza el contacto ahora.
+
+Output: Quiero ver un log que diga: "Procesados 500 mensajes. Encontrados 25 teléfonos nuevos. CRM actualizado."
+
+Ejecución: Implementa el servicio y corre el script de backfill inmediatamente para que el usuario vea los teléfonos aparecer en su CRM hoy mismo.

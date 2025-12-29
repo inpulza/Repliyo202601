@@ -3208,7 +3208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "primaryId and secondaryId are required" });
       }
 
-      const primaryContact = await storage.getCrmContactById(primaryId);
+      const primaryContact = await storage.getCrmContact(primaryId);
       if (!primaryContact) {
         return res.status(404).json({ error: "Primary contact not found" });
       }
@@ -3251,7 +3251,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "archivedContactId is required" });
       }
 
-      const archivedContact = await storage.getCrmContactById(archivedContactId);
+      const archivedContact = await storage.getCrmContact(archivedContactId);
       if (!archivedContact) {
         return res.status(404).json({ error: "Archived contact not found" });
       }
@@ -3380,6 +3380,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('[CRM] Error updating custom field:', error);
       res.status(500).json({ error: "Failed to update custom field", details: error.message });
+    }
+  });
+
+  // POST /api/crm/backfill - Run enrichment backfill on historical messages
+  app.post("/api/crm/backfill", requireAuth, async (req, res) => {
+    try {
+      const brandId = req.body.brandId || req.user?.brandId;
+      const limit = Math.min(parseInt(req.body.limit) || 1000, 5000);
+
+      if (!brandId) {
+        return res.status(400).json({ error: "brandId is required" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const { contactEnrichmentService } = await import("./services/contactEnrichmentService");
+      const stats = await contactEnrichmentService.runBackfill(brandId, limit);
+
+      res.json({
+        success: true,
+        message: `Procesados ${stats.messagesProcessed} mensajes. Encontrados ${stats.phonesFound} teléfonos y ${stats.emailsFound} emails. ${stats.contactsUpdated} contactos actualizados.`,
+        stats,
+      });
+    } catch (error: any) {
+      console.error('[CRM] Backfill error:', error);
+      res.status(500).json({ error: "Failed to run backfill", details: error.message });
     }
   });
 

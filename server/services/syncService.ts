@@ -4,6 +4,7 @@ import { websocketService } from "./websocketService";
 import { autoReplyService } from "./autoReplyService";
 import { transcriptionService } from "./transcriptionService";
 import { crmTrafficController } from "./crmTrafficController";
+import { contactEnrichmentService } from "./contactEnrichmentService";
 import { log } from "../app";
 
 interface BrandSyncResult {
@@ -341,7 +342,7 @@ class SyncService {
           // CRM Traffic Controller: Route DM to contact system
           if (isReallyNew && isInbound) {
             try {
-              await crmTrafficController.routeIncomingMessage({
+              const crmResult = await crmTrafficController.routeIncomingMessage({
                 brandId,
                 platform,
                 externalId: customerId,
@@ -350,6 +351,15 @@ class SyncService {
                 displayName: author,
                 messageType: 'dm',
               });
+              
+              // Contact Enrichment: Extract phone/email from message content (independent of auto-reply)
+              if (crmResult.contactId && content) {
+                void contactEnrichmentService.processInboundMessage(
+                  crmResult.contactId,
+                  content,
+                  savedMessage.id
+                ).catch(err => log(`[SyncService] Enrichment error: ${err.message}`, "sync"));
+              }
             } catch (crmError: any) {
               log(`[SyncService] CRM routing error for DM: ${crmError.message}`, "sync");
             }
