@@ -719,9 +719,22 @@ function buildSystemPromptV53(context: VariableContext, brand?: Brand, useJsonMo
     Responde SOLO con este formato JSON:
     {
       "thought": "Análisis: tipo=${context.messageType}, tiempo=${context.timeSinceLastInteraction}min, debo_saludar=...",
-      "reply": "Texto final de la respuesta aquí"
+      "reply": "Texto final de la respuesta aquí",
+      "crm_actions": [] // OPCIONAL - solo si detectas datos del cliente
     }
   </output_schema>
+
+  <crm_extraction>
+    Si detectas información valiosa del cliente, agrégala en crm_actions:
+    
+    FUNCIONES:
+    - set_custom_field: {"function": "set_custom_field", "params": {"fieldName": "servicio_interes", "value": "Taxes"}}
+    - update_contact: {"function": "update_contact", "params": {"email": "...", "phone": "...", "city": "..."}}
+    - update_status: {"function": "update_status", "params": {"status": "qualified"}} // lead, qualified, customer
+    
+    PRIORIDADES: email, teléfono, intereses, ubicación, presupuesto
+    REGLA: Solo extrae datos mencionados explícitamente por el cliente
+  </crm_extraction>
 
   <safety_lock>
     ${context.userGuardrails || 'Responde de manera profesional y respetuosa.'}

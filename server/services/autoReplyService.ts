@@ -5,6 +5,7 @@ import { createLLMProvider } from "./llm/factory";
 import { getCharacterLimit, splitMessageForDelivery, type MessageChunk } from "./llm/types";
 import { triggerSummaryUpdateAsync } from "./summaryService";
 import { dmBufferService, type BufferedMessage } from "./dmBufferService";
+import { executeCrmFunctions, parseCrmActionsFromResponse } from "./llm/crm-functions";
 import { log } from "../app";
 import type { Message, Conversation, Brand, AiAgent, SocialProvider } from "@shared/schema";
 import { getEffectiveChannelSettings, socialProviderEnum } from "@shared/schema";
@@ -231,6 +232,26 @@ class AutoReplyService {
       });
 
       log(`${logPrefix} Generated reply (${llmResponse.characterCount} chars)`, "sync");
+
+      // CRM Function Calling: Extract and execute CRM actions from AI response
+      if (message.type === "conversation" && conversation.customerId) {
+        try {
+          const crmActions = parseCrmActionsFromResponse(llmResponse.rawResponse || "");
+          if (crmActions.length > 0) {
+            const channel = await storage.findCrmContactChannelByExternal(
+              brand.id,
+              message.platform,
+              conversation.customerId
+            );
+            if (channel?.contactId) {
+              const results = await executeCrmFunctions(channel.contactId, crmActions);
+              log(`${logPrefix} CRM actions executed: ${results.length} functions, ${results.filter(r => r.success).length} successful`, "sync");
+            }
+          }
+        } catch (crmError: any) {
+          log(`${logPrefix} CRM function execution error: ${crmError.message}`, "sync");
+        }
+      }
 
       const metricoolService = new MetricoolService({
         userToken: brand.metricoolToken,

@@ -22,6 +22,7 @@ export interface LLMResponse {
   characterCount: number;
   wasCharacterLimited: boolean;
   raw?: unknown;
+  rawResponse?: string;
 }
 
 export type LLMErrorCode = 

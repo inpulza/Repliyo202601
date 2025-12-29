@@ -101,6 +101,7 @@ export class GeminiAdapter implements LLMProvider {
         characterCount: text.length,
         wasCharacterLimited: wasLimited,
         raw: response,
+        rawResponse: rawText,
       };
     } catch (error) {
       throw this.normalizeError(error);
