@@ -176,6 +176,8 @@ export interface IStorage {
   getCrmContactByPhone(brandId: string, phone: string): Promise<CrmContact | undefined>;
   findPotentialDuplicates(brandId: string, contactId: string): Promise<Array<{ contact: CrmContact; matchType: 'email' | 'phone'; matchValue: string }>>;
   findAllDuplicatePairs(brandId: string): Promise<Array<{ contact1: CrmContact; contact2: CrmContact; matchType: 'email' | 'phone'; matchValue: string }>>;
+  mergeContacts(primaryId: string, secondaryId: string, fieldResolutions?: Record<string, 'primary' | 'secondary'>): Promise<{ primary: CrmContact; mergedChannels: number; mergedConversations: number }>;
+  undoMerge(archivedContactId: string): Promise<{ restored: CrmContact; restoredChannels: number; restoredConversations: number } | null>;
   createCrmContact(contact: InsertCrmContact): Promise<CrmContact>;
   createCrmContactWithChannel(
     contact: InsertCrmContact,
@@ -2189,6 +2191,192 @@ export class DatabaseStorage implements IStorage {
     }
     
     return pairs;
+  }
+
+  async mergeContacts(
+    primaryId: string, 
+    secondaryId: string, 
+    fieldResolutions?: Record<string, 'primary' | 'secondary'>
+  ): Promise<{ primary: CrmContact; mergedChannels: number; mergedConversations: number }> {
+    return await db.transaction(async (tx) => {
+      const [primary] = await tx.select().from(crmContacts).where(eq(crmContacts.id, primaryId));
+      const [secondary] = await tx.select().from(crmContacts).where(eq(crmContacts.id, secondaryId));
+      
+      if (!primary || !secondary) {
+        throw new Error('CONTACT_NOT_FOUND');
+      }
+      
+      if (primary.brandId !== secondary.brandId) {
+        throw new Error('DIFFERENT_BRANDS');
+      }
+      
+      if (secondary.status === 'archived') {
+        throw new Error('CONTACT_ALREADY_ARCHIVED');
+      }
+      
+      const channelUpdateResult = await tx
+        .update(crmContactChannels)
+        .set({ contactId: primaryId, updatedAt: new Date() })
+        .where(eq(crmContactChannels.contactId, secondaryId))
+        .returning({ id: crmContactChannels.id });
+      
+      const conversationUpdateResult = await tx
+        .update(conversations)
+        .set({ contactId: primaryId })
+        .where(eq(conversations.contactId, secondaryId))
+        .returning({ id: conversations.id });
+      
+      const resolvedFields: Partial<CrmContact> = {};
+      const fieldsToResolve = ['displayName', 'firstName', 'lastName', 'email', 'phone', 'city', 'country'] as const;
+      
+      for (const field of fieldsToResolve) {
+        const resolution = fieldResolutions?.[field];
+        if (resolution === 'secondary' && secondary[field]) {
+          (resolvedFields as any)[field] = secondary[field];
+        } else if (!primary[field] && secondary[field]) {
+          (resolvedFields as any)[field] = secondary[field];
+        }
+      }
+      
+      const mergedCustomFields = {
+        ...(secondary.customFields as Record<string, any> || {}),
+        ...(primary.customFields as Record<string, any> || {}),
+      };
+      
+      const [updatedPrimary] = await tx
+        .update(crmContacts)
+        .set({
+          ...resolvedFields,
+          customFields: mergedCustomFields,
+          conversationCount: (primary.conversationCount || 0) + (secondary.conversationCount || 0),
+          totalMessages: (primary.totalMessages || 0) + (secondary.totalMessages || 0),
+          firstInteractionAt: primary.firstInteractionAt && secondary.firstInteractionAt
+            ? (primary.firstInteractionAt < secondary.firstInteractionAt ? primary.firstInteractionAt : secondary.firstInteractionAt)
+            : primary.firstInteractionAt || secondary.firstInteractionAt,
+          updatedAt: new Date(),
+        })
+        .where(eq(crmContacts.id, primaryId))
+        .returning();
+      
+      const mergeMetadata = {
+        _mergeInfo: {
+          mergedFromId: secondaryId,
+          mergedAt: new Date().toISOString(),
+          primaryId: primaryId,
+          channelIds: channelUpdateResult.map(c => c.id),
+          conversationIds: conversationUpdateResult.map(c => c.id),
+          originalSecondary: {
+            displayName: secondary.displayName,
+            email: secondary.email,
+            phone: secondary.phone,
+            status: secondary.status,
+            customFields: secondary.customFields,
+          },
+          originalPrimary: {
+            displayName: primary.displayName,
+            firstName: primary.firstName,
+            lastName: primary.lastName,
+            email: primary.email,
+            phone: primary.phone,
+            city: primary.city,
+            country: primary.country,
+            customFields: primary.customFields,
+            conversationCount: primary.conversationCount,
+            totalMessages: primary.totalMessages,
+            firstInteractionAt: primary.firstInteractionAt?.toISOString(),
+          }
+        }
+      };
+      
+      await tx
+        .update(crmContacts)
+        .set({
+          status: 'archived',
+          customFields: mergeMetadata,
+          updatedAt: new Date(),
+        })
+        .where(eq(crmContacts.id, secondaryId));
+      
+      return {
+        primary: updatedPrimary,
+        mergedChannels: channelUpdateResult.length,
+        mergedConversations: conversationUpdateResult.length,
+      };
+    });
+  }
+
+  async undoMerge(archivedContactId: string): Promise<{ restored: CrmContact; restoredChannels: number; restoredConversations: number } | null> {
+    return await db.transaction(async (tx) => {
+      const [archived] = await tx.select().from(crmContacts).where(eq(crmContacts.id, archivedContactId));
+      
+      if (!archived || archived.status !== 'archived') {
+        return null;
+      }
+      
+      const mergeInfo = (archived.customFields as any)?._mergeInfo;
+      if (!mergeInfo || !mergeInfo.primaryId || !mergeInfo.mergedAt) {
+        return null;
+      }
+      
+      const mergedAt = new Date(mergeInfo.mergedAt);
+      const gracePeriodMs = 15 * 60 * 1000;
+      if (Date.now() - mergedAt.getTime() > gracePeriodMs) {
+        throw new Error('GRACE_PERIOD_EXPIRED');
+      }
+      
+      const channelUpdateResult = await tx
+        .update(crmContactChannels)
+        .set({ contactId: archivedContactId, updatedAt: new Date() })
+        .where(sql`${crmContactChannels.id} = ANY(${mergeInfo.channelIds || []})`)
+        .returning({ id: crmContactChannels.id });
+      
+      const conversationUpdateResult = await tx
+        .update(conversations)
+        .set({ contactId: archivedContactId })
+        .where(sql`${conversations.id} = ANY(${mergeInfo.conversationIds || []})`)
+        .returning({ id: conversations.id });
+      
+      const originalSecondary = mergeInfo.originalSecondary || {};
+      const [restored] = await tx
+        .update(crmContacts)
+        .set({
+          status: originalSecondary.status || 'lead',
+          displayName: originalSecondary.displayName,
+          email: originalSecondary.email,
+          phone: originalSecondary.phone,
+          customFields: originalSecondary.customFields || {},
+          updatedAt: new Date(),
+        })
+        .where(eq(crmContacts.id, archivedContactId))
+        .returning();
+      
+      const originalPrimary = mergeInfo.originalPrimary;
+      if (originalPrimary) {
+        await tx
+          .update(crmContacts)
+          .set({
+            displayName: originalPrimary.displayName,
+            firstName: originalPrimary.firstName,
+            lastName: originalPrimary.lastName,
+            email: originalPrimary.email,
+            phone: originalPrimary.phone,
+            city: originalPrimary.city,
+            country: originalPrimary.country,
+            customFields: originalPrimary.customFields || {},
+            conversationCount: originalPrimary.conversationCount || 0,
+            totalMessages: originalPrimary.totalMessages || 0,
+            firstInteractionAt: originalPrimary.firstInteractionAt ? new Date(originalPrimary.firstInteractionAt) : null,
+            updatedAt: new Date(),
+          })
+          .where(eq(crmContacts.id, mergeInfo.primaryId));
+      }
+      
+      return {
+        restored,
+        restoredChannels: channelUpdateResult.length,
+        restoredConversations: conversationUpdateResult.length,
+      };
+    });
   }
 
   async createCrmContact(contact: InsertCrmContact): Promise<CrmContact> {
