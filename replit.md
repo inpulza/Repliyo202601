@@ -11,7 +11,28 @@
 
 ## Estado Actual (29 Dic 2025)
 
-### Módulo CRM Completo ✅ NUEVO (29 Dic 2025)
+### Context View - Vista Unificada de Historial ✅ NUEVO (29 Dic 2025)
+Nueva funcionalidad que permite ver todo el historial de un contacto desde el CRM:
+
+**Endpoint Timeline:**
+- `GET /api/crm/contacts/:id/timeline?limit=100&offset=0`
+- Fusiona mensajes de TODOS los canales vinculados al contacto
+- Ordenados cronológicamente (más recientes primero)
+- Retorna `mostRecentConversationId` para navegación al inbox
+
+**Slide-over con Tabs:**
+- **Perfil**: Vista actual con datos, canales conectados, campos personalizados
+- **Historial**: Burbujas de chat con todos los mensajes del contacto
+  - Inbound (cliente) alineados a la izquierda
+  - Outbound (marca) alineados a la derecha
+  - Icono de plataforma por mensaje
+
+**Botón "Abrir en Inbox":**
+- Navega a la conversación más reciente del contacto
+- Estado de loading mientras carga el timeline
+- Toast de error si no hay conversaciones
+
+### Módulo CRM Completo ✅ (29 Dic 2025)
 Sistema CRM integrado inspirado en Respond.io para gestión de contactos multi-plataforma.
 
 **Fase 1 - Base de Datos:**
