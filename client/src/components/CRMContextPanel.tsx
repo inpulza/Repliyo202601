@@ -9,8 +9,11 @@ import {
   X,
   Loader2,
   Clock,
-  User
+  User,
+  ExternalLink,
+  ArrowRight
 } from 'lucide-react';
+import { useLocation } from 'wouter';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -108,6 +111,15 @@ const LifecycleBadge = ({ stage }: { stage: string | null }) => {
   );
 };
 
+interface TimelineMessage {
+  id: string;
+  content: string;
+  author: string;
+  timestamp: string;
+  direction: string;
+  platform: string;
+}
+
 function CRMPanelContent({ 
   crmContact, 
   crmChannels,
@@ -127,8 +139,11 @@ function CRMPanelContent({
   onContactCreated?: () => void;
   className?: string;
 }) {
+  const [, navigate] = useLocation();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [timelineMessages, setTimelineMessages] = useState<TimelineMessage[]>([]);
+  const [isLoadingTimeline, setIsLoadingTimeline] = useState(false);
   const [formData, setFormData] = useState({
     displayName: '',
     email: '',
@@ -144,6 +159,39 @@ function CRMPanelContent({
       });
     }
   }, [conversation]);
+
+  React.useEffect(() => {
+    if (!crmContact?.id) {
+      setTimelineMessages([]);
+      setIsLoadingTimeline(false);
+      return;
+    }
+    
+    setIsLoadingTimeline(true);
+    fetch(`/api/crm/contacts/${crmContact.id}/timeline?limit=10`)
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(data => {
+        setTimelineMessages(data.messages || []);
+      })
+      .catch(err => {
+        console.error('Error loading timeline:', err);
+        setTimelineMessages([]);
+      })
+      .finally(() => {
+        setIsLoadingTimeline(false);
+      });
+  }, [crmContact?.id]);
+
+  const handleGoToCRM = () => {
+    if (crmContact?.id) {
+      navigate(`/crm?contactId=${crmContact.id}`);
+    }
+  };
 
   const handleCreateContact = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -302,9 +350,21 @@ function CRMPanelContent({
         <span className="text-sm font-semibold text-gray-900 flex items-center gap-2">
           <User className="h-4 w-4" /> Perfil CRM
         </span>
-        <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 hover:bg-gray-100 text-gray-500">
-          <X className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleGoToCRM}
+            className="h-8 px-2 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+            data-testid="button-go-to-crm"
+          >
+            Ver en CRM
+            <ExternalLink className="h-3 w-3 ml-1" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 hover:bg-gray-100 text-gray-500">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <ScrollArea className="flex-1">
@@ -423,13 +483,15 @@ function CRMPanelContent({
             )}
           </div>
 
-          {Object.keys(crmContact.customFields || {}).length > 0 && (
+          {Object.keys(crmContact.customFields || {}).filter(k => !k.startsWith('_')).length > 0 && (
             <>
               <Separator />
               <div className="space-y-3">
                 <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Datos Extraídos</h4>
                 <div className="space-y-2">
-                  {Object.entries(crmContact.customFields || {}).map(([key, value]) => (
+                  {Object.entries(crmContact.customFields || {})
+                    .filter(([key]) => !key.startsWith('_'))
+                    .map(([key, value]) => (
                     <div key={key} className="flex items-center justify-between text-sm">
                       <span className="text-gray-500 capitalize">{key.replace(/_/g, ' ')}</span>
                       <span className="font-medium text-gray-900">{String(value)}</span>
@@ -439,6 +501,57 @@ function CRMPanelContent({
               </div>
             </>
           )}
+
+          <Separator />
+          
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Historial de Mensajes</h4>
+            
+            {isLoadingTimeline ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+              </div>
+            ) : timelineMessages.length === 0 ? (
+              <p className="text-xs text-gray-400 text-center py-2">Sin mensajes recientes</p>
+            ) : (
+              <div className="space-y-2">
+                {timelineMessages.slice(0, 5).map((msg) => (
+                  <div 
+                    key={msg.id} 
+                    className={cn(
+                      "p-2 rounded-lg text-xs",
+                      msg.direction === 'inbound' 
+                        ? "bg-gray-100 text-gray-700" 
+                        : "bg-indigo-50 text-indigo-700"
+                    )}
+                  >
+                    <div className="flex items-center gap-1.5 mb-1">
+                      {getPlatformIcon(msg.platform)}
+                      <span className="font-medium truncate flex-1">
+                        {msg.direction === 'inbound' ? msg.author : 'Tú'}
+                      </span>
+                      <span className="text-[10px] text-gray-400">
+                        {formatDistanceToNow(new Date(msg.timestamp), { addSuffix: true, locale: es })}
+                      </span>
+                    </div>
+                    <p className="line-clamp-2 text-gray-600">{msg.content}</p>
+                  </div>
+                ))}
+                
+                {timelineMessages.length > 5 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={handleGoToCRM}
+                    className="w-full text-xs text-gray-500 hover:text-gray-700"
+                  >
+                    Ver {timelineMessages.length - 5} mensajes más
+                    <ArrowRight className="h-3 w-3 ml-1" />
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </ScrollArea>
     </div>
