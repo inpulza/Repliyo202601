@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, jsonb, unique, integer, boolean, real } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, jsonb, unique, integer, boolean, real, index } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -570,3 +570,190 @@ export const updatePlaygroundTemplateSchema = insertPlaygroundTemplateSchema.par
 export type InsertPlaygroundTemplate = z.infer<typeof insertPlaygroundTemplateSchema>;
 export type PlaygroundTemplate = typeof playgroundTemplates.$inferSelect;
 export type UpdatePlaygroundTemplate = z.infer<typeof updatePlaygroundTemplateSchema>;
+
+// ============================================
+// CRM MODULE - Conversational CRM Tables
+// ============================================
+
+// Enums para el CRM
+export const crmContactStatusEnum = z.enum(['lead', 'qualified', 'customer', 'churned']);
+export type CrmContactStatus = z.infer<typeof crmContactStatusEnum>;
+
+export const crmLifecycleStageEnum = z.enum(['new', 'engaged', 'converted', 'loyal']);
+export type CrmLifecycleStage = z.infer<typeof crmLifecycleStageEnum>;
+
+export const crmInteractionTypeEnum = z.enum(['comment', 'like', 'mention', 'reaction', 'reply']);
+export type CrmInteractionType = z.infer<typeof crmInteractionTypeEnum>;
+
+// TABLA 1: CRM CONTACTS (La persona)
+export const crmContacts = pgTable("crm_contacts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brandId: varchar("brand_id").notNull().references(() => brands.id, { onDelete: 'cascade' }),
+  
+  // Datos básicos
+  displayName: text("display_name"),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  phone: text("phone"),
+  email: text("email"),
+  language: text("language").default('es'),
+  country: text("country"),
+  city: text("city"),
+  
+  // Lifecycle
+  status: text("status").default('lead'),
+  lifecycleStage: text("lifecycle_stage").default('new'),
+  source: text("source"),
+  
+  // Datos dinámicos extraídos por IA (JSONB flexible)
+  customFields: jsonb("custom_fields").default({}),
+  
+  // Enrutamiento inteligente
+  lastUsedChannelId: varchar("last_used_channel_id"),
+  
+  // Métricas
+  conversationCount: integer("conversation_count").default(0),
+  totalMessages: integer("total_messages").default(0),
+  firstInteractionAt: timestamp("first_interaction_at"),
+  lastInteractionAt: timestamp("last_interaction_at"),
+  
+  // Audit
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  emailIdx: index("crm_contacts_email_idx").on(table.email),
+  phoneIdx: index("crm_contacts_phone_idx").on(table.phone),
+  brandIdx: index("crm_contacts_brand_idx").on(table.brandId),
+  statusIdx: index("crm_contacts_status_idx").on(table.status),
+}));
+
+// TABLA 2: CRM CONTACT CHANNELS (Identity Merge - un contacto, múltiples canales)
+export const crmContactChannels = pgTable("crm_contact_channels", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  contactId: varchar("contact_id").notNull().references(() => crmContacts.id, { onDelete: 'cascade' }),
+  
+  // Identificación del canal
+  platform: text("platform").notNull(),
+  externalId: text("external_id").notNull(),
+  username: text("username"),
+  avatarUrl: text("avatar_url"),
+  
+  // Estado
+  isVerified: boolean("is_verified").default(false),
+  isActive: boolean("is_active").default(true),
+  
+  // Métricas
+  messageCount: integer("message_count").default(0),
+  lastMessageAt: timestamp("last_message_at"),
+  
+  // Audit
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  uniquePlatformExternal: unique().on(table.platform, table.externalId),
+  contactIdx: index("crm_contact_channels_contact_idx").on(table.contactId),
+}));
+
+// TABLA 3: CRM CONTACT LIMBO (Lazy Creation - comentarios públicos esperando handshake)
+export const crmContactLimbo = pgTable("crm_contact_limbo", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brandId: varchar("brand_id").notNull().references(() => brands.id, { onDelete: 'cascade' }),
+  
+  // Identificación
+  platform: text("platform").notNull(),
+  externalId: text("external_id").notNull(),
+  username: text("username"),
+  avatarUrl: text("avatar_url"),
+  
+  // Tracking de interacciones
+  interactionType: text("interaction_type").notNull(),
+  interactionCount: integer("interaction_count").default(1),
+  firstInteractionAt: timestamp("first_interaction_at").notNull(),
+  lastInteractionAt: timestamp("last_interaction_at").notNull(),
+  
+  // Promoción a contacto oficial
+  promotedToContactId: varchar("promoted_to_contact_id").references(() => crmContacts.id),
+  promotedAt: timestamp("promoted_at"),
+  
+  // Audit
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueBrandPlatformExternal: unique().on(table.brandId, table.platform, table.externalId),
+  brandIdx: index("crm_contact_limbo_brand_idx").on(table.brandId),
+  notPromotedIdx: index("crm_contact_limbo_not_promoted_idx").on(table.promotedToContactId),
+}));
+
+// Relations para CRM
+export const crmContactsRelations = relations(crmContacts, ({ one, many }) => ({
+  brand: one(brands, {
+    fields: [crmContacts.brandId],
+    references: [brands.id],
+  }),
+  channels: many(crmContactChannels),
+  lastUsedChannel: one(crmContactChannels, {
+    fields: [crmContacts.lastUsedChannelId],
+    references: [crmContactChannels.id],
+  }),
+}));
+
+export const crmContactChannelsRelations = relations(crmContactChannels, ({ one }) => ({
+  contact: one(crmContacts, {
+    fields: [crmContactChannels.contactId],
+    references: [crmContacts.id],
+  }),
+}));
+
+export const crmContactLimboRelations = relations(crmContactLimbo, ({ one }) => ({
+  brand: one(brands, {
+    fields: [crmContactLimbo.brandId],
+    references: [brands.id],
+  }),
+  promotedToContact: one(crmContacts, {
+    fields: [crmContactLimbo.promotedToContactId],
+    references: [crmContacts.id],
+  }),
+}));
+
+// Schemas Zod para CRM Contacts
+export const insertCrmContactSchema = createInsertSchema(crmContacts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const selectCrmContactSchema = createSelectSchema(crmContacts);
+
+export const updateCrmContactSchema = insertCrmContactSchema.partial();
+
+export type InsertCrmContact = z.infer<typeof insertCrmContactSchema>;
+export type CrmContact = typeof crmContacts.$inferSelect;
+export type UpdateCrmContact = z.infer<typeof updateCrmContactSchema>;
+
+// Schemas Zod para CRM Contact Channels
+export const insertCrmContactChannelSchema = createInsertSchema(crmContactChannels).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const selectCrmContactChannelSchema = createSelectSchema(crmContactChannels);
+
+export const updateCrmContactChannelSchema = insertCrmContactChannelSchema.partial();
+
+export type InsertCrmContactChannel = z.infer<typeof insertCrmContactChannelSchema>;
+export type CrmContactChannel = typeof crmContactChannels.$inferSelect;
+export type UpdateCrmContactChannel = z.infer<typeof updateCrmContactChannelSchema>;
+
+// Schemas Zod para CRM Contact Limbo
+export const insertCrmContactLimboSchema = createInsertSchema(crmContactLimbo).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const selectCrmContactLimboSchema = createSelectSchema(crmContactLimbo);
+
+export const updateCrmContactLimboSchema = insertCrmContactLimboSchema.partial();
+
+export type InsertCrmContactLimbo = z.infer<typeof insertCrmContactLimboSchema>;
+export type CrmContactLimbo = typeof crmContactLimbo.$inferSelect;
+export type UpdateCrmContactLimbo = z.infer<typeof updateCrmContactLimboSchema>;
