@@ -1,0 +1,39 @@
+Proyecto: Repliyo - Sistema de Gestión de Inbox Social Media con Metricool
+
+Necesito que revises el archivo DOCUMENTACION_COMPLETA.md para entender el contexto completo del proyecto. Este es un sistema de gestión de mensajes de redes sociales que se integra con Metricool para centralizar y gestionar DMs y comentarios de múltiples marcas/empresas (Instagram, Facebook, TikTok, YouTube, LinkedIn, Google Business). El sistema incluye respuestas automáticas con IA usando OpenAI o Gemini, configurables por agente.
+
+Estado actual y lo que estamos validando:
+
+En la conversación anterior trabajamos en corregir varios problemas críticos del sistema de contexto y resúmenes. Los cambios ya están implementados pero necesitamos verificar que funcionan correctamente. Los problemas que resolvimos (en teoría) son:
+
+SummaryService no distinguía DMs de comentarios: El servicio usaba "comment" como messageType hardcodeado para todos los casos, lo que causaba que el filtrado de historial (filterHistoryByAuthor) funcionara incorrectamente para DMs. Corregimos esto para que ahora obtenga conversation.type de la BD (dm o comment) y pase el messageType correcto: 'conversation' para DMs (incluye todo el historial) y 'comment' para comentarios (filtra por autor).
+
+Resúmenes truncados/corruptos: Encontramos que los resúmenes en la tabla conversation_user_summaries se guardaban truncados (ej: solo 67 caracteres cuando deberían tener 300+ palabras). Agregamos validación de longitud mínima (100 caracteres) para que resúmenes incompletos no se persistan. También eliminamos los resúmenes corruptos existentes de jordan.inpulza.
+
+createDummyMessage con type hardcodeado: La función creaba mensajes dummy con type: "comment" siempre, afectando el filtrado downstream. Ahora acepta el tipo de conversación real como parámetro.
+
+SummaryService ya usa el LLM del agente: Confirmamos que ahora usa createLLMProvider(agent, secrets) con generateRawCompletion, respetando la configuración de OpenAI/Gemini del agente en lugar de tener Gemini hardcodeado.
+
+Sistemas relacionados que funcionan (no tocar):
+
+Buffer de DMs: Acumula mensajes rápidos (ej: 3 DMs en 10 segundos) y responde UNA vez después del delay configurado (45s para BO Trust)
+Cooldown por conversación: Cada conversación tiene su propio cooldown independiente
+Variables dinámicas: {{first_name}}, {{relationship_status}}, {{time_since_last_interaction}} se pasan al LLM
+Prompt-composer simplificado: Ya no tiene instrucciones de saludo hardcodeadas, solo datos de contexto para que los guardrails del usuario definan la lógica
+Marca de prueba: BO Trust (@bo_trust_service), brand_id: 866600f9-4c0e-4d5e-b9d4-62fc9113426b. Usuario de prueba: jordan.inpulza (tiene 17 conversaciones entre DMs y comentarios en Instagram/TikTok).
+
+Lo que necesito verificar:
+
+Que cuando jordan.inpulza (o cualquier usuario) envíe mensajes y se active el SummaryService, los logs muestren type=dm, messageType=conversation para DMs
+Que el resumen generado tenga más de 100 caracteres y se guarde correctamente en conversation_user_summaries
+Que el historial enviado al LLM para generar respuestas sea SOLO de la conversación actual (no mezclando DMs con comentarios de TikTok del mismo usuario)
+Revisar los logs de [SummaryService] y [PromptComposer] para confirmar el flujo correcto
+Archivos clave a revisar:
+
+server/services/summaryService.ts - Generación de resúmenes con LLM del agente
+server/services/llm/prompt-composer.ts - Construcción del contexto para el LLM
+server/services/autoReplyService.ts - Orquestación de respuestas automáticas
+shared/schema.ts - Esquema de BD y tipos
+Por favor, revisa primero el archivo de documentación, luego verifica el código actual y los logs para confirmar que los cambios están funcionando como esperamos. Si encuentras algún problema o algo que no esté implementado correctamente, indícamelo con detalle.
+
+¿Necesitas que agregue o modifique algo en este mensaje?
