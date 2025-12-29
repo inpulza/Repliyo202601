@@ -1,0 +1,48 @@
+3.2 Estrategia de Identity Merging. No es solo un "botón de unir"; es una operación delicada de base de datos que debes programar con mucho cuidado para no perder historial.
+
+Aquí tienes el desglose técnico de la función merge_identities para que se lo pases a tu equipo de desarrollo (o a Replit):
+
+🧠 Lógica de la Función "Identity Merge"
+El objetivo es tomar dos contactos (ej: "Juan WhatsApp" y "Juan Instagram") y convertirlos en uno solo sin perder nada.
+
+1. Algoritmo de Detección (El "Radar")
+Antes de fusionar, el sistema debe saber qué fusionar.
+
+Trigger: Se ejecuta cada vez que entra un mensaje nuevo o se crea un contacto.
+
+
+Lógica: Busca coincidencias exactas en la base de datos para email o phone.
+
+
+UI: Si encuentra coincidencia, muestra un "Tick Verde" o una alerta de "Posible Duplicado" en la interfaz del agente.
+
+2. Ejecución de la Fusión (El "Cirujano")
+Cuando el agente confirma la fusión, el backend debe ejecutar una transacción atómica (todo o nada) con estos 5 pasos:
+
+Selección de Maestro: El agente decide cuál es el primary_contact (el que se queda) y cuál es el secondary_contact (el que desaparece).
+
+Resolución de Conflictos: Si ambos tienen datos distintos (ej. nombres diferentes), el sistema debe preguntar qué valor conservar. No sobrescribir a ciegas.
+
+Consolidación de Historial (Lo más crítico):
+
+Mover todos los registros de la tabla crm_contact_channels del secundario al primario.
+
+Mover todos los conversations y messages del secundario al primario (hacer un UPDATE conversations SET contact_id = primary_id WHERE contact_id = secondary_id).
+
+Fusión de custom_fields: Unir los JSONs de ambos. Si hay claves repetidas, gana la del maestro.
+
+Limpieza (Soft Delete): Marcar el contacto secundario como "Archivado" o "Fusionado", pero no borrarlo físicamente de inmediato. El reporte menciona que debe existir un botón "Deshacer" (Undo) por si el agente se equivoca.
+
+3. Estructura de Datos de Apoyo
+Para que esto funcione, tu tabla crmContactChannels es la clave.
+
+Antes del Merge: Tienes 2 Contactos, cada uno con 1 Canal.
+
+Después del Merge: Tienes 1 Contacto (el Maestro) que ahora tiene 2 Canales vinculados en la tabla crmContactChannels.
+
+⚠️ Reglas de Oro (Constraints)
+
+Bloqueo de Spam: Si un contacto está marcado como "Spam", no debe sugerirse para fusión para no contaminar un perfil bueno.
+
+
+Reversibilidad: La operación debe ser reversible durante un periodo de gracia (ej. 15 minutos) usando un log de auditoría.

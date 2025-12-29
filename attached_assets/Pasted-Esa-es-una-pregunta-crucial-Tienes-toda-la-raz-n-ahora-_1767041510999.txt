@@ -1,0 +1,58 @@
+Esa es una pregunta crucial! Tienes toda la razón: ahora mismo hemos creado un CRM "vacío" que solo se llenará con los mensajes nuevos que lleguen a partir de mañana. Pero Repliyo ya tiene oro en su base de datos: miles de conversaciones pasadas que contienen emails, nombres y preferencias de tus clientes.
+
+No queremos un CRM vacío. Queremos un CRM que nazca "lleno".
+
+Para esto, necesitamos ejecutar un proceso llamado "Backfill" o Migración Histórica.
+
+Aquí te explico en qué momento y cómo lo haremos para no romper nada.
+
+🕒 ¿En qué momento se hace?
+Justo AHORA. Ya tienes las tablas creadas (crm_contacts, etc.). Antes de lanzar la UI a los usuarios, debemos ejecutar un script interno una sola vez que "lea" todo tu historial antiguo y cree las fichas de contacto automáticamente.
+
+⚙️ La Lógica del "Gran Migrador" (Script de Backfill)
+Este script recorrerá tus tablas antiguas de conversations y hará lo siguiente con cada usuario que encuentre:
+
+¿Ya existe en el CRM?
+
+Revisa si el external_id (ej. ID de Instagram) ya está en la tabla crm_contact_channels.
+
+Si existe: No hace nada.
+
+Si NO existe: Crea un nuevo Contacto en el CRM.
+
+Extracción de Datos Básicos (Gratis):
+
+Toma el username y avatar de la conversación antigua y lo guarda en el perfil.
+
+Calcula la fecha de first_interaction_at basándose en el mensaje más viejo que tengas guardado.
+
+Extracción de Datos con IA (La "Minería de Oro"):
+
+Opcional pero recomendado: Podemos pasar las últimas 10 conversaciones de cada cliente antiguo por la IA para que extraiga emails y teléfonos que se hayan dicho en el pasado y los guarde en el nuevo CRM.
+
+🚀 Prompt para Replit: El Script de Migración
+Este es el prompt para que Replit genere el script que "mueve" tus datos actuales al nuevo CRM.
+
+Copia y pega esto:
+
+Markdown
+
+@Workspace
+Estamos listos para poblar el CRM con datos históricos.
+Actualmente, tenemos muchas conversaciones en la tabla `conversations` antigua, pero la tabla `crm_contacts` está vacía.
+
+Necesito que crees un **Script de Migración (Backfill)** en TypeScript (`scripts/migrate-contacts.ts`) que haga lo siguiente:
+
+1.  **Lectura:** Selecciona todos los `sender_id` o identificadores de usuarios únicos de nuestra tabla existente de `conversations` o `messages`.
+2.  **Transformación:**
+    * Para cada usuario único encontrado, crea un registro en la tabla `crm_contacts` (generando un UUID nuevo).
+    * Crea el registro correspondiente en `crm_contact_channels` vinculando la plataforma (Instagram/WhatsApp) y su ID original.
+    * Usa el nombre/avatar que ya tengamos guardado para poblar `display_name` y `profile_pic_url`.
+3.  **Seguridad:** El script debe ser "idempotente" (si lo corro dos veces, no debe duplicar contactos; debe verificar si ya existe el `external_id` antes de insertar).
+4.  **Logging:** Quiero que imprima en consola cuántos contactos nuevos se crearon y si hubo errores.
+
+Este script lo ejecutaré manualmente una vez para que el CRM nazca con todos los clientes que ya nos han escrito en el pasado.
+💡 Mi recomendación estratégica
+Ejecuta este script primero solo con la "Extracción Básica" (Punto 2). Es rápido y gratis.
+
+La "Minería con IA" (leer chats viejos para sacar emails) consúmela poco a poco o bajo demanda, porque si tienes 10,000 conversaciones antiguas, procesarlas todas con GPT-4 de golpe te costará dinero. Es mejor que la IA extraiga datos solo cuando el cliente vuelva a escribir (en tiempo real) o cuando tú abras su ficha manualmente.
