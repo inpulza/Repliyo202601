@@ -16,7 +16,8 @@ import {
   Bot,
   ChevronLeft,
   ChevronRight,
-  Menu
+  Menu,
+  Users
 } from 'lucide-react';
 import { NotificationCenter } from './NotificationCenter';
 import {
@@ -65,6 +66,7 @@ export function Sidebar() {
   const navItems = [
     { href: "/overview", icon: BarChart3, label: "Overview" },
     { href: "/inbox", icon: Inbox, label: "Smart Inbox" },
+    { href: "/crm", icon: Users, label: "CRM" },
     { href: "/connections", icon: LayoutDashboard, label: "Connections" },
     { href: "/integrations", icon: Command, label: "Integrations" },
     { href: "/settings", icon: Settings, label: "Agent Settings" },

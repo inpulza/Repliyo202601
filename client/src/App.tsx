@@ -16,6 +16,7 @@ import { Connections } from "@/pages/Connections";
 import { IntegrationsPage } from "@/pages/Integrations";
 import { Login } from "@/pages/Login";
 import { ProfileSettings } from "@/pages/ProfileSettings";
+import { CRM } from "@/pages/CRM";
 
 function Router() {
   return (
@@ -60,6 +61,13 @@ function Router() {
         {() => (
           <DashboardLayout>
             <ProfileSettings />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/crm">
+        {() => (
+          <DashboardLayout>
+            <CRM />
           </DashboardLayout>
         )}
       </Route>
