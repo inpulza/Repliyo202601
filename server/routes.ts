@@ -2250,12 +2250,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let replyResult;
       
       if (message.type === 'comment' || message.type === 'mention' || message.type === 'story_reply') {
+        const autoMentionEnabled = agent?.autoMentionEnabled ?? false;
         replyResult = await metricoolService.replyToComment({
           provider: message.platform,
           objectId: objectIdToUse,
           text: message.aiSuggestedReply,
           blogId: brand.metricoolBlogId,
-          mentionUsername: message.author || undefined,
+          mentionUsername: autoMentionEnabled ? (message.author || undefined) : undefined,
         });
       } else if (message.type === 'dm' || message.type === 'conversation') {
         replyResult = await metricoolService.replyToConversation({

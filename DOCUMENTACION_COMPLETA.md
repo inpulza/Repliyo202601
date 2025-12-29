@@ -5,7 +5,8 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 
 ## Estado Actual
 - **Fase Actual**: ✅ FASE 11 COMPLETADA - Mejoras Conversacionales BOTrust
-- **Última Actualización**: 21 de Diciembre 2025
+- **Última Actualización**: 29 de Diciembre 2025
+- **Control @Mention**: ✅ Etiquetado automático desactivado por defecto, configurable por agente
 - **Login/Logout**: ✅ Completamente funcional (página de login creada, logout en sidebar)
 - **Sistema de Roles**: ✅ Admin vs Client funcionando correctamente
 - **Marca de Prueba**: ✅ Inpulza Testing conectada (blogId: 4074962)
@@ -26,6 +27,47 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 - **Deep Links**: ✅ Click en notificación navega a conversación con scroll + highlight
 - **Filtros Mejorados**: ✅ Badges muestran solo no leídos, filtro conjunto automático
 - **Próximo Paso**: Tests unitarios, rate limiting, dashboard de métricas IA
+
+---
+
+## Control de Etiquetado Automático (@Mention) - 29 Dic 2025
+
+### Problema Resuelto
+El sistema agregaba automáticamente `@nombreusuario` al inicio de cada respuesta a comentarios. Esto no era deseado en todos los casos y no había forma de controlarlo.
+
+### Solución Implementada
+Se agregó un campo `autoMentionEnabled` (boolean, default: `false`) a la tabla `ai_agents` que controla si se agrega el @mention automático.
+
+### Flujos Modificados
+Se verificaron y corrigieron **3 flujos** donde se generaban respuestas:
+
+| Flujo | Archivo | Línea | Verificación |
+|-------|---------|-------|--------------|
+| Auto-reply automático | `autoReplyService.ts` | 316 | `agent.autoMentionEnabled && chunk.partIndex === 1` |
+| Reply manual | `routes.ts` | 909-912 | `includeMention && autoMentionEnabled` |
+| Send Draft (borrador) | `routes.ts` | 2256-2262 | `autoMentionEnabled ? author : undefined` |
+
+### Configuración UI
+Toggle en pestaña "Orquestación" del AIAgentConfig:
+- **Icono**: AtSign
+- **Label**: "Etiquetar usuario en respuestas"
+- **Descripción**: Agregar @usuario al inicio de cada respuesta a comentarios
+- **Default**: Desactivado (false)
+
+### Comportamiento
+```
+autoMentionEnabled = false (default):
+  → Respuesta: "Gracias por tu comentario..."
+
+autoMentionEnabled = true:
+  → Respuesta: "@flash_handyman Gracias por tu comentario..."
+```
+
+### Archivos Modificados
+- `shared/schema.ts` - Campo `autoMentionEnabled` con default false
+- `server/services/autoReplyService.ts` - Condición en línea 316
+- `server/routes.ts` - Verificación en líneas 909-912 y 2256-2262
+- `client/src/components/AIAgentConfig.tsx` - Toggle con icono AtSign
 
 ---
 
