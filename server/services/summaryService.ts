@@ -5,7 +5,7 @@ import type { AgentSecrets } from "./llm/types";
 import type { Message, AiAgent, Conversation } from "@shared/schema";
 
 const DEFAULT_SUMMARY_THRESHOLD = 10;
-const MIN_SUMMARY_LENGTH = 100; // Resúmenes deben tener al menos 100 caracteres
+const MIN_SUMMARY_LENGTH = 500; // Resúmenes deben tener al menos 500 caracteres
 
 const SUMMARY_PROMPT = `Eres un experto en resumir conversaciones de atención al cliente. Tu tarea es crear un resumen CONSOLIDADO de la conversación entre la marca y el cliente.
 
