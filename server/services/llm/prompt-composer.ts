@@ -88,6 +88,7 @@ interface PromptContext {
 
 interface VariableContext {
   username: string;
+  firstName: string;
   platform: string;
   comment: string;
   postContext: string;
@@ -101,6 +102,76 @@ interface VariableContext {
   timeSinceLastInteraction: number;
   conversationDepth: number;
   relationshipStatus: 'new' | 'active' | 'reengagement';
+}
+
+/**
+ * Extrae el primer nombre probable de un username de redes sociales.
+ * Maneja patrones comunes como:
+ * - maria_perez_1985 → María
+ * - CarlosGomez → Carlos
+ * - juanito_123 → Juanito
+ * - lacubanitaniurbys → (difícil, devuelve vacío)
+ * 
+ * @returns El primer nombre capitalizado, o cadena vacía si no se puede determinar
+ */
+function extractFirstName(username: string): string {
+  if (!username || username.length < 2) return '';
+  
+  // Limpiar @ inicial si existe
+  let clean = username.replace(/^@/, '').trim();
+  
+  // Lista de patrones que NO son nombres (empresas, nicknames genéricos)
+  const invalidPatterns = [
+    /^user\d+$/i,
+    /^gamer/i,
+    /^streqi$/i,
+    /^admin/i,
+    /^official/i,
+    /^the_/i,
+    /^team_/i,
+    /agencia$/i,
+    /agency$/i,
+    /studio$/i,
+    /^pg_/i,
+    /translations$/i,
+    /^inpulza/i,
+  ];
+  
+  for (const pattern of invalidPatterns) {
+    if (pattern.test(clean)) return '';
+  }
+  
+  // Si tiene solo números o caracteres especiales, no es nombre
+  if (/^[\d_\-\.]+$/.test(clean)) return '';
+  
+  // Estrategia 1: Separar por _, -, o . y tomar el primer segmento
+  const segments = clean.split(/[_\-\.]+/);
+  let candidate = segments[0];
+  
+  // Si el primer segmento parece un nombre (solo letras, 2-15 chars)
+  if (candidate && /^[a-záéíóúñü]+$/i.test(candidate) && candidate.length >= 2 && candidate.length <= 15) {
+    // Verificar que no sea una palabra común que no es nombre
+    const notNames = ['the', 'its', 'hey', 'xox', 'xxx', 'lol', 'omg', 'wtf', 'pro', 'vip', 'top'];
+    if (!notNames.includes(candidate.toLowerCase())) {
+      // Capitalizar primera letra
+      return candidate.charAt(0).toUpperCase() + candidate.slice(1).toLowerCase();
+    }
+  }
+  
+  // Estrategia 2: CamelCase - CarlosGomez → Carlos
+  const camelMatch = clean.match(/^([A-Z][a-záéíóúñü]+)/);
+  if (camelMatch && camelMatch[1].length >= 2 && camelMatch[1].length <= 15) {
+    return camelMatch[1];
+  }
+  
+  // Estrategia 3: Si es todo minúsculas sin separadores, 
+  // tomar solo si parece un nombre corto (2-8 chars)
+  if (/^[a-záéíóúñü]+$/.test(clean) && clean.length >= 2 && clean.length <= 8) {
+    return clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
+  }
+  
+  // No se pudo extraer un nombre confiable
+  return '';
 }
 
 interface SituationContext {
@@ -168,13 +239,21 @@ Estado de relación: ${context.relationshipStatus}${batchInfo}`);
    ✅ Ejemplo bueno: "claro, pásame los datos" 
    ❌ Ejemplo malo: "¡Hola! Claro que sí, con mucho gusto..."`);
     } else if (context.relationshipStatus === 'reengagement') {
+      const greetingExample = context.firstName 
+        ? `"Hola de nuevo, ${context.firstName}", "Qué tal, ${context.firstName}"`
+        : `"Hola de nuevo", "Qué tal"`;
       rules.push(`👋 REENGAGEMENT (usuario que vuelve)
-   ✅ Puedes saludar brevemente: "Hola de nuevo", "Qué tal"
-   ✅ No es necesario un saludo elaborado.
+   ✅ Saluda usando el PRIMER NOMBRE si está disponible: ${greetingExample}
+   ✅ Nombre detectado: ${context.firstName || '(no detectado - omite el nombre)'}
    ✅ Puedes hacer referencia breve a conversación anterior si aplica.`);
     } else {
+      const greetingExample = context.firstName 
+        ? `"Hola, ${context.firstName}", "Qué tal, ${context.firstName}"`
+        : `"Hola", "Qué tal"`;
       rules.push(`🆕 CONVERSACIÓN NUEVA
-   ✅ Saludo breve permitido: "Hola", "Qué tal"
+   ✅ Saludo con PRIMER NOMBRE: ${greetingExample}
+   ✅ Nombre detectado: ${context.firstName || '(no detectado - omite el nombre)'}
+   ✅ Si hay nombre, SIEMPRE úsalo: "Hola, María" NO "Hola"
    ✅ Presentación corta si aplica.`);
     }
     
@@ -206,12 +285,16 @@ Estado de relación: ${context.relationshipStatus}${batchInfo}`);
     }
     
   } else {
+    const nameInstruction = context.firstName 
+      ? `Usa el nombre "${context.firstName}" para personalizar: "Hola, ${context.firstName}, ..." o "...te esperamos, ${context.firstName}"`
+      : `No se detectó nombre del usuario, responde sin nombre.`;
     rules.push(`
 [MODO COMENTARIO PÚBLICO ACTIVADO]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📢 REGLAS PARA COMENTARIOS:
    - Sé BREVE y DIRECTO (máximo 2-3 líneas).
    - Tono profesional pero accesible.
+   - ${nameInstruction}
    - Incluye un CTA cuando aplique: "Escríbenos al DM 📩", "Más info en bio".
    - Emojis permitidos con moderación (1-2 máximo).
    - Evita respuestas largas o conversacionales en público.`);
@@ -405,8 +488,12 @@ function buildVariableContext(
     }
   }
   
+  // Extraer primer nombre del username
+  const firstName = extractFirstName(message.author || '');
+  
   const baseContext: VariableContext = {
     username,
+    firstName,
     platform,
     comment,
     postContext,
@@ -437,6 +524,7 @@ function replaceVariablesBasic(text: string, context: VariableContext): string {
   let result = text;
   
   result = result.replace(/\{\{\s*username\s*\}\}/g, context.username);
+  result = result.replace(/\{\{\s*first_name\s*\}\}/g, context.firstName);
   result = result.replace(/\{\{\s*platform\s*\}\}/g, context.platform);
   result = result.replace(/\{\{\s*comment\s*\}\}/g, context.comment);
   result = result.replace(/\{\{\s*post_context\s*\}\}/g, context.postContext);
@@ -455,6 +543,7 @@ export function replaceVariables(text: string, context: VariableContext): string
   let result = text;
   
   result = result.replace(/\{\{\s*username\s*\}\}/g, context.username);
+  result = result.replace(/\{\{\s*first_name\s*\}\}/g, context.firstName);
   result = result.replace(/\{\{\s*platform\s*\}\}/g, context.platform);
   result = result.replace(/\{\{\s*comment\s*\}\}/g, context.comment);
   result = result.replace(/\{\{\s*post_context\s*\}\}/g, context.postContext);
