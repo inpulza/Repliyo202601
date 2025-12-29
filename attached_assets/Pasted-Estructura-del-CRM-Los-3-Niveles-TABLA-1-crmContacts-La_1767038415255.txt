@@ -1,0 +1,102 @@
+Estructura del CRM - Los 3 Niveles
+TABLA 1: crmContacts (La Persona)
+Estos son los campos fijos que siempre existen:
+
+Campo	Tipo	Descripción	Ejemplo
+id	UUID	Identificador único interno	a1b2c3d4-...
+brandId	UUID	A qué marca pertenece	Tu marca BO Trust
+displayName	Texto	Nombre para mostrar	"María García"
+firstName	Texto	Primer nombre	"María"
+lastName	Texto	Apellido	"García"
+phone	Texto	Teléfono (extraído por IA)	"+1 305 639 0110"
+email	Texto	Email (extraído por IA)	"maria@gmail.com"
+language	Texto	Idioma del contacto	"es", "en", "pt"
+country	Texto	País detectado	"US", "MX", "CO"
+city	Texto	Ciudad si se conoce	"Miami"
+status	Texto	Estado del lead	"lead", "qualified", "customer"
+lifecycleStage	Texto	Etapa del journey	"new", "engaged", "converted"
+source	Texto	De dónde vino	"instagram_dm", "tiktok_comment"
+lastUsedChannelId	UUID	Último canal usado	Para saber por dónde responder
+conversationCount	Número	Cuántas conversaciones	5
+totalMessages	Número	Total de mensajes	47
+firstInteractionAt	Fecha	Primera vez que contactó	2025-01-15
+lastInteractionAt	Fecha	Última vez activo	2025-12-29
+El Campo Mágico: customFields (JSONB)
+Este es el campo dinámico donde la IA puede guardar CUALQUIER cosa:
+
+{
+  "servicio_interes": "Taxes",
+  "presupuesto": "5000",
+  "tipo_negocio": "LLC",
+  "empleados": "12",
+  "necesita_itin": true,
+  "fecha_limite_taxes": "2025-04-15",
+  "estado_civil": "casado",
+  "tiene_hijos": true,
+  "ingresos_anuales": "$80,000-$120,000",
+  "fuente_referido": "amigo Juan",
+  "notas_agente": "Cliente muy interesado, llamar el lunes",
+  "productos_previos": ["Bookkeeping 2024", "Taxes 2023"]
+}
+Ventaja: No necesitas modificar la base de datos cada vez que quieras guardar algo nuevo. La IA simplemente lo agrega al JSON.
+
+TABLA 2: crmContactChannels (Sus Cuentas de Redes)
+Un contacto puede tener múltiples canales:
+
+Campo	Tipo	Descripción
+id	UUID	ID del canal
+contactId	UUID	A qué contacto pertenece
+platform	Texto	instagram, facebook, tiktok, whatsapp
+externalId	Texto	ID del usuario en esa red
+username	Texto	@maria_garcia
+avatarUrl	Texto	Foto de perfil
+messageCount	Número	Mensajes por este canal
+lastMessageAt	Fecha	Última actividad
+Ejemplo real:
+
+Contacto: María García
+├── Instagram: @maria_garcia (45 mensajes)
+├── Facebook: Maria G. (12 mensajes)
+└── WhatsApp: +1305XXXXXXX (3 mensajes)
+Esto permite Identity Merging: aunque escriba por 3 canales diferentes, es la misma persona.
+
+TABLA 3: crmContactLimbo (Leads Temporales)
+Para comentarios públicos que aún no son contactos oficiales:
+
+Campo	Tipo	Descripción
+platform	Texto	De qué red viene
+username	Texto	Nombre del usuario
+interactionType	Texto	comment, like, mention
+interactionCount	Número	Cuántas veces ha interactuado
+promotedToContactId	UUID	Si luego envía DM, se promociona
+Comparación con Respond.io
+Característica	Respond.io	Nuestro CRM
+Campos básicos (nombre, email, phone)	✅	✅
+Custom fields dinámicos (JSONB)	✅	✅
+Identity merging (múltiples canales)	✅	✅
+Lifecycle stages	✅	✅
+Idioma del contacto	✅	✅
+País/Ciudad	✅	✅
+Historial de conversaciones	✅	✅ (ya existe en conversations)
+Tags/Etiquetas	✅	⏳ (se puede agregar después)
+Notas internas	✅	⏳ (se puede agregar después)
+Ejemplo Real de Uso
+Conversación:
+
+Usuario: Hola, me llamo Carlos Mendez, estoy interesado en sus servicios de Taxes.
+         Tengo una LLC en Florida con 5 empleados.
+         Mi email es carlos@empresa.com
+Lo que la IA extrae automáticamente:
+
+{
+  "firstName": "Carlos",
+  "lastName": "Mendez",
+  "email": "carlos@empresa.com",
+  "customFields": {
+    "servicio_interes": "Taxes",
+    "tipo_negocio": "LLC",
+    "estado": "Florida",
+    "empleados": "5"
+  }
+}
+Toda esa información queda guardada en el CRM sin que tú hagas nada.

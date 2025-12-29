@@ -1,5 +1,6 @@
 import { 
   brands, users, messages, socialPosts, conversations, socialAccounts, aiAgents, aiAgentAuditLog, conversationUserSummaries, aiModelPricing, notifications, playgroundTemplates,
+  crmContacts, crmContactChannels, crmContactLimbo,
   type Brand, type InsertBrand, 
   type User, type InsertUser, 
   type Message, type InsertMessage, type UpdateMessage,
@@ -11,7 +12,10 @@ import {
   type ConversationUserSummary, type InsertConversationUserSummary, type UpdateConversationUserSummary,
   type AiModelPricing, type InsertAiModelPricing, type UpdateAiModelPricing,
   type Notification, type InsertNotification, type UpdateNotification,
-  type PlaygroundTemplate, type InsertPlaygroundTemplate, type UpdatePlaygroundTemplate
+  type PlaygroundTemplate, type InsertPlaygroundTemplate, type UpdatePlaygroundTemplate,
+  type CrmContact, type InsertCrmContact, type UpdateCrmContact,
+  type CrmContactChannel, type InsertCrmContactChannel, type UpdateCrmContactChannel,
+  type CrmContactLimbo, type InsertCrmContactLimbo, type UpdateCrmContactLimbo
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, isNull, gte, lte, sql } from "drizzle-orm";
@@ -163,6 +167,30 @@ export interface IStorage {
   updatePlaygroundTemplate(id: string, updates: UpdatePlaygroundTemplate): Promise<PlaygroundTemplate | undefined>;
   deletePlaygroundTemplate(id: string): Promise<boolean>;
   incrementTemplateUsage(id: string): Promise<PlaygroundTemplate | undefined>;
+  
+  // CRM Module - Contacts
+  getCrmContacts(brandId: string, options?: { status?: string; limit?: number; offset?: number }): Promise<CrmContact[]>;
+  getCrmContact(id: string): Promise<CrmContact | undefined>;
+  getCrmContactByEmail(brandId: string, email: string): Promise<CrmContact | undefined>;
+  getCrmContactByPhone(brandId: string, phone: string): Promise<CrmContact | undefined>;
+  createCrmContact(contact: InsertCrmContact): Promise<CrmContact>;
+  updateCrmContact(id: string, updates: UpdateCrmContact): Promise<CrmContact | undefined>;
+  updateCrmContactCustomField(id: string, field: string, value: any): Promise<CrmContact | undefined>;
+  incrementCrmContactMetrics(id: string, conversations?: number, messages?: number): Promise<CrmContact | undefined>;
+  
+  // CRM Module - Contact Channels (Identity Merge)
+  getCrmContactChannels(contactId: string): Promise<CrmContactChannel[]>;
+  getCrmContactChannel(id: string): Promise<CrmContactChannel | undefined>;
+  findCrmContactChannelByExternal(platform: string, externalId: string): Promise<CrmContactChannel | undefined>;
+  createCrmContactChannel(channel: InsertCrmContactChannel): Promise<CrmContactChannel>;
+  updateCrmContactChannel(id: string, updates: UpdateCrmContactChannel): Promise<CrmContactChannel | undefined>;
+  incrementCrmChannelMessageCount(id: string): Promise<CrmContactChannel | undefined>;
+  
+  // CRM Module - Contact Limbo (Lazy Creation)
+  getCrmContactLimbo(brandId: string, options?: { notPromoted?: boolean; limit?: number }): Promise<CrmContactLimbo[]>;
+  findCrmLimboEntry(brandId: string, platform: string, externalId: string): Promise<CrmContactLimbo | undefined>;
+  upsertCrmLimboEntry(entry: InsertCrmContactLimbo): Promise<CrmContactLimbo>;
+  promoteCrmLimboToContact(limboId: string, contactId: string): Promise<CrmContactLimbo | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1977,6 +2005,227 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date() 
       })
       .where(eq(playgroundTemplates.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  // ============================================
+  // CRM MODULE - Contacts
+  // ============================================
+
+  async getCrmContacts(brandId: string, options?: { status?: string; limit?: number; offset?: number }): Promise<CrmContact[]> {
+    const conditions = [eq(crmContacts.brandId, brandId)];
+    
+    if (options?.status) {
+      conditions.push(eq(crmContacts.status, options.status));
+    }
+    
+    return await db
+      .select()
+      .from(crmContacts)
+      .where(and(...conditions))
+      .orderBy(desc(crmContacts.lastInteractionAt))
+      .limit(options?.limit || 100)
+      .offset(options?.offset || 0);
+  }
+
+  async getCrmContact(id: string): Promise<CrmContact | undefined> {
+    const [contact] = await db.select().from(crmContacts).where(eq(crmContacts.id, id));
+    return contact || undefined;
+  }
+
+  async getCrmContactByEmail(brandId: string, email: string): Promise<CrmContact | undefined> {
+    const [contact] = await db
+      .select()
+      .from(crmContacts)
+      .where(and(eq(crmContacts.brandId, brandId), eq(crmContacts.email, email)));
+    return contact || undefined;
+  }
+
+  async getCrmContactByPhone(brandId: string, phone: string): Promise<CrmContact | undefined> {
+    const [contact] = await db
+      .select()
+      .from(crmContacts)
+      .where(and(eq(crmContacts.brandId, brandId), eq(crmContacts.phone, phone)));
+    return contact || undefined;
+  }
+
+  async createCrmContact(contact: InsertCrmContact): Promise<CrmContact> {
+    const now = new Date();
+    const [created] = await db
+      .insert(crmContacts)
+      .values({
+        ...contact,
+        firstInteractionAt: contact.firstInteractionAt || now,
+        lastInteractionAt: contact.lastInteractionAt || now,
+      })
+      .returning();
+    return created;
+  }
+
+  async updateCrmContact(id: string, updates: UpdateCrmContact): Promise<CrmContact | undefined> {
+    const [updated] = await db
+      .update(crmContacts)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(crmContacts.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async updateCrmContactCustomField(id: string, field: string, value: any): Promise<CrmContact | undefined> {
+    const [updated] = await db
+      .update(crmContacts)
+      .set({
+        customFields: sql`jsonb_set(COALESCE(${crmContacts.customFields}, '{}'), ${`{${field}}`}, ${JSON.stringify(value)}::jsonb)`,
+        updatedAt: new Date(),
+      })
+      .where(eq(crmContacts.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async incrementCrmContactMetrics(id: string, conversations?: number, messages?: number): Promise<CrmContact | undefined> {
+    const updates: any = {
+      lastInteractionAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    if (conversations) {
+      updates.conversationCount = sql`COALESCE(${crmContacts.conversationCount}, 0) + ${conversations}`;
+    }
+    if (messages) {
+      updates.totalMessages = sql`COALESCE(${crmContacts.totalMessages}, 0) + ${messages}`;
+    }
+    
+    const [updated] = await db
+      .update(crmContacts)
+      .set(updates)
+      .where(eq(crmContacts.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  // ============================================
+  // CRM MODULE - Contact Channels (Identity Merge)
+  // ============================================
+
+  async getCrmContactChannels(contactId: string): Promise<CrmContactChannel[]> {
+    return await db
+      .select()
+      .from(crmContactChannels)
+      .where(eq(crmContactChannels.contactId, contactId))
+      .orderBy(desc(crmContactChannels.lastMessageAt));
+  }
+
+  async getCrmContactChannel(id: string): Promise<CrmContactChannel | undefined> {
+    const [channel] = await db.select().from(crmContactChannels).where(eq(crmContactChannels.id, id));
+    return channel || undefined;
+  }
+
+  async findCrmContactChannelByExternal(platform: string, externalId: string): Promise<CrmContactChannel | undefined> {
+    const [channel] = await db
+      .select()
+      .from(crmContactChannels)
+      .where(and(
+        eq(crmContactChannels.platform, platform),
+        eq(crmContactChannels.externalId, externalId)
+      ));
+    return channel || undefined;
+  }
+
+  async createCrmContactChannel(channel: InsertCrmContactChannel): Promise<CrmContactChannel> {
+    const [created] = await db
+      .insert(crmContactChannels)
+      .values(channel)
+      .returning();
+    return created;
+  }
+
+  async updateCrmContactChannel(id: string, updates: UpdateCrmContactChannel): Promise<CrmContactChannel | undefined> {
+    const [updated] = await db
+      .update(crmContactChannels)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(crmContactChannels.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async incrementCrmChannelMessageCount(id: string): Promise<CrmContactChannel | undefined> {
+    const [updated] = await db
+      .update(crmContactChannels)
+      .set({
+        messageCount: sql`COALESCE(${crmContactChannels.messageCount}, 0) + 1`,
+        lastMessageAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(crmContactChannels.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  // ============================================
+  // CRM MODULE - Contact Limbo (Lazy Creation)
+  // ============================================
+
+  async getCrmContactLimbo(brandId: string, options?: { notPromoted?: boolean; limit?: number }): Promise<CrmContactLimbo[]> {
+    let conditions = [eq(crmContactLimbo.brandId, brandId)];
+    
+    if (options?.notPromoted) {
+      conditions.push(isNull(crmContactLimbo.promotedToContactId));
+    }
+    
+    return await db
+      .select()
+      .from(crmContactLimbo)
+      .where(and(...conditions))
+      .orderBy(desc(crmContactLimbo.lastInteractionAt))
+      .limit(options?.limit || 100);
+  }
+
+  async findCrmLimboEntry(brandId: string, platform: string, externalId: string): Promise<CrmContactLimbo | undefined> {
+    const [entry] = await db
+      .select()
+      .from(crmContactLimbo)
+      .where(and(
+        eq(crmContactLimbo.brandId, brandId),
+        eq(crmContactLimbo.platform, platform),
+        eq(crmContactLimbo.externalId, externalId)
+      ));
+    return entry || undefined;
+  }
+
+  async upsertCrmLimboEntry(entry: InsertCrmContactLimbo): Promise<CrmContactLimbo> {
+    const existing = await this.findCrmLimboEntry(entry.brandId, entry.platform, entry.externalId);
+    
+    if (existing) {
+      const [updated] = await db
+        .update(crmContactLimbo)
+        .set({
+          interactionCount: sql`COALESCE(${crmContactLimbo.interactionCount}, 0) + 1`,
+          lastInteractionAt: entry.lastInteractionAt || new Date(),
+          username: entry.username || existing.username,
+          avatarUrl: entry.avatarUrl || existing.avatarUrl,
+        })
+        .where(eq(crmContactLimbo.id, existing.id))
+        .returning();
+      return updated;
+    }
+    
+    const [created] = await db
+      .insert(crmContactLimbo)
+      .values(entry)
+      .returning();
+    return created;
+  }
+
+  async promoteCrmLimboToContact(limboId: string, contactId: string): Promise<CrmContactLimbo | undefined> {
+    const [updated] = await db
+      .update(crmContactLimbo)
+      .set({
+        promotedToContactId: contactId,
+        promotedAt: new Date(),
+      })
+      .where(eq(crmContactLimbo.id, limboId))
       .returning();
     return updated || undefined;
   }
