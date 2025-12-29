@@ -2837,6 +2837,341 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================
+  // CRM MODULE API ENDPOINTS
+  // ============================================
+
+  // GET /api/crm/contacts - List contacts for a brand
+  app.get("/api/crm/contacts", requireAuth, async (req, res) => {
+    try {
+      const brandId = req.query.brandId as string || req.user?.brandId;
+      
+      if (!brandId) {
+        return res.status(400).json({ error: "brandId is required" });
+      }
+
+      // Verify access
+      if (req.user?.role !== 'admin' && req.user?.brandId !== brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const options = {
+        status: req.query.status as string | undefined,
+        limit: req.query.limit ? parseInt(req.query.limit as string) : 100,
+        offset: req.query.offset ? parseInt(req.query.offset as string) : 0,
+      };
+
+      const contacts = await storage.getCrmContacts(brandId, options);
+      
+      // Get channel counts for each contact
+      const contactsWithChannels = await Promise.all(
+        contacts.map(async (contact) => {
+          const channels = await storage.getCrmContactChannels(contact.id);
+          return {
+            ...contact,
+            channelCount: channels.length,
+            platforms: channels.map(c => c.platform),
+          };
+        })
+      );
+
+      res.json({ contacts: contactsWithChannels });
+    } catch (error: any) {
+      console.error('[CRM] Error getting contacts:', error);
+      res.status(500).json({ error: "Failed to get contacts", details: error.message });
+    }
+  });
+
+  // GET /api/crm/contacts/:id - Get single contact with all details
+  app.get("/api/crm/contacts/:id", requireAuth, async (req, res) => {
+    try {
+      const contact = await storage.getCrmContact(req.params.id);
+      
+      if (!contact) {
+        return res.status(404).json({ error: "Contact not found" });
+      }
+
+      // Verify access
+      if (req.user?.role !== 'admin' && req.user?.brandId !== contact.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const channels = await storage.getCrmContactChannels(contact.id);
+
+      res.json({ contact, channels });
+    } catch (error: any) {
+      console.error('[CRM] Error getting contact:', error);
+      res.status(500).json({ error: "Failed to get contact", details: error.message });
+    }
+  });
+
+  // POST /api/crm/contacts - Create new contact
+  app.post("/api/crm/contacts", requireAuth, async (req, res) => {
+    try {
+      const brandId = req.body.brandId || req.user?.brandId;
+      
+      if (!brandId) {
+        return res.status(400).json({ error: "brandId is required" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const { displayName, email, phone, city, country, status, lifecycleStage, customFields } = req.body;
+
+      if (!displayName) {
+        return res.status(400).json({ error: "displayName is required" });
+      }
+
+      const contact = await storage.createCrmContact({
+        brandId,
+        displayName,
+        email,
+        phone,
+        city,
+        country,
+        status: status || 'lead',
+        lifecycleStage: lifecycleStage || 'new',
+        customFields: customFields || {},
+      });
+
+      res.status(201).json({ contact });
+    } catch (error: any) {
+      console.error('[CRM] Error creating contact:', error);
+      res.status(500).json({ error: "Failed to create contact", details: error.message });
+    }
+  });
+
+  // PUT /api/crm/contacts/:id - Update contact
+  app.put("/api/crm/contacts/:id", requireAuth, async (req, res) => {
+    try {
+      const existing = await storage.getCrmContact(req.params.id);
+      
+      if (!existing) {
+        return res.status(404).json({ error: "Contact not found" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== existing.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const { displayName, email, phone, city, country, status, lifecycleStage, customFields } = req.body;
+
+      const contact = await storage.updateCrmContact(req.params.id, {
+        displayName,
+        email,
+        phone,
+        city,
+        country,
+        status,
+        lifecycleStage,
+        customFields,
+      });
+
+      res.json({ contact });
+    } catch (error: any) {
+      console.error('[CRM] Error updating contact:', error);
+      res.status(500).json({ error: "Failed to update contact", details: error.message });
+    }
+  });
+
+  // DELETE /api/crm/contacts/:id - Delete contact
+  app.delete("/api/crm/contacts/:id", requireAuth, async (req, res) => {
+    try {
+      const existing = await storage.getCrmContact(req.params.id);
+      
+      if (!existing) {
+        return res.status(404).json({ error: "Contact not found" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== existing.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      // Update status to archived instead of hard delete
+      await storage.updateCrmContact(req.params.id, { status: 'archived' });
+
+      res.json({ success: true, message: "Contact archived" });
+    } catch (error: any) {
+      console.error('[CRM] Error deleting contact:', error);
+      res.status(500).json({ error: "Failed to delete contact", details: error.message });
+    }
+  });
+
+  // GET /api/crm/contacts/:id/channels - Get contact's social channels
+  app.get("/api/crm/contacts/:id/channels", requireAuth, async (req, res) => {
+    try {
+      const contact = await storage.getCrmContact(req.params.id);
+      
+      if (!contact) {
+        return res.status(404).json({ error: "Contact not found" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== contact.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const channels = await storage.getCrmContactChannels(req.params.id);
+
+      res.json({ channels });
+    } catch (error: any) {
+      console.error('[CRM] Error getting contact channels:', error);
+      res.status(500).json({ error: "Failed to get channels", details: error.message });
+    }
+  });
+
+  // GET /api/crm/contacts/:id/conversations - Get contact's conversation history
+  app.get("/api/crm/contacts/:id/conversations", requireAuth, async (req, res) => {
+    try {
+      const contact = await storage.getCrmContact(req.params.id);
+      
+      if (!contact) {
+        return res.status(404).json({ error: "Contact not found" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== contact.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      // Get all channels for this contact
+      const channels = await storage.getCrmContactChannels(req.params.id);
+      
+      // Get conversations by matching customerId from channels
+      const conversations: any[] = [];
+      for (const channel of channels) {
+        // Find conversations that match this channel's external ID
+        const brandConversations = await storage.getConversations(contact.brandId);
+        const matching = brandConversations.filter(c => 
+          c.customerId === channel.externalId && 
+          normalizePlatform(c.platform) === channel.platform
+        );
+        
+        for (const conv of matching) {
+          const messages = await storage.getMessagesByConversation(conv.id);
+          conversations.push({
+            ...conv,
+            platform: channel.platform,
+            messageCount: messages.length,
+            lastMessage: messages[0],
+          });
+        }
+      }
+
+      // Sort by most recent activity
+      conversations.sort((a, b) => {
+        const dateA = new Date(a.updatedAt || a.lastMessageAt || 0);
+        const dateB = new Date(b.updatedAt || b.lastMessageAt || 0);
+        return dateB.getTime() - dateA.getTime();
+      });
+
+      res.json({ conversations });
+    } catch (error: any) {
+      console.error('[CRM] Error getting contact conversations:', error);
+      res.status(500).json({ error: "Failed to get conversations", details: error.message });
+    }
+  });
+
+  // GET /api/crm/limbo - Get limbo entries (commenters not yet promoted to contacts)
+  app.get("/api/crm/limbo", requireAuth, async (req, res) => {
+    try {
+      const brandId = req.query.brandId as string || req.user?.brandId;
+      
+      if (!brandId) {
+        return res.status(400).json({ error: "brandId is required" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const notPromoted = req.query.notPromoted !== 'false';
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+
+      const entries = await storage.getCrmContactLimbo(brandId, { notPromoted, limit });
+
+      res.json({ entries });
+    } catch (error: any) {
+      console.error('[CRM] Error getting limbo entries:', error);
+      res.status(500).json({ error: "Failed to get limbo entries", details: error.message });
+    }
+  });
+
+  // POST /api/crm/limbo/:id/promote - Promote limbo entry to full contact
+  app.post("/api/crm/limbo/:id/promote", requireAuth, async (req, res) => {
+    try {
+      // Get the limbo entry by ID (works for both admin and client users)
+      const limboEntry = await storage.getCrmLimboById(req.params.id);
+
+      if (!limboEntry) {
+        return res.status(404).json({ error: "Limbo entry not found" });
+      }
+
+      // Authorize: admin can access any, clients only their brand
+      if (req.user?.role !== 'admin' && req.user?.brandId !== limboEntry.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      if (limboEntry.promotedToContactId) {
+        return res.status(400).json({ error: "Already promoted", contactId: limboEntry.promotedToContactId });
+      }
+
+      // Create the contact
+      const contact = await storage.createCrmContact({
+        brandId: limboEntry.brandId,
+        displayName: limboEntry.username || 'Unknown',
+        status: 'lead',
+        lifecycleStage: 'new',
+        customFields: {},
+      });
+
+      // Create the channel
+      await storage.createCrmContactChannel({
+        contactId: contact.id,
+        platform: limboEntry.platform,
+        externalId: limboEntry.externalId,
+        username: limboEntry.username,
+        avatarUrl: limboEntry.avatarUrl,
+      });
+
+      // Mark limbo as promoted
+      await storage.promoteCrmLimboToContact(limboEntry.id, contact.id);
+
+      res.json({ success: true, contact });
+    } catch (error: any) {
+      console.error('[CRM] Error promoting limbo entry:', error);
+      res.status(500).json({ error: "Failed to promote entry", details: error.message });
+    }
+  });
+
+  // PUT /api/crm/contacts/:id/custom-field - Set a custom field
+  app.put("/api/crm/contacts/:id/custom-field", requireAuth, async (req, res) => {
+    try {
+      const existing = await storage.getCrmContact(req.params.id);
+      
+      if (!existing) {
+        return res.status(404).json({ error: "Contact not found" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== existing.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const { field, value } = req.body;
+      
+      if (!field) {
+        return res.status(400).json({ error: "field is required" });
+      }
+
+      const contact = await storage.updateCrmContactCustomField(req.params.id, field, value);
+
+      res.json({ contact });
+    } catch (error: any) {
+      console.error('[CRM] Error updating custom field:', error);
+      res.status(500).json({ error: "Failed to update custom field", details: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
 
   websocketService.initialize(httpServer);

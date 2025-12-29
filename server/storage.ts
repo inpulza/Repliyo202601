@@ -2196,6 +2196,14 @@ export class DatabaseStorage implements IStorage {
     return entry || undefined;
   }
 
+  async getCrmLimboById(id: string): Promise<CrmContactLimbo | undefined> {
+    const [entry] = await db
+      .select()
+      .from(crmContactLimbo)
+      .where(eq(crmContactLimbo.id, id));
+    return entry || undefined;
+  }
+
   async upsertCrmLimboEntry(entry: InsertCrmContactLimbo): Promise<CrmContactLimbo> {
     const existing = await this.findCrmLimboEntry(entry.brandId, entry.platform, entry.externalId);
     
