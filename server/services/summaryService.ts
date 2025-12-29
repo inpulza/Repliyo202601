@@ -2,9 +2,10 @@ import { storage } from "../storage";
 import { filterHistoryByAuthor } from "./llm/prompt-composer";
 import { createLLMProvider } from "./llm/factory";
 import type { AgentSecrets } from "./llm/types";
-import type { Message, AiAgent } from "@shared/schema";
+import type { Message, AiAgent, Conversation } from "@shared/schema";
 
 const DEFAULT_SUMMARY_THRESHOLD = 10;
+const MIN_SUMMARY_LENGTH = 100; // Resúmenes deben tener al menos 100 caracteres
 
 const SUMMARY_PROMPT = `Eres un experto en resumir conversaciones de atención al cliente. Tu tarea es crear un resumen CONSOLIDADO de la conversación entre la marca y el cliente.
 
@@ -88,14 +89,14 @@ Genera un resumen consolidado siguiendo las reglas establecidas.`;
   }
 }
 
-function createDummyMessage(conversationId: string, author: string): Message {
+function createDummyMessage(conversationId: string, author: string, type: string = "comment"): Message {
   return {
     id: "",
     brandId: "",
     conversationId,
     metricoolId: null,
     platform: "",
-    type: "comment",
+    type: type as "dm" | "comment",
     direction: "inbound",
     author,
     authorAvatar: null,
@@ -133,7 +134,8 @@ export async function generateConversationSummary(
   conversationId: string,
   targetAuthor: string,
   allMessages: Message[],
-  brandId: string
+  brandId: string,
+  conversationType: string = "comment"
 ): Promise<SummaryGenerationResult> {
   const agent = await storage.getAiAgentByBrand(brandId);
   
@@ -141,8 +143,12 @@ export async function generateConversationSummary(
     throw new Error(`No AI agent configured for brand ${brandId}`);
   }
 
-  const dummyMessage = createDummyMessage(conversationId, targetAuthor);
-  const filteredMessages = filterHistoryByAuthor(allMessages, dummyMessage, "comment");
+  // Usar el tipo de conversación correcto: 'conversation' para DMs, 'comment' para comentarios
+  const messageType = conversationType === 'dm' ? 'conversation' : 'comment';
+  const dummyMessage = createDummyMessage(conversationId, targetAuthor, conversationType);
+  const filteredMessages = filterHistoryByAuthor(allMessages, dummyMessage, messageType);
+
+  console.log(`[SummaryService] Filtering messages: type=${messageType}, total=${allMessages.length}, filtered=${filteredMessages.length}`);
 
   if (filteredMessages.length === 0) {
     throw new Error("No messages found for this author");
@@ -155,6 +161,14 @@ export async function generateConversationSummary(
     agent,
     existingSummary?.summary || undefined
   );
+
+  // Validar que el resumen no esté truncado o vacío
+  if (!summary || summary.length < MIN_SUMMARY_LENGTH) {
+    console.error(`[SummaryService] Generated summary too short (${summary?.length || 0} chars), discarding`);
+    throw new Error(`Summary too short: ${summary?.length || 0} characters`);
+  }
+
+  console.log(`[SummaryService] Summary generated successfully: ${summary.length} chars`);
 
   const lastMessage = filteredMessages[filteredMessages.length - 1];
 
@@ -171,6 +185,16 @@ export async function checkAndUpdateSummary(
   brandId: string
 ): Promise<void> {
   try {
+    // Obtener la conversación para saber el tipo (DM vs comentario)
+    const conversation = await storage.getConversation(conversationId);
+    if (!conversation) {
+      console.log(`[SummaryService] Conversation ${conversationId} not found`);
+      return;
+    }
+
+    const conversationType = conversation.type || 'comment';
+    console.log(`[SummaryService] Processing conversation ${conversationId}, type=${conversationType}, author=${author}`);
+
     const allMessages = await storage.getMessagesByConversation(conversationId);
     
     if (allMessages.length === 0) {
@@ -185,8 +209,10 @@ export async function checkAndUpdateSummary(
       return;
     }
 
-    const dummyMessage = createDummyMessage(conversationId, author);
-    const filteredMessages = filterHistoryByAuthor(allMessages, dummyMessage, "comment");
+    // Usar tipo correcto: 'conversation' para DMs, 'comment' para comentarios
+    const messageType = conversationType === 'dm' ? 'conversation' : 'comment';
+    const dummyMessage = createDummyMessage(conversationId, author, conversationType);
+    const filteredMessages = filterHistoryByAuthor(allMessages, dummyMessage, messageType);
     
     const existingSummary = await storage.getConversationUserSummary(conversationId, author);
     
@@ -202,7 +228,7 @@ export async function checkAndUpdateSummary(
       }
     }
 
-    console.log(`[SummaryService] Conversation ${conversationId}, Author: ${author}, New messages since last summary: ${newMessagesCount}`);
+    console.log(`[SummaryService] Conversation ${conversationId}, Author: ${author}, Type: ${conversationType}, New messages since last summary: ${newMessagesCount}`);
 
     if (newMessagesCount < DEFAULT_SUMMARY_THRESHOLD) {
       console.log(`[SummaryService] Below threshold (${DEFAULT_SUMMARY_THRESHOLD}), skipping summary generation`);
@@ -211,7 +237,7 @@ export async function checkAndUpdateSummary(
 
     console.log(`[SummaryService] Generating summary for ${author} in conversation ${conversationId} using ${agent.provider}/${agent.model}...`);
     
-    const result = await generateConversationSummary(conversationId, author, allMessages, brandId);
+    const result = await generateConversationSummary(conversationId, author, allMessages, brandId, conversationType);
 
     await storage.upsertConversationUserSummary({
       conversationId,
@@ -221,7 +247,7 @@ export async function checkAndUpdateSummary(
       messageCount: result.messageCount,
     });
 
-    console.log(`[SummaryService] Summary saved successfully for ${author}`);
+    console.log(`[SummaryService] Summary saved successfully for ${author} (${result.summary.length} chars)`);
   } catch (error) {
     console.error(`[SummaryService] Error updating summary:`, error);
   }
