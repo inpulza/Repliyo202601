@@ -4,8 +4,9 @@
 Sistema de gestión de mensajes de redes sociales que se integra con Metricool para centralizar y gestionar DMs y comentarios de múltiples marcas/empresas. El sistema permite a usuarios admin y clientes gestionar sus interacciones sociales de forma organizada.
 
 ## Estado Actual
-- **Fase Actual**: ✅ FASE 11 COMPLETADA - Mejoras Conversacionales BOTrust
-- **Última Actualización**: 29 de Diciembre 2025
+- **Fase Actual**: ✅ FASE 11 COMPLETADA - Mejoras Conversacionales BOTrust + Guardrails
+- **Última Actualización**: 29 de Diciembre 2025 (Sesión 2)
+- **Historial DMs**: 20 mensajes recientes + resumen persistente (500+ chars)
 - **Control @Mention**: ✅ Etiquetado automático desactivado por defecto, configurable por agente
 - **Login/Logout**: ✅ Completamente funcional (página de login creada, logout en sidebar)
 - **Sistema de Roles**: ✅ Admin vs Client funcionando correctamente
@@ -142,6 +143,110 @@ rules.push(`📊 DATOS PARA TU LÓGICA DE SALUDO:
 
 ---
 
+## Mejoras de Contexto y Guardrails - 29 Dic 2025 (Sesión 2)
+
+### Cambios Implementados
+
+#### 1. Aumento de Historial de DMs (10 → 20 mensajes)
+Se aumentó el contexto enviado al LLM para mensajes directos:
+
+```typescript
+// Archivo: server/services/llm/prompt-composer.ts, línea 342-343
+// Antes:
+return history.slice(-10);
+
+// Ahora:
+return history.slice(-20);
+```
+
+**Razón:** Con el resumen persistente cubriendo el historial antiguo, se puede enviar más contexto reciente sin duplicar información.
+
+#### 2. Mínimo de Resumen Aumentado (100 → 500 caracteres)
+Se aumentó el umbral mínimo para que los resúmenes sean más sustanciales:
+
+```typescript
+// Archivo: server/services/summaryService.ts
+const MIN_SUMMARY_LENGTH = 500; // Antes: 100
+```
+
+**Razón:** Resúmenes cortos (<500 chars) no proporcionaban contexto útil. Ahora se fuerza un resumen detallado.
+
+#### 3. Script de Generación de Resúmenes
+Se creó `scripts/generate-summaries.ts` para generar resúmenes en batch:
+
+```bash
+npx tsx scripts/generate-summaries.ts
+```
+
+**Resultado para BO Trust:**
+- Total DM conversations: 84
+- Generados: 12 (con 10+ mensajes)
+- Skipped: 72 (menos de 10 mensajes)
+- Promedio: 800-1300 caracteres por resumen
+
+#### 4. Guardrail #11: Prohibido Dar Precios
+Se agregó regla crítica a los guardrails del agente BO Trust:
+
+```markdown
+11. **PROHIBIDO DAR PRECIOS (CRÍTICO):**
+   - **NUNCA** des precios específicos por DM ni comentarios.
+   - ❌ PROHIBIDO: "$250", "cuesta $100", "son 300 dólares"
+   - **RESPUESTA CORRECTA:**
+     * ✅ "Los precios varían según cada caso. Escríbenos al WhatsApp (305) 639-0110 para cotización personalizada."
+   - **RAZÓN:** Precios dependen de cada cliente. Dar precios públicos genera problemas si luego el servicio cuesta diferente.
+```
+
+### Estructura Actualizada del Prompt
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                       USER PROMPT                               │
+├─────────────────────────────────────────────────────────────────┤
+│ 1. RESUMEN PERSISTENTE (500+ caracteres):                       │
+│    "--- RESUMEN DE CONVERSACIÓN ANTERIOR ---                    │
+│     • Cliente preguntó por ITIN y Taxes en Miami                │
+│     • Se le indicó contactar por WhatsApp                       │
+│     • Estado: Interesado, pendiente de envío de documentos      │
+│     --- FIN DEL RESUMEN ---"                                    │
+│                                                                 │
+│ 2. HISTORIAL RECIENTE (últimos 20 mensajes para DMs):           │
+│    "--- HISTORIAL RECIENTE DE CONVERSACIÓN ---                  │
+│     Cliente: Hola, me interesa el servicio...                   │
+│     Marca: Claro, te cuento los detalles...                     │
+│     [... hasta 20 mensajes ...]"                                │
+│                                                                 │
+│ 3. FICHA DE SITUACIÓN + MENSAJE ACTUAL                          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 11 Guardrails Actuales de BO Trust
+
+| # | Regla | Descripción Breve |
+|---|-------|-------------------|
+| 1 | Protocolo de Idioma | Detecta y responde en el idioma del usuario |
+| 2 | Formato Anti-Robot | Prohibido guión largo (—), usar puntos/comas |
+| 3 | Adaptación Longitud/CTA | TikTok=breve, IG/FB=más espacio |
+| 4 | Cero Asesoramiento Legal | No confirmar deducciones específicas |
+| 5 | Personalización Nombre | Extraer nombre del username |
+| 6 | Filtro de Servicios | Solo Taxes, Seguros, Bookkeeping, Payroll, Notaría |
+| 7 | Cobertura Geográfica | Atendemos TODO Estados Unidos |
+| 8 | Lógica de Saludo | Según tiempo transcurrido |
+| 9 | Tono según Canal | DM=conversacional, Comentario=profesional |
+| 10 | Acciones Externas | No decir "ya lo vi" para WhatsApp |
+| 11 | **Prohibido Precios** | Redirigir siempre al WhatsApp para cotización |
+
+### Archivos Modificados
+
+| Archivo | Cambio |
+|---------|--------|
+| `server/services/llm/prompt-composer.ts` | Línea 343: `slice(-20)` para DMs |
+| `server/services/summaryService.ts` | `MIN_SUMMARY_LENGTH = 500` |
+| `scripts/generate-summaries.ts` | Nuevo script para batch generation |
+| `server/routes.ts` | Endpoint `/api/admin/generate-summaries` |
+| Base de datos: `ai_agents.guardrail_prompt` | Regla #11 agregada |
+
+---
+
 ## Flujo de Contexto para DMs - Documentación Técnica
 
 ### Estructura del Prompt enviado al LLM
@@ -177,11 +282,11 @@ Cuando llega un DM nuevo, el sistema arma el siguiente prompt:
 │     • Cliente indica envío por WhatsApp - NO VERIFICABLE        │
 │     --- FIN DEL RESUMEN ---"                                    │
 │                                                                 │
-│ 2. HISTORIAL RECIENTE (últimos 10 mensajes):                    │
+│ 2. HISTORIAL RECIENTE (últimos 20 mensajes para DMs):           │
 │    "--- HISTORIAL RECIENTE DE CONVERSACIÓN ---                  │
 │     Cliente: Hola, me interesa el servicio...                   │
 │     Marca: Claro, te cuento los detalles...                     │
-│     Cliente: ¿Cuánto cuesta?"                                   │
+│     [... hasta 20 mensajes para DMs, 10 para comentarios ...]"                                   │
 │                                                                 │
 │ 3. FICHA DE SITUACIÓN:                                          │
 │    "Tipo: dm                                                    │
@@ -203,8 +308,8 @@ Cuando llega un DM nuevo, el sistema arma el siguiente prompt:
 ```
 1. Mensaje entrante → Buffer (45s) → autoReplyService
 2. autoReplyService:
-   - Obtiene últimos 10 mensajes
-   - Obtiene resumen persistente (si existe)
+   - Obtiene últimos 20 mensajes (para DMs)
+   - Obtiene resumen persistente (si existe, 500+ chars)
    - Envía todo a LLM
 3. LLM genera respuesta
 4. Se envía respuesta a Metricool
