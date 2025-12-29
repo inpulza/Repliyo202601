@@ -9,7 +9,30 @@
 
 ---
 
-## Estado Actual (21 Dic 2025)
+## Estado Actual (29 Dic 2025)
+
+### SummaryService Refactorizado ✅ NUEVO (29 Dic 2025)
+- **Problema:** SummaryService usaba Gemini hardcodeado, ignorando la configuración del agente
+- **Solución:** Ahora usa `createLLMProvider` con el mismo patrón que autoReplyService
+- **Cambios:**
+  - Se agregó método `generateRawCompletion` a la interfaz `LLMProvider`
+  - Implementado en `OpenAIAdapter` y `GeminiAdapter`
+  - `triggerSummaryUpdateAsync` ahora recibe `brandId` como tercer parámetro
+  - Respeta `platformSettings.openaiApiKey/geminiApiKey` del agente
+
+### Instrucciones de Saludo Simplificadas ✅ NUEVO (29 Dic 2025)
+- **Problema:** Las instrucciones hardcodeadas en prompt-composer sobrescribían los guardrails del usuario
+- **Solución:** `buildDynamicPersonalityRules()` ahora solo proporciona datos de contexto:
+  - Tiempo desde última interacción
+  - Profundidad de conversación
+  - Estado de relación (new/active/reengagement)
+  - Nombre detectado
+- El prompt personalizado del usuario (guardrails) define la lógica de saludo
+- Variables disponibles: `{{time_since_last_interaction}}`, `{{relationship_status}}`, `{{first_name}}`
+
+---
+
+## Estado Anterior (21 Dic 2025)
 
 ### Sistema de Buffer de DMs ✅ FUNCIONANDO
 - **Problema:** Cuando usuario envía 4 DMs rápidos, la IA respondía 4 veces
