@@ -3,6 +3,7 @@ import { MetricoolService, createMetricoolService } from "./metricool";
 import { websocketService } from "./websocketService";
 import { autoReplyService } from "./autoReplyService";
 import { transcriptionService } from "./transcriptionService";
+import { crmTrafficController } from "./crmTrafficController";
 import { log } from "../app";
 
 interface BrandSyncResult {
@@ -337,6 +338,23 @@ class SyncService {
           // Log DM processing for debugging
           log(`[SyncService] DM ${metricoolId} from ${author}: isNew=${isNewMessage}, isReallyNew=${isReallyNew}, isFromBrand=${isFromBrand}, direction=${direction}`, "sync");
           
+          // CRM Traffic Controller: Route DM to contact system
+          if (isReallyNew && isInbound) {
+            try {
+              await crmTrafficController.routeIncomingMessage({
+                brandId,
+                platform,
+                externalId: customerId,
+                username: author,
+                avatarUrl: authorAvatar,
+                displayName: author,
+                messageType: 'dm',
+              });
+            } catch (crmError: any) {
+              log(`[SyncService] CRM routing error for DM: ${crmError.message}`, "sync");
+            }
+          }
+          
           if (isReallyNew && isInbound) {
             newInboundCount++; // Increment counter for truly new inbound messages
             
@@ -492,6 +510,23 @@ class SyncService {
         const isReallyNew = isNewComment && savedComment.brandId === brandId;
         
         log(`[SyncService] Comment ${comment.id} from ${comment.author}: isNew=${isNewComment}, isReallyNew=${isReallyNew}, isFromBrand=${isCommentFromBrand}`, "sync");
+        
+        // CRM Traffic Controller: Route comment to limbo or existing contact
+        if (isReallyNew && !isCommentFromBrand) {
+          try {
+            await crmTrafficController.routeIncomingMessage({
+              brandId,
+              platform,
+              externalId: customerId,
+              username: customerName,
+              avatarUrl: customerAvatar,
+              displayName: customerName,
+              messageType: 'comment',
+            });
+          } catch (crmError: any) {
+            log(`[SyncService] CRM routing error for comment: ${crmError.message}`, "sync");
+          }
+        }
         
         // Only notify and trigger auto-reply for NEW INBOUND comments (not from brand)
         if (isReallyNew && !isCommentFromBrand) {
