@@ -71,6 +71,166 @@ autoMentionEnabled = true:
 
 ---
 
+## Refactorización SummaryService + Prompt Composer - 29 Dic 2025
+
+### Problema 1: SummaryService ignoraba configuración del agente
+El servicio de resúmenes usaba Gemini Flash hardcodeado, ignorando la configuración de OpenAI/ChatGPT del agente.
+
+### Solución Implementada
+Se refactorizó para usar `createLLMProvider` con el mismo patrón que autoReplyService:
+
+```typescript
+// Antes (hardcodeado):
+const client = new GoogleGenAI({ apiKey });
+const response = await client.models.generateContent({...});
+
+// Ahora (usa configuración del agente):
+const secrets = getGlobalSecrets();
+const llmProvider = createLLMProvider(agent, secrets);
+const response = await llmProvider.generateRawCompletion(...);
+```
+
+### Cambios Técnicos
+1. **Nuevo método `generateRawCompletion`** en interfaz `LLMProvider`:
+   - Implementado en `OpenAIAdapter` y `GeminiAdapter`
+   - Permite completaciones simples sin pasar por `composePrompt`
+   
+2. **`triggerSummaryUpdateAsync`** ahora recibe `brandId` como tercer parámetro:
+   ```typescript
+   // Antes:
+   triggerSummaryUpdateAsync(conversationId, author);
+   
+   // Ahora:
+   triggerSummaryUpdateAsync(conversationId, author, brandId);
+   ```
+
+3. **Prioridad de API keys** (igual que `createLLMProvider`):
+   1. `platformSettings.openaiApiKey` (per-brand)
+   2. `secrets.openaiApiKey` (global)
+   3. `process.env.OPENAI_API_KEY` (fallback)
+
+### Problema 2: Instrucciones de saludo sobrescribían guardrails
+`buildDynamicPersonalityRules()` tenía instrucciones hardcodeadas como "Hola de nuevo, María" que sobrescribían las reglas del usuario.
+
+### Solución Implementada
+Simplificado para solo proporcionar datos de contexto:
+
+```typescript
+// Antes (hardcodeado):
+rules.push(`👋 REENGAGEMENT (usuario que vuelve)
+   ✅ Saluda usando el PRIMER NOMBRE: "Hola de nuevo, ${firstName}"...`);
+
+// Ahora (solo datos):
+rules.push(`📊 DATOS PARA TU LÓGICA DE SALUDO:
+   - Tiempo desde última interacción: ${context.timeSinceLastInteraction} minutos
+   - Estado: ${context.relationshipStatus}
+   - Nombre detectado: ${context.firstName || '(no detectado)'}
+
+⚠️ USA LAS INSTRUCCIONES DEL PROMPT PERSONALIZADO para decidir cómo saludar.`);
+```
+
+### Archivos Modificados
+| Archivo | Cambio |
+|---------|--------|
+| `server/services/llm/types.ts` | Nuevos tipos `RawCompletionOptions`, `RawCompletionResponse` y método `generateRawCompletion` |
+| `server/services/llm/openai-adapter.ts` | Implementación de `generateRawCompletion` |
+| `server/services/llm/gemini-adapter.ts` | Implementación de `generateRawCompletion` |
+| `server/services/summaryService.ts` | Usa `createLLMProvider` + `generateRawCompletion` |
+| `server/services/llm/prompt-composer.ts` | Simplificado `buildDynamicPersonalityRules()` |
+| `server/routes.ts` | Llamadas a `triggerSummaryUpdateAsync` con brandId |
+| `server/services/autoReplyService.ts` | Llamada a `triggerSummaryUpdateAsync` con brandId |
+
+---
+
+## Flujo de Contexto para DMs - Documentación Técnica
+
+### Estructura del Prompt enviado al LLM
+
+Cuando llega un DM nuevo, el sistema arma el siguiente prompt:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      SYSTEM PROMPT                              │
+├─────────────────────────────────────────────────────────────────┤
+│ 1. Agent Persona (systemPrompt del agente)                      │
+│ 2. Dynamic Personality Rules:                                   │
+│    - Tipo de mensaje (DM vs Comentario)                         │
+│    - Tiempo desde última interacción                            │
+│    - Estado de relación (new/active/reengagement)               │
+│    - Datos para lógica de saludo                                │
+│ 3. Guardrails del usuario (reglas 1-10)                         │
+│ 4. Knowledge Base (si existe)                                   │
+│ 5. Tono de comunicación de la marca                             │
+│ 6. Contexto del negocio                                         │
+│ 7. Guía de longitud para la plataforma                          │
+│ 8. Límites técnicos de caracteres                               │
+│ 9. Regla de memoria (PROHIBIDO decir "no tengo acceso")         │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                       USER PROMPT                               │
+├─────────────────────────────────────────────────────────────────┤
+│ 1. RESUMEN PERSISTENTE (si > 10 mensajes previos):              │
+│    "--- RESUMEN DE CONVERSACIÓN ANTERIOR ---                    │
+│     • Cliente preguntó por servicio X                           │
+│     • Se cotizó $500                                            │
+│     • Cliente indica envío por WhatsApp - NO VERIFICABLE        │
+│     --- FIN DEL RESUMEN ---"                                    │
+│                                                                 │
+│ 2. HISTORIAL RECIENTE (últimos 10 mensajes):                    │
+│    "--- HISTORIAL RECIENTE DE CONVERSACIÓN ---                  │
+│     Cliente: Hola, me interesa el servicio...                   │
+│     Marca: Claro, te cuento los detalles...                     │
+│     Cliente: ¿Cuánto cuesta?"                                   │
+│                                                                 │
+│ 3. FICHA DE SITUACIÓN:                                          │
+│    "Tipo: dm                                                    │
+│     Estado: active                                              │
+│     Profundidad: 5 mensajes                                     │
+│     Última respuesta nuestra: hace 3 min"                       │
+│                                                                 │
+│ 4. MENSAJE ACTUAL:                                              │
+│    "--- MENSAJE A RESPONDER ---                                 │
+│     Plataforma: instagram                                       │
+│     Tipo: Mensaje Directo                                       │
+│     Autor: María                                                │
+│     Contenido: ¿Cuánto cuesta el servicio?"                     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Flujo de Actualización del Resumen
+
+```
+1. Mensaje entrante → Buffer (45s) → autoReplyService
+2. autoReplyService:
+   - Obtiene últimos 10 mensajes
+   - Obtiene resumen persistente (si existe)
+   - Envía todo a LLM
+3. LLM genera respuesta
+4. Se envía respuesta a Metricool
+5. Se llama triggerSummaryUpdateAsync(conversationId, author, brandId)
+6. summaryService (async):
+   - Cuenta mensajes nuevos desde último resumen
+   - Si >= 10 mensajes nuevos → genera nuevo resumen
+   - Usa LLM configurado del agente (ChatGPT/Gemini)
+   - Guarda en BD tabla conversation_user_summaries
+```
+
+### Variables Dinámicas Disponibles
+
+| Variable | Valor Ejemplo | Uso |
+|----------|---------------|-----|
+| `{{username}}` | @maria_perez | Nombre completo del usuario |
+| `{{first_name}}` | María | Primer nombre extraído |
+| `{{platform}}` | instagram | Red social |
+| `{{is_dm}}` | true | Si es DM o comentario |
+| `{{time_since_last_interaction}}` | 5 | Minutos desde última respuesta |
+| `{{relationship_status}}` | active | new/active/reengagement |
+| `{{conversation_depth}}` | 7 | Cantidad de mensajes en hilo |
+| `{{post_context}}` | Caption del post | Contexto del post (comentarios) |
+
+---
+
 ## PRD Técnico Completo
 
 ### FASE 1: Arquitectura de Datos & Autenticación ✅ COMPLETADA
