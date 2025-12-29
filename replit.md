@@ -13,27 +13,25 @@
 
 ## 🎯 PRÓXIMOS PASOS PENDIENTES (En Orden)
 
-### PASO 1: Backfill (Migración Histórica) 🔄
-**Estado:** PENDIENTE
-**Prioridad:** PRIMERO - Sin esto el CRM está vacío
+### PASO 1: Backfill (Migración Histórica) ✅ COMPLETADO (29 Dic 2025)
+**Estado:** COMPLETADO
 
-**Objetivo:** Poblar el CRM con datos de conversaciones existentes. Actualmente las tablas CRM están vacías porque solo se llenan con mensajes nuevos (via Traffic Controller). Necesitamos "sembrar" el CRM con el historial existente.
+**Resultados de la migración:**
+- 205 contactos CRM creados en total
+- 202 contactos desde backfill + 3 del Traffic Controller
+- 146 contactos Instagram + 59 contactos Facebook
+- Distribuidos en 5 marcas: BO Trust (84), Fortress (53), hmpsychiatry (30), Inpulza (28), Inpulza Testing (10)
 
-**Script a crear:** `scripts/migrate-contacts.ts`
+**Script creado:** `scripts/migrate-contacts.ts`
+- Lee combinaciones únicas de (brandId, platform, customerId) de la tabla `conversations` (tipo DM)
+- Crea `crm_contacts` + `crm_contact_channels` para cada contacto
+- **Idempotente:** usa `findCrmContactChannelByExternal()` para saltar duplicados
+- Usa MAX() para customerName/customerAvatar en casos de cambios
 
-**Lógica del Backfill:**
-1. Leer todos los `sender_id` únicos de la tabla `conversations`
-2. Para cada usuario único:
-   - Crear registro en `crm_contacts` (UUID nuevo)
-   - Crear registro en `crm_contact_channels` vinculando plataforma + external_id
-   - Usar `display_name`/`avatar_url` de la conversación existente
-3. El script debe ser **idempotente** (si corre 2 veces, no duplica)
-4. Logging de cuántos contactos creados
-
-**Archivos relevantes:**
-- `shared/schema.ts` - Tablas `crm_contacts`, `crm_contact_channels`
-- `server/storage.ts` - Métodos CRM existentes
-- `server/services/crmTrafficController.ts` - Lógica de creación (referencia)
+**Comando para ejecutar:**
+```bash
+npx tsx scripts/migrate-contacts.ts
+```
 
 ---
 
