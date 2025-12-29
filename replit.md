@@ -14,19 +14,32 @@
 ## 🎯 PRÓXIMOS PASOS PENDIENTES (En Orden)
 
 ### PASO 1: Backfill (Migración Histórica) ✅ COMPLETADO (29 Dic 2025)
-**Estado:** COMPLETADO
+**Estado:** COMPLETADO Y VERIFICADO
 
-**Resultados de la migración:**
+**Resultados finales de la migración:**
 - 205 contactos CRM creados en total
 - 202 contactos desde backfill + 3 del Traffic Controller
 - 146 contactos Instagram + 59 contactos Facebook
+- 212 conversaciones DM vinculadas a contactos con FK constraint
 - Distribuidos en 5 marcas: BO Trust (84), Fortress (53), hmpsychiatry (30), Inpulza (28), Inpulza Testing (10)
 
-**Script creado:** `scripts/migrate-contacts.ts`
+**Script:** `scripts/migrate-contacts.ts` (v2)
 - Lee combinaciones únicas de (brandId, platform, customerId) de la tabla `conversations` (tipo DM)
+- Calcula métricas reales desde tabla `messages`: `MIN(timestamp)` y `MAX(timestamp)`
 - Crea `crm_contacts` + `crm_contact_channels` para cada contacto
+- Vincula `conversations.contact_id` a cada contacto CRM
 - **Idempotente:** usa `findCrmContactChannelByExternal()` para saltar duplicados
-- Usa MAX() para customerName/customerAvatar en casos de cambios
+
+**FK Constraint agregado:**
+```sql
+conversations.contact_id → crm_contacts.id ON DELETE SET NULL
+```
+
+**Verificación de consistencia (spot-check):**
+| Contacto | first_interaction_at | actual MIN(msg) | ✓ |
+|----------|---------------------|-----------------|---|
+| Angel Andres Ortiz Martinez | 2025-11-08 17:41:44 | 2025-11-08 17:41:44 | ✅ |
+| feli_0511 | 2025-09-27 11:02:11 | 2025-09-27 11:02:11 | ✅ |
 
 **Comando para ejecutar:**
 ```bash
