@@ -47,6 +47,7 @@ export interface IStorage {
   
   getConversations(brandId: string): Promise<Conversation[]>;
   getConversationsBySocialPost(brandId: string, socialPostId: string): Promise<Conversation[]>;
+  getConversationsByCustomer(brandId: string, platform: string, customerId: string): Promise<Conversation[]>;
   getInboxThreads(brandId: string): Promise<Array<Conversation & { messageCount: number; aggregatedUnreadCount: number; representativeConversationIds: string[] }>>;
   getConversation(id: string): Promise<Conversation | undefined>;
   getConversationByKey(brandId: string, platform: string, customerId: string, socialPostId?: string | null): Promise<Conversation | undefined>;
@@ -174,6 +175,10 @@ export interface IStorage {
   getCrmContactByEmail(brandId: string, email: string): Promise<CrmContact | undefined>;
   getCrmContactByPhone(brandId: string, phone: string): Promise<CrmContact | undefined>;
   createCrmContact(contact: InsertCrmContact): Promise<CrmContact>;
+  createCrmContactWithChannel(
+    contact: InsertCrmContact,
+    channel: { platform: string; externalId: string; username?: string; avatarUrl?: string }
+  ): Promise<{ contact: CrmContact; channel: CrmContactChannel; linkedConversations: number; existingContact?: CrmContact; existingChannel?: CrmContactChannel }>;
   updateCrmContact(id: string, updates: UpdateCrmContact): Promise<CrmContact | undefined>;
   updateCrmContactCustomField(id: string, field: string, value: any): Promise<CrmContact | undefined>;
   incrementCrmContactMetrics(id: string, conversations?: number, messages?: number): Promise<CrmContact | undefined>;
@@ -377,6 +382,20 @@ export class DatabaseStorage implements IStorage {
         and(
           eq(conversations.brandId, brandId),
           eq(conversations.socialPostId, socialPostId)
+        )
+      )
+      .orderBy(desc(conversations.lastMessageAt));
+  }
+
+  async getConversationsByCustomer(brandId: string, platform: string, customerId: string): Promise<Conversation[]> {
+    return await db
+      .select()
+      .from(conversations)
+      .where(
+        and(
+          eq(conversations.brandId, brandId),
+          eq(conversations.platform, platform),
+          eq(conversations.customerId, customerId)
         )
       )
       .orderBy(desc(conversations.lastMessageAt));
@@ -2065,6 +2084,77 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return created;
+  }
+
+  async createCrmContactWithChannel(
+    contact: InsertCrmContact,
+    channelData: { platform: string; externalId: string; username?: string; avatarUrl?: string }
+  ): Promise<{ contact: CrmContact; channel: CrmContactChannel; linkedConversations: number; existingContact?: CrmContact; existingChannel?: CrmContactChannel }> {
+    return await db.transaction(async (tx) => {
+      const now = new Date();
+      
+      const existingResult = await tx
+        .select({ 
+          channel: crmContactChannels,
+          contact: crmContacts 
+        })
+        .from(crmContactChannels)
+        .innerJoin(crmContacts, eq(crmContactChannels.contactId, crmContacts.id))
+        .where(and(
+          eq(crmContacts.brandId, contact.brandId),
+          eq(crmContactChannels.platform, channelData.platform),
+          eq(crmContactChannels.externalId, channelData.externalId)
+        ))
+        .limit(1);
+      
+      if (existingResult.length > 0) {
+        const err = new Error('CONTACT_ALREADY_EXISTS') as Error & { existingContact?: CrmContact; existingChannel?: CrmContactChannel };
+        err.existingContact = existingResult[0].contact;
+        err.existingChannel = existingResult[0].channel;
+        throw err;
+      }
+      
+      const [createdContact] = await tx
+        .insert(crmContacts)
+        .values({
+          ...contact,
+          firstInteractionAt: contact.firstInteractionAt || now,
+          lastInteractionAt: contact.lastInteractionAt || now,
+        })
+        .returning();
+      
+      const [createdChannel] = await tx
+        .insert(crmContactChannels)
+        .values({
+          contactId: createdContact.id,
+          platform: channelData.platform,
+          externalId: channelData.externalId,
+          username: channelData.username || createdContact.displayName || null,
+          avatarUrl: channelData.avatarUrl || null,
+          isActive: true,
+          messageCount: 0,
+          firstMessageAt: now,
+          lastMessageAt: now,
+        })
+        .returning();
+      
+      const updateResult = await tx
+        .update(conversations)
+        .set({ contactId: createdContact.id })
+        .where(and(
+          eq(conversations.brandId, contact.brandId),
+          eq(conversations.platform, channelData.platform),
+          eq(conversations.customerId, channelData.externalId),
+          isNull(conversations.contactId)
+        ))
+        .returning({ id: conversations.id });
+      
+      return {
+        contact: createdContact,
+        channel: createdChannel,
+        linkedConversations: updateResult.length,
+      };
+    });
   }
 
   async updateCrmContact(id: string, updates: UpdateCrmContact): Promise<CrmContact | undefined> {

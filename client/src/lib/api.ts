@@ -523,4 +523,49 @@ export const api = {
       return res.json();
     },
   },
+
+  crm: {
+    getContactByChannel: async (brandId: string, platform: string, externalId: string): Promise<{ contact: any; channels: any[] } | null> => {
+      const res = await fetch(`${API_BASE}/crm/contacts/by-channel?brandId=${brandId}&platform=${platform}&externalId=${encodeURIComponent(externalId)}`);
+      if (res.status === 404) return null;
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to fetch CRM contact');
+      }
+      return res.json();
+    },
+
+    createContact: async (data: {
+      brandId: string;
+      displayName: string;
+      email?: string;
+      phone?: string;
+      city?: string;
+      country?: string;
+      platform?: string;
+      externalId?: string;
+      username?: string;
+      avatarUrl?: string;
+    }): Promise<{ contact: any }> => {
+      const res = await fetch(`${API_BASE}/crm/contacts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to create contact');
+      }
+      return res.json();
+    },
+
+    getContactTimeline: async (contactId: string, limit = 100): Promise<{ messages: any[]; mostRecentConversationId: string | null }> => {
+      const res = await fetch(`${API_BASE}/crm/contacts/${contactId}/timeline?limit=${limit}`);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to fetch timeline');
+      }
+      return res.json();
+    },
+  },
 };

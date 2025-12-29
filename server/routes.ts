@@ -2882,6 +2882,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/crm/contacts/by-channel - Find contact by social channel (platform + externalId)
+  // Used by Inbox to resolve CRM context when selecting a conversation
+  app.get("/api/crm/contacts/by-channel", requireAuth, async (req, res) => {
+    try {
+      const brandId = req.query.brandId as string || req.user?.brandId;
+      const platform = req.query.platform as string;
+      const externalId = req.query.externalId as string;
+      
+      if (!brandId || !platform || !externalId) {
+        return res.status(400).json({ error: "brandId, platform, and externalId are required" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const channel = await storage.findCrmContactChannelByExternal(brandId, platform, externalId);
+      
+      if (!channel) {
+        return res.status(404).json({ error: "Contact not found for this channel" });
+      }
+
+      const contact = await storage.getCrmContact(channel.contactId);
+      
+      if (!contact) {
+        return res.status(404).json({ error: "Contact not found" });
+      }
+
+      const channels = await storage.getCrmContactChannels(contact.id);
+
+      res.json({ contact, channels });
+    } catch (error: any) {
+      console.error('[CRM] Error finding contact by channel:', error);
+      res.status(500).json({ error: "Failed to find contact", details: error.message });
+    }
+  });
+
   // GET /api/crm/contacts/:id - Get single contact with all details
   app.get("/api/crm/contacts/:id", requireAuth, async (req, res) => {
     try {
@@ -2906,6 +2943,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/crm/contacts - Create new contact
+  // If platform and externalId are provided, creates contact+channel+links in atomic transaction
   app.post("/api/crm/contacts", requireAuth, async (req, res) => {
     try {
       const brandId = req.body.brandId || req.user?.brandId;
@@ -2918,12 +2956,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Access denied" });
       }
 
-      const { displayName, email, phone, city, country, status, lifecycleStage, customFields } = req.body;
+      const { 
+        displayName, email, phone, city, country, status, lifecycleStage, customFields,
+        platform, externalId, username, avatarUrl
+      } = req.body;
 
       if (!displayName) {
         return res.status(400).json({ error: "displayName is required" });
       }
 
+      // If platform and externalId provided, use atomic transaction
+      if (platform && externalId) {
+        try {
+          const result = await storage.createCrmContactWithChannel(
+            {
+              brandId,
+              displayName,
+              email,
+              phone,
+              city,
+              country,
+              status: status || 'lead',
+              lifecycleStage: lifecycleStage || 'new',
+              customFields: customFields || {},
+            },
+            { platform, externalId, username: username || displayName, avatarUrl }
+          );
+          
+          console.log(`[CRM] Created contact ${result.contact.id} with channel, linked ${result.linkedConversations} conversations`);
+          return res.status(201).json({ contact: result.contact, channel: result.channel });
+        } catch (txError: any) {
+          if (txError.message === 'CONTACT_ALREADY_EXISTS') {
+            return res.status(409).json({ 
+              error: "Contact already exists for this channel",
+              contact: txError.existingContact || null,
+              channel: txError.existingChannel || null
+            });
+          }
+          throw txError;
+        }
+      }
+
+      // No channel data - create simple contact
       const contact = await storage.createCrmContact({
         brandId,
         displayName,

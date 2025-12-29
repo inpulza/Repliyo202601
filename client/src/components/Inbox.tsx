@@ -252,6 +252,19 @@ export function Inbox() {
     enabled: !!activeClientId,
   });
 
+  // CRM Contact Query - fetch contact when DM conversation is selected
+  const { data: crmContactData, isLoading: isLoadingCrmContact } = useQuery({
+    queryKey: ['crmContact', activeClientId, activeConversation?.platform, activeConversation?.customerId],
+    queryFn: () => {
+      if (!activeClientId || !activeConversation?.customerId || activeConversation.type !== 'dm') {
+        return null;
+      }
+      return api.crm.getContactByChannel(activeClientId, activeConversation.platform, activeConversation.customerId);
+    },
+    enabled: !!activeClientId && !!activeConversation?.customerId && activeConversation?.type === 'dm',
+    staleTime: 30000, // Cache for 30 seconds
+  });
+
   const [isUpdatingSyncPause, setIsUpdatingSyncPause] = useState(false);
 
   const handleToggleSyncPause = async () => {
@@ -1680,9 +1693,16 @@ export function Inbox() {
 
       {/* COLUMN 4: CRM Context Panel */}
       <CRMContextPanel 
-          contact={selectedMessage?.crmData as CRMContact | undefined}
+          crmContact={crmContactData?.contact}
+          crmChannels={crmContactData?.channels}
+          isLoadingContact={isLoadingCrmContact}
+          conversation={activeConversation}
+          brandId={activeClientId || ''}
           isOpen={isCRMOpen}
           onClose={() => setIsCRMOpen(false)}
+          onContactCreated={() => {
+            queryClient.invalidateQueries({ queryKey: ['crmContact'] });
+          }}
       />
     </div>
   );
