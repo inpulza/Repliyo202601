@@ -11,7 +11,50 @@
 
 ## Estado Actual (29 Dic 2025)
 
-### SummaryService Refactorizado ✅ NUEVO (29 Dic 2025)
+### Módulo CRM Completo ✅ NUEVO (29 Dic 2025)
+Sistema CRM integrado inspirado en Respond.io para gestión de contactos multi-plataforma.
+
+**Fase 1 - Base de Datos:**
+- 3 tablas: `crm_contacts`, `crm_contact_channels`, `crm_contact_limbo`
+- UUIDs como PKs para fusión futura de identidades
+- JSONB `customFields` para datos dinámicos extraídos por IA
+- 20+ métodos de storage con aislamiento multi-tenant
+
+**Fase 2 - Traffic Controller:**
+- Enrutamiento automático: DMs → crear contactos, Comentarios → limbo
+- Integrado en syncService durante sincronización de Metricool
+- Patrón "lazy creation" - contactos solo después de handshake DM
+
+**Fase 3 - Function Calling para IA:**
+- 4 funciones CRM: `update_contact`, `set_custom_field`, `update_status`, `update_lifecycle`
+- Extracción automática de datos (email, teléfono, ciudad) durante conversaciones
+- Prompt-based function calling compatible con OpenAI y Gemini
+- Ejecución de acciones CRM antes de enviar respuesta
+
+**Fase 4 - API Endpoints:**
+| Endpoint | Descripción |
+|----------|-------------|
+| `GET /api/crm/contacts` | Listar contactos de una marca |
+| `GET /api/crm/contacts/:id` | Detalle con canales asociados |
+| `POST /api/crm/contacts` | Crear nuevo contacto |
+| `PUT /api/crm/contacts/:id` | Actualizar contacto |
+| `DELETE /api/crm/contacts/:id` | Archivar contacto (soft delete) |
+| `GET /api/crm/contacts/:id/channels` | Canales sociales del contacto |
+| `GET /api/crm/contacts/:id/conversations` | Historial de conversaciones |
+| `PUT /api/crm/contacts/:id/custom-field` | Actualizar campo personalizado |
+| `GET /api/crm/limbo` | Entradas en limbo (comentaristas) |
+| `POST /api/crm/limbo/:id/promote` | Promover limbo a contacto |
+
+**Archivos CRM clave:**
+- `shared/schema.ts` - Tablas y tipos CRM
+- `server/storage.ts` - Métodos de persistencia CRM
+- `server/services/crmTrafficController.ts` - Enrutamiento DM/comentarios
+- `server/services/llm/crm-functions.ts` - Ejecutor de funciones IA
+- `server/services/llm/prompt-composer.ts` - Prompt con instrucciones CRM
+
+---
+
+### SummaryService Refactorizado ✅ (29 Dic 2025)
 - **Problema:** SummaryService usaba Gemini hardcodeado, ignorando la configuración del agente
 - **Solución:** Ahora usa `createLLMProvider` con el mismo patrón que autoReplyService
 - **Cambios:**
