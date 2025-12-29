@@ -5186,17 +5186,94 @@ async function trafficController(webhook: MetricoolWebhook): Promise<void> {
 
 ---
 
-### Plan de Implementación
+### Plan de Implementación - ✅ COMPLETADO (29 Dic 2025)
 
 | Paso | Descripción | Archivos | Riesgo | Estado |
 |------|-------------|----------|--------|--------|
-| **1** | Crear tablas CRM (migración aditiva) | `shared/schema.ts`, migrations | ⚪ Bajo | ⏳ Pendiente |
-| **2** | Métodos CRUD en storage | `server/storage.ts` | ⚪ Bajo | ⏳ Pendiente |
-| **3** | Traffic Controller en sync | `server/services/syncService.ts` | 🟡 Medio | ⏳ Pendiente |
-| **4** | Function Calling en LLM adapters | `server/services/llm/*.ts` | 🟡 Medio | ⏳ Pendiente |
-| **5** | Link conversations → contacts | `server/routes.ts` | 🟡 Medio | ⏳ Pendiente |
-| **6** | UI del Mini-CRM | `client/src/pages/Contacts.tsx` | ⚪ Bajo | ⏳ Pendiente |
-| **7** | Dashboard de contactos | `client/src/components/ContactDetail.tsx` | ⚪ Bajo | ⏳ Pendiente |
+| **1** | Crear tablas CRM (migración aditiva) | `shared/schema.ts` | ⚪ Bajo | ✅ Completado |
+| **2** | Métodos CRUD en storage (20+ métodos) | `server/storage.ts` | ⚪ Bajo | ✅ Completado |
+| **3** | Traffic Controller en sync | `server/services/crmTrafficController.ts` | 🟡 Medio | ✅ Completado |
+| **4** | Function Calling IA (4 funciones CRM) | `server/services/llm/crm-functions.ts` | 🟡 Medio | ✅ Completado |
+| **5** | API REST (10 endpoints CRM) | `server/routes.ts` | 🟡 Medio | ✅ Completado |
+| **6** | UI del CRM (tabla + slide-over) | `client/src/pages/CRM.tsx` | ⚪ Bajo | ✅ Completado |
+| **7** | Navegación integrada en sidebar | `client/src/components/Sidebar.tsx` | ⚪ Bajo | ✅ Completado |
+
+---
+
+## Resumen de Implementación CRM - 29 Dic 2025
+
+### Fase 1: Base de Datos ✅
+- **3 tablas creadas:** `crm_contacts`, `crm_contact_channels`, `crm_contact_limbo`
+- **UUIDs como PKs:** Preparado para fusión futura de identidades multi-plataforma
+- **JSONB `customFields`:** Permite datos dinámicos extraídos por IA sin migraciones
+- **Soft delete:** Columna `archived` en lugar de DELETE físico
+
+### Fase 2: Storage Layer ✅
+- **20+ métodos CRUD:** `createCrmContact`, `getCrmContactById`, `updateCrmContact`, `linkChannelToContact`, etc.
+- **Aislamiento multi-tenant:** Todos los queries filtran por `brandId` vía JOINs
+- **Upsert patterns:** `upsertLimboEntry` previene duplicados
+
+### Fase 3: Traffic Controller ✅
+- **Archivo:** `server/services/crmTrafficController.ts`
+- **Enrutamiento automático:** DMs → crear contacto + canal, Comentarios → solo limbo
+- **Patrón "lazy creation":** Contactos solo tras handshake DM (no de comentarios públicos)
+- **Integrado en:** `syncService.ts` durante sincronización de Metricool
+
+### Fase 4: Function Calling IA ✅
+- **Archivo:** `server/services/llm/crm-functions.ts`
+- **4 funciones disponibles para el agente:**
+  1. `update_contact` - Actualizar nombre, teléfono, email, notas
+  2. `set_custom_field` - Guardar campo personalizado extraído de conversación
+  3. `update_status` - Cambiar status (new/active/vip/archived)
+  4. `update_lifecycle` - Cambiar lifecycle (lead/prospect/customer/churned)
+- **Prompt-based calling:** Compatible con OpenAI y Gemini
+- **Ejecución:** Las acciones CRM se ejecutan ANTES de enviar respuesta al usuario
+
+### Fase 5: API REST ✅
+**10 endpoints implementados:**
+
+| Método | Endpoint | Función |
+|--------|----------|---------|
+| GET | `/api/crm/contacts` | Listar contactos de marca |
+| GET | `/api/crm/contacts/:id` | Detalle con canales |
+| POST | `/api/crm/contacts` | Crear contacto |
+| PUT | `/api/crm/contacts/:id` | Actualizar contacto |
+| DELETE | `/api/crm/contacts/:id` | Archivar (soft delete) |
+| GET | `/api/crm/contacts/:id/channels` | Canales sociales |
+| GET | `/api/crm/contacts/:id/conversations` | Historial |
+| PUT | `/api/crm/contacts/:id/custom-field` | Campo personalizado |
+| GET | `/api/crm/limbo` | Entradas en limbo |
+| POST | `/api/crm/limbo/:id/promote` | Promover a contacto |
+
+### Fase 6: Interfaz de Usuario ✅
+- **Archivo:** `client/src/pages/CRM.tsx`
+- **Diseño:** Estilo TwentyCRM/Airtable/Notion (sin sombras, minimal, flat)
+- **Componentes:**
+  - Tabla de contactos con búsqueda
+  - Tabs: Contactos vs Limbo
+  - Panel slide-over para detalle (estilo Respond.io)
+  - Diálogo de creación de contacto
+  - Badges de status y lifecycle
+  - Iconos de plataformas sociales
+  - Fechas relativas en español
+
+### Fase 7: Navegación ✅
+- **Ruta:** `/crm` registrada en `App.tsx`
+- **Sidebar:** Enlace "CRM" con icono Users agregado
+
+### Archivos Clave del Módulo CRM
+
+| Archivo | Función |
+|---------|---------|
+| `shared/schema.ts` | Tablas Drizzle + tipos TypeScript |
+| `server/storage.ts` | 20+ métodos de persistencia |
+| `server/routes.ts` | 10 endpoints REST |
+| `server/services/crmTrafficController.ts` | Enrutamiento DM/comentario |
+| `server/services/llm/crm-functions.ts` | Ejecutor de funciones IA |
+| `server/services/llm/prompt-composer.ts` | Prompt con instrucciones CRM |
+| `client/src/pages/CRM.tsx` | Interfaz completa |
+| `client/src/components/Sidebar.tsx` | Navegación |
+| `client/src/App.tsx` | Registro de ruta |
 
 ---
 
