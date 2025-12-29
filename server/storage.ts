@@ -186,6 +186,10 @@ export interface IStorage {
   updateCrmContactChannel(id: string, updates: UpdateCrmContactChannel): Promise<CrmContactChannel | undefined>;
   incrementCrmChannelMessageCount(id: string): Promise<CrmContactChannel | undefined>;
   
+  // CRM Module - Contact Timeline (Unified History)
+  getCrmContactTimeline(contactId: string, options?: { limit?: number }): Promise<Array<Message & { conversationPlatform: string; conversationType: string }>>;
+  getCrmContactConversations(contactId: string): Promise<Conversation[]>;
+  
   // CRM Module - Contact Limbo (Lazy Creation)
   getCrmContactLimbo(brandId: string, options?: { notPromoted?: boolean; limit?: number }): Promise<CrmContactLimbo[]>;
   findCrmLimboEntry(brandId: string, platform: string, externalId: string): Promise<CrmContactLimbo | undefined>;
@@ -2163,6 +2167,74 @@ export class DatabaseStorage implements IStorage {
       .where(eq(crmContactChannels.id, id))
       .returning();
     return updated || undefined;
+  }
+
+  // ============================================
+  // CRM MODULE - Contact Timeline (Unified History)
+  // ============================================
+
+  async getCrmContactTimeline(contactId: string, options?: { limit?: number }): Promise<Array<Message & { conversationPlatform: string; conversationType: string }>> {
+    const channels = await this.getCrmContactChannels(contactId);
+    
+    if (channels.length === 0) {
+      return [];
+    }
+    
+    const orConditions = channels.map(ch => 
+      and(
+        eq(conversations.customerId, ch.externalId),
+        eq(conversations.platform, ch.platform)
+      )
+    );
+    
+    const contactConversations = await db
+      .select()
+      .from(conversations)
+      .where(or(...orConditions));
+    
+    if (contactConversations.length === 0) {
+      return [];
+    }
+    
+    const conversationIds = contactConversations.map(c => c.id);
+    const conversationMap = new Map(contactConversations.map(c => [c.id, c]));
+    
+    const allMessages = await db
+      .select()
+      .from(messages)
+      .where(sql`${messages.conversationId} IN (${sql.join(conversationIds.map(id => sql`${id}`), sql`, `)})`)
+      .orderBy(desc(messages.timestamp))
+      .limit(options?.limit || 100);
+    
+    return allMessages.map(msg => {
+      const conv = conversationMap.get(msg.conversationId!);
+      return {
+        ...msg,
+        conversationPlatform: conv?.platform || msg.platform,
+        conversationType: conv?.type || msg.type,
+      };
+    });
+  }
+
+  async getCrmContactConversations(contactId: string): Promise<Conversation[]> {
+    const channels = await this.getCrmContactChannels(contactId);
+    
+    if (channels.length === 0) {
+      return [];
+    }
+    
+    const orConditions = channels.map(ch => 
+      and(
+        eq(conversations.customerId, ch.externalId),
+        eq(conversations.platform, ch.platform)
+      )
+    );
+    
+    return await db
+      .select()
+      .from(conversations)
+      .where(or(...orConditions))
+      .orderBy(desc(conversations.lastMessageAt));
   }
 
   // ============================================

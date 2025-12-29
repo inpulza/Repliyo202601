@@ -14,7 +14,10 @@ import {
   Filter,
   X,
   ChevronRight,
-  Loader2
+  Loader2,
+  Clock,
+  ArrowUpRight,
+  Inbox
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +41,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { useLocation } from 'wouter';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from "@/lib/utils";
@@ -144,14 +148,27 @@ const LifecycleBadge = ({ stage }: { stage: string | null }) => {
   );
 };
 
+interface TimelineMessage {
+  id: string;
+  content: string;
+  author: string;
+  timestamp: string;
+  direction: string;
+  platform: string;
+  conversationPlatform: string;
+  conversationType: string;
+}
+
 export function CRM() {
   const { activeClientId } = useNexus();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedContact, setSelectedContact] = useState<CrmContact | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'contacts' | 'limbo'>('contacts');
+  const [detailTab, setDetailTab] = useState<'profile' | 'history'>('profile');
   
   const [newContact, setNewContact] = useState({
     displayName: '',
@@ -186,6 +203,16 @@ export function CRM() {
     queryFn: async () => {
       const res = await fetch(`/api/crm/contacts/${selectedContact?.id}`);
       if (!res.ok) throw new Error('Failed to fetch contact');
+      return res.json();
+    },
+    enabled: !!selectedContact?.id,
+  });
+
+  const { data: timelineData, isLoading: timelineLoading } = useQuery({
+    queryKey: ['/api/crm/contacts', selectedContact?.id, 'timeline'],
+    queryFn: async () => {
+      const res = await fetch(`/api/crm/contacts/${selectedContact?.id}/timeline?limit=100`);
+      if (!res.ok) throw new Error('Failed to fetch timeline');
       return res.json();
     },
     enabled: !!selectedContact?.id,
@@ -233,6 +260,16 @@ export function CRM() {
   const contacts: CrmContact[] = contactsData?.contacts || [];
   const limboEntries: LimboEntry[] = limboData?.entries || [];
   const channels: CrmChannel[] = contactDetail?.channels || [];
+  const timelineMessages: TimelineMessage[] = timelineData?.messages || [];
+  const mostRecentConversationId: string | null = timelineData?.mostRecentConversationId || null;
+
+  const handleOpenInInbox = () => {
+    if (mostRecentConversationId) {
+      navigate(`/inbox?conversationId=${mostRecentConversationId}`);
+    } else {
+      toast.error('No hay conversaciones para este contacto');
+    }
+  };
 
   const filteredContacts = contacts.filter(c => 
     !searchQuery || 
@@ -488,121 +525,219 @@ export function CRM() {
         <div className="fixed inset-0 z-50 flex justify-end">
           <div 
             className="absolute inset-0 bg-black/20"
-            onClick={() => setIsDetailOpen(false)}
+            onClick={() => { setIsDetailOpen(false); setDetailTab('profile'); }}
           />
-          <div className="relative w-full max-w-md bg-white border-l animate-in slide-in-from-right duration-200">
-            <div className="flex items-center justify-between px-6 py-4 border-b">
+          <div className="relative w-full max-w-md bg-white border-l animate-in slide-in-from-right duration-200 flex flex-col">
+            {/* Header with close button and action */}
+            <div className="flex items-center justify-between px-6 py-4 border-b shrink-0">
               <h2 className="text-lg font-semibold text-gray-900">Detalle del contacto</h2>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => setIsDetailOpen(false)}
-                className="h-8 w-8"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="default"
+                  size="sm"
+                  onClick={handleOpenInInbox}
+                  disabled={timelineLoading}
+                  className="h-8 px-3 text-sm"
+                  data-testid="button-open-inbox"
+                >
+                  {timelineLoading ? (
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                  ) : (
+                    <Inbox className="h-4 w-4 mr-1.5" />
+                  )}
+                  Abrir en Inbox
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => { setIsDetailOpen(false); setDetailTab('profile'); }}
+                  className="h-8 w-8"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             
-            <ScrollArea className="h-[calc(100vh-65px)]">
-              <div className="p-6 space-y-6">
-                {/* Profile */}
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-16 w-16">
-                    <AvatarFallback className="bg-gray-100 text-gray-600 text-xl font-medium">
-                      {(selectedContact.displayName || '?')[0].toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{selectedContact.displayName || 'Sin nombre'}</h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      <StatusBadge status={selectedContact.status} />
-                      <LifecycleBadge stage={selectedContact.lifecycleStage} />
+            {/* Tabs for Profile vs History */}
+            <div className="flex items-center gap-1 px-6 py-2 border-b bg-gray-50 shrink-0">
+              <button
+                onClick={() => setDetailTab('profile')}
+                className={cn(
+                  "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                  detailTab === 'profile' 
+                    ? "bg-white text-gray-900" 
+                    : "text-gray-600 hover:text-gray-900"
+                )}
+                data-testid="detail-tab-profile"
+              >
+                <User className="h-3.5 w-3.5 inline mr-1.5" />
+                Perfil
+              </button>
+              <button
+                onClick={() => setDetailTab('history')}
+                className={cn(
+                  "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                  detailTab === 'history' 
+                    ? "bg-white text-gray-900" 
+                    : "text-gray-600 hover:text-gray-900"
+                )}
+                data-testid="detail-tab-history"
+              >
+                <Clock className="h-3.5 w-3.5 inline mr-1.5" />
+                Historial
+              </button>
+            </div>
+            
+            <ScrollArea className="flex-1">
+              {/* Profile Tab */}
+              {detailTab === 'profile' && (
+                <div className="p-6 space-y-6">
+                  {/* Profile Header */}
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-16 w-16">
+                      <AvatarFallback className="bg-gray-100 text-gray-600 text-xl font-medium">
+                        {(selectedContact.displayName || '?')[0].toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">{selectedContact.displayName || 'Sin nombre'}</h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <StatusBadge status={selectedContact.status} />
+                        <LifecycleBadge stage={selectedContact.lifecycleStage} />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Contact Info */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Información</h4>
-                  
-                  {selectedContact.email && (
-                    <div className="flex items-center gap-3 text-sm">
-                      <Mail className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-900">{selectedContact.email}</span>
-                    </div>
-                  )}
-                  
-                  {selectedContact.phone && (
-                    <div className="flex items-center gap-3 text-sm">
-                      <Phone className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-900">{selectedContact.phone}</span>
-                    </div>
-                  )}
-                  
-                  {(selectedContact.city || selectedContact.country) && (
-                    <div className="flex items-center gap-3 text-sm">
-                      <MapPin className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-900">
-                        {[selectedContact.city, selectedContact.country].filter(Boolean).join(', ')}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Channels */}
-                {channels.length > 0 && (
+                  {/* Contact Info */}
                   <div className="space-y-3">
-                    <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Canales conectados</h4>
-                    <div className="space-y-2">
-                      {channels.map((channel) => (
-                        <div 
-                          key={channel.id}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                        >
-                          <div className="flex items-center gap-3">
-                            {getPlatformIcon(channel.platform)}
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">{channel.username || channel.externalId}</p>
-                              <p className="text-xs text-gray-500 capitalize">{channel.platform}</p>
+                    <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Información</h4>
+                    
+                    {selectedContact.email && (
+                      <div className="flex items-center gap-3 text-sm">
+                        <Mail className="h-4 w-4 text-gray-400" />
+                        <span className="text-gray-900">{selectedContact.email}</span>
+                      </div>
+                    )}
+                    
+                    {selectedContact.phone && (
+                      <div className="flex items-center gap-3 text-sm">
+                        <Phone className="h-4 w-4 text-gray-400" />
+                        <span className="text-gray-900">{selectedContact.phone}</span>
+                      </div>
+                    )}
+                    
+                    {(selectedContact.city || selectedContact.country) && (
+                      <div className="flex items-center gap-3 text-sm">
+                        <MapPin className="h-4 w-4 text-gray-400" />
+                        <span className="text-gray-900">
+                          {[selectedContact.city, selectedContact.country].filter(Boolean).join(', ')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Channels */}
+                  {channels.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Canales conectados</h4>
+                      <div className="space-y-2">
+                        {channels.map((channel) => (
+                          <div 
+                            key={channel.id}
+                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                          >
+                            <div className="flex items-center gap-3">
+                              {getPlatformIcon(channel.platform)}
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">{channel.username || channel.externalId}</p>
+                                <p className="text-xs text-gray-500 capitalize">{channel.platform}</p>
+                              </div>
                             </div>
+                            <span className="text-xs text-gray-500">{channel.messageCount} msgs</span>
                           </div>
-                          <span className="text-xs text-gray-500">{channel.messageCount} msgs</span>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Custom Fields */}
-                {selectedContact.customFields && Object.keys(selectedContact.customFields).length > 0 && (
+                  {/* Custom Fields */}
+                  {selectedContact.customFields && Object.keys(selectedContact.customFields).length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Campos personalizados</h4>
+                      <div className="space-y-2">
+                        {Object.entries(selectedContact.customFields).map(([key, value]) => (
+                          <div key={key} className="flex items-center justify-between text-sm">
+                            <span className="text-gray-500 capitalize">{key.replace(/_/g, ' ')}</span>
+                            <span className="text-gray-900">{String(value)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Stats */}
                   <div className="space-y-3">
-                    <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Campos personalizados</h4>
-                    <div className="space-y-2">
-                      {Object.entries(selectedContact.customFields).map(([key, value]) => (
-                        <div key={key} className="flex items-center justify-between text-sm">
-                          <span className="text-gray-500 capitalize">{key.replace(/_/g, ' ')}</span>
-                          <span className="text-gray-900">{String(value)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Stats */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Actividad</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 bg-gray-50 rounded-lg">
-                      <p className="text-2xl font-semibold text-gray-900">{selectedContact.conversationCount || 0}</p>
-                      <p className="text-xs text-gray-500">Conversaciones</p>
-                    </div>
-                    <div className="p-3 bg-gray-50 rounded-lg">
-                      <p className="text-2xl font-semibold text-gray-900">{selectedContact.totalMessages || 0}</p>
-                      <p className="text-xs text-gray-500">Mensajes</p>
+                    <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Actividad</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <p className="text-2xl font-semibold text-gray-900">{selectedContact.conversationCount || 0}</p>
+                        <p className="text-xs text-gray-500">Conversaciones</p>
+                      </div>
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <p className="text-2xl font-semibold text-gray-900">{selectedContact.totalMessages || 0}</p>
+                        <p className="text-xs text-gray-500">Mensajes</p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* History Tab */}
+              {detailTab === 'history' && (
+                <div className="p-4">
+                  {timelineLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                    </div>
+                  ) : timelineMessages.length === 0 ? (
+                    <div className="text-center py-12">
+                      <MessageSquare className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+                      <p className="text-sm text-gray-500">No hay mensajes</p>
+                      <p className="text-xs text-gray-400 mt-1">El historial aparecerá cuando haya conversaciones</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {timelineMessages.map((msg) => (
+                        <div 
+                          key={msg.id}
+                          className={cn(
+                            "flex gap-2",
+                            msg.direction === 'outbound' ? "flex-row-reverse" : "flex-row"
+                          )}
+                        >
+                          <div className={cn(
+                            "max-w-[85%] rounded-lg p-3",
+                            msg.direction === 'outbound' 
+                              ? "bg-indigo-50 text-gray-900" 
+                              : "bg-gray-100 text-gray-900"
+                          )}>
+                            <div className="flex items-center gap-2 mb-1">
+                              {getPlatformIcon(msg.conversationPlatform || msg.platform)}
+                              <span className="text-xs font-medium text-gray-600">
+                                {msg.direction === 'outbound' ? 'Tú' : msg.author}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                {formatDistanceToNow(new Date(msg.timestamp), { addSuffix: true, locale: es })}
+                              </span>
+                            </div>
+                            <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </ScrollArea>
           </div>
         </div>

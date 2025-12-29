@@ -3072,6 +3072,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/crm/contacts/:id/timeline - Get unified message history across all channels
+  app.get("/api/crm/contacts/:id/timeline", requireAuth, async (req, res) => {
+    try {
+      const contact = await storage.getCrmContact(req.params.id);
+      
+      if (!contact) {
+        return res.status(404).json({ error: "Contact not found" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== contact.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+      const messages = await storage.getCrmContactTimeline(req.params.id, { limit });
+      
+      // Also get conversations for the "Open in Inbox" button
+      const contactConversations = await storage.getCrmContactConversations(req.params.id);
+      const mostRecentConversation = contactConversations.length > 0 ? contactConversations[0] : null;
+
+      res.json({ 
+        messages, 
+        totalMessages: messages.length,
+        mostRecentConversationId: mostRecentConversation?.id || null,
+        conversationCount: contactConversations.length
+      });
+    } catch (error: any) {
+      console.error('[CRM] Error getting contact timeline:', error);
+      res.status(500).json({ error: "Failed to get timeline", details: error.message });
+    }
+  });
+
   // GET /api/crm/limbo - Get limbo entries (commenters not yet promoted to contacts)
   app.get("/api/crm/limbo", requireAuth, async (req, res) => {
     try {
