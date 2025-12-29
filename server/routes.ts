@@ -6,7 +6,7 @@ import { hashPassword, verifyPassword, sanitizeUser, sanitizeBrand, type Authent
 import { MetricoolService } from "./services/metricool";
 import { syncService } from "./services/syncService";
 import { websocketService } from "./services/websocketService";
-import { triggerSummaryUpdateAsync } from "./services/summaryService";
+import { triggerSummaryUpdateAsync, checkAndUpdateSummary } from "./services/summaryService";
 import { authRateLimiter, syncRateLimiter, aiRateLimiter, sendMessageRateLimiter } from "./middleware/rateLimiter";
 import { z } from "zod";
 
@@ -2766,6 +2766,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error during notification cleanup:', error);
       res.status(500).json({ error: "Failed to cleanup notifications" });
+    }
+  });
+
+  // POST /api/admin/generate-summaries - Generate summaries for DM conversations (admin only)
+  app.post("/api/admin/generate-summaries", requireAuth, async (req, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const { brandId, minMessages = 10 } = req.body;
+      
+      if (!brandId) {
+        return res.status(400).json({ error: "brandId is required" });
+      }
+
+      // Get all DM conversations with enough messages
+      const conversations = await storage.getConversations(brandId);
+      const dmConversations = conversations.filter(c => c.type === 'dm');
+      
+      const results: { conversationId: string; customerName: string; status: string; error?: string }[] = [];
+      
+      for (const conv of dmConversations) {
+        const messages = await storage.getMessagesByConversation(conv.id);
+        
+        if (messages.length < minMessages) {
+          results.push({
+            conversationId: conv.id,
+            customerName: conv.customerName || 'Unknown',
+            status: 'skipped',
+            error: `Only ${messages.length} messages (min: ${minMessages})`
+          });
+          continue;
+        }
+
+        // Find the customer author (inbound messages)
+        const inboundMessage = messages.find(m => m.direction === 'inbound');
+        const author = inboundMessage?.author || conv.customerName || 'Unknown';
+
+        try {
+          await checkAndUpdateSummary(conv.id, author, brandId);
+          results.push({
+            conversationId: conv.id,
+            customerName: conv.customerName || author,
+            status: 'generated'
+          });
+        } catch (error: any) {
+          results.push({
+            conversationId: conv.id,
+            customerName: conv.customerName || author,
+            status: 'failed',
+            error: error.message
+          });
+        }
+      }
+
+      const generated = results.filter(r => r.status === 'generated').length;
+      const failed = results.filter(r => r.status === 'failed').length;
+      const skipped = results.filter(r => r.status === 'skipped').length;
+
+      res.json({
+        success: true,
+        summary: { total: dmConversations.length, generated, failed, skipped },
+        details: results
+      });
+    } catch (error: any) {
+      console.error('Error generating summaries:', error);
+      res.status(500).json({ error: "Failed to generate summaries", details: error.message });
     }
   });
 

@@ -337,9 +337,10 @@ export function filterHistoryByAuthor(
     return [];
   }
 
-  // DMs: Ya son 1:1 entre marca y un usuario único. Devolver todo.
+  // DMs: Ya son 1:1 entre marca y un usuario único. Devolver más contexto.
+  // El resumen persistente cubre el historial antiguo, enviamos los últimos 20 mensajes recientes.
   if (messageType === 'conversation') {
-    return history.slice(-10);
+    return history.slice(-20);
   }
 
   // COMENTARIOS: Necesitamos segregar por autor
