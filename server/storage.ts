@@ -174,6 +174,8 @@ export interface IStorage {
   getCrmContact(id: string): Promise<CrmContact | undefined>;
   getCrmContactByEmail(brandId: string, email: string): Promise<CrmContact | undefined>;
   getCrmContactByPhone(brandId: string, phone: string): Promise<CrmContact | undefined>;
+  findPotentialDuplicates(brandId: string, contactId: string): Promise<Array<{ contact: CrmContact; matchType: 'email' | 'phone'; matchValue: string }>>;
+  findAllDuplicatePairs(brandId: string): Promise<Array<{ contact1: CrmContact; contact2: CrmContact; matchType: 'email' | 'phone'; matchValue: string }>>;
   createCrmContact(contact: InsertCrmContact): Promise<CrmContact>;
   createCrmContactWithChannel(
     contact: InsertCrmContact,
@@ -2071,6 +2073,122 @@ export class DatabaseStorage implements IStorage {
       .from(crmContacts)
       .where(and(eq(crmContacts.brandId, brandId), eq(crmContacts.phone, phone)));
     return contact || undefined;
+  }
+
+  async findPotentialDuplicates(brandId: string, contactId: string): Promise<Array<{ contact: CrmContact; matchType: 'email' | 'phone'; matchValue: string }>> {
+    const sourceContact = await this.getCrmContact(contactId);
+    if (!sourceContact) return [];
+    
+    const duplicates: Array<{ contact: CrmContact; matchType: 'email' | 'phone'; matchValue: string }> = [];
+    
+    if (sourceContact.email) {
+      const emailMatches = await db
+        .select()
+        .from(crmContacts)
+        .where(and(
+          eq(crmContacts.brandId, brandId),
+          eq(crmContacts.email, sourceContact.email),
+          sql`${crmContacts.id} != ${contactId}`,
+          sql`${crmContacts.status} != 'archived'`
+        ));
+      
+      for (const match of emailMatches) {
+        duplicates.push({ contact: match, matchType: 'email', matchValue: sourceContact.email });
+      }
+    }
+    
+    if (sourceContact.phone) {
+      const phoneMatches = await db
+        .select()
+        .from(crmContacts)
+        .where(and(
+          eq(crmContacts.brandId, brandId),
+          eq(crmContacts.phone, sourceContact.phone),
+          sql`${crmContacts.id} != ${contactId}`,
+          sql`${crmContacts.status} != 'archived'`
+        ));
+      
+      for (const match of phoneMatches) {
+        if (!duplicates.find(d => d.contact.id === match.id)) {
+          duplicates.push({ contact: match, matchType: 'phone', matchValue: sourceContact.phone });
+        }
+      }
+    }
+    
+    return duplicates;
+  }
+
+  async findAllDuplicatePairs(brandId: string): Promise<Array<{ contact1: CrmContact; contact2: CrmContact; matchType: 'email' | 'phone'; matchValue: string }>> {
+    const pairs: Array<{ contact1: CrmContact; contact2: CrmContact; matchType: 'email' | 'phone'; matchValue: string }> = [];
+    const seenPairs = new Set<string>();
+    
+    const emailDuplicates = await db
+      .select()
+      .from(crmContacts)
+      .where(and(
+        eq(crmContacts.brandId, brandId),
+        sql`${crmContacts.email} IS NOT NULL`,
+        sql`${crmContacts.status} != 'archived'`
+      ))
+      .orderBy(crmContacts.email);
+    
+    const emailGroups = new Map<string, CrmContact[]>();
+    for (const contact of emailDuplicates) {
+      if (contact.email) {
+        const group = emailGroups.get(contact.email) || [];
+        group.push(contact);
+        emailGroups.set(contact.email, group);
+      }
+    }
+    
+    for (const [email, contacts] of emailGroups) {
+      if (contacts.length > 1) {
+        for (let i = 0; i < contacts.length; i++) {
+          for (let j = i + 1; j < contacts.length; j++) {
+            const pairKey = [contacts[i].id, contacts[j].id].sort().join('-');
+            if (!seenPairs.has(pairKey)) {
+              seenPairs.add(pairKey);
+              pairs.push({ contact1: contacts[i], contact2: contacts[j], matchType: 'email', matchValue: email });
+            }
+          }
+        }
+      }
+    }
+    
+    const phoneDuplicates = await db
+      .select()
+      .from(crmContacts)
+      .where(and(
+        eq(crmContacts.brandId, brandId),
+        sql`${crmContacts.phone} IS NOT NULL`,
+        sql`${crmContacts.status} != 'archived'`
+      ))
+      .orderBy(crmContacts.phone);
+    
+    const phoneGroups = new Map<string, CrmContact[]>();
+    for (const contact of phoneDuplicates) {
+      if (contact.phone) {
+        const group = phoneGroups.get(contact.phone) || [];
+        group.push(contact);
+        phoneGroups.set(contact.phone, group);
+      }
+    }
+    
+    for (const [phone, contacts] of phoneGroups) {
+      if (contacts.length > 1) {
+        for (let i = 0; i < contacts.length; i++) {
+          for (let j = i + 1; j < contacts.length; j++) {
+            const pairKey = [contacts[i].id, contacts[j].id].sort().join('-');
+            if (!seenPairs.has(pairKey)) {
+              seenPairs.add(pairKey);
+              pairs.push({ contact1: contacts[i], contact2: contacts[j], matchType: 'phone', matchValue: phone });
+            }
+          }
+        }
+      }
+    }
+    
+    return pairs;
   }
 
   async createCrmContact(contact: InsertCrmContact): Promise<CrmContact> {
