@@ -1,0 +1,37 @@
+Situación Actual: Ya tenemos una aplicación operativa llamada Repliyo. Ahora vamos a desarrollar una Actualización Mayor (Major Feature Update). No estamos empezando de cero; estamos integrando un nuevo "Módulo de CRM Conversacional e Inteligencia Artificial".
+
+El Objetivo de la Actualización: Queremos dotar a Repliyo de capacidades avanzadas inspiradas en la arquitectura moderna de Respond.io (estado a Dic 2025). El objetivo es que Repliyo deje de ser solo una herramienta de gestión y pase a ser un sistema que:
+
+Ingesta conversaciones de redes sociales (DMs, comentarios).
+
+Extrae datos automáticamente de esos chats para poblar un nuevo "Mini CRM" interno.
+
+Utiliza Agentes de IA para gestionar esas conversaciones, cerrar ventas o dar soporte.
+
+Especificaciones Técnicas del Nuevo Módulo (Nuestra "Estrella del Norte"): He investigado a fondo cómo lo hace Respond.io y quiero que implementemos esta lógica exacta en nuestro nuevo módulo:
+
+Base de Datos del CRM (Identity Merging): Necesitamos crear tablas nuevas para contacts y conversations.
+
+Importante: La clave primaria de los contactos debe ser un UUID interno, nunca el teléfono o email, para permitirnos en el futuro fusionar identidades (ej. unir el usuario de Instagram con el de WhatsApp).
+
+Flexibilidad: Usaremos una columna JSONB (PostgreSQL) llamada custom_fields para guardar datos dinámicos que la IA extraiga (ej. "talla_zapato", "presupuesto") sin tener que alterar la estructura de la tabla cada vez.
+
+Lógica de Ingesta ("Lazy Creation"): Al recibir Webhooks (simulados por ahora), aplicaremos un filtro estricto. Si llega un comentario público, el contacto queda en un "Limbo" temporal. Solo creamos el registro oficial en la tabla contacts cuando hay un "Handshake" (interacción real/DM), para no llenar la base de datos de Repliyo con "ruido" o leads basura.
+
+Orquestación de Agentes de IA: Integraremos agentes que no son simples chatbots. Tendrán capacidad de Function Calling para interactuar con este nuevo CRM:
+
+Podrán ejecutar update_contact_field() para guardar datos que el usuario diga en el chat.
+
+Podrán ejecutar close_conversation() cuando el ticket esté resuelto.
+
+Restricción: La IA nunca podrá reabrir un ticket cerrado (para evitar bucles).
+
+Tu Misión:
+
+Realiza una búsqueda rápida sobre "Respond.io features 2025 conversation led growth" para alinear tu criterio técnico.
+
+Analiza cómo podemos acoplar este esquema de tablas (contacts con JSONB, ai_agents) en nuestra infraestructura actual.
+
+Propón el primer paso para crear el esquema de base de datos de este módulo sin afectar la estabilidad actual de Repliyo.
+
+Guarda este contexto: Repliyo es la nave nodriza, y este CRM es el nuevo motor de hipervelocidad que le estamos instalando.
