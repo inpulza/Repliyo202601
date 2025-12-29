@@ -3178,6 +3178,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/crm/duplicates - Get potential duplicate contacts
+  app.get("/api/crm/duplicates", requireAuth, async (req, res) => {
+    try {
+      const brandId = req.query.brandId as string || req.user?.brandId;
+      
+      if (!brandId) {
+        return res.status(400).json({ error: "brandId is required" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const duplicates = await storage.findAllDuplicatePairs(brandId);
+      res.json({ duplicates, count: duplicates.length });
+    } catch (error: any) {
+      console.error('[CRM] Error finding duplicates:', error);
+      res.status(500).json({ error: "Failed to find duplicates", details: error.message });
+    }
+  });
+
+  // POST /api/crm/merge - Merge two contacts
+  app.post("/api/crm/merge", requireAuth, async (req, res) => {
+    try {
+      const { primaryId, secondaryId, fieldResolutions } = req.body;
+      
+      if (!primaryId || !secondaryId) {
+        return res.status(400).json({ error: "primaryId and secondaryId are required" });
+      }
+
+      const primaryContact = await storage.getCrmContactById(primaryId);
+      if (!primaryContact) {
+        return res.status(404).json({ error: "Primary contact not found" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== primaryContact.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const result = await storage.mergeContacts(primaryId, secondaryId, fieldResolutions);
+      
+      res.json({ 
+        success: true,
+        primary: result.primary,
+        mergedChannels: result.mergedChannels,
+        mergedConversations: result.mergedConversations
+      });
+    } catch (error: any) {
+      console.error('[CRM] Error merging contacts:', error);
+      
+      if (error.message === 'CONTACT_NOT_FOUND') {
+        return res.status(404).json({ error: "One or both contacts not found" });
+      }
+      if (error.message === 'DIFFERENT_BRANDS') {
+        return res.status(400).json({ error: "Contacts belong to different brands" });
+      }
+      if (error.message === 'CONTACT_ALREADY_ARCHIVED') {
+        return res.status(400).json({ error: "Secondary contact is already archived" });
+      }
+      
+      res.status(500).json({ error: "Failed to merge contacts", details: error.message });
+    }
+  });
+
+  // POST /api/crm/undo-merge - Undo a recent merge (within grace period)
+  app.post("/api/crm/undo-merge", requireAuth, async (req, res) => {
+    try {
+      const { archivedContactId } = req.body;
+      
+      if (!archivedContactId) {
+        return res.status(400).json({ error: "archivedContactId is required" });
+      }
+
+      const archivedContact = await storage.getCrmContactById(archivedContactId);
+      if (!archivedContact) {
+        return res.status(404).json({ error: "Archived contact not found" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== archivedContact.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const result = await storage.undoMerge(archivedContactId);
+      
+      if (!result) {
+        return res.status(400).json({ error: "Cannot undo merge - contact not archived or missing merge info" });
+      }
+      
+      res.json({ 
+        success: true,
+        restored: result.restored,
+        restoredChannels: result.restoredChannels,
+        restoredConversations: result.restoredConversations
+      });
+    } catch (error: any) {
+      console.error('[CRM] Error undoing merge:', error);
+      
+      if (error.message === 'GRACE_PERIOD_EXPIRED') {
+        return res.status(400).json({ error: "Grace period expired (15 minutes). Merge cannot be undone." });
+      }
+      
+      res.status(500).json({ error: "Failed to undo merge", details: error.message });
+    }
+  });
+
   // GET /api/crm/limbo - Get limbo entries (commenters not yet promoted to contacts)
   app.get("/api/crm/limbo", requireAuth, async (req, res) => {
     try {
