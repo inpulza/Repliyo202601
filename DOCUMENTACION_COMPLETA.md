@@ -4756,3 +4756,455 @@ Con el lock, los mensajes ahora se procesan secuencialmente:
 `3204bad368c7aba117730fbe1d37c0ade5333616` - Add a lock to prevent simultaneous message processing race conditions
 
 ---
+
+## FASE 12: Módulo CRM Conversacional e Inteligencia Artificial
+
+### Fecha de Inicio: 29 Diciembre 2025
+### Estado: 📋 EN PLANIFICACIÓN
+
+---
+
+### Contexto y Visión
+
+**Objetivo:** Dotar a Repliyo de capacidades avanzadas inspiradas en la arquitectura de Respond.io (estado a Dic 2025), transformándolo de una herramienta de gestión a un sistema que:
+
+1. **Ingesta** conversaciones de redes sociales (DMs, comentarios)
+2. **Extrae datos automáticamente** de esos chats para poblar un "Mini CRM" interno
+3. **Utiliza Agentes de IA** con Function Calling para gestionar conversaciones, cerrar ventas o dar soporte
+
+**Metáfora:** Repliyo es la nave nodriza, y este CRM es el nuevo motor de hipervelocidad que le estamos instalando.
+
+---
+
+### Investigación: Respond.io Features 2025
+
+#### Conversation-Led Growth Framework
+
+Respond.io estructura el journey del cliente en 3 etapas:
+
+| Etapa | Descripción | Funcionalidad Clave |
+|-------|-------------|---------------------|
+| **Capture** | Agregación unificada de leads | Todos los canales → un inbox con perfiles limpios |
+| **Convert** | AI Agents califican y convierten | Function calling, workflows, analytics |
+| **Retain** | Broadcasts y seguimiento | Campañas, CSAT, lifecycle tracking |
+
+#### AI Agents de Respond.io
+
+**Capacidades multimodales:**
+- Procesan texto, imágenes, PDFs, audio, emojis en múltiples idiomas
+- Entendimiento de mensajes de voz + manejo de llamadas
+- Análisis de documentos (ej. tablas en PDFs)
+
+**Acciones agenticas (Function Calling):**
+- Actualizar campos del CRM automáticamente
+- Recomendar productos (upsell/cross-sell)
+- Agendar citas + compartir links de pago
+- Cerrar conversaciones con auto-resúmenes
+- Escalar a agentes humanos con contexto completo
+
+**Arquitectura:**
+- **AI Orchestrator:** Coordina micro-agentes especializados
+- **Templates:** Agente de ventas, soporte, recepcionista
+- **Guardrails:** Reglas de compliance, tono, voz de marca
+- **Testing environment:** Simular conversaciones antes de lanzar
+
+#### CRM Nativo de Respond.io
+
+- Perfiles de contacto con historial unificado (mensajes, llamadas, emails, notas)
+- Lifecycle stages + lead management
+- Tags, snippets, notas de cierre
+- Sync con HubSpot, Salesforce, Zoho
+
+#### Pricing (Referencia)
+- Starter: $79/mes (5 usuarios, sin IA)
+- Growth/Scale: Custom (con AI Agents y workflows)
+
+---
+
+### Arquitectura Técnica del Módulo CRM
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    REPLIYO (Nave Nodriza)                           │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌─────────────┐    ┌─────────────────────────────────────────┐    │
+│  │ Metricool   │───▶│   Traffic Controller (Función Puente)   │    │
+│  │ Webhooks    │    │                                         │    │
+│  └─────────────┘    │  ┌─────────────────────────────────────┐│    │
+│                     │  │ ¿Es DM?                              ││    │
+│                     │  │   └─► Buscar/Crear en crmContacts    ││    │
+│                     │  │ ¿Es Comentario?                      ││    │
+│                     │  │   └─► Upsert en crmContactLimbo      ││    │
+│                     │  └─────────────────────────────────────┘│    │
+│                     └─────────────────────────────────────────┘    │
+│                                    │                                │
+│                                    ▼                                │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │                    CRM DATABASE MODULE                       │   │
+│  │                                                              │   │
+│  │  ┌──────────────┐    ┌───────────────────┐                  │   │
+│  │  │ crmContacts  │◀───│ crmContactChannels│                  │   │
+│  │  │  (UUID pk)   │    │ (identity merge)  │                  │   │
+│  │  │ customFields │    └───────────────────┘                  │   │
+│  │  │ JSONB        │                                           │   │
+│  │  └──────────────┘    ┌───────────────────┐                  │   │
+│  │         ▲            │ crmContactLimbo   │                  │   │
+│  │         │            │ (lazy creation)   │                  │   │
+│  │         │            └───────────────────┘                  │   │
+│  └─────────┼────────────────────────────────────────────────────┘   │
+│            │                                                        │
+│            │ Function Calling                                       │
+│  ┌─────────┴───────────────────────────────────────────────────┐   │
+│  │                      AI AGENTS                               │   │
+│  │  • update_contact_field(field, value)                       │   │
+│  │  • close_conversation(reason, summary)                      │   │
+│  │  • promote_to_contact()                                     │   │
+│  │  • extract_entities()                                       │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Decisiones de Diseño Clave
+
+#### 1. UUID como Clave Primaria (NUNCA phone/email)
+
+**Razón:** Permite fusión de identidades en el futuro. Si el teléfono fuera PK, sería imposible unir el usuario de Instagram con el de WhatsApp.
+
+```typescript
+// ❌ INCORRECTO
+id: phone.primaryKey()
+
+// ✅ CORRECTO
+id: varchar("id").primaryKey().default(sql`gen_random_uuid()`)
+phone: text("phone") // Campo indexado pero NO es PK
+```
+
+#### 2. JSONB para Custom Fields
+
+**Razón:** Flexibilidad para guardar datos dinámicos que la IA extraiga sin alterar el schema.
+
+```typescript
+customFields: jsonb("custom_fields").default({})
+// Ejemplo: {"talla_zapato": "42", "presupuesto": "5000", "fecha_boda": "2025-06-15"}
+```
+
+#### 3. Lazy Creation con Tabla Limbo
+
+**Razón:** Evita llenar la base de datos con "ruido" de comentarios públicos. Solo creamos contactos reales cuando hay un "handshake" (DM).
+
+| Interacción | Destino |
+|-------------|---------|
+| Comentario público | `crmContactLimbo` (temporal) |
+| DM / Mensaje privado | `crmContacts` (oficial) |
+| Comentario → luego DM | Promoción de limbo a contacto |
+
+#### 4. Identity Merging con Tabla Separada
+
+**Razón:** Un contacto puede tener múltiples canales. Separar permite queries eficientes y merge futuro.
+
+```
+crmContacts (1) ←──────── (*) crmContactChannels
+                              - instagram @user123
+                              - facebook 17841459810424420
+                              - whatsapp +1305XXXXXXX
+```
+
+#### 5. Campo `language` (ISO Code)
+
+**Razón:** Determina idioma de templates automáticos y notificaciones del sistema.
+
+```typescript
+language: text("language").default('es') // 'es', 'en', 'pt', etc.
+```
+
+#### 6. Campo `lastUsedChannelId` (Enrutamiento Inteligente)
+
+**Razón:** Permite responder al último canal activo sin lógica extra.
+
+```typescript
+lastUsedChannelId: varchar("last_used_channel_id").references(() => crmContactChannels.id)
+```
+
+---
+
+### Schema de Base de Datos (Drizzle ORM)
+
+```typescript
+// ============================================
+// TABLA 1: CRM CONTACTS (La persona)
+// ============================================
+export const crmContacts = pgTable("crm_contacts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brandId: varchar("brand_id").notNull().references(() => brands.id, { onDelete: 'cascade' }),
+  
+  // Datos básicos
+  displayName: text("display_name"),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  phone: text("phone"),
+  email: text("email"),
+  language: text("language").default('es'), // ISO code: 'es', 'en', 'pt'
+  
+  // Lifecycle
+  status: text("status").default('lead'), // lead | qualified | customer | churned
+  lifecycleStage: text("lifecycle_stage").default('new'), // new | engaged | converted | loyal
+  source: text("source"), // instagram_dm | facebook_comment | manual | import
+  
+  // Datos dinámicos extraídos por IA
+  customFields: jsonb("custom_fields").default({}),
+  
+  // Enrutamiento inteligente
+  lastUsedChannelId: varchar("last_used_channel_id"),
+  
+  // Métricas
+  conversationCount: integer("conversation_count").default(0),
+  totalMessages: integer("total_messages").default(0),
+  firstInteractionAt: timestamp("first_interaction_at"),
+  lastInteractionAt: timestamp("last_interaction_at"),
+  
+  // Audit
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  // Índices para búsqueda O(1) en deduplicación
+  emailIdx: index("crm_contacts_email_idx").on(table.email),
+  phoneIdx: index("crm_contacts_phone_idx").on(table.phone),
+  brandIdx: index("crm_contacts_brand_idx").on(table.brandId),
+}));
+
+// ============================================
+// TABLA 2: CRM CONTACT CHANNELS (Identity Merge)
+// ============================================
+export const crmContactChannels = pgTable("crm_contact_channels", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  contactId: varchar("contact_id").notNull().references(() => crmContacts.id, { onDelete: 'cascade' }),
+  
+  // Identificación del canal
+  platform: text("platform").notNull(), // instagram | facebook | whatsapp | tiktok | youtube | linkedin
+  externalId: text("external_id").notNull(), // ID del usuario en esa plataforma
+  username: text("username"),
+  avatarUrl: text("avatar_url"),
+  
+  // Estado
+  isVerified: boolean("is_verified").default(false),
+  isActive: boolean("is_active").default(true),
+  
+  // Métricas
+  messageCount: integer("message_count").default(0),
+  lastMessageAt: timestamp("last_message_at"),
+  
+  // Audit
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  // Evitar duplicados: un usuario de Instagram solo puede existir una vez
+  uniquePlatformExternal: unique().on(table.platform, table.externalId),
+  contactIdx: index("crm_contact_channels_contact_idx").on(table.contactId),
+}));
+
+// ============================================
+// TABLA 3: CRM CONTACT LIMBO (Lazy Creation)
+// ============================================
+export const crmContactLimbo = pgTable("crm_contact_limbo", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brandId: varchar("brand_id").notNull().references(() => brands.id, { onDelete: 'cascade' }),
+  
+  // Identificación
+  platform: text("platform").notNull(),
+  externalId: text("external_id").notNull(),
+  username: text("username"),
+  avatarUrl: text("avatar_url"),
+  
+  // Tracking de interacciones
+  interactionType: text("interaction_type").notNull(), // comment | like | mention | reaction
+  interactionCount: integer("interaction_count").default(1),
+  firstInteractionAt: timestamp("first_interaction_at").notNull(),
+  lastInteractionAt: timestamp("last_interaction_at").notNull(),
+  
+  // Promoción a contacto oficial
+  promotedToContactId: varchar("promoted_to_contact_id").references(() => crmContacts.id),
+  promotedAt: timestamp("promoted_at"),
+  
+  // Audit
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  // Para upsert eficiente
+  uniqueBrandPlatformExternal: unique().on(table.brandId, table.platform, table.externalId),
+  brandIdx: index("crm_contact_limbo_brand_idx").on(table.brandId),
+}));
+```
+
+---
+
+### Function Calling para AI Agents
+
+Los agentes de IA podrán ejecutar estas funciones durante el chat:
+
+```typescript
+const CRM_FUNCTIONS = {
+  update_contact_field: {
+    name: "update_contact_field",
+    description: "Guarda información extraída del chat en el perfil del contacto",
+    parameters: {
+      type: "object",
+      properties: {
+        field: {
+          type: "string",
+          description: "Nombre del campo a actualizar. Puede ser: phone, email, firstName, lastName, o cualquier custom field"
+        },
+        value: {
+          type: "string",
+          description: "Valor a guardar"
+        }
+      },
+      required: ["field", "value"]
+    }
+  },
+  
+  close_conversation: {
+    name: "close_conversation",
+    description: "Marca la conversación como resuelta. IMPORTANTE: Una vez cerrada, la IA NO puede reabrirla",
+    parameters: {
+      type: "object",
+      properties: {
+        reason: {
+          type: "string",
+          enum: ["resolved", "spam", "not_qualified", "referred_to_human"],
+          description: "Razón del cierre"
+        },
+        summary: {
+          type: "string",
+          description: "Resumen breve de la conversación (máx 200 caracteres)"
+        }
+      },
+      required: ["reason"]
+    }
+  },
+  
+  promote_to_contact: {
+    name: "promote_to_contact",
+    description: "Convierte un lead del limbo en contacto oficial. Usar cuando el usuario inicia DM desde un comentario previo",
+    parameters: {
+      type: "object",
+      properties: {}
+    }
+  },
+  
+  get_contact_info: {
+    name: "get_contact_info",
+    description: "Obtiene información del contacto para personalizar la respuesta",
+    parameters: {
+      type: "object",
+      properties: {
+        fields: {
+          type: "array",
+          items: { type: "string" },
+          description: "Lista de campos a obtener. Ej: ['firstName', 'language', 'customFields.presupuesto']"
+        }
+      }
+    }
+  }
+};
+```
+
+---
+
+### Traffic Controller (Función Puente)
+
+Lógica de enrutamiento para webhooks de Metricool:
+
+```typescript
+async function trafficController(webhook: MetricoolWebhook): Promise<void> {
+  const { platform, externalUserId, username, type } = webhook;
+  
+  if (type === 'dm' || type === 'conversation') {
+    // ========================================
+    // FLUJO DM: Crear o actualizar contacto
+    // ========================================
+    
+    // 1. Buscar canal existente
+    let channel = await storage.findContactChannel(platform, externalUserId);
+    
+    if (!channel) {
+      // 2. ¿Viene de un limbo? (comentó antes de enviar DM)
+      const limboEntry = await storage.findLimboEntry(brandId, platform, externalUserId);
+      
+      // 3. Crear contacto nuevo
+      const contact = await storage.createContact({
+        brandId,
+        displayName: username,
+        source: limboEntry ? 'comment_to_dm' : `${platform}_dm`,
+        firstInteractionAt: new Date(),
+      });
+      
+      // 4. Crear canal
+      channel = await storage.createContactChannel({
+        contactId: contact.id,
+        platform,
+        externalId: externalUserId,
+        username,
+      });
+      
+      // 5. Promocionar limbo si existía
+      if (limboEntry) {
+        await storage.promoteLimboEntry(limboEntry.id, contact.id);
+      }
+    }
+    
+    // 6. Actualizar última interacción
+    await storage.updateContactLastInteraction(channel.contactId);
+    
+  } else if (type === 'comment') {
+    // ========================================
+    // FLUJO COMENTARIO: Solo limbo (no crear contacto)
+    // ========================================
+    
+    await storage.upsertLimboEntry({
+      brandId,
+      platform,
+      externalId: externalUserId,
+      username,
+      interactionType: 'comment',
+      lastInteractionAt: new Date(),
+    });
+  }
+}
+```
+
+---
+
+### Restricciones de Seguridad
+
+1. **La IA NUNCA puede reabrir un ticket cerrado** (evita bucles infinitos)
+2. **Custom fields tienen límite de 50 campos** por contacto
+3. **Promoción de limbo a contacto** solo ocurre con interacción DM real
+4. **Datos sensibles (phone, email)** requieren consentimiento implícito (DM iniciado por usuario)
+
+---
+
+### Plan de Implementación
+
+| Paso | Descripción | Archivos | Riesgo | Estado |
+|------|-------------|----------|--------|--------|
+| **1** | Crear tablas CRM (migración aditiva) | `shared/schema.ts`, migrations | ⚪ Bajo | ⏳ Pendiente |
+| **2** | Métodos CRUD en storage | `server/storage.ts` | ⚪ Bajo | ⏳ Pendiente |
+| **3** | Traffic Controller en sync | `server/services/syncService.ts` | 🟡 Medio | ⏳ Pendiente |
+| **4** | Function Calling en LLM adapters | `server/services/llm/*.ts` | 🟡 Medio | ⏳ Pendiente |
+| **5** | Link conversations → contacts | `server/routes.ts` | 🟡 Medio | ⏳ Pendiente |
+| **6** | UI del Mini-CRM | `client/src/pages/Contacts.tsx` | ⚪ Bajo | ⏳ Pendiente |
+| **7** | Dashboard de contactos | `client/src/components/ContactDetail.tsx` | ⚪ Bajo | ⏳ Pendiente |
+
+---
+
+### Referencias
+
+- **Respond.io Official:** https://respond.io/
+- **Respond.io AI Agents:** https://respond.io/ai-agents
+- **Respond.io Help Center:** https://help.respond.io/l/en/conversation-led-growth
+- **Respond.io AI Agent Actions:** https://respond.io/help/ai-agents/using-ai-agent-actions
+
+---
