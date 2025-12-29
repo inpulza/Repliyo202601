@@ -1,11 +1,96 @@
 # Sistema de Gestión de Inbox Social Media con Metricool
 
-## Documentación
+## 📖 DOCUMENTACIÓN PRINCIPAL
+**SIEMPRE comienza leyendo `DOCUMENTACION_COMPLETA.md`** - contiene el historial completo de desarrollo, arquitectura, y decisiones técnicas de todas las fases del proyecto.
 
 | Documento | Descripción |
 |-----------|-------------|
-| `DOCUMENTACION_COMPLETA.md` | Historial completo de desarrollo, fases, y arquitectura general |
+| `DOCUMENTACION_COMPLETA.md` | **LEER PRIMERO** - Historial completo de desarrollo, fases, y arquitectura general |
 | `DM_BUFFER_SYSTEM.md` | Sistema de Buffer de DMs para evitar respuestas múltiples de IA |
+| `replit.md` | Este archivo - Estado actual y próximos pasos |
+
+---
+
+## 🎯 PRÓXIMOS PASOS PENDIENTES (En Orden)
+
+### PASO 1: Backfill (Migración Histórica) 🔄
+**Estado:** PENDIENTE
+**Prioridad:** PRIMERO - Sin esto el CRM está vacío
+
+**Objetivo:** Poblar el CRM con datos de conversaciones existentes. Actualmente las tablas CRM están vacías porque solo se llenan con mensajes nuevos (via Traffic Controller). Necesitamos "sembrar" el CRM con el historial existente.
+
+**Script a crear:** `scripts/migrate-contacts.ts`
+
+**Lógica del Backfill:**
+1. Leer todos los `sender_id` únicos de la tabla `conversations`
+2. Para cada usuario único:
+   - Crear registro en `crm_contacts` (UUID nuevo)
+   - Crear registro en `crm_contact_channels` vinculando plataforma + external_id
+   - Usar `display_name`/`avatar_url` de la conversación existente
+3. El script debe ser **idempotente** (si corre 2 veces, no duplica)
+4. Logging de cuántos contactos creados
+
+**Archivos relevantes:**
+- `shared/schema.ts` - Tablas `crm_contacts`, `crm_contact_channels`
+- `server/storage.ts` - Métodos CRM existentes
+- `server/services/crmTrafficController.ts` - Lógica de creación (referencia)
+
+---
+
+### PASO 2: CRMContextPanel del Inbox 🖼️
+**Estado:** PENDIENTE
+**Prioridad:** SEGUNDO - Una vez hay datos, mostrarlos en el Inbox
+
+**Problema actual:** El componente `CRMContextPanel.tsx` es un mockup estático que siempre muestra "New Prospect" o datos fake de HubSpot/Salesforce. No está conectado a nuestro CRM real.
+
+**Objetivo:** Cuando el usuario selecciona una conversación en el Inbox, el panel lateral debe:
+1. Buscar si el participante ya existe en `crm_contact_channels`
+2. SI EXISTE → Mostrar perfil real (igual que slide-over de `/crm`)
+3. SI NO EXISTE → Mostrar "New Prospect" + botón que llame `POST /api/crm/contacts`
+
+**Cambios necesarios:**
+1. **Nuevo endpoint:** `GET /api/crm/contacts/by-channel?platform={}&externalId={}` para buscar contacto por participante
+2. **Modificar Inbox.tsx:** Agregar query que resuelva el contacto CRM cuando se selecciona conversación
+3. **Refactorizar:** Extraer componentes compartidos del slide-over de CRM.tsx para reusar en CRMContextPanel
+4. **Conectar:** Reemplazar mock "Create Contact" con llamada real al API
+
+**Archivos relevantes:**
+- `client/src/components/CRMContextPanel.tsx` - Panel actual (mockup)
+- `client/src/components/Inbox.tsx` - Donde se usa el panel
+- `client/src/pages/CRM.tsx` - Slide-over con UI real a reusar
+
+---
+
+### PASO 3: Identity Merge (Fusión de Identidades) 🔗
+**Estado:** PENDIENTE
+**Prioridad:** TERCERO - Refinamiento después de tener datos
+
+**Objetivo:** Permitir fusionar contactos duplicados. Ejemplo: "Juan WhatsApp" + "Juan Instagram" = mismo Juan.
+
+**Algoritmo de Detección:**
+- Trigger: Cada vez que entra un mensaje nuevo o se crea contacto
+- Buscar coincidencias exactas en `email` o `phone`
+- UI: Mostrar alerta "Posible Duplicado" cuando se detecte
+
+**Algoritmo de Fusión (Transacción Atómica):**
+1. **Selección de Maestro:** Usuario decide cuál es `primary_contact` y cuál `secondary_contact`
+2. **Resolución de Conflictos:** Si datos distintos (nombres diferentes), preguntar cuál conservar
+3. **Consolidación de Historial:**
+   - `UPDATE crm_contact_channels SET contact_id = primary_id WHERE contact_id = secondary_id`
+   - `UPDATE conversations SET contact_id = primary_id WHERE contact_id = secondary_id`
+   - Fusión de `customFields` (JSON merge)
+4. **Soft Delete:** Marcar secundario como "archived" (no borrar físicamente)
+5. **Undo:** Botón "Deshacer" durante período de gracia (15 min)
+
+**Reglas:**
+- Contacto marcado como "spam" NO se sugiere para fusión
+- Operación reversible durante período de gracia
+- Log de auditoría para todas las fusiones
+
+**Archivos relevantes:**
+- `shared/schema.ts` - Tablas CRM
+- `server/storage.ts` - Nuevos métodos merge
+- Nuevo archivo: `server/services/identityMergeService.ts`
 
 ---
 
