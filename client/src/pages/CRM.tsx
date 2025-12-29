@@ -17,7 +17,11 @@ import {
   Loader2,
   Clock,
   ArrowUpRight,
-  Inbox
+  Inbox,
+  AlertTriangle,
+  GitMerge,
+  Undo2,
+  ArrowRight
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -88,6 +92,13 @@ interface LimboEntry {
   interactionCount: number;
   lastInteractionAt: string | null;
   promotedToContactId: string | null;
+}
+
+interface DuplicatePair {
+  contact1: CrmContact;
+  contact2: CrmContact;
+  matchType: 'email' | 'phone';
+  matchValue: string;
 }
 
 const getPlatformIcon = (platform: string) => {
@@ -167,8 +178,12 @@ export function CRM() {
   const [selectedContact, setSelectedContact] = useState<CrmContact | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'contacts' | 'limbo'>('contacts');
+  const [activeTab, setActiveTab] = useState<'contacts' | 'limbo' | 'duplicates'>('contacts');
   const [detailTab, setDetailTab] = useState<'profile' | 'history'>('profile');
+  const [isMergeOpen, setIsMergeOpen] = useState(false);
+  const [selectedDuplicate, setSelectedDuplicate] = useState<DuplicatePair | null>(null);
+  const [primarySelection, setPrimarySelection] = useState<'contact1' | 'contact2'>('contact1');
+  const [lastMergedId, setLastMergedId] = useState<string | null>(null);
   
   const [newContact, setNewContact] = useState({
     displayName: '',
@@ -193,6 +208,16 @@ export function CRM() {
     queryFn: async () => {
       const res = await fetch(`/api/crm/limbo?brandId=${activeClientId}`);
       if (!res.ok) throw new Error('Failed to fetch limbo');
+      return res.json();
+    },
+    enabled: !!activeClientId,
+  });
+
+  const { data: duplicatesData, isLoading: duplicatesLoading } = useQuery({
+    queryKey: ['/api/crm/duplicates', activeClientId],
+    queryFn: async () => {
+      const res = await fetch(`/api/crm/duplicates?brandId=${activeClientId}`);
+      if (!res.ok) throw new Error('Failed to fetch duplicates');
       return res.json();
     },
     enabled: !!activeClientId,
@@ -257,8 +282,70 @@ export function CRM() {
     },
   });
 
+  const mergeMutation = useMutation({
+    mutationFn: async ({ primaryId, secondaryId }: { primaryId: string; secondaryId: string }) => {
+      const res = await fetch('/api/crm/merge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ primaryId, secondaryId }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to merge');
+      }
+      return res.json();
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/crm/contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/crm/duplicates'] });
+      setIsMergeOpen(false);
+      setSelectedDuplicate(null);
+      const archivedId = variables.secondaryId;
+      setLastMergedId(archivedId);
+      toast.success(`Contactos fusionados: ${data.mergedChannels} canales, ${data.mergedConversations} conversaciones movidas`, {
+        action: {
+          label: 'Deshacer',
+          onClick: () => {
+            if (archivedId) {
+              undoMergeMutation.mutate(archivedId);
+            }
+          },
+        },
+        duration: 15000,
+      });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Error al fusionar contactos');
+    },
+  });
+
+  const undoMergeMutation = useMutation({
+    mutationFn: async (archivedContactId: string) => {
+      const res = await fetch('/api/crm/undo-merge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ archivedContactId }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to undo merge');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/crm/contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/crm/duplicates'] });
+      setLastMergedId(null);
+      toast.success('Fusion deshecha correctamente');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Error al deshacer fusion');
+    },
+  });
+
   const contacts: CrmContact[] = contactsData?.contacts || [];
   const limboEntries: LimboEntry[] = limboData?.entries || [];
+  const duplicates: DuplicatePair[] = duplicatesData?.duplicates || [];
   const channels: CrmChannel[] = contactDetail?.channels || [];
   const timelineMessages: TimelineMessage[] = timelineData?.messages || [];
   const mostRecentConversationId: string | null = timelineData?.mostRecentConversationId || null;
@@ -333,6 +420,23 @@ export function CRM() {
             >
               Pendientes
               <span className="ml-1.5 text-xs text-gray-500">({limboEntries.length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('duplicates')}
+              className={cn(
+                "px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-1",
+                activeTab === 'duplicates' 
+                  ? "bg-white text-amber-700" 
+                  : duplicates.length > 0 
+                    ? "text-amber-600 hover:text-amber-700"
+                    : "text-gray-500 hover:text-gray-700"
+              )}
+              data-testid="tab-duplicates"
+            >
+              {duplicates.length > 0 && <AlertTriangle className="h-3.5 w-3.5" />}
+              {duplicates.length === 0 && <GitMerge className="h-3.5 w-3.5" />}
+              Duplicados
+              {duplicates.length > 0 && <span className="ml-1 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">{duplicates.length}</span>}
             </button>
           </div>
           
@@ -437,7 +541,7 @@ export function CRM() {
               </table>
             )}
           </ScrollArea>
-        ) : (
+        ) : activeTab === 'limbo' ? (
           /* Limbo Tab */
           <ScrollArea className="h-full">
             {limboLoading ? (
@@ -517,7 +621,96 @@ export function CRM() {
               </table>
             )}
           </ScrollArea>
-        )}
+        ) : activeTab === 'duplicates' ? (
+          /* Duplicates Tab */
+          <ScrollArea className="h-full">
+            {duplicatesLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+              </div>
+            ) : duplicates.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+                <GitMerge className="h-12 w-12 mb-3 text-gray-300" />
+                <p className="text-sm">No hay contactos duplicados</p>
+                <p className="text-xs text-gray-400 mt-1">Los duplicados se detectan por email o telefono coincidente</p>
+              </div>
+            ) : (
+              <div className="p-6 space-y-4">
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-amber-800">Se detectaron {duplicates.length} posibles duplicados</p>
+                    <p className="text-xs text-amber-700 mt-1">Revisa y fusiona contactos para mantener tu CRM limpio. La fusion consolida canales, conversaciones y datos.</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  {duplicates.map((pair, index) => (
+                    <div 
+                      key={`${pair.contact1.id}-${pair.contact2.id}`}
+                      className="border rounded-lg p-4 hover:border-gray-300 transition-colors"
+                      data-testid={`duplicate-pair-${index}`}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <Badge variant="outline" className="text-xs">
+                          {pair.matchType === 'email' ? <Mail className="h-3 w-3 mr-1" /> : <Phone className="h-3 w-3 mr-1" />}
+                          {pair.matchType}: {pair.matchValue}
+                        </Badge>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            setSelectedDuplicate(pair);
+                            setPrimarySelection('contact1');
+                            setIsMergeOpen(true);
+                          }}
+                          className="h-7 text-xs"
+                          data-testid={`button-merge-${index}`}
+                        >
+                          <GitMerge className="h-3 w-3 mr-1" />
+                          Fusionar
+                        </Button>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Avatar className="h-6 w-6">
+                              <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">
+                                {(pair.contact1.displayName || '?')[0].toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm font-medium">{pair.contact1.displayName || 'Sin nombre'}</span>
+                          </div>
+                          <div className="text-xs text-gray-500 space-y-1">
+                            {pair.contact1.email && <p>{pair.contact1.email}</p>}
+                            {pair.contact1.phone && <p>{pair.contact1.phone}</p>}
+                            <p>{pair.contact1.conversationCount || 0} conversaciones</p>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Avatar className="h-6 w-6">
+                              <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">
+                                {(pair.contact2.displayName || '?')[0].toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm font-medium">{pair.contact2.displayName || 'Sin nombre'}</span>
+                          </div>
+                          <div className="text-xs text-gray-500 space-y-1">
+                            {pair.contact2.email && <p>{pair.contact2.email}</p>}
+                            {pair.contact2.phone && <p>{pair.contact2.phone}</p>}
+                            <p>{pair.contact2.conversationCount || 0} conversaciones</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </ScrollArea>
+        ) : null}
       </div>
 
       {/* Contact Detail Slide-over */}
@@ -820,6 +1013,136 @@ export function CRM() {
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : null}
               Crear contacto
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Merge Dialog */}
+      <Dialog open={isMergeOpen} onOpenChange={setIsMergeOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <GitMerge className="h-5 w-5" />
+              Fusionar contactos
+            </DialogTitle>
+            <DialogDescription>
+              Selecciona cual sera el contacto principal. El otro sera archivado y sus datos se moveran al principal.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedDuplicate && (
+            <div className="space-y-4 py-4">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+                Coincidencia: {selectedDuplicate.matchType === 'email' ? 'Email' : 'Telefono'} - {selectedDuplicate.matchValue}
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div 
+                  className={cn(
+                    "border-2 rounded-lg p-4 cursor-pointer transition-all",
+                    primarySelection === 'contact1' 
+                      ? "border-blue-500 bg-blue-50" 
+                      : "border-gray-200 hover:border-gray-300"
+                  )}
+                  onClick={() => setPrimarySelection('contact1')}
+                  data-testid="merge-select-contact1"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <input 
+                      type="radio" 
+                      checked={primarySelection === 'contact1'} 
+                      readOnly 
+                      className="h-4 w-4 text-blue-600"
+                    />
+                    <span className="text-xs font-medium text-blue-600">PRINCIPAL</span>
+                  </div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">
+                        {(selectedDuplicate.contact1.displayName || '?')[0].toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium">{selectedDuplicate.contact1.displayName || 'Sin nombre'}</span>
+                  </div>
+                  <div className="text-xs text-gray-500 space-y-1 ml-10">
+                    {selectedDuplicate.contact1.email && <p>{selectedDuplicate.contact1.email}</p>}
+                    {selectedDuplicate.contact1.phone && <p>{selectedDuplicate.contact1.phone}</p>}
+                    <p className="text-gray-400">{selectedDuplicate.contact1.conversationCount || 0} conversaciones</p>
+                  </div>
+                </div>
+                
+                <div 
+                  className={cn(
+                    "border-2 rounded-lg p-4 cursor-pointer transition-all",
+                    primarySelection === 'contact2' 
+                      ? "border-blue-500 bg-blue-50" 
+                      : "border-gray-200 hover:border-gray-300"
+                  )}
+                  onClick={() => setPrimarySelection('contact2')}
+                  data-testid="merge-select-contact2"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <input 
+                      type="radio" 
+                      checked={primarySelection === 'contact2'} 
+                      readOnly 
+                      className="h-4 w-4 text-blue-600"
+                    />
+                    <span className="text-xs font-medium text-blue-600">PRINCIPAL</span>
+                  </div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">
+                        {(selectedDuplicate.contact2.displayName || '?')[0].toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium">{selectedDuplicate.contact2.displayName || 'Sin nombre'}</span>
+                  </div>
+                  <div className="text-xs text-gray-500 space-y-1 ml-10">
+                    {selectedDuplicate.contact2.email && <p>{selectedDuplicate.contact2.email}</p>}
+                    {selectedDuplicate.contact2.phone && <p>{selectedDuplicate.contact2.phone}</p>}
+                    <p className="text-gray-400">{selectedDuplicate.contact2.conversationCount || 0} conversaciones</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
+                <p className="font-medium text-gray-700 mb-1">Al fusionar:</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  <li>Los canales y conversaciones se moveran al contacto principal</li>
+                  <li>Los campos vacios del principal se rellenaran con datos del secundario</li>
+                  <li>Tendras 15 minutos para deshacer la fusion</li>
+                </ul>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsMergeOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => {
+                if (selectedDuplicate) {
+                  const primaryId = primarySelection === 'contact1' 
+                    ? selectedDuplicate.contact1.id 
+                    : selectedDuplicate.contact2.id;
+                  const secondaryId = primarySelection === 'contact1' 
+                    ? selectedDuplicate.contact2.id 
+                    : selectedDuplicate.contact1.id;
+                  mergeMutation.mutate({ primaryId, secondaryId });
+                }
+              }}
+              disabled={mergeMutation.isPending}
+              data-testid="button-confirm-merge"
+            >
+              {mergeMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <GitMerge className="h-4 w-4 mr-2" />
+              )}
+              Fusionar contactos
             </Button>
           </DialogFooter>
         </DialogContent>
