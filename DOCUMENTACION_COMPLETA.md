@@ -2986,10 +2986,32 @@ El sistema reemplaza estas variables antes de enviar a la IA:
 | Variable | Descripción | Fuente |
 |----------|-------------|--------|
 | `{{customer_name}}` | Nombre del cliente | `conversation.customerName` |
+| `{{first_name}}` | Primer nombre extraído del username | `extractFirstName(message.author)` |
+| `{{username}}` | Username completo del usuario | `message.author` |
 | `{{platform}}` | Red social | `message.platform` |
 | `{{brand_name}}` | Nombre de la marca | `brand.name` |
 | `{{post_context}}` | Descripción del post original | `socialPost.caption` |
 | `{{char_limit}}` | Límite de caracteres | `PLATFORM_LIMITS[platform]` |
+| `{{is_dm}}` | Si es mensaje directo | `true/false` |
+| `{{relationship_status}}` | Estado de relación | `new/active/reengagement` |
+| `{{time_since_last_interaction}}` | Minutos desde última respuesta | Número |
+
+### Extracción Inteligente de Primer Nombre
+
+La función `extractFirstName()` en `prompt-composer.ts` procesa usernames de redes sociales para detectar el primer nombre:
+
+**Patrones soportados:**
+- `maria_perez_1985` → `María`
+- `CarlosGomez` → `Carlos`
+- `juanito_123` → `Juanito`
+- `user12345` → (vacío, no es nombre)
+- `TheAgency_Official` → (vacío, es empresa)
+
+**Uso en prompts:**
+- En DMs nuevos: "Hola, María, ¿en qué puedo ayudarte?"
+- En reengagement: "Hola de nuevo, Carlos"
+- En comentarios: "Hola, Juan, te esperamos en DM 📩"
+- Si no se detecta nombre, la IA saluda sin nombre: "Hola, ¿en qué puedo ayudarte?"
 
 ### Estructura del Frontend
 
