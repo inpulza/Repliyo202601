@@ -181,7 +181,7 @@ export interface IStorage {
   // CRM Module - Contact Channels (Identity Merge)
   getCrmContactChannels(contactId: string): Promise<CrmContactChannel[]>;
   getCrmContactChannel(id: string): Promise<CrmContactChannel | undefined>;
-  findCrmContactChannelByExternal(platform: string, externalId: string): Promise<CrmContactChannel | undefined>;
+  findCrmContactChannelByExternal(brandId: string, platform: string, externalId: string): Promise<CrmContactChannel | undefined>;
   createCrmContactChannel(channel: InsertCrmContactChannel): Promise<CrmContactChannel>;
   updateCrmContactChannel(id: string, updates: UpdateCrmContactChannel): Promise<CrmContactChannel | undefined>;
   incrementCrmChannelMessageCount(id: string): Promise<CrmContactChannel | undefined>;
@@ -2122,15 +2122,17 @@ export class DatabaseStorage implements IStorage {
     return channel || undefined;
   }
 
-  async findCrmContactChannelByExternal(platform: string, externalId: string): Promise<CrmContactChannel | undefined> {
+  async findCrmContactChannelByExternal(brandId: string, platform: string, externalId: string): Promise<CrmContactChannel | undefined> {
     const [channel] = await db
-      .select()
+      .select({ channel: crmContactChannels })
       .from(crmContactChannels)
+      .innerJoin(crmContacts, eq(crmContactChannels.contactId, crmContacts.id))
       .where(and(
+        eq(crmContacts.brandId, brandId),
         eq(crmContactChannels.platform, platform),
         eq(crmContactChannels.externalId, externalId)
       ));
-    return channel || undefined;
+    return channel?.channel || undefined;
   }
 
   async createCrmContactChannel(channel: InsertCrmContactChannel): Promise<CrmContactChannel> {
