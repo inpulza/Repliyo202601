@@ -73,6 +73,7 @@ export const conversations = pgTable("conversations", {
   status: text("status").notNull().default('open'),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastAiReplyAt: timestamp("last_ai_reply_at"),
+  contactId: varchar("contact_id").references(() => crmContacts.id, { onDelete: 'set null' }),
 });
 
 export const messages = pgTable("messages", {
