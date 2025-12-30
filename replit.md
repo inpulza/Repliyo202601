@@ -56,6 +56,11 @@ The user interface includes a consolidated "Orchestration" tab for managing all 
     - **API Endpoint:** `POST /api/crm/populate` for brand-specific backfill
     - **Results:** 717 conversations processed, 100% DMs linked to contacts, all comments in limbo or linked to existing contacts
     - **Idempotent:** Can be run multiple times safely without creating duplicates
+- **Sync Service Hardening (Dec 30, 2024):** Critical fixes to ensure 100% comment capture in CRM:
+    - **CustomerId Normalization:** Coerces numeric IDs (Facebook/TikTok) to strings before processing; fallback chain: authorParticipant.id → comment.author → commentOwnerId → comment.id
+    - **Nested Replies CRM Routing:** Added crmTrafficController.routeIncomingMessage() call for all nested replies (previously bypassed CRM entirely)
+    - **Warning Logs:** Added logs when fallback IDs are used, enabling monitoring of data quality issues
+    - **Idempotent:** Uses Metricool message IDs for deduplication, safe to re-sync
 
 ### System Design Choices
 - **Multi-Tenant Architecture:** Strong isolation of data per brand via `brandId` for CRM and AI configurations.
