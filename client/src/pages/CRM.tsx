@@ -28,7 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   DropdownMenu,
@@ -186,6 +186,8 @@ export function CRM() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedContact, setSelectedContact] = useState<CrmContact | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [selectedLimbo, setSelectedLimbo] = useState<LimboEntry | null>(null);
+  const [isLimboDetailOpen, setIsLimboDetailOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'contacts' | 'limbo' | 'duplicates'>('contacts');
   const [detailTab, setDetailTab] = useState<'profile' | 'history'>('profile');
@@ -711,12 +713,16 @@ export function CRM() {
                   {filteredLimbo.map((entry) => (
                     <tr 
                       key={entry.id}
-                      className="hover:bg-gray-50"
+                      className="hover:bg-gray-50 cursor-pointer"
+                      onClick={() => { setSelectedLimbo(entry); setIsLimboDetailOpen(true); }}
                       data-testid={`row-limbo-${entry.id}`}
                     >
                       <td className="px-6 py-3">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
+                            {entry.avatarUrl ? (
+                              <AvatarImage src={entry.avatarUrl} alt={entry.username || ''} />
+                            ) : null}
                             <AvatarFallback className="bg-gray-100 text-gray-600 text-xs font-medium">
                               {(entry.username || '?')[0].toUpperCase()}
                             </AvatarFallback>
@@ -741,7 +747,7 @@ export function CRM() {
                           }
                         </span>
                       </td>
-                      <td className="px-6 py-3">
+                      <td className="px-6 py-3" onClick={(e) => e.stopPropagation()}>
                         <Button
                           size="sm"
                           variant="outline"
@@ -1445,6 +1451,124 @@ export function CRM() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Limbo Detail Slide-over */}
+      {isLimboDetailOpen && selectedLimbo && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <div 
+            className="absolute inset-0 bg-black/20"
+            onClick={() => setIsLimboDetailOpen(false)}
+          />
+          <div className="relative w-full max-w-md bg-white border-l animate-in slide-in-from-right duration-200 flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b shrink-0">
+              <h2 className="text-lg font-semibold text-gray-900">Usuario pendiente</h2>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="default"
+                  size="sm"
+                  onClick={() => {
+                    promoteMutation.mutate(selectedLimbo.id);
+                    setIsLimboDetailOpen(false);
+                  }}
+                  disabled={promoteMutation.isPending}
+                  className="h-8 px-3 text-sm"
+                  data-testid="button-promote-panel"
+                >
+                  {promoteMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                  ) : (
+                    <ArrowUpRight className="h-4 w-4 mr-1.5" />
+                  )}
+                  Promover a contacto
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => setIsLimboDetailOpen(false)}
+                  className="h-8 w-8"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            
+            <ScrollArea className="flex-1">
+              <div className="p-6 space-y-6">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-16 w-16">
+                    {selectedLimbo.avatarUrl ? (
+                      <AvatarImage src={selectedLimbo.avatarUrl} alt={selectedLimbo.username || ''} />
+                    ) : null}
+                    <AvatarFallback className="bg-gray-100 text-gray-600 text-xl font-medium">
+                      {(selectedLimbo.username || '?')[0].toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">{selectedLimbo.username || 'Desconocido'}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="outline" className="text-xs">
+                        {getPlatformIcon(selectedLimbo.platform)}
+                        <span className="ml-1 capitalize">{selectedLimbo.platform}</span>
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
+                        Pendiente
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Información del canal</h4>
+                  <div className="p-4 bg-gray-50 rounded-lg space-y-3">
+                    <div className="flex items-center gap-3">
+                      {getPlatformIcon(selectedLimbo.platform)}
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">@{selectedLimbo.username || selectedLimbo.externalId}</p>
+                        <p className="text-xs text-gray-500 capitalize">{selectedLimbo.platform}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Actividad</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <p className="text-2xl font-semibold text-gray-900">{selectedLimbo.interactionCount || 1}</p>
+                      <p className="text-xs text-gray-500">Comentarios</p>
+                    </div>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <p className="text-sm font-medium text-gray-900">
+                        {selectedLimbo.lastInteractionAt 
+                          ? formatDistanceToNow(new Date(selectedLimbo.lastInteractionAt), { addSuffix: true, locale: es })
+                          : '—'
+                        }
+                      </p>
+                      <p className="text-xs text-gray-500">Última actividad</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <MessageSquare className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-blue-800">Usuario de comentarios</p>
+                      <p className="text-xs text-blue-700 mt-1">
+                        Este usuario solo ha interactuado a través de comentarios públicos. 
+                        Cuando te escriba por DM, se convertirá automáticamente en un contacto completo.
+                      </p>
+                      <p className="text-xs text-blue-600 mt-2">
+                        También puedes promoverlo manualmente usando el botón de arriba.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ScrollArea>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
