@@ -3192,7 +3192,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const duplicates = await storage.findAllDuplicatePairs(brandId);
-      res.json({ duplicates, count: duplicates.length });
+      
+      const enrichedDuplicates = await Promise.all(duplicates.map(async (pair) => {
+        const [channels1, channels2] = await Promise.all([
+          storage.getCrmContactChannels(pair.contact1.id),
+          storage.getCrmContactChannels(pair.contact2.id)
+        ]);
+        
+        return {
+          ...pair,
+          contact1: {
+            ...pair.contact1,
+            channels: channels1.map(ch => ({
+              platform: ch.platform,
+              username: ch.username,
+              avatarUrl: ch.avatarUrl
+            }))
+          },
+          contact2: {
+            ...pair.contact2,
+            channels: channels2.map(ch => ({
+              platform: ch.platform,
+              username: ch.username,
+              avatarUrl: ch.avatarUrl
+            }))
+          }
+        };
+      }));
+      
+      res.json({ duplicates: enrichedDuplicates, count: enrichedDuplicates.length });
     } catch (error: any) {
       console.error('[CRM] Error finding duplicates:', error);
       res.status(500).json({ error: "Failed to find duplicates", details: error.message });

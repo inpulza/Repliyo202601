@@ -652,10 +652,13 @@ export function CRM() {
                       data-testid={`duplicate-pair-${index}`}
                     >
                       <div className="flex items-center justify-between mb-3">
-                        <Badge variant="outline" className="text-xs">
-                          {pair.matchType === 'email' ? <Mail className="h-3 w-3 mr-1" /> : <Phone className="h-3 w-3 mr-1" />}
-                          {pair.matchType}: {pair.matchValue}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs bg-amber-50 border-amber-200 text-amber-700">
+                            {pair.matchType === 'email' ? <Mail className="h-3 w-3 mr-1" /> : <Phone className="h-3 w-3 mr-1" />}
+                            Coincidencia: {pair.matchType === 'email' ? 'Email' : 'Teléfono'}
+                          </Badge>
+                          <span className="text-xs font-mono text-gray-600">{pair.matchValue}</span>
+                        </div>
                         <Button
                           size="sm"
                           onClick={() => {
@@ -672,37 +675,87 @@ export function CRM() {
                       </div>
                       
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-gray-50 rounded-lg p-3">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Avatar className="h-6 w-6">
-                              <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">
-                                {(pair.contact1.displayName || '?')[0].toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm font-medium">{pair.contact1.displayName || 'Sin nombre'}</span>
-                          </div>
-                          <div className="text-xs text-gray-500 space-y-1">
-                            {pair.contact1.email && <p>{pair.contact1.email}</p>}
-                            {pair.contact1.phone && <p>{pair.contact1.phone}</p>}
-                            <p>{pair.contact1.conversationCount || 0} conversaciones</p>
-                          </div>
-                        </div>
-                        
-                        <div className="bg-gray-50 rounded-lg p-3">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Avatar className="h-6 w-6">
-                              <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">
-                                {(pair.contact2.displayName || '?')[0].toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm font-medium">{pair.contact2.displayName || 'Sin nombre'}</span>
-                          </div>
-                          <div className="text-xs text-gray-500 space-y-1">
-                            {pair.contact2.email && <p>{pair.contact2.email}</p>}
-                            {pair.contact2.phone && <p>{pair.contact2.phone}</p>}
-                            <p>{pair.contact2.conversationCount || 0} conversaciones</p>
-                          </div>
-                        </div>
+                        {(() => {
+                          const channels1 = (pair.contact1 as any)?.channels || [];
+                          const channels2 = (pair.contact2 as any)?.channels || [];
+                          return (
+                            <>
+                              <div className="bg-gray-50 rounded-lg p-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Avatar className="h-8 w-8">
+                                    <AvatarFallback className="bg-blue-100 text-blue-600 text-sm font-medium">
+                                      {(pair.contact1.displayName || '?')[0].toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <span className="text-sm font-medium block">{pair.contact1.displayName || 'Sin nombre'}</span>
+                                    {channels1.length > 0 && (
+                                      <div className="flex items-center gap-1 mt-0.5">
+                                        {channels1.map((ch: any, i: number) => (
+                                          <div key={i} className="flex items-center gap-1" title={`@${ch.username}`}>
+                                            {getPlatformIcon(ch.platform)}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="text-xs text-gray-500 space-y-1 ml-10">
+                                  {channels1.map((ch: any, i: number) => (
+                                    <p key={i} className="flex items-center gap-1">
+                                      {getPlatformIcon(ch.platform)}
+                                      <span className="font-medium">@{ch.username}</span>
+                                      <span className="text-gray-400">(DM)</span>
+                                    </p>
+                                  ))}
+                                  {pair.contact1.email && <p className="flex items-center gap-1"><Mail className="h-3 w-3" /> {pair.contact1.email}</p>}
+                                  {pair.contact1.phone && <p className="flex items-center gap-1"><Phone className="h-3 w-3" /> {pair.contact1.phone}</p>}
+                                  <p className="text-gray-400 pt-1">{pair.contact1.conversationCount || 0} conversaciones</p>
+                                </div>
+                              </div>
+                              
+                              <div className="bg-gray-50 rounded-lg p-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Avatar className="h-8 w-8">
+                                    <AvatarFallback className="bg-green-100 text-green-600 text-sm font-medium">
+                                      {(pair.contact2.displayName || '?')[0].toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <span className="text-sm font-medium block">{pair.contact2.displayName || 'Sin nombre'}</span>
+                                    {channels2.length > 0 && (
+                                      <div className="flex items-center gap-1 mt-0.5">
+                                        {channels2.map((ch: any, i: number) => (
+                                          <div key={i} className="flex items-center gap-1" title={`@${ch.username}`}>
+                                            {getPlatformIcon(ch.platform)}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="text-xs text-gray-500 space-y-1 ml-10">
+                                  {channels2.map((ch: any, i: number) => (
+                                    <p key={i} className="flex items-center gap-1">
+                                      {getPlatformIcon(ch.platform)}
+                                      <span className="font-medium">@{ch.username}</span>
+                                      <span className="text-gray-400">(DM)</span>
+                                    </p>
+                                  ))}
+                                  {pair.contact2.email && <p className="flex items-center gap-1"><Mail className="h-3 w-3" /> {pair.contact2.email}</p>}
+                                  {pair.contact2.phone && <p className="flex items-center gap-1"><Phone className="h-3 w-3" /> {pair.contact2.phone}</p>}
+                                  <p className="text-gray-400 pt-1">{pair.contact2.conversationCount || 0} conversaciones</p>
+                                </div>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                      
+                      <div className="mt-3 pt-3 border-t border-gray-100">
+                        <p className="text-xs text-gray-500">
+                          <span className="font-medium text-gray-600">¿Por qué son duplicados?</span> Ambos contactos comparten el mismo {pair.matchType === 'email' ? 'email' : 'teléfono'}: <span className="font-mono text-gray-700">{pair.matchValue}</span>
+                        </p>
                       </div>
                     </div>
                   ))}
