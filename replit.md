@@ -62,6 +62,14 @@ The user interface includes a consolidated "Orchestration" tab for managing all 
     - **Warning Logs:** Added logs when fallback IDs are used, enabling monitoring of data quality issues
     - **Idempotent:** Uses Metricool message IDs for deduplication, safe to re-sync
 
+### Upcoming Features (Research Phase)
+- **Conversation Lifecycle Management (Dec 30, 2024 - Research):** Comprehensive research on "Smart AI Closing" functionality:
+    - **Knowledge Base:** `docs/knowledge-base/CONVERSATION_LIFECYCLE_MANAGEMENT.md`
+    - **Source PDF:** `docs/knowledge-base/Cierre_Perfecto_en_SaaS_B2B_1767113509977.pdf`
+    - **Scope:** Máquina de estados (Open/Pending/Solved/Closed), Smart AI Closing con resúmenes, lógica Anti-Zombie (detección de "Gracias"), métricas de cierre
+    - **Benchmarking:** Zendesk, Intercom (Fin AI), Front, HubSpot, Respond.io
+    - **Status:** Investigación completada, pendiente de implementación
+
 ### System Design Choices
 - **Multi-Tenant Architecture:** Strong isolation of data per brand via `brandId` for CRM and AI configurations.
 - **Idempotent Operations:** Migration scripts and CRM contact creation are designed to be idempotent to prevent duplicate entries.
