@@ -186,6 +186,7 @@ export interface IStorage {
   updateCrmContact(id: string, updates: UpdateCrmContact): Promise<CrmContact | undefined>;
   updateCrmContactCustomField(id: string, field: string, value: any): Promise<CrmContact | undefined>;
   incrementCrmContactMetrics(id: string, conversations?: number, messages?: number): Promise<CrmContact | undefined>;
+  deleteCrmContact(id: string): Promise<boolean>;
   
   // CRM Module - Contact Channels (Identity Merge)
   getCrmContactChannels(contactId: string): Promise<CrmContactChannel[]>;
@@ -2503,6 +2504,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(crmContacts.id, id))
       .returning();
     return updated || undefined;
+  }
+
+  async deleteCrmContact(id: string): Promise<boolean> {
+    await db.delete(crmContactChannels).where(eq(crmContactChannels.contactId, id));
+    await db.update(conversations).set({ contactId: null }).where(eq(conversations.contactId, id));
+    await db.delete(crmContacts).where(eq(crmContacts.id, id));
+    return true;
   }
 
   // ============================================

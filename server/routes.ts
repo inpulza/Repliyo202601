@@ -3063,10 +3063,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Access denied" });
       }
 
-      // Update status to archived instead of hard delete
-      await storage.updateCrmContact(req.params.id, { status: 'archived' });
-
-      res.json({ success: true, message: "Contact archived" });
+      const permanent = req.query.permanent === 'true';
+      
+      if (permanent) {
+        await storage.deleteCrmContact(req.params.id);
+        res.json({ success: true, message: "Contact permanently deleted" });
+      } else {
+        await storage.updateCrmContact(req.params.id, { status: 'archived' });
+        res.json({ success: true, message: "Contact archived" });
+      }
     } catch (error: any) {
       console.error('[CRM] Error deleting contact:', error);
       res.status(500).json({ error: "Failed to delete contact", details: error.message });

@@ -21,7 +21,9 @@ import {
   AlertTriangle,
   GitMerge,
   Undo2,
-  ArrowRight
+  ArrowRight,
+  Trash2,
+  History
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +46,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { useLocation } from 'wouter';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -184,6 +193,11 @@ export function CRM() {
   const [selectedDuplicate, setSelectedDuplicate] = useState<DuplicatePair | null>(null);
   const [primarySelection, setPrimarySelection] = useState<'contact1' | 'contact2'>('contact1');
   const [lastMergedId, setLastMergedId] = useState<string | null>(null);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [contactToDelete, setContactToDelete] = useState<CrmContact | null>(null);
+  const [filterPlatform, setFilterPlatform] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterLifecycle, setFilterLifecycle] = useState<string>('all');
   
   const [newContact, setNewContact] = useState({
     displayName: '',
@@ -343,6 +357,28 @@ export function CRM() {
     },
   });
 
+  const deleteContactMutation = useMutation({
+    mutationFn: async ({ id, permanent }: { id: string; permanent?: boolean }) => {
+      const url = permanent ? `/api/crm/contacts/${id}?permanent=true` : `/api/crm/contacts/${id}`;
+      const res = await fetch(url, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to delete');
+      }
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/crm/contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/crm/duplicates'] });
+      setIsDeleteOpen(false);
+      setContactToDelete(null);
+      toast.success(variables.permanent ? 'Contacto eliminado permanentemente' : 'Contacto archivado');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Error al eliminar contacto');
+    },
+  });
+
   const contacts: CrmContact[] = contactsData?.contacts || [];
   const limboEntries: LimboEntry[] = limboData?.entries || [];
   const duplicates: DuplicatePair[] = duplicatesData?.duplicates || [];
@@ -358,12 +394,29 @@ export function CRM() {
     }
   };
 
-  const filteredContacts = contacts.filter(c => 
-    !searchQuery || 
-    c.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.phone?.includes(searchQuery)
-  );
+  const filteredContacts = contacts.filter(c => {
+    const matchesSearch = !searchQuery || 
+      c.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.phone?.includes(searchQuery);
+    
+    const matchesPlatform = filterPlatform === 'all' || 
+      c.platforms?.some(p => p.toLowerCase() === filterPlatform.toLowerCase());
+    
+    const matchesStatus = filterStatus === 'all' || c.status === filterStatus;
+    
+    const matchesLifecycle = filterLifecycle === 'all' || c.lifecycleStage === filterLifecycle;
+    
+    return matchesSearch && matchesPlatform && matchesStatus && matchesLifecycle;
+  });
+  
+  const hasActiveFilters = filterPlatform !== 'all' || filterStatus !== 'all' || filterLifecycle !== 'all';
+  
+  const clearFilters = () => {
+    setFilterPlatform('all');
+    setFilterStatus('all');
+    setFilterLifecycle('all');
+  };
 
   const filteredLimbo = limboEntries.filter(e => 
     !searchQuery || 
@@ -450,6 +503,63 @@ export function CRM() {
               data-testid="input-search-contacts"
             />
           </div>
+          
+          {activeTab === 'contacts' && (
+            <div className="flex items-center gap-2">
+              <Select value={filterPlatform} onValueChange={setFilterPlatform}>
+                <SelectTrigger className="h-9 w-32 text-xs">
+                  <SelectValue placeholder="Plataforma" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="instagram">Instagram</SelectItem>
+                  <SelectItem value="facebook">Facebook</SelectItem>
+                  <SelectItem value="tiktok">TikTok</SelectItem>
+                  <SelectItem value="youtube">YouTube</SelectItem>
+                  <SelectItem value="twitter">Twitter</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="h-9 w-28 text-xs">
+                  <SelectValue placeholder="Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="new">Nuevo</SelectItem>
+                  <SelectItem value="lead">Lead</SelectItem>
+                  <SelectItem value="active">Activo</SelectItem>
+                  <SelectItem value="inactive">Inactivo</SelectItem>
+                  <SelectItem value="archived">Archivado</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={filterLifecycle} onValueChange={setFilterLifecycle}>
+                <SelectTrigger className="h-9 w-28 text-xs">
+                  <SelectValue placeholder="Etapa" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="new">Nuevo</SelectItem>
+                  <SelectItem value="lead">Lead</SelectItem>
+                  <SelectItem value="customer">Cliente</SelectItem>
+                  <SelectItem value="vip">VIP</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {hasActiveFilters && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={clearFilters}
+                  className="h-9 px-2 text-xs text-gray-500"
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  Limpiar
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -472,6 +582,7 @@ export function CRM() {
                 <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                   <tr>
                     <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
                     <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Canales</th>
                     <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                     <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Etapa</th>
@@ -504,6 +615,13 @@ export function CRM() {
                         </div>
                       </td>
                       <td className="px-6 py-3">
+                        {contact.phone ? (
+                          <span className="text-sm text-gray-600 font-mono">{contact.phone}</span>
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-3">
                         <div className="flex items-center gap-1">
                           {contact.platforms?.map((platform, i) => (
                             <span key={i} className="p-1">
@@ -532,8 +650,32 @@ export function CRM() {
                           }
                         </span>
                       </td>
-                      <td className="px-6 py-3">
-                        <ChevronRight className="h-4 w-4 text-gray-400" />
+                      <td className="px-6 py-3" onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4 text-gray-400" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleContactClick(contact)}>
+                              <User className="h-4 w-4 mr-2" />
+                              Ver contacto
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => { setSelectedContact(contact); setIsDetailOpen(true); setDetailTab('history'); }}>
+                              <History className="h-4 w-4 mr-2" />
+                              Ver historial
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => { setContactToDelete(contact); setIsDeleteOpen(true); }}
+                              className="text-red-600 focus:text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Eliminar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </td>
                     </tr>
                   ))}
@@ -703,35 +845,31 @@ export function CRM() {
                                   </div>
                                 </div>
                                 <div className="flex flex-col gap-1 ml-2">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="h-7 text-xs px-2"
-                                    onClick={() => {
-                                      setSelectedContact(pair.contact1);
-                                      setIsDetailOpen(true);
-                                    }}
-                                    data-testid={`view-contact-${pair.contact1.id}`}
-                                  >
-                                    <User className="h-3 w-3 mr-1" />
-                                    Ver contacto
-                                  </Button>
-                                  {channels1.length > 0 && (
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm" 
-                                      className="h-7 text-xs px-2"
-                                      onClick={() => {
-                                        setSelectedContact(pair.contact1);
-                                        setIsDetailOpen(true);
-                                        setDetailTab('history');
-                                      }}
-                                      data-testid={`view-history-${pair.contact1.id}`}
-                                    >
-                                      <MessageSquare className="h-3 w-3 mr-1" />
-                                      Ver historial
-                                    </Button>
-                                  )}
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-7 w-7">
+                                        <MoreHorizontal className="h-4 w-4 text-gray-400" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => { setSelectedContact(pair.contact1); setIsDetailOpen(true); }}>
+                                        <User className="h-4 w-4 mr-2" />
+                                        Ver contacto
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => { setSelectedContact(pair.contact1); setIsDetailOpen(true); setDetailTab('history'); }}>
+                                        <History className="h-4 w-4 mr-2" />
+                                        Ver historial
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem 
+                                        onClick={() => { setContactToDelete(pair.contact1); setIsDeleteOpen(true); }}
+                                        className="text-red-600 focus:text-red-600"
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Eliminar
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
                                 </div>
                               </div>
                               
@@ -758,35 +896,31 @@ export function CRM() {
                                   </div>
                                 </div>
                                 <div className="flex flex-col gap-1 ml-2">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="h-7 text-xs px-2"
-                                    onClick={() => {
-                                      setSelectedContact(pair.contact2);
-                                      setIsDetailOpen(true);
-                                    }}
-                                    data-testid={`view-contact-${pair.contact2.id}`}
-                                  >
-                                    <User className="h-3 w-3 mr-1" />
-                                    Ver contacto
-                                  </Button>
-                                  {channels2.length > 0 && (
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm" 
-                                      className="h-7 text-xs px-2"
-                                      onClick={() => {
-                                        setSelectedContact(pair.contact2);
-                                        setIsDetailOpen(true);
-                                        setDetailTab('history');
-                                      }}
-                                      data-testid={`view-history-${pair.contact2.id}`}
-                                    >
-                                      <MessageSquare className="h-3 w-3 mr-1" />
-                                      Ver historial
-                                    </Button>
-                                  )}
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-7 w-7">
+                                        <MoreHorizontal className="h-4 w-4 text-gray-400" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => { setSelectedContact(pair.contact2); setIsDetailOpen(true); }}>
+                                        <User className="h-4 w-4 mr-2" />
+                                        Ver contacto
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => { setSelectedContact(pair.contact2); setIsDetailOpen(true); setDetailTab('history'); }}>
+                                        <History className="h-4 w-4 mr-2" />
+                                        Ver historial
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem 
+                                        onClick={() => { setContactToDelete(pair.contact2); setIsDeleteOpen(true); }}
+                                        className="text-red-600 focus:text-red-600"
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Eliminar
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
                                 </div>
                               </div>
                             </>
@@ -1238,6 +1372,75 @@ export function CRM() {
                 <GitMerge className="h-4 w-4 mr-2" />
               )}
               Fusionar contactos
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="h-5 w-5" />
+              Eliminar contacto
+            </DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que quieres eliminar a <strong>{contactToDelete?.displayName || 'este contacto'}</strong>?
+            </DialogDescription>
+          </DialogHeader>
+          
+          {contactToDelete && (
+            <div className="py-4 space-y-3">
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback className="bg-gray-200 text-gray-600">
+                    {(contactToDelete.displayName || '?')[0].toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium">{contactToDelete.displayName || 'Sin nombre'}</p>
+                  <p className="text-sm text-gray-500">
+                    {contactToDelete.totalMessages || 0} mensajes · {contactToDelete.conversationCount || 0} conversaciones
+                  </p>
+                </div>
+              </div>
+              
+              <div className="text-sm text-gray-600 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <p className="font-medium text-amber-800 mb-1">Opciones de eliminación:</p>
+                <ul className="text-amber-700 space-y-1 text-xs">
+                  <li><strong>Archivar:</strong> El contacto se oculta pero se puede recuperar</li>
+                  <li><strong>Eliminar permanentemente:</strong> Se borra todo (útil para spam)</li>
+                </ul>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)} className="flex-1">
+              Cancelar
+            </Button>
+            <Button 
+              variant="secondary"
+              onClick={() => contactToDelete && deleteContactMutation.mutate({ id: contactToDelete.id, permanent: false })}
+              disabled={deleteContactMutation.isPending}
+              className="flex-1"
+              data-testid="button-archive-contact"
+            >
+              Archivar
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={() => contactToDelete && deleteContactMutation.mutate({ id: contactToDelete.id, permanent: true })}
+              disabled={deleteContactMutation.isPending}
+              data-testid="button-delete-permanent"
+            >
+              {deleteContactMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Trash2 className="h-4 w-4 mr-2" />
+              )}
+              Eliminar
             </Button>
           </DialogFooter>
         </DialogContent>
