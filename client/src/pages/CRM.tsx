@@ -499,7 +499,7 @@ export function CRM() {
               placeholder="Buscar contactos..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 border-gray-200 focus:border-gray-300 focus:ring-0"
+              className="pl-9 h-8 bg-white border-gray-200 shadow-none focus:border-gray-300 focus:ring-0"
               data-testid="input-search-contacts"
             />
           </div>
@@ -507,7 +507,7 @@ export function CRM() {
           {activeTab === 'contacts' && (
             <div className="flex items-center gap-2">
               <Select value={filterPlatform} onValueChange={setFilterPlatform}>
-                <SelectTrigger className="h-9 w-32 text-xs">
+                <SelectTrigger className="h-8 w-32 text-xs bg-white border-gray-200 shadow-none">
                   <SelectValue placeholder="Plataforma" />
                 </SelectTrigger>
                 <SelectContent>
@@ -521,7 +521,7 @@ export function CRM() {
               </Select>
               
               <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="h-9 w-28 text-xs">
+                <SelectTrigger className="h-8 w-28 text-xs bg-white border-gray-200 shadow-none">
                   <SelectValue placeholder="Estado" />
                 </SelectTrigger>
                 <SelectContent>
@@ -535,7 +535,7 @@ export function CRM() {
               </Select>
               
               <Select value={filterLifecycle} onValueChange={setFilterLifecycle}>
-                <SelectTrigger className="h-9 w-28 text-xs">
+                <SelectTrigger className="h-8 w-28 text-xs bg-white border-gray-200 shadow-none">
                   <SelectValue placeholder="Etapa" />
                 </SelectTrigger>
                 <SelectContent>
