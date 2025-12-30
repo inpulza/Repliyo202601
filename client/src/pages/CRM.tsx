@@ -458,56 +458,57 @@ export function CRM() {
 
   return (
     <div className="flex flex-col h-full bg-white">
-      {/* Header - Clean, minimal */}
-      <div className="border-b px-6 py-4">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl font-semibold text-gray-900" data-testid="crm-title">Contactos</h1>
+      {/* Header - Clean, minimal - Responsive */}
+      <div className="border-b px-3 sm:px-6 py-3 sm:py-4">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <h1 className="text-lg sm:text-xl font-semibold text-gray-900" data-testid="crm-title">Contactos</h1>
           <Button 
             onClick={() => setIsCreateOpen(true)}
             size="sm"
-            className="h-8 px-3 text-sm"
+            className="h-8 px-2 sm:px-3 text-xs sm:text-sm"
             data-testid="button-create-contact"
           >
-            <Plus className="h-4 w-4 mr-1.5" />
-            Nuevo contacto
+            <Plus className="h-4 w-4 sm:mr-1.5" />
+            <span className="hidden sm:inline">Nuevo contacto</span>
           </Button>
         </div>
         
-        {/* Tabs + Search */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+        {/* Tabs + Search - Responsive */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          {/* Tabs - scrollable on mobile */}
+          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5 overflow-x-auto no-scrollbar">
             <button
               onClick={() => setActiveTab('contacts')}
               className={cn(
-                "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                "px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors whitespace-nowrap",
                 activeTab === 'contacts' 
-                  ? "bg-white text-gray-900" 
+                  ? "bg-white text-gray-900 shadow-sm" 
                   : "text-gray-600 hover:text-gray-900"
               )}
               data-testid="tab-contacts"
             >
               Contactos
-              <span className="ml-1.5 text-xs text-gray-500">({contacts.length})</span>
+              <span className="ml-1 text-xs text-gray-500">({contacts.length})</span>
             </button>
             <button
               onClick={() => setActiveTab('limbo')}
               className={cn(
-                "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                "px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors whitespace-nowrap",
                 activeTab === 'limbo' 
-                  ? "bg-white text-gray-900" 
+                  ? "bg-white text-gray-900 shadow-sm" 
                   : "text-gray-600 hover:text-gray-900"
               )}
               data-testid="tab-limbo"
             >
               Pendientes
-              <span className="ml-1.5 text-xs text-gray-500">({limboEntries.length})</span>
+              <span className="ml-1 text-xs text-gray-500">({limboEntries.length})</span>
             </button>
             <button
               onClick={() => setActiveTab('duplicates')}
               className={cn(
-                "px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-1",
+                "px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors flex items-center gap-1 whitespace-nowrap",
                 activeTab === 'duplicates' 
-                  ? "bg-white text-amber-700" 
+                  ? "bg-white text-amber-700 shadow-sm" 
                   : duplicates.length > 0 
                     ? "text-amber-600 hover:text-amber-700"
                     : "text-gray-500 hover:text-gray-700"
@@ -516,26 +517,29 @@ export function CRM() {
             >
               {duplicates.length > 0 && <AlertTriangle className="h-3.5 w-3.5" />}
               {duplicates.length === 0 && <GitMerge className="h-3.5 w-3.5" />}
-              Duplicados
-              {duplicates.length > 0 && <span className="ml-1 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">{duplicates.length}</span>}
+              <span className="hidden xs:inline">Duplicados</span>
+              <span className="xs:hidden">Dup.</span>
+              {duplicates.length > 0 && <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">{duplicates.length}</span>}
             </button>
           </div>
           
-          <div className="relative flex-1 max-w-sm">
+          {/* Search - full width on mobile */}
+          <div className="relative flex-1 sm:max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Buscar contactos..."
+              placeholder="Buscar..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-8 bg-white border-gray-200 shadow-none focus:border-gray-300 focus:ring-0"
+              className="pl-9 h-9 sm:h-8 bg-white border-gray-200 shadow-none focus:border-gray-300 focus:ring-0"
               data-testid="input-search-contacts"
             />
           </div>
           
+          {/* Filters - scrollable row on mobile */}
           {activeTab === 'contacts' && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
               <Select value={filterPlatform} onValueChange={setFilterPlatform}>
-                <SelectTrigger className="h-8 w-32 text-xs bg-white border-gray-200 shadow-none">
+                <SelectTrigger className="h-8 w-28 sm:w-32 text-xs bg-white border-gray-200 shadow-none shrink-0">
                   <SelectValue placeholder="Plataforma" />
                 </SelectTrigger>
                 <SelectContent>
@@ -549,7 +553,7 @@ export function CRM() {
               </Select>
               
               <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="h-8 w-28 text-xs bg-white border-gray-200 shadow-none">
+                <SelectTrigger className="h-8 w-24 sm:w-28 text-xs bg-white border-gray-200 shadow-none shrink-0">
                   <SelectValue placeholder="Estado" />
                 </SelectTrigger>
                 <SelectContent>
@@ -563,7 +567,7 @@ export function CRM() {
               </Select>
               
               <Select value={filterLifecycle} onValueChange={setFilterLifecycle}>
-                <SelectTrigger className="h-8 w-28 text-xs bg-white border-gray-200 shadow-none">
+                <SelectTrigger className="h-8 w-24 sm:w-28 text-xs bg-white border-gray-200 shadow-none shrink-0">
                   <SelectValue placeholder="Etapa" />
                 </SelectTrigger>
                 <SelectContent>
@@ -580,19 +584,18 @@ export function CRM() {
                   variant="ghost" 
                   size="sm" 
                   onClick={clearContactFilters}
-                  className="h-9 px-2 text-xs text-gray-500"
+                  className="h-8 px-2 text-xs text-gray-500 shrink-0"
                 >
-                  <X className="h-3 w-3 mr-1" />
-                  Limpiar
+                  <X className="h-3 w-3" />
                 </Button>
               )}
             </div>
           )}
           
           {activeTab === 'limbo' && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
               <Select value={filterLimboPlatform} onValueChange={setFilterLimboPlatform}>
-                <SelectTrigger className="h-8 w-32 text-xs bg-white border-gray-200 shadow-none">
+                <SelectTrigger className="h-8 w-28 sm:w-32 text-xs bg-white border-gray-200 shadow-none shrink-0">
                   <SelectValue placeholder="Plataforma" />
                 </SelectTrigger>
                 <SelectContent>
@@ -610,19 +613,18 @@ export function CRM() {
                   variant="ghost" 
                   size="sm" 
                   onClick={clearLimboFilters}
-                  className="h-9 px-2 text-xs text-gray-500"
+                  className="h-8 px-2 text-xs text-gray-500 shrink-0"
                 >
-                  <X className="h-3 w-3 mr-1" />
-                  Limpiar
+                  <X className="h-3 w-3" />
                 </Button>
               )}
             </div>
           )}
           
           {activeTab === 'duplicates' && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
               <Select value={filterDuplicatesPlatform} onValueChange={setFilterDuplicatesPlatform}>
-                <SelectTrigger className="h-8 w-32 text-xs bg-white border-gray-200 shadow-none">
+                <SelectTrigger className="h-8 w-28 sm:w-32 text-xs bg-white border-gray-200 shadow-none shrink-0">
                   <SelectValue placeholder="Plataforma" />
                 </SelectTrigger>
                 <SelectContent>
@@ -636,7 +638,7 @@ export function CRM() {
               </Select>
               
               <Select value={filterDuplicatesMatchType} onValueChange={setFilterDuplicatesMatchType}>
-                <SelectTrigger className="h-8 w-32 text-xs bg-white border-gray-200 shadow-none">
+                <SelectTrigger className="h-8 w-24 sm:w-32 text-xs bg-white border-gray-200 shadow-none shrink-0">
                   <SelectValue placeholder="Tipo" />
                 </SelectTrigger>
                 <SelectContent>
@@ -651,10 +653,9 @@ export function CRM() {
                   variant="ghost" 
                   size="sm" 
                   onClick={clearDuplicateFilters}
-                  className="h-9 px-2 text-xs text-gray-500"
+                  className="h-8 px-2 text-xs text-gray-500 shrink-0"
                 >
-                  <X className="h-3 w-3 mr-1" />
-                  Limpiar
+                  <X className="h-3 w-3" />
                 </Button>
               )}
             </div>
@@ -677,109 +678,163 @@ export function CRM() {
                 <p className="text-xs text-gray-400 mt-1">Los contactos se crean automáticamente cuando alguien te escribe por DM</p>
               </div>
             ) : (
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
-                  <tr>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Canales</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Etapa</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Mensajes</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Última actividad</th>
-                    <th className="w-10"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
+              <>
+                {/* Mobile Card View */}
+                <div className="sm:hidden divide-y divide-gray-100">
                   {filteredContacts.map((contact) => (
-                    <tr 
+                    <div
                       key={contact.id}
                       onClick={() => handleContactClick(contact)}
-                      className="hover:bg-gray-50 cursor-pointer transition-colors"
-                      data-testid={`row-contact-${contact.id}`}
+                      className="p-3 hover:bg-gray-50 active:bg-gray-100 cursor-pointer"
+                      data-testid={`card-contact-${contact.id}`}
                     >
-                      <td className="px-6 py-3">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarFallback className="bg-gray-100 text-gray-600 text-xs font-medium">
-                              {(contact.displayName || '?')[0].toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">{contact.displayName || 'Sin nombre'}</p>
-                            {contact.email && (
-                              <p className="text-xs text-gray-500">{contact.email}</p>
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-10 w-10 shrink-0">
+                          <AvatarFallback className="bg-gray-100 text-gray-600 text-sm font-medium">
+                            {(contact.displayName || '?')[0].toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-sm font-medium text-gray-900 truncate">{contact.displayName || 'Sin nombre'}</p>
+                            <div className="flex items-center gap-1 shrink-0">
+                              {contact.platforms?.slice(0, 3).map((platform, i) => (
+                                <span key={i}>{getPlatformIcon(platform)}</span>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            {contact.phone && (
+                              <span className="text-xs text-gray-500 font-mono">{contact.phone}</span>
+                            )}
+                            {contact.email && !contact.phone && (
+                              <span className="text-xs text-gray-500 truncate">{contact.email}</span>
                             )}
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-3">
-                        {contact.phone ? (
-                          <span className="text-sm text-gray-600 font-mono">{contact.phone}</span>
-                        ) : (
-                          <span className="text-xs text-gray-400">—</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-3">
-                        <div className="flex items-center gap-1">
-                          {contact.platforms?.map((platform, i) => (
-                            <span key={i} className="p-1">
-                              {getPlatformIcon(platform)}
+                          <div className="flex items-center gap-2 mt-2">
+                            <StatusBadge status={contact.status} />
+                            <span className="text-xs text-gray-400">
+                              {contact.totalMessages || 0} msgs
                             </span>
-                          ))}
-                          {(!contact.platforms || contact.platforms.length === 0) && (
+                            <span className="text-xs text-gray-400">
+                              {contact.lastInteractionAt 
+                                ? formatDistanceToNow(new Date(contact.lastInteractionAt), { addSuffix: true, locale: es })
+                                : ''
+                              }
+                            </span>
+                          </div>
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-gray-400 shrink-0 mt-3" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop Table View */}
+                <table className="w-full hidden sm:table">
+                  <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+                    <tr>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Canales</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Etapa</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Mensajes</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Última actividad</th>
+                      <th className="w-10"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {filteredContacts.map((contact) => (
+                      <tr 
+                        key={contact.id}
+                        onClick={() => handleContactClick(contact)}
+                        className="hover:bg-gray-50 cursor-pointer transition-colors"
+                        data-testid={`row-contact-${contact.id}`}
+                      >
+                        <td className="px-6 py-3">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="bg-gray-100 text-gray-600 text-xs font-medium">
+                                {(contact.displayName || '?')[0].toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">{contact.displayName || 'Sin nombre'}</p>
+                              {contact.email && (
+                                <p className="text-xs text-gray-500">{contact.email}</p>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-3">
+                          {contact.phone ? (
+                            <span className="text-sm text-gray-600 font-mono">{contact.phone}</span>
+                          ) : (
                             <span className="text-xs text-gray-400">—</span>
                           )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-3">
-                        <StatusBadge status={contact.status} />
-                      </td>
-                      <td className="px-6 py-3">
-                        <LifecycleBadge stage={contact.lifecycleStage} />
-                      </td>
-                      <td className="px-6 py-3">
-                        <span className="text-sm text-gray-600">{contact.totalMessages || 0}</span>
-                      </td>
-                      <td className="px-6 py-3">
-                        <span className="text-sm text-gray-500">
-                          {contact.lastInteractionAt 
-                            ? formatDistanceToNow(new Date(contact.lastInteractionAt), { addSuffix: true, locale: es })
-                            : '—'
-                          }
-                        </span>
-                      </td>
-                      <td className="px-6 py-3" onClick={(e) => e.stopPropagation()}>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4 text-gray-400" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleContactClick(contact)}>
-                              <User className="h-4 w-4 mr-2" />
-                              Ver contacto
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => { setSelectedContact(contact); setIsDetailOpen(true); setDetailTab('history'); }}>
-                              <History className="h-4 w-4 mr-2" />
-                              Ver historial
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem 
-                              onClick={() => { setContactToDelete(contact); setIsDeleteOpen(true); }}
-                              className="text-red-600 focus:text-red-600"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Eliminar
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        </td>
+                        <td className="px-6 py-3">
+                          <div className="flex items-center gap-1">
+                            {contact.platforms?.map((platform, i) => (
+                              <span key={i} className="p-1">
+                                {getPlatformIcon(platform)}
+                              </span>
+                            ))}
+                            {(!contact.platforms || contact.platforms.length === 0) && (
+                              <span className="text-xs text-gray-400">—</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-3">
+                          <StatusBadge status={contact.status} />
+                        </td>
+                        <td className="px-6 py-3">
+                          <LifecycleBadge stage={contact.lifecycleStage} />
+                        </td>
+                        <td className="px-6 py-3">
+                          <span className="text-sm text-gray-600">{contact.totalMessages || 0}</span>
+                        </td>
+                        <td className="px-6 py-3">
+                          <span className="text-sm text-gray-500">
+                            {contact.lastInteractionAt 
+                              ? formatDistanceToNow(new Date(contact.lastInteractionAt), { addSuffix: true, locale: es })
+                              : '—'
+                            }
+                          </span>
+                        </td>
+                        <td className="px-6 py-3" onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4 text-gray-400" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleContactClick(contact)}>
+                                <User className="h-4 w-4 mr-2" />
+                                Ver contacto
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => { setSelectedContact(contact); setIsDetailOpen(true); setDetailTab('history'); }}>
+                                <History className="h-4 w-4 mr-2" />
+                                Ver historial
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => { setContactToDelete(contact); setIsDeleteOpen(true); }}
+                                className="text-red-600 focus:text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Eliminar
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
             )}
           </ScrollArea>
         ) : activeTab === 'limbo' ? (
@@ -796,74 +851,132 @@ export function CRM() {
                 <p className="text-xs text-gray-400 mt-1">{limboEntries.length === 0 ? 'Los usuarios que comentan aparecen aquí hasta que te escriban por DM' : 'Prueba ajustando los filtros'}</p>
               </div>
             ) : (
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
-                  <tr>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Plataforma</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Interacciones</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Última actividad</th>
-                    <th className="w-32"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
+              <>
+                {/* Mobile Card View for Limbo */}
+                <div className="sm:hidden divide-y divide-gray-100">
                   {filteredLimbo.map((entry) => (
-                    <tr 
+                    <div
                       key={entry.id}
-                      className="hover:bg-gray-50 cursor-pointer"
                       onClick={() => { setSelectedLimbo(entry); setIsLimboDetailOpen(true); }}
-                      data-testid={`row-limbo-${entry.id}`}
+                      className="p-3 hover:bg-gray-50 active:bg-gray-100 cursor-pointer"
+                      data-testid={`card-limbo-${entry.id}`}
                     >
-                      <td className="px-6 py-3">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            {entry.avatarUrl ? (
-                              <AvatarImage src={entry.avatarUrl} alt={entry.username || ''} />
-                            ) : null}
-                            <AvatarFallback className="bg-gray-100 text-gray-600 text-xs font-medium">
-                              {(entry.username || '?')[0].toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <p className="text-sm font-medium text-gray-900">{entry.username || 'Desconocido'}</p>
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-10 w-10 shrink-0">
+                          {entry.avatarUrl ? (
+                            <AvatarImage src={entry.avatarUrl} alt={entry.username || ''} />
+                          ) : null}
+                          <AvatarFallback className="bg-gray-100 text-gray-600 text-sm font-medium">
+                            {(entry.username || '?')[0].toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-sm font-medium text-gray-900 truncate">{entry.username || 'Desconocido'}</p>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {getPlatformIcon(entry.platform)}
+                              <span className="text-xs text-gray-500 capitalize">{entry.platform}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 mt-1.5">
+                            <span className="text-xs text-gray-500">{entry.interactionCount || 1} interacciones</span>
+                            <span className="text-xs text-gray-400">
+                              {entry.lastInteractionAt 
+                                ? formatDistanceToNow(new Date(entry.lastInteractionAt), { addSuffix: true, locale: es })
+                                : ''
+                              }
+                            </span>
+                          </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-3">
-                        <div className="flex items-center gap-2">
-                          {getPlatformIcon(entry.platform)}
-                          <span className="text-sm text-gray-600 capitalize">{entry.platform}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-3">
-                        <span className="text-sm text-gray-600">{entry.interactionCount || 1}</span>
-                      </td>
-                      <td className="px-6 py-3">
-                        <span className="text-sm text-gray-500">
-                          {entry.lastInteractionAt 
-                            ? formatDistanceToNow(new Date(entry.lastInteractionAt), { addSuffix: true, locale: es })
-                            : '—'
-                          }
-                        </span>
-                      </td>
-                      <td className="px-6 py-3" onClick={(e) => e.stopPropagation()}>
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => promoteMutation.mutate(entry.id)}
+                          onClick={(e) => { e.stopPropagation(); promoteMutation.mutate(entry.id); }}
                           disabled={promoteMutation.isPending}
-                          className="h-7 text-xs"
-                          data-testid={`button-promote-${entry.id}`}
+                          className="h-7 text-xs shrink-0"
+                          data-testid={`button-promote-mobile-${entry.id}`}
                         >
                           {promoteMutation.isPending ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
                           ) : (
-                            'Promover'
+                            <ArrowUpRight className="h-3.5 w-3.5" />
                           )}
                         </Button>
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+
+                {/* Desktop Table View for Limbo */}
+                <table className="w-full hidden sm:table">
+                  <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+                    <tr>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Plataforma</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Interacciones</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Última actividad</th>
+                      <th className="w-32"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {filteredLimbo.map((entry) => (
+                      <tr 
+                        key={entry.id}
+                        className="hover:bg-gray-50 cursor-pointer"
+                        onClick={() => { setSelectedLimbo(entry); setIsLimboDetailOpen(true); }}
+                        data-testid={`row-limbo-${entry.id}`}
+                      >
+                        <td className="px-6 py-3">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                              {entry.avatarUrl ? (
+                                <AvatarImage src={entry.avatarUrl} alt={entry.username || ''} />
+                              ) : null}
+                              <AvatarFallback className="bg-gray-100 text-gray-600 text-xs font-medium">
+                                {(entry.username || '?')[0].toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <p className="text-sm font-medium text-gray-900">{entry.username || 'Desconocido'}</p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-3">
+                          <div className="flex items-center gap-2">
+                            {getPlatformIcon(entry.platform)}
+                            <span className="text-sm text-gray-600 capitalize">{entry.platform}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-3">
+                          <span className="text-sm text-gray-600">{entry.interactionCount || 1}</span>
+                        </td>
+                        <td className="px-6 py-3">
+                          <span className="text-sm text-gray-500">
+                            {entry.lastInteractionAt 
+                              ? formatDistanceToNow(new Date(entry.lastInteractionAt), { addSuffix: true, locale: es })
+                              : '—'
+                            }
+                          </span>
+                        </td>
+                        <td className="px-6 py-3" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => promoteMutation.mutate(entry.id)}
+                            disabled={promoteMutation.isPending}
+                            className="h-7 text-xs"
+                            data-testid={`button-promote-${entry.id}`}
+                          >
+                            {promoteMutation.isPending ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              'Promover'
+                            )}
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
             )}
           </ScrollArea>
         ) : activeTab === 'duplicates' ? (
@@ -880,12 +993,12 @@ export function CRM() {
                 <p className="text-xs text-gray-400 mt-1">{duplicates.length === 0 ? 'Los duplicados se detectan por email o teléfono coincidente' : 'Prueba ajustando los filtros'}</p>
               </div>
             ) : (
-              <div className="p-6 space-y-4">
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
-                  <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="p-3 sm:p-6 space-y-3 sm:space-y-4">
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 sm:p-4 flex items-start gap-2 sm:gap-3">
+                  <AlertTriangle className="h-4 sm:h-5 w-4 sm:w-5 text-amber-600 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-amber-800">Se detectaron {filteredDuplicates.length} posibles duplicados{hasActiveDuplicateFilters ? ' (filtrados)' : ''}</p>
-                    <p className="text-xs text-amber-700 mt-1">Revisa y fusiona contactos para mantener tu CRM limpio. La fusión consolida canales, conversaciones y datos.</p>
+                    <p className="text-xs sm:text-sm font-medium text-amber-800">Se detectaron {filteredDuplicates.length} posibles duplicados{hasActiveDuplicateFilters ? ' (filtrados)' : ''}</p>
+                    <p className="text-xs text-amber-700 mt-1 hidden sm:block">Revisa y fusiona contactos para mantener tu CRM limpio. La fusión consolida canales, conversaciones y datos.</p>
                   </div>
                 </div>
                 
@@ -893,16 +1006,16 @@ export function CRM() {
                   {filteredDuplicates.map((pair, index) => (
                     <div 
                       key={`${pair.contact1.id}-${pair.contact2.id}`}
-                      className="border rounded-lg p-4 hover:border-gray-300 transition-colors"
+                      className="border rounded-lg p-3 sm:p-4 hover:border-gray-300 transition-colors"
                       data-testid={`duplicate-pair-${index}`}
                     >
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <Badge variant="outline" className="text-xs bg-amber-50 border-amber-200 text-amber-700">
                             {pair.matchType === 'email' ? <Mail className="h-3 w-3 mr-1" /> : <Phone className="h-3 w-3 mr-1" />}
-                            Coincidencia: {pair.matchType === 'email' ? 'Email' : 'Teléfono'}
+                            <span className="hidden xs:inline">Coincidencia:</span> {pair.matchType === 'email' ? 'Email' : 'Tel.'}
                           </Badge>
-                          <span className="text-xs font-mono text-gray-600">{pair.matchValue}</span>
+                          <span className="text-xs font-mono text-gray-600 truncate max-w-[150px] sm:max-w-none">{pair.matchValue}</span>
                         </div>
                         <Button
                           size="sm"
@@ -911,7 +1024,7 @@ export function CRM() {
                             setPrimarySelection('contact1');
                             setIsMergeOpen(true);
                           }}
-                          className="h-7 text-xs"
+                          className="h-7 text-xs w-full sm:w-auto"
                           data-testid={`button-merge-${index}`}
                         >
                           <GitMerge className="h-3 w-3 mr-1" />
@@ -919,7 +1032,7 @@ export function CRM() {
                         </Button>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         {(() => {
                           const channels1 = (pair.contact1 as any)?.channels || [];
                           const channels2 = (pair.contact2 as any)?.channels || [];
@@ -1045,38 +1158,48 @@ export function CRM() {
         ) : null}
       </div>
 
-      {/* Contact Detail Slide-over */}
+      {/* Contact Detail Slide-over - Full screen on mobile */}
       {isDetailOpen && selectedContact && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div 
-            className="absolute inset-0 bg-black/20"
+            className="absolute inset-0 bg-black/20 hidden sm:block"
             onClick={() => { setIsDetailOpen(false); setDetailTab('profile'); }}
           />
-          <div className="relative w-full max-w-md bg-white border-l animate-in slide-in-from-right duration-200 flex flex-col">
+          <div className="relative w-full sm:max-w-md bg-white sm:border-l animate-in slide-in-from-right sm:slide-in-from-right duration-200 flex flex-col">
             {/* Header with close button and action */}
-            <div className="flex items-center justify-between px-6 py-4 border-b shrink-0">
-              <h2 className="text-lg font-semibold text-gray-900">Detalle del contacto</h2>
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b shrink-0">
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => { setIsDetailOpen(false); setDetailTab('profile'); }}
+                  className="h-8 w-8 sm:hidden"
+                >
+                  <ChevronRight className="h-4 w-4 rotate-180" />
+                </Button>
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900">Detalle</h2>
+              </div>
               <div className="flex items-center gap-2">
                 <Button 
                   variant="default"
                   size="sm"
                   onClick={handleOpenInInbox}
                   disabled={timelineLoading}
-                  className="h-8 px-3 text-sm"
+                  className="h-8 px-2 sm:px-3 text-xs sm:text-sm"
                   data-testid="button-open-inbox"
                 >
                   {timelineLoading ? (
-                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    <Loader2 className="h-4 w-4 sm:mr-1.5 animate-spin" />
                   ) : (
-                    <Inbox className="h-4 w-4 mr-1.5" />
+                    <Inbox className="h-4 w-4 sm:mr-1.5" />
                   )}
-                  Abrir en Inbox
+                  <span className="hidden sm:inline">Abrir en Inbox</span>
                 </Button>
                 <Button 
                   variant="ghost" 
                   size="icon"
                   onClick={() => { setIsDetailOpen(false); setDetailTab('profile'); }}
-                  className="h-8 w-8"
+                  className="h-8 w-8 hidden sm:flex"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -1084,7 +1207,7 @@ export function CRM() {
             </div>
             
             {/* Tabs for Profile vs History */}
-            <div className="flex items-center gap-1 px-6 py-2 border-b bg-gray-50 shrink-0">
+            <div className="flex items-center gap-1 px-4 sm:px-6 py-2 border-b bg-gray-50 shrink-0">
               <button
                 onClick={() => setDetailTab('profile')}
                 className={cn(
@@ -1116,17 +1239,17 @@ export function CRM() {
             <ScrollArea className="flex-1">
               {/* Profile Tab */}
               {detailTab === 'profile' && (
-                <div className="p-6 space-y-6">
+                <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
                   {/* Profile Header */}
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-16 w-16">
-                      <AvatarFallback className="bg-gray-100 text-gray-600 text-xl font-medium">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <Avatar className="h-12 sm:h-16 w-12 sm:w-16">
+                      <AvatarFallback className="bg-gray-100 text-gray-600 text-lg sm:text-xl font-medium">
                         {(selectedContact.displayName || '?')[0].toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{selectedContact.displayName || 'Sin nombre'}</h3>
-                      <div className="flex items-center gap-2 mt-1">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{selectedContact.displayName || 'Sin nombre'}</h3>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <StatusBadge status={selectedContact.status} />
                         <LifecycleBadge stage={selectedContact.lifecycleStage} />
                       </div>
@@ -1576,16 +1699,26 @@ export function CRM() {
         </DialogContent>
       </Dialog>
 
-      {/* Limbo Detail Slide-over */}
+      {/* Limbo Detail Slide-over - Full screen on mobile */}
       {isLimboDetailOpen && selectedLimbo && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div 
-            className="absolute inset-0 bg-black/20"
+            className="absolute inset-0 bg-black/20 hidden sm:block"
             onClick={() => setIsLimboDetailOpen(false)}
           />
-          <div className="relative w-full max-w-md bg-white border-l animate-in slide-in-from-right duration-200 flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b shrink-0">
-              <h2 className="text-lg font-semibold text-gray-900">Usuario pendiente</h2>
+          <div className="relative w-full sm:max-w-md bg-white sm:border-l animate-in slide-in-from-right duration-200 flex flex-col">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b shrink-0">
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => setIsLimboDetailOpen(false)}
+                  className="h-8 w-8 sm:hidden"
+                >
+                  <ChevronRight className="h-4 w-4 rotate-180" />
+                </Button>
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900">Pendiente</h2>
+              </div>
               <div className="flex items-center gap-2">
                 <Button 
                   variant="default"
@@ -1595,21 +1728,21 @@ export function CRM() {
                     setIsLimboDetailOpen(false);
                   }}
                   disabled={promoteMutation.isPending}
-                  className="h-8 px-3 text-sm"
+                  className="h-8 px-2 sm:px-3 text-xs sm:text-sm"
                   data-testid="button-promote-panel"
                 >
                   {promoteMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    <Loader2 className="h-4 w-4 sm:mr-1.5 animate-spin" />
                   ) : (
-                    <ArrowUpRight className="h-4 w-4 mr-1.5" />
+                    <ArrowUpRight className="h-4 w-4 sm:mr-1.5" />
                   )}
-                  Promover a contacto
+                  <span className="hidden sm:inline">Promover</span>
                 </Button>
                 <Button 
                   variant="ghost" 
                   size="icon"
                   onClick={() => setIsLimboDetailOpen(false)}
-                  className="h-8 w-8"
+                  className="h-8 w-8 hidden sm:flex"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -1617,19 +1750,19 @@ export function CRM() {
             </div>
             
             <ScrollArea className="flex-1">
-              <div className="p-6 space-y-6">
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-16 w-16">
+              <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <Avatar className="h-12 sm:h-16 w-12 sm:w-16">
                     {selectedLimbo.avatarUrl ? (
                       <AvatarImage src={selectedLimbo.avatarUrl} alt={selectedLimbo.username || ''} />
                     ) : null}
-                    <AvatarFallback className="bg-gray-100 text-gray-600 text-xl font-medium">
+                    <AvatarFallback className="bg-gray-100 text-gray-600 text-lg sm:text-xl font-medium">
                       {(selectedLimbo.username || '?')[0].toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{selectedLimbo.username || 'Desconocido'}</h3>
-                    <div className="flex items-center gap-2 mt-1">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{selectedLimbo.username || 'Desconocido'}</h3>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <Badge variant="outline" className="text-xs">
                         {getPlatformIcon(selectedLimbo.platform)}
                         <span className="ml-1 capitalize">{selectedLimbo.platform}</span>

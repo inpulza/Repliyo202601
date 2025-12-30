@@ -161,3 +161,12 @@
 /* Thread Connector Lines - Per-child L-shaped segments */
 .thread-node { position: relative; }
 .thread-children { padding-left: 32px; }
+
+/* Hide scrollbar for horizontal scroll areas */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
