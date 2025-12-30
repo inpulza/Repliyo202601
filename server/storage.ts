@@ -202,9 +202,14 @@ export interface IStorage {
   
   // CRM Module - Contact Limbo (Lazy Creation)
   getCrmContactLimbo(brandId: string, options?: { notPromoted?: boolean; limit?: number }): Promise<CrmContactLimbo[]>;
+  getCrmLimboById(id: string): Promise<CrmContactLimbo | undefined>;
   findCrmLimboEntry(brandId: string, platform: string, externalId: string): Promise<CrmContactLimbo | undefined>;
   upsertCrmLimboEntry(entry: InsertCrmContactLimbo): Promise<CrmContactLimbo>;
   promoteCrmLimboToContact(limboId: string, contactId: string): Promise<CrmContactLimbo | undefined>;
+  updateCrmLimboCustomFields(id: string, customFields: Record<string, any>): Promise<CrmContactLimbo | undefined>;
+  
+  // CRM Module - Custom Fields Batch Update
+  updateCrmContactCustomFields(id: string, customFields: Record<string, any>): Promise<CrmContact | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2712,6 +2717,37 @@ export class DatabaseStorage implements IStorage {
         promotedAt: new Date(),
       })
       .where(eq(crmContactLimbo.id, limboId))
+      .returning();
+    return updated || undefined;
+  }
+
+  async updateCrmLimboCustomFields(id: string, customFields: Record<string, any>): Promise<CrmContactLimbo | undefined> {
+    const existing = await this.getCrmLimboById(id);
+    if (!existing) return undefined;
+    
+    const mergedFields = { ...(existing.customFields || {}), ...customFields };
+    
+    const [updated] = await db
+      .update(crmContactLimbo)
+      .set({ customFields: mergedFields })
+      .where(eq(crmContactLimbo.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async updateCrmContactCustomFields(id: string, customFields: Record<string, any>): Promise<CrmContact | undefined> {
+    const existing = await this.getCrmContact(id);
+    if (!existing) return undefined;
+    
+    const mergedFields = { ...(existing.customFields || {}), ...customFields };
+    
+    const [updated] = await db
+      .update(crmContacts)
+      .set({ 
+        customFields: mergedFields,
+        updatedAt: new Date(),
+      })
+      .where(eq(crmContacts.id, id))
       .returning();
     return updated || undefined;
   }

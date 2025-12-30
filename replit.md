@@ -43,6 +43,14 @@ The user interface includes a consolidated "Orchestration" tab for managing all 
     - **Integration Point:** Hooked into `syncService.processInboundMessage()` as fire-and-forget async call. Runs for ALL inbound DMs regardless of auto-reply status.
     - **Backfill Capability:** `POST /api/crm/backfill` endpoint and `scripts/run-backfill.ts` for processing historical messages. Stats tracking: messagesProcessed, phonesFound, emailsFound, contactsUpdated.
     - **Results:** Initial backfill processed 635 messages, extracted 18 phones and 7 emails, updated 18 contacts.
+- **LLM Enrichment Service (Completed - Dec 30, 2024):** AI-powered extraction of service interest, intent, and budget from messages, independent of auto-reply:
+    - **Fields Extracted:** `serviceInterest` (e.g., "ITIN", "LLC", "Taxes"), `intent` (user's goal), `budgetAmount`/`budgetCurrency`, `qualifiers` (additional data).
+    - **Fire-and-Forget:** Hooked into `syncService` after each inbound DM. Runs async without blocking message sync.
+    - **Idempotent Updates:** Only fills empty fields, uses Set to dedupe qualifiers, guards against null values.
+    - **LLM Provider Agnostic:** Uses brand's configured AI agent (OpenAI or Gemini) via `createLLMProvider` pattern.
+    - **API Endpoints:** `POST /api/crm/llm-enrich` for batch backfill, `POST /api/crm/contacts/:id/enrich` for single contact.
+    - **UI Integration:** "Interés detectado" section highlighted in contact profile and limbo panel with serviceInterest, intent, and budget display.
+- **CRM Filters Expansion (Dec 30, 2024):** Added platform/type filters to Limbo and Duplicates tabs (matching Contacts tab design).
 
 ### System Design Choices
 - **Multi-Tenant Architecture:** Strong isolation of data per brand via `brandId` for CRM and AI configurations.

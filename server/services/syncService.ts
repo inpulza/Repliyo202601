@@ -5,6 +5,7 @@ import { autoReplyService } from "./autoReplyService";
 import { transcriptionService } from "./transcriptionService";
 import { crmTrafficController } from "./crmTrafficController";
 import { contactEnrichmentService } from "./contactEnrichmentService";
+import { llmEnrichmentService } from "./llmEnrichmentService";
 import { log } from "../app";
 
 interface BrandSyncResult {
@@ -359,6 +360,13 @@ class SyncService {
                   content,
                   savedMessage.id
                 ).catch(err => log(`[SyncService] Enrichment error: ${err.message}`, "sync"));
+                
+                // LLM Enrichment: Extract service interest, intent, budget from message (async, fire-and-forget)
+                void llmEnrichmentService.processInboundMessage(
+                  crmResult.contactId,
+                  content,
+                  brand.id
+                ).catch(err => log(`[SyncService] LLM Enrichment error: ${err.message}`, "sync"));
               }
             } catch (crmError: any) {
               log(`[SyncService] CRM routing error for DM: ${crmError.message}`, "sync");

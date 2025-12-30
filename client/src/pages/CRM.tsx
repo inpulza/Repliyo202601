@@ -101,6 +101,7 @@ interface LimboEntry {
   interactionCount: number;
   lastInteractionAt: string | null;
   promotedToContactId: string | null;
+  customFields?: Record<string, any>;
 }
 
 interface DuplicatePair {
@@ -1184,12 +1185,39 @@ export function CRM() {
                     </div>
                   )}
 
-                  {/* Custom Fields */}
-                  {selectedContact.customFields && Object.keys(selectedContact.customFields).length > 0 && (
+                  {/* Service Interest - Highlighted Field */}
+                  {selectedContact.customFields?.serviceInterest && (
                     <div className="space-y-3">
-                      <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Campos personalizados</h4>
+                      <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Interés detectado</h4>
+                      <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">🎯</span>
+                          <div>
+                            <p className="text-sm font-semibold text-indigo-900">{selectedContact.customFields.serviceInterest}</p>
+                            {selectedContact.customFields.intent && (
+                              <p className="text-xs text-indigo-600 mt-0.5">{selectedContact.customFields.intent}</p>
+                            )}
+                          </div>
+                        </div>
+                        {selectedContact.customFields.budgetAmount && (
+                          <div className="mt-2 text-xs text-indigo-700">
+                            💰 Presupuesto: {selectedContact.customFields.budgetCurrency || 'USD'} {selectedContact.customFields.budgetAmount}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Other Custom Fields */}
+                  {selectedContact.customFields && Object.keys(selectedContact.customFields).filter(k => 
+                    !['serviceInterest', 'intent', 'budgetAmount', 'budgetCurrency', 'lastEnrichedAt', 'enrichmentSource', 'qualifiers'].includes(k)
+                  ).length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Otros campos</h4>
                       <div className="space-y-2">
-                        {Object.entries(selectedContact.customFields).map(([key, value]) => (
+                        {Object.entries(selectedContact.customFields)
+                          .filter(([key]) => !['serviceInterest', 'intent', 'budgetAmount', 'budgetCurrency', 'lastEnrichedAt', 'enrichmentSource', 'qualifiers'].includes(key))
+                          .map(([key, value]) => (
                           <div key={key} className="flex items-center justify-between text-sm">
                             <span className="text-gray-500 capitalize">{key.replace(/_/g, ' ')}</span>
                             <span className="text-gray-900">{String(value)}</span>
@@ -1644,6 +1672,24 @@ export function CRM() {
                     </div>
                   </div>
                 </div>
+
+                {/* Service Interest for Limbo - if extracted */}
+                {selectedLimbo.customFields?.serviceInterest && (
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Interés detectado</h4>
+                    <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">🎯</span>
+                        <div>
+                          <p className="text-sm font-semibold text-indigo-900">{selectedLimbo.customFields.serviceInterest}</p>
+                          {selectedLimbo.customFields.intent && (
+                            <p className="text-xs text-indigo-600 mt-0.5">{selectedLimbo.customFields.intent}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <div className="flex items-start gap-3">

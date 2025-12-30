@@ -3444,6 +3444,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/crm/llm-enrich - Run LLM enrichment backfill to extract service interest and intent
+  app.post("/api/crm/llm-enrich", requireAuth, async (req, res) => {
+    try {
+      const brandId = req.body.brandId || req.user?.brandId;
+      const limit = Math.min(parseInt(req.body.limit) || 50, 200);
+
+      if (!brandId) {
+        return res.status(400).json({ error: "brandId is required" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const { llmEnrichmentService } = await import("./services/llmEnrichmentService");
+      const stats = await llmEnrichmentService.runBackfill(brandId, limit);
+
+      res.json({
+        success: true,
+        message: `LLM Enrichment: ${stats.contactsEnriched}/${stats.contactsProcessed} contactos y ${stats.limboEnriched}/${stats.limboProcessed} pendientes enriquecidos. ${stats.errors} errores.`,
+        stats,
+      });
+    } catch (error: any) {
+      console.error('[CRM] LLM Enrichment error:', error);
+      res.status(500).json({ error: "Failed to run LLM enrichment", details: error.message });
+    }
+  });
+
+  // POST /api/crm/contacts/:id/enrich - Manually enrich a single contact with LLM
+  app.post("/api/crm/contacts/:id/enrich", requireAuth, async (req, res) => {
+    try {
+      const brandId = req.body.brandId || req.user?.brandId;
+
+      if (!brandId) {
+        return res.status(400).json({ error: "brandId is required" });
+      }
+
+      const { llmEnrichmentService } = await import("./services/llmEnrichmentService");
+      const result = await llmEnrichmentService.enrichContactFromMessages(req.params.id, brandId);
+
+      res.json({
+        success: result.updated,
+        message: result.updated 
+          ? `Campos actualizados: ${result.fields.join(', ')}`
+          : 'No se encontraron nuevos datos para extraer',
+        fields: result.fields,
+      });
+    } catch (error: any) {
+      console.error('[CRM] Contact enrichment error:', error);
+      res.status(500).json({ error: "Failed to enrich contact", details: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
 
   websocketService.initialize(httpServer);
