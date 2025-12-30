@@ -200,6 +200,9 @@ export function CRM() {
   const [filterPlatform, setFilterPlatform] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterLifecycle, setFilterLifecycle] = useState<string>('all');
+  const [filterLimboPlatform, setFilterLimboPlatform] = useState<string>('all');
+  const [filterDuplicatesPlatform, setFilterDuplicatesPlatform] = useState<string>('all');
+  const [filterDuplicatesMatchType, setFilterDuplicatesMatchType] = useState<string>('all');
   
   const [newContact, setNewContact] = useState({
     displayName: '',
@@ -412,18 +415,40 @@ export function CRM() {
     return matchesSearch && matchesPlatform && matchesStatus && matchesLifecycle;
   });
   
-  const hasActiveFilters = filterPlatform !== 'all' || filterStatus !== 'all' || filterLifecycle !== 'all';
+  const hasActiveContactFilters = filterPlatform !== 'all' || filterStatus !== 'all' || filterLifecycle !== 'all';
+  const hasActiveLimboFilters = filterLimboPlatform !== 'all';
+  const hasActiveDuplicateFilters = filterDuplicatesPlatform !== 'all' || filterDuplicatesMatchType !== 'all';
   
-  const clearFilters = () => {
+  const clearContactFilters = () => {
     setFilterPlatform('all');
     setFilterStatus('all');
     setFilterLifecycle('all');
   };
+  
+  const clearLimboFilters = () => {
+    setFilterLimboPlatform('all');
+  };
+  
+  const clearDuplicateFilters = () => {
+    setFilterDuplicatesPlatform('all');
+    setFilterDuplicatesMatchType('all');
+  };
 
-  const filteredLimbo = limboEntries.filter(e => 
-    !searchQuery || 
-    e.username?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredLimbo = limboEntries.filter(e => {
+    const matchesSearch = !searchQuery || 
+      e.username?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesPlatform = filterLimboPlatform === 'all' || 
+      e.platform?.toLowerCase() === filterLimboPlatform.toLowerCase();
+    return matchesSearch && matchesPlatform;
+  });
+  
+  const filteredDuplicates = duplicates.filter(pair => {
+    const matchesPlatform = filterDuplicatesPlatform === 'all' || 
+      pair.contact1.platforms?.some(p => p.toLowerCase() === filterDuplicatesPlatform.toLowerCase()) ||
+      pair.contact2.platforms?.some(p => p.toLowerCase() === filterDuplicatesPlatform.toLowerCase());
+    const matchesType = filterDuplicatesMatchType === 'all' || pair.matchType === filterDuplicatesMatchType;
+    return matchesPlatform && matchesType;
+  });
 
   const handleContactClick = (contact: CrmContact) => {
     setSelectedContact(contact);
@@ -549,11 +574,82 @@ export function CRM() {
                 </SelectContent>
               </Select>
               
-              {hasActiveFilters && (
+              {hasActiveContactFilters && (
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  onClick={clearFilters}
+                  onClick={clearContactFilters}
+                  className="h-9 px-2 text-xs text-gray-500"
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  Limpiar
+                </Button>
+              )}
+            </div>
+          )}
+          
+          {activeTab === 'limbo' && (
+            <div className="flex items-center gap-2">
+              <Select value={filterLimboPlatform} onValueChange={setFilterLimboPlatform}>
+                <SelectTrigger className="h-8 w-32 text-xs bg-white border-gray-200 shadow-none">
+                  <SelectValue placeholder="Plataforma" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="instagram">Instagram</SelectItem>
+                  <SelectItem value="facebook">Facebook</SelectItem>
+                  <SelectItem value="tiktok">TikTok</SelectItem>
+                  <SelectItem value="youtube">YouTube</SelectItem>
+                  <SelectItem value="linkedin">LinkedIn</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {hasActiveLimboFilters && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={clearLimboFilters}
+                  className="h-9 px-2 text-xs text-gray-500"
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  Limpiar
+                </Button>
+              )}
+            </div>
+          )}
+          
+          {activeTab === 'duplicates' && (
+            <div className="flex items-center gap-2">
+              <Select value={filterDuplicatesPlatform} onValueChange={setFilterDuplicatesPlatform}>
+                <SelectTrigger className="h-8 w-32 text-xs bg-white border-gray-200 shadow-none">
+                  <SelectValue placeholder="Plataforma" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="instagram">Instagram</SelectItem>
+                  <SelectItem value="facebook">Facebook</SelectItem>
+                  <SelectItem value="tiktok">TikTok</SelectItem>
+                  <SelectItem value="youtube">YouTube</SelectItem>
+                  <SelectItem value="linkedin">LinkedIn</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={filterDuplicatesMatchType} onValueChange={setFilterDuplicatesMatchType}>
+                <SelectTrigger className="h-8 w-32 text-xs bg-white border-gray-200 shadow-none">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="phone">Teléfono</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {hasActiveDuplicateFilters && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={clearDuplicateFilters}
                   className="h-9 px-2 text-xs text-gray-500"
                 >
                   <X className="h-3 w-3 mr-1" />
@@ -695,8 +791,8 @@ export function CRM() {
             ) : filteredLimbo.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 text-gray-500">
                 <MessageSquare className="h-12 w-12 mb-3 text-gray-300" />
-                <p className="text-sm">No hay comentaristas pendientes</p>
-                <p className="text-xs text-gray-400 mt-1">Los usuarios que comentan aparecen aquí hasta que te escriban por DM</p>
+                <p className="text-sm">{limboEntries.length === 0 ? 'No hay comentaristas pendientes' : 'No hay pendientes con estos filtros'}</p>
+                <p className="text-xs text-gray-400 mt-1">{limboEntries.length === 0 ? 'Los usuarios que comentan aparecen aquí hasta que te escriban por DM' : 'Prueba ajustando los filtros'}</p>
               </div>
             ) : (
               <table className="w-full">
@@ -776,24 +872,24 @@ export function CRM() {
               <div className="flex items-center justify-center h-64">
                 <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
               </div>
-            ) : duplicates.length === 0 ? (
+            ) : filteredDuplicates.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 text-gray-500">
                 <GitMerge className="h-12 w-12 mb-3 text-gray-300" />
-                <p className="text-sm">No hay contactos duplicados</p>
-                <p className="text-xs text-gray-400 mt-1">Los duplicados se detectan por email o telefono coincidente</p>
+                <p className="text-sm">{duplicates.length === 0 ? 'No hay contactos duplicados' : 'No hay duplicados con estos filtros'}</p>
+                <p className="text-xs text-gray-400 mt-1">{duplicates.length === 0 ? 'Los duplicados se detectan por email o teléfono coincidente' : 'Prueba ajustando los filtros'}</p>
               </div>
             ) : (
               <div className="p-6 space-y-4">
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
                   <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-amber-800">Se detectaron {duplicates.length} posibles duplicados</p>
-                    <p className="text-xs text-amber-700 mt-1">Revisa y fusiona contactos para mantener tu CRM limpio. La fusion consolida canales, conversaciones y datos.</p>
+                    <p className="text-sm font-medium text-amber-800">Se detectaron {filteredDuplicates.length} posibles duplicados{hasActiveDuplicateFilters ? ' (filtrados)' : ''}</p>
+                    <p className="text-xs text-amber-700 mt-1">Revisa y fusiona contactos para mantener tu CRM limpio. La fusión consolida canales, conversaciones y datos.</p>
                   </div>
                 </div>
                 
                 <div className="space-y-3">
-                  {duplicates.map((pair, index) => (
+                  {filteredDuplicates.map((pair, index) => (
                     <div 
                       key={`${pair.contact1.id}-${pair.contact2.id}`}
                       className="border rounded-lg p-4 hover:border-gray-300 transition-colors"
