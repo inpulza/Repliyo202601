@@ -680,71 +680,113 @@ export function CRM() {
                           const channels2 = (pair.contact2 as any)?.channels || [];
                           return (
                             <>
-                              <div className="bg-gray-50 rounded-lg p-3">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <Avatar className="h-8 w-8">
-                                    <AvatarFallback className="bg-blue-100 text-blue-600 text-sm font-medium">
-                                      {(pair.contact1.displayName || '?')[0].toUpperCase()}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <div>
-                                    <span className="text-sm font-medium block">{pair.contact1.displayName || 'Sin nombre'}</span>
-                                    {channels1.length > 0 && (
-                                      <div className="flex items-center gap-1 mt-0.5">
-                                        {channels1.map((ch: any, i: number) => (
-                                          <div key={i} className="flex items-center gap-1" title={`@${ch.username}`}>
-                                            {getPlatformIcon(ch.platform)}
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
+                              <div className="bg-gray-50 rounded-lg p-3 flex">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Avatar className="h-8 w-8">
+                                      <AvatarFallback className="bg-blue-100 text-blue-600 text-sm font-medium">
+                                        {(pair.contact1.displayName || '?')[0].toUpperCase()}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <span className="text-sm font-medium">{pair.contact1.displayName || 'Sin nombre'}</span>
+                                  </div>
+                                  <div className="text-xs text-gray-500 space-y-1 ml-10">
+                                    {channels1.map((ch: any, i: number) => (
+                                      <p key={i} className="flex items-center gap-1">
+                                        {getPlatformIcon(ch.platform)}
+                                        <span className="font-medium">@{ch.username}</span>
+                                      </p>
+                                    ))}
+                                    {pair.contact1.email && <p className="flex items-center gap-1"><Mail className="h-3 w-3" /> {pair.contact1.email}</p>}
+                                    {pair.contact1.phone && <p className="flex items-center gap-1"><Phone className="h-3 w-3" /> {pair.contact1.phone}</p>}
+                                    <p className="text-gray-400 pt-1">{pair.contact1.conversationCount || 0} conversaciones</p>
                                   </div>
                                 </div>
-                                <div className="text-xs text-gray-500 space-y-1 ml-10">
-                                  {channels1.map((ch: any, i: number) => (
-                                    <p key={i} className="flex items-center gap-1">
-                                      {getPlatformIcon(ch.platform)}
-                                      <span className="font-medium">@{ch.username}</span>
-                                      <span className="text-gray-400">(DM)</span>
-                                    </p>
-                                  ))}
-                                  {pair.contact1.email && <p className="flex items-center gap-1"><Mail className="h-3 w-3" /> {pair.contact1.email}</p>}
-                                  {pair.contact1.phone && <p className="flex items-center gap-1"><Phone className="h-3 w-3" /> {pair.contact1.phone}</p>}
-                                  <p className="text-gray-400 pt-1">{pair.contact1.conversationCount || 0} conversaciones</p>
+                                <div className="flex flex-col gap-1 ml-2">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-7 text-xs px-2"
+                                    onClick={() => {
+                                      setSelectedContact(pair.contact1);
+                                      setIsDetailOpen(true);
+                                    }}
+                                    data-testid={`view-contact-${pair.contact1.id}`}
+                                  >
+                                    <User className="h-3 w-3 mr-1" />
+                                    Ver contacto
+                                  </Button>
+                                  {channels1.length > 0 && (
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="h-7 text-xs px-2"
+                                      onClick={() => {
+                                        setSelectedContact(pair.contact1);
+                                        setIsDetailOpen(true);
+                                        setDetailTab('history');
+                                      }}
+                                      data-testid={`view-history-${pair.contact1.id}`}
+                                    >
+                                      <MessageSquare className="h-3 w-3 mr-1" />
+                                      Ver historial
+                                    </Button>
+                                  )}
                                 </div>
                               </div>
                               
-                              <div className="bg-gray-50 rounded-lg p-3">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <Avatar className="h-8 w-8">
-                                    <AvatarFallback className="bg-green-100 text-green-600 text-sm font-medium">
-                                      {(pair.contact2.displayName || '?')[0].toUpperCase()}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <div>
-                                    <span className="text-sm font-medium block">{pair.contact2.displayName || 'Sin nombre'}</span>
-                                    {channels2.length > 0 && (
-                                      <div className="flex items-center gap-1 mt-0.5">
-                                        {channels2.map((ch: any, i: number) => (
-                                          <div key={i} className="flex items-center gap-1" title={`@${ch.username}`}>
-                                            {getPlatformIcon(ch.platform)}
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
+                              <div className="bg-gray-50 rounded-lg p-3 flex">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Avatar className="h-8 w-8">
+                                      <AvatarFallback className="bg-green-100 text-green-600 text-sm font-medium">
+                                        {(pair.contact2.displayName || '?')[0].toUpperCase()}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <span className="text-sm font-medium">{pair.contact2.displayName || 'Sin nombre'}</span>
+                                  </div>
+                                  <div className="text-xs text-gray-500 space-y-1 ml-10">
+                                    {channels2.map((ch: any, i: number) => (
+                                      <p key={i} className="flex items-center gap-1">
+                                        {getPlatformIcon(ch.platform)}
+                                        <span className="font-medium">@{ch.username}</span>
+                                      </p>
+                                    ))}
+                                    {pair.contact2.email && <p className="flex items-center gap-1"><Mail className="h-3 w-3" /> {pair.contact2.email}</p>}
+                                    {pair.contact2.phone && <p className="flex items-center gap-1"><Phone className="h-3 w-3" /> {pair.contact2.phone}</p>}
+                                    <p className="text-gray-400 pt-1">{pair.contact2.conversationCount || 0} conversaciones</p>
                                   </div>
                                 </div>
-                                <div className="text-xs text-gray-500 space-y-1 ml-10">
-                                  {channels2.map((ch: any, i: number) => (
-                                    <p key={i} className="flex items-center gap-1">
-                                      {getPlatformIcon(ch.platform)}
-                                      <span className="font-medium">@{ch.username}</span>
-                                      <span className="text-gray-400">(DM)</span>
-                                    </p>
-                                  ))}
-                                  {pair.contact2.email && <p className="flex items-center gap-1"><Mail className="h-3 w-3" /> {pair.contact2.email}</p>}
-                                  {pair.contact2.phone && <p className="flex items-center gap-1"><Phone className="h-3 w-3" /> {pair.contact2.phone}</p>}
-                                  <p className="text-gray-400 pt-1">{pair.contact2.conversationCount || 0} conversaciones</p>
+                                <div className="flex flex-col gap-1 ml-2">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-7 text-xs px-2"
+                                    onClick={() => {
+                                      setSelectedContact(pair.contact2);
+                                      setIsDetailOpen(true);
+                                    }}
+                                    data-testid={`view-contact-${pair.contact2.id}`}
+                                  >
+                                    <User className="h-3 w-3 mr-1" />
+                                    Ver contacto
+                                  </Button>
+                                  {channels2.length > 0 && (
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="h-7 text-xs px-2"
+                                      onClick={() => {
+                                        setSelectedContact(pair.contact2);
+                                        setIsDetailOpen(true);
+                                        setDetailTab('history');
+                                      }}
+                                      data-testid={`view-history-${pair.contact2.id}`}
+                                    >
+                                      <MessageSquare className="h-3 w-3 mr-1" />
+                                      Ver historial
+                                    </Button>
+                                  )}
                                 </div>
                               </div>
                             </>
