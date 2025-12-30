@@ -475,6 +475,17 @@ class SyncService {
           customerName = authorParticipant.name || comment.author;
           customerAvatar = authorParticipant.imageProfileUrl || comment.authorAvatar || null;
         }
+        
+        // Normalize customerId: ensure it's never empty/null for CRM routing
+        // Fallback chain: authorParticipant.id -> comment.author -> comment.id (platform-scoped)
+        // Note: Metricool may return numeric IDs for Facebook/TikTok, so we coerce to string first
+        const customerIdStr = typeof customerId === 'string' ? customerId : (customerId?.toString?.() ?? '');
+        if (!customerIdStr || customerIdStr.trim() === '') {
+          customerId = commentOwnerId?.toString() || comment.id || `${platform}_unknown_${Date.now()}`;
+          log(`[SyncService] WARNING: Empty customerId for comment, using fallback: ${customerId}`, "sync");
+        } else {
+          customerId = customerIdStr;
+        }
 
         // Check if comment already exists BEFORE updating conversation unread count
         const existingComment = await storage.getMessageByMetricoolId(comment.id, brandId);
@@ -632,6 +643,30 @@ class SyncService {
               crmData: null,
             });
             savedCount++;
+            
+            // CRM Traffic Controller: Route nested reply to limbo or existing contact
+            if (isNewReply && !isReplyFromBrand) {
+              try {
+                // Normalize replyOwnerId: ensure it's never empty for CRM routing
+                let replyExternalId = replyOwnerId || reply.id || `${platform}_reply_${Date.now()}`;
+                if (!replyExternalId || (typeof replyExternalId === 'string' && replyExternalId.trim() === '')) {
+                  replyExternalId = `${platform}_reply_${reply.id || Date.now()}`;
+                  log(`[SyncService] WARNING: Empty replyOwnerId, using fallback: ${replyExternalId}`, "sync");
+                }
+                
+                await crmTrafficController.routeIncomingMessage({
+                  brandId,
+                  platform,
+                  externalId: replyExternalId,
+                  username: replyAuthor,
+                  avatarUrl: replyAvatar,
+                  displayName: replyAuthor,
+                  messageType: 'comment',
+                });
+              } catch (crmError: any) {
+                log(`[SyncService] CRM routing error for reply: ${crmError.message}`, "sync");
+              }
+            }
           } catch (replyError: any) {
             console.error(`Error upserting reply:`, replyError.message);
           }
