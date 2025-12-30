@@ -51,6 +51,11 @@ The user interface includes a consolidated "Orchestration" tab for managing all 
     - **API Endpoints:** `POST /api/crm/llm-enrich` for batch backfill, `POST /api/crm/contacts/:id/enrich` for single contact.
     - **UI Integration:** "Interés detectado" section highlighted in contact profile and limbo panel with serviceInterest, intent, and budget display.
 - **CRM Filters Expansion (Dec 30, 2024):** Added platform/type filters to Limbo and Duplicates tabs (matching Contacts tab design).
+- **CRM Population Backfill (Dec 30, 2024):** Script and API endpoint to process ALL existing conversations and populate CRM:
+    - **Script:** `scripts/run-crm-populate.ts` processes all brands automatically
+    - **API Endpoint:** `POST /api/crm/populate` for brand-specific backfill
+    - **Results:** 717 conversations processed, 100% DMs linked to contacts, all comments in limbo or linked to existing contacts
+    - **Idempotent:** Can be run multiple times safely without creating duplicates
 
 ### System Design Choices
 - **Multi-Tenant Architecture:** Strong isolation of data per brand via `brandId` for CRM and AI configurations.
