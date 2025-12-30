@@ -8,7 +8,6 @@ This project is an advanced Social Media Inbox Management System integrated with
 - I like an iterative development approach, where features are built and reviewed in stages.
 - Ask for my approval before implementing major architectural changes or new third-party integrations.
 - I expect detailed explanations for complex technical decisions.
-- Do not make changes to the `DOCUMENTACION_COMPLETA.md` file.
 
 ## System Architecture
 The system employs a multi-tenant architecture with a focus on modularity and extensibility.

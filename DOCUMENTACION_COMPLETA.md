@@ -5277,6 +5277,414 @@ async function trafficController(webhook: MetricoolWebhook): Promise<void> {
 
 ---
 
+## PRD: Conversation Lifecycle Management (Smart AI Closing)
+
+> **Sección**: `PRD-LIFECYCLE` | **Estado**: Investigación Completada, Pendiente Implementación  
+> **Fecha**: 30 Diciembre 2024  
+> **Knowledge Base**: `docs/knowledge-base/CONVERSATION_LIFECYCLE_MANAGEMENT.md`
+
+---
+
+### 1. El Dilema: Por qué necesitamos esto
+
+#### 1.1 Problema Actual
+Actualmente las conversaciones en nuestro sistema no tienen un ciclo de vida definido:
+- No hay distinción entre conversaciones "abiertas" y "cerradas"
+- No hay resúmenes ejecutivos al cerrar una conversación
+- No hay métricas de tiempo de resolución
+- Los mensajes de "Gracias" del cliente pueden generar trabajo innecesario
+
+#### 1.2 Impacto del "Thank You Paradox"
+Con 10,000 tickets/mes y 20% de reaperturas por agradecimiento:
+- **2,000 tickets "falsamente" reabiertos**
+- **~16 horas/mes perdidas** (30 seg/ticket para verificar y re-cerrar)
+- **Distorsión de métricas**: One-Touch Resolution, Reopen Rate quedan inutilizables
+
+#### 1.3 Objetivo
+Implementar un sistema de gestión del ciclo de vida de conversaciones que:
+1. Permita cerrar conversaciones con resumen automático de IA
+2. Detecte inteligentemente mensajes de "agradecimiento" para evitar reaperturas falsas
+3. Capture métricas de resolución (tiempo, CSAT, atribución bot vs humano)
+
+---
+
+### 2. Benchmarking: Gold Standard de la Industria
+
+#### 2.1 Máquinas de Estados Comparadas
+
+| Plataforma | Estados | Filosofía |
+|------------|---------|-----------|
+| **Zendesk** | New → Open → Pending/On-hold → Solved → Closed (4-28 días auto) | Ticket como contrato inmutable |
+| **Intercom** | Open ↔ Snoozed → Closed (reabre misma conversación) | Conversación continua y fluida |
+| **Front** | Open → Archived (sin Solved intermedio) | Correo colaborativo |
+| **HubSpot** | Pipelines personalizables → Open/Closed | Ticket como objeto CRM |
+| **Respond.io** | Open/Closed con categorización forzada | Mensajería de alta velocidad |
+
+#### 2.2 Solved vs Closed (Zendesk - Referencia)
+
+| Aspecto | Solved | Closed |
+|---------|--------|--------|
+| **Establecido por** | Agente manualmente | Solo automatización |
+| **Reapertura** | Sí (respuesta cliente) | No (requiere follow-up) |
+| **Duración** | Temporal (máx 28 días) | Permanente |
+| **Uso** | "Creo que está resuelto" | Archivo definitivo |
+
+**Best Practice**: El estado Solved da un "periodo de gracia" al cliente para confirmar o refutar la solución.
+
+#### 2.3 Smart AI Closing (Resumen Ejecutivo)
+
+**Intercom (Gold Standard para edición):**
+- Acceso: `⌘J` / `Ctrl+J` o botón "Summarize"
+- Agente puede **editar antes de guardar** (Human-in-the-Loop)
+- Se guarda como nota interna visible en el hilo
+- Automatizable via Workflows (post-cierre o post-handover de Fin AI)
+
+**Front (Gold Standard para colaboración):**
+- Resumen **dinámico** en encabezado del hilo
+- Se actualiza automáticamente con nuevos mensajes
+- Superior para colaboración en tiempo real
+
+**Estructura del Dato Recomendada:**
+```typescript
+interface ConversationSummary {
+  summary: string;           // Resumen en texto libre
+  sentiment: 'positive' | 'neutral' | 'negative';
+  intent: string;            // Ej: "Consulta de precios ITIN"
+  resolution: string;        // Ej: "Redirigido a WhatsApp para cotización"
+  closedBy: 'agent' | 'bot' | 'auto';
+  closedAt: Date;
+  resolutionTimeMinutes: number;
+}
+```
+
+#### 2.4 Lógica Anti-Zombie (Thank You Detection)
+
+**Intercom Fin AI (Gold Standard):**
+
+**Opción 1: Bloqueo Total**
+- Setting: "Prevent replies to closed conversations" (0 días = cierre duro)
+- Cliente ve "Start new conversation" en lugar de campo de respuesta
+
+**Opción 2: Detección Inteligente con IA**
+```
+Árbol de Decisión Anti-Zombie:
+1. ¿Mensaje contiene signos de interrogación? → SÍ → REABRIR
+2. ¿Sentimiento = "Gratitud" o "Confirmación"? → NO → REABRIR
+3. ¿Conteo palabras < 15? → NO → REABRIR (textos largos tienen dudas)
+4. Si pasa todos los filtros → Mantener CLOSED + suprimir notificación
+```
+
+**Solución Elegante (Canalizar Intención):**
+- Enviar encuesta CSAT inline inmediatamente después del cierre
+- Usuario hace clic en ⭐⭐⭐⭐⭐ (no escribe texto)
+- Sistema captura satisfacción **sin reabrir** el ticket
+
+---
+
+### 3. Nuestra Implementación: Diseño Técnico
+
+#### 3.1 Máquina de Estados Propuesta
+
+```
+                    ┌──────────────────────────────────────┐
+                    │         CONVERSATION STATES          │
+                    └──────────────────────────────────────┘
+
+    ┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐
+    │   NEW   │────▶│  OPEN   │────▶│ PENDING │────▶│ SOLVED  │
+    └─────────┘     └─────────┘     └─────────┘     └─────────┘
+         │               ▲               │               │
+         │               │               │               │
+         │               └───────────────┘               │
+         │          (respuesta cliente)                  │
+         │                                               │
+         │                                               ▼
+         │                                        ┌─────────┐
+         │                                        │ CLOSED  │
+         │                                        └─────────┘
+         │                                               │
+         └───────────────────────────────────────────────┘
+                    (nuevo mensaje = nueva conversación)
+```
+
+**Estados:**
+| Estado | Descripción | SLA |
+|--------|-------------|-----|
+| `new` | Mensaje entrante sin respuesta | Tiempo respuesta activo |
+| `open` | En proceso, asignado a agente/bot | Handle time activo |
+| `pending` | Esperando respuesta del cliente | SLA pausado |
+| `solved` | Propuesta de cierre (reversible) | Periodo de gracia (configurable: 1h-7 días) |
+| `closed` | Archivado definitivo | Inmutable |
+
+#### 3.2 Cambios en Base de Datos
+
+```typescript
+// Nuevos campos en tabla conversations
+export const conversations = pgTable('conversations', {
+  // ... campos existentes ...
+  
+  // Lifecycle Management
+  status: text('status').default('new'), // new, open, pending, solved, closed
+  closedAt: timestamp('closed_at'),
+  closedBy: text('closed_by'), // 'agent' | 'bot' | 'auto' | 'customer'
+  closedByUserId: uuid('closed_by_user_id'),
+  
+  // Resolution Metrics
+  firstResponseAt: timestamp('first_response_at'),
+  resolutionTimeMinutes: integer('resolution_time_minutes'),
+  reopenCount: integer('reopen_count').default(0),
+  
+  // AI Summary
+  closingSummary: text('closing_summary'),
+  closingSentiment: text('closing_sentiment'), // positive, neutral, negative
+  closingIntent: text('closing_intent'),
+  closingResolution: text('closing_resolution'),
+});
+
+// Nueva tabla para historial de cambios de estado
+export const conversationStatusHistory = pgTable('conversation_status_history', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  conversationId: uuid('conversation_id').references(() => conversations.id),
+  previousStatus: text('previous_status'),
+  newStatus: text('new_status'),
+  changedBy: text('changed_by'), // 'agent' | 'bot' | 'auto' | 'customer'
+  changedByUserId: uuid('changed_by_user_id'),
+  reason: text('reason'), // Ej: "Thank you detected", "Customer confirmed"
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+// Nueva tabla para configuración de auto-close por marca
+export const brandLifecycleSettings = pgTable('brand_lifecycle_settings', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  brandId: uuid('brand_id').references(() => brands.id),
+  
+  // Periodo de gracia Solved → Closed
+  solvedToClosedHours: integer('solved_to_closed_hours').default(24),
+  
+  // Anti-Zombie Settings
+  thankYouDetectionEnabled: boolean('thank_you_detection_enabled').default(true),
+  thankYouMaxWords: integer('thank_you_max_words').default(15),
+  
+  // Auto-close por inactividad
+  autoCloseInactivityHours: integer('auto_close_inactivity_hours').default(72),
+  
+  // CSAT
+  csatSurveyEnabled: boolean('csat_survey_enabled').default(false),
+  csatSurveyDelayMinutes: integer('csat_survey_delay_minutes').default(5),
+});
+```
+
+#### 3.3 Servicios Backend
+
+**Nuevo servicio: `conversationLifecycleService.ts`**
+
+```typescript
+interface IConversationLifecycleService {
+  // Cambios de estado
+  markAsOpen(conversationId: string, agentId?: string): Promise<void>;
+  markAsPending(conversationId: string, reason?: string): Promise<void>;
+  markAsSolved(conversationId: string, closedBy: 'agent' | 'bot'): Promise<void>;
+  markAsClosed(conversationId: string): Promise<void>;
+  
+  // Smart AI Closing
+  generateClosingSummary(conversationId: string): Promise<ClosingSummary>;
+  closeWithSummary(conversationId: string, summary?: string): Promise<void>;
+  
+  // Anti-Zombie
+  analyzeIncomingMessage(message: string): Promise<MessageAnalysis>;
+  shouldReopenConversation(conversationId: string, message: string): Promise<boolean>;
+  
+  // Métricas
+  calculateResolutionTime(conversationId: string): Promise<number>;
+  getConversationMetrics(brandId: string, dateRange: DateRange): Promise<Metrics>;
+  
+  // Automáticos
+  processAutoClose(): Promise<void>; // Cron job
+  processSolvedToClosedTransitions(): Promise<void>; // Cron job
+}
+```
+
+**Integración con syncService:**
+```typescript
+// En processInboundMessage():
+async processInboundMessage(message: InboundMessage) {
+  const conversation = await this.getOrCreateConversation(message);
+  
+  // Si la conversación está en 'solved', evaluar si reabrir
+  if (conversation.status === 'solved') {
+    const shouldReopen = await lifecycleService.shouldReopenConversation(
+      conversation.id,
+      message.content
+    );
+    
+    if (shouldReopen) {
+      await lifecycleService.markAsOpen(conversation.id, null);
+      // Notificar al agente
+    } else {
+      // Mensaje de agradecimiento detectado, no reabrir
+      // Opcionalmente: registrar CSAT implícito
+      return;
+    }
+  }
+  
+  // Procesar mensaje normalmente...
+}
+```
+
+#### 3.4 API Endpoints
+
+```typescript
+// Lifecycle Management
+POST   /api/conversations/:id/status    // Cambiar estado
+GET    /api/conversations/:id/history   // Historial de cambios
+POST   /api/conversations/:id/close     // Cerrar con resumen IA
+POST   /api/conversations/:id/reopen    // Reabrir manualmente
+
+// Smart Summary
+POST   /api/conversations/:id/generate-summary  // Solo generar (sin cerrar)
+PUT    /api/conversations/:id/summary           // Editar resumen existente
+
+// Métricas
+GET    /api/analytics/resolution-time    // Tiempo promedio de resolución
+GET    /api/analytics/reopen-rate        // Tasa de reapertura
+GET    /api/analytics/csat               // Satisfacción del cliente
+GET    /api/analytics/attribution        // Bot vs Humano
+
+// Configuración por marca
+GET    /api/brands/:id/lifecycle-settings
+PUT    /api/brands/:id/lifecycle-settings
+```
+
+#### 3.5 Prompt para Generación de Resumen
+
+```typescript
+const CLOSING_SUMMARY_PROMPT = `
+Analiza la siguiente conversación y genera un resumen ejecutivo.
+
+CONVERSACIÓN:
+{conversation_history}
+
+GENERA UN JSON con este formato exacto:
+{
+  "summary": "Resumen de 2-3 oraciones sobre qué pidió el cliente y cómo se resolvió",
+  "sentiment": "positive" | "neutral" | "negative",
+  "intent": "Intención principal del cliente (ej: Consulta precios ITIN)",
+  "resolution": "Cómo se resolvió (ej: Redirigido a WhatsApp para cotización)",
+  "topics": ["tema1", "tema2"],
+  "actionItems": ["si quedó algo pendiente"]
+}
+
+REGLAS:
+- El resumen debe ser útil para un agente que retome esta conversación
+- Sentiment basado en el tono general del cliente
+- Intent es lo que el cliente QUERÍA lograr
+- Resolution es lo que EFECTIVAMENTE se hizo
+`;
+```
+
+#### 3.6 Prompt para Thank You Detection
+
+```typescript
+const THANK_YOU_DETECTION_PROMPT = `
+Analiza el siguiente mensaje y determina si es simplemente un agradecimiento 
+o confirmación que NO requiere respuesta, o si contiene una nueva pregunta/solicitud.
+
+MENSAJE: "{message}"
+
+Responde SOLO con JSON:
+{
+  "isThankYou": true/false,
+  "confidence": 0.0-1.0,
+  "hasQuestion": true/false,
+  "hasNewRequest": true/false,
+  "reasoning": "Breve explicación"
+}
+
+EJEMPLOS:
+- "Gracias!" → isThankYou: true, confidence: 0.99
+- "Gracias, pero tengo otra duda..." → isThankYou: false, hasNewRequest: true
+- "Ok perfecto" → isThankYou: true, confidence: 0.85
+- "Entendido, ¿y cuánto cuesta?" → isThankYou: false, hasQuestion: true
+`;
+```
+
+---
+
+### 4. Métricas y Analytics
+
+#### 4.1 Métricas Estándar a Implementar
+
+| Métrica | Descripción | Cálculo |
+|---------|-------------|---------|
+| **First Response Time** | Tiempo hasta primera respuesta | `firstResponseAt - createdAt` |
+| **Full Resolution Time** | Tiempo total hasta cierre | `closedAt - createdAt` |
+| **Requester Wait Time** | Tiempo sin contar Pending | `Full - tiempo en Pending` |
+| **Reopen Rate** | % de conversaciones reabiertas | `reopened / total * 100` |
+| **One-Touch Resolution** | % resueltas en primera respuesta | `single_response / total * 100` |
+| **CSAT** | Customer Satisfaction Score | `positive_ratings / total_ratings * 100` |
+| **Bot Resolution Rate** | % resueltas por bot | `bot_closed / total * 100` |
+
+#### 4.2 Separación Bot vs Agente (Crítico)
+
+```typescript
+interface ResolutionMetrics {
+  // Separar SIEMPRE
+  botResolutions: {
+    count: number;
+    avgTimeSeconds: number;  // Típicamente < 60s
+  };
+  agentResolutions: {
+    count: number;
+    avgTimeMinutes: number;  // Típicamente 5-30 min
+  };
+  // Nunca mezclar promedios (media inútil)
+}
+```
+
+---
+
+### 5. Plan de Implementación
+
+| Fase | Descripción | Archivos Principales | Prioridad |
+|------|-------------|---------------------|-----------|
+| **Fase 1** | Schema + Migraciones | `shared/schema.ts` | Alta |
+| **Fase 2** | Lifecycle Service | `server/services/conversationLifecycleService.ts` | Alta |
+| **Fase 3** | Thank You Detection | `server/services/thankYouDetector.ts` | Alta |
+| **Fase 4** | Smart Summary | Integrar con LLM existente | Media |
+| **Fase 5** | API Endpoints | `server/routes.ts` | Media |
+| **Fase 6** | UI - Estado en Inbox | `client/src/pages/Inbox.tsx` | Media |
+| **Fase 7** | UI - Panel de Cierre | Nuevo componente | Media |
+| **Fase 8** | Analytics Dashboard | Nueva página | Baja |
+| **Fase 9** | CSAT Survey | Integración inline | Baja |
+
+---
+
+### 6. UX/UI (Pendiente de Diseño)
+
+> **Nota:** Esta sección será completada con el diseño de customer journey, wireframes y especificaciones de UI antes de la implementación del frontend.
+
+**Puntos a definir:**
+- [ ] Cómo se ve el botón de "Cerrar conversación" en el Inbox
+- [ ] Modal de cierre con resumen editable
+- [ ] Indicadores visuales de estado (badges, colores)
+- [ ] Panel de métricas de resolución
+- [ ] Flujo de CSAT post-cierre
+- [ ] Configuración de lifecycle settings por marca
+
+---
+
+### 7. Referencias Técnicas
+
+- **Zendesk Solved vs Closed:** https://support.zendesk.com/hc/en-us/articles/4408887712154
+- **Intercom AI Summarize:** https://www.intercom.com/help/en/articles/6955446
+- **Intercom Prevent Replies:** https://www.intercom.com/help/en/articles/3449698
+- **Intercom Fin Attributes:** https://www.intercom.com/help/en/articles/11680403
+- **Front Reopened Conversations:** https://help.front.com/en/articles/2063
+- **HubSpot Service Analytics:** https://knowledge.hubspot.com/help-desk/analyze-help-desk
+- **Knowledge Base Local:** `docs/knowledge-base/CONVERSATION_LIFECYCLE_MANAGEMENT.md`
+
+---
+
 ### Referencias
 
 - **Respond.io Official:** https://respond.io/
