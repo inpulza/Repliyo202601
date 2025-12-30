@@ -3472,6 +3472,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/crm/populate - Populate CRM from ALL existing conversations (backfill contacts and limbo)
+  app.post("/api/crm/populate", requireAuth, async (req, res) => {
+    try {
+      const brandId = req.body.brandId || req.user?.brandId;
+
+      if (!brandId) {
+        return res.status(400).json({ error: "brandId is required" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const { crmTrafficController } = await import("./services/crmTrafficController");
+      
+      // Get all conversations for this brand
+      const allConversations = await storage.getConversations(brandId);
+      
+      const stats = {
+        total: allConversations.length,
+        contactsCreated: 0,
+        limboCreated: 0,
+        limboUpdated: 0,
+        alreadyProcessed: 0,
+        errors: 0,
+      };
+
+      for (const conv of allConversations) {
+        try {
+          // Determine message type: 'dm' for conversation type, 'comment' for comment type
+          const messageType: 'dm' | 'comment' = conv.type === 'dm' || conv.type === 'conversation' ? 'dm' : 'comment';
+          
+          // Use customer_id as externalId, fallback to thread_external_id or conversation id
+          const externalId = conv.customerId || conv.threadExternalId || conv.id;
+          
+          if (!externalId) {
+            stats.errors++;
+            continue;
+          }
+
+          // Normalize platform
+          const platform = normalizePlatform(conv.platform || 'unknown');
+
+          const result = await crmTrafficController.routeIncomingMessage({
+            brandId,
+            platform,
+            externalId,
+            username: conv.customerName || 'Unknown',
+            avatarUrl: conv.customerAvatar,
+            displayName: conv.customerName,
+            messageType,
+          });
+
+          if (result.isNew) {
+            if (result.type === 'contact') {
+              // Link conversation to the new contact
+              await storage.updateConversation(conv.id, { contactId: result.contactId });
+              stats.contactsCreated++;
+            } else {
+              stats.limboCreated++;
+            }
+          } else {
+            if (result.type === 'limbo') {
+              stats.limboUpdated++;
+            } else {
+              // Link conversation to existing contact if not linked
+              if (!conv.contactId && result.contactId) {
+                await storage.updateConversation(conv.id, { contactId: result.contactId });
+              }
+              stats.alreadyProcessed++;
+            }
+          }
+        } catch (convError: any) {
+          console.error(`[CRM Populate] Error processing conversation ${conv.id}:`, convError.message);
+          stats.errors++;
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `CRM poblado: ${stats.contactsCreated} nuevos contactos, ${stats.limboCreated} nuevos pendientes, ${stats.limboUpdated} pendientes actualizados, ${stats.alreadyProcessed} ya procesados, ${stats.errors} errores.`,
+        stats,
+      });
+    } catch (error: any) {
+      console.error('[CRM] Populate error:', error);
+      res.status(500).json({ error: "Failed to populate CRM", details: error.message });
+    }
+  });
+
   // POST /api/crm/contacts/:id/enrich - Manually enrich a single contact with LLM
   app.post("/api/crm/contacts/:id/enrich", requireAuth, async (req, res) => {
     try {
