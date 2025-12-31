@@ -39,8 +39,11 @@ The user interface includes an "Orchestration" tab for managing timing configura
 - **Customer Journey Timeline:** Visualización cronológica de todos los puntos de contacto clave con cada cliente. Combina:
   - Datos de: `messages`, `conversation_user_summaries`, `reminder_events`, `conversationStatusHistory`
   - Tipos de eventos: primer contacto, mensajes in/out, respuestas IA, recordatorios, cambios de estado, resúmenes
-  - Endpoint: `GET /api/conversations/:id/timeline`
+  - Endpoints:
+    - `GET /api/conversations/:id/timeline` - Timeline de conversación individual
+    - `GET /api/crm/contacts/:id/journey` - Timeline agregado de TODAS las conversaciones del contacto
   - UI: Componente `ConversationTimeline.tsx` integrado en `CRMContextPanel.tsx` como sección "Customer Journey"
+  - Soporta ambos modos: conversationId (individual) y contactId (agregado de todas las conversaciones)
 
 ### System Design Choices
 - **Multi-Tenant Architecture:** Data isolation per brand using `brandId`.
