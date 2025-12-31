@@ -113,8 +113,8 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Bell className="h-5 w-5 text-primary" />
-              <CardTitle>Recordatorios Automáticos</CardTitle>
+              <Bell className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-base font-semibold">Recordatorios Automáticos</CardTitle>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
@@ -128,7 +128,7 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
               </div>
             </div>
           </div>
-          <CardDescription>
+          <CardDescription className="text-xs">
             Envía recordatorios personalizados a clientes inactivos para re-engancharlos en la conversación.
           </CardDescription>
         </CardHeader>
@@ -144,18 +144,18 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
 
           {/* Sección: Canales de Aplicación */}
           <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
-            <h3 className="text-base font-semibold flex items-center gap-2 pb-2 border-b">
-              <MessageSquare className="h-5 w-5 text-primary" />
+            <h3 className="text-sm font-medium flex items-center gap-2 pb-2 border-b">
+              <MessageSquare className="h-4 w-4 text-muted-foreground" />
               Canales de Aplicación
             </h3>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Selecciona en qué tipos de conversaciones se enviarán los recordatorios automáticos.
             </p>
             
             <div className="space-y-3">
               <div className="flex items-center justify-between p-4 bg-background border rounded-lg">
                 <div>
-                  <Label htmlFor="applyToDms" className="font-medium">Mensajes Directos (DMs)</Label>
+                  <Label htmlFor="applyToDms" className="text-sm">Mensajes Directos (DMs)</Label>
                   <p className="text-xs text-muted-foreground mt-1">Enviar recordatorios en conversaciones de DM</p>
                 </div>
                 <Switch
@@ -168,7 +168,7 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
 
               <div className="flex items-center justify-between p-4 bg-background border rounded-lg">
                 <div>
-                  <Label htmlFor="applyToComments" className="font-medium">Comentarios</Label>
+                  <Label htmlFor="applyToComments" className="text-sm">Comentarios</Label>
                   <p className="text-xs text-muted-foreground mt-1">Responder a comentarios sin respuesta</p>
                 </div>
                 <Switch
