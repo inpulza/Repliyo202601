@@ -4,8 +4,10 @@
 Sistema de gestión de mensajes de redes sociales que se integra con Metricool para centralizar y gestionar DMs y comentarios de múltiples marcas/empresas. El sistema permite a usuarios admin y clientes gestionar sus interacciones sociales de forma organizada.
 
 ## Estado Actual
-- **Fase Actual**: ✅ FASE 11 COMPLETADA - Mejoras Conversacionales BOTrust + Guardrails
-- **Última Actualización**: 29 de Diciembre 2025 (Sesión 2)
+- **Fase Actual**: 🔄 FASE 12 EN PROGRESO - Smart Customer Follow-up System
+- **Última Actualización**: 31 de Diciembre 2025
+- **Sub-fases Completadas**: Fase 1-3 (Database, ReminderService, Scheduler Integration)
+- **Próxima Sub-fase**: Fase 4 (Delivery via Metricool)
 - **Historial DMs**: 20 mensajes recientes + resumen persistente (500+ chars)
 - **Control @Mention**: ✅ Etiquetado automático desactivado por defecto, configurable por agente
 - **Login/Logout**: ✅ Completamente funcional (página de login creada, logout en sidebar)
@@ -5955,6 +5957,340 @@ Cuando está en Solved: Mostrar tiempo restante del periodo de gracia.
 5. CIERRE DEFINITIVO
    └── Timer expira → Closed (inmutable)
 ```
+
+---
+
+## FASE 12: Smart Customer Follow-up System (Recordatorios Automatizados)
+
+**Estado:** ✅ Fase 2 Completada (30 Dic 2025)
+**Objetivo:** Sistema automatizado de recordatorios personalizados para clientes inactivos en DMs y comentarios.
+
+### 12.1 Arquitectura del Sistema
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                  SMART FOLLOW-UP SYSTEM                         │
+└─────────────────────────────────────────────────────────────────┘
+
+SCOPE:
+- Lifecycle Management: Solo DMs (type='dm')
+- Follow-up System: DMs + Comments (ambos tipos)
+
+FLUJO DE SCHEDULING:
+┌────────────────┐    ┌────────────────┐    ┌────────────────┐
+│   Pre-check    │───▶│  AI Generation │───▶│    Atomic      │
+│   (Barato)     │    │   (Costoso)    │    │   Schedule     │
+└────────────────┘    └────────────────┘    └────────────────┘
+        │                                            │
+        ▼                                            ▼
+  Exit si no                                  Transaction +
+  elegible                                    Unique Index
+
+DEFENSE LAYERS:
+1. Eligibility Query (excluye estados terminales)
+2. Pre-check (valida antes de AI generation)
+3. Transaction checks (datos frescos en transacción)
+4. Unique partial index (previene duplicados en DB)
+5. Structured responses (tracking de estados terminales)
+```
+
+### 12.2 Estructura de Base de Datos
+
+#### Tabla: reminder_rules (Configuración por Marca)
+```typescript
+reminderRules = pgTable('reminder_rules', {
+  id: uuid().primaryKey().defaultRandom(),
+  brandId: uuid().notNull().references(() => brands.id),
+  enabled: boolean().default(false),
+  targetTypes: text().array().default(['dm', 'comment']),
+  maxReminders: integer().default(2),
+  reminderDelayHours: integer().default(24),
+  reminder2DelayHours: integer().default(48),
+  reminder3DelayHours: integer(),
+  dailyCap: integer().default(50),
+  useAiContent: boolean().default(true),
+  templateContent: text(),
+  excludeStatuses: text().array().default(['closed', 'solved']),
+  createdAt: timestamp().defaultNow(),
+  updatedAt: timestamp().defaultNow(),
+});
+```
+
+#### Tabla: reminder_events (Eventos de Recordatorio)
+```typescript
+reminderEvents = pgTable('reminder_events', {
+  id: uuid().primaryKey().defaultRandom(),
+  brandId: uuid().notNull().references(() => brands.id),
+  conversationId: uuid().notNull().references(() => conversations.id),
+  contactId: uuid().references(() => crmContacts.id),
+  status: text().default('scheduled'), // scheduled, sent, cancelled, failed
+  scheduledAt: timestamp().notNull(),
+  sentAt: timestamp(),
+  content: text().notNull(),
+  contentSource: text().default('ai'), // ai, template
+  reminderNumber: integer().notNull(), // 1, 2, 3
+  deliveryChannel: text().notNull(), // dm, comment
+  errorMessage: text(),
+  createdAt: timestamp().defaultNow(),
+});
+
+// Unique partial index para prevenir duplicados
+CREATE UNIQUE INDEX idx_reminder_events_unique_scheduled 
+ON reminder_events (conversation_id, reminder_number) 
+WHERE status = 'scheduled';
+```
+
+#### Campos Agregados a conversations
+```typescript
+// Nuevos campos en tabla conversations:
+reminderStatus: text().default('none'), // none, scheduled, sent, opted_out, max_reached
+reminderCount: integer().default(0),
+lastReminderAt: timestamp(),
+```
+
+### 12.3 Storage Layer (14 Métodos CRUD)
+
+| Método | Descripción |
+|--------|-------------|
+| `getReminderRulesByBrand` | Obtiene configuración de reminders por marca |
+| `createReminderRules` | Crea nueva configuración |
+| `updateReminderRules` | Actualiza configuración existente |
+| `createReminderEvent` | Crea evento de reminder |
+| `getReminderEventById` | Obtiene evento por ID |
+| `getReminderEventsByConversation` | Obtiene eventos por conversación |
+| `updateReminderEventStatus` | Actualiza estado del evento |
+| `getScheduledRemindersReady` | Obtiene reminders listos para enviar |
+| `countRemindersSentToday` | Cuenta reminders enviados hoy |
+| `countRemindersScheduledAndSentToday` | Cuenta scheduled + sent (para daily cap) |
+| `checkConversationEligibleForReminder` | **Pre-check antes de AI generation** |
+| `scheduleReminderAtomic` | **Scheduling transaccional atómico** |
+| `updateConversationReminderStatus` | Actualiza estado de reminder en conversación |
+| `getConversationsEligibleForReminder` | Query de elegibilidad con filtros |
+
+### 12.4 ReminderService (Lógica de Negocio)
+
+#### Flujo Principal: `scheduleRemindersForBrand(brandId)`
+```typescript
+async scheduleRemindersForBrand(brandId: string): Promise<{
+  scheduled: number;
+  errors: string[];
+}> {
+  // 1. Obtener reglas de la marca
+  const rules = await storage.getReminderRulesByBrand(brandId);
+  if (!rules?.enabled) return { scheduled: 0, errors: [] };
+  
+  // 2. Verificar daily cap (scheduled + sent)
+  const dailyCount = await storage.countRemindersScheduledAndSentToday(brandId);
+  const remainingQuota = rules.dailyCap - dailyCount;
+  if (remainingQuota <= 0) return { scheduled: 0, errors: ['Daily cap reached'] };
+  
+  // 3. Obtener conversaciones elegibles
+  const eligible = await storage.getConversationsEligibleForReminder(
+    brandId, 
+    rules.reminderDelayHours, 
+    rules.maxReminders,
+    rules.targetTypes
+  );
+  
+  // 4. Procesar cada conversación
+  for (const conv of eligible.slice(0, remainingQuota)) {
+    const result = await this.scheduleReminder(conv, rules);
+    if (result.scheduled) scheduled++;
+  }
+}
+```
+
+#### Flujo Optimizado: `scheduleReminder(conversation, rules)`
+```typescript
+private async scheduleReminder(conv, rules): Promise<{ scheduled: boolean; terminal: boolean }> {
+  // PASO 1: Pre-check ANTES de AI generation (barato)
+  const precheck = await storage.checkConversationEligibleForReminder(
+    conv.id, 
+    rules.maxReminders
+  );
+  
+  if (!precheck.eligible) {
+    // Exit temprano, NO se llama a AI
+    const isTerminal = ['max_reached', 'opted_out', 'not_found', 'closed'].includes(precheck.reason);
+    return { scheduled: false, terminal: isTerminal };
+  }
+  
+  // PASO 2: AI Generation (costoso) - Solo si pre-check pasó
+  const generation = await this.generateReminderContent(conv, nextReminderNumber, rules);
+  if (!generation.success) return { scheduled: false, terminal: false };
+  
+  // PASO 3: Atomic Schedule (transacción)
+  const result = await storage.scheduleReminderAtomic(conv.id, event, 'scheduled', maxReminders);
+  
+  // PASO 4: Interpretar resultado estructurado
+  switch (result.status) {
+    case 'scheduled': return { scheduled: true, terminal: false };
+    case 'max_reached': return { scheduled: false, terminal: true };
+    case 'already_scheduled': return { scheduled: false, terminal: false };
+    case 'opted_out': return { scheduled: false, terminal: true };
+    case 'not_found': return { scheduled: false, terminal: true };
+    case 'duplicate': return { scheduled: false, terminal: false };
+  }
+}
+```
+
+### 12.5 Optimizaciones Implementadas
+
+#### 1. Pre-check Antes de AI Generation
+**Problema:** AI generation es costoso (tokens LLM). Si la conversación ya no es elegible, se desperdician tokens.
+
+**Solución:** `checkConversationEligibleForReminder()` verifica elegibilidad ANTES de llamar al LLM.
+
+```typescript
+// Pre-check (barato - solo DB read)
+const precheck = await storage.checkConversationEligibleForReminder(convId, maxReminders);
+if (!precheck.eligible) {
+  // NO se llama a generateReminderContent()
+  return { scheduled: false, terminal: precheck.reason === 'max_reached' };
+}
+
+// Solo ahora se llama al LLM (costoso)
+const generation = await this.generateReminderContent(...);
+```
+
+#### 2. Respuestas Estructuradas
+**Problema:** Retornar `null` no indica POR QUÉ falló el scheduling.
+
+**Solución:** Retornar objeto con status detallado:
+```typescript
+Promise<{
+  status: 'scheduled' | 'max_reached' | 'already_scheduled' | 'opted_out' | 'not_found' | 'duplicate';
+  event?: ReminderEvent;
+}>
+```
+
+#### 3. Tracking de Estados Terminales
+**Problema:** Loops podían re-intentar conversaciones que ya alcanzaron estado terminal.
+
+**Solución:** Retornar `{ scheduled, terminal }` para que callers sepan cuándo parar:
+```typescript
+// Estados terminales (no re-intentar):
+- max_reached
+- opted_out
+- not_found
+- closed
+
+// Estados no-terminales (puede ser race condition):
+- already_scheduled
+- duplicate
+```
+
+#### 4. Daily Cap con Scheduled + Sent
+**Problema:** Contar solo `sent` permitía over-scheduling si se programaban muchos antes de enviar.
+
+**Solución:** `countRemindersScheduledAndSentToday()` suma ambos:
+```sql
+-- Sent today
+SELECT COUNT(*) FROM reminder_events 
+WHERE brand_id = $1 AND sent_at >= $startOfDay;
+
+-- Scheduled for today
+SELECT COUNT(*) FROM reminder_events 
+WHERE brand_id = $1 AND status = 'scheduled' 
+AND scheduled_at >= $startOfDay AND scheduled_at < $endOfDay;
+
+-- Total = sent + scheduled
+```
+
+### 12.6 Defense Layers (5 Capas de Protección)
+
+| Capa | Ubicación | Función |
+|------|-----------|---------|
+| 1 | Eligibility Query | Excluye estados terminales de la query inicial |
+| 2 | Pre-check | Valida elegibilidad antes de AI generation |
+| 3 | Transaction | Re-verifica con datos frescos en transacción |
+| 4 | Unique Index | Constraint de DB previene duplicados |
+| 5 | Structured Response | Tracking de estados terminales para callers |
+
+### 12.7 Tipos y Schemas
+
+```typescript
+// Estados de reminder en conversación
+type ReminderStatus = 'none' | 'scheduled' | 'sent' | 'opted_out' | 'max_reached';
+
+// Insert schema para reminder_rules
+export const insertReminderRulesSchema = createInsertSchema(reminderRules).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Insert schema para reminder_events
+export const insertReminderEventSchema = createInsertSchema(reminderEvents).omit({
+  id: true,
+  createdAt: true,
+});
+```
+
+### 12.8 Archivos Modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `shared/schema.ts` | Tablas `reminder_rules`, `reminder_events`, campos en `conversations` |
+| `server/storage.ts` | 14 métodos CRUD + pre-check + atomic scheduling |
+| `server/services/reminderService.ts` | ReminderService completo con optimizaciones |
+
+### 12.9 Fases del Sistema
+
+| Fase | Estado | Descripción |
+|------|--------|-------------|
+| Fase 1: Database & Storage | ✅ Completada | Schema + 14 métodos CRUD |
+| Fase 2: ReminderService | ✅ Completada | Lógica de negocio + optimizaciones |
+| Fase 3: Scheduler Integration | ✅ Completada | Integrar con lifecycleScheduler |
+| Fase 4: Delivery & Sending | 🔄 Pendiente | Envío real via Metricool |
+| Fase 5: UI Configuration | 🔄 Pendiente | Panel de configuración |
+| Fase 6: Analytics | 🔄 Pendiente | Métricas y dashboard |
+
+### 12.10 Scheduler Integration (Fase 3 - Completada 31 Dic 2025)
+
+#### Integración con LifecycleScheduler
+```typescript
+// server/services/lifecycleScheduler.ts
+class LifecycleScheduler {
+  private reminderInterval: NodeJS.Timeout | null = null;
+  private readonly REMINDER_CHECK_INTERVAL_MS = 5 * 60 * 1000; // 5 minutos
+
+  async start(): Promise<void> {
+    // Inicia intervalo para lifecycle (15 min) y reminders (5 min)
+    await this.runReminderTasks();
+    this.reminderInterval = setInterval(() => this.runReminderTasks(), this.REMINDER_CHECK_INTERVAL_MS);
+  }
+
+  private async runReminderTasks(): Promise<void> {
+    for (const brand of await storage.getActiveBrands()) {
+      await reminderService.scheduleRemindersForBrand(brand.id);
+      await reminderService.sendScheduledReminders(brand.id);
+    }
+  }
+}
+```
+
+#### Endpoints API Añadidos
+| Endpoint | Método | Descripción |
+|----------|--------|-------------|
+| `/api/brands/:id/reminder-rules` | GET | Obtener configuración de reminders |
+| `/api/brands/:id/reminder-rules` | POST | Crear/actualizar configuración (validación Zod) |
+| `/api/brands/:id/reminders/run` | POST | Trigger manual de scheduling y envío |
+| `/api/conversations/:id/reminder-events` | GET | Ver eventos de reminder de una conversación |
+| `/api/conversations/:id/reminder-opt-out` | POST | Opt-out de reminders |
+| `/api/scheduler/status` | GET | Ver estado del scheduler |
+
+#### Validación de Datos
+```typescript
+// POST /api/brands/:id/reminder-rules
+const validatedData = updateReminderRulesSchema.parse(req.body);
+// Solo campos whitelistados llegan al storage
+```
+
+#### Mejoras Pendientes para Iteraciones Futuras
+- **Delays específicos por número de reminder**: Actualmente usa delayHours1 para query de elegibilidad. Mejorar para usar delayHours2 específicamente para segundo reminder.
+- **Tracking de cap intra-ciclo**: Agregar tracking más granular de cuota diaria durante ejecución del scheduler.
+- **Default rules object**: Retornar objeto por defecto en GET cuando no existen reglas para la marca.
 
 ---
 

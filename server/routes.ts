@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertBrandSchema, insertUserSchema, insertMessageSchema, updateMessageSchema, updateConversationSchema, insertSocialAccountSchema } from "@shared/schema";
+import { insertBrandSchema, insertUserSchema, insertMessageSchema, updateMessageSchema, updateConversationSchema, insertSocialAccountSchema, updateReminderRulesSchema } from "@shared/schema";
 import { hashPassword, verifyPassword, sanitizeUser, sanitizeBrand, type AuthenticatedUser } from "./auth";
 import { MetricoolService } from "./services/metricool";
 import { syncService } from "./services/syncService";
@@ -3932,6 +3932,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('[Lifecycle] Message analysis error:', error);
       res.status(500).json({ error: "Failed to analyze message", details: error.message });
+    }
+  });
+
+  // ====== SMART CUSTOMER FOLLOW-UP SYSTEM ENDPOINTS ======
+
+  // GET /api/brands/:id/reminder-rules - Get reminder configuration for brand
+  app.get("/api/brands/:id/reminder-rules", requireAuth, filterByBrand('id'), async (req, res) => {
+    try {
+      const brandId = req.params.id;
+      const rules = await storage.getReminderRules(brandId);
+      res.json({ success: true, rules });
+    } catch (error: any) {
+      console.error('[Reminders] Get rules error:', error);
+      res.status(500).json({ error: "Failed to get reminder rules", details: error.message });
+    }
+  });
+
+  // POST /api/brands/:id/reminder-rules - Create or update reminder rules
+  app.post("/api/brands/:id/reminder-rules", requireAuth, filterByBrand('id'), async (req, res) => {
+    try {
+      const brandId = req.params.id;
+      const existing = await storage.getReminderRules(brandId);
+      
+      // Validate and whitelist fields
+      const validatedData = updateReminderRulesSchema.parse(req.body);
+      
+      let rules;
+      if (existing) {
+        rules = await storage.updateReminderRules(brandId, validatedData);
+      } else {
+        rules = await storage.upsertReminderRules({ ...validatedData, brandId });
+      }
+      
+      res.json({ success: true, rules });
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ error: "Invalid reminder rules data", details: error.errors });
+      }
+      console.error('[Reminders] Save rules error:', error);
+      res.status(500).json({ error: "Failed to save reminder rules", details: error.message });
+    }
+  });
+
+  // POST /api/brands/:id/reminders/run - Manually trigger reminder scheduling and sending
+  app.post("/api/brands/:id/reminders/run", requireAuth, filterByBrand('id'), async (req, res) => {
+    try {
+      const brandId = req.params.id;
+      const { lifecycleScheduler } = await import("./services/lifecycleScheduler");
+      const result = await lifecycleScheduler.runManualReminders(brandId);
+      
+      res.json({
+        success: true,
+        scheduled: result.scheduled,
+        sent: result.sent,
+        errors: result.errors,
+        message: `Scheduled ${result.scheduled}, sent ${result.sent} reminders`,
+      });
+    } catch (error: any) {
+      console.error('[Reminders] Manual run error:', error);
+      res.status(500).json({ error: "Failed to run reminders", details: error.message });
+    }
+  });
+
+  // GET /api/conversations/:id/reminder-events - Get reminder events for conversation
+  app.get("/api/conversations/:id/reminder-events", requireAuth, async (req, res) => {
+    try {
+      const conversationId = req.params.id;
+      const events = await storage.getReminderEventsByConversation(conversationId);
+      res.json({ success: true, events });
+    } catch (error: any) {
+      console.error('[Reminders] Get events error:', error);
+      res.status(500).json({ error: "Failed to get reminder events", details: error.message });
+    }
+  });
+
+  // POST /api/conversations/:id/reminder-opt-out - Opt out conversation from reminders
+  app.post("/api/conversations/:id/reminder-opt-out", requireAuth, async (req, res) => {
+    try {
+      const conversationId = req.params.id;
+      const updated = await storage.updateConversationReminderStatus(conversationId, 'opted_out');
+      res.json({ success: !!updated, conversation: updated });
+    } catch (error: any) {
+      console.error('[Reminders] Opt out error:', error);
+      res.status(500).json({ error: "Failed to opt out", details: error.message });
+    }
+  });
+
+  // GET /api/scheduler/status - Get scheduler status
+  app.get("/api/scheduler/status", requireAuth, async (req, res) => {
+    try {
+      const { lifecycleScheduler } = await import("./services/lifecycleScheduler");
+      res.json({ success: true, status: lifecycleScheduler.getStatus() });
+    } catch (error: any) {
+      console.error('[Scheduler] Get status error:', error);
+      res.status(500).json({ error: "Failed to get scheduler status", details: error.message });
     }
   });
 
