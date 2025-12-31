@@ -296,6 +296,30 @@ export interface IStorage {
   // Contact Reminder Updates
   updateContactReminderCount(contactId: string): Promise<CrmContact | undefined>;
   updateContactOptOutReminders(contactId: string, optOut: boolean): Promise<CrmContact | undefined>;
+  
+  // Reminder Analytics
+  getReminderStats(brandId: string, timeRange: 'today' | '7d' | '30d'): Promise<{
+    totalSent: number;
+    totalScheduled: number;
+    totalFailed: number;
+    totalCancelled: number;
+    totalOptedOut: number;
+    conversionCount: number;
+    conversionRate: number;
+    avgResponseMinutes: number | null;
+    dailyCapUsage: number;
+    dailyCapLimit: number;
+  }>;
+  getReminderTimeline(brandId: string, timeRange: 'today' | '7d' | '30d'): Promise<Array<{
+    date: string;
+    sent: number;
+    conversions: number;
+    failed: number;
+  }>>;
+  getReminderFailureReasons(brandId: string, timeRange: 'today' | '7d' | '30d', limit?: number): Promise<Array<{
+    reason: string;
+    count: number;
+  }>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3506,6 +3530,225 @@ export class DatabaseStorage implements IStorage {
       .where(eq(crmContacts.id, contactId))
       .returning();
     return updated || undefined;
+  }
+
+  // Reminder Analytics
+  private getTimeRangeStart(timeRange: 'today' | '7d' | '30d'): Date {
+    const now = new Date();
+    switch (timeRange) {
+      case 'today':
+        const today = new Date(now);
+        today.setHours(0, 0, 0, 0);
+        return today;
+      case '7d':
+        const week = new Date(now);
+        week.setDate(week.getDate() - 7);
+        week.setHours(0, 0, 0, 0);
+        return week;
+      case '30d':
+        const month = new Date(now);
+        month.setDate(month.getDate() - 30);
+        month.setHours(0, 0, 0, 0);
+        return month;
+    }
+  }
+
+  async getReminderStats(brandId: string, timeRange: 'today' | '7d' | '30d'): Promise<{
+    totalSent: number;
+    totalScheduled: number;
+    totalFailed: number;
+    totalCancelled: number;
+    totalOptedOut: number;
+    conversionCount: number;
+    conversionRate: number;
+    avgResponseMinutes: number | null;
+    dailyCapUsage: number;
+    dailyCapLimit: number;
+  }> {
+    const startDate = this.getTimeRangeStart(timeRange);
+    
+    // Get status counts
+    const statusCounts = await db
+      .select({
+        status: reminderEvents.status,
+        count: sql<number>`count(*)::int`
+      })
+      .from(reminderEvents)
+      .where(and(
+        eq(reminderEvents.brandId, brandId),
+        gte(reminderEvents.createdAt, startDate)
+      ))
+      .groupBy(reminderEvents.status);
+    
+    const countsByStatus: Record<string, number> = {};
+    statusCounts.forEach(row => {
+      countsByStatus[row.status] = row.count;
+    });
+    
+    const totalSent = countsByStatus['sent'] || 0;
+    const totalScheduled = countsByStatus['scheduled'] || 0;
+    const totalFailed = countsByStatus['failed'] || 0;
+    const totalCancelled = countsByStatus['cancelled'] || 0;
+    
+    // Count opted out conversations
+    const optedOutResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(conversations)
+      .where(and(
+        eq(conversations.brandId, brandId),
+        eq(conversations.reminderStatus, 'opted_out')
+      ));
+    const totalOptedOut = optedOutResult[0]?.count || 0;
+    
+    // Count conversions (customer replied after reminder was sent)
+    // A conversion = reminder sent, then customer sent a message after the reminder
+    const conversionResult = await db
+      .select({ count: sql<number>`count(DISTINCT ${reminderEvents.conversationId})::int` })
+      .from(reminderEvents)
+      .innerJoin(conversations, eq(reminderEvents.conversationId, conversations.id))
+      .where(and(
+        eq(reminderEvents.brandId, brandId),
+        eq(reminderEvents.status, 'sent'),
+        gte(reminderEvents.createdAt, startDate),
+        isNotNull(conversations.lastCustomerMessageAt),
+        sql`${conversations.lastCustomerMessageAt} > ${reminderEvents.sentAt}`
+      ));
+    const conversionCount = conversionResult[0]?.count || 0;
+    
+    // Calculate conversion rate
+    const conversionRate = totalSent > 0 ? (conversionCount / totalSent) * 100 : 0;
+    
+    // Calculate average response time for conversions
+    const avgResponseResult = await db
+      .select({
+        avgMinutes: sql<number>`AVG(EXTRACT(EPOCH FROM (${conversations.lastCustomerMessageAt} - ${reminderEvents.sentAt})) / 60)::float`
+      })
+      .from(reminderEvents)
+      .innerJoin(conversations, eq(reminderEvents.conversationId, conversations.id))
+      .where(and(
+        eq(reminderEvents.brandId, brandId),
+        eq(reminderEvents.status, 'sent'),
+        gte(reminderEvents.createdAt, startDate),
+        isNotNull(conversations.lastCustomerMessageAt),
+        sql`${conversations.lastCustomerMessageAt} > ${reminderEvents.sentAt}`
+      ));
+    const avgResponseMinutes = avgResponseResult[0]?.avgMinutes || null;
+    
+    // Daily cap usage (today only)
+    const dailyCapUsage = await this.countRemindersScheduledAndSentToday(brandId);
+    
+    // Get daily cap limit from rules
+    const rules = await this.getReminderRules(brandId);
+    const dailyCapLimit = rules?.dailyBrandCap || 50;
+    
+    return {
+      totalSent,
+      totalScheduled,
+      totalFailed,
+      totalCancelled,
+      totalOptedOut,
+      conversionCount,
+      conversionRate: Math.round(conversionRate * 10) / 10,
+      avgResponseMinutes: avgResponseMinutes ? Math.round(avgResponseMinutes) : null,
+      dailyCapUsage,
+      dailyCapLimit,
+    };
+  }
+
+  async getReminderTimeline(brandId: string, timeRange: 'today' | '7d' | '30d'): Promise<Array<{
+    date: string;
+    sent: number;
+    conversions: number;
+    failed: number;
+  }>> {
+    const startDate = this.getTimeRangeStart(timeRange);
+    
+    // Get daily sent/failed counts
+    const dailyEvents = await db
+      .select({
+        date: sql<string>`date_trunc('day', ${reminderEvents.createdAt})::date::text`,
+        status: reminderEvents.status,
+        count: sql<number>`count(*)::int`
+      })
+      .from(reminderEvents)
+      .where(and(
+        eq(reminderEvents.brandId, brandId),
+        gte(reminderEvents.createdAt, startDate),
+        or(
+          eq(reminderEvents.status, 'sent'),
+          eq(reminderEvents.status, 'failed')
+        )
+      ))
+      .groupBy(sql`date_trunc('day', ${reminderEvents.createdAt})`, reminderEvents.status)
+      .orderBy(sql`date_trunc('day', ${reminderEvents.createdAt})`);
+    
+    // Get daily conversions
+    const dailyConversions = await db
+      .select({
+        date: sql<string>`date_trunc('day', ${conversations.lastCustomerMessageAt})::date::text`,
+        count: sql<number>`count(DISTINCT ${reminderEvents.conversationId})::int`
+      })
+      .from(reminderEvents)
+      .innerJoin(conversations, eq(reminderEvents.conversationId, conversations.id))
+      .where(and(
+        eq(reminderEvents.brandId, brandId),
+        eq(reminderEvents.status, 'sent'),
+        gte(reminderEvents.createdAt, startDate),
+        isNotNull(conversations.lastCustomerMessageAt),
+        sql`${conversations.lastCustomerMessageAt} > ${reminderEvents.sentAt}`
+      ))
+      .groupBy(sql`date_trunc('day', ${conversations.lastCustomerMessageAt})`)
+      .orderBy(sql`date_trunc('day', ${conversations.lastCustomerMessageAt})`);
+    
+    // Merge into timeline
+    const timelineMap: Record<string, { sent: number; conversions: number; failed: number }> = {};
+    
+    dailyEvents.forEach(row => {
+      if (!timelineMap[row.date]) {
+        timelineMap[row.date] = { sent: 0, conversions: 0, failed: 0 };
+      }
+      if (row.status === 'sent') {
+        timelineMap[row.date].sent = row.count;
+      } else if (row.status === 'failed') {
+        timelineMap[row.date].failed = row.count;
+      }
+    });
+    
+    dailyConversions.forEach(row => {
+      if (!timelineMap[row.date]) {
+        timelineMap[row.date] = { sent: 0, conversions: 0, failed: 0 };
+      }
+      timelineMap[row.date].conversions = row.count;
+    });
+    
+    // Convert to sorted array
+    return Object.entries(timelineMap)
+      .map(([date, data]) => ({ date, ...data }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  async getReminderFailureReasons(brandId: string, timeRange: 'today' | '7d' | '30d', limit: number = 10): Promise<Array<{
+    reason: string;
+    count: number;
+  }>> {
+    const startDate = this.getTimeRangeStart(timeRange);
+    
+    const failureReasons = await db
+      .select({
+        reason: sql<string>`COALESCE(${reminderEvents.errorMessage}, 'Unknown error')`,
+        count: sql<number>`count(*)::int`
+      })
+      .from(reminderEvents)
+      .where(and(
+        eq(reminderEvents.brandId, brandId),
+        eq(reminderEvents.status, 'failed'),
+        gte(reminderEvents.createdAt, startDate)
+      ))
+      .groupBy(reminderEvents.errorMessage)
+      .orderBy(sql`count(*) DESC`)
+      .limit(limit);
+    
+    return failureReasons;
   }
 }
 

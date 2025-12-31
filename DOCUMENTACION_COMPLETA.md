@@ -6,8 +6,8 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 ## Estado Actual
 - **Fase Actual**: 🔄 FASE 12 EN PROGRESO - Smart Customer Follow-up System
 - **Última Actualización**: 31 de Diciembre 2025
-- **Sub-fases Completadas**: Fase 1-4 (Database, ReminderService, Scheduler Integration, Delivery via Metricool)
-- **Próxima Sub-fase**: Fase 5 (UI Configuration)
+- **Sub-fases Completadas**: Fase 1-5 (Database, ReminderService, Scheduler Integration, Delivery via Metricool, UI Configuration)
+- **Próxima Sub-fase**: Fase 6 (Analytics Dashboard)
 - **Historial DMs**: 20 mensajes recientes + resumen persistente (500+ chars)
 - **Control @Mention**: ✅ Etiquetado automático desactivado por defecto, configurable por agente
 - **Login/Logout**: ✅ Completamente funcional (página de login creada, logout en sidebar)
@@ -6580,6 +6580,151 @@ if (sendResult.success) {
 - `docs/knowledge-base/Cierre_Perfecto_en_SaaS_B2B_1767113509977.pdf` - PDF original cierre perfecto
 - `docs/knowledge-base/Investigación_Técnica_Respond.io_CRM_1767175751422.pdf` - PDF investigación Respond.io
 - `docs/knowledge-base/Guía_de_Diseño_CRM_SaaS_Conversacional_1767176108783.pdf` - PDF guía de diseño
+
+---
+
+### FASE 5: UI Configuration (Completada 31 Dic 2025)
+
+**Objetivo:** Panel de configuración en AIAgentConfig + control de opt-out en conversaciones.
+
+#### 5.1 API Hooks (`client/src/hooks/useReminderRules.ts`)
+
+```typescript
+// Hook principal para reglas
+export function useReminderRules(brandId?: string) {
+  const query = useQuery({...}); // GET /api/brands/:id/reminder-rules
+  const updateMutation = useMutation({...}); // POST /api/brands/:id/reminder-rules
+  const runManualMutation = useMutation({...}); // POST /api/brands/:id/reminders/run
+  return { rules, updateRules, runManual, isLoading };
+}
+
+// Hook para eventos a nivel de marca
+export function useBrandReminderEvents(brandId?: string, options?: { status?: string; limit?: number }) {
+  // GET /api/brands/:id/reminder-events
+}
+
+// Hook para opt-out
+export function useReminderOptOut(conversationId?: string) {
+  // POST /api/conversations/:id/reminder-opt-out
+}
+```
+
+#### 5.2 API Methods (`client/src/lib/api.ts`)
+
+```typescript
+reminderRules: {
+  get: (brandId: string) => fetchJSON<RulesResponse>(...),
+  update: (brandId: string, data: ReminderRulesUpdate) => fetchJSON(...),
+  runManual: (brandId: string) => fetchJSON<ManualRunResult>(...),
+  getEventsByBrand: (brandId: string, options?) => fetchJSON<EventsResponse>(...),
+  getEvents: (conversationId: string) => fetchJSON<EventsResponse>(...),
+  optOut: (conversationId: string) => fetchJSON(...),
+}
+```
+
+#### 5.3 ReminderSettingsForm Component
+
+**Ubicación:** `client/src/components/ReminderSettingsForm.tsx`
+
+**Campos de Configuración:**
+| Campo | Tipo | Default | Descripción |
+|-------|------|---------|-------------|
+| enabled | boolean | false | Master toggle |
+| applyToDms | boolean | true | Aplicar a DMs |
+| applyToComments | boolean | true | Aplicar a comentarios |
+| delayHours1 | number | 24 | Horas para primer recordatorio |
+| delayHours2 | number | 48 | Horas para segundo recordatorio |
+| maxReminders | number | 2 | Máximo de recordatorios por conversación |
+| dailyBrandCap | number | 50 | Límite diario por marca |
+| useAiContent | boolean | true | Usar contenido AI vs plantilla |
+| templateText | string | "" | Texto de plantilla si no usa AI |
+| autoCloseAfterMaxReminders | boolean | false | Auto-cerrar tras máximo |
+| autoCloseDelayHours | number | 24 | Delay para auto-cierre |
+
+**Funcionalidades:**
+- Toggle master con indicador visual
+- Botón "Ejecutar Ahora" para trigger manual
+- Tabla de historial de eventos (últimos 25)
+- Badges de estado (scheduled, sent, failed, cancelled)
+- Refresh de eventos
+
+#### 5.4 Integración en AIAgentConfig
+
+```typescript
+// Nueva pestaña "Recordatorios" con icono Bell
+<Tab value="reminders" className="...">
+  <Bell className="h-4 w-4" />
+  <span>Recordatorios</span>
+</Tab>
+
+// Contenido condicional con guard
+<TabsContent value="reminders">
+  {!activeClient?.id ? (
+    <Card>Selecciona una marca primero...</Card>
+  ) : (
+    <ReminderSettingsForm brandId={activeClient.id} />
+  )}
+</TabsContent>
+```
+
+#### 5.5 Historial de Eventos a Nivel de Marca
+
+**Endpoint:** `GET /api/brands/:id/reminder-events`
+
+```typescript
+// Query params: status?, limit? (default 25)
+// Response: { success: true, events: ReminderEvent[] }
+```
+
+**Storage method:**
+```typescript
+async getEventsByBrand(brandId: string, options?: { 
+  status?: string; 
+  limit?: number 
+}): Promise<ReminderEvent[]>
+```
+
+#### 5.6 Control Opt-Out en CRMContextPanel
+
+**Ubicación:** `client/src/components/CRMContextPanel.tsx`
+
+**Condición de visibilidad:** Solo para conversaciones tipo 'dm'
+
+**UI Elements:**
+- Sección "Recordatorios Automáticos" con iconos Bell/BellOff
+- Switch para desactivar (solo permite opt-out, no re-activar)
+- Estados visuales: Activos (verde) / Desactivados (gris)
+- Mensaje informativo cuando está opted-out
+
+```typescript
+const optOutMutation = useReminderOptOut(conversation?.id);
+const isOptedOut = conversation?.reminderStatus === 'opted_out';
+const hasReminders = conversation?.type === 'dm';
+
+// Switch solo permite desactivar (one-way)
+<Switch
+  checked={!isOptedOut}
+  onCheckedChange={() => {
+    if (!isOptedOut) optOutMutation.mutate();
+  }}
+  disabled={optOutMutation.isPending || isOptedOut}
+/>
+```
+
+#### 5.7 Response Unwrapping
+
+Backend retorna estructura envuelta:
+```typescript
+{ success: true, rules: {...} }
+{ success: true, events: [...] }
+```
+
+Frontend unwraps correctamente:
+```typescript
+// En hooks
+const rules = data?.rules || data; // Maneja ambos formatos
+const events = data?.events || [];
+```
 
 ---
 

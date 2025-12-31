@@ -103,3 +103,36 @@ export function useReminderOptOut(conversationId: string | undefined) {
     },
   });
 }
+
+// Analytics hooks
+export type TimeRange = 'today' | '7d' | '30d';
+
+export function useReminderStats(brandId: string | undefined, timeRange: TimeRange = '7d') {
+  return useQuery({
+    queryKey: ['reminder-stats', brandId, timeRange],
+    queryFn: () => api.reminders.getStats(brandId!, timeRange),
+    enabled: !!brandId,
+    staleTime: 60000,
+    refetchInterval: 300000, // 5 minutes
+  });
+}
+
+export function useReminderTimeline(brandId: string | undefined, timeRange: TimeRange = '7d') {
+  return useQuery({
+    queryKey: ['reminder-timeline', brandId, timeRange],
+    queryFn: () => api.reminders.getTimeline(brandId!, timeRange),
+    enabled: !!brandId,
+    staleTime: 60000,
+    refetchInterval: 300000,
+  });
+}
+
+export function useReminderFailures(brandId: string | undefined, timeRange: TimeRange = '7d', limit: number = 10) {
+  return useQuery({
+    queryKey: ['reminder-failures', brandId, timeRange, limit],
+    queryFn: () => api.reminders.getFailureReasons(brandId!, timeRange, limit),
+    enabled: !!brandId,
+    staleTime: 60000,
+    refetchInterval: 300000,
+  });
+}

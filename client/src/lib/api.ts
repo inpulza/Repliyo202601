@@ -736,5 +736,55 @@ export const api = {
       }
       return res.json();
     },
+
+    // Analytics
+    getStats: async (brandId: string, timeRange: 'today' | '7d' | '30d' = '7d'): Promise<{
+      totalSent: number;
+      totalScheduled: number;
+      totalFailed: number;
+      totalCancelled: number;
+      totalOptedOut: number;
+      conversionCount: number;
+      conversionRate: number;
+      avgResponseMinutes: number | null;
+      dailyCapUsage: number;
+      dailyCapLimit: number;
+    }> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/reminders/analytics/summary?timeRange=${timeRange}`);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to fetch reminder stats');
+      }
+      const data = await res.json();
+      return data.stats;
+    },
+
+    getTimeline: async (brandId: string, timeRange: 'today' | '7d' | '30d' = '7d'): Promise<Array<{
+      date: string;
+      sent: number;
+      conversions: number;
+      failed: number;
+    }>> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/reminders/analytics/timeline?timeRange=${timeRange}`);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to fetch reminder timeline');
+      }
+      const data = await res.json();
+      return data.timeline || [];
+    },
+
+    getFailureReasons: async (brandId: string, timeRange: 'today' | '7d' | '30d' = '7d', limit: number = 10): Promise<Array<{
+      reason: string;
+      count: number;
+    }>> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/reminders/analytics/failures?timeRange=${timeRange}&limit=${limit}`);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to fetch failure reasons');
+      }
+      const data = await res.json();
+      return data.failures || [];
+    },
   },
 };

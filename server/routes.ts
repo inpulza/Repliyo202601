@@ -4044,6 +4044,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/brands/:id/reminders/analytics/summary - Get reminder analytics summary
+  app.get("/api/brands/:id/reminders/analytics/summary", requireAuth, filterByBrand('id'), async (req, res) => {
+    try {
+      const brandId = req.params.id;
+      const timeRange = (req.query.timeRange as 'today' | '7d' | '30d') || '7d';
+      
+      if (!['today', '7d', '30d'].includes(timeRange)) {
+        return res.status(400).json({ error: "Invalid timeRange. Use 'today', '7d', or '30d'" });
+      }
+      
+      const stats = await storage.getReminderStats(brandId, timeRange);
+      res.json({ success: true, stats });
+    } catch (error: any) {
+      console.error('[Analytics] Get reminder stats error:', error);
+      res.status(500).json({ error: "Failed to get reminder stats", details: error.message });
+    }
+  });
+
+  // GET /api/brands/:id/reminders/analytics/timeline - Get reminder timeline data
+  app.get("/api/brands/:id/reminders/analytics/timeline", requireAuth, filterByBrand('id'), async (req, res) => {
+    try {
+      const brandId = req.params.id;
+      const timeRange = (req.query.timeRange as 'today' | '7d' | '30d') || '7d';
+      
+      if (!['today', '7d', '30d'].includes(timeRange)) {
+        return res.status(400).json({ error: "Invalid timeRange. Use 'today', '7d', or '30d'" });
+      }
+      
+      const timeline = await storage.getReminderTimeline(brandId, timeRange);
+      res.json({ success: true, timeline });
+    } catch (error: any) {
+      console.error('[Analytics] Get reminder timeline error:', error);
+      res.status(500).json({ error: "Failed to get reminder timeline", details: error.message });
+    }
+  });
+
+  // GET /api/brands/:id/reminders/analytics/failures - Get failure reasons
+  app.get("/api/brands/:id/reminders/analytics/failures", requireAuth, filterByBrand('id'), async (req, res) => {
+    try {
+      const brandId = req.params.id;
+      const timeRange = (req.query.timeRange as 'today' | '7d' | '30d') || '7d';
+      const limit = parseInt(req.query.limit as string) || 10;
+      
+      if (!['today', '7d', '30d'].includes(timeRange)) {
+        return res.status(400).json({ error: "Invalid timeRange. Use 'today', '7d', or '30d'" });
+      }
+      
+      const failures = await storage.getReminderFailureReasons(brandId, timeRange, limit);
+      res.json({ success: true, failures });
+    } catch (error: any) {
+      console.error('[Analytics] Get failure reasons error:', error);
+      res.status(500).json({ error: "Failed to get failure reasons", details: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
 
   websocketService.initialize(httpServer);

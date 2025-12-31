@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useReminderRules, useBrandReminderEvents } from '@/hooks/useReminderRules';
+import { useReminderRules, useBrandReminderEvents, useReminderStats, useReminderTimeline, useReminderFailures, type TimeRange } from '@/hooks/useReminderRules';
 import type { ReminderRules, ReminderEvent } from '@shared/schema';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,12 +11,15 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from '@/hooks/use-toast';
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
   Bell, Clock, MessageSquare, Mail, Settings, 
   Save, Loader2, Play, AlertTriangle, Info, Zap, History,
-  CheckCircle, XCircle, Clock3, RefreshCw
+  CheckCircle, XCircle, Clock3, RefreshCw, TrendingUp,
+  BarChart3, Target, BellOff, Timer
 } from 'lucide-react';
 
 interface ReminderSettingsFormProps {
@@ -57,6 +60,12 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
   const { data: events, isLoading: eventsLoading, refetch: refetchEvents } = useBrandReminderEvents(brandId, { limit: 25 });
   const [formData, setFormData] = useState<Partial<ReminderRules>>(DEFAULT_RULES);
   const [hasChanges, setHasChanges] = useState(false);
+  const [analyticsTimeRange, setAnalyticsTimeRange] = useState<TimeRange>('7d');
+
+  // Analytics hooks
+  const { data: stats, isLoading: statsLoading } = useReminderStats(brandId, analyticsTimeRange);
+  const { data: timeline, isLoading: timelineLoading } = useReminderTimeline(brandId, analyticsTimeRange);
+  const { data: failures, isLoading: failuresLoading } = useReminderFailures(brandId, analyticsTimeRange);
 
   useEffect(() => {
     if (rules) {
@@ -383,6 +392,135 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
           )}
         </Button>
       </div>
+
+      {/* Analytics Dashboard */}
+      <Card data-testid="analytics-dashboard">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              <CardTitle>Métricas de Recordatorios</CardTitle>
+            </div>
+            <Tabs value={analyticsTimeRange} onValueChange={(v) => setAnalyticsTimeRange(v as TimeRange)}>
+              <TabsList className="h-8">
+                <TabsTrigger value="today" className="text-xs px-2">Hoy</TabsTrigger>
+                <TabsTrigger value="7d" className="text-xs px-2">7 días</TabsTrigger>
+                <TabsTrigger value="30d" className="text-xs px-2">30 días</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+          <CardDescription>
+            Rendimiento y efectividad de los recordatorios automáticos
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {statsLoading ? (
+            <div className="flex items-center justify-center p-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : stats ? (
+            <>
+              {/* KPI Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 border rounded-lg" data-testid="kpi-sent">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span className="text-xs">Enviados</span>
+                  </div>
+                  <p className="text-2xl font-bold">{stats.totalSent}</p>
+                </div>
+                
+                <div className="p-4 border rounded-lg" data-testid="kpi-conversion">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <Target className="h-4 w-4 text-blue-500" />
+                    <span className="text-xs">Conversiones</span>
+                  </div>
+                  <p className="text-2xl font-bold">{stats.conversionCount}</p>
+                  <p className="text-xs text-muted-foreground">{stats.conversionRate}% tasa</p>
+                </div>
+
+                <div className="p-4 border rounded-lg" data-testid="kpi-response-time">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <Timer className="h-4 w-4 text-amber-500" />
+                    <span className="text-xs">Tiempo Resp.</span>
+                  </div>
+                  <p className="text-2xl font-bold">
+                    {stats.avgResponseMinutes ? `${stats.avgResponseMinutes}m` : '-'}
+                  </p>
+                </div>
+
+                <div className="p-4 border rounded-lg" data-testid="kpi-failed">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <XCircle className="h-4 w-4 text-red-500" />
+                    <span className="text-xs">Fallidos</span>
+                  </div>
+                  <p className="text-2xl font-bold">{stats.totalFailed}</p>
+                </div>
+              </div>
+
+              {/* Daily Cap Progress */}
+              <div className="p-4 border rounded-lg space-y-2" data-testid="daily-cap">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" />
+                    Cuota Diaria
+                  </span>
+                  <span className="font-medium">{stats.dailyCapUsage} / {stats.dailyCapLimit}</span>
+                </div>
+                <Progress 
+                  value={(stats.dailyCapUsage / stats.dailyCapLimit) * 100} 
+                  className="h-2"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {stats.dailyCapLimit - stats.dailyCapUsage} recordatorios restantes hoy
+                </p>
+              </div>
+
+              {/* Status Summary */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="status-summary">
+                <div className="flex items-center gap-2 p-2 border rounded text-sm">
+                  <Clock3 className="h-4 w-4 text-blue-500" />
+                  <span className="text-muted-foreground">Programados:</span>
+                  <span className="font-medium">{stats.totalScheduled}</span>
+                </div>
+                <div className="flex items-center gap-2 p-2 border rounded text-sm">
+                  <XCircle className="h-4 w-4 text-gray-400" />
+                  <span className="text-muted-foreground">Cancelados:</span>
+                  <span className="font-medium">{stats.totalCancelled}</span>
+                </div>
+                <div className="flex items-center gap-2 p-2 border rounded text-sm">
+                  <BellOff className="h-4 w-4 text-amber-500" />
+                  <span className="text-muted-foreground">Opt-out:</span>
+                  <span className="font-medium">{stats.totalOptedOut}</span>
+                </div>
+              </div>
+
+              {/* Failure Reasons (if any) */}
+              {failures && failures.length > 0 && (
+                <div className="space-y-2" data-testid="failure-reasons">
+                  <h4 className="text-sm font-medium flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-red-500" />
+                    Razones de Fallo
+                  </h4>
+                  <div className="space-y-1">
+                    {failures.slice(0, 5).map((failure, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-2 bg-red-50 rounded text-sm">
+                        <span className="text-red-700 truncate flex-1">{failure.reason}</span>
+                        <Badge variant="destructive" className="ml-2">{failure.count}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <BarChart3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>No hay datos de métricas disponibles</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
