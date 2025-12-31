@@ -5379,6 +5379,76 @@ interface ConversationSummary {
 - Usuario hace clic en ⭐⭐⭐⭐⭐ (no escribe texto)
 - Sistema captura satisfacción **sin reabrir** el ticket
 
+#### 2.5 Regla de Hierro de Reapertura (Respond.io)
+
+> **Un Agente de IA NO puede reabrir una conversación cerrada.**
+
+**Justificación Técnica (Prevención de Loops):**
+```
+Cierre → Mensaje "Gracias" al cliente → 
+IA interpreta como nueva interacción → Reabre →
+IA responde "De nada" → Cierre de nuevo → Loop infinito ♻️
+```
+
+**Quién PUEDE reabrir**:
+| Actor | Puede Reabrir | Notas |
+|-------|---------------|-------|
+| Cliente (mensaje entrante) | ✅ Sí | Único trigger automático válido |
+| Agente humano (manual) | ✅ Sí | Acción explícita en UI |
+| Agente de IA | ❌ No | Restricción hard-coded |
+| Workflow automático | ⚠️ Condicional | Solo si trigger es mensaje cliente |
+
+**Implementación**: Restricción en lógica de negocio o trigger de BD.
+
+#### 2.6 Flag `ai_active` para Prevención de Handoff (Respond.io)
+
+**Problema**: Bot y humano hablando al mismo tiempo confunden al usuario.
+
+**Solución**:
+```typescript
+// Campo en tabla conversations
+ai_active: boolean  // default: true
+
+// Cuando se ejecuta assign_to_user o assign_to_team:
+UPDATE conversations SET ai_active = false WHERE id = ?  // Atómico
+
+// Orquestador de IA verifica ANTES de invocar LLM:
+if (!conversation.ai_active) {
+  // Enrutar directo al Inbox del agente humano
+  // NO invocar LLM (ahorro costos + evita respuestas fantasma)
+  return;
+}
+```
+
+#### 2.7 Threading y Ventanas de Mensajería
+
+| Canal | Ventana | Fuera de Ventana |
+|-------|---------|------------------|
+| **WhatsApp Business** | 24h desde último mensaje cliente | Solo Template Messages pre-aprobados |
+| **Facebook Messenger** | 24h (extendible a 7 días con Human Agent Tag) | Bloqueo de texto libre |
+| **Instagram DM** | 24h | Solo respuestas a stories |
+
+**Implementación UI**:
+```typescript
+if (lastCustomerMessageAt > 24_HOURS_AGO) {
+  // Bloquear input de texto libre
+  // Mostrar selector de plantillas
+  showTemplateSelector();
+}
+```
+
+#### 2.8 Límites de Contexto para Resúmenes (Respond.io)
+
+| Operación | Límite de Mensajes | Razón |
+|-----------|-------------------|-------|
+| **Agente conversacional (respuestas)** | 20 mensajes | Latencia + costos LLM |
+| **Generación de resumen de cierre** | 100 mensajes | Contexto completo para archivo |
+
+**Implementación**:
+- Ventana deslizante para respuestas (últimos 20)
+- Contexto extendido para resúmenes (últimos 100)
+- NO enviar años de historial al LLM
+
 ---
 
 ### 3. Nuestra Implementación: Diseño Técnico
@@ -5429,10 +5499,16 @@ export const conversations = pgTable('conversations', {
   closedBy: text('closed_by'), // 'agent' | 'bot' | 'auto' | 'customer'
   closedByUserId: uuid('closed_by_user_id'),
   
+  // Handoff Prevention (Respond.io pattern)
+  aiActive: boolean('ai_active').default(true), // false = humano asignado, no invocar LLM
+  assignedToUserId: uuid('assigned_to_user_id'), // Agente humano asignado
+  assignedAt: timestamp('assigned_at'),
+  
   // Resolution Metrics
   firstResponseAt: timestamp('first_response_at'),
   resolutionTimeMinutes: integer('resolution_time_minutes'),
   reopenCount: integer('reopen_count').default(0),
+  lastCustomerMessageAt: timestamp('last_customer_message_at'), // Para ventana 24h
   
   // AI Summary
   closingSummary: text('closing_summary'),
@@ -5675,21 +5751,28 @@ interface ResolutionMetrics {
 
 ### 7. Referencias Técnicas
 
+**Documentación Externa:**
 - **Zendesk Solved vs Closed:** https://support.zendesk.com/hc/en-us/articles/4408887712154
 - **Intercom AI Summarize:** https://www.intercom.com/help/en/articles/6955446
 - **Intercom Prevent Replies:** https://www.intercom.com/help/en/articles/3449698
 - **Intercom Fin Attributes:** https://www.intercom.com/help/en/articles/11680403
 - **Front Reopened Conversations:** https://help.front.com/en/articles/2063
 - **HubSpot Service Analytics:** https://knowledge.hubspot.com/help-desk/analyze-help-desk
-- **Knowledge Base Local:** `docs/knowledge-base/CONVERSATION_LIFECYCLE_MANAGEMENT.md`
-
----
-
-### Referencias
-
 - **Respond.io Official:** https://respond.io/
 - **Respond.io AI Agents:** https://respond.io/ai-agents
 - **Respond.io Help Center:** https://help.respond.io/l/en/conversation-led-growth
+
+**Knowledge Base Local:**
+- `docs/knowledge-base/CONVERSATION_LIFECYCLE_MANAGEMENT.md` - Benchmarking de plataformas
+- `docs/knowledge-base/RESPOND_IO_TECHNICAL_ARCHITECTURE.md` - Arquitectura técnica Respond.io
+- `docs/knowledge-base/Cierre_Perfecto_en_SaaS_B2B_1767113509977.pdf` - PDF original cierre perfecto
+- `docs/knowledge-base/Investigación_Técnica_Respond.io_CRM_1767175751422.pdf` - PDF investigación Respond.io
+
+---
+
+### Referencias Generales del Proyecto
+
+- **Respond.io Official:** https://respond.io/
 - **Respond.io AI Agent Actions:** https://respond.io/help/ai-agents/using-ai-agent-actions
 
 ---
