@@ -185,6 +185,9 @@ export function AgentSettings() {
             </div>
           </div>
 
+          {/* CICLO DE VIDA section - Mobile */}
+          <MobileLifecycleSection brandId={activeClient.id} />
+
           {/* CONOCIMIENTO section */}
           <div className="pt-8 pb-2 px-4">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Conocimiento</p>
@@ -620,5 +623,166 @@ function LifecycleSettingsSection({ brandId }: { brandId: string }) {
         </div>
       </div>
     </motion.div>
+  );
+}
+
+function MobileLifecycleSection({ brandId }: { brandId: string }) {
+  const queryClient = useQueryClient();
+  const [gracePeriod, setGracePeriod] = useState(24);
+  const [autoSummary, setAutoSummary] = useState(true);
+  const [csatEnabled, setCsatEnabled] = useState(false);
+  const [showGracePeriodSheet, setShowGracePeriodSheet] = useState(false);
+
+  const gracePeriodLabels: Record<number, string> = {
+    1: '1 hora',
+    6: '6 horas',
+    12: '12 horas',
+    24: '1 día',
+    48: '2 días',
+    72: '3 días',
+    96: '4 días',
+    168: '7 días',
+    336: '14 días',
+    504: '21 días',
+    672: '28 días',
+  };
+
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ['lifecycleSettings', brandId],
+    queryFn: () => api.lifecycle.getSettings(brandId),
+    enabled: !!brandId,
+  });
+
+  useEffect(() => {
+    if (settings) {
+      setGracePeriod(settings.solvedToClosedHours);
+      setAutoSummary(settings.autoGenerateSummary);
+      setCsatEnabled(settings.csatSurveyEnabled ?? false);
+    }
+  }, [settings]);
+
+  const mutation = useMutation({
+    mutationFn: (newSettings: { solvedToClosedHours?: number; autoGenerateSummary?: boolean; csatSurveyEnabled?: boolean }) =>
+      api.lifecycle.updateSettings(brandId, newSettings),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lifecycleSettings', brandId] });
+      toast.success('Configuración actualizada');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Error al actualizar');
+    },
+  });
+
+  const handleGracePeriodChange = (value: number) => {
+    setGracePeriod(value);
+    mutation.mutate({ solvedToClosedHours: value });
+    setShowGracePeriodSheet(false);
+  };
+
+  const handleAutoSummaryChange = (checked: boolean) => {
+    setAutoSummary(checked);
+    mutation.mutate({ autoGenerateSummary: checked });
+  };
+
+  const handleCsatChange = (checked: boolean) => {
+    setCsatEnabled(checked);
+    mutation.mutate({ csatSurveyEnabled: checked });
+  };
+
+  if (isLoading) {
+    return (
+      <>
+        <div className="pt-8 pb-2 px-4">
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Ciclo de Vida</p>
+        </div>
+        <div className="bg-white flex justify-center py-4">
+          <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div className="pt-8 pb-2 px-4">
+        <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Ciclo de Vida</p>
+      </div>
+      <div className="bg-white">
+        {/* Auto-close timer */}
+        <button
+          onClick={() => setShowGracePeriodSheet(true)}
+          className="w-full flex items-center justify-between px-4 py-3.5 border-b border-gray-100 active:bg-gray-50"
+          data-testid="mobile-row-grace-period"
+        >
+          <div className="flex-1 text-left">
+            <span className="text-[15px] text-gray-900">Tiempo de cierre automático</span>
+            <p className="text-xs text-gray-400 mt-0.5">Tras marcar como "Resuelto"</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[15px] text-gray-400">{gracePeriodLabels[gracePeriod] || `${gracePeriod}h`}</span>
+            <ChevronRight className="h-4 w-4 text-gray-300" />
+          </div>
+        </button>
+
+        {/* AI Summary toggle */}
+        <div className="w-full flex items-center justify-between px-4 py-3.5 border-b border-gray-100">
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-purple-500" />
+              <span className="text-[15px] text-gray-900">Resumen con IA</span>
+            </div>
+            <p className="text-xs text-gray-400 mt-0.5">Generar resumen al resolver</p>
+          </div>
+          <Switch
+            checked={autoSummary}
+            onCheckedChange={handleAutoSummaryChange}
+            disabled={mutation.isPending}
+            data-testid="mobile-switch-auto-summary"
+          />
+        </div>
+
+        {/* CSAT Survey toggle */}
+        <div className="w-full flex items-center justify-between px-4 py-3.5 border-b border-gray-100">
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-green-500" />
+              <span className="text-[15px] text-gray-900">Encuesta CSAT</span>
+            </div>
+            <p className="text-xs text-gray-400 mt-0.5">Enviar encuesta tras cerrar</p>
+          </div>
+          <Switch
+            checked={csatEnabled}
+            onCheckedChange={handleCsatChange}
+            disabled={mutation.isPending}
+            data-testid="mobile-switch-csat"
+          />
+        </div>
+      </div>
+
+      {/* Grace Period Sheet */}
+      <Sheet open={showGracePeriodSheet} onOpenChange={setShowGracePeriodSheet}>
+        <SheetContent side="bottom" className="md:hidden rounded-t-3xl p-0 max-h-[60vh]">
+          <div className="flex items-center justify-center h-12 border-b border-gray-100">
+            <span className="text-base font-semibold text-gray-900">Tiempo de cierre</span>
+          </div>
+          <div className="overflow-y-auto">
+            {Object.entries(gracePeriodLabels).map(([value, label]) => (
+              <button
+                key={value}
+                onClick={() => handleGracePeriodChange(parseInt(value))}
+                className="w-full flex items-center justify-between px-4 py-3.5 border-b border-gray-100 active:bg-gray-50"
+              >
+                <span className="text-[15px] text-gray-900">{label}</span>
+                {gracePeriod === parseInt(value) && (
+                  <svg className="h-5 w-5 text-[#0095F6]" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </button>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }
