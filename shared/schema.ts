@@ -96,6 +96,11 @@ export const conversations = pgTable("conversations", {
   closingSentiment: text("closing_sentiment"), // positive, neutral, negative
   closingIntent: text("closing_intent"),
   closingResolution: text("closing_resolution"),
+  
+  // Smart Follow-up System
+  reminderCount: integer("reminder_count").default(0),
+  lastReminderAt: timestamp("last_reminder_at"),
+  reminderStatus: text("reminder_status").default('none'), // 'none' | 'scheduled' | 'sent' | 'max_reached' | 'opted_out'
 });
 
 export const messages = pgTable("messages", {
@@ -640,6 +645,11 @@ export const crmContacts = pgTable("crm_contacts", {
   firstInteractionAt: timestamp("first_interaction_at"),
   lastInteractionAt: timestamp("last_interaction_at"),
   
+  // Smart Follow-up System
+  reminderCount: integer("reminder_count").default(0),
+  lastReminderAt: timestamp("last_reminder_at"),
+  optOutReminders: boolean("opt_out_reminders").default(false),
+  
   // Audit
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -898,3 +908,132 @@ export interface MessageAnalysis {
   hasNewRequest: boolean;
   reasoning: string;
 }
+
+// ============================================
+// SMART CUSTOMER FOLLOW-UP SYSTEM
+// ============================================
+
+// TABLA: Reglas de reminder por marca
+export const reminderRules = pgTable("reminder_rules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brandId: varchar("brand_id").notNull().references(() => brands.id, { onDelete: 'cascade' }).unique(),
+  
+  // Configuración general
+  enabled: boolean("enabled").default(false),
+  
+  // Delays para cada reminder (en horas)
+  delayHours1: integer("delay_hours_1").default(24), // Primer reminder tras X horas sin respuesta
+  delayHours2: integer("delay_hours_2").default(48), // Segundo reminder tras X horas desde el primero
+  
+  // Límites
+  maxReminders: integer("max_reminders").default(2),
+  dailyBrandCap: integer("daily_brand_cap").default(50), // Máximo reminders por día por marca
+  
+  // Generación de contenido
+  useAiContent: boolean("use_ai_content").default(true), // true = LLM genera mensaje, false = usa template
+  templateText: text("template_text"), // Template con variables: {name}, {serviceInterest}, {lastTopic}
+  
+  // Alcance
+  applyToDms: boolean("apply_to_dms").default(true),
+  applyToComments: boolean("apply_to_comments").default(false),
+  
+  // Auto-close después de agotar reminders
+  autoCloseAfterMaxReminders: boolean("auto_close_after_max_reminders").default(true),
+  autoCloseDelayHours: integer("auto_close_delay_hours").default(48), // Horas extra antes de cerrar
+  
+  // Audit
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// TABLA: Historial de reminders enviados
+export const reminderEvents = pgTable("reminder_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brandId: varchar("brand_id").notNull().references(() => brands.id, { onDelete: 'cascade' }),
+  conversationId: varchar("conversation_id").notNull().references(() => conversations.id, { onDelete: 'cascade' }),
+  contactId: varchar("contact_id").references(() => crmContacts.id, { onDelete: 'set null' }),
+  
+  // Información del reminder
+  reminderNumber: integer("reminder_number").notNull(), // 1, 2, etc.
+  status: text("status").notNull().default('scheduled'), // 'scheduled' | 'sent' | 'failed' | 'cancelled'
+  
+  // Contenido
+  content: text("content"), // Mensaje enviado
+  contentSource: text("content_source"), // 'ai' | 'template'
+  
+  // Contexto usado para generar (snapshot)
+  contextSnapshot: jsonb("context_snapshot"), // { summary, serviceInterest, lastMessages, etc. }
+  
+  // Timestamps
+  scheduledAt: timestamp("scheduled_at").notNull(),
+  sentAt: timestamp("sent_at"),
+  
+  // Error info si falló
+  errorMessage: text("error_message"),
+  
+  // Delivery info
+  deliveryChannel: text("delivery_channel"), // 'dm' | 'comment_reply'
+  externalMessageId: text("external_message_id"), // ID del mensaje en la plataforma
+  
+  // Audit
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  brandIdx: index("reminder_events_brand_idx").on(table.brandId),
+  conversationIdx: index("reminder_events_conversation_idx").on(table.conversationId),
+  contactIdx: index("reminder_events_contact_idx").on(table.contactId),
+  statusIdx: index("reminder_events_status_idx").on(table.status),
+  scheduledAtIdx: index("reminder_events_scheduled_at_idx").on(table.scheduledAt),
+}));
+
+// Relations para Smart Follow-up
+export const reminderRulesRelations = relations(reminderRules, ({ one }) => ({
+  brand: one(brands, {
+    fields: [reminderRules.brandId],
+    references: [brands.id],
+  }),
+}));
+
+export const reminderEventsRelations = relations(reminderEvents, ({ one }) => ({
+  brand: one(brands, {
+    fields: [reminderEvents.brandId],
+    references: [brands.id],
+  }),
+  conversation: one(conversations, {
+    fields: [reminderEvents.conversationId],
+    references: [conversations.id],
+  }),
+  contact: one(crmContacts, {
+    fields: [reminderEvents.contactId],
+    references: [crmContacts.id],
+  }),
+}));
+
+// Schemas Zod para Reminder Rules
+export const insertReminderRulesSchema = createInsertSchema(reminderRules).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const selectReminderRulesSchema = createSelectSchema(reminderRules);
+
+export const updateReminderRulesSchema = insertReminderRulesSchema.partial();
+
+export type InsertReminderRules = z.infer<typeof insertReminderRulesSchema>;
+export type ReminderRules = typeof reminderRules.$inferSelect;
+export type UpdateReminderRules = z.infer<typeof updateReminderRulesSchema>;
+
+// Schemas Zod para Reminder Events
+export const insertReminderEventsSchema = createInsertSchema(reminderEvents).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const selectReminderEventsSchema = createSelectSchema(reminderEvents);
+
+export type InsertReminderEvent = z.infer<typeof insertReminderEventsSchema>;
+export type ReminderEvent = typeof reminderEvents.$inferSelect;
+
+// Types para reminder status
+export type ReminderStatus = 'none' | 'scheduled' | 'sent' | 'max_reached' | 'opted_out';
+export type ReminderEventStatus = 'scheduled' | 'sent' | 'failed' | 'cancelled';
