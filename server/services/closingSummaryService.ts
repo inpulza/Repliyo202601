@@ -35,6 +35,11 @@ export class ClosingSummaryService {
       return null;
     }
 
+    if (conversation.type !== 'dm') {
+      console.log(`[ClosingSummary] Skipping summary for non-DM conversation ${conversationId} (type: ${conversation.type})`);
+      return null;
+    }
+
     const brand = await storage.getBrand(conversation.brandId);
     if (!brand) {
       console.log(`[ClosingSummary] Brand ${conversation.brandId} not found`);

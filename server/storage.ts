@@ -2883,6 +2883,7 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(conversations.brandId, brandId),
         eq(conversations.status, 'solved'),
+        eq(conversations.type, 'dm'),
         lte(conversations.lastMessageAt, cutoffTime)
       ))
       .orderBy(conversations.lastMessageAt);
@@ -2896,6 +2897,7 @@ export class DatabaseStorage implements IStorage {
       .from(conversations)
       .where(and(
         eq(conversations.brandId, brandId),
+        eq(conversations.type, 'dm'),
         or(
           eq(conversations.status, 'open'),
           eq(conversations.status, 'pending')
