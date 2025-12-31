@@ -6287,10 +6287,37 @@ const validatedData = updateReminderRulesSchema.parse(req.body);
 // Solo campos whitelistados llegan al storage
 ```
 
+#### Matriz de Elegibilidad para Reminders
+
+| Reminder # | Condición de Tiempo | Condición de Actividad | Estados Excluidos |
+|------------|---------------------|------------------------|-------------------|
+| 1 (Stage 0) | COALESCE(lastMessageAt, lastCustomerMessageAt, createdAt) >= delayHours1 ago | Sin actividad (cliente O agente) dentro del período de delay | closed, scheduled, max_reached, opted_out |
+| 2+ (Stage N) | lastReminderAt >= delayHoursN ago | lastCustomerMessageAt <= lastReminderAt AND lastMessageAt <= lastReminderAt | closed, scheduled, max_reached, opted_out |
+
+**Nota sobre Stage 0:** El sistema verifica que NO haya ninguna actividad (ni del cliente ni del agente) dentro del período de delay antes de enviar el primer reminder. Esto previene el envío de reminders automáticos inmediatamente después de que un agente humano haya respondido.
+
+**Reglas de Cooldown:**
+- Cualquier mensaje del cliente → resetea elegibilidad (actualiza lastCustomerMessageAt)
+- Cualquier mensaje del agente → resetea elegibilidad (actualiza lastMessageAt)
+- Cambio a closed/solved → bloquea reminders permanentemente
+- Opt-out del contacto → bloquea reminders permanentemente
+
+**Flujo de Eligibilidad:**
+```
+Reminder #1: 
+  ├─ Esperar delayHours1 desde último mensaje del cliente
+  └─ Enviar reminder → actualiza lastReminderAt, reminderCount++
+
+Reminder #2:
+  ├─ Esperar delayHours2 desde lastReminderAt
+  ├─ Verificar: cliente no respondió desde reminder #1
+  ├─ Verificar: agente no respondió desde reminder #1
+  └─ Si ambas condiciones OK → enviar reminder #2
+```
+
 #### Mejoras Pendientes para Iteraciones Futuras
-- **Delays específicos por número de reminder**: Actualmente usa delayHours1 para query de elegibilidad. Mejorar para usar delayHours2 específicamente para segundo reminder.
-- **Tracking de cap intra-ciclo**: Agregar tracking más granular de cuota diaria durante ejecución del scheduler.
 - **Default rules object**: Retornar objeto por defecto en GET cuando no existen reglas para la marca.
+- **Tests automatizados**: Casos de re-engagement después de reminder #1.
 
 ---
 

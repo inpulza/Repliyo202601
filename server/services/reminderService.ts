@@ -91,31 +91,41 @@ export class ReminderService implements IReminderService {
         return result;
       }
 
-      const delayHours = rules.delayHours1 || 24;
-      const eligibleConversations = await storage.getConversationsEligibleForReminder(
-        brandId,
-        delayHours,
-        rules.maxReminders || 2,
-        types
-      );
+      let remainingQuota = dailyCap - dailyCount;
+      const maxReminders = rules.maxReminders || 2;
 
-      console.log(`[ReminderService] Found ${eligibleConversations.length} eligible conversations for brand ${brandId}`);
+      // Process each reminder level with its specific delay
+      for (let reminderNum = 1; reminderNum <= maxReminders && remainingQuota > 0; reminderNum++) {
+        const delayHours = this.getDelayForReminderNumber(rules, reminderNum);
+        
+        const eligibleConversations = await storage.getConversationsEligibleForReminder(
+          brandId,
+          delayHours,
+          maxReminders,
+          types,
+          reminderNum // Pass specific reminder number
+        );
 
-      const remainingQuota = dailyCap - dailyCount;
-      const toProcess = eligibleConversations.slice(0, remainingQuota);
+        console.log(`[ReminderService] Found ${eligibleConversations.length} conversations eligible for reminder #${reminderNum} (delay: ${delayHours}h)`);
 
-      for (const conversation of toProcess) {
-        try {
-          const scheduleResult = await this.scheduleReminder(conversation, rules);
-          if (scheduleResult.scheduled) {
-            result.scheduled++;
+        const toProcess = eligibleConversations.slice(0, remainingQuota);
+
+        for (const conversation of toProcess) {
+          try {
+            const scheduleResult = await this.scheduleReminder(conversation, rules);
+            if (scheduleResult.scheduled) {
+              result.scheduled++;
+              remainingQuota--;
+            }
+          } catch (error) {
+            const errMsg = `Failed to schedule reminder for conversation ${conversation.id}: ${error}`;
+            console.error(`[ReminderService] ${errMsg}`);
+            result.errors.push(errMsg);
           }
-        } catch (error) {
-          const errMsg = `Failed to schedule reminder for conversation ${conversation.id}: ${error}`;
-          console.error(`[ReminderService] ${errMsg}`);
-          result.errors.push(errMsg);
         }
       }
+
+      console.log(`[ReminderService] Total scheduled for brand ${brandId}: ${result.scheduled}`);
 
     } catch (error) {
       const errMsg = `Error scheduling reminders for brand ${brandId}: ${error}`;
@@ -284,7 +294,7 @@ export class ReminderService implements IReminderService {
         scheduledAt,
         content: generation.content,
         contentSource: rules.useAiContent !== false ? 'ai' : 'template',
-        reminderNumber: 0,
+        reminderNumber: nextReminderNumber,
         deliveryChannel: conversation.type || 'dm',
       },
       'scheduled' as ReminderStatus,
@@ -400,10 +410,16 @@ export class ReminderService implements IReminderService {
 
     await storage.updateReminderEventStatus(reminder.id, 'sent', new Date());
 
-    await storage.updateConversationReminderStatus(
-      conversation.id,
-      'sent' as ReminderStatus
-    );
+    // Update conversation timestamps to reflect the actual send time
+    // Both lastMessageAt and lastReminderAt should be set to send time
+    // so that eligibility checks for future reminders work correctly
+    // (eligibility requires lastMessageAt <= lastReminderAt)
+    const sendTime = new Date();
+    await storage.updateConversation(conversation.id, {
+      lastMessageAt: sendTime,
+      lastReminderAt: sendTime,
+      reminderStatus: 'sent' as ReminderStatus,
+    });
 
     if (conversation.contactId) {
       await storage.updateContactReminderCount(conversation.contactId);
