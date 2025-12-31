@@ -70,10 +70,32 @@ export const conversations = pgTable("conversations", {
   lastMessageAt: timestamp("last_message_at").notNull(),
   lastMessagePreview: text("last_message_preview"),
   unreadCount: integer("unread_count").default(0),
-  status: text("status").notNull().default('open'),
+  status: text("status").notNull().default('new'),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastAiReplyAt: timestamp("last_ai_reply_at"),
   contactId: varchar("contact_id").references(() => crmContacts.id, { onDelete: 'set null' }),
+  
+  // Lifecycle Management (PRD-LIFECYCLE)
+  closedAt: timestamp("closed_at"),
+  closedBy: text("closed_by"), // 'agent' | 'bot' | 'auto' | 'customer'
+  closedByUserId: varchar("closed_by_user_id"),
+  
+  // Handoff Prevention (Respond.io pattern)
+  aiActive: boolean("ai_active").default(true), // false = humano asignado, no invocar LLM
+  assignedToUserId: varchar("assigned_to_user_id"),
+  assignedAt: timestamp("assigned_at"),
+  
+  // Resolution Metrics
+  firstResponseAt: timestamp("first_response_at"),
+  resolutionTimeMinutes: integer("resolution_time_minutes"),
+  reopenCount: integer("reopen_count").default(0),
+  lastCustomerMessageAt: timestamp("last_customer_message_at"), // Para ventana 24h
+  
+  // AI Summary
+  closingSummary: text("closing_summary"),
+  closingSentiment: text("closing_sentiment"), // positive, neutral, negative
+  closingIntent: text("closing_intent"),
+  closingResolution: text("closing_resolution"),
 });
 
 export const messages = pgTable("messages", {
@@ -758,3 +780,118 @@ export const updateCrmContactLimboSchema = insertCrmContactLimboSchema.partial()
 export type InsertCrmContactLimbo = z.infer<typeof insertCrmContactLimboSchema>;
 export type CrmContactLimbo = typeof crmContactLimbo.$inferSelect;
 export type UpdateCrmContactLimbo = z.infer<typeof updateCrmContactLimboSchema>;
+
+// ============================================
+// CONVERSATION LIFECYCLE MODULE (PRD-LIFECYCLE)
+// ============================================
+
+// Enum para estados de conversación
+export const conversationStatusEnum = z.enum(['new', 'open', 'pending', 'solved', 'closed']);
+export type ConversationStatus = z.infer<typeof conversationStatusEnum>;
+
+// Enum para quien cerró la conversación
+export const closedByEnum = z.enum(['agent', 'bot', 'auto', 'customer']);
+export type ClosedBy = z.infer<typeof closedByEnum>;
+
+// Enum para sentimiento del cierre
+export const closingSentimentEnum = z.enum(['positive', 'neutral', 'negative']);
+export type ClosingSentiment = z.infer<typeof closingSentimentEnum>;
+
+// TABLA: Historial de cambios de estado de conversación
+export const conversationStatusHistory = pgTable("conversation_status_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  conversationId: varchar("conversation_id").notNull().references(() => conversations.id, { onDelete: 'cascade' }),
+  previousStatus: text("previous_status"),
+  newStatus: text("new_status").notNull(),
+  changedBy: text("changed_by").notNull(), // 'agent' | 'bot' | 'auto' | 'customer'
+  changedByUserId: varchar("changed_by_user_id"),
+  reason: text("reason"), // Ej: "Thank you detected", "Customer confirmed"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  conversationIdx: index("conversation_status_history_conversation_idx").on(table.conversationId),
+  createdAtIdx: index("conversation_status_history_created_at_idx").on(table.createdAt),
+}));
+
+// TABLA: Configuración de lifecycle por marca
+export const brandLifecycleSettings = pgTable("brand_lifecycle_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brandId: varchar("brand_id").notNull().references(() => brands.id, { onDelete: 'cascade' }).unique(),
+  
+  // Periodo de gracia Solved → Closed
+  solvedToClosedHours: integer("solved_to_closed_hours").default(24),
+  
+  // Anti-Zombie Settings
+  thankYouDetectionEnabled: boolean("thank_you_detection_enabled").default(true),
+  thankYouMaxWords: integer("thank_you_max_words").default(15),
+  
+  // Auto-close por inactividad
+  autoCloseInactivityHours: integer("auto_close_inactivity_hours").default(72),
+  
+  // CSAT
+  csatSurveyEnabled: boolean("csat_survey_enabled").default(false),
+  csatSurveyDelayMinutes: integer("csat_survey_delay_minutes").default(5),
+  
+  // Audit
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Relations para Lifecycle
+export const conversationStatusHistoryRelations = relations(conversationStatusHistory, ({ one }) => ({
+  conversation: one(conversations, {
+    fields: [conversationStatusHistory.conversationId],
+    references: [conversations.id],
+  }),
+}));
+
+export const brandLifecycleSettingsRelations = relations(brandLifecycleSettings, ({ one }) => ({
+  brand: one(brands, {
+    fields: [brandLifecycleSettings.brandId],
+    references: [brands.id],
+  }),
+}));
+
+// Schemas Zod para Conversation Status History
+export const insertConversationStatusHistorySchema = createInsertSchema(conversationStatusHistory).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const selectConversationStatusHistorySchema = createSelectSchema(conversationStatusHistory);
+
+export type InsertConversationStatusHistory = z.infer<typeof insertConversationStatusHistorySchema>;
+export type ConversationStatusHistory = typeof conversationStatusHistory.$inferSelect;
+
+// Schemas Zod para Brand Lifecycle Settings
+export const insertBrandLifecycleSettingsSchema = createInsertSchema(brandLifecycleSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const selectBrandLifecycleSettingsSchema = createSelectSchema(brandLifecycleSettings);
+
+export const updateBrandLifecycleSettingsSchema = insertBrandLifecycleSettingsSchema.partial();
+
+export type InsertBrandLifecycleSettings = z.infer<typeof insertBrandLifecycleSettingsSchema>;
+export type BrandLifecycleSettings = typeof brandLifecycleSettings.$inferSelect;
+export type UpdateBrandLifecycleSettings = z.infer<typeof updateBrandLifecycleSettingsSchema>;
+
+// Interface para resumen de cierre generado por IA
+export interface ConversationClosingSummary {
+  summary: string;
+  sentiment: ClosingSentiment;
+  intent: string;
+  resolution: string;
+  topics: string[];
+  actionItems: string[];
+}
+
+// Interface para análisis de mensaje (Thank You Detection)
+export interface MessageAnalysis {
+  isThankYou: boolean;
+  confidence: number;
+  hasQuestion: boolean;
+  hasNewRequest: boolean;
+  reasoning: string;
+}

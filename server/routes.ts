@@ -3586,6 +3586,355 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================
+  // CONVERSATION LIFECYCLE MANAGEMENT ENDPOINTS (PRD-LIFECYCLE)
+  // ============================================
+
+  // POST /api/conversations/:id/status - Change conversation status
+  app.post("/api/conversations/:id/status", requireAuth, async (req, res) => {
+    try {
+      const { status, reason } = req.body;
+      const conversationId = req.params.id;
+      
+      if (!status || !['new', 'open', 'pending', 'solved', 'closed'].includes(status)) {
+        return res.status(400).json({ error: "Invalid status. Must be: new, open, pending, solved, closed" });
+      }
+
+      const conversation = await storage.getConversation(conversationId);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== conversation.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      if (conversation.status === 'closed' && status !== 'closed') {
+        return res.status(400).json({ 
+          error: "Cannot change status of closed conversation",
+          message: "Las conversaciones cerradas son inmutables. Debe crearse una nueva conversación."
+        });
+      }
+
+      const { conversationLifecycleService } = await import("./services/conversationLifecycleService");
+
+      let updated;
+      switch (status) {
+        case 'open':
+          updated = await conversationLifecycleService.markAsOpen(conversationId, req.user?.id);
+          break;
+        case 'pending':
+          updated = await conversationLifecycleService.markAsPending(conversationId, reason);
+          break;
+        case 'solved':
+          updated = await conversationLifecycleService.markAsSolved(conversationId, 'agent', req.user?.id);
+          break;
+        case 'closed':
+          updated = await conversationLifecycleService.markAsClosed(conversationId);
+          break;
+        default:
+          updated = await storage.updateConversation(conversationId, { status });
+      }
+
+      res.json({ 
+        success: !!updated, 
+        conversation: updated,
+        message: `Conversación marcada como ${status}`
+      });
+    } catch (error: any) {
+      console.error('[Lifecycle] Status change error:', error);
+      res.status(500).json({ error: "Failed to change status", details: error.message });
+    }
+  });
+
+  // GET /api/conversations/:id/history - Get status change history
+  app.get("/api/conversations/:id/history", requireAuth, async (req, res) => {
+    try {
+      const conversationId = req.params.id;
+      const conversation = await storage.getConversation(conversationId);
+      
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== conversation.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const history = await storage.getConversationStatusHistory(conversationId);
+      res.json(history);
+    } catch (error: any) {
+      console.error('[Lifecycle] Get history error:', error);
+      res.status(500).json({ error: "Failed to get history", details: error.message });
+    }
+  });
+
+  // POST /api/conversations/:id/close - Close conversation with AI summary
+  app.post("/api/conversations/:id/close", requireAuth, async (req, res) => {
+    try {
+      const conversationId = req.params.id;
+      const { summary: customSummary, skipSummary } = req.body;
+      
+      const conversation = await storage.getConversation(conversationId);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== conversation.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      if (conversation.status === 'closed') {
+        return res.status(400).json({ error: "Conversation is already closed" });
+      }
+
+      const { conversationLifecycleService } = await import("./services/conversationLifecycleService");
+      const { closingSummaryService } = await import("./services/closingSummaryService");
+
+      let summaryData;
+      if (customSummary) {
+        summaryData = {
+          summary: customSummary.summary || customSummary,
+          sentiment: customSummary.sentiment || 'neutral',
+          intent: customSummary.intent || 'No especificado',
+          resolution: customSummary.resolution || 'Cerrado manualmente',
+          topics: customSummary.topics || [],
+          actionItems: customSummary.actionItems || [],
+        };
+      } else if (!skipSummary) {
+        summaryData = await closingSummaryService.generateSummary(conversationId);
+      }
+
+      if (summaryData) {
+        await closingSummaryService.saveSummary(conversationId, summaryData);
+      }
+
+      const updated = await conversationLifecycleService.markAsSolved(conversationId, 'agent', req.user?.id);
+
+      res.json({
+        success: !!updated,
+        conversation: updated,
+        summary: summaryData,
+        message: "Conversación marcada como resuelta con resumen generado"
+      });
+    } catch (error: any) {
+      console.error('[Lifecycle] Close error:', error);
+      res.status(500).json({ error: "Failed to close conversation", details: error.message });
+    }
+  });
+
+  // POST /api/conversations/:id/reopen - Reopen a solved conversation
+  app.post("/api/conversations/:id/reopen", requireAuth, async (req, res) => {
+    try {
+      const conversationId = req.params.id;
+      const { reason } = req.body;
+      
+      const conversation = await storage.getConversation(conversationId);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== conversation.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      if (conversation.status === 'closed') {
+        return res.status(400).json({ 
+          error: "Cannot reopen closed conversation",
+          message: "Las conversaciones cerradas son inmutables. El cliente debe iniciar una nueva conversación."
+        });
+      }
+
+      const { conversationLifecycleService } = await import("./services/conversationLifecycleService");
+      const updated = await conversationLifecycleService.reopenConversation(conversationId, reason || 'Reopened by agent');
+
+      res.json({
+        success: !!updated,
+        conversation: updated,
+        message: "Conversación reabierta"
+      });
+    } catch (error: any) {
+      console.error('[Lifecycle] Reopen error:', error);
+      res.status(500).json({ error: "Failed to reopen conversation", details: error.message });
+    }
+  });
+
+  // POST /api/conversations/:id/generate-summary - Generate summary without closing
+  app.post("/api/conversations/:id/generate-summary", requireAuth, async (req, res) => {
+    try {
+      const conversationId = req.params.id;
+      
+      const conversation = await storage.getConversation(conversationId);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== conversation.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const { closingSummaryService } = await import("./services/closingSummaryService");
+      const summary = await closingSummaryService.generateSummary(conversationId);
+
+      res.json({
+        success: !!summary,
+        summary,
+        message: summary ? "Resumen generado exitosamente" : "No se pudo generar el resumen"
+      });
+    } catch (error: any) {
+      console.error('[Lifecycle] Generate summary error:', error);
+      res.status(500).json({ error: "Failed to generate summary", details: error.message });
+    }
+  });
+
+  // PUT /api/conversations/:id/summary - Edit existing summary
+  app.put("/api/conversations/:id/summary", requireAuth, async (req, res) => {
+    try {
+      const conversationId = req.params.id;
+      const { summary, sentiment, intent, resolution } = req.body;
+      
+      const conversation = await storage.getConversation(conversationId);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== conversation.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const updated = await storage.updateClosingSummary(
+        conversationId,
+        summary || conversation.closingSummary || '',
+        sentiment || conversation.closingSentiment || 'neutral',
+        intent || conversation.closingIntent || '',
+        resolution || conversation.closingResolution || ''
+      );
+
+      res.json({
+        success: !!updated,
+        conversation: updated,
+        message: "Resumen actualizado"
+      });
+    } catch (error: any) {
+      console.error('[Lifecycle] Update summary error:', error);
+      res.status(500).json({ error: "Failed to update summary", details: error.message });
+    }
+  });
+
+  // POST /api/conversations/:id/assign - Assign conversation to user
+  app.post("/api/conversations/:id/assign", requireAuth, async (req, res) => {
+    try {
+      const conversationId = req.params.id;
+      const { userId } = req.body;
+      
+      const conversation = await storage.getConversation(conversationId);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== conversation.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const { conversationLifecycleService } = await import("./services/conversationLifecycleService");
+      const updated = userId 
+        ? await conversationLifecycleService.assignToUser(conversationId, userId)
+        : await conversationLifecycleService.unassign(conversationId);
+
+      res.json({
+        success: !!updated,
+        conversation: updated,
+        message: userId ? `Conversación asignada al usuario ${userId}` : "Conversación desasignada"
+      });
+    } catch (error: any) {
+      console.error('[Lifecycle] Assign error:', error);
+      res.status(500).json({ error: "Failed to assign conversation", details: error.message });
+    }
+  });
+
+  // GET /api/analytics/lifecycle - Get lifecycle metrics
+  app.get("/api/analytics/lifecycle", requireAuth, async (req, res) => {
+    try {
+      const brandId = (req.query.brandId as string) || req.user?.brandId;
+      const days = parseInt(req.query.days as string) || 30;
+
+      if (!brandId) {
+        return res.status(400).json({ error: "brandId is required" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const metrics = await storage.getLifecycleMetrics(brandId, days);
+      res.json(metrics);
+    } catch (error: any) {
+      console.error('[Analytics] Lifecycle metrics error:', error);
+      res.status(500).json({ error: "Failed to get metrics", details: error.message });
+    }
+  });
+
+  // GET /api/brands/:id/lifecycle-settings - Get brand lifecycle settings
+  app.get("/api/brands/:id/lifecycle-settings", requireAuth, filterByBrand('id'), async (req, res) => {
+    try {
+      const brandId = req.params.id;
+      let settings = await storage.getBrandLifecycleSettings(brandId);
+      
+      if (!settings) {
+        settings = await storage.upsertBrandLifecycleSettings({ brandId });
+      }
+      
+      res.json(settings);
+    } catch (error: any) {
+      console.error('[Lifecycle] Get settings error:', error);
+      res.status(500).json({ error: "Failed to get lifecycle settings", details: error.message });
+    }
+  });
+
+  // PUT /api/brands/:id/lifecycle-settings - Update brand lifecycle settings
+  app.put("/api/brands/:id/lifecycle-settings", requireAuth, filterByBrand('id'), async (req, res) => {
+    try {
+      const brandId = req.params.id;
+      const updates = req.body;
+
+      let settings = await storage.getBrandLifecycleSettings(brandId);
+      
+      if (!settings) {
+        settings = await storage.upsertBrandLifecycleSettings({ brandId, ...updates });
+      } else {
+        settings = await storage.updateBrandLifecycleSettings(brandId, updates);
+      }
+      
+      res.json({
+        success: !!settings,
+        settings,
+        message: "Configuración de ciclo de vida actualizada"
+      });
+    } catch (error: any) {
+      console.error('[Lifecycle] Update settings error:', error);
+      res.status(500).json({ error: "Failed to update lifecycle settings", details: error.message });
+    }
+  });
+
+  // POST /api/conversations/:id/analyze-message - Analyze incoming message for thank you detection
+  app.post("/api/conversations/:id/analyze-message", requireAuth, async (req, res) => {
+    try {
+      const { message } = req.body;
+      
+      if (!message) {
+        return res.status(400).json({ error: "message is required" });
+      }
+
+      const { thankYouDetector } = await import("./services/thankYouDetector");
+      const analysis = thankYouDetector.analyzeMessage(message);
+
+      res.json(analysis);
+    } catch (error: any) {
+      console.error('[Lifecycle] Message analysis error:', error);
+      res.status(500).json({ error: "Failed to analyze message", details: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
 
   websocketService.initialize(httpServer);

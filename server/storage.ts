@@ -1,6 +1,7 @@
 import { 
   brands, users, messages, socialPosts, conversations, socialAccounts, aiAgents, aiAgentAuditLog, conversationUserSummaries, aiModelPricing, notifications, playgroundTemplates,
   crmContacts, crmContactChannels, crmContactLimbo,
+  conversationStatusHistory, brandLifecycleSettings,
   type Brand, type InsertBrand, 
   type User, type InsertUser, 
   type Message, type InsertMessage, type UpdateMessage,
@@ -15,7 +16,10 @@ import {
   type PlaygroundTemplate, type InsertPlaygroundTemplate, type UpdatePlaygroundTemplate,
   type CrmContact, type InsertCrmContact, type UpdateCrmContact,
   type CrmContactChannel, type InsertCrmContactChannel, type UpdateCrmContactChannel,
-  type CrmContactLimbo, type InsertCrmContactLimbo, type UpdateCrmContactLimbo
+  type CrmContactLimbo, type InsertCrmContactLimbo, type UpdateCrmContactLimbo,
+  type ConversationStatusHistory, type InsertConversationStatusHistory,
+  type BrandLifecycleSettings, type InsertBrandLifecycleSettings, type UpdateBrandLifecycleSettings,
+  type ConversationStatus, type ClosedBy
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, isNull, gte, lte, sql } from "drizzle-orm";
@@ -210,6 +214,51 @@ export interface IStorage {
   
   // CRM Module - Custom Fields Batch Update
   updateCrmContactCustomFields(id: string, customFields: Record<string, any>): Promise<CrmContact | undefined>;
+  
+  // Conversation Lifecycle Module (PRD-LIFECYCLE)
+  // Status History
+  createConversationStatusHistory(entry: InsertConversationStatusHistory): Promise<ConversationStatusHistory>;
+  getConversationStatusHistory(conversationId: string): Promise<ConversationStatusHistory[]>;
+  
+  // Brand Lifecycle Settings
+  getBrandLifecycleSettings(brandId: string): Promise<BrandLifecycleSettings | undefined>;
+  upsertBrandLifecycleSettings(settings: InsertBrandLifecycleSettings): Promise<BrandLifecycleSettings>;
+  updateBrandLifecycleSettings(brandId: string, updates: UpdateBrandLifecycleSettings): Promise<BrandLifecycleSettings | undefined>;
+  
+  // Lifecycle Queries
+  getConversationsByStatus(brandId: string, status: ConversationStatus): Promise<Conversation[]>;
+  getSolvedConversationsReadyForClose(brandId: string, hoursInSolved: number): Promise<Conversation[]>;
+  getInactiveConversationsForAutoClose(brandId: string, inactivityHours: number): Promise<Conversation[]>;
+  updateConversationStatus(
+    conversationId: string, 
+    status: ConversationStatus, 
+    closedBy?: ClosedBy,
+    closedByUserId?: string
+  ): Promise<Conversation | undefined>;
+  updateConversationAiActive(conversationId: string, aiActive: boolean): Promise<Conversation | undefined>;
+  updateConversationAssignment(conversationId: string, userId: string | null): Promise<Conversation | undefined>;
+  setFirstResponseAt(conversationId: string): Promise<Conversation | undefined>;
+  updateLastCustomerMessageAt(conversationId: string): Promise<Conversation | undefined>;
+  incrementReopenCount(conversationId: string): Promise<Conversation | undefined>;
+  updateClosingSummary(
+    conversationId: string,
+    summary: string,
+    sentiment: string,
+    intent: string,
+    resolution: string
+  ): Promise<Conversation | undefined>;
+  
+  // Lifecycle Metrics
+  getLifecycleMetrics(brandId: string, days?: number): Promise<{
+    totalConversations: number;
+    byStatus: Record<string, number>;
+    avgResolutionTimeMinutes: number;
+    avgFirstResponseTimeMinutes: number;
+    reopenRate: number;
+    botResolutions: number;
+    agentResolutions: number;
+    autoResolutions: number;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2750,6 +2799,280 @@ export class DatabaseStorage implements IStorage {
       .where(eq(crmContacts.id, id))
       .returning();
     return updated || undefined;
+  }
+
+  // ============================================
+  // Conversation Lifecycle Module (PRD-LIFECYCLE)
+  // ============================================
+
+  async createConversationStatusHistory(entry: InsertConversationStatusHistory): Promise<ConversationStatusHistory> {
+    const [created] = await db
+      .insert(conversationStatusHistory)
+      .values(entry)
+      .returning();
+    return created;
+  }
+
+  async getConversationStatusHistory(conversationId: string): Promise<ConversationStatusHistory[]> {
+    return await db
+      .select()
+      .from(conversationStatusHistory)
+      .where(eq(conversationStatusHistory.conversationId, conversationId))
+      .orderBy(desc(conversationStatusHistory.createdAt));
+  }
+
+  async getBrandLifecycleSettings(brandId: string): Promise<BrandLifecycleSettings | undefined> {
+    const [settings] = await db
+      .select()
+      .from(brandLifecycleSettings)
+      .where(eq(brandLifecycleSettings.brandId, brandId));
+    return settings || undefined;
+  }
+
+  async upsertBrandLifecycleSettings(settings: InsertBrandLifecycleSettings): Promise<BrandLifecycleSettings> {
+    const existing = await this.getBrandLifecycleSettings(settings.brandId);
+    
+    if (existing) {
+      const [updated] = await db
+        .update(brandLifecycleSettings)
+        .set({
+          ...settings,
+          updatedAt: new Date(),
+        })
+        .where(eq(brandLifecycleSettings.brandId, settings.brandId))
+        .returning();
+      return updated;
+    }
+    
+    const [created] = await db
+      .insert(brandLifecycleSettings)
+      .values(settings)
+      .returning();
+    return created;
+  }
+
+  async updateBrandLifecycleSettings(brandId: string, updates: UpdateBrandLifecycleSettings): Promise<BrandLifecycleSettings | undefined> {
+    const [updated] = await db
+      .update(brandLifecycleSettings)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+      })
+      .where(eq(brandLifecycleSettings.brandId, brandId))
+      .returning();
+    return updated || undefined;
+  }
+
+  async getConversationsByStatus(brandId: string, status: ConversationStatus): Promise<Conversation[]> {
+    return await db
+      .select()
+      .from(conversations)
+      .where(and(
+        eq(conversations.brandId, brandId),
+        eq(conversations.status, status)
+      ))
+      .orderBy(desc(conversations.lastMessageAt));
+  }
+
+  async getSolvedConversationsReadyForClose(brandId: string, hoursInSolved: number): Promise<Conversation[]> {
+    const cutoffTime = new Date(Date.now() - hoursInSolved * 60 * 60 * 1000);
+    
+    return await db
+      .select()
+      .from(conversations)
+      .where(and(
+        eq(conversations.brandId, brandId),
+        eq(conversations.status, 'solved'),
+        lte(conversations.lastMessageAt, cutoffTime)
+      ))
+      .orderBy(conversations.lastMessageAt);
+  }
+
+  async getInactiveConversationsForAutoClose(brandId: string, inactivityHours: number): Promise<Conversation[]> {
+    const cutoffTime = new Date(Date.now() - inactivityHours * 60 * 60 * 1000);
+    
+    return await db
+      .select()
+      .from(conversations)
+      .where(and(
+        eq(conversations.brandId, brandId),
+        or(
+          eq(conversations.status, 'open'),
+          eq(conversations.status, 'pending')
+        ),
+        lte(conversations.lastMessageAt, cutoffTime)
+      ))
+      .orderBy(conversations.lastMessageAt);
+  }
+
+  async updateConversationStatus(
+    conversationId: string,
+    status: ConversationStatus,
+    closedBy?: ClosedBy,
+    closedByUserId?: string
+  ): Promise<Conversation | undefined> {
+    const updateData: Record<string, any> = { status };
+    
+    if (status === 'closed' || status === 'solved') {
+      updateData.closedAt = new Date();
+      if (closedBy) updateData.closedBy = closedBy;
+      if (closedByUserId) updateData.closedByUserId = closedByUserId;
+    }
+    
+    // Calculate resolution time if closing
+    if (status === 'closed' || status === 'solved') {
+      const conversation = await this.getConversation(conversationId);
+      if (conversation) {
+        const resolutionTimeMs = Date.now() - new Date(conversation.createdAt).getTime();
+        updateData.resolutionTimeMinutes = Math.round(resolutionTimeMs / (1000 * 60));
+      }
+    }
+    
+    const [updated] = await db
+      .update(conversations)
+      .set(updateData)
+      .where(eq(conversations.id, conversationId))
+      .returning();
+    return updated || undefined;
+  }
+
+  async updateConversationAiActive(conversationId: string, aiActive: boolean): Promise<Conversation | undefined> {
+    const [updated] = await db
+      .update(conversations)
+      .set({ aiActive })
+      .where(eq(conversations.id, conversationId))
+      .returning();
+    return updated || undefined;
+  }
+
+  async updateConversationAssignment(conversationId: string, userId: string | null): Promise<Conversation | undefined> {
+    const [updated] = await db
+      .update(conversations)
+      .set({
+        assignedToUserId: userId,
+        assignedAt: userId ? new Date() : null,
+        aiActive: !userId, // Disable AI when assigning to human
+      })
+      .where(eq(conversations.id, conversationId))
+      .returning();
+    return updated || undefined;
+  }
+
+  async setFirstResponseAt(conversationId: string): Promise<Conversation | undefined> {
+    const conversation = await this.getConversation(conversationId);
+    if (!conversation || conversation.firstResponseAt) return conversation;
+    
+    const [updated] = await db
+      .update(conversations)
+      .set({ firstResponseAt: new Date() })
+      .where(eq(conversations.id, conversationId))
+      .returning();
+    return updated || undefined;
+  }
+
+  async updateLastCustomerMessageAt(conversationId: string): Promise<Conversation | undefined> {
+    const [updated] = await db
+      .update(conversations)
+      .set({ lastCustomerMessageAt: new Date() })
+      .where(eq(conversations.id, conversationId))
+      .returning();
+    return updated || undefined;
+  }
+
+  async incrementReopenCount(conversationId: string): Promise<Conversation | undefined> {
+    const [updated] = await db
+      .update(conversations)
+      .set({
+        reopenCount: sql`COALESCE(${conversations.reopenCount}, 0) + 1`,
+      })
+      .where(eq(conversations.id, conversationId))
+      .returning();
+    return updated || undefined;
+  }
+
+  async updateClosingSummary(
+    conversationId: string,
+    summary: string,
+    sentiment: string,
+    intent: string,
+    resolution: string
+  ): Promise<Conversation | undefined> {
+    const [updated] = await db
+      .update(conversations)
+      .set({
+        closingSummary: summary,
+        closingSentiment: sentiment,
+        closingIntent: intent,
+        closingResolution: resolution,
+      })
+      .where(eq(conversations.id, conversationId))
+      .returning();
+    return updated || undefined;
+  }
+
+  async getLifecycleMetrics(brandId: string, days: number = 30): Promise<{
+    totalConversations: number;
+    byStatus: Record<string, number>;
+    avgResolutionTimeMinutes: number;
+    avgFirstResponseTimeMinutes: number;
+    reopenRate: number;
+    botResolutions: number;
+    agentResolutions: number;
+    autoResolutions: number;
+  }> {
+    const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    
+    const allConversations = await db
+      .select()
+      .from(conversations)
+      .where(and(
+        eq(conversations.brandId, brandId),
+        gte(conversations.createdAt, cutoffDate)
+      ));
+    
+    const byStatus: Record<string, number> = {};
+    let totalResolutionTime = 0;
+    let resolutionCount = 0;
+    let totalFirstResponseTime = 0;
+    let firstResponseCount = 0;
+    let reopenedCount = 0;
+    let botResolutions = 0;
+    let agentResolutions = 0;
+    let autoResolutions = 0;
+    
+    for (const conv of allConversations) {
+      byStatus[conv.status] = (byStatus[conv.status] || 0) + 1;
+      
+      if (conv.resolutionTimeMinutes) {
+        totalResolutionTime += conv.resolutionTimeMinutes;
+        resolutionCount++;
+      }
+      
+      if (conv.firstResponseAt) {
+        const firstResponseTime = new Date(conv.firstResponseAt).getTime() - new Date(conv.createdAt).getTime();
+        totalFirstResponseTime += firstResponseTime / (1000 * 60);
+        firstResponseCount++;
+      }
+      
+      if ((conv.reopenCount || 0) > 0) {
+        reopenedCount++;
+      }
+      
+      if (conv.closedBy === 'bot') botResolutions++;
+      else if (conv.closedBy === 'agent') agentResolutions++;
+      else if (conv.closedBy === 'auto') autoResolutions++;
+    }
+    
+    return {
+      totalConversations: allConversations.length,
+      byStatus,
+      avgResolutionTimeMinutes: resolutionCount > 0 ? totalResolutionTime / resolutionCount : 0,
+      avgFirstResponseTimeMinutes: firstResponseCount > 0 ? totalFirstResponseTime / firstResponseCount : 0,
+      reopenRate: allConversations.length > 0 ? (reopenedCount / allConversations.length) * 100 : 0,
+      botResolutions,
+      agentResolutions,
+      autoResolutions,
+    };
   }
 }
 
