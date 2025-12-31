@@ -183,17 +183,17 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
 
           {/* Sección: Tiempos de Espera */}
           <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
-            <h3 className="text-base font-semibold flex items-center gap-2 pb-2 border-b">
-              <Clock className="h-5 w-5 text-primary" />
+            <h3 className="text-sm font-medium flex items-center gap-2 pb-2 border-b">
+              <Clock className="h-4 w-4 text-muted-foreground" />
               Tiempos de Espera
             </h3>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Configura cuánto tiempo debe pasar sin actividad antes de enviar cada recordatorio.
             </p>
 
             <div className="space-y-3">
               <div className="space-y-2 p-4 bg-background border rounded-lg">
-                <Label htmlFor="delayHours1" className="font-medium">Primer recordatorio (horas)</Label>
+                <Label htmlFor="delayHours1" className="text-sm">Primer recordatorio (horas)</Label>
                 <Input
                   id="delayHours1"
                   type="number"
@@ -210,7 +210,7 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
               </div>
 
               <div className="space-y-2 p-4 bg-background border rounded-lg">
-                <Label htmlFor="delayHours2" className="font-medium">Segundo recordatorio (horas)</Label>
+                <Label htmlFor="delayHours2" className="text-sm">Segundo recordatorio (horas)</Label>
                 <Input
                   id="delayHours2"
                   type="number"
@@ -230,17 +230,17 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
 
           {/* Sección: Límites */}
           <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
-            <h3 className="text-base font-semibold flex items-center gap-2 pb-2 border-b">
-              <Settings className="h-5 w-5 text-primary" />
+            <h3 className="text-sm font-medium flex items-center gap-2 pb-2 border-b">
+              <Settings className="h-4 w-4 text-muted-foreground" />
               Límites
             </h3>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Define los límites de envío para controlar el volumen de recordatorios.
             </p>
 
             <div className="space-y-3">
               <div className="space-y-2 p-4 bg-background border rounded-lg">
-                <Label htmlFor="maxReminders" className="font-medium">Máximo de recordatorios por conversación</Label>
+                <Label htmlFor="maxReminders" className="text-sm">Máximo de recordatorios por conversación</Label>
                 <Input
                   id="maxReminders"
                   type="number"
@@ -257,7 +257,7 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
               </div>
 
               <div className="space-y-2 p-4 bg-background border rounded-lg">
-                <Label htmlFor="dailyBrandCap" className="font-medium">Límite diario por marca</Label>
+                <Label htmlFor="dailyBrandCap" className="text-sm">Límite diario por marca</Label>
                 <Input
                   id="dailyBrandCap"
                   type="number"
@@ -286,17 +286,17 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
 
           {/* Sección: Cierre Automático */}
           <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
-            <h3 className="text-base font-semibold flex items-center gap-2 pb-2 border-b">
-              <Zap className="h-5 w-5 text-primary" />
+            <h3 className="text-sm font-medium flex items-center gap-2 pb-2 border-b">
+              <Zap className="h-4 w-4 text-muted-foreground" />
               Cierre Automático
             </h3>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Configura el comportamiento de cierre automático para conversaciones sin respuesta.
             </p>
 
             <div className="flex items-center justify-between p-4 bg-background border rounded-lg">
               <div>
-                <Label htmlFor="autoCloseAfterMaxReminders" className="font-medium">
+                <Label htmlFor="autoCloseAfterMaxReminders" className="text-sm">
                   Cerrar tras agotar recordatorios
                 </Label>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -313,7 +313,7 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
 
             {formData.autoCloseAfterMaxReminders && (
               <div className="space-y-2 p-4 bg-background border rounded-lg">
-                <Label htmlFor="autoCloseDelayHours" className="font-medium">Horas antes de cerrar</Label>
+                <Label htmlFor="autoCloseDelayHours" className="text-sm">Horas antes de cerrar</Label>
                 <Input
                   id="autoCloseDelayHours"
                   type="number"
@@ -333,17 +333,17 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
 
           {/* Sección: Contenido del Mensaje */}
           <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
-            <h3 className="text-base font-semibold flex items-center gap-2 pb-2 border-b">
-              <Mail className="h-5 w-5 text-primary" />
+            <h3 className="text-sm font-medium flex items-center gap-2 pb-2 border-b">
+              <Mail className="h-4 w-4 text-muted-foreground" />
               Contenido del Mensaje
             </h3>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Elige cómo se generará el contenido de los recordatorios.
             </p>
 
             <div className="flex items-center justify-between p-4 bg-background border rounded-lg">
               <div>
-                <Label htmlFor="useAiContent" className="font-medium">Usar IA para generar contenido</Label>
+                <Label htmlFor="useAiContent" className="text-sm">Usar IA para generar contenido</Label>
                 <p className="text-xs text-muted-foreground mt-1">
                   La IA creará mensajes personalizados basados en el contexto de la conversación
                 </p>
@@ -358,7 +358,7 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
 
             {!formData.useAiContent && (
               <div className="space-y-2 p-4 bg-background border rounded-lg">
-                <Label htmlFor="templateText" className="font-medium">Plantilla de mensaje</Label>
+                <Label htmlFor="templateText" className="text-sm">Plantilla de mensaje</Label>
                 <Textarea
                   id="templateText"
                   placeholder="Hola {name}, queríamos saber si tienes alguna pregunta sobre {lastTopic}..."
@@ -421,8 +421,8 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-primary" />
-              <CardTitle>Métricas de Recordatorios</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-base font-semibold">Métricas de Recordatorios</CardTitle>
             </div>
             <Tabs value={analyticsTimeRange} onValueChange={(v) => setAnalyticsTimeRange(v as TimeRange)}>
               <TabsList className="h-8">
@@ -432,7 +432,7 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
               </TabsList>
             </Tabs>
           </div>
-          <CardDescription>
+          <CardDescription className="text-xs">
             Rendimiento y efectividad de los recordatorios automáticos
           </CardDescription>
         </CardHeader>
@@ -549,8 +549,8 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <History className="h-5 w-5 text-primary" />
-              <CardTitle>Historial de Recordatorios</CardTitle>
+              <History className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-base font-semibold">Historial de Recordatorios</CardTitle>
             </div>
             <Button
               variant="ghost"
@@ -562,7 +562,7 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
               <RefreshCw className={`h-4 w-4 ${eventsLoading ? 'animate-spin' : ''}`} />
             </Button>
           </div>
-          <CardDescription>
+          <CardDescription className="text-xs">
             Últimos recordatorios enviados y programados
           </CardDescription>
         </CardHeader>
