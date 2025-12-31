@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, jsonb, unique, integer, boolean, real, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, jsonb, unique, integer, boolean, real, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -983,6 +983,9 @@ export const reminderEvents = pgTable("reminder_events", {
   contactIdx: index("reminder_events_contact_idx").on(table.contactId),
   statusIdx: index("reminder_events_status_idx").on(table.status),
   scheduledAtIdx: index("reminder_events_scheduled_at_idx").on(table.scheduledAt),
+  uniqueScheduledReminder: uniqueIndex("reminder_events_unique_scheduled_idx")
+    .on(table.conversationId, table.reminderNumber)
+    .where(sql`status = 'scheduled'`),
 }));
 
 // Relations para Smart Follow-up

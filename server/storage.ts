@@ -277,6 +277,17 @@ export interface IStorage {
   updateReminderEventStatus(id: string, status: string, sentAt?: Date, errorMessage?: string): Promise<ReminderEvent | undefined>;
   getScheduledRemindersReady(brandId: string): Promise<ReminderEvent[]>;
   countRemindersSentToday(brandId: string): Promise<number>;
+  countRemindersScheduledAndSentToday(brandId: string): Promise<number>;
+  checkConversationEligibleForReminder(conversationId: string, maxReminders: number): Promise<{
+    eligible: boolean;
+    reason?: 'not_found' | 'already_scheduled' | 'opted_out' | 'max_reached' | 'closed';
+    currentReminderCount?: number;
+  }>;
+  
+  scheduleReminderAtomic(conversationId: string, event: InsertReminderEvent, newReminderStatus: ReminderStatus, maxReminders: number): Promise<{
+    status: 'scheduled' | 'max_reached' | 'already_scheduled' | 'opted_out' | 'not_found' | 'duplicate';
+    event?: ReminderEvent;
+  }>;
   
   // Conversation Reminder Updates
   updateConversationReminderStatus(conversationId: string, status: ReminderStatus, reminderCount?: number): Promise<Conversation | undefined>;
@@ -3233,6 +3244,147 @@ export class DatabaseStorage implements IStorage {
       ));
     
     return result[0]?.count || 0;
+  }
+
+  async countRemindersScheduledAndSentToday(brandId: string): Promise<number> {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(startOfDay);
+    endOfDay.setDate(endOfDay.getDate() + 1);
+    
+    const sentTodayResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(reminderEvents)
+      .where(and(
+        eq(reminderEvents.brandId, brandId),
+        eq(reminderEvents.status, 'sent'),
+        gte(reminderEvents.sentAt, startOfDay)
+      ));
+    
+    const scheduledTodayResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(reminderEvents)
+      .where(and(
+        eq(reminderEvents.brandId, brandId),
+        eq(reminderEvents.status, 'scheduled'),
+        gte(reminderEvents.scheduledAt, startOfDay),
+        sql`${reminderEvents.scheduledAt} < ${endOfDay}`
+      ));
+    
+    const sentToday = sentTodayResult[0]?.count || 0;
+    const scheduledToday = scheduledTodayResult[0]?.count || 0;
+    
+    return sentToday + scheduledToday;
+  }
+
+  async checkConversationEligibleForReminder(conversationId: string, maxReminders: number): Promise<{
+    eligible: boolean;
+    reason?: 'not_found' | 'already_scheduled' | 'opted_out' | 'max_reached' | 'closed';
+    currentReminderCount?: number;
+  }> {
+    const [conversation] = await db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.id, conversationId));
+    
+    if (!conversation) {
+      return { eligible: false, reason: 'not_found' };
+    }
+    
+    if (conversation.status === 'closed') {
+      return { eligible: false, reason: 'closed', currentReminderCount: conversation.reminderCount || 0 };
+    }
+    
+    if (conversation.reminderStatus === 'scheduled') {
+      return { eligible: false, reason: 'already_scheduled', currentReminderCount: conversation.reminderCount || 0 };
+    }
+    
+    if (conversation.reminderStatus === 'opted_out') {
+      return { eligible: false, reason: 'opted_out', currentReminderCount: conversation.reminderCount || 0 };
+    }
+    
+    if (conversation.reminderStatus === 'max_reached') {
+      return { eligible: false, reason: 'max_reached', currentReminderCount: conversation.reminderCount || 0 };
+    }
+    
+    const currentReminderCount = conversation.reminderCount || 0;
+    if (currentReminderCount >= maxReminders) {
+      return { eligible: false, reason: 'max_reached', currentReminderCount };
+    }
+    
+    return { eligible: true, currentReminderCount };
+  }
+
+  async scheduleReminderAtomic(
+    conversationId: string,
+    event: InsertReminderEvent,
+    newReminderStatus: ReminderStatus,
+    maxReminders: number
+  ): Promise<{
+    status: 'scheduled' | 'max_reached' | 'already_scheduled' | 'opted_out' | 'not_found' | 'duplicate';
+    event?: ReminderEvent;
+  }> {
+    try {
+      return await db.transaction(async (tx) => {
+        const [conversation] = await tx
+          .select()
+          .from(conversations)
+          .where(eq(conversations.id, conversationId));
+        
+        if (!conversation) {
+          return { status: 'not_found' };
+        }
+        
+        if (conversation.reminderStatus === 'scheduled') {
+          return { status: 'already_scheduled' };
+        }
+        
+        if (conversation.reminderStatus === 'opted_out') {
+          return { status: 'opted_out' };
+        }
+        
+        if (conversation.reminderStatus === 'max_reached') {
+          return { status: 'max_reached' };
+        }
+        
+        const currentReminderCount = conversation.reminderCount || 0;
+        
+        if (currentReminderCount >= maxReminders) {
+          await tx
+            .update(conversations)
+            .set({ reminderStatus: 'max_reached' })
+            .where(eq(conversations.id, conversationId));
+          return { status: 'max_reached' };
+        }
+        
+        const eventWithCorrectNumber = {
+          ...event,
+          reminderNumber: currentReminderCount + 1,
+        };
+        
+        const [createdEvent] = await tx
+          .insert(reminderEvents)
+          .values(eventWithCorrectNumber)
+          .returning();
+        
+        await tx
+          .update(conversations)
+          .set({
+            reminderStatus: newReminderStatus,
+            lastReminderAt: new Date(),
+            reminderCount: currentReminderCount + 1,
+          })
+          .where(eq(conversations.id, conversationId));
+        
+        return { status: 'scheduled', event: createdEvent };
+      });
+    } catch (error: any) {
+      if (error?.code === '23505' || error?.message?.includes('unique constraint')) {
+        console.log(`[Storage] Reminder already scheduled for conversation ${conversationId}, skipping`);
+        return { status: 'duplicate' };
+      }
+      throw error;
+    }
   }
 
   // Conversation Reminder Updates

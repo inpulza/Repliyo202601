@@ -30,7 +30,12 @@ The user interface includes an "Orchestration" tab for managing timing configura
 - **CRM Filters & Population Backfill:** Expanded filters for Limbo and Duplicates tabs and a script/API for populating the CRM from existing conversations.
 - **Sync Service Hardening:** Ensures robust comment capture in CRM with customer ID normalization and routing for nested replies.
 - **Conversation Lifecycle Management:** A state machine with five states (new, open, pending, solved, closed), AI-powered closing summaries, a `thankYouDetector.ts` service, and a `lifecycleScheduler.ts` for auto-closing conversations. AI agents cannot reopen closed conversations.
-- **Smart Customer Follow-up System:** (In Progress) Automated reminder system for inactive customers with planned database schema and service architecture for content generation and delivery.
+- **Smart Customer Follow-up System:** Automated reminder system for inactive customers covering both DMs and comments. Implements:
+  - Database: `reminder_rules` (per-brand config) and `reminder_events` (scheduled/sent reminders) tables with unique partial index for duplicate prevention.
+  - Storage: 14 CRUD methods including `checkConversationEligibleForReminder()` (precheck) and `scheduleReminderAtomic()` (transactional scheduling).
+  - ReminderService: Pre-check → AI generation → Atomic schedule workflow. Prevents AI quota waste by validating eligibility before expensive LLM calls.
+  - Defense layers: Eligibility query, pre-check, transaction checks, unique partial index, structured responses with terminal state tracking.
+  - Daily cap enforcement counting both scheduled + sent reminders to prevent over-scheduling.
 
 ### System Design Choices
 - **Multi-Tenant Architecture:** Data isolation per brand using `brandId`.
