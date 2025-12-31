@@ -1385,8 +1385,8 @@ export function Inbox() {
                              
                              <span className="text-gray-300 text-[10px] hidden md:inline">|</span>
 
-                             {/* Status Badge */}
-                             {(() => {
+                             {/* Status Badge - Only for DMs */}
+                             {activeConversation.type === 'dm' && (() => {
                                const statusConfig = getStatusConfig(activeConversation.status);
                                return (
                                  <span className={cn(
@@ -1485,47 +1485,51 @@ export function Inbox() {
                         <DropdownMenuItem onClick={() => setIsCRMOpen(!isCRMOpen)}>
                             {isCRMOpen ? "Hide CRM Panel" : "Show CRM Panel"}
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                            Change Status
-                        </DropdownMenuLabel>
-                        <DropdownMenuItem 
-                            onClick={() => handleUpdateConversationStatus('open')}
-                            disabled={activeConversation.status === 'closed' || activeConversation.status === 'open' || isUpdatingStatus}
-                            data-testid="action-status-open"
-                        >
-                            <span className="w-2 h-2 rounded-full bg-green-500 mr-2" />
-                            Mark as Open
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                            onClick={() => handleUpdateConversationStatus('pending')}
-                            disabled={activeConversation.status === 'closed' || activeConversation.status === 'pending' || isUpdatingStatus}
-                            data-testid="action-status-pending"
-                        >
-                            <span className="w-2 h-2 rounded-full bg-yellow-500 mr-2" />
-                            Mark as Pending
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                            onClick={() => handleUpdateConversationStatus('solved')}
-                            disabled={activeConversation.status === 'closed' || activeConversation.status === 'solved' || isUpdatingStatus}
-                            data-testid="action-status-solved"
-                        >
-                            <span className="w-2 h-2 rounded-full bg-purple-500 mr-2" />
-                            Mark as Solved
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                            onClick={handleGenerateSummary}
-                            disabled={activeConversation.status === 'new' || isGeneratingSummary}
-                            data-testid="action-generate-summary"
-                        >
-                            {isGeneratingSummary ? (
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            ) : (
-                              <Sparkles className="w-4 h-4 mr-2" />
-                            )}
-                            {activeConversation.closingSummary ? "Regenerate Summary" : "Generate AI Summary"}
-                        </DropdownMenuItem>
+                        {activeConversation.type === 'dm' && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                                Change Status
+                            </DropdownMenuLabel>
+                            <DropdownMenuItem 
+                                onClick={() => handleUpdateConversationStatus('open')}
+                                disabled={activeConversation.status === 'closed' || activeConversation.status === 'open' || isUpdatingStatus}
+                                data-testid="action-status-open"
+                            >
+                                <span className="w-2 h-2 rounded-full bg-green-500 mr-2" />
+                                Mark as Open
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                                onClick={() => handleUpdateConversationStatus('pending')}
+                                disabled={activeConversation.status === 'closed' || activeConversation.status === 'pending' || isUpdatingStatus}
+                                data-testid="action-status-pending"
+                            >
+                                <span className="w-2 h-2 rounded-full bg-yellow-500 mr-2" />
+                                Mark as Pending
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                                onClick={() => handleUpdateConversationStatus('solved')}
+                                disabled={activeConversation.status === 'closed' || activeConversation.status === 'solved' || isUpdatingStatus}
+                                data-testid="action-status-solved"
+                            >
+                                <span className="w-2 h-2 rounded-full bg-purple-500 mr-2" />
+                                Mark as Solved
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                                onClick={handleGenerateSummary}
+                                disabled={activeConversation.status === 'new' || isGeneratingSummary}
+                                data-testid="action-generate-summary"
+                            >
+                                {isGeneratingSummary ? (
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                ) : (
+                                  <Sparkles className="w-4 h-4 mr-2" />
+                                )}
+                                {activeConversation.closingSummary ? "Regenerate Summary" : "Generate AI Summary"}
+                            </DropdownMenuItem>
+                          </>
+                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem disabled>Mute Conversation</DropdownMenuItem>
                         <DropdownMenuItem disabled>Mark as Unread</DropdownMenuItem>
