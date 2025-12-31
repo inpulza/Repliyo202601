@@ -1040,3 +1040,58 @@ export type ReminderEvent = typeof reminderEvents.$inferSelect;
 // Types para reminder status
 export type ReminderStatus = 'none' | 'scheduled' | 'sent' | 'max_reached' | 'opted_out';
 export type ReminderEventStatus = 'scheduled' | 'sent' | 'failed' | 'cancelled';
+
+// ============================================
+// TIMELINE DE INTERACCIONES (CUSTOMER JOURNEY)
+// ============================================
+
+export const timelineEventTypeEnum = z.enum([
+  'first_contact',      // Primer mensaje del cliente
+  'message_inbound',    // Mensaje entrante del cliente
+  'message_outbound',   // Respuesta de la marca
+  'summary_generated',  // Resumen de conversación generado
+  'reminder_scheduled', // Reminder programado
+  'reminder_sent',      // Reminder enviado
+  'status_change',      // Cambio de estado de conversación
+  'ai_reply',           // Respuesta automática de IA
+  'opt_out',            // Cliente optó por no recibir reminders
+]);
+export type TimelineEventType = z.infer<typeof timelineEventTypeEnum>;
+
+export interface TimelineEvent {
+  id: string;
+  type: TimelineEventType;
+  timestamp: Date;
+  title: string;
+  description?: string;
+  metadata?: {
+    messageId?: string;
+    summaryId?: string;
+    reminderEventId?: string;
+    statusHistoryId?: string;
+    previousStatus?: string;
+    newStatus?: string;
+    reminderNumber?: number;
+    platform?: string;
+    direction?: string;
+    author?: string;
+    content?: string;
+    sentiment?: string;
+    intent?: string;
+  };
+}
+
+export interface ConversationTimeline {
+  conversationId: string;
+  customerName: string;
+  platform: string;
+  events: TimelineEvent[];
+  summary?: {
+    firstContactAt: Date;
+    lastActivityAt: Date;
+    totalMessages: number;
+    totalReminders: number;
+    currentStatus: string;
+    detectedIntent?: string;
+  };
+}

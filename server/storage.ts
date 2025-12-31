@@ -22,7 +22,8 @@ import {
   type BrandLifecycleSettings, type InsertBrandLifecycleSettings, type UpdateBrandLifecycleSettings,
   type ConversationStatus, type ClosedBy,
   type ReminderRules, type InsertReminderRules, type UpdateReminderRules,
-  type ReminderEvent, type InsertReminderEvent, type ReminderStatus
+  type ReminderEvent, type InsertReminderEvent, type ReminderStatus,
+  type ConversationTimeline, type TimelineEvent
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, isNull, isNotNull, gte, lte, sql, inArray, notInArray } from "drizzle-orm";
@@ -320,6 +321,9 @@ export interface IStorage {
     reason: string;
     count: number;
   }>>;
+  
+  // Customer Journey Timeline
+  getConversationTimeline(conversationId: string): Promise<import("@shared/schema").ConversationTimeline | null>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3749,6 +3753,194 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
     
     return failureReasons;
+  }
+
+  async getConversationTimeline(conversationId: string): Promise<ConversationTimeline | null> {
+    const conversation = await this.getConversation(conversationId);
+    if (!conversation) {
+      return null;
+    }
+
+    const events: TimelineEvent[] = [];
+
+    const allMessages = await db
+      .select()
+      .from(messages)
+      .where(eq(messages.conversationId, conversationId))
+      .orderBy(messages.timestamp);
+
+    const summaries = await db
+      .select()
+      .from(conversationUserSummaries)
+      .where(eq(conversationUserSummaries.conversationId, conversationId))
+      .orderBy(conversationUserSummaries.updatedAt);
+
+    const reminders = await db
+      .select()
+      .from(reminderEvents)
+      .where(eq(reminderEvents.conversationId, conversationId))
+      .orderBy(reminderEvents.createdAt);
+
+    const statusHistory = await db
+      .select()
+      .from(conversationStatusHistory)
+      .where(eq(conversationStatusHistory.conversationId, conversationId))
+      .orderBy(conversationStatusHistory.createdAt);
+
+    const toISOString = (date: Date | string | null | undefined): Date => {
+      if (!date) return new Date();
+      return date instanceof Date ? date : new Date(date);
+    };
+
+    let firstContactAdded = false;
+    for (const msg of allMessages) {
+      const isInbound = msg.direction === 'inbound';
+      const isAiReply = msg.source === 'repliyo' && msg.internalOrigin === 'ai';
+      
+      if (isInbound && !firstContactAdded) {
+        events.push({
+          id: `first_contact_${msg.id}`,
+          type: 'first_contact',
+          timestamp: toISOString(msg.timestamp),
+          title: 'Primer contacto',
+          description: msg.content?.substring(0, 150) || undefined,
+          metadata: {
+            messageId: msg.id,
+            platform: msg.platform,
+            author: msg.author,
+            content: msg.content || undefined,
+          }
+        });
+        firstContactAdded = true;
+      } else if (isAiReply) {
+        events.push({
+          id: `ai_reply_${msg.id}`,
+          type: 'ai_reply',
+          timestamp: toISOString(msg.timestamp),
+          title: 'Respuesta automática de IA',
+          description: msg.content?.substring(0, 150) || undefined,
+          metadata: {
+            messageId: msg.id,
+            direction: 'outbound',
+            content: msg.content || undefined,
+          }
+        });
+      } else if (isInbound) {
+        events.push({
+          id: `msg_in_${msg.id}`,
+          type: 'message_inbound',
+          timestamp: toISOString(msg.timestamp),
+          title: `Mensaje de ${msg.author}`,
+          description: msg.content?.substring(0, 150) || undefined,
+          metadata: {
+            messageId: msg.id,
+            author: msg.author,
+            content: msg.content || undefined,
+          }
+        });
+      } else {
+        events.push({
+          id: `msg_out_${msg.id}`,
+          type: 'message_outbound',
+          timestamp: toISOString(msg.timestamp),
+          title: 'Respuesta de la marca',
+          description: msg.content?.substring(0, 150) || undefined,
+          metadata: {
+            messageId: msg.id,
+            direction: 'outbound',
+            content: msg.content || undefined,
+          }
+        });
+      }
+    }
+
+    for (const summary of summaries) {
+      events.push({
+        id: `summary_${summary.id}`,
+        type: 'summary_generated',
+        timestamp: toISOString(summary.updatedAt),
+        title: 'Resumen de conversación generado',
+        description: summary.summary?.substring(0, 200) || undefined,
+        metadata: {
+          summaryId: summary.id,
+          author: summary.author,
+        }
+      });
+    }
+
+    for (const reminder of reminders) {
+      if (reminder.status === 'scheduled') {
+        events.push({
+          id: `reminder_scheduled_${reminder.id}`,
+          type: 'reminder_scheduled',
+          timestamp: toISOString(reminder.scheduledAt),
+          title: `Recordatorio #${reminder.reminderNumber} programado`,
+          metadata: {
+            reminderEventId: reminder.id,
+            reminderNumber: reminder.reminderNumber,
+          }
+        });
+      } else if (reminder.status === 'sent') {
+        events.push({
+          id: `reminder_sent_${reminder.id}`,
+          type: 'reminder_sent',
+          timestamp: toISOString(reminder.sentAt || reminder.createdAt),
+          title: `Recordatorio #${reminder.reminderNumber} enviado`,
+          description: reminder.content?.substring(0, 150) || undefined,
+          metadata: {
+            reminderEventId: reminder.id,
+            reminderNumber: reminder.reminderNumber,
+            content: reminder.content || undefined,
+          }
+        });
+      }
+    }
+
+    for (const status of statusHistory) {
+      events.push({
+        id: `status_${status.id}`,
+        type: 'status_change',
+        timestamp: toISOString(status.createdAt),
+        title: `Estado cambiado a ${status.newStatus}`,
+        description: status.reason || undefined,
+        metadata: {
+          statusHistoryId: status.id,
+          previousStatus: status.previousStatus || undefined,
+          newStatus: status.newStatus,
+        }
+      });
+    }
+
+    if (conversation.reminderStatus === 'opted_out') {
+      events.push({
+        id: `opt_out_${conversationId}`,
+        type: 'opt_out',
+        timestamp: toISOString(conversation.lastMessageAt),
+        title: 'Cliente optó por no recibir recordatorios',
+      });
+    }
+
+    events.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+    const inboundMessages = allMessages.filter(m => m.direction === 'inbound');
+    const firstMessage = allMessages[0];
+    const lastMessage = allMessages[allMessages.length - 1];
+    const lastSummary = summaries[summaries.length - 1];
+
+    return {
+      conversationId,
+      customerName: conversation.customerName || conversation.customerId,
+      platform: conversation.platform,
+      events,
+      summary: {
+        firstContactAt: toISOString(firstMessage?.timestamp || conversation.createdAt),
+        lastActivityAt: toISOString(lastMessage?.timestamp || conversation.lastMessageAt),
+        totalMessages: allMessages.length,
+        totalReminders: reminders.filter(r => r.status === 'sent').length,
+        currentStatus: conversation.status,
+        detectedIntent: conversation.closingIntent || lastSummary?.summary?.substring(0, 100) || undefined,
+      }
+    };
   }
 }
 

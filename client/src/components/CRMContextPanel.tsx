@@ -45,6 +45,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { api } from '@/lib/api';
 import type { Conversation, CrmContact, CrmContactChannel } from '@shared/schema';
+import { ConversationTimeline } from './ConversationTimeline';
 
 interface CRMContextPanelProps {
   crmContact?: CrmContact;
@@ -605,6 +606,24 @@ function CRMPanelContent({
                     Para reactivar, contacta al administrador
                   </p>
                 )}
+              </div>
+            </>
+          )}
+
+          {conversation && (
+            <>
+              <Separator />
+              
+              <div className="space-y-3" data-testid="section-customer-journey">
+                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                  <Clock className="h-3 w-3 text-indigo-500" />
+                  Customer Journey
+                </h4>
+                <ConversationTimeline 
+                  conversationId={conversation.id} 
+                  maxEvents={10}
+                  showSummary={true}
+                />
               </div>
             </>
           )}

@@ -273,6 +273,12 @@ export const api = {
       if (!res.ok) throw new Error('Failed to update conversation');
       return res.json();
     },
+
+    getTimeline: async (conversationId: string): Promise<{ success: boolean; timeline: import('@shared/schema').ConversationTimeline }> => {
+      const res = await fetch(`${API_BASE}/conversations/${conversationId}/timeline`);
+      if (!res.ok) throw new Error('Failed to fetch timeline');
+      return res.json();
+    },
   },
 
   aiAgent: {

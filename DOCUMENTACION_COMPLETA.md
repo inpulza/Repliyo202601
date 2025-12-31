@@ -6728,6 +6728,178 @@ const events = data?.events || [];
 
 ---
 
+## FASE 13: Timeline de Interacciones (Customer Journey)
+
+**Fecha de implementación:** Diciembre 2025
+
+**Objetivo:** Sistema de visualización cronológica de todos los puntos de contacto clave con cada cliente, diferente del historial de mensajes raw. Muestra un resumen del "Customer Journey" completo.
+
+### 1. Arquitectura
+
+El Timeline de Interacciones combina datos de múltiples fuentes:
+- **messages** - Mensajes de la conversación (primer contacto, respuestas IA, mensajes inbound/outbound)
+- **conversation_user_summaries** - Resúmenes generados por IA
+- **reminder_events** - Recordatorios programados y enviados
+- **conversationStatusHistory** - Cambios de estado de la conversación
+
+### 2. Tipos (shared/schema.ts)
+
+```typescript
+// Tipos de eventos del timeline
+export const timelineEventTypeEnum = pgEnum('timeline_event_type', [
+  'first_contact',      // Primer mensaje del cliente
+  'message_inbound',    // Mensajes entrantes
+  'message_outbound',   // Mensajes salientes de la marca
+  'ai_reply',           // Respuestas automáticas de IA
+  'reminder_scheduled', // Recordatorio programado
+  'reminder_sent',      // Recordatorio enviado
+  'status_change',      // Cambio de estado (open/solved/closed)
+  'summary_generated',  // Resumen de conversación generado
+  'opt_out',           // Cliente optó por no recibir recordatorios
+]);
+
+export type TimelineEventType = (typeof timelineEventTypeEnum.enumValues)[number];
+
+// Estructura de un evento del timeline
+export interface TimelineEvent {
+  id: string;
+  type: TimelineEventType;
+  timestamp: Date;
+  title: string;
+  description?: string;
+  metadata?: {
+    messageId?: string;
+    reminderEventId?: string;
+    summaryId?: string;
+    statusHistoryId?: string;
+    platform?: string;
+    author?: string;
+    direction?: string;
+    reminderNumber?: number;
+    previousStatus?: string;
+    newStatus?: string;
+    content?: string;
+  };
+}
+
+// Timeline completo de una conversación
+export interface ConversationTimeline {
+  conversationId: string;
+  customerName: string;
+  platform: string;
+  events: TimelineEvent[];
+  summary: {
+    firstContactAt: Date;
+    lastActivityAt: Date;
+    totalMessages: number;
+    totalReminders: number;
+    currentStatus: string;
+    detectedIntent?: string;
+  };
+}
+```
+
+### 3. Storage Method (server/storage.ts)
+
+```typescript
+// Interface
+getConversationTimeline(conversationId: string): Promise<ConversationTimeline | null>;
+
+// Implementación: Query agregadora que combina datos de 4 tablas
+// - Normaliza timestamps a Date consistentes
+// - Ordena eventos cronológicamente
+// - Incluye métricas resumidas en summary
+```
+
+### 4. API Endpoint (server/routes.ts)
+
+**Endpoint:** `GET /api/conversations/:id/timeline`
+
+```typescript
+// Response: { success: true, timeline: ConversationTimeline }
+// 404 si conversation no existe
+```
+
+### 5. API Client (client/src/lib/api.ts)
+
+```typescript
+conversations: {
+  getTimeline: async (conversationId: string) => {
+    const res = await fetch(`${API_BASE}/conversations/${conversationId}/timeline`);
+    if (!res.ok) throw new Error('Failed to fetch timeline');
+    return res.json();
+  },
+}
+```
+
+### 6. Componente React (ConversationTimeline.tsx)
+
+**Ubicación:** `client/src/components/ConversationTimeline.tsx`
+
+**Features:**
+- Visualización vertical con iconos por tipo de evento
+- Colores diferenciados por tipo de evento
+- Línea temporal conectando eventos
+- Panel de resumen con métricas clave
+- Límite configurable de eventos a mostrar
+- Loading state y manejo de errores
+
+**Props:**
+```typescript
+interface ConversationTimelineProps {
+  conversationId: string;
+  maxEvents?: number;        // Default: 15
+  showSummary?: boolean;     // Default: true
+}
+```
+
+**Iconos por tipo:**
+| Tipo | Icono | Color |
+|------|-------|-------|
+| first_contact | UserPlus | green |
+| message_inbound | MessageSquare | blue |
+| message_outbound | ArrowRight | indigo |
+| ai_reply | Bot | purple |
+| reminder_scheduled | Clock | amber |
+| reminder_sent | Bell | orange |
+| status_change | CheckCircle | teal |
+| summary_generated | FileText | gray |
+| opt_out | BellOff | red |
+
+### 7. Integración en CRMContextPanel
+
+**Nueva sección:** "Customer Journey" con icono Clock
+
+**Ubicación:** Entre "Recordatorios Automáticos" y "Historial de Mensajes"
+
+**Visibilidad:** Solo cuando hay una conversación activa
+
+```tsx
+{conversation && (
+  <div className="space-y-3" data-testid="section-customer-journey">
+    <h4>Customer Journey</h4>
+    <ConversationTimeline 
+      conversationId={conversation.id} 
+      maxEvents={10}
+      showSummary={true}
+    />
+  </div>
+)}
+```
+
+### 8. Data Test IDs
+
+| Elemento | data-testid |
+|----------|-------------|
+| Sección principal | section-customer-journey |
+| Container | conversation-timeline |
+| Evento individual | timeline-event-{id} |
+| Loading state | timeline-loading |
+| Error state | timeline-error |
+| Empty state | timeline-empty |
+
+---
+
 ### Referencias Generales del Proyecto
 
 - **Respond.io Official:** https://respond.io/

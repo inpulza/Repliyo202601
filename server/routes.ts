@@ -4033,6 +4033,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/conversations/:id/timeline - Get customer journey timeline
+  app.get("/api/conversations/:id/timeline", requireAuth, async (req, res) => {
+    try {
+      const conversationId = req.params.id;
+      const timeline = await storage.getConversationTimeline(conversationId);
+      if (!timeline) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      res.json({ success: true, timeline });
+    } catch (error: any) {
+      console.error('[Timeline] Get timeline error:', error);
+      res.status(500).json({ error: "Failed to get timeline", details: error.message });
+    }
+  });
+
   // GET /api/scheduler/status - Get scheduler status
   app.get("/api/scheduler/status", requireAuth, async (req, res) => {
     try {
