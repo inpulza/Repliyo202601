@@ -31,8 +31,9 @@ import {
   Play, Save, Loader2, Sparkles, Brain, BookOpen,
   Clock, AlertTriangle, CheckCircle, XCircle, Share2, Variable, Copy,
   ChevronDown, ChevronUp, Filter, RotateCcw, Eye, Info, Pencil, X,
-  FileText, Plus, Trash2, Tag, AtSign
+  FileText, Plus, Trash2, Tag, AtSign, Bell
 } from 'lucide-react';
+import { ReminderSettingsForm } from './ReminderSettingsForm';
 import { FaFacebook, FaInstagram, FaTwitter, FaTiktok, FaLinkedin, FaYoutube, FaGoogle } from 'react-icons/fa';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -533,6 +534,11 @@ export function AIAgentConfig() {
                 <History className="h-3.5 w-3.5 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">Historial</span>
                 <span className="sm:hidden">Hist</span>
+              </TabsTrigger>
+              <TabsTrigger value="reminders" className="gap-1.5 md:gap-2 data-[state=active]:bg-muted rounded-md px-2.5 md:px-3 text-xs md:text-sm" data-testid="tab-reminders">
+                <Bell className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Recordatorios</span>
+                <span className="sm:hidden">Rec</span>
               </TabsTrigger>
             </TabsList>
           </div>
@@ -1888,6 +1894,12 @@ export function AIAgentConfig() {
                     );
                   })}
                 </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="reminders" className="mt-0">
+              {activeClient?.id && (
+                <ReminderSettingsForm brandId={activeClient.id} />
               )}
             </TabsContent>
           </div>

@@ -6235,7 +6235,7 @@ export const insertReminderEventSchema = createInsertSchema(reminderEvents).omit
 | `server/storage.ts` | 14 métodos CRUD + pre-check + atomic scheduling |
 | `server/services/reminderService.ts` | ReminderService completo con optimizaciones |
 
-### 12.9 Fases del Sistema
+### 12.9 Resumen de Fases del Sistema
 
 | Fase | Estado | Descripción |
 |------|--------|-------------|
@@ -6246,9 +6246,170 @@ export const insertReminderEventSchema = createInsertSchema(reminderEvents).omit
 | Fase 5: UI Configuration | 🔄 Pendiente | Panel de configuración |
 | Fase 6: Analytics | 🔄 Pendiente | Métricas y dashboard |
 
-### 12.10 Scheduler Integration (Fase 3 - Completada 31 Dic 2025)
+---
 
-#### Integración con LifecycleScheduler
+## DETALLE DE FASES IMPLEMENTADAS
+
+### FASE 1: Database & Storage (Completada 30 Dic 2025)
+
+**Objetivo:** Crear el esquema de base de datos y capa de almacenamiento para el sistema de recordatorios.
+
+#### 1.1 Tablas Creadas
+
+| Tabla | Propósito |
+|-------|-----------|
+| `reminder_rules` | Configuración por marca (delays, caps, templates) |
+| `reminder_events` | Eventos individuales de recordatorio |
+| Campos en `conversations` | `reminderStatus`, `reminderCount`, `lastReminderAt` |
+
+#### 1.2 Schema reminder_rules
+```typescript
+{
+  id: uuid,
+  brandId: uuid (FK brands),
+  enabled: boolean (default false),
+  targetTypes: text[] (default ['dm', 'comment']),
+  maxReminders: integer (default 2),
+  reminderDelayHours: integer (default 24),      // Delay para reminder #1
+  reminder2DelayHours: integer (default 48),     // Delay para reminder #2
+  reminder3DelayHours: integer (null),           // Delay opcional para #3
+  dailyCap: integer (default 50),
+  useAiContent: boolean (default true),
+  templateContent: text (null),
+  excludeStatuses: text[] (default ['closed', 'solved']),
+  createdAt, updatedAt: timestamps
+}
+```
+
+#### 1.3 Schema reminder_events
+```typescript
+{
+  id: uuid,
+  brandId: uuid (FK brands),
+  conversationId: uuid (FK conversations),
+  contactId: uuid (FK crm_contacts, nullable),
+  status: 'scheduled' | 'sent' | 'cancelled' | 'failed',
+  scheduledAt: timestamp,
+  sentAt: timestamp (null),
+  content: text,
+  contentSource: 'ai' | 'template',
+  reminderNumber: integer (1, 2, 3),
+  deliveryChannel: 'dm' | 'comment',
+  errorMessage: text (null),
+  createdAt: timestamp
+}
+```
+
+#### 1.4 Índice Único Parcial (Prevención de Duplicados)
+```sql
+CREATE UNIQUE INDEX idx_reminder_events_unique_scheduled 
+ON reminder_events (conversation_id, reminder_number) 
+WHERE status = 'scheduled';
+```
+
+#### 1.5 Storage Methods (14 Métodos CRUD)
+
+| # | Método | Tipo | Descripción |
+|---|--------|------|-------------|
+| 1 | `getReminderRulesByBrand(brandId)` | READ | Obtiene configuración de reminders |
+| 2 | `createReminderRules(data)` | CREATE | Crea nueva configuración |
+| 3 | `updateReminderRules(brandId, data)` | UPDATE | Actualiza configuración existente |
+| 4 | `createReminderEvent(data)` | CREATE | Crea evento de reminder |
+| 5 | `getReminderEventById(id)` | READ | Obtiene evento por ID |
+| 6 | `getReminderEventsByConversation(convId)` | READ | Lista eventos por conversación |
+| 7 | `updateReminderEventStatus(id, status, sentAt, error)` | UPDATE | Actualiza estado del evento |
+| 8 | `getScheduledRemindersReady(brandId)` | READ | Obtiene reminders listos para enviar |
+| 9 | `countRemindersSentToday(brandId)` | READ | Cuenta reminders enviados hoy |
+| 10 | `countRemindersScheduledAndSentToday(brandId)` | READ | Cuenta scheduled + sent (daily cap) |
+| 11 | `checkConversationEligibleForReminder(convId, max)` | READ | Pre-check antes de AI |
+| 12 | `scheduleReminderAtomic(convId, event, status, max)` | CREATE | Scheduling transaccional |
+| 13 | `updateConversationReminderStatus(convId, status)` | UPDATE | Actualiza estado en conversación |
+| 14 | `getConversationsEligibleForReminder(brandId, delay, max, types)` | READ | Query de elegibilidad |
+
+---
+
+### FASE 2: ReminderService (Completada 30 Dic 2025)
+
+**Objetivo:** Implementar lógica de negocio con optimizaciones para evitar desperdicio de tokens LLM.
+
+#### 2.1 Métodos Principales del Servicio
+
+| Método | Propósito |
+|--------|-----------|
+| `scheduleRemindersForBrand(brandId)` | Orquesta el scheduling para una marca |
+| `scheduleReminder(conv, rules)` | Programa reminder individual |
+| `generateReminderContent(conv, num, rules)` | Genera contenido con AI |
+| `sendScheduledReminders(brandId)` | Envía reminders programados |
+| `sendReminder(reminder)` | Envía un reminder individual |
+| `optOutContact(contactId)` | Opt-out de reminders |
+
+#### 2.2 Flujo de Scheduling Optimizado
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   PRE-CHECK     │───▶│  AI GENERATION  │───▶│    ATOMIC       │
+│   (Barato)      │    │   (Costoso)     │    │   SCHEDULE      │
+│   DB Query      │    │   LLM Call      │    │   Transaction   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+        │                                              │
+        ▼                                              ▼
+  Si NO elegible:                               Transaction +
+  EXIT temprano                                 Unique Index
+  (NO llama a AI)
+```
+
+#### 2.3 Optimización: Pre-check Antes de AI
+**Problema:** AI generation consume tokens LLM costosos.
+**Solución:** `checkConversationEligibleForReminder()` verifica ANTES de llamar al LLM.
+
+```typescript
+// PASO 1: Pre-check (solo DB - barato)
+const precheck = await storage.checkConversationEligibleForReminder(convId, max);
+if (!precheck.eligible) {
+  return { scheduled: false, terminal: isTerminalState(precheck.reason) };
+}
+
+// PASO 2: Solo si pre-check OK → AI Generation (costoso)
+const content = await this.generateReminderContent(...);
+```
+
+#### 2.4 Respuestas Estructuradas
+```typescript
+// scheduleReminderAtomic retorna status detallado:
+type ScheduleResult = {
+  status: 'scheduled' | 'max_reached' | 'already_scheduled' | 
+          'opted_out' | 'not_found' | 'duplicate';
+  event?: ReminderEvent;
+};
+
+// Estados terminales (no re-intentar):
+const TERMINAL_STATES = ['max_reached', 'opted_out', 'not_found', 'closed'];
+```
+
+#### 2.5 Daily Cap Enforcement
+```typescript
+// Cuenta AMBOS para prevenir over-scheduling:
+const dailyCount = await storage.countRemindersScheduledAndSentToday(brandId);
+const remainingQuota = rules.dailyCap - dailyCount;
+if (remainingQuota <= 0) return { scheduled: 0, errors: ['Daily cap reached'] };
+```
+
+#### 2.6 Defense Layers (5 Capas de Protección)
+
+| Capa | Ubicación | Función |
+|------|-----------|---------|
+| 1 | Eligibility Query | Excluye estados terminales de la query inicial |
+| 2 | Pre-check | Valida antes de AI generation (ahorra tokens) |
+| 3 | Transaction | Re-verifica con datos frescos |
+| 4 | Unique Index | Constraint de DB previene duplicados |
+| 5 | Structured Response | Tracking de estados terminales |
+
+---
+
+### FASE 3: Scheduler Integration (Completada 31 Dic 2025)
+
+**Objetivo:** Integrar el ReminderService con el lifecycleScheduler existente y exponer APIs.
+
+#### 3.1 Integración con LifecycleScheduler
 ```typescript
 // server/services/lifecycleScheduler.ts
 class LifecycleScheduler {
@@ -6256,13 +6417,18 @@ class LifecycleScheduler {
   private readonly REMINDER_CHECK_INTERVAL_MS = 5 * 60 * 1000; // 5 minutos
 
   async start(): Promise<void> {
-    // Inicia intervalo para lifecycle (15 min) y reminders (5 min)
+    // Lifecycle tasks: cada 15 minutos
+    // Reminder tasks: cada 5 minutos
     await this.runReminderTasks();
-    this.reminderInterval = setInterval(() => this.runReminderTasks(), this.REMINDER_CHECK_INTERVAL_MS);
+    this.reminderInterval = setInterval(
+      () => this.runReminderTasks(), 
+      this.REMINDER_CHECK_INTERVAL_MS
+    );
   }
 
   private async runReminderTasks(): Promise<void> {
-    for (const brand of await storage.getActiveBrands()) {
+    const brands = await storage.getActiveBrands();
+    for (const brand of brands) {
       await reminderService.scheduleRemindersForBrand(brand.id);
       await reminderService.sendScheduledReminders(brand.id);
     }
@@ -6270,99 +6436,127 @@ class LifecycleScheduler {
 }
 ```
 
-#### Endpoints API Añadidos
-| Endpoint | Método | Descripción |
-|----------|--------|-------------|
-| `/api/brands/:id/reminder-rules` | GET | Obtener configuración de reminders |
-| `/api/brands/:id/reminder-rules` | POST | Crear/actualizar configuración (validación Zod) |
-| `/api/brands/:id/reminders/run` | POST | Trigger manual de scheduling y envío |
-| `/api/conversations/:id/reminder-events` | GET | Ver eventos de reminder de una conversación |
-| `/api/conversations/:id/reminder-opt-out` | POST | Opt-out de reminders |
-| `/api/scheduler/status` | GET | Ver estado del scheduler |
+#### 3.2 Endpoints API Añadidos
 
-#### Validación de Datos
+| Endpoint | Método | Auth | Descripción |
+|----------|--------|------|-------------|
+| `/api/brands/:id/reminder-rules` | GET | Admin | Obtener configuración |
+| `/api/brands/:id/reminder-rules` | POST | Admin | Crear/actualizar configuración |
+| `/api/brands/:id/reminders/run` | POST | Admin | Trigger manual scheduling + envío |
+| `/api/conversations/:id/reminder-events` | GET | Auth | Ver eventos de reminder |
+| `/api/conversations/:id/reminder-opt-out` | POST | Auth | Opt-out de reminders |
+| `/api/scheduler/status` | GET | Admin | Estado del scheduler |
+
+#### 3.3 Validación Zod para Configuración
 ```typescript
 // POST /api/brands/:id/reminder-rules
 const validatedData = updateReminderRulesSchema.parse(req.body);
-// Solo campos whitelistados llegan al storage
+// Schema valida: enabled, targetTypes, maxReminders, delays, dailyCap, etc.
 ```
 
-#### Matriz de Elegibilidad para Reminders
+#### 3.4 Matriz de Elegibilidad Completa
 
-| Reminder # | Condición de Tiempo | Condición de Actividad | Estados Excluidos |
-|------------|---------------------|------------------------|-------------------|
-| 1 (Stage 0) | COALESCE(lastMessageAt, lastCustomerMessageAt, createdAt) >= delayHours1 ago | Sin actividad (cliente O agente) dentro del período de delay | closed, scheduled, max_reached, opted_out |
-| 2+ (Stage N) | lastReminderAt >= delayHoursN ago | lastCustomerMessageAt <= lastReminderAt AND lastMessageAt <= lastReminderAt | closed, scheduled, max_reached, opted_out |
+| Reminder # | Condición de Tiempo | Condición de Actividad |
+|------------|---------------------|------------------------|
+| #1 (Stage 0) | `COALESCE(lastMessageAt, lastCustomerMessageAt, createdAt) >= delayHours1 ago` | Sin actividad de cliente NI agente |
+| #2+ (Stage N) | `lastReminderAt >= delayHoursN ago` | `lastCustomerMessageAt <= lastReminderAt AND lastMessageAt <= lastReminderAt` |
 
-**Nota sobre Stage 0:** El sistema verifica que NO haya ninguna actividad (ni del cliente ni del agente) dentro del período de delay antes de enviar el primer reminder. Esto previene el envío de reminders automáticos inmediatamente después de que un agente humano haya respondido.
+**Estados Excluidos:** closed, scheduled, max_reached, opted_out
 
-**Reglas de Cooldown:**
-- Cualquier mensaje del cliente → resetea elegibilidad (actualiza lastCustomerMessageAt)
-- Cualquier mensaje del agente → resetea elegibilidad (actualiza lastMessageAt)
-- Cambio a closed/solved → bloquea reminders permanentemente
-- Opt-out del contacto → bloquea reminders permanentemente
+#### 3.5 Reglas de Cooldown
+- Mensaje del cliente → resetea elegibilidad
+- Mensaje del agente → resetea elegibilidad
+- Cambio a closed/solved → bloquea permanentemente
+- Opt-out del contacto → bloquea permanentemente
 
-**Flujo de Eligibilidad:**
-```
-Reminder #1: 
-  ├─ Esperar delayHours1 desde último mensaje del cliente
-  └─ Enviar reminder → actualiza lastReminderAt, reminderCount++
+---
 
-Reminder #2:
-  ├─ Esperar delayHours2 desde lastReminderAt
-  ├─ Verificar: cliente no respondió desde reminder #1
-  ├─ Verificar: agente no respondió desde reminder #1
-  └─ Si ambas condiciones OK → enviar reminder #2
-```
+### FASE 4: Delivery via Metricool (Completada 31 Dic 2025)
 
-### 12.11 Delivery via Metricool (Fase 4 - Completada 31 Dic 2025)
+**Objetivo:** Enviar los recordatorios reales a través de la API de Metricool.
 
-#### Integración de Envío Real
+#### 4.1 Método sendReminder (Firma Actualizada)
 ```typescript
-// server/services/reminderService.ts - sendReminder()
-private async sendReminder(reminder: ReminderEvent): Promise<boolean> {
-  const metricoolService = new MetricoolService();
-  
-  if (deliveryChannel === 'dm' || deliveryChannel === 'conversation') {
-    sendResult = await metricoolService.replyToConversation({
-      provider: conversation.platform,
-      conversationId: conversation.threadExternalId,
-      recipient: conversation.customerId,
-      text: reminder.content,
-      blogId: brand.metricoolBlogId,
-    });
-  } else if (deliveryChannel === 'comment') {
-    sendResult = await metricoolService.replyToComment({
-      provider: conversation.platform,
-      objectId: conversation.objectExternalId,
-      text: reminder.content,
-      blogId: brand.metricoolBlogId,
-    });
+private async sendReminder(reminder: ReminderEvent): Promise<{ 
+  success: boolean; 
+  error?: string 
+}> {
+  // 1. Validar conversación existe y no está cerrada/opted-out
+  // 2. Obtener brand para metricoolBlogId
+  // 3. Validar identificadores requeridos
+  // 4. Enviar via Metricool
+  // 5. Persistir mensaje y actualizar estados
+}
+```
+
+#### 4.2 Flujo de Envío por Canal
+
+**Para DMs:**
+```typescript
+await metricoolService.replyToConversation({
+  provider: conversation.platform,
+  conversationId: conversation.threadExternalId,
+  recipient: conversation.customerId,
+  text: reminder.content,
+  blogId: brand.metricoolBlogId,
+});
+```
+
+**Para Comments:**
+```typescript
+await metricoolService.replyToComment({
+  provider: conversation.platform,
+  objectId: conversation.objectExternalId,
+  text: reminder.content,
+  blogId: brand.metricoolBlogId,
+});
+```
+
+#### 4.3 Manejo de Errores Robusto
+
+| Escenario | Acción |
+|-----------|--------|
+| Conversación no existe | Marcar 'failed', retornar error |
+| Conversación cerrada | Marcar 'cancelled', retornar error |
+| Contacto opted-out | Marcar 'cancelled', retornar error |
+| Identificadores faltantes | Marcar 'failed', retornar error |
+| Metricool falla | Marcar 'failed' con mensaje, retornar error |
+| DB falla después de Metricool éxito | Log error, marcar 'sent' (prevenir duplicados) |
+
+#### 4.4 Mensaje Creado en DB
+```typescript
+{
+  source: 'reminder_service',
+  internalOrigin: 'reminder',
+  direction: 'outbound',
+  status: 'sent',
+  metricoolId: sendResult.messageId,
+  rawData: {
+    isReminder: true,
+    reminderNumber: 1 | 2,
+    reminderEventId: reminder.id,
+    metricoolResponse: sendResult.rawResponse
   }
 }
 ```
 
-#### Flujo de Envío
-1. Verificar que la conversación existe y no está cerrada/opted-out
-2. Obtener brand para acceder a `metricoolBlogId`
-3. Determinar canal de entrega (dm/comment)
-4. Enviar via `replyToConversation` o `replyToComment`
-5. Si éxito: crear mensaje en DB, actualizar timestamps
-6. Si error: marcar reminder como 'failed' con razón
+#### 4.5 Timestamps Actualizados
+- `conversation.lastMessageAt` → sendTime
+- `conversation.lastReminderAt` → sendTime
+- `conversation.reminderStatus` → 'sent'
+- `reminderEvent.sentAt` → sendTime
+- `reminderEvent.status` → 'sent'
 
-#### Campos del Mensaje Creado
-| Campo | Valor |
-|-------|-------|
-| source | 'reminder_service' |
-| internalOrigin | 'reminder' |
-| metricoolId | ID retornado por Metricool |
-| rawData.isReminder | true |
-| rawData.reminderNumber | 1 o 2 |
-| rawData.reminderEventId | UUID del evento |
-
-#### Mejoras Pendientes para Iteraciones Futuras
-- **Default rules object**: Retornar objeto por defecto en GET cuando no existen reglas para la marca.
-- **Tests automatizados**: Casos de re-engagement después de reminder #1.
+#### 4.6 Métricas del Scheduler
+```typescript
+// sendScheduledReminders captura errores correctamente:
+const sendResult = await this.sendReminder(reminder);
+if (sendResult.success) {
+  result.sent++;
+} else if (sendResult.error) {
+  result.errors.push(`Reminder ${reminder.id}: ${sendResult.error}`);
+}
+```
 
 ---
 

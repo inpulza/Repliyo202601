@@ -1,4 +1,4 @@
-import type { Client, Message, Brand, Conversation, SocialPost, SocialAccount, AiAgent, AiAgentAuditLog, PlaygroundTemplate } from '@shared/schema';
+import type { Client, Message, Brand, Conversation, SocialPost, SocialAccount, AiAgent, AiAgentAuditLog, PlaygroundTemplate, ReminderRules, ReminderEvent } from '@shared/schema';
 import type { Platform, MessageType, Urgency, Intent, Sentiment, MessageStatus, CRMContact } from '@/lib/types';
 
 export type { SocialAccount };
@@ -658,6 +658,81 @@ export const api = {
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || 'Failed to update lifecycle settings');
+      }
+      return res.json();
+    },
+  },
+
+  reminders: {
+    getRules: async (brandId: string): Promise<ReminderRules | null> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/reminder-rules`);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to fetch reminder rules');
+      }
+      const data = await res.json();
+      return data.rules || null;
+    },
+
+    updateRules: async (brandId: string, rules: Partial<ReminderRules>): Promise<ReminderRules> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/reminder-rules`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rules),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to update reminder rules');
+      }
+      const data = await res.json();
+      return data.rules;
+    },
+
+    runManual: async (brandId: string): Promise<{ scheduled: number; sent: number; errors: string[] }> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/reminders/run`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to run reminders');
+      }
+      const data = await res.json();
+      return { scheduled: data.scheduled || 0, sent: data.sent || 0, errors: data.errors || [] };
+    },
+
+    getEventsByConversation: async (conversationId: string): Promise<ReminderEvent[]> => {
+      const res = await fetch(`${API_BASE}/conversations/${conversationId}/reminder-events`);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to fetch reminder events');
+      }
+      const data = await res.json();
+      return data.events || [];
+    },
+
+    getEventsByBrand: async (brandId: string, options?: { status?: string; limit?: number }): Promise<ReminderEvent[]> => {
+      const params = new URLSearchParams();
+      if (options?.status) params.append('status', options.status);
+      if (options?.limit) params.append('limit', options.limit.toString());
+      const url = `${API_BASE}/brands/${brandId}/reminder-events${params.toString() ? '?' + params.toString() : ''}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to fetch reminder events');
+      }
+      const data = await res.json();
+      return data.events || [];
+    },
+
+    optOutConversation: async (conversationId: string): Promise<{ success: boolean }> => {
+      const res = await fetch(`${API_BASE}/conversations/${conversationId}/reminder-opt-out`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to opt out');
       }
       return res.json();
     },

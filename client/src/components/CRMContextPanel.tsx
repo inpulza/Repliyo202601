@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useReminderOptOut } from '@/hooks/useReminderRules';
 import { 
   Mail, 
   Phone, 
@@ -11,7 +12,9 @@ import {
   Clock,
   User,
   ExternalLink,
-  ArrowRight
+  ArrowRight,
+  Bell,
+  BellOff
 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { Button } from "@/components/ui/button";
@@ -31,6 +34,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
   Drawer,
@@ -149,6 +153,10 @@ function CRMPanelContent({
     email: '',
     phone: '',
   });
+
+  const optOutMutation = useReminderOptOut(conversation?.id);
+  const isOptedOut = conversation?.reminderStatus === 'opted_out';
+  const hasReminders = conversation?.type === 'dm';
 
   React.useEffect(() => {
     if (conversation) {
@@ -557,6 +565,46 @@ function CRMPanelContent({
                     </div>
                   )}
                 </div>
+              </div>
+            </>
+          )}
+
+          {hasReminders && (
+            <>
+              <Separator />
+              <div className="space-y-3" data-testid="section-reminders">
+                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                  {isOptedOut ? <BellOff className="h-3 w-3 text-gray-400" /> : <Bell className="h-3 w-3 text-indigo-500" />}
+                  Recordatorios Automáticos
+                </h4>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900">
+                      {isOptedOut ? 'Desactivados' : 'Activos'}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {isOptedOut 
+                        ? 'No se enviarán recordatorios a esta conversación' 
+                        : 'El sistema puede enviar recordatorios de seguimiento'
+                      }
+                    </p>
+                  </div>
+                  <Switch
+                    checked={!isOptedOut}
+                    onCheckedChange={() => {
+                      if (!isOptedOut) {
+                        optOutMutation.mutate();
+                      }
+                    }}
+                    disabled={optOutMutation.isPending || isOptedOut}
+                    data-testid="switch-reminder-opt-out"
+                  />
+                </div>
+                {isOptedOut && (
+                  <p className="text-xs text-gray-400 text-center">
+                    Para reactivar, contacta al administrador
+                  </p>
+                )}
               </div>
             </>
           )}
