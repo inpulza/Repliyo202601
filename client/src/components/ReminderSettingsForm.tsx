@@ -7,7 +7,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from '@/hooks/use-toast';
 import { Badge } from "@/components/ui/badge";
@@ -133,7 +132,7 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
             Envía recordatorios personalizados a clientes inactivos para re-engancharlos en la conversación.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-8">
           {!formData.enabled && (
             <Alert>
               <Info className="h-4 w-4" />
@@ -143,17 +142,21 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
             </Alert>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" />
-                Canales de Aplicación
-              </h3>
-              
-              <div className="flex items-center justify-between p-3 border rounded-lg">
+          {/* Sección: Canales de Aplicación */}
+          <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
+            <h3 className="text-base font-semibold flex items-center gap-2 pb-2 border-b">
+              <MessageSquare className="h-5 w-5 text-primary" />
+              Canales de Aplicación
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Selecciona en qué tipos de conversaciones se enviarán los recordatorios automáticos.
+            </p>
+            
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-4 bg-background border rounded-lg">
                 <div>
-                  <Label htmlFor="applyToDms" className="font-normal">Mensajes Directos (DMs)</Label>
-                  <p className="text-xs text-muted-foreground">Enviar recordatorios en conversaciones de DM</p>
+                  <Label htmlFor="applyToDms" className="font-medium">Mensajes Directos (DMs)</Label>
+                  <p className="text-xs text-muted-foreground mt-1">Enviar recordatorios en conversaciones de DM</p>
                 </div>
                 <Switch
                   id="applyToDms"
@@ -163,10 +166,10 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
                 />
               </div>
 
-              <div className="flex items-center justify-between p-3 border rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-background border rounded-lg">
                 <div>
-                  <Label htmlFor="applyToComments" className="font-normal">Comentarios</Label>
-                  <p className="text-xs text-muted-foreground">Responder a comentarios sin respuesta</p>
+                  <Label htmlFor="applyToComments" className="font-medium">Comentarios</Label>
+                  <p className="text-xs text-muted-foreground mt-1">Responder a comentarios sin respuesta</p>
                 </div>
                 <Switch
                   id="applyToComments"
@@ -176,15 +179,21 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
                 />
               </div>
             </div>
+          </div>
 
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                Tiempos de Espera
-              </h3>
+          {/* Sección: Tiempos de Espera */}
+          <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
+            <h3 className="text-base font-semibold flex items-center gap-2 pb-2 border-b">
+              <Clock className="h-5 w-5 text-primary" />
+              Tiempos de Espera
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Configura cuánto tiempo debe pasar sin actividad antes de enviar cada recordatorio.
+            </p>
 
-              <div className="space-y-2">
-                <Label htmlFor="delayHours1">Primer recordatorio (horas)</Label>
+            <div className="space-y-3">
+              <div className="space-y-2 p-4 bg-background border rounded-lg">
+                <Label htmlFor="delayHours1" className="font-medium">Primer recordatorio (horas)</Label>
                 <Input
                   id="delayHours1"
                   type="number"
@@ -192,6 +201,7 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
                   max={168}
                   value={formData.delayHours1 || 24}
                   onChange={(e) => handleChange('delayHours1', parseInt(e.target.value) || 24)}
+                  className="w-full"
                   data-testid="input-delay-hours-1"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -199,8 +209,8 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="delayHours2">Segundo recordatorio (horas)</Label>
+              <div className="space-y-2 p-4 bg-background border rounded-lg">
+                <Label htmlFor="delayHours2" className="font-medium">Segundo recordatorio (horas)</Label>
                 <Input
                   id="delayHours2"
                   type="number"
@@ -208,6 +218,7 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
                   max={336}
                   value={formData.delayHours2 || 48}
                   onChange={(e) => handleChange('delayHours2', parseInt(e.target.value) || 48)}
+                  className="w-full"
                   data-testid="input-delay-hours-2"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -217,17 +228,19 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
             </div>
           </div>
 
-          <Separator />
+          {/* Sección: Límites */}
+          <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
+            <h3 className="text-base font-semibold flex items-center gap-2 pb-2 border-b">
+              <Settings className="h-5 w-5 text-primary" />
+              Límites
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Define los límites de envío para controlar el volumen de recordatorios.
+            </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium flex items-center gap-2">
-                <Settings className="h-4 w-4" />
-                Límites
-              </h3>
-
-              <div className="space-y-2">
-                <Label htmlFor="maxReminders">Máximo de recordatorios</Label>
+            <div className="space-y-3">
+              <div className="space-y-2 p-4 bg-background border rounded-lg">
+                <Label htmlFor="maxReminders" className="font-medium">Máximo de recordatorios por conversación</Label>
                 <Input
                   id="maxReminders"
                   type="number"
@@ -235,6 +248,7 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
                   max={3}
                   value={formData.maxReminders || 2}
                   onChange={(e) => handleChange('maxReminders', parseInt(e.target.value) || 2)}
+                  className="w-full"
                   data-testid="input-max-reminders"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -242,8 +256,8 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="dailyBrandCap">Límite diario por marca</Label>
+              <div className="space-y-2 p-4 bg-background border rounded-lg">
+                <Label htmlFor="dailyBrandCap" className="font-medium">Límite diario por marca</Label>
                 <Input
                   id="dailyBrandCap"
                   type="number"
@@ -251,6 +265,7 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
                   max={500}
                   value={formData.dailyBrandCap || 50}
                   onChange={(e) => handleChange('dailyBrandCap', parseInt(e.target.value) || 50)}
+                  className="w-full"
                   data-testid="input-daily-cap"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -259,61 +274,77 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
               </div>
             </div>
 
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium flex items-center gap-2">
-                <Zap className="h-4 w-4" />
-                Cierre Automático
-              </h3>
-
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <Label htmlFor="autoCloseAfterMaxReminders" className="font-normal">
-                    Cerrar tras agotar recordatorios
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Cerrar automáticamente conversaciones sin respuesta
-                  </p>
-                </div>
-                <Switch
-                  id="autoCloseAfterMaxReminders"
-                  checked={formData.autoCloseAfterMaxReminders || false}
-                  onCheckedChange={(checked) => handleChange('autoCloseAfterMaxReminders', checked)}
-                  data-testid="switch-auto-close"
-                />
-              </div>
-
-              {formData.autoCloseAfterMaxReminders && (
-                <div className="space-y-2">
-                  <Label htmlFor="autoCloseDelayHours">Horas antes de cerrar</Label>
-                  <Input
-                    id="autoCloseDelayHours"
-                    type="number"
-                    min={1}
-                    max={168}
-                    value={formData.autoCloseDelayHours || 48}
-                    onChange={(e) => handleChange('autoCloseDelayHours', parseInt(e.target.value) || 48)}
-                    data-testid="input-auto-close-delay"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Horas adicionales de espera después del último recordatorio
-                  </p>
-                </div>
-              )}
-            </div>
+            {formData.maxReminders === 1 && formData.delayHours2 && (
+              <Alert className="mt-2">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  Solo enviarás 1 recordatorio. El delay del segundo recordatorio no se utilizará.
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
 
-          <Separator />
+          {/* Sección: Cierre Automático */}
+          <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
+            <h3 className="text-base font-semibold flex items-center gap-2 pb-2 border-b">
+              <Zap className="h-5 w-5 text-primary" />
+              Cierre Automático
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Configura el comportamiento de cierre automático para conversaciones sin respuesta.
+            </p>
 
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium flex items-center gap-2">
-              <Mail className="h-4 w-4" />
+            <div className="flex items-center justify-between p-4 bg-background border rounded-lg">
+              <div>
+                <Label htmlFor="autoCloseAfterMaxReminders" className="font-medium">
+                  Cerrar tras agotar recordatorios
+                </Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Cerrar automáticamente conversaciones sin respuesta después de enviar todos los recordatorios
+                </p>
+              </div>
+              <Switch
+                id="autoCloseAfterMaxReminders"
+                checked={formData.autoCloseAfterMaxReminders || false}
+                onCheckedChange={(checked) => handleChange('autoCloseAfterMaxReminders', checked)}
+                data-testid="switch-auto-close"
+              />
+            </div>
+
+            {formData.autoCloseAfterMaxReminders && (
+              <div className="space-y-2 p-4 bg-background border rounded-lg">
+                <Label htmlFor="autoCloseDelayHours" className="font-medium">Horas antes de cerrar</Label>
+                <Input
+                  id="autoCloseDelayHours"
+                  type="number"
+                  min={1}
+                  max={168}
+                  value={formData.autoCloseDelayHours || 48}
+                  onChange={(e) => handleChange('autoCloseDelayHours', parseInt(e.target.value) || 48)}
+                  className="w-full"
+                  data-testid="input-auto-close-delay"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Horas adicionales de espera después del último recordatorio antes de cerrar
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Sección: Contenido del Mensaje */}
+          <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
+            <h3 className="text-base font-semibold flex items-center gap-2 pb-2 border-b">
+              <Mail className="h-5 w-5 text-primary" />
               Contenido del Mensaje
             </h3>
+            <p className="text-sm text-muted-foreground">
+              Elige cómo se generará el contenido de los recordatorios.
+            </p>
 
-            <div className="flex items-center justify-between p-3 border rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-background border rounded-lg">
               <div>
-                <Label htmlFor="useAiContent" className="font-normal">Usar IA para generar contenido</Label>
-                <p className="text-xs text-muted-foreground">
+                <Label htmlFor="useAiContent" className="font-medium">Usar IA para generar contenido</Label>
+                <p className="text-xs text-muted-foreground mt-1">
                   La IA creará mensajes personalizados basados en el contexto de la conversación
                 </p>
               </div>
@@ -326,14 +357,15 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
             </div>
 
             {!formData.useAiContent && (
-              <div className="space-y-2">
-                <Label htmlFor="templateText">Plantilla de mensaje</Label>
+              <div className="space-y-2 p-4 bg-background border rounded-lg">
+                <Label htmlFor="templateText" className="font-medium">Plantilla de mensaje</Label>
                 <Textarea
                   id="templateText"
                   placeholder="Hola {name}, queríamos saber si tienes alguna pregunta sobre {lastTopic}..."
                   value={formData.templateText || ''}
                   onChange={(e) => handleChange('templateText', e.target.value)}
                   rows={4}
+                  className="w-full"
                   data-testid="textarea-template"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -342,15 +374,6 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
               </div>
             )}
           </div>
-
-          {formData.maxReminders === 1 && formData.delayHours2 && (
-            <Alert>
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                Solo enviarás 1 recordatorio. El delay del segundo recordatorio no se utilizará.
-              </AlertDescription>
-            </Alert>
-          )}
         </CardContent>
       </Card>
 
@@ -569,7 +592,7 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1 truncate">
-                      {event.messageText ? event.messageText.substring(0, 60) + '...' : 'Sin mensaje'}
+                      {event.content ? event.content.substring(0, 60) + '...' : 'Sin mensaje'}
                     </p>
                   </div>
                   <div className="text-right text-xs text-muted-foreground whitespace-nowrap ml-4">
@@ -578,10 +601,10 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
                         <p>Enviado:</p>
                         <p>{format(new Date(event.sentAt), 'dd MMM HH:mm', { locale: es })}</p>
                       </div>
-                    ) : event.scheduledFor ? (
+                    ) : event.scheduledAt ? (
                       <div>
                         <p>Programado:</p>
-                        <p>{format(new Date(event.scheduledFor), 'dd MMM HH:mm', { locale: es })}</p>
+                        <p>{format(new Date(event.scheduledAt), 'dd MMM HH:mm', { locale: es })}</p>
                       </div>
                     ) : (
                       <p>{format(new Date(event.createdAt), 'dd MMM HH:mm', { locale: es })}</p>
