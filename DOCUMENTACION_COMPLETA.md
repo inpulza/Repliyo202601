@@ -6,8 +6,8 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 ## Estado Actual
 - **Fase Actual**: 🔄 FASE 12 EN PROGRESO - Smart Customer Follow-up System
 - **Última Actualización**: 31 de Diciembre 2025
-- **Sub-fases Completadas**: Fase 1-3 (Database, ReminderService, Scheduler Integration)
-- **Próxima Sub-fase**: Fase 4 (Delivery via Metricool)
+- **Sub-fases Completadas**: Fase 1-4 (Database, ReminderService, Scheduler Integration, Delivery via Metricool)
+- **Próxima Sub-fase**: Fase 5 (UI Configuration)
 - **Historial DMs**: 20 mensajes recientes + resumen persistente (500+ chars)
 - **Control @Mention**: ✅ Etiquetado automático desactivado por defecto, configurable por agente
 - **Login/Logout**: ✅ Completamente funcional (página de login creada, logout en sidebar)
@@ -6242,7 +6242,7 @@ export const insertReminderEventSchema = createInsertSchema(reminderEvents).omit
 | Fase 1: Database & Storage | ✅ Completada | Schema + 14 métodos CRUD |
 | Fase 2: ReminderService | ✅ Completada | Lógica de negocio + optimizaciones |
 | Fase 3: Scheduler Integration | ✅ Completada | Integrar con lifecycleScheduler |
-| Fase 4: Delivery & Sending | 🔄 Pendiente | Envío real via Metricool |
+| Fase 4: Delivery & Sending | ✅ Completada | Envío real via Metricool |
 | Fase 5: UI Configuration | 🔄 Pendiente | Panel de configuración |
 | Fase 6: Analytics | 🔄 Pendiente | Métricas y dashboard |
 
@@ -6314,6 +6314,51 @@ Reminder #2:
   ├─ Verificar: agente no respondió desde reminder #1
   └─ Si ambas condiciones OK → enviar reminder #2
 ```
+
+### 12.11 Delivery via Metricool (Fase 4 - Completada 31 Dic 2025)
+
+#### Integración de Envío Real
+```typescript
+// server/services/reminderService.ts - sendReminder()
+private async sendReminder(reminder: ReminderEvent): Promise<boolean> {
+  const metricoolService = new MetricoolService();
+  
+  if (deliveryChannel === 'dm' || deliveryChannel === 'conversation') {
+    sendResult = await metricoolService.replyToConversation({
+      provider: conversation.platform,
+      conversationId: conversation.threadExternalId,
+      recipient: conversation.customerId,
+      text: reminder.content,
+      blogId: brand.metricoolBlogId,
+    });
+  } else if (deliveryChannel === 'comment') {
+    sendResult = await metricoolService.replyToComment({
+      provider: conversation.platform,
+      objectId: conversation.objectExternalId,
+      text: reminder.content,
+      blogId: brand.metricoolBlogId,
+    });
+  }
+}
+```
+
+#### Flujo de Envío
+1. Verificar que la conversación existe y no está cerrada/opted-out
+2. Obtener brand para acceder a `metricoolBlogId`
+3. Determinar canal de entrega (dm/comment)
+4. Enviar via `replyToConversation` o `replyToComment`
+5. Si éxito: crear mensaje en DB, actualizar timestamps
+6. Si error: marcar reminder como 'failed' con razón
+
+#### Campos del Mensaje Creado
+| Campo | Valor |
+|-------|-------|
+| source | 'reminder_service' |
+| internalOrigin | 'reminder' |
+| metricoolId | ID retornado por Metricool |
+| rawData.isReminder | true |
+| rawData.reminderNumber | 1 o 2 |
+| rawData.reminderEventId | UUID del evento |
 
 #### Mejoras Pendientes para Iteraciones Futuras
 - **Default rules object**: Retornar objeto por defecto en GET cuando no existen reglas para la marca.

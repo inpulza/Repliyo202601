@@ -1,5 +1,6 @@
 import { storage } from "../storage";
 import { createLLMProvider } from "./llm/factory";
+import { MetricoolService } from "./metricool";
 import { 
   type Conversation, 
   type ReminderRules,
@@ -337,9 +338,11 @@ export class ReminderService implements IReminderService {
 
       for (const reminder of readyReminders) {
         try {
-          const success = await this.sendReminder(reminder);
-          if (success) {
+          const sendResult = await this.sendReminder(reminder);
+          if (sendResult.success) {
             result.sent++;
+          } else if (sendResult.error) {
+            result.errors.push(`Reminder ${reminder.id}: ${sendResult.error}`);
           }
         } catch (error) {
           const errMsg = `Failed to send reminder ${reminder.id}: ${error}`;
@@ -361,72 +364,154 @@ export class ReminderService implements IReminderService {
     return result;
   }
 
-  private async sendReminder(reminder: ReminderEvent): Promise<boolean> {
+  private async sendReminder(reminder: ReminderEvent): Promise<{ success: boolean; error?: string }> {
     if (!reminder.conversationId || !reminder.content) {
-      console.error(`[ReminderService] Invalid reminder data for ${reminder.id}`);
-      return false;
+      const error = 'Invalid reminder data';
+      console.error(`[ReminderService] ${error} for ${reminder.id}`);
+      return { success: false, error };
     }
 
     const conversation = await storage.getConversation(reminder.conversationId);
     if (!conversation) {
+      const error = 'Conversation not found';
       console.error(`[ReminderService] Conversation ${reminder.conversationId} not found`);
-      await storage.updateReminderEventStatus(reminder.id, 'failed', undefined, 'Conversation not found');
-      return false;
+      await storage.updateReminderEventStatus(reminder.id, 'failed', undefined, error);
+      return { success: false, error };
     }
 
     if (conversation.status === 'closed') {
+      const error = 'Conversation closed';
       console.log(`[ReminderService] Conversation ${conversation.id} is closed, cancelling reminder`);
-      await storage.updateReminderEventStatus(reminder.id, 'cancelled', undefined, 'Conversation closed');
-      return false;
+      await storage.updateReminderEventStatus(reminder.id, 'cancelled', undefined, error);
+      return { success: false, error };
     }
 
     if (conversation.reminderStatus === 'opted_out') {
+      const error = 'Contact opted out';
       console.log(`[ReminderService] Conversation ${conversation.id} is opted out, cancelling reminder`);
-      await storage.updateReminderEventStatus(reminder.id, 'cancelled', undefined, 'Contact opted out');
-      return false;
+      await storage.updateReminderEventStatus(reminder.id, 'cancelled', undefined, error);
+      return { success: false, error };
     }
 
-    const message = {
-      conversationId: conversation.id,
-      brandId: conversation.brandId,
-      platform: conversation.platform,
-      type: reminder.deliveryChannel || conversation.type || 'dm',
-      direction: 'outbound',
-      author: 'Sistema de Seguimiento',
-      authorAvatar: null,
-      content: reminder.content,
-      timestamp: new Date(),
-      status: 'sent',
-      source: 'reminder_service',
-      internalOrigin: 'reminder',
-      rawData: {
-        isReminder: true,
-        reminderNumber: reminder.reminderNumber,
-        reminderEventId: reminder.id,
-      },
-    };
-
-    await storage.createMessage(message);
-
-    await storage.updateReminderEventStatus(reminder.id, 'sent', new Date());
-
-    // Update conversation timestamps to reflect the actual send time
-    // Both lastMessageAt and lastReminderAt should be set to send time
-    // so that eligibility checks for future reminders work correctly
-    // (eligibility requires lastMessageAt <= lastReminderAt)
-    const sendTime = new Date();
-    await storage.updateConversation(conversation.id, {
-      lastMessageAt: sendTime,
-      lastReminderAt: sendTime,
-      reminderStatus: 'sent' as ReminderStatus,
-    });
-
-    if (conversation.contactId) {
-      await storage.updateContactReminderCount(conversation.contactId);
+    const brand = await storage.getBrand(conversation.brandId);
+    if (!brand) {
+      const error = 'Brand not found';
+      console.error(`[ReminderService] Brand ${conversation.brandId} not found`);
+      await storage.updateReminderEventStatus(reminder.id, 'failed', undefined, error);
+      return { success: false, error };
     }
 
-    console.log(`[ReminderService] Sent reminder ${reminder.reminderNumber} for conversation ${conversation.id}`);
-    return true;
+    const deliveryChannel = reminder.deliveryChannel || conversation.type || 'dm';
+
+    // Validate required identifiers before attempting Metricool send
+    if ((deliveryChannel === 'dm' || deliveryChannel === 'conversation') && 
+        (!conversation.threadExternalId || !conversation.customerId)) {
+      const error = 'Missing DM identifiers';
+      console.error(`[ReminderService] ${error} for ${reminder.id}`);
+      await storage.updateReminderEventStatus(reminder.id, 'failed', undefined, error);
+      return { success: false, error };
+    }
+    
+    if (deliveryChannel === 'comment' && !conversation.objectExternalId) {
+      const error = 'Missing comment identifiers';
+      console.error(`[ReminderService] ${error} for ${reminder.id}`);
+      await storage.updateReminderEventStatus(reminder.id, 'failed', undefined, error);
+      return { success: false, error };
+    }
+
+    // Send via Metricool
+    let sendResult: { success: boolean; messageId?: string; error?: string; rawResponse?: any };
+    
+    try {
+      const metricoolService = new MetricoolService();
+      
+      if (deliveryChannel === 'dm' || deliveryChannel === 'conversation') {
+        sendResult = await metricoolService.replyToConversation({
+          provider: conversation.platform,
+          conversationId: conversation.threadExternalId!,
+          recipient: conversation.customerId!,
+          text: reminder.content,
+          blogId: brand.metricoolBlogId || '',
+        });
+      } else if (deliveryChannel === 'comment') {
+        sendResult = await metricoolService.replyToComment({
+          provider: conversation.platform,
+          objectId: conversation.objectExternalId!,
+          text: reminder.content,
+          blogId: brand.metricoolBlogId || '',
+        });
+      } else {
+        const error = `Unsupported channel: ${deliveryChannel}`;
+        console.error(`[ReminderService] ${error}`);
+        await storage.updateReminderEventStatus(reminder.id, 'failed', undefined, error);
+        return { success: false, error };
+      }
+      
+      if (!sendResult.success) {
+        const error = sendResult.error || 'Metricool send failed';
+        console.error(`[ReminderService] Metricool send failed: ${error}`);
+        await storage.updateReminderEventStatus(reminder.id, 'failed', undefined, error);
+        return { success: false, error };
+      }
+    } catch (error) {
+      const errorMsg = String(error);
+      console.error(`[ReminderService] Error sending via Metricool:`, error);
+      await storage.updateReminderEventStatus(reminder.id, 'failed', undefined, errorMsg);
+      return { success: false, error: errorMsg };
+    }
+
+    // Message sent successfully via Metricool - persist to database
+    // If this fails, we log but still report success since message was delivered
+    try {
+      const sendTime = new Date();
+      
+      await storage.createMessage({
+        conversationId: conversation.id,
+        brandId: conversation.brandId,
+        platform: conversation.platform,
+        type: deliveryChannel,
+        direction: 'outbound',
+        author: brand.name,
+        authorAvatar: null,
+        content: reminder.content,
+        timestamp: sendTime,
+        status: 'sent',
+        source: 'reminder_service',
+        internalOrigin: 'reminder',
+        metricoolId: sendResult.messageId || null,
+        rawData: {
+          isReminder: true,
+          reminderNumber: reminder.reminderNumber,
+          reminderEventId: reminder.id,
+          metricoolResponse: sendResult.rawResponse,
+        },
+      });
+
+      await storage.updateReminderEventStatus(reminder.id, 'sent', sendTime);
+
+      await storage.updateConversation(conversation.id, {
+        lastMessageAt: sendTime,
+        lastReminderAt: sendTime,
+        reminderStatus: 'sent' as ReminderStatus,
+      });
+
+      if (conversation.contactId) {
+        await storage.updateContactReminderCount(conversation.contactId);
+      }
+    } catch (dbError) {
+      // Message was sent via Metricool but DB update failed
+      // Log the issue but don't return failure since customer received the message
+      console.error(`[ReminderService] DB update failed after Metricool send for ${reminder.id}:`, dbError);
+      // Still try to mark the reminder as sent to prevent duplicate sends
+      try {
+        await storage.updateReminderEventStatus(reminder.id, 'sent', new Date(), `DB error: ${dbError}`);
+      } catch (e) {
+        console.error(`[ReminderService] Failed to update reminder status after DB error:`, e);
+      }
+    }
+
+    console.log(`[ReminderService] Sent reminder ${reminder.reminderNumber} for conversation ${conversation.id} via Metricool`);
+    return { success: true };
   }
 
   async optOutContact(contactId: string): Promise<CrmContact | undefined> {
