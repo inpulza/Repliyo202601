@@ -59,6 +59,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from "@/lib/utils";
 import { FaInstagram, FaFacebook, FaTiktok, FaYoutube, FaTwitter, FaLinkedin } from 'react-icons/fa';
+import { ConversationTimeline } from '@/components/ConversationTimeline';
 
 interface CrmContact {
   id: string;
@@ -191,7 +192,7 @@ export function CRM() {
   const [isLimboDetailOpen, setIsLimboDetailOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'contacts' | 'limbo' | 'duplicates'>('contacts');
-  const [detailTab, setDetailTab] = useState<'profile' | 'history'>('profile');
+  const [detailTab, setDetailTab] = useState<'profile' | 'history' | 'journey'>('profile');
   const [isMergeOpen, setIsMergeOpen] = useState(false);
   const [selectedDuplicate, setSelectedDuplicate] = useState<DuplicatePair | null>(null);
   const [primarySelection, setPrimarySelection] = useState<'contact1' | 'contact2'>('contact1');
@@ -1233,6 +1234,19 @@ export function CRM() {
               >
                 <Clock className="h-3.5 w-3.5 inline mr-1.5" />
                 Historial
+              </button>
+              <button
+                onClick={() => setDetailTab('journey')}
+                className={cn(
+                  "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                  detailTab === 'journey' 
+                    ? "bg-white text-gray-900" 
+                    : "text-gray-600 hover:text-gray-900"
+                )}
+                data-testid="detail-tab-journey"
+              >
+                <History className="h-3.5 w-3.5 inline mr-1.5" />
+                Journey
               </button>
             </div>
             
