@@ -135,6 +135,25 @@ const getPlatformStyles = (platform: Platform) => {
     }
 };
 
+type ConversationStatus = 'new' | 'open' | 'pending' | 'solved' | 'closed';
+
+const getStatusConfig = (status: ConversationStatus | string | undefined | null) => {
+    switch (status) {
+        case 'new':
+            return { label: 'New', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: '●' };
+        case 'open':
+            return { label: 'Open', color: 'bg-green-100 text-green-700 border-green-200', icon: '●' };
+        case 'pending':
+            return { label: 'Pending', color: 'bg-yellow-100 text-yellow-700 border-yellow-200', icon: '●' };
+        case 'solved':
+            return { label: 'Solved', color: 'bg-purple-100 text-purple-700 border-purple-200', icon: '✓' };
+        case 'closed':
+            return { label: 'Closed', color: 'bg-gray-200 text-gray-600 border-gray-300', icon: '●' };
+        default:
+            return { label: 'Open', color: 'bg-green-100 text-green-700 border-green-200', icon: '●' };
+    }
+};
+
 interface SyncStatus {
   isRunning: boolean;
   isSyncing: boolean;
@@ -266,6 +285,62 @@ export function Inbox() {
   });
 
   const [isUpdatingSyncPause, setIsUpdatingSyncPause] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+
+  const handleGenerateSummary = async () => {
+    if (!activeConversation || isGeneratingSummary) return;
+    
+    setIsGeneratingSummary(true);
+    try {
+      await api.lifecycle.generateSummary(activeConversation.id);
+      queryClient.invalidateQueries({ queryKey: ['conversations', activeClientId] });
+      queryClient.invalidateQueries({ queryKey: ['conversationMessages', activeConversation.id] });
+      toast({
+        title: "Summary generated",
+        description: "AI has created a closing summary for this conversation.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error generating summary",
+        description: error.message || "Failed to generate summary",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
+
+  const handleUpdateConversationStatus = async (newStatus: ConversationStatus) => {
+    if (!activeConversation || isUpdatingStatus) return;
+    if (activeConversation.status === 'closed') {
+      toast({
+        title: "Cannot modify closed conversation",
+        description: "Closed conversations cannot be reopened or modified.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsUpdatingStatus(true);
+    try {
+      await api.lifecycle.updateStatus(activeConversation.id, newStatus);
+      queryClient.invalidateQueries({ queryKey: ['conversations', activeClientId] });
+      queryClient.invalidateQueries({ queryKey: ['conversationMessages', activeConversation.id] });
+      toast({
+        title: "Status updated",
+        description: `Conversation marked as ${newStatus}`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error updating status",
+        description: error.message || "Failed to update conversation status",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
 
   const handleToggleSyncPause = async () => {
     if (!activeClientId || isUpdatingSyncPause) return;
@@ -1310,8 +1385,22 @@ export function Inbox() {
                              
                              <span className="text-gray-300 text-[10px] hidden md:inline">|</span>
 
+                             {/* Status Badge */}
+                             {(() => {
+                               const statusConfig = getStatusConfig(activeConversation.status);
+                               return (
+                                 <span className={cn(
+                                   "text-[10px] font-medium px-1.5 py-0.5 rounded border",
+                                   statusConfig.color
+                                 )} data-testid="badge-conversation-status">
+                                   {statusConfig.label}
+                                 </span>
+                               );
+                             })()}
+
                              {/* Desktop Metadata */}
                              <div className="hidden md:flex items-center gap-2">
+                                <span className="text-gray-300 text-[10px]">|</span>
                                 <span className="text-xs text-muted-foreground">
                                    {activeConversation.type === 'dm' && 'Direct Message'}
                                    {activeConversation.type === 'comment' && 'Comment'}
@@ -1392,15 +1481,56 @@ export function Inbox() {
                             <MoreVertical className="h-5 w-5" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="w-48">
                         <DropdownMenuItem onClick={() => setIsCRMOpen(!isCRMOpen)}>
                             {isCRMOpen ? "Hide CRM Panel" : "Show CRM Panel"}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem>Mute Conversation</DropdownMenuItem>
-                        <DropdownMenuItem>Mark as Unread</DropdownMenuItem>
+                        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                            Change Status
+                        </DropdownMenuLabel>
+                        <DropdownMenuItem 
+                            onClick={() => handleUpdateConversationStatus('open')}
+                            disabled={activeConversation.status === 'closed' || activeConversation.status === 'open' || isUpdatingStatus}
+                            data-testid="action-status-open"
+                        >
+                            <span className="w-2 h-2 rounded-full bg-green-500 mr-2" />
+                            Mark as Open
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                            onClick={() => handleUpdateConversationStatus('pending')}
+                            disabled={activeConversation.status === 'closed' || activeConversation.status === 'pending' || isUpdatingStatus}
+                            data-testid="action-status-pending"
+                        >
+                            <span className="w-2 h-2 rounded-full bg-yellow-500 mr-2" />
+                            Mark as Pending
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                            onClick={() => handleUpdateConversationStatus('solved')}
+                            disabled={activeConversation.status === 'closed' || activeConversation.status === 'solved' || isUpdatingStatus}
+                            data-testid="action-status-solved"
+                        >
+                            <span className="w-2 h-2 rounded-full bg-purple-500 mr-2" />
+                            Mark as Solved
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-600">Block Contact</DropdownMenuItem>
+                        <DropdownMenuItem 
+                            onClick={handleGenerateSummary}
+                            disabled={activeConversation.status === 'new' || isGeneratingSummary}
+                            data-testid="action-generate-summary"
+                        >
+                            {isGeneratingSummary ? (
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                              <Sparkles className="w-4 h-4 mr-2" />
+                            )}
+                            {activeConversation.closingSummary ? "Regenerate Summary" : "Generate AI Summary"}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem disabled>Mute Conversation</DropdownMenuItem>
+                        <DropdownMenuItem disabled>Mark as Unread</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-red-600" disabled>Block Contact</DropdownMenuItem>
                     </DropdownMenuContent>
                  </DropdownMenu>
                  </div>

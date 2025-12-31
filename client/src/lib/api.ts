@@ -568,4 +568,98 @@ export const api = {
       return res.json();
     },
   },
+
+  lifecycle: {
+    updateStatus: async (conversationId: string, status: string, userId?: string): Promise<Conversation> => {
+      const res = await fetch(`${API_BASE}/conversations/${conversationId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, userId }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to update status');
+      }
+      return res.json();
+    },
+
+    generateSummary: async (conversationId: string): Promise<{ summary: string; sentiment: string; intent: string; resolution: string }> => {
+      const res = await fetch(`${API_BASE}/conversations/${conversationId}/generate-summary`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to generate summary');
+      }
+      return res.json();
+    },
+
+    updateSummary: async (conversationId: string, summary: { summary: string; sentiment: string; intent: string; resolution: string }): Promise<Conversation> => {
+      const res = await fetch(`${API_BASE}/conversations/${conversationId}/summary`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(summary),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to update summary');
+      }
+      return res.json();
+    },
+
+    assign: async (conversationId: string, userId: string): Promise<Conversation> => {
+      const res = await fetch(`${API_BASE}/conversations/${conversationId}/assign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to assign conversation');
+      }
+      return res.json();
+    },
+
+    unassign: async (conversationId: string): Promise<Conversation> => {
+      const res = await fetch(`${API_BASE}/conversations/${conversationId}/unassign`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to unassign conversation');
+      }
+      return res.json();
+    },
+
+    getAnalytics: async (brandId: string, days = 30): Promise<any> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/lifecycle/analytics?days=${days}`);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to fetch analytics');
+      }
+      return res.json();
+    },
+
+    getSettings: async (brandId: string): Promise<{ solvedToClosedHours: number; autoGenerateSummary: boolean }> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/lifecycle-settings`);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to fetch lifecycle settings');
+      }
+      return res.json();
+    },
+
+    updateSettings: async (brandId: string, settings: { solvedToClosedHours?: number; autoGenerateSummary?: boolean }): Promise<{ solvedToClosedHours: number; autoGenerateSummary: boolean }> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/lifecycle-settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to update lifecycle settings');
+      }
+      return res.json();
+    },
+  },
 };

@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useNexus } from '@/context/NexusContext';
 import { useForm } from 'react-hook-form';
+import { api } from '@/lib/api';
+import { toast } from 'sonner';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from "@/components/ui/button";
@@ -25,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Save, Bot, Zap, BookOpen, ArrowRight, Loader2, ChevronRight, User, MessageSquare } from 'lucide-react';
+import { Save, Bot, Zap, BookOpen, ArrowRight, Loader2, ChevronRight, User, MessageSquare, Clock, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
   MobilePageHeader,
@@ -414,6 +417,9 @@ export function AgentSettings() {
                 />
             </motion.div>
 
+            {/* Section 2.5: Conversation Lifecycle */}
+            <LifecycleSettingsSection brandId={activeClient.id} />
+
             {/* Section 3: Knowledge */}
             <motion.div 
                initial={{ opacity: 0, y: 20 }}
@@ -463,5 +469,126 @@ export function AgentSettings() {
         </Form>
       </div>
     </div>
+  );
+}
+
+function LifecycleSettingsSection({ brandId }: { brandId: string }) {
+  const queryClient = useQueryClient();
+  const [gracePeriod, setGracePeriod] = useState(24);
+  const [autoSummary, setAutoSummary] = useState(true);
+
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ['lifecycleSettings', brandId],
+    queryFn: () => api.lifecycle.getSettings(brandId),
+    enabled: !!brandId,
+  });
+
+  useEffect(() => {
+    if (settings) {
+      setGracePeriod(settings.solvedToClosedHours);
+      setAutoSummary(settings.autoGenerateSummary);
+    }
+  }, [settings]);
+
+  const mutation = useMutation({
+    mutationFn: (newSettings: { solvedToClosedHours?: number; autoGenerateSummary?: boolean }) =>
+      api.lifecycle.updateSettings(brandId, newSettings),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lifecycleSettings', brandId] });
+      toast.success('Lifecycle settings updated');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to update settings');
+    },
+  });
+
+  const handleGracePeriodChange = (value: string) => {
+    const hours = parseInt(value, 10);
+    setGracePeriod(hours);
+    mutation.mutate({ solvedToClosedHours: hours });
+  };
+
+  const handleAutoSummaryChange = (checked: boolean) => {
+    setAutoSummary(checked);
+    mutation.mutate({ autoGenerateSummary: checked });
+  };
+
+  if (isLoading) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.25 }}
+        className="space-y-6"
+      >
+        <div className="flex items-center gap-2 pb-2 border-b mt-8">
+          <Clock className="h-5 w-5 text-purple-500" />
+          <h2 className="font-semibold text-lg">Conversation Lifecycle</h2>
+        </div>
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+        </div>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: 0.25 }}
+      className="space-y-6"
+    >
+      <div className="flex items-center gap-2 pb-2 border-b mt-8">
+        <Clock className="h-5 w-5 text-purple-500" />
+        <h2 className="font-semibold text-lg">Conversation Lifecycle</h2>
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm bg-gray-50/50">
+          <div className="space-y-0.5">
+            <label className="text-base font-medium">Auto-Close Timer</label>
+            <p className="text-sm text-muted-foreground">
+              Hours after a conversation is marked "Solved" before it auto-closes permanently.
+            </p>
+          </div>
+          <Select 
+            value={gracePeriod.toString()} 
+            onValueChange={handleGracePeriodChange}
+            disabled={mutation.isPending}
+          >
+            <SelectTrigger className="w-32" data-testid="select-grace-period">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">1 hour</SelectItem>
+              <SelectItem value="6">6 hours</SelectItem>
+              <SelectItem value="12">12 hours</SelectItem>
+              <SelectItem value="24">24 hours</SelectItem>
+              <SelectItem value="48">48 hours</SelectItem>
+              <SelectItem value="72">72 hours</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm bg-gray-50/50">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-purple-500" />
+              <label className="text-base font-medium">AI Closing Summary</label>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Automatically generate an AI summary when marking conversations as Solved.
+            </p>
+          </div>
+          <Switch
+            checked={autoSummary}
+            onCheckedChange={handleAutoSummaryChange}
+            disabled={mutation.isPending}
+            data-testid="switch-auto-summary"
+          />
+        </div>
+      </div>
+    </motion.div>
   );
 }

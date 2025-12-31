@@ -502,6 +502,65 @@ function CRMPanelContent({
             </>
           )}
 
+          {conversation && (conversation.status === 'solved' || conversation.status === 'closed') && conversation.closingSummary && (
+            <>
+              <Separator />
+              <div className="space-y-3" data-testid="section-closing-summary">
+                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                  <span className={cn(
+                    "w-2 h-2 rounded-full",
+                    conversation.status === 'solved' ? "bg-purple-500" : "bg-gray-500"
+                  )} />
+                  Resumen de Cierre
+                </h4>
+                <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                  <p className="text-sm text-gray-700">{conversation.closingSummary}</p>
+                  
+                  {(conversation.closingSentiment || conversation.closingIntent || conversation.closingResolution) && (
+                    <div className="pt-2 border-t border-gray-200 space-y-1.5">
+                      {conversation.closingSentiment && (
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">Sentimiento</span>
+                          <span className={cn(
+                            "px-2 py-0.5 rounded font-medium",
+                            conversation.closingSentiment === 'positive' && "bg-green-100 text-green-700",
+                            conversation.closingSentiment === 'negative' && "bg-red-100 text-red-700",
+                            conversation.closingSentiment === 'neutral' && "bg-gray-100 text-gray-600"
+                          )}>
+                            {conversation.closingSentiment === 'positive' && 'Positivo'}
+                            {conversation.closingSentiment === 'negative' && 'Negativo'}
+                            {conversation.closingSentiment === 'neutral' && 'Neutral'}
+                          </span>
+                        </div>
+                      )}
+                      {conversation.closingIntent && (
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">Intención</span>
+                          <span className="text-gray-700 font-medium capitalize">{conversation.closingIntent}</span>
+                        </div>
+                      )}
+                      {conversation.closingResolution && (
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">Resolución</span>
+                          <span className={cn(
+                            "px-2 py-0.5 rounded font-medium",
+                            conversation.closingResolution === 'resolved' && "bg-green-100 text-green-700",
+                            conversation.closingResolution === 'unresolved' && "bg-red-100 text-red-700",
+                            conversation.closingResolution === 'escalated' && "bg-amber-100 text-amber-700"
+                          )}>
+                            {conversation.closingResolution === 'resolved' && 'Resuelto'}
+                            {conversation.closingResolution === 'unresolved' && 'Sin resolver'}
+                            {conversation.closingResolution === 'escalated' && 'Escalado'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
           <Separator />
           
           <div className="space-y-3">

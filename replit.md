@@ -61,13 +61,19 @@ The user interface includes a consolidated "Orchestration" tab for managing all 
     - **Warning Logs:** Added logs when fallback IDs are used, enabling monitoring of data quality issues
     - **Idempotent:** Uses Metricool message IDs for deduplication, safe to re-sync
 
-### Upcoming Features (Research Phase)
-- **Conversation Lifecycle Management (Dec 30, 2024 - Research):** Comprehensive research on "Smart AI Closing" functionality:
-    - **Knowledge Base:** `docs/knowledge-base/CONVERSATION_LIFECYCLE_MANAGEMENT.md`
-    - **Source PDF:** `docs/knowledge-base/Cierre_Perfecto_en_SaaS_B2B_1767113509977.pdf`
-    - **Scope:** Máquina de estados (Open/Pending/Solved/Closed), Smart AI Closing con resúmenes, lógica Anti-Zombie (detección de "Gracias"), métricas de cierre
-    - **Benchmarking:** Zendesk, Intercom (Fin AI), Front, HubSpot, Respond.io
-    - **Status:** Investigación completada, pendiente de implementación
+- **Conversation Lifecycle Management (Completed - Dec 31, 2024):** Full-featured conversation state machine with AI-powered closing summaries:
+    - **State Machine:** Five states (new, open, pending, solved, closed) with controlled transitions. Closed conversations are immutable - AI agents cannot reopen them.
+    - **Database Schema:** Added `status`, `closingSummary`, `closingSentiment`, `closingIntent`, `closingResolution`, `solvedAt`, `closedAt`, `closedBy`, `aiActive`, `lastAiReplyAt` fields to `conversations` table. New `conversation_status_history` and `brand_lifecycle_settings` tables for audit trail and brand-specific configuration.
+    - **Thank-You Detection:** `thankYouDetector.ts` service with 15-word limit, multilingual keyword matching (Spanish/English), 0.8+ confidence threshold. Detects closing messages to auto-mark as solved.
+    - **AI Closing Summaries:** `closingSummaryService.ts` generates structured summaries with sentiment, intent, resolution, topics, and action items using brand's LLM provider.
+    - **Lifecycle Scheduler:** `lifecycleScheduler.ts` runs every 15 minutes, auto-closes solved conversations after configurable grace period (default 24 hours).
+    - **Integration Points:** SyncService records customer messages and applies thank-you detection. AutoReplyService checks `aiActive` and `closed` status before responding.
+    - **API Endpoints:** `POST /api/conversations/:id/status`, `POST /api/conversations/:id/generate-summary`, `PUT /api/conversations/:id/summary`, `GET /api/brands/:id/lifecycle-settings`, `PUT /api/brands/:id/lifecycle-settings`, `GET /api/analytics/lifecycle`.
+    - **UI Components:**
+        - **Inbox:** Status badge with color-coded display, dropdown menu for status changes (Open/Pending/Solved), AI summary generation button
+        - **CRMContextPanel:** Closing summary display with sentiment indicator, intent, and resolution fields
+        - **AgentSettings:** Lifecycle settings section with auto-close timer (1-72 hours) and AI summary toggle
+    - **Critical Rule:** AI agents CANNOT reopen closed conversations (hard-coded prevention). Customer must start new conversation.
 
 ### System Design Choices
 - **Multi-Tenant Architecture:** Strong isolation of data per brand via `brandId` for CRM and AI configurations.

@@ -820,6 +820,9 @@ export const brandLifecycleSettings = pgTable("brand_lifecycle_settings", {
   // Periodo de gracia Solved → Closed
   solvedToClosedHours: integer("solved_to_closed_hours").default(24),
   
+  // Auto-generate AI summary when marking as Solved
+  autoGenerateSummary: boolean("auto_generate_summary").default(true),
+  
   // Anti-Zombie Settings
   thankYouDetectionEnabled: boolean("thank_you_detection_enabled").default(true),
   thankYouMaxWords: integer("thank_you_max_words").default(15),
