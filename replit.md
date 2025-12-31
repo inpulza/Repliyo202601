@@ -36,6 +36,11 @@ The user interface includes an "Orchestration" tab for managing timing configura
   - ReminderService: Pre-check → AI generation → Atomic schedule workflow. Prevents AI quota waste by validating eligibility before expensive LLM calls.
   - Defense layers: Eligibility query, pre-check, transaction checks, unique partial index, structured responses with terminal state tracking.
   - Daily cap enforcement counting both scheduled + sent reminders to prevent over-scheduling.
+- **Customer Journey Timeline:** Visualización cronológica de todos los puntos de contacto clave con cada cliente. Combina:
+  - Datos de: `messages`, `conversation_user_summaries`, `reminder_events`, `conversationStatusHistory`
+  - Tipos de eventos: primer contacto, mensajes in/out, respuestas IA, recordatorios, cambios de estado, resúmenes
+  - Endpoint: `GET /api/conversations/:id/timeline`
+  - UI: Componente `ConversationTimeline.tsx` integrado en `CRMContextPanel.tsx` como sección "Customer Journey"
 
 ### System Design Choices
 - **Multi-Tenant Architecture:** Data isolation per brand using `brandId`.
