@@ -1427,6 +1427,17 @@ export function CRM() {
                   )}
                 </div>
               )}
+
+              {/* Journey Tab */}
+              {detailTab === 'journey' && (
+                <div className="p-4">
+                  <ConversationTimeline 
+                    contactId={selectedContact.id}
+                    maxEvents={20}
+                    showSummary={true}
+                  />
+                </div>
+              )}
             </ScrollArea>
           </div>
         </div>
