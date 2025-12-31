@@ -66,13 +66,14 @@ The user interface includes a consolidated "Orchestration" tab for managing all 
     - **Database Schema:** Added `status`, `closingSummary`, `closingSentiment`, `closingIntent`, `closingResolution`, `solvedAt`, `closedAt`, `closedBy`, `aiActive`, `lastAiReplyAt` fields to `conversations` table. New `conversation_status_history` and `brand_lifecycle_settings` tables for audit trail and brand-specific configuration.
     - **Thank-You Detection:** `thankYouDetector.ts` service with 15-word limit, multilingual keyword matching (Spanish/English), 0.8+ confidence threshold. Detects closing messages to auto-mark as solved.
     - **AI Closing Summaries:** `closingSummaryService.ts` generates structured summaries with sentiment, intent, resolution, topics, and action items using brand's LLM provider.
-    - **Lifecycle Scheduler:** `lifecycleScheduler.ts` runs every 15 minutes, auto-closes solved conversations after configurable grace period (default 24 hours).
+    - **Lifecycle Scheduler:** `lifecycleScheduler.ts` runs every 15 minutes, auto-closes solved conversations after configurable grace period (default 24 hours, max 28 days per Zendesk pattern).
     - **Integration Points:** SyncService records customer messages and applies thank-you detection. AutoReplyService checks `aiActive` and `closed` status before responding.
     - **API Endpoints:** `POST /api/conversations/:id/status`, `POST /api/conversations/:id/generate-summary`, `PUT /api/conversations/:id/summary`, `GET /api/brands/:id/lifecycle-settings`, `PUT /api/brands/:id/lifecycle-settings`, `GET /api/analytics/lifecycle`.
     - **UI Components:**
         - **Inbox:** Status badge with color-coded display, dropdown menu for status changes (Open/Pending/Solved), AI summary generation button
         - **CRMContextPanel:** Closing summary display with sentiment indicator, intent, and resolution fields
-        - **AgentSettings:** Lifecycle settings section with auto-close timer (1-72 hours) and AI summary toggle
+        - **AgentSettings:** Lifecycle settings section with auto-close timer (1h-28 days), AI summary toggle, and CSAT survey toggle
+    - **CSAT Survey:** Schema and settings UI ready for CSAT survey collection post-close (channels "thank you" into actionable feedback). Full survey UI implementation pending.
     - **Critical Rule:** AI agents CANNOT reopen closed conversations (hard-coded prevention). Customer must start new conversation.
 
 ### System Design Choices

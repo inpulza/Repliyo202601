@@ -476,6 +476,7 @@ function LifecycleSettingsSection({ brandId }: { brandId: string }) {
   const queryClient = useQueryClient();
   const [gracePeriod, setGracePeriod] = useState(24);
   const [autoSummary, setAutoSummary] = useState(true);
+  const [csatEnabled, setCsatEnabled] = useState(false);
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ['lifecycleSettings', brandId],
@@ -487,11 +488,12 @@ function LifecycleSettingsSection({ brandId }: { brandId: string }) {
     if (settings) {
       setGracePeriod(settings.solvedToClosedHours);
       setAutoSummary(settings.autoGenerateSummary);
+      setCsatEnabled(settings.csatSurveyEnabled ?? false);
     }
   }, [settings]);
 
   const mutation = useMutation({
-    mutationFn: (newSettings: { solvedToClosedHours?: number; autoGenerateSummary?: boolean }) =>
+    mutationFn: (newSettings: { solvedToClosedHours?: number; autoGenerateSummary?: boolean; csatSurveyEnabled?: boolean }) =>
       api.lifecycle.updateSettings(brandId, newSettings),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lifecycleSettings', brandId] });
@@ -511,6 +513,11 @@ function LifecycleSettingsSection({ brandId }: { brandId: string }) {
   const handleAutoSummaryChange = (checked: boolean) => {
     setAutoSummary(checked);
     mutation.mutate({ autoGenerateSummary: checked });
+  };
+
+  const handleCsatChange = (checked: boolean) => {
+    setCsatEnabled(checked);
+    mutation.mutate({ csatSurveyEnabled: checked });
   };
 
   if (isLoading) {
@@ -549,7 +556,7 @@ function LifecycleSettingsSection({ brandId }: { brandId: string }) {
           <div className="space-y-0.5">
             <label className="text-base font-medium">Auto-Close Timer</label>
             <p className="text-sm text-muted-foreground">
-              Hours after a conversation is marked "Solved" before it auto-closes permanently.
+              Time after a conversation is marked "Solved" before it auto-closes permanently (max 28 days).
             </p>
           </div>
           <Select 
@@ -557,16 +564,21 @@ function LifecycleSettingsSection({ brandId }: { brandId: string }) {
             onValueChange={handleGracePeriodChange}
             disabled={mutation.isPending}
           >
-            <SelectTrigger className="w-32" data-testid="select-grace-period">
+            <SelectTrigger className="w-36" data-testid="select-grace-period">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="1">1 hour</SelectItem>
               <SelectItem value="6">6 hours</SelectItem>
               <SelectItem value="12">12 hours</SelectItem>
-              <SelectItem value="24">24 hours</SelectItem>
-              <SelectItem value="48">48 hours</SelectItem>
-              <SelectItem value="72">72 hours</SelectItem>
+              <SelectItem value="24">1 day</SelectItem>
+              <SelectItem value="48">2 days</SelectItem>
+              <SelectItem value="72">3 days</SelectItem>
+              <SelectItem value="96">4 days</SelectItem>
+              <SelectItem value="168">7 days</SelectItem>
+              <SelectItem value="336">14 days</SelectItem>
+              <SelectItem value="504">21 days</SelectItem>
+              <SelectItem value="672">28 days</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -586,6 +598,24 @@ function LifecycleSettingsSection({ brandId }: { brandId: string }) {
             onCheckedChange={handleAutoSummaryChange}
             disabled={mutation.isPending}
             data-testid="switch-auto-summary"
+          />
+        </div>
+
+        <div className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm bg-gray-50/50">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-green-500" />
+              <label className="text-base font-medium">CSAT Survey</label>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Send a satisfaction survey after conversations are closed. Channels "thank you" messages into actionable feedback.
+            </p>
+          </div>
+          <Switch
+            checked={csatEnabled}
+            onCheckedChange={handleCsatChange}
+            disabled={mutation.isPending}
+            data-testid="switch-csat-survey"
           />
         </div>
       </div>

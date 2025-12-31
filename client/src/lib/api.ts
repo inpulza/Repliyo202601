@@ -640,7 +640,7 @@ export const api = {
       return res.json();
     },
 
-    getSettings: async (brandId: string): Promise<{ solvedToClosedHours: number; autoGenerateSummary: boolean }> => {
+    getSettings: async (brandId: string): Promise<{ solvedToClosedHours: number; autoGenerateSummary: boolean; csatSurveyEnabled: boolean }> => {
       const res = await fetch(`${API_BASE}/brands/${brandId}/lifecycle-settings`);
       if (!res.ok) {
         const error = await res.json();
@@ -649,7 +649,7 @@ export const api = {
       return res.json();
     },
 
-    updateSettings: async (brandId: string, settings: { solvedToClosedHours?: number; autoGenerateSummary?: boolean }): Promise<{ solvedToClosedHours: number; autoGenerateSummary: boolean }> => {
+    updateSettings: async (brandId: string, settings: { solvedToClosedHours?: number; autoGenerateSummary?: boolean; csatSurveyEnabled?: boolean }): Promise<{ solvedToClosedHours: number; autoGenerateSummary: boolean; csatSurveyEnabled: boolean }> => {
       const res = await fetch(`${API_BASE}/brands/${brandId}/lifecycle-settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
