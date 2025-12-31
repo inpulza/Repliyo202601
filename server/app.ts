@@ -3,6 +3,7 @@ import { type Server } from "node:http";
 import express, { type Express, type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { syncService } from "./services/syncService";
+import { lifecycleScheduler } from "./services/lifecycleScheduler";
 import { sessionMiddleware } from "./sessionStore";
 
 export function log(message: string, source = "express") {
@@ -105,6 +106,10 @@ export default async function runApp(
     
     syncService.start().catch(err => {
       log(`[SyncService] Failed to start: ${err.message}`, "sync");
+    });
+    
+    lifecycleScheduler.start().catch(err => {
+      log(`[LifecycleScheduler] Failed to start: ${err.message}`, "sync");
     });
   });
 }

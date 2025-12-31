@@ -148,6 +148,18 @@ class AutoReplyService {
         return { success: false, skippedReason: `mode_${agent.autoReplyMode}` };
       }
 
+      // LIFECYCLE: Check if AI is disabled for this conversation (human agent handoff)
+      if (conversation.aiActive === false) {
+        log(`${logPrefix} AI disabled for conversation ${conversation.id} (assigned to human agent), skipping auto-reply`, "sync");
+        return { success: false, skippedReason: "ai_disabled_handoff" };
+      }
+
+      // LIFECYCLE: Skip AI reply for closed conversations
+      if (conversation.status === 'closed') {
+        log(`${logPrefix} Conversation ${conversation.id} is closed, skipping auto-reply`, "sync");
+        return { success: false, skippedReason: "conversation_closed" };
+      }
+
       // Normalize and validate platform
       const normalizedProvider = normalizeProvider(message.platform);
       const cooldownResult = this.checkCooldown(agent, conversation, normalizedProvider || undefined);

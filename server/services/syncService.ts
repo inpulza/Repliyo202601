@@ -6,6 +6,8 @@ import { transcriptionService } from "./transcriptionService";
 import { crmTrafficController } from "./crmTrafficController";
 import { contactEnrichmentService } from "./contactEnrichmentService";
 import { llmEnrichmentService } from "./llmEnrichmentService";
+import { conversationLifecycleService } from "./conversationLifecycleService";
+import { thankYouDetector } from "./thankYouDetector";
 import { log } from "../app";
 
 interface BrandSyncResult {
@@ -365,7 +367,7 @@ class SyncService {
                 void llmEnrichmentService.processInboundMessage(
                   crmResult.contactId,
                   content,
-                  brand.id
+                  brandId
                 ).catch(err => log(`[SyncService] LLM Enrichment error: ${err.message}`, "sync"));
               }
             } catch (crmError: any) {
@@ -375,6 +377,24 @@ class SyncService {
           
           if (isReallyNew && isInbound) {
             newInboundCount++; // Increment counter for truly new inbound messages
+            
+            // LIFECYCLE INTEGRATION: Record customer message and handle status transitions
+            void conversationLifecycleService.recordCustomerMessage(conversationRecord.id)
+              .catch(err => log(`[SyncService] Lifecycle recordCustomerMessage error: ${err.message}`, "sync"));
+            
+            // LIFECYCLE: Check if solved conversation should reopen or stay solved (thank-you detection)
+            if (conversationRecord.status === 'solved') {
+              const messageAnalysis = thankYouDetector.analyzeMessage(content);
+              const shouldReopen = conversationLifecycleService.shouldReopenOnMessage(conversationRecord, messageAnalysis);
+              
+              if (shouldReopen) {
+                log(`[SyncService] Reopening solved conversation ${conversationRecord.id} - new request detected`, "sync");
+                void conversationLifecycleService.reopenConversation(conversationRecord.id, 'Customer sent new message')
+                  .catch(err => log(`[SyncService] Lifecycle reopen error: ${err.message}`, "sync"));
+              } else {
+                log(`[SyncService] Keeping conversation ${conversationRecord.id} solved - thank you message detected (confidence: ${messageAnalysis.confidence})`, "sync");
+              }
+            }
             
             // DIAGNOSTIC: Log when we're about to trigger auto-reply for a NEW INBOUND DM
             log(`[SyncService] ⚡ NEW_INBOUND_DM - msgId: ${savedMessage.id}, author: ${author}, convId: ${conversationRecord.id}, will call triggerAutoReply`, "sync");
@@ -479,7 +499,7 @@ class SyncService {
         // Normalize customerId: ensure it's never empty/null for CRM routing
         // Fallback chain: authorParticipant.id -> comment.author -> comment.id (platform-scoped)
         // Note: Metricool may return numeric IDs for Facebook/TikTok, so we coerce to string first
-        const customerIdStr = typeof customerId === 'string' ? customerId : (customerId?.toString?.() ?? '');
+        const customerIdStr = typeof customerId === 'string' ? customerId : String(customerId ?? '');
         if (!customerIdStr || customerIdStr.trim() === '') {
           customerId = commentOwnerId?.toString() || comment.id || `${platform}_unknown_${Date.now()}`;
           log(`[SyncService] WARNING: Empty customerId for comment, using fallback: ${customerId}`, "sync");
