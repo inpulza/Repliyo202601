@@ -20,7 +20,8 @@ import { api } from '@/lib/api';
 import type { TimelineEvent, TimelineEventType, ConversationTimeline as TimelineType } from '@shared/schema';
 
 interface ConversationTimelineProps {
-  conversationId: string;
+  conversationId?: string;
+  contactId?: string;
   maxEvents?: number;
   showSummary?: boolean;
 }
@@ -116,15 +117,27 @@ const TimelineEventCard: React.FC<{ event: TimelineEvent; isFirst?: boolean; isL
 
 export function ConversationTimeline({ 
   conversationId, 
+  contactId,
   maxEvents = 15,
   showSummary = true
 }: ConversationTimelineProps) {
-  const { data, isLoading, error } = useQuery({
+  const conversationQuery = useQuery({
     queryKey: ['conversation-timeline', conversationId],
-    queryFn: () => api.conversations.getTimeline(conversationId),
-    enabled: !!conversationId,
+    queryFn: () => api.conversations.getTimeline(conversationId!),
+    enabled: !!conversationId && !contactId,
     staleTime: 30000,
   });
+
+  const contactQuery = useQuery({
+    queryKey: ['contact-journey', contactId],
+    queryFn: () => api.crm.getContactJourney(contactId!),
+    enabled: !!contactId,
+    staleTime: 30000,
+  });
+
+  const isLoading = conversationQuery.isLoading || contactQuery.isLoading;
+  const error = conversationQuery.error || contactQuery.error;
+  const data = contactId ? contactQuery.data : conversationQuery.data;
 
   if (isLoading) {
     return (

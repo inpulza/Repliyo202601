@@ -610,7 +610,7 @@ function CRMPanelContent({
             </>
           )}
 
-          {conversation && (
+          {(conversation || crmContact) && (
             <>
               <Separator />
               
@@ -620,7 +620,8 @@ function CRMPanelContent({
                   Customer Journey
                 </h4>
                 <ConversationTimeline 
-                  conversationId={conversation.id} 
+                  conversationId={conversation?.id}
+                  contactId={crmContact?.id}
                   maxEvents={10}
                   showSummary={true}
                 />

@@ -324,6 +324,7 @@ export interface IStorage {
   
   // Customer Journey Timeline
   getConversationTimeline(conversationId: string): Promise<import("@shared/schema").ConversationTimeline | null>;
+  getContactTimeline(contactId: string): Promise<import("@shared/schema").ConversationTimeline | null>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3939,6 +3940,204 @@ export class DatabaseStorage implements IStorage {
         totalReminders: reminders.filter(r => r.status === 'sent').length,
         currentStatus: conversation.status,
         detectedIntent: conversation.closingIntent || lastSummary?.summary?.substring(0, 100) || undefined,
+      }
+    };
+  }
+
+  async getContactTimeline(contactId: string): Promise<ConversationTimeline | null> {
+    const contact = await this.getCrmContact(contactId);
+    if (!contact) {
+      return null;
+    }
+
+    const contactConversations = await this.getCrmContactConversations(contactId);
+    const toDateString = (date: Date | string | null | undefined): string => {
+      if (!date) return new Date().toISOString();
+      return date instanceof Date ? date.toISOString() : new Date(date).toISOString();
+    };
+
+    if (contactConversations.length === 0) {
+      return {
+        conversationId: contactId,
+        customerName: contact.displayName || 'Sin nombre',
+        platform: 'multi',
+        events: [],
+        summary: {
+          firstContactAt: toDateString(contact.firstInteractionAt || contact.createdAt),
+          lastActivityAt: toDateString(contact.lastInteractionAt || contact.createdAt),
+          totalMessages: contact.totalMessages,
+          totalReminders: 0,
+          currentStatus: contact.status || 'lead',
+        }
+      };
+    }
+
+    const events: TimelineEvent[] = [];
+    const conversationIds = contactConversations.map(c => c.id);
+    const toISOString = toDateString;
+
+    const allMessages = await db
+      .select()
+      .from(messages)
+      .where(inArray(messages.conversationId, conversationIds))
+      .orderBy(messages.timestamp);
+
+    const summaries = await db
+      .select()
+      .from(conversationUserSummaries)
+      .where(inArray(conversationUserSummaries.conversationId, conversationIds))
+      .orderBy(conversationUserSummaries.updatedAt);
+
+    const reminders = await db
+      .select()
+      .from(reminderEvents)
+      .where(inArray(reminderEvents.conversationId, conversationIds))
+      .orderBy(reminderEvents.createdAt);
+
+    const statusHistory = await db
+      .select()
+      .from(conversationStatusHistory)
+      .where(inArray(conversationStatusHistory.conversationId, conversationIds))
+      .orderBy(conversationStatusHistory.createdAt);
+
+    let firstContactAdded = false;
+    for (const msg of allMessages) {
+      const isInbound = msg.direction === 'inbound';
+      const isAiReply = msg.source === 'repliyo' && msg.internalOrigin === 'ai';
+      
+      if (isInbound && !firstContactAdded) {
+        events.push({
+          id: `first_contact_${msg.id}`,
+          type: 'first_contact',
+          timestamp: toISOString(msg.timestamp),
+          title: 'Primer contacto',
+          description: msg.content?.substring(0, 150) || undefined,
+          metadata: {
+            messageId: msg.id,
+            platform: msg.platform,
+            author: msg.author,
+            content: msg.content || undefined,
+          }
+        });
+        firstContactAdded = true;
+      } else if (isAiReply) {
+        events.push({
+          id: `ai_reply_${msg.id}`,
+          type: 'ai_reply',
+          timestamp: toISOString(msg.timestamp),
+          title: 'Respuesta automática de IA',
+          description: msg.content?.substring(0, 150) || undefined,
+          metadata: {
+            messageId: msg.id,
+            direction: 'outbound',
+            platform: msg.platform,
+            content: msg.content || undefined,
+          }
+        });
+      } else if (isInbound) {
+        events.push({
+          id: `msg_in_${msg.id}`,
+          type: 'message_inbound',
+          timestamp: toISOString(msg.timestamp),
+          title: `Mensaje de ${msg.author}`,
+          description: msg.content?.substring(0, 150) || undefined,
+          metadata: {
+            messageId: msg.id,
+            author: msg.author,
+            platform: msg.platform,
+            content: msg.content || undefined,
+          }
+        });
+      } else {
+        events.push({
+          id: `msg_out_${msg.id}`,
+          type: 'message_outbound',
+          timestamp: toISOString(msg.timestamp),
+          title: 'Respuesta de la marca',
+          description: msg.content?.substring(0, 150) || undefined,
+          metadata: {
+            messageId: msg.id,
+            direction: 'outbound',
+            platform: msg.platform,
+            content: msg.content || undefined,
+          }
+        });
+      }
+    }
+
+    for (const summary of summaries) {
+      events.push({
+        id: `summary_${summary.id}`,
+        type: 'summary_generated',
+        timestamp: toISOString(summary.updatedAt),
+        title: 'Resumen de conversación generado',
+        description: summary.summary?.substring(0, 200) || undefined,
+        metadata: {
+          summaryId: summary.id,
+          author: summary.author,
+        }
+      });
+    }
+
+    for (const reminder of reminders) {
+      if (reminder.status === 'scheduled') {
+        events.push({
+          id: `reminder_scheduled_${reminder.id}`,
+          type: 'reminder_scheduled',
+          timestamp: toISOString(reminder.scheduledAt),
+          title: `Recordatorio #${reminder.reminderNumber} programado`,
+          metadata: {
+            reminderEventId: reminder.id,
+            reminderNumber: reminder.reminderNumber,
+          }
+        });
+      } else if (reminder.status === 'sent') {
+        events.push({
+          id: `reminder_sent_${reminder.id}`,
+          type: 'reminder_sent',
+          timestamp: toISOString(reminder.sentAt || reminder.createdAt),
+          title: `Recordatorio #${reminder.reminderNumber} enviado`,
+          description: reminder.content?.substring(0, 150) || undefined,
+          metadata: {
+            reminderEventId: reminder.id,
+            reminderNumber: reminder.reminderNumber,
+            content: reminder.content || undefined,
+          }
+        });
+      }
+    }
+
+    for (const status of statusHistory) {
+      events.push({
+        id: `status_${status.id}`,
+        type: 'status_change',
+        timestamp: toISOString(status.createdAt),
+        title: `Estado cambiado a ${status.newStatus}`,
+        description: status.reason || undefined,
+        metadata: {
+          statusHistoryId: status.id,
+          previousStatus: status.previousStatus || undefined,
+          newStatus: status.newStatus,
+        }
+      });
+    }
+
+    events.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+    const firstMessage = allMessages[0];
+    const lastMessage = allMessages[allMessages.length - 1];
+
+    return {
+      conversationId: contactId,
+      customerName: contact.displayName || 'Sin nombre',
+      platform: 'multi',
+      events,
+      summary: {
+        firstContactAt: toISOString(firstMessage?.timestamp || contact.firstInteractionAt || contact.createdAt),
+        lastActivityAt: toISOString(lastMessage?.timestamp || contact.lastInteractionAt || contact.createdAt),
+        totalMessages: allMessages.length,
+        totalReminders: reminders.filter(r => r.status === 'sent').length,
+        currentStatus: contact.status || 'lead',
       }
     };
   }

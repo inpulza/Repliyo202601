@@ -3183,6 +3183,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/crm/contacts/:id/journey - Get aggregated customer journey timeline
+  app.get("/api/crm/contacts/:id/journey", requireAuth, async (req, res) => {
+    try {
+      const contact = await storage.getCrmContact(req.params.id);
+      if (!contact) {
+        return res.status(404).json({ error: "Contact not found" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== contact.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const timeline = await storage.getContactTimeline(req.params.id);
+      if (!timeline) {
+        return res.status(404).json({ error: "Contact not found" });
+      }
+      res.json({ success: true, timeline });
+    } catch (error: any) {
+      console.error('[CRM] Get contact journey error:', error);
+      res.status(500).json({ error: "Failed to get journey", details: error.message });
+    }
+  });
+
   // GET /api/crm/duplicates - Get potential duplicate contacts
   app.get("/api/crm/duplicates", requireAuth, async (req, res) => {
     try {

@@ -573,6 +573,15 @@ export const api = {
       }
       return res.json();
     },
+
+    getContactJourney: async (contactId: string): Promise<{ success: boolean; timeline: import('@shared/schema').ConversationTimeline }> => {
+      const res = await fetch(`${API_BASE}/crm/contacts/${contactId}/journey`);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to fetch journey');
+      }
+      return res.json();
+    },
   },
 
   lifecycle: {
