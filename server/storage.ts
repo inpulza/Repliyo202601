@@ -2,6 +2,7 @@ import {
   brands, users, messages, socialPosts, conversations, socialAccounts, aiAgents, aiAgentAuditLog, conversationUserSummaries, aiModelPricing, notifications, playgroundTemplates,
   crmContacts, crmContactChannels, crmContactLimbo,
   conversationStatusHistory, brandLifecycleSettings,
+  reminderRules, reminderEvents,
   type Brand, type InsertBrand, 
   type User, type InsertUser, 
   type Message, type InsertMessage, type UpdateMessage,
@@ -19,10 +20,12 @@ import {
   type CrmContactLimbo, type InsertCrmContactLimbo, type UpdateCrmContactLimbo,
   type ConversationStatusHistory, type InsertConversationStatusHistory,
   type BrandLifecycleSettings, type InsertBrandLifecycleSettings, type UpdateBrandLifecycleSettings,
-  type ConversationStatus, type ClosedBy
+  type ConversationStatus, type ClosedBy,
+  type ReminderRules, type InsertReminderRules, type UpdateReminderRules,
+  type ReminderEvent, type InsertReminderEvent, type ReminderStatus
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, isNull, gte, lte, sql } from "drizzle-orm";
+import { eq, desc, and, or, isNull, gte, lte, sql, inArray, notInArray } from "drizzle-orm";
 
 export interface IStorage {
   getBrands(): Promise<Brand[]>;
@@ -259,6 +262,29 @@ export interface IStorage {
     agentResolutions: number;
     autoResolutions: number;
   }>;
+  
+  // Smart Customer Follow-up System
+  // Reminder Rules (per-brand configuration)
+  getReminderRules(brandId: string): Promise<ReminderRules | undefined>;
+  upsertReminderRules(rules: InsertReminderRules): Promise<ReminderRules>;
+  updateReminderRules(brandId: string, updates: UpdateReminderRules): Promise<ReminderRules | undefined>;
+  
+  // Reminder Events (audit/history)
+  createReminderEvent(event: InsertReminderEvent): Promise<ReminderEvent>;
+  getReminderEventsByConversation(conversationId: string): Promise<ReminderEvent[]>;
+  getReminderEventsByContact(contactId: string): Promise<ReminderEvent[]>;
+  getReminderEventsByBrand(brandId: string, options?: { status?: string; limit?: number }): Promise<ReminderEvent[]>;
+  updateReminderEventStatus(id: string, status: string, sentAt?: Date, errorMessage?: string): Promise<ReminderEvent | undefined>;
+  getScheduledRemindersReady(brandId: string): Promise<ReminderEvent[]>;
+  countRemindersSentToday(brandId: string): Promise<number>;
+  
+  // Conversation Reminder Updates
+  updateConversationReminderStatus(conversationId: string, status: ReminderStatus, reminderCount?: number): Promise<Conversation | undefined>;
+  getConversationsEligibleForReminder(brandId: string, delayHours: number, maxReminders: number, types: string[]): Promise<Conversation[]>;
+  
+  // Contact Reminder Updates
+  updateContactReminderCount(contactId: string): Promise<CrmContact | undefined>;
+  updateContactOptOutReminders(contactId: string, optOut: boolean): Promise<CrmContact | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3075,6 +3101,219 @@ export class DatabaseStorage implements IStorage {
       agentResolutions,
       autoResolutions,
     };
+  }
+
+  // ============================================
+  // SMART CUSTOMER FOLLOW-UP SYSTEM
+  // ============================================
+
+  // Reminder Rules
+  async getReminderRules(brandId: string): Promise<ReminderRules | undefined> {
+    const [rules] = await db
+      .select()
+      .from(reminderRules)
+      .where(eq(reminderRules.brandId, brandId));
+    return rules || undefined;
+  }
+
+  async upsertReminderRules(rules: InsertReminderRules): Promise<ReminderRules> {
+    const existing = await this.getReminderRules(rules.brandId);
+    
+    if (existing) {
+      const [updated] = await db
+        .update(reminderRules)
+        .set({
+          ...rules,
+          updatedAt: new Date(),
+        })
+        .where(eq(reminderRules.brandId, rules.brandId))
+        .returning();
+      return updated;
+    }
+    
+    const [created] = await db
+      .insert(reminderRules)
+      .values(rules)
+      .returning();
+    return created;
+  }
+
+  async updateReminderRules(brandId: string, updates: UpdateReminderRules): Promise<ReminderRules | undefined> {
+    const [updated] = await db
+      .update(reminderRules)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+      })
+      .where(eq(reminderRules.brandId, brandId))
+      .returning();
+    return updated || undefined;
+  }
+
+  // Reminder Events
+  async createReminderEvent(event: InsertReminderEvent): Promise<ReminderEvent> {
+    const [created] = await db
+      .insert(reminderEvents)
+      .values(event)
+      .returning();
+    return created;
+  }
+
+  async getReminderEventsByConversation(conversationId: string): Promise<ReminderEvent[]> {
+    return await db
+      .select()
+      .from(reminderEvents)
+      .where(eq(reminderEvents.conversationId, conversationId))
+      .orderBy(desc(reminderEvents.createdAt));
+  }
+
+  async getReminderEventsByContact(contactId: string): Promise<ReminderEvent[]> {
+    return await db
+      .select()
+      .from(reminderEvents)
+      .where(eq(reminderEvents.contactId, contactId))
+      .orderBy(desc(reminderEvents.createdAt));
+  }
+
+  async getReminderEventsByBrand(brandId: string, options?: { status?: string; limit?: number }): Promise<ReminderEvent[]> {
+    let query = db
+      .select()
+      .from(reminderEvents)
+      .where(
+        options?.status 
+          ? and(eq(reminderEvents.brandId, brandId), eq(reminderEvents.status, options.status))
+          : eq(reminderEvents.brandId, brandId)
+      )
+      .orderBy(desc(reminderEvents.createdAt));
+    
+    if (options?.limit) {
+      query = query.limit(options.limit) as typeof query;
+    }
+    
+    return await query;
+  }
+
+  async updateReminderEventStatus(id: string, status: string, sentAt?: Date, errorMessage?: string): Promise<ReminderEvent | undefined> {
+    const updateData: Record<string, any> = { status };
+    if (sentAt) updateData.sentAt = sentAt;
+    if (errorMessage) updateData.errorMessage = errorMessage;
+    
+    const [updated] = await db
+      .update(reminderEvents)
+      .set(updateData)
+      .where(eq(reminderEvents.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async getScheduledRemindersReady(brandId: string): Promise<ReminderEvent[]> {
+    const now = new Date();
+    return await db
+      .select()
+      .from(reminderEvents)
+      .where(and(
+        eq(reminderEvents.brandId, brandId),
+        eq(reminderEvents.status, 'scheduled'),
+        lte(reminderEvents.scheduledAt, now)
+      ))
+      .orderBy(reminderEvents.scheduledAt);
+  }
+
+  async countRemindersSentToday(brandId: string): Promise<number> {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const result = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(reminderEvents)
+      .where(and(
+        eq(reminderEvents.brandId, brandId),
+        eq(reminderEvents.status, 'sent'),
+        gte(reminderEvents.sentAt, startOfDay)
+      ));
+    
+    return result[0]?.count || 0;
+  }
+
+  // Conversation Reminder Updates
+  async updateConversationReminderStatus(conversationId: string, status: ReminderStatus, reminderCount?: number): Promise<Conversation | undefined> {
+    const updateData: Record<string, any> = { 
+      reminderStatus: status,
+      lastReminderAt: new Date()
+    };
+    if (reminderCount !== undefined) {
+      updateData.reminderCount = reminderCount;
+    }
+    
+    const [updated] = await db
+      .update(conversations)
+      .set(updateData)
+      .where(eq(conversations.id, conversationId))
+      .returning();
+    return updated || undefined;
+  }
+
+  async getConversationsEligibleForReminder(brandId: string, delayHours: number, maxReminders: number, types: string[]): Promise<Conversation[]> {
+    const cutoffTime = new Date(Date.now() - delayHours * 60 * 60 * 1000);
+    
+    // Return empty if no types specified
+    if (types.length === 0) {
+      return [];
+    }
+    
+    // Get conversations that:
+    // 1. Are from the specified brand
+    // 2. Are NOT closed
+    // 3. Have lastCustomerMessageAt OR lastMessageAt older than cutoffTime
+    // 4. Have reminderCount < maxReminders
+    // 5. Are of the specified types (dm, comment)
+    // 6. Are NOT in terminal reminder states (scheduled, max_reached, opted_out)
+    const excludedReminderStatuses = ['scheduled', 'max_reached', 'opted_out'];
+    
+    return await db
+      .select()
+      .from(conversations)
+      .where(and(
+        eq(conversations.brandId, brandId),
+        sql`${conversations.status} NOT IN ('closed')`,
+        or(
+          lte(conversations.lastCustomerMessageAt, cutoffTime),
+          and(
+            isNull(conversations.lastCustomerMessageAt),
+            lte(conversations.lastMessageAt, cutoffTime)
+          )
+        ),
+        sql`COALESCE(${conversations.reminderCount}, 0) < ${maxReminders}`,
+        inArray(conversations.type, types),
+        sql`COALESCE(${conversations.reminderStatus}, 'none') NOT IN ('scheduled', 'max_reached', 'opted_out')`
+      ))
+      .orderBy(conversations.lastMessageAt);
+  }
+
+  // Contact Reminder Updates
+  async updateContactReminderCount(contactId: string): Promise<CrmContact | undefined> {
+    const [updated] = await db
+      .update(crmContacts)
+      .set({
+        reminderCount: sql`COALESCE(${crmContacts.reminderCount}, 0) + 1`,
+        lastReminderAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(crmContacts.id, contactId))
+      .returning();
+    return updated || undefined;
+  }
+
+  async updateContactOptOutReminders(contactId: string, optOut: boolean): Promise<CrmContact | undefined> {
+    const [updated] = await db
+      .update(crmContacts)
+      .set({
+        optOutReminders: optOut,
+        updatedAt: new Date(),
+      })
+      .where(eq(crmContacts.id, contactId))
+      .returning();
+    return updated || undefined;
   }
 }
 
