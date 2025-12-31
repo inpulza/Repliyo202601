@@ -5735,17 +5735,226 @@ interface ResolutionMetrics {
 
 ---
 
-### 6. UX/UI (Pendiente de Diseño)
+### 6. UX/UI: Especificaciones de Diseño
 
-> **Nota:** Esta sección será completada con el diseño de customer journey, wireframes y especificaciones de UI antes de la implementación del frontend.
+> **Guía de referencia**: `docs/knowledge-base/CRM_DESIGN_SYSTEM_UX_UI.md`
 
-**Puntos a definir:**
-- [ ] Cómo se ve el botón de "Cerrar conversación" en el Inbox
-- [ ] Modal de cierre con resumen editable
-- [ ] Indicadores visuales de estado (badges, colores)
-- [ ] Panel de métricas de resolución
-- [ ] Flujo de CSAT post-cierre
-- [ ] Configuración de lifecycle settings por marca
+#### 6.1 Botón de Cierre en Header de Conversación
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Juan Pérez                           [Resolver ▼] [Posponer]   │
+│  📱 WhatsApp • Última actividad: hace 5 min                     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Botón "Resolver" (Split Button)**:
+- Acción principal: Marcar como Solved
+- Dropdown con opciones:
+  - "Resolver" (cambiar a Solved)
+  - "Resolver y generar resumen"
+  - "Resolver sin notificar"
+
+**Best Practice**: El botón debe decir "Resolver" (Solved), NO "Cerrar". El estado Closed es automático del sistema.
+
+#### 6.2 Modal de Cierre con Resumen Editable
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  ✨ Resumen Generado por IA                                [X] │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌───────────────────────────────────────────────────────────┐ │
+│  │ El cliente consultó sobre precios de servicios ITIN.     │ │
+│  │ Se proporcionó información general y se redirigió al     │ │
+│  │ WhatsApp (305) 639-0110 para cotización personalizada.   │ │
+│  └───────────────────────────────────────────────────────────┘ │
+│                                    [Editar resumen...]          │
+│                                                                 │
+│  Sentimiento detectado: 😊 Positivo                             │
+│                                                                 │
+│  Categoría de cierre:                                           │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ Consulta de Precios                                   ▼ │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+│  ┌───────────────────────────────────────────────────────────┐ │
+│  │ ¿Fue útil este resumen?        👍 Sí       👎 No         │ │
+│  └───────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│                    [Cancelar]    [✓ Confirmar y Resolver]       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Elementos**:
+- Textarea editable con resumen pre-generado
+- Selector de categoría de cierre (obligatorio)
+- Sentimiento detectado (visual, no editable)
+- Feedback thumbs up/down para mejorar modelo
+- Botones: Cancelar, Confirmar
+
+#### 6.3 Indicadores Visuales de Estado en Lista
+
+| Estado | Badge | Color | Efecto Visual |
+|--------|-------|-------|---------------|
+| `new` | 🔵 Nuevo | Azul | Punto azul, texto bold |
+| `open` | 🟢 Abierto | Verde | Borde izquierdo verde |
+| `pending` | 🟡 Pendiente | Amarillo | Fondo amarillo pálido |
+| `solved` | ✅ Resuelto | Gris | Texto en gris, sin bold |
+| `closed` | ⬛ Cerrado | Gris oscuro | Solo visible en búsqueda |
+
+**SLA en riesgo**:
+- Borde izquierdo rojo
+- Timestamp en rojo
+- Fondo amarillo pálido opcional
+
+#### 6.4 Timeline: Eventos de Sistema Minimizados
+
+Cambios de estado en la línea de tiempo:
+```
+─────────────────────────────────────────────────────────
+                   Ticket resuelto por Maria
+              hace 2 días • Categoría: Consulta Precios
+─────────────────────────────────────────────────────────
+```
+
+**Estilo**:
+- Texto pequeño (12px), centrado
+- Color gris neutro
+- Sin avatar
+- Colapsables si son consecutivos
+
+#### 6.5 Alerta de Thank You Detection
+
+Cuando se detecta posible agradecimiento en ticket Solved:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ ⚠️ El cliente respondió a una conversación resuelta         │
+│                                                              │
+│ "Muchas gracias, me ha servido mucho la información"        │
+│                                                              │
+│ Confianza de detección: 92% (Agradecimiento)                 │
+│                                                              │
+│ ¿Qué deseas hacer?                                           │
+│                                                              │
+│  [Mantener Resuelto]  [Reabrir Conversación]                 │
+│        ↑ Recomendado                                         │
+└──────────────────────────────────────────────────────────────┘
+```
+
+#### 6.6 Panel de Configuración Lifecycle (Por Marca)
+
+Ubicación: Settings → Automatización → Ciclo de Vida
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  ⚙️ Configuración del Ciclo de Vida                            │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  TRANSICIÓN AUTOMÁTICA                                          │
+│  ─────────────────────                                          │
+│  Tiempo Solved → Closed:                                        │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ 24 horas                                              ▼ │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│  ℹ️ Tras este tiempo sin actividad, el ticket se cierra       │
+│                                                                 │
+│  DETECCIÓN ANTI-ZOMBIE                                          │
+│  ─────────────────────                                          │
+│  [✓] Detectar mensajes de agradecimiento                        │
+│  [✓] Prevenir reapertura automática                             │
+│                                                                 │
+│  Umbral de palabras: [15] (mensajes más largos se reabren)      │
+│                                                                 │
+│  CIERRE POR INACTIVIDAD                                         │
+│  ─────────────────────                                          │
+│  Cerrar conversaciones inactivas después de:                    │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ 72 horas                                              ▼ │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+│  ENCUESTA CSAT                                                  │
+│  ───────────                                                    │
+│  [ ] Enviar encuesta automática al resolver                     │
+│  Delay antes de enviar: [5] minutos                             │
+│                                                                 │
+│                                          [Guardar Cambios]      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### 6.7 Badge de Estado en Conversation Header
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Juan Pérez            [Resuelto ✓] hace 2h    [⋯]              │
+│  📱 WhatsApp           Periodo de gracia: 22h restantes         │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+Cuando está en Solved: Mostrar tiempo restante del periodo de gracia.
+
+#### 6.8 Dashboard de Métricas (Fase 8)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  📊 Métricas de Resolución                    Últimos 30 días  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │   4.2 min    │  │    89%       │  │    3.2%      │          │
+│  │ First Reply  │  │ One-Touch    │  │ Reopen Rate  │          │
+│  │   ↓ 12%      │  │   ↑ 5%       │  │   ↓ 1.5%     │          │
+│  └──────────────┘  └──────────────┘  └──────────────┘          │
+│                                                                 │
+│  RESOLUCIÓN POR TIPO                                            │
+│  ───────────────────                                            │
+│  Bot: ████████████████ 340 (68%)  | Avg: 45 seg                 │
+│  Humano: ████████ 160 (32%)       | Avg: 12 min                 │
+│                                                                 │
+│  CATEGORÍAS DE CIERRE                                           │
+│  ────────────────────                                           │
+│  Consulta Precios    ████████████████ 42%                       │
+│  Soporte Técnico     ████████ 25%                               │
+│  Info General        ██████ 18%                                 │
+│  Otros               ████ 15%                                   │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### 6.9 Customer Journey: Flujo de Cierre
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    FLUJO DE CIERRE INTELIGENTE                  │
+└─────────────────────────────────────────────────────────────────┘
+
+1. AGENTE RESUELVE
+   ├── Click en "Resolver"
+   └── Sistema genera resumen IA
+
+2. MODAL DE VALIDACIÓN
+   ├── Agente revisa/edita resumen
+   ├── Selecciona categoría
+   └── Confirma cierre
+
+3. PERIODO DE GRACIA (24h default)
+   ├── Ticket en estado "Solved"
+   └── Timer visible en header
+
+4. RESPUESTA DEL CLIENTE
+   ├── SI responde:
+   │   ├── IA analiza mensaje
+   │   ├── SI es "Gracias": 
+   │   │   └── Mantener Solved + añadir nota
+   │   └── SI es pregunta:
+   │       └── Reabrir → Open
+   └── SI no responde:
+       └── Continuar timer
+
+5. CIERRE DEFINITIVO
+   └── Timer expira → Closed (inmutable)
+```
 
 ---
 
@@ -5765,8 +5974,10 @@ interface ResolutionMetrics {
 **Knowledge Base Local:**
 - `docs/knowledge-base/CONVERSATION_LIFECYCLE_MANAGEMENT.md` - Benchmarking de plataformas
 - `docs/knowledge-base/RESPOND_IO_TECHNICAL_ARCHITECTURE.md` - Arquitectura técnica Respond.io
+- `docs/knowledge-base/CRM_DESIGN_SYSTEM_UX_UI.md` - Sistema de diseño UX/UI completo
 - `docs/knowledge-base/Cierre_Perfecto_en_SaaS_B2B_1767113509977.pdf` - PDF original cierre perfecto
 - `docs/knowledge-base/Investigación_Técnica_Respond.io_CRM_1767175751422.pdf` - PDF investigación Respond.io
+- `docs/knowledge-base/Guía_de_Diseño_CRM_SaaS_Conversacional_1767176108783.pdf` - PDF guía de diseño
 
 ---
 
