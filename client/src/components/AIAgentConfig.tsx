@@ -936,6 +936,9 @@ export function AIAgentConfig() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Lifecycle Settings Card */}
+              <LifecycleSettingsCard brandId={activeClient?.id} />
             </TabsContent>
 
             <TabsContent value="platforms" className="mt-0 space-y-6">
@@ -2112,5 +2115,157 @@ export function AIAgentConfig() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function LifecycleSettingsCard({ brandId }: { brandId: string | undefined }) {
+  const queryClient = useQueryClient();
+  const [gracePeriod, setGracePeriod] = useState(24);
+  const [autoSummary, setAutoSummary] = useState(true);
+  const [csatEnabled, setCsatEnabled] = useState(false);
+
+  const gracePeriodOptions = [
+    { value: 1, label: '1 hora' },
+    { value: 6, label: '6 horas' },
+    { value: 12, label: '12 horas' },
+    { value: 24, label: '1 día' },
+    { value: 48, label: '2 días' },
+    { value: 72, label: '3 días' },
+    { value: 168, label: '7 días' },
+    { value: 336, label: '14 días' },
+    { value: 672, label: '28 días' },
+  ];
+
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ['lifecycleSettings', brandId],
+    queryFn: () => api.lifecycle.getSettings(brandId!),
+    enabled: !!brandId,
+  });
+
+  useEffect(() => {
+    if (settings) {
+      setGracePeriod(settings.solvedToClosedHours);
+      setAutoSummary(settings.autoGenerateSummary);
+      setCsatEnabled(settings.csatSurveyEnabled ?? false);
+    }
+  }, [settings]);
+
+  const mutation = useMutation({
+    mutationFn: (newSettings: { solvedToClosedHours?: number; autoGenerateSummary?: boolean; csatSurveyEnabled?: boolean }) =>
+      api.lifecycle.updateSettings(brandId!, newSettings),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lifecycleSettings', brandId] });
+      toast({ title: "Guardado", description: "Configuración de ciclo de vida actualizada" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "No se pudo actualizar", variant: "destructive" });
+    },
+  });
+
+  const handleGracePeriodChange = (value: string) => {
+    const numValue = parseInt(value);
+    setGracePeriod(numValue);
+    mutation.mutate({ solvedToClosedHours: numValue });
+  };
+
+  const handleAutoSummaryChange = (checked: boolean) => {
+    setAutoSummary(checked);
+    mutation.mutate({ autoGenerateSummary: checked });
+  };
+
+  const handleCsatChange = (checked: boolean) => {
+    setCsatEnabled(checked);
+    mutation.mutate({ csatSurveyEnabled: checked });
+  };
+
+  if (!brandId) return null;
+
+  if (isLoading) {
+    return (
+      <Card className="border border-border shadow-none">
+        <CardContent className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="border border-border shadow-none">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2 text-base font-semibold">
+          <Clock className="h-4 w-4 text-muted-foreground" />
+          Ciclo de Vida de Conversaciones
+        </CardTitle>
+        <CardDescription className="text-xs">
+          Configura el cierre automático y resúmenes de conversaciones
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Auto-close timer */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <Label className="text-sm">Tiempo de cierre automático</Label>
+            <p className="text-xs text-muted-foreground">
+              Las conversaciones marcadas como "Resuelto" se cierran automáticamente después de este tiempo
+            </p>
+          </div>
+          <Select value={gracePeriod.toString()} onValueChange={handleGracePeriodChange}>
+            <SelectTrigger className="w-full sm:w-40 shadow-none" data-testid="select-grace-period">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {gracePeriodOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value.toString()}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <Separator />
+
+        {/* AI Summary toggle */}
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-purple-500" />
+              <Label className="text-sm">Resumen automático con IA</Label>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Genera un resumen automático al marcar conversaciones como resueltas
+            </p>
+          </div>
+          <Switch
+            checked={autoSummary}
+            onCheckedChange={handleAutoSummaryChange}
+            disabled={mutation.isPending}
+            data-testid="switch-auto-summary"
+          />
+        </div>
+
+        <Separator />
+
+        {/* CSAT Survey toggle */}
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-green-500" />
+              <Label className="text-sm">Encuesta de satisfacción (CSAT)</Label>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Envía una encuesta de satisfacción después de cerrar conversaciones
+            </p>
+          </div>
+          <Switch
+            checked={csatEnabled}
+            onCheckedChange={handleCsatChange}
+            disabled={mutation.isPending}
+            data-testid="switch-csat-survey"
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
