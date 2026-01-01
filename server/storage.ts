@@ -875,7 +875,7 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Find outbound messages without metricoolId across the ENTIRE brand
-    // Filter by source='repliyo' or 'repliyo_auto' to only match messages sent from our app
+    // Filter by source='repliyo', 'repliyo_auto', or 'reminder_service' to only match messages sent from our app
     const pendingMessages = await db
       .select()
       .from(messages)
@@ -886,7 +886,8 @@ export class DatabaseStorage implements IStorage {
           isNull(messages.metricoolId),
           or(
             eq(messages.source, 'repliyo'),
-            eq(messages.source, 'repliyo_auto')
+            eq(messages.source, 'repliyo_auto'),
+            eq(messages.source, 'reminder_service')
           )
         )
       );
@@ -994,7 +995,8 @@ export class DatabaseStorage implements IStorage {
       .where(
         or(
           eq(messages.source, 'repliyo'),
-          eq(messages.source, 'repliyo_auto')
+          eq(messages.source, 'repliyo_auto'),
+          eq(messages.source, 'reminder_service')
         )
       );
 
@@ -3434,10 +3436,16 @@ export class DatabaseStorage implements IStorage {
           reminderNumber: currentReminderCount + 1,
         };
         
+        console.log(`[Storage] Inserting reminder event with contextSnapshot:`, 
+          JSON.stringify(eventWithCorrectNumber.contextSnapshot));
+        
         const [createdEvent] = await tx
           .insert(reminderEvents)
           .values(eventWithCorrectNumber)
           .returning();
+        
+        console.log(`[Storage] Created reminder event ${createdEvent.id}, contextSnapshot saved:`, 
+          createdEvent.contextSnapshot !== null && createdEvent.contextSnapshot !== undefined);
         
         await tx
           .update(conversations)

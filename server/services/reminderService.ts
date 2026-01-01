@@ -292,7 +292,9 @@ export class ReminderService implements IReminderService {
 
     let customerName = conversation.customerName || '';
     
-    if (!customerName && lastInbound?.author) {
+    if (conversation.type === 'comment' && lastInbound?.author) {
+      customerName = lastInbound.author;
+    } else if (!customerName && lastInbound?.author) {
       customerName = lastInbound.author;
     }
     
@@ -423,26 +425,34 @@ export class ReminderService implements IReminderService {
       targetMetricoolId: context.lastInboundMessage?.metricoolId || null,
       targetAuthor: context.lastInboundMessage?.author || null,
       customerName: context.customerName,
-      conversationSummary: context.conversationSummary,
-      closingIntent: context.closingIntent,
+      conversationSummary: context.conversationSummary || null,
+      closingIntent: context.closingIntent || null,
       postId: context.lastInboundMessage?.rawData?.postId || 
               context.lastInboundMessage?.rawData?.permalink?.split('/')?.slice(-2, -1)?.[0] || null,
+    };
+    
+    console.log(`[ReminderService] Context snapshot for ${conversation.id}:`, JSON.stringify({
+      targetMetricoolId: contextSnapshot.targetMetricoolId,
+      targetAuthor: contextSnapshot.targetAuthor,
+      customerName: contextSnapshot.customerName,
+    }));
+
+    const eventData = {
+      brandId: conversation.brandId,
+      conversationId: conversation.id,
+      contactId: conversation.contactId || null,
+      status: 'scheduled' as const,
+      scheduledAt,
+      content: trimmedContent,
+      contentSource: rules.useAiContent !== false ? 'ai' : 'template',
+      reminderNumber: nextReminderNumber,
+      deliveryChannel: conversation.type || 'dm',
+      contextSnapshot: JSON.parse(JSON.stringify(contextSnapshot)),
     };
 
     const result = await storage.scheduleReminderAtomic(
       conversation.id,
-      {
-        brandId: conversation.brandId,
-        conversationId: conversation.id,
-        contactId: conversation.contactId || null,
-        status: 'scheduled',
-        scheduledAt,
-        content: trimmedContent,
-        contentSource: rules.useAiContent !== false ? 'ai' : 'template',
-        reminderNumber: nextReminderNumber,
-        deliveryChannel: conversation.type || 'dm',
-        contextSnapshot,
-      },
+      eventData,
       'scheduled' as ReminderStatus,
       maxReminders
     );
