@@ -420,19 +420,23 @@ export class ReminderService implements IReminderService {
 
     const scheduledAt = new Date();
     
+    const rawData = context.lastInboundMessage?.rawData as Record<string, any> | null;
+    
     const contextSnapshot = {
       targetMessageId: context.lastInboundMessage?.id || null,
       targetMetricoolId: context.lastInboundMessage?.metricoolId || null,
       targetAuthor: context.lastInboundMessage?.author || null,
+      targetParentId: rawData?.parentId || null,
       customerName: context.customerName,
       conversationSummary: context.conversationSummary || null,
       closingIntent: context.closingIntent || null,
-      postId: context.lastInboundMessage?.rawData?.postId || 
-              context.lastInboundMessage?.rawData?.permalink?.split('/')?.slice(-2, -1)?.[0] || null,
+      postId: rawData?.postId || 
+              rawData?.permalink?.split('/')?.slice(-2, -1)?.[0] || null,
     };
     
     console.log(`[ReminderService] Context snapshot for ${conversation.id}:`, JSON.stringify({
       targetMetricoolId: contextSnapshot.targetMetricoolId,
+      targetParentId: contextSnapshot.targetParentId,
       targetAuthor: contextSnapshot.targetAuthor,
       customerName: contextSnapshot.customerName,
     }));
@@ -594,16 +598,55 @@ export class ReminderService implements IReminderService {
     }
     
     let commentObjectId: string | null = null;
+    let isNestedComment = false;
+    
     if (deliveryChannel === 'comment') {
-      commentObjectId = snapshot.targetMetricoolId || null;
+      const platform = conversation.platform?.toLowerCase();
       
-      if (!commentObjectId) {
+      if ((platform === 'youtube' || platform === 'tiktok') && snapshot.targetParentId) {
+        commentObjectId = snapshot.targetParentId;
+        isNestedComment = true;
+        console.log(`[ReminderService] ${platform} nested comment detected (from snapshot), using parentId: ${commentObjectId}`);
+      } else if (snapshot.targetMetricoolId) {
+        commentObjectId = snapshot.targetMetricoolId;
+        console.log(`[ReminderService] Using targetMetricoolId from snapshot: ${commentObjectId}`);
+      }
+      
+      if (!commentObjectId && snapshot.targetMessageId) {
+        const targetMessage = await storage.getMessage(snapshot.targetMessageId);
+        if (targetMessage) {
+          const msgRawData = targetMessage.rawData as Record<string, any> | null;
+          if ((platform === 'youtube' || platform === 'tiktok') && msgRawData?.parentId) {
+            commentObjectId = msgRawData.parentId;
+            isNestedComment = true;
+            console.log(`[ReminderService] ${platform} nested comment (from target message ${targetMessage.id}), using parentId: ${commentObjectId}`);
+          } else {
+            commentObjectId = targetMessage.metricoolId || null;
+            console.log(`[ReminderService] Using metricoolId from target message: ${commentObjectId}`);
+          }
+        } else {
+          console.warn(`[ReminderService] Target message ${snapshot.targetMessageId} not found in database`);
+        }
+      }
+      
+      if (!commentObjectId && !snapshot.targetMessageId) {
+        console.log(`[ReminderService] No snapshot data available, falling back to latest inbound message`);
         const messages = await storage.getMessagesByConversation(conversation.id);
         const latestInbound = messages
           .filter(m => m.direction === 'inbound')
           .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
         
-        commentObjectId = latestInbound?.metricoolId || null;
+        if (latestInbound) {
+          const msgRawData = latestInbound.rawData as Record<string, any> | null;
+          if ((platform === 'youtube' || platform === 'tiktok') && msgRawData?.parentId) {
+            commentObjectId = msgRawData.parentId;
+            isNestedComment = true;
+            console.log(`[ReminderService] ${platform} nested comment (fallback), using parentId: ${commentObjectId}`);
+          } else {
+            commentObjectId = latestInbound.metricoolId || null;
+            console.log(`[ReminderService] Using metricoolId from latest inbound (fallback): ${commentObjectId}`);
+          }
+        }
       }
       
       if (!commentObjectId) {
@@ -613,7 +656,7 @@ export class ReminderService implements IReminderService {
         return { success: false, error };
       }
       
-      console.log(`[ReminderService] Will reply to comment ${commentObjectId} (target author: ${snapshot.targetAuthor || 'unknown'})`);
+      console.log(`[ReminderService] Will reply to comment ${commentObjectId} (target author: ${snapshot.targetAuthor || 'unknown'}, nested: ${isNestedComment})`);
     }
 
     // Send via Metricool
@@ -683,6 +726,8 @@ export class ReminderService implements IReminderService {
           isReminder: true,
           reminderNumber: reminder.reminderNumber,
           reminderEventId: reminder.id,
+          isNestedComment: isNestedComment || false,
+          replyToObjectId: commentObjectId || null,
           metricoolResponse: sendResult.rawResponse,
         },
       });
