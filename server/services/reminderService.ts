@@ -835,6 +835,56 @@ export class ReminderService implements IReminderService {
   async getContactReminderHistory(contactId: string): Promise<ReminderEvent[]> {
     return storage.getReminderEventsByContact(contactId);
   }
+
+  async regenerateScheduledRemindersWithGenericName(brandId: string): Promise<{ regenerated: number; errors: string[] }> {
+    const result = { regenerated: 0, errors: [] as string[] };
+    
+    try {
+      const events = await storage.getReminderEventsByBrand(brandId, { status: 'scheduled' });
+      const rules = await storage.getReminderRules(brandId);
+      
+      if (!rules) {
+        result.errors.push('No reminder rules found for brand');
+        return result;
+      }
+
+      for (const event of events) {
+        if (!event.content?.includes('Cliente')) {
+          continue;
+        }
+
+        try {
+          const conversation = await storage.getConversation(event.conversationId);
+          if (!conversation) {
+            result.errors.push(`Conversation ${event.conversationId} not found`);
+            continue;
+          }
+
+          console.log(`[ReminderService] Regenerating content for event ${event.id}`);
+          
+          const generation = await this.generateReminderContent(
+            conversation,
+            event.reminderNumber,
+            rules
+          );
+
+          if (generation.success && generation.content) {
+            await storage.updateReminderEventContent(event.id, generation.content);
+            result.regenerated++;
+            console.log(`[ReminderService] Regenerated event ${event.id} with new content`);
+          } else {
+            result.errors.push(`Failed to generate content for event ${event.id}: ${generation.error}`);
+          }
+        } catch (error) {
+          result.errors.push(`Error processing event ${event.id}: ${error}`);
+        }
+      }
+    } catch (error) {
+      result.errors.push(`Error fetching events: ${error}`);
+    }
+
+    return result;
+  }
 }
 
 export const reminderService = new ReminderService();

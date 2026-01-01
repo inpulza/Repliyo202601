@@ -288,6 +288,7 @@ export interface IStorage {
   getReminderEventsByContact(contactId: string): Promise<ReminderEvent[]>;
   getReminderEventsByBrand(brandId: string, options?: { status?: string; limit?: number }): Promise<ReminderEvent[]>;
   updateReminderEventStatus(id: string, status: string, sentAt?: Date, errorMessage?: string): Promise<ReminderEvent | undefined>;
+  updateReminderEventContent(id: string, content: string): Promise<ReminderEvent | undefined>;
   getScheduledRemindersReady(brandId: string): Promise<ReminderEvent[]>;
   countRemindersSentToday(brandId: string): Promise<number>;
   countRemindersScheduledAndSentToday(brandId: string): Promise<number>;
@@ -3307,6 +3308,15 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(reminderEvents)
       .set(updateData)
+      .where(eq(reminderEvents.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async updateReminderEventContent(id: string, content: string): Promise<ReminderEvent | undefined> {
+    const [updated] = await db
+      .update(reminderEvents)
+      .set({ content })
       .where(eq(reminderEvents.id, id))
       .returning();
     return updated || undefined;

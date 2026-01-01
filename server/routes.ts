@@ -4018,6 +4018,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/brands/:id/reminders/regenerate - Regenerate content for reminders with generic "Cliente" name
+  app.post("/api/brands/:id/reminders/regenerate", requireAuth, filterByBrand('id'), async (req, res) => {
+    try {
+      const brandId = req.params.id;
+      const { reminderService } = await import("./services/reminderService");
+      const result = await reminderService.regenerateScheduledRemindersWithGenericName(brandId);
+      
+      res.json({
+        success: true,
+        regenerated: result.regenerated,
+        errors: result.errors,
+        message: `Regenerated ${result.regenerated} reminder(s) with personalized names`,
+      });
+    } catch (error: any) {
+      console.error('[Reminders] Regenerate error:', error);
+      res.status(500).json({ error: "Failed to regenerate reminders", details: error.message });
+    }
+  });
+
   // GET /api/brands/:id/reminder-events - Get reminder events for brand with pagination
   app.get("/api/brands/:id/reminder-events", requireAuth, filterByBrand('id'), async (req, res) => {
     try {
