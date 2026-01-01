@@ -271,7 +271,17 @@ export class ReminderService implements IReminderService {
       })
       .join('\n');
 
-    let customerName = conversation.customerName || 'Cliente';
+    // Fallback para nombre: customerName > CRM contact > último mensaje inbound > 'Cliente'
+    let customerName = conversation.customerName || '';
+    
+    // Si no hay customerName, intentar obtener del último mensaje inbound
+    if (!customerName) {
+      const lastInbound = [...messages].reverse().find(m => m.direction === 'inbound');
+      if (lastInbound?.author) {
+        customerName = lastInbound.author;
+      }
+    }
+    
     let crmProfile: ReminderContext['crmProfile'] = null;
     let otherConversationsSummary: string | null = null;
 
@@ -313,8 +323,11 @@ export class ReminderService implements IReminderService {
 
     const lastMessageAt = conversation.lastCustomerMessageAt || conversation.lastMessageAt;
 
+    // Fallback final si no se encontró ningún nombre
+    const finalCustomerName = customerName || 'Cliente';
+
     return {
-      customerName,
+      customerName: finalCustomerName,
       channel: conversation.type || 'dm',
       timeSinceLastMessage: this.formatTimeSince(lastMessageAt),
       recentMessages: recentMessagesText,
@@ -385,9 +398,9 @@ export class ReminderService implements IReminderService {
       return { scheduled: false, terminal: false };
     }
 
-    const delayHours = this.getDelayForReminderNumber(rules, nextReminderNumber);
-    const baseTime = conversation.lastReminderAt || conversation.lastCustomerMessageAt || conversation.lastMessageAt || new Date();
-    const scheduledAt = new Date(new Date(baseTime).getTime() + delayHours * 60 * 60 * 1000);
+    // scheduledAt = NOW porque ya filtramos conversaciones que pasaron el delay de elegibilidad
+    // No tiene sentido calcular una fecha en el pasado basándose en lastMessageAt
+    const scheduledAt = new Date();
 
     const result = await storage.scheduleReminderAtomic(
       conversation.id,
