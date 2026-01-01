@@ -6,30 +6,66 @@ import {
   type ReminderRules,
   type ReminderEvent,
   type CrmContact,
-  type ReminderStatus
+  type ReminderStatus,
+  type Message
 } from "@shared/schema";
 
-const DEFAULT_REMINDER_PROMPT = `Eres un asistente de seguimiento amigable. Tu objetivo es enviar un mensaje breve y cortés para retomar la conversación con el cliente.
+interface ReminderContext {
+  customerName: string;
+  channel: string;
+  timeSinceLastMessage: string;
+  recentMessages: string;
+  conversationSummary: string | null;
+  closingIntent: string | null;
+  crmProfile: {
+    lifecycleStage: string | null;
+    status: string | null;
+    serviceInterest: string | null;
+    intent: string | null;
+    budget: string | null;
+    qualifiers: string | null;
+    preferredChannel: string | null;
+  } | null;
+  otherConversationsSummary: string | null;
+}
 
-Contexto de la conversación:
-{conversation_context}
+const ENHANCED_REMINDER_PROMPT = `Eres un asistente de seguimiento amigable para {brand_name}. Tu objetivo es enviar un mensaje breve y personalizado para retomar la conversación con el cliente.
 
-Información del cliente:
-- Nombre: {customer_name}
-- Canal: {channel}
-- Último mensaje hace: {time_since_last}
+## CONTEXTO DEL CLIENTE
 
-Este es el recordatorio número {reminder_number} de máximo {max_reminders}.
+**Nombre:** {customer_name}
+**Canal actual:** {channel}
+**Tiempo sin respuesta:** {time_since_last}
+**Recordatorio:** #{reminder_number} de {max_reminders}
+
+### Conversación reciente:
+{recent_messages}
+
+### Resumen de la conversación:
+{conversation_summary}
+
+### Intención detectada:
+{closing_intent}
+
+### Perfil del cliente (CRM):
+{crm_profile}
+
+### Historial con este cliente:
+{other_conversations}
+
+## INSTRUCCIONES
 
 Genera un mensaje de seguimiento que:
-1. Sea breve (máximo 2-3 oraciones)
-2. Sea amigable y no invasivo
-3. Haga referencia sutil al tema de la conversación si es posible
-4. Invite al cliente a continuar si tiene preguntas o necesita ayuda
+1. Sea MUY breve (máximo 2 oraciones)
+2. Haga referencia ESPECÍFICA al tema o servicio que consultó el cliente
+3. Si hay un canal preferido mencionado (WhatsApp, teléfono), pregunta si pudo contactar por ese medio
+4. Sea amigable y no invasivo
 5. NO menciones que es un recordatorio automatizado
-6. Adapta el tono al canal (DM más personal, comentario más público)
+6. Adapta el tono: DM = personal y directo, comentario = más breve y público
 
-Responde SOLO con el mensaje de seguimiento, sin explicaciones ni formato JSON.`;
+IMPORTANTE: Si el cliente preguntó por algo específico (servicio, precio, cita), el mensaje DEBE hacer referencia a eso.
+
+Responde SOLO con el mensaje de seguimiento, sin explicaciones ni formato.`;
 
 export interface ReminderGenerationResult {
   success: boolean;
@@ -178,40 +214,36 @@ export class ReminderService implements IReminderService {
         };
       }
 
-      const messages = await storage.getMessagesByConversation(conversation.id);
-      const recentMessages = messages.slice(-10);
+      const brand = await storage.getBrand(conversation.brandId);
+      const context = await this.assembleReminderContext(conversation);
       
-      const conversationContext = recentMessages
-        .map(m => {
-          const role = m.direction === 'inbound' ? 'Cliente' : 'Agente';
-          return `${role}: ${m.content}`;
-        })
-        .join('\n');
+      const crmProfileText = context.crmProfile 
+        ? `- Etapa: ${context.crmProfile.lifecycleStage || 'No definida'}
+- Estado: ${context.crmProfile.status || 'No definido'}
+- Interés en servicio: ${context.crmProfile.serviceInterest || 'No especificado'}
+- Intención detectada: ${context.crmProfile.intent || 'No detectada'}
+- Presupuesto: ${context.crmProfile.budget || 'No mencionado'}
+- Canal preferido: ${context.crmProfile.preferredChannel || 'No especificado'}`
+        : 'No hay perfil CRM disponible';
 
-      let customerName = 'Cliente';
-      if (conversation.contactId) {
-        const contact = await storage.getCrmContact(conversation.contactId);
-        if (contact) {
-          customerName = contact.displayName || contact.firstName || 'Cliente';
-        }
-      }
-
-      const lastMessageAt = conversation.lastCustomerMessageAt || conversation.lastMessageAt;
-      const timeSince = this.formatTimeSince(lastMessageAt);
-
-      const prompt = DEFAULT_REMINDER_PROMPT
-        .replace('{conversation_context}', conversationContext || 'Sin contexto previo')
-        .replace('{customer_name}', customerName)
-        .replace('{channel}', conversation.type || 'dm')
-        .replace('{time_since_last}', timeSince)
+      const prompt = ENHANCED_REMINDER_PROMPT
+        .replace('{brand_name}', brand?.name || 'la empresa')
+        .replace('{customer_name}', context.customerName)
+        .replace('{channel}', context.channel)
+        .replace('{time_since_last}', context.timeSinceLastMessage)
         .replace('{reminder_number}', String(reminderNumber))
-        .replace('{max_reminders}', String(rules.maxReminders || 2));
+        .replace('{max_reminders}', String(rules.maxReminders || 2))
+        .replace('{recent_messages}', context.recentMessages || 'Sin mensajes recientes')
+        .replace('{conversation_summary}', context.conversationSummary || 'Sin resumen disponible')
+        .replace('{closing_intent}', context.closingIntent || 'Sin intención detectada')
+        .replace('{crm_profile}', crmProfileText)
+        .replace('{other_conversations}', context.otherConversationsSummary || 'Sin historial previo');
 
       const provider = createLLMProvider(agent, this.secrets);
       const response = await provider.generateRawCompletion(
-        'Eres un asistente de servicio al cliente que genera mensajes de seguimiento personalizados.',
+        'Eres un asistente de servicio al cliente experto en mensajes de seguimiento personalizados.',
         prompt,
-        { temperature: 0.7, maxTokens: 200 }
+        { temperature: 0.7, maxTokens: 150 }
       );
 
       return {
@@ -225,6 +257,69 @@ export class ReminderService implements IReminderService {
         error: String(error),
       };
     }
+  }
+
+  private async assembleReminderContext(conversation: Conversation): Promise<ReminderContext> {
+    const messages = await storage.getMessagesByConversation(conversation.id);
+    const recentMessages = messages.slice(-8);
+    
+    const recentMessagesText = recentMessages
+      .map(m => {
+        const role = m.direction === 'inbound' ? 'Cliente' : 'Agente';
+        const content = m.content?.substring(0, 150) || '[sin contenido]';
+        return `${role}: ${content}${m.content && m.content.length > 150 ? '...' : ''}`;
+      })
+      .join('\n');
+
+    let customerName = conversation.customerName || 'Cliente';
+    let crmProfile: ReminderContext['crmProfile'] = null;
+    let otherConversationsSummary: string | null = null;
+
+    if (conversation.contactId) {
+      const contact = await storage.getCrmContact(conversation.contactId);
+      if (contact) {
+        customerName = contact.displayName || contact.firstName || customerName;
+        
+        const customFields = (contact.customFields || {}) as Record<string, any>;
+        
+        crmProfile = {
+          lifecycleStage: contact.lifecycleStage || null,
+          status: contact.status || null,
+          serviceInterest: customFields.serviceInterest || null,
+          intent: customFields.intent || null,
+          budget: customFields.budget || null,
+          qualifiers: customFields.qualifiers ? JSON.stringify(customFields.qualifiers) : null,
+          preferredChannel: customFields.preferredChannel || null,
+        };
+
+        const otherConversations = await storage.getCrmContactConversations(contact.id);
+        const otherConvs = otherConversations.filter(c => c.id !== conversation.id);
+        
+        if (otherConvs.length > 0) {
+          const summaries = otherConvs
+            .slice(0, 3)
+            .map(c => c.closingSummary || c.closingIntent || `Conversación ${c.type} en ${c.platform}`)
+            .filter(Boolean);
+          
+          if (summaries.length > 0) {
+            otherConversationsSummary = `El cliente tiene ${otherConvs.length} conversación(es) previa(s): ${summaries.join('; ')}`;
+          }
+        }
+      }
+    }
+
+    const lastMessageAt = conversation.lastCustomerMessageAt || conversation.lastMessageAt;
+
+    return {
+      customerName,
+      channel: conversation.type || 'dm',
+      timeSinceLastMessage: this.formatTimeSince(lastMessageAt),
+      recentMessages: recentMessagesText,
+      conversationSummary: conversation.closingSummary || null,
+      closingIntent: conversation.closingIntent || null,
+      crmProfile,
+      otherConversationsSummary,
+    };
   }
 
   private applyTemplate(template: string, conversation: Conversation): string {
