@@ -15,10 +15,11 @@ import {
   AlertCircle, 
   Check, 
   Loader2,
-  Video 
+  Video,
+  Bell
 } from 'lucide-react';
 import { Platform, MessageType, Sentiment } from '@/lib/types';
-import { isRepliyoMessage, isAutoReply } from '@/lib/mockData';
+import { isRepliyoMessage, isAutoReply, isReminderMessage } from '@/lib/mockData';
 import type { Message } from '@shared/schema';
 import { motion } from "framer-motion";
 import { getCharacterLimit } from '@/utils/platformLimits';
@@ -165,6 +166,7 @@ function SingleMessage({
   const isOwner = isOutbound;
   const isSentFromRepliyo = isRepliyoMessage(msg.source, msg.internalOrigin);
   const isSentByAI = isAutoReply(msg.source, msg.internalOrigin);
+  const isSentByReminder = isReminderMessage(msg.source, msg.internalOrigin);
 
   const avatarSize = isReply ? AVATAR_SIZE_REPLY : AVATAR_SIZE_ROOT;
 
@@ -338,12 +340,14 @@ function SingleMessage({
           {isSentFromRepliyo && (
             <div className="mt-2 pt-2 border-t border-gray-200 flex items-center justify-between text-[10px] font-medium text-gray-500">
               <div className="flex items-center gap-1.5">
-                {isSentByAI ? (
+                {isSentByReminder ? (
+                  <Bell className="h-3 w-3 text-amber-500" />
+                ) : isSentByAI ? (
                   <Bot className="h-3 w-3" />
                 ) : (
                   <Send className="h-2.5 w-2.5" />
                 )}
-                <span>{isSentByAI ? "Respondido con IA" : "Enviado desde Repliyo"}</span>
+                <span>{isSentByReminder ? "Reminder automático" : isSentByAI ? "Respondido con IA" : "Enviado desde Repliyo"}</span>
               </div>
               <span className="text-[9px] text-gray-400">
                 {(msg.content || '').length}/{getCharacterLimit((msg.platform || 'instagram') as Platform, (msg.type || 'comment') as MessageType)}

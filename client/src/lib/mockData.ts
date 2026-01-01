@@ -51,7 +51,7 @@ export const SYNC_SOURCES = ['metricool_sync'] as const;
 export type SyncSource = typeof SYNC_SOURCES[number];
 
 // Internal origin values (immutable field)
-export const INTERNAL_ORIGINS = ['manual', 'ai'] as const;
+export const INTERNAL_ORIGINS = ['manual', 'ai', 'reminder'] as const;
 export type InternalOrigin = typeof INTERNAL_ORIGINS[number];
 
 // Helper functions for message source detection
@@ -60,7 +60,7 @@ export type InternalOrigin = typeof INTERNAL_ORIGINS[number];
 
 export function isRepliyoMessage(source: string | null | undefined, internalOrigin?: string | null): boolean {
   // Primary: use internalOrigin (immutable field that can't be overwritten by sync)
-  if (internalOrigin === 'manual' || internalOrigin === 'ai') {
+  if (internalOrigin === 'manual' || internalOrigin === 'ai' || internalOrigin === 'reminder') {
     return true;
   }
   // Fallback: use source for backward compatibility with existing messages
@@ -68,6 +68,18 @@ export function isRepliyoMessage(source: string | null | undefined, internalOrig
     return true;
   }
   // Explicitly return false for null/undefined or sync sources
+  return false;
+}
+
+export function isReminderMessage(source: string | null | undefined, internalOrigin?: string | null): boolean {
+  // Primary: use internalOrigin (immutable)
+  if (internalOrigin === 'reminder') {
+    return true;
+  }
+  // Fallback: check source
+  if (source === 'reminder_service') {
+    return true;
+  }
   return false;
 }
 
@@ -105,7 +117,7 @@ export function isManualReply(source: string | null | undefined, internalOrigin?
 // Helper to check if message was synced from social network (not sent from Repliyo)
 export function isSyncedMessage(source: string | null | undefined, internalOrigin?: string | null): boolean {
   // If internalOrigin is set, it's from Repliyo, not synced
-  if (internalOrigin === 'manual' || internalOrigin === 'ai') {
+  if (internalOrigin === 'manual' || internalOrigin === 'ai' || internalOrigin === 'reminder') {
     return false;
   }
   // Check for sync sources
