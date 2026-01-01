@@ -288,6 +288,23 @@ class SyncService {
           // Check if message already exists BEFORE updating conversation unread count
           const existingMessage = await storage.getMessageByMetricoolId(metricoolId, brandId);
           const isNewMessage = !existingMessage;
+          
+          // PROTECTION: Additional check to prevent incrementing unread for brand's own messages
+          // that were incorrectly detected as inbound
+          const authorLower = author.toLowerCase();
+          const brandNameLower = brandName.toLowerCase();
+          const isSuspiciousInbound = isInbound && (
+            authorLower === brandNameLower ||
+            authorLower.includes(brandNameLower) ||
+            brandNameLower.includes(authorLower)
+          );
+          
+          if (isSuspiciousInbound && isNewMessage) {
+            log(`[SyncService] WARNING: Suspicious inbound message from "${author}" for brand "${brandName}" - may be misidentified outbound. Not incrementing unread.`, "sync");
+          }
+          
+          // Only increment if truly new, truly inbound, and NOT suspicious
+          const shouldIncrementUnread = isInbound && isNewMessage && !isSuspiciousInbound;
 
           const conversationRecord = await storage.upsertConversation({
             brandId,
@@ -301,7 +318,7 @@ class SyncService {
             lastMessageAt: new Date(timestamp),
             lastMessagePreview: content.substring(0, 100),
             status: 'open',
-          }, isInbound && isNewMessage); // Only increment unread if NEW inbound message
+          }, shouldIncrementUnread); // Only increment unread if truly NEW inbound message and NOT suspicious
 
           const messageData = {
             brandId,
