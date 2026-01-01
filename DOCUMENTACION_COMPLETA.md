@@ -6866,6 +6866,104 @@ FLUJO DE REMINDER (CORREGIDO):
 | `server/services/reminderService.ts` | Enriquecimiento de contexto + guardado de contextSnapshot |
 | `shared/schema.ts` | Campo `contextSnapshot` (jsonb) en tabla `reminder_events` |
 
+#### 6.8 Troubleshooting y Diagnóstico de Reminders
+
+##### Problemas Comunes y Soluciones
+
+| Problema | Causa | Solución |
+|----------|-------|----------|
+| **"No AI agent configured and no template available"** | La marca tiene `use_ai_content=true` pero no hay AI agent configurado, y tampoco hay `template_text` como fallback | 1. Verificar que existe un AI agent para la marca: `SELECT * FROM ai_agents WHERE brand_id = 'XXX'` <br> 2. O añadir un `template_text` en `reminder_rules` como fallback |
+| **"Missing comment identifiers (no metricoolId in messages or contextSnapshot)"** | El mensaje inbound más reciente no tiene `metricool_id` (fue creado manualmente o hay bug en sync) | 1. Verificar mensajes: `SELECT id, metricool_id FROM messages WHERE conversation_id = 'XXX' AND direction = 'inbound' ORDER BY timestamp DESC` <br> 2. Esperar próximo sync para que se actualice el metricoolId |
+| **"Missing DM identifiers"** | La conversación DM no tiene `thread_external_id` o `customer_id` | 1. Verificar: `SELECT thread_external_id, customer_id FROM conversations WHERE id = 'XXX'` <br> 2. Ejecutar sync para actualizar datos de Metricool |
+| **Conversaciones huérfanas (reminder_status='scheduled' sin eventos)** | Inconsistencia de datos: la conversación se marcó como scheduled pero el evento nunca se creó | Limpiar con SQL: `UPDATE conversations SET reminder_status = 'none', reminder_count = 0, last_reminder_at = NULL WHERE brand_id = 'XXX' AND reminder_status = 'scheduled' AND id NOT IN (SELECT DISTINCT conversation_id FROM reminder_events WHERE status = 'scheduled')` |
+| **Reminders no se envían (0 scheduled, 0 sent)** | Puede ser: (1) No hay conversaciones elegibles, (2) Reminders deshabilitados, (3) Daily cap alcanzado | 1. Verificar reglas: `SELECT * FROM reminder_rules WHERE brand_id = 'XXX'` <br> 2. Verificar conversaciones elegibles (ver query abajo) |
+| **Reminders duplicados** | Sistema de 5 capas de defensa no funcionando | Verificar índice único: `SELECT * FROM pg_indexes WHERE indexname LIKE '%reminder%unique%'` |
+
+##### Dónde Buscar (Archivos y Logs)
+
+| Qué buscar | Dónde mirar |
+|------------|-------------|
+| **Logs del scheduler** | Buscar en logs del servidor: `grep -i "ReminderService\|LifecycleScheduler" /tmp/logs/Start_application_*.log` |
+| **Configuración de reminders por marca** | `SELECT * FROM reminder_rules WHERE brand_id = 'XXX'` |
+| **Estado de conversaciones** | `SELECT id, customer_name, reminder_status, reminder_count FROM conversations WHERE brand_id = 'XXX' AND reminder_status != 'none'` |
+| **Eventos de reminder** | `SELECT * FROM reminder_events WHERE brand_id = 'XXX' ORDER BY created_at DESC LIMIT 20` |
+| **AI Agent configurado** | `SELECT id, model, is_active FROM ai_agents WHERE brand_id = 'XXX'` |
+| **Lógica de elegibilidad** | `server/storage.ts` método `getConversationsEligibleForReminder` |
+| **Generación de contenido** | `server/services/reminderService.ts` método `generateReminderContent` |
+| **Envío vía Metricool** | `server/services/reminderService.ts` método `sendScheduledReminder` |
+
+##### Query de Diagnóstico: Conversaciones Elegibles
+
+```sql
+-- Ver conversaciones elegibles para reminder (lógica corregida)
+WITH message_timestamps AS (
+  SELECT 
+    m.conversation_id,
+    MAX(CASE WHEN m.direction = 'inbound' THEN m.timestamp END) as last_inbound_at,
+    MAX(CASE WHEN m.direction = 'outbound' THEN m.timestamp END) as last_outbound_at
+  FROM messages m
+  JOIN conversations c ON c.id = m.conversation_id
+  WHERE c.brand_id = 'TU_BRAND_ID_AQUI'
+  GROUP BY m.conversation_id
+)
+SELECT c.id, c.type, c.customer_name, c.status, c.reminder_status, c.reminder_count,
+       mt.last_inbound_at, mt.last_outbound_at,
+       (mt.last_outbound_at > mt.last_inbound_at) as brand_replied_last
+FROM conversations c
+JOIN message_timestamps mt ON mt.conversation_id = c.id
+WHERE c.brand_id = 'TU_BRAND_ID_AQUI'
+AND c.status NOT IN ('closed')
+AND COALESCE(c.reminder_status, 'none') NOT IN ('scheduled', 'max_reached', 'opted_out')
+AND COALESCE(c.reminder_count, 0) < 2
+AND mt.last_outbound_at IS NOT NULL
+AND mt.last_inbound_at IS NOT NULL
+AND mt.last_outbound_at > mt.last_inbound_at  -- Marca respondió al cliente
+AND mt.last_inbound_at <= NOW() - INTERVAL '1 hour'  -- Cliente inactivo
+ORDER BY mt.last_inbound_at DESC;
+```
+
+##### Flujo de Diagnóstico Paso a Paso
+
+```
+1. ¿Los reminders están habilitados para la marca?
+   └── SELECT enabled FROM reminder_rules WHERE brand_id = 'XXX'
+   
+2. ¿Hay AI agent o template configurado?
+   └── SELECT * FROM ai_agents WHERE brand_id = 'XXX'
+   └── SELECT template_text FROM reminder_rules WHERE brand_id = 'XXX'
+   
+3. ¿Hay conversaciones elegibles?
+   └── Ejecutar query de diagnóstico arriba
+   
+4. ¿Los mensajes tienen metricool_id?
+   └── SELECT id, metricool_id FROM messages WHERE conversation_id = 'XXX' AND direction = 'inbound'
+   
+5. ¿Hay eventos stuck en 'scheduled'?
+   └── SELECT * FROM reminder_events WHERE brand_id = 'XXX' AND status = 'scheduled' AND scheduled_at < NOW()
+   
+6. ¿Qué dice el log?
+   └── grep "ReminderService" /tmp/logs/Start_application_*.log | tail -50
+```
+
+##### Ejecución Manual del Scheduler
+
+Para forzar una ejecución inmediata del scheduler de reminders:
+
+```bash
+curl -X POST "http://localhost:5000/api/brands/BRAND_ID/reminders/run-manual" \
+  -H "Content-Type: application/json"
+```
+
+Esto ejecutará el ciclo completo: buscar elegibles → generar contenido → programar → enviar.
+
+##### Sistema de 5 Capas de Defensa Contra Duplicados
+
+1. **Pre-check en storage** - `checkConversationEligibleForReminder()` verifica estado actual
+2. **Unique partial index** - `idx_reminder_events_unique_scheduled` previene duplicados en DB
+3. **Atomic transaction** - `scheduleReminderAtomic()` usa transacción para consistencia
+4. **Estado terminal check** - No procesa conversaciones en estados terminales
+5. **Conversation status update** - Actualiza `reminder_status` inmediatamente después de crear evento
+
 ---
 
 ## FASE 13: Timeline de Interacciones (Customer Journey)
