@@ -463,8 +463,11 @@ export class ReminderService implements IReminderService {
       contentSource: rules.useAiContent !== false ? 'ai' : 'template',
       reminderNumber: nextReminderNumber,
       deliveryChannel: conversation.type || 'dm',
-      contextSnapshot: JSON.parse(JSON.stringify(contextSnapshot)),
+      contextSnapshot: contextSnapshot,
     };
+
+    console.log(`[ReminderService] DEBUG - eventData.contextSnapshot:`, JSON.stringify(eventData.contextSnapshot));
+    console.log(`[ReminderService] DEBUG - eventData keys:`, Object.keys(eventData));
 
     const result = await storage.scheduleReminderAtomic(
       conversation.id,
