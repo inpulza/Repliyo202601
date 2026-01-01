@@ -603,7 +603,9 @@ export class ReminderService implements IReminderService {
     if (deliveryChannel === 'comment') {
       const platform = conversation.platform?.toLowerCase();
       
-      if ((platform === 'youtube' || platform === 'tiktok') && snapshot.targetParentId) {
+      // For ALL platforms with nested comments: use parentId if available
+      // This applies to YouTube, TikTok, Instagram, and Facebook
+      if (snapshot.targetParentId) {
         commentObjectId = snapshot.targetParentId;
         isNestedComment = true;
         console.log(`[ReminderService] ${platform} nested comment detected (from snapshot), using parentId: ${commentObjectId}`);
@@ -616,13 +618,15 @@ export class ReminderService implements IReminderService {
         const targetMessage = await storage.getMessage(snapshot.targetMessageId);
         if (targetMessage) {
           const msgRawData = targetMessage.rawData as Record<string, any> | null;
-          if ((platform === 'youtube' || platform === 'tiktok') && msgRawData?.parentId) {
+          // Use parentId for nested comments on any platform
+          if (msgRawData?.parentId) {
             commentObjectId = msgRawData.parentId;
             isNestedComment = true;
             console.log(`[ReminderService] ${platform} nested comment (from target message ${targetMessage.id}), using parentId: ${commentObjectId}`);
           } else {
-            commentObjectId = targetMessage.metricoolId || null;
-            console.log(`[ReminderService] Using metricoolId from target message: ${commentObjectId}`);
+            // Fallback: use rawData.id, rawData.root.id, or metricoolId (same logic as auto-reply)
+            commentObjectId = msgRawData?.id || msgRawData?.root?.id || targetMessage.metricoolId || null;
+            console.log(`[ReminderService] Using objectId from target message: ${commentObjectId}`);
           }
         } else {
           console.warn(`[ReminderService] Target message ${snapshot.targetMessageId} not found in database`);
@@ -638,13 +642,15 @@ export class ReminderService implements IReminderService {
         
         if (latestInbound) {
           const msgRawData = latestInbound.rawData as Record<string, any> | null;
-          if ((platform === 'youtube' || platform === 'tiktok') && msgRawData?.parentId) {
+          // Use parentId for nested comments on any platform
+          if (msgRawData?.parentId) {
             commentObjectId = msgRawData.parentId;
             isNestedComment = true;
             console.log(`[ReminderService] ${platform} nested comment (fallback), using parentId: ${commentObjectId}`);
           } else {
-            commentObjectId = latestInbound.metricoolId || null;
-            console.log(`[ReminderService] Using metricoolId from latest inbound (fallback): ${commentObjectId}`);
+            // Same fallback logic as auto-reply
+            commentObjectId = msgRawData?.id || msgRawData?.root?.id || latestInbound.metricoolId || null;
+            console.log(`[ReminderService] Using objectId from latest inbound (fallback): ${commentObjectId}`);
           }
         }
       }
