@@ -36,6 +36,7 @@ The user interface includes an "Orchestration" tab for managing timing configura
   - ReminderService: Pre-check → AI generation → Atomic schedule workflow. Prevents AI quota waste by validating eligibility before expensive LLM calls.
   - Defense layers: Eligibility query, pre-check, transaction checks, unique partial index, structured responses with terminal state tracking.
   - Daily cap enforcement counting both scheduled + sent reminders to prevent over-scheduling.
+  - **Corrección Crítica (1 Ene 2026):** Reminders solo se programan DESPUÉS de que la marca haya respondido al cliente (`last_outbound_at > last_inbound_at`). Se guarda `contextSnapshot` con `targetMessageId`/`targetMetricoolId` para responder al mensaje correcto en Metricool.
 - **Customer Journey Timeline:** Visualización cronológica de todos los puntos de contacto clave con cada cliente. Combina:
   - Datos de: `messages`, `conversation_user_summaries`, `reminder_events`, `conversationStatusHistory`
   - Tipos de eventos: primer contacto, mensajes in/out, respuestas IA, recordatorios, cambios de estado, resúmenes

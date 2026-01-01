@@ -4,10 +4,10 @@
 Sistema de gestión de mensajes de redes sociales que se integra con Metricool para centralizar y gestionar DMs y comentarios de múltiples marcas/empresas. El sistema permite a usuarios admin y clientes gestionar sus interacciones sociales de forma organizada.
 
 ## Estado Actual
-- **Fase Actual**: 🔄 FASE 12 EN PROGRESO - Smart Customer Follow-up System
-- **Última Actualización**: 31 de Diciembre 2025
-- **Sub-fases Completadas**: Fase 1-5 (Database, ReminderService, Scheduler Integration, Delivery via Metricool, UI Configuration)
-- **Próxima Sub-fase**: Fase 6 (Analytics Dashboard)
+- **Fase Actual**: ✅ FASE 12 COMPLETADA - Smart Customer Follow-up System
+- **Última Actualización**: 1 de Enero 2026
+- **Sub-fases Completadas**: Fase 1-6 (Database, ReminderService, Scheduler Integration, Delivery via Metricool, UI Configuration, Correcciones Críticas)
+- **Corrección Crítica (1 Ene 2026)**: Lógica de elegibilidad corregida - reminders solo se programan DESPUÉS de que la marca haya respondido al cliente
 - **Historial DMs**: 20 mensajes recientes + resumen persistente (500+ chars)
 - **Control @Mention**: ✅ Etiquetado automático desactivado por defecto, configurable por agente
 - **Login/Logout**: ✅ Completamente funcional (página de login creada, logout en sidebar)
@@ -6725,6 +6725,146 @@ Frontend unwraps correctamente:
 const rules = data?.rules || data; // Maneja ambos formatos
 const events = data?.events || [];
 ```
+
+---
+
+### FASE 12.6: Correcciones Críticas (1 Enero 2026)
+
+**Problema Detectado:** El sistema programaba reminders ANTES de que la marca hubiera respondido al cliente, causando follow-ups prematuros.
+
+**Causa Raíz:** La lógica de elegibilidad no verificaba que existiera un mensaje outbound posterior al último mensaje inbound.
+
+#### 6.1 Corrección de Lógica de Elegibilidad
+
+**Archivo:** `server/storage.ts` (línea ~3490)
+
+**Antes (incorrecta):**
+```sql
+-- Solo verificaba tiempo desde último mensaje
+WHERE last_customer_message_at < now() - interval 'X hours'
+```
+
+**Después (correcta):**
+```sql
+-- CTE que verifica: la marca DEBE haber respondido al cliente
+WITH conversations_with_outbound AS (
+  SELECT c.*, 
+         c.last_message_at AS last_outbound_at
+  FROM conversations c
+  WHERE c.brand_id = $1
+    AND c.status NOT IN ('closed', 'solved')
+    AND c.reminder_status NOT IN ('max_reached', 'opted_out')
+    -- CRÍTICO: Debe existir respuesta outbound DESPUÉS del inbound
+    AND c.last_message_at > c.last_customer_message_at
+)
+```
+
+**Nueva Regla:** `last_outbound_at > last_inbound_at` es OBLIGATORIO antes de programar cualquier reminder.
+
+#### 6.2 Enriquecimiento de ReminderContext
+
+**Archivo:** `server/services/reminderService.ts`
+
+Se enriqueció el contexto pasado al LLM con datos completos del último mensaje inbound:
+
+```typescript
+interface EnrichedReminderContext {
+  // Datos existentes...
+  lastInboundMessage: {
+    id: string;
+    metricoolId: string;
+    author: string;
+    content: string;
+    rawData: any;
+  };
+}
+```
+
+#### 6.3 Target Message Tracking
+
+**Problema:** Al enviar el reminder, el sistema podía responder al mensaje equivocado en Metricool.
+
+**Solución:** Se guarda `contextSnapshot` con `targetMessageId` y `targetMetricoolId`:
+
+```typescript
+// Al programar reminder
+const reminderEvent = {
+  // ...campos existentes
+  contextSnapshot: JSON.stringify({
+    targetMessageId: lastInboundMessage.id,
+    targetMetricoolId: lastInboundMessage.metricoolId,
+    author: lastInboundMessage.author,
+    capturedAt: new Date().toISOString(),
+  }),
+};
+
+// Al enviar reminder
+const snapshot = JSON.parse(reminder.contextSnapshot);
+const targetId = snapshot.targetMetricoolId || conversation.lastCustomerMessageMetricoolId;
+```
+
+#### 6.4 Corrección de Error SQL en Arrays
+
+**Problema:** Error SQL `op ANY/ALL (array) requires array on right side` al filtrar por tipos de conversación.
+
+**Antes (error):**
+```typescript
+const types = ['dm', 'comment'];
+sql`c.type = ANY(${types})`  // ❌ Falla con drizzle
+```
+
+**Después (correcto):**
+```typescript
+import { sql } from 'drizzle-orm';
+
+const typePlaceholders = types.map(t => sql`${t}`);
+sql`c.type IN (${sql.join(typePlaceholders, sql`, `)})`  // ✅ Funciona
+```
+
+#### 6.5 Flujo Completo Corregido
+
+```
+FLUJO DE REMINDER (CORREGIDO):
+
+1. Scheduler ejecuta cada 5 minutos
+   │
+2. getConversationsEligibleForReminder
+   ├── Filtro 1: status NOT IN (closed, solved)
+   ├── Filtro 2: reminderStatus NOT IN (max_reached, opted_out)
+   ├── Filtro 3: tipo IN (dm, comment) según config
+   └── Filtro 4 (NUEVO): last_outbound_at > last_inbound_at  ✅
+   │
+3. Para cada conversación elegible:
+   ├── Pre-check (barato): checkConversationEligibleForReminder
+   ├── AI Generation (costoso): Solo si pre-check OK
+   ├── Guardar contextSnapshot con targetMessageId/targetMetricoolId
+   └── Atomic Schedule con transacción
+   │
+4. sendScheduledReminders
+   ├── Obtener reminder.contextSnapshot
+   ├── Usar snapshot.targetMetricoolId para replyTo
+   └── Enviar via Metricool al mensaje correcto
+```
+
+#### 6.6 Verificación de Correcciones
+
+**Logs del scheduler después de correcciones:**
+```
+[ReminderService] Found 0 conversations eligible for reminder #1 (delay: 1h)
+[ReminderService] Found 0 conversations eligible for reminder #2 (delay: 48h)
+[ReminderService] Total scheduled for brand: 0
+[ReminderService] Found 0 reminders ready to send
+```
+
+**Sin errores SQL:** El error `op ANY/ALL (array)` ya no aparece.
+
+#### 6.7 Archivos Modificados
+
+| Archivo | Cambio |
+|---------|--------|
+| `server/storage.ts` | Nueva lógica de elegibilidad con CTE y verificación outbound > inbound |
+| `server/services/reminderService.ts` | Enriquecimiento de contexto + guardado de contextSnapshot |
+| `shared/schema.ts` | Campo `contextSnapshot` (jsonb) en tabla `reminder_events` |
 
 ---
 
