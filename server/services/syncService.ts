@@ -154,16 +154,6 @@ class SyncService {
     }
     
     log(`[SyncService] Brand ${brandName}: active providers - ${activeProviders.join(', ')}`, "sync");
-    
-    // Load known brand account names for cross-brand detection (cache per platform)
-    const knownBrandAccountsByPlatform: Map<string, Set<string>> = new Map();
-    for (const provider of activeProviders) {
-      const normalizedPlatform = this.normalizePlatform(provider);
-      if (!knownBrandAccountsByPlatform.has(normalizedPlatform)) {
-        const accounts = await storage.getKnownBrandAccountNames(normalizedPlatform);
-        knownBrandAccountsByPlatform.set(normalizedPlatform, accounts);
-      }
-    }
 
     const metricoolService = new MetricoolService({
       userToken: token,
@@ -268,16 +258,36 @@ class SyncService {
               isFromBrand = true;
             }
             
-            // Find customer participant: look for participant that is NOT the brand
-            // First try to find by self=false flag, then by excluding brandAccountId
-            const customerParticipant = participants.find((p: any) => p.self === false) ||
-              (brandAccountId ? participants.find((p: any) => p.id !== brandAccountId && p.id) : null) ||
+            // Find customer participant: the person who is NOT the current brand
+            // Priority order:
+            // 1. Participant with self=false (clear non-brand indicator)
+            // 2. Participant whose ID is NOT the brandAccountId
+            // 3. When both are self=true (cross-brand DM), use the participant that is NOT the current brand
+            let customerParticipant = participants.find((p: any) => p.self === false);
+            
+            if (!customerParticipant && brandAccountId) {
+              // Both participants may be self=true (cross-brand DM between connected accounts)
+              // Pick the one that is NOT the current brand
+              customerParticipant = participants.find((p: any) => p.id !== brandAccountId);
+            }
+            
+            if (!customerParticipant && !isFromBrand) {
               // If we still can't find, and message is inbound, use the sender
-              (!isFromBrand ? fromParticipant : null) ||
+              customerParticipant = fromParticipant;
+            }
+            
+            if (!customerParticipant) {
               // Last resort: find any participant that is not marked as self
-              participants.find((p: any) => p.self !== true);
+              customerParticipant = participants.find((p: any) => p.self !== true);
+            }
             
             customerId = customerParticipant?.id || fromId || author;
+            // Use customerParticipant name if available, not the current message author
+            const customerName = customerParticipant?.name || author;
+            const customerAvatar = customerParticipant?.imageProfileUrl || authorAvatar;
+            
+            // DEBUG: Log conversation key details for troubleshooting
+            log(`[SyncService] DM Key Debug - brand: ${brandName}, threadId: ${conv.id}, customerId: ${customerId}, customerName: ${customerName}, fromBrand: ${isFromBrand}, participants: ${JSON.stringify(participants.map((p: any) => ({ id: p.id, name: p.name, self: p.self })))}`, "sync");
             
             // Warn if customerId matches brandAccountId (potential bug)
             if (customerId === brandAccountId) {
@@ -291,6 +301,16 @@ class SyncService {
             customerId = msg.from?.id || msg.sender?.id || author;
           }
 
+          // Variables for conversation customer identity (may differ from message author)
+          // For Instagram/LinkedIn/TikTok/Facebook: these are set from customerParticipant above
+          // For other platforms: fall back to author
+          const convCustomerName = (conv.provider === 'INSTAGRAM' || conv.provider === 'LINKEDIN' || conv.provider === 'TIKTOKBUSINESS' || conv.provider === 'FACEBOOK') 
+            ? (participants.find((p: any) => p.id === customerId)?.name || author)
+            : author;
+          const convCustomerAvatar = (conv.provider === 'INSTAGRAM' || conv.provider === 'LINKEDIN' || conv.provider === 'TIKTOKBUSINESS' || conv.provider === 'FACEBOOK')
+            ? (participants.find((p: any) => p.id === customerId)?.imageProfileUrl || authorAvatar)
+            : authorAvatar;
+
           const direction = isFromBrand ? 'outbound' : 'inbound';
           const isInbound = !isFromBrand;
           const metricoolId = `conv_${conv.id}_${msg.id || msg.timestamp}`;
@@ -299,27 +319,18 @@ class SyncService {
           const existingMessage = await storage.getMessageByMetricoolId(metricoolId, brandId);
           const isNewMessage = !existingMessage;
           
-          // PROTECTION: Check if author is a known brand account (cross-brand detection)
+          // PROTECTION: Additional check to prevent incrementing unread for brand's own messages
+          // that were incorrectly detected as inbound
           const authorLower = author.toLowerCase();
           const brandNameLower = brandName.toLowerCase();
-          const knownBrandAccounts = knownBrandAccountsByPlatform.get(platform) || new Set<string>();
-          
-          // Message is suspicious if:
-          // 1. Author matches current brand name (old check)
-          // 2. Author is in the list of known brand accounts that send outbound messages
-          const isAuthorKnownBrandAccount = knownBrandAccounts.has(authorLower);
           const isSuspiciousInbound = isInbound && (
             authorLower === brandNameLower ||
             authorLower.includes(brandNameLower) ||
-            brandNameLower.includes(authorLower) ||
-            isAuthorKnownBrandAccount
+            brandNameLower.includes(authorLower)
           );
           
           if (isSuspiciousInbound && isNewMessage) {
-            const reason = isAuthorKnownBrandAccount 
-              ? `author "${author}" is a known brand account` 
-              : `author matches brand name "${brandName}"`;
-            log(`[SyncService] BLOCKED: Inbound message from "${author}" for brand "${brandName}" - ${reason}. Not incrementing unread.`, "sync");
+            log(`[SyncService] WARNING: Suspicious inbound message from "${author}" for brand "${brandName}" - may be misidentified outbound. Not incrementing unread.`, "sync");
           }
           
           // Only increment if truly new, truly inbound, and NOT suspicious
@@ -331,8 +342,8 @@ class SyncService {
             platform,
             type: 'dm',
             customerId,
-            customerName: author,
-            customerAvatar: authorAvatar,
+            customerName: convCustomerName,
+            customerAvatar: convCustomerAvatar,
             threadExternalId: conv.id,
             lastMessageAt: new Date(timestamp),
             lastMessagePreview: content.substring(0, 100),
