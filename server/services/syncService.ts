@@ -154,6 +154,16 @@ class SyncService {
     }
     
     log(`[SyncService] Brand ${brandName}: active providers - ${activeProviders.join(', ')}`, "sync");
+    
+    // Load known brand account names for cross-brand detection (cache per platform)
+    const knownBrandAccountsByPlatform: Map<string, Set<string>> = new Map();
+    for (const provider of activeProviders) {
+      const normalizedPlatform = this.normalizePlatform(provider);
+      if (!knownBrandAccountsByPlatform.has(normalizedPlatform)) {
+        const accounts = await storage.getKnownBrandAccountNames(normalizedPlatform);
+        knownBrandAccountsByPlatform.set(normalizedPlatform, accounts);
+      }
+    }
 
     const metricoolService = new MetricoolService({
       userToken: token,
@@ -289,18 +299,27 @@ class SyncService {
           const existingMessage = await storage.getMessageByMetricoolId(metricoolId, brandId);
           const isNewMessage = !existingMessage;
           
-          // PROTECTION: Additional check to prevent incrementing unread for brand's own messages
-          // that were incorrectly detected as inbound
+          // PROTECTION: Check if author is a known brand account (cross-brand detection)
           const authorLower = author.toLowerCase();
           const brandNameLower = brandName.toLowerCase();
+          const knownBrandAccounts = knownBrandAccountsByPlatform.get(platform) || new Set<string>();
+          
+          // Message is suspicious if:
+          // 1. Author matches current brand name (old check)
+          // 2. Author is in the list of known brand accounts that send outbound messages
+          const isAuthorKnownBrandAccount = knownBrandAccounts.has(authorLower);
           const isSuspiciousInbound = isInbound && (
             authorLower === brandNameLower ||
             authorLower.includes(brandNameLower) ||
-            brandNameLower.includes(authorLower)
+            brandNameLower.includes(authorLower) ||
+            isAuthorKnownBrandAccount
           );
           
           if (isSuspiciousInbound && isNewMessage) {
-            log(`[SyncService] WARNING: Suspicious inbound message from "${author}" for brand "${brandName}" - may be misidentified outbound. Not incrementing unread.`, "sync");
+            const reason = isAuthorKnownBrandAccount 
+              ? `author "${author}" is a known brand account` 
+              : `author matches brand name "${brandName}"`;
+            log(`[SyncService] BLOCKED: Inbound message from "${author}" for brand "${brandName}" - ${reason}. Not incrementing unread.`, "sync");
           }
           
           // Only increment if truly new, truly inbound, and NOT suspicious

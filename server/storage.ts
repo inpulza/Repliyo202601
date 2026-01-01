@@ -338,6 +338,9 @@ export interface IStorage {
   // Customer Journey Timeline
   getConversationTimeline(conversationId: string): Promise<import("@shared/schema").ConversationTimeline | null>;
   getContactTimeline(contactId: string): Promise<import("@shared/schema").ConversationTimeline | null>;
+  
+  // Cross-Brand Account Detection (for preventing false inbound detection)
+  getKnownBrandAccountNames(platform: string): Promise<Set<string>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -4241,6 +4244,30 @@ export class DatabaseStorage implements IStorage {
         currentStatus: contact.status || 'lead',
       }
     };
+  }
+  
+  async getKnownBrandAccountNames(platform: string): Promise<Set<string>> {
+    const normalizedPlatform = platform.toLowerCase();
+    
+    const result = await db
+      .selectDistinct({ author: messages.author })
+      .from(messages)
+      .where(
+        and(
+          eq(messages.direction, 'outbound'),
+          eq(messages.source, 'metricool_sync'),
+          sql`LOWER(${messages.platform}) = ${normalizedPlatform}`
+        )
+      );
+    
+    const accountNames = new Set<string>();
+    for (const row of result) {
+      if (row.author) {
+        accountNames.add(row.author.toLowerCase());
+      }
+    }
+    
+    return accountNames;
   }
 }
 
