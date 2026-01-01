@@ -730,7 +730,7 @@ export const api = {
       conversationType?: string | null;
       conversationPlatform?: string | null;
       customerName?: string | null;
-      postId?: string | null;
+      socialPostId?: string | null;
     }>> => {
       const params = new URLSearchParams();
       if (options?.status) params.append('status', options.status);

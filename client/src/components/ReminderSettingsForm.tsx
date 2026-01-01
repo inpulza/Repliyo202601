@@ -28,7 +28,7 @@ type ReminderEventWithConversation = ReminderEvent & {
   conversationType?: string | null;
   conversationPlatform?: string | null;
   customerName?: string | null;
-  postId?: string | null;
+  socialPostId?: string | null;
 };
 
 const getPlatformIcon = (platform: string | null | undefined) => {

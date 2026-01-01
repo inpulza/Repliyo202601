@@ -3247,17 +3247,30 @@ export class DatabaseStorage implements IStorage {
     return await query;
   }
 
-  async getReminderEventsWithConversationByBrand(brandId: string, options?: { status?: string; limit?: number }): Promise<Array<ReminderEvent & { 
+  async getReminderEventsWithConversationByBrand(brandId: string, options?: { status?: string; limit?: number }): Promise<Array<{
+    id: string;
+    brandId: string;
+    conversationId: string;
+    contactId: string | null;
+    reminderNumber: number;
+    status: string;
+    content: string | null;
+    contentSource: string | null;
+    contextSnapshot: unknown;
+    scheduledAt: Date | null;
+    sentAt: Date | null;
+    errorMessage: string | null;
+    createdAt: Date;
     conversationType: string | null;
     conversationPlatform: string | null;
     customerName: string | null;
-    postId: string | null;
+    socialPostId: string | null;
   }>> {
     const conditions = options?.status 
       ? and(eq(reminderEvents.brandId, brandId), eq(reminderEvents.status, options.status))
       : eq(reminderEvents.brandId, brandId);
     
-    let query = db
+    const results = await db
       .select({
         id: reminderEvents.id,
         brandId: reminderEvents.brandId,
@@ -3275,18 +3288,15 @@ export class DatabaseStorage implements IStorage {
         conversationType: conversations.type,
         conversationPlatform: conversations.platform,
         customerName: conversations.customerName,
-        postId: conversations.postId,
+        socialPostId: conversations.socialPostId,
       })
       .from(reminderEvents)
       .leftJoin(conversations, eq(reminderEvents.conversationId, conversations.id))
       .where(conditions)
-      .orderBy(desc(reminderEvents.createdAt));
+      .orderBy(desc(reminderEvents.createdAt))
+      .limit(options?.limit || 50);
     
-    if (options?.limit) {
-      query = query.limit(options.limit) as typeof query;
-    }
-    
-    return await query;
+    return results;
   }
 
   async updateReminderEventStatus(id: string, status: string, sentAt?: Date, errorMessage?: string): Promise<ReminderEvent | undefined> {
