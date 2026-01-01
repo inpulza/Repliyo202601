@@ -333,9 +333,8 @@ class SyncService {
             log(`[SyncService] WARNING: Suspicious inbound message from "${author}" for brand "${brandName}" - may be misidentified outbound. Not incrementing unread.`, "sync");
           }
           
-          // Only increment if truly new, truly inbound, and NOT suspicious
-          const shouldIncrementUnread = isInbound && isNewMessage && !isSuspiciousInbound;
-
+          // CRITICAL FIX: Do NOT increment unread here - wait until after upsertMessage
+          // to verify the message actually saved for THIS brand (cross-brand protection)
           const conversationRecord = await storage.upsertConversation({
             brandId,
             socialPostId: null,
@@ -348,7 +347,7 @@ class SyncService {
             lastMessageAt: new Date(timestamp),
             lastMessagePreview: content.substring(0, 100),
             status: 'open',
-          }, shouldIncrementUnread); // Only increment unread if truly NEW inbound message and NOT suspicious
+          }, false); // Never increment here - will increment after message upsert
 
           const messageData = {
             brandId,
@@ -386,8 +385,14 @@ class SyncService {
           // (upsertMessage may return an existing message from another brand if it's a global duplicate)
           const isReallyNew = isNewMessage && savedMessage.brandId === brandId;
           
+          // CRITICAL FIX: Increment unread counter ONLY AFTER verifying message belongs to this brand
+          // This prevents cross-brand counter duplication when both accounts are connected
+          if (isReallyNew && isInbound && !isSuspiciousInbound) {
+            await storage.incrementConversationUnread(conversationRecord.id);
+          }
+          
           // Log DM processing for debugging
-          log(`[SyncService] DM ${metricoolId} from ${author}: isNew=${isNewMessage}, isReallyNew=${isReallyNew}, isFromBrand=${isFromBrand}, direction=${direction}`, "sync");
+          log(`[SyncService] DM ${metricoolId} from ${author}: isNew=${isNewMessage}, isReallyNew=${isReallyNew}, isFromBrand=${isFromBrand}, direction=${direction}, incrementedUnread=${isReallyNew && isInbound && !isSuspiciousInbound}`, "sync");
           
           // CRM Traffic Controller: Route DM to contact system
           if (isReallyNew && isInbound) {

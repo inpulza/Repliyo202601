@@ -75,6 +75,7 @@ export interface IStorage {
   updateConversation(id: string, updates: UpdateConversation): Promise<Conversation | undefined>;
   upsertConversation(conversation: InsertConversation): Promise<Conversation>;
   updateConversationLastAiReply(id: string): Promise<Conversation | undefined>;
+  incrementConversationUnread(id: string): Promise<Conversation | undefined>;
   
   getMessages(brandId?: string): Promise<Message[]>;
   getMessagesByConversation(conversationId: string): Promise<Message[]>;
@@ -749,6 +750,21 @@ export class DatabaseStorage implements IStorage {
     const [conversation] = await db
       .update(conversations)
       .set({ lastAiReplyAt: new Date() })
+      .where(eq(conversations.id, id))
+      .returning();
+    return conversation || undefined;
+  }
+
+  async incrementConversationUnread(id: string): Promise<Conversation | undefined> {
+    const existing = await this.getConversation(id);
+    if (!existing) return undefined;
+    
+    const newCount = (existing.unreadCount || 0) + 1;
+    console.log(`[Storage] POST-UPSERT INCREMENT unread for conv ${id} (${existing.customerName}): ${existing.unreadCount || 0} -> ${newCount}`);
+    
+    const [conversation] = await db
+      .update(conversations)
+      .set({ unreadCount: newCount })
       .where(eq(conversations.id, id))
       .returning();
     return conversation || undefined;
