@@ -209,7 +209,9 @@ export class ReminderService implements IReminderService {
       }
 
       const agent = await storage.getAiAgentByBrand(conversation.brandId);
+      console.log(`[ReminderService] Looking for agent for brand ${conversation.brandId}, found: ${agent?.id || 'null'}`);
       if (!agent) {
+        console.log(`[ReminderService] No agent found for brand ${conversation.brandId}, templateText available: ${!!rules.templateText}`);
         if (rules.templateText) {
           return {
             success: true,
