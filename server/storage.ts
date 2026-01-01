@@ -28,6 +28,18 @@ import {
 import { db } from "./db";
 import { eq, desc, and, or, isNull, isNotNull, gte, lte, sql, inArray, notInArray } from "drizzle-orm";
 
+function snakeToCamel(str: string): string {
+  return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+}
+
+function transformRowToCamelCase<T>(row: Record<string, unknown>): T {
+  const result: Record<string, unknown> = {};
+  for (const key in row) {
+    result[snakeToCamel(key)] = row[key];
+  }
+  return result as T;
+}
+
 export interface IStorage {
   getBrands(): Promise<Brand[]>;
   getActiveBrands(): Promise<Brand[]>;
@@ -3535,7 +3547,7 @@ export class DatabaseStorage implements IStorage {
       ORDER BY mt.last_inbound_at ASC
     `);
     
-    return result.rows as Conversation[];
+    return result.rows.map(row => transformRowToCamelCase<Conversation>(row as Record<string, unknown>));
   }
 
   // Contact Reminder Updates
