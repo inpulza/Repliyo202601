@@ -207,6 +207,9 @@ export function Inbox() {
   // Bulk Draft Selection State
   const [selectionEnabled, setSelectionEnabled] = useState(false);
   const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set());
+  
+  // Unread message tracking - captures IDs of unread messages when opening a conversation
+  const [unreadMessageIds, setUnreadMessageIds] = useState<Set<string>>(new Set());
 
   // Bulk Draft Queue Hook
   const bulkDraftQueue = useBulkDraftQueue({
@@ -237,7 +240,27 @@ export function Inbox() {
   React.useEffect(() => {
     setSelectedMessageIds(new Set());
     setSelectionEnabled(false);
+    setUnreadMessageIds(new Set()); // Reset unread tracking when switching conversations
   }, [activeConversation?.id]);
+  
+  // Capture unread message IDs when messages load for the active conversation
+  // Merges new unread IDs into existing set so new messages arriving while thread is open are highlighted
+  React.useEffect(() => {
+    if (!activeConversation?.id || !activeConversationMessages?.length) return;
+    
+    // Find messages with status='unread' that we haven't captured yet
+    const newUnreadIds = activeConversationMessages
+      .filter(m => m.status === 'unread' && m.direction === 'inbound')
+      .map(m => m.id);
+    
+    if (newUnreadIds.length > 0) {
+      setUnreadMessageIds(prev => {
+        const merged = new Set(prev);
+        newUnreadIds.forEach(id => merged.add(id));
+        return merged;
+      });
+    }
+  }, [activeConversation?.id, activeConversationMessages]);
 
   const handleToggleSelection = (messageId: string) => {
     setSelectedMessageIds(prev => {
@@ -1646,6 +1669,7 @@ export function Inbox() {
                         selectedMessageIds={selectedMessageIds}
                         onToggleSelection={handleToggleSelection}
                         bulkQueueStatusById={bulkDraftQueue.statusById}
+                        unreadMessageIds={unreadMessageIds}
                       />
 
                       {/* Spacer to prevent content from being hidden behind the floating card */}

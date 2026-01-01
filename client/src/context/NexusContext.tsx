@@ -139,7 +139,10 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
   const setActiveConversation = (conversation: ConversationWithPost | null) => {
     setActiveConversationState(conversation);
     if (conversation && conversation.unreadCount && conversation.unreadCount > 0) {
-      markConversationAsReadMutation.mutate(conversation.id);
+      // Delay mark-as-read to allow frontend to capture unread message IDs first
+      setTimeout(() => {
+        markConversationAsReadMutation.mutate(conversation.id);
+      }, 1500);
     }
   };
 

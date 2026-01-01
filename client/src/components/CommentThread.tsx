@@ -65,6 +65,7 @@ interface CommentThreadProps {
   selectedMessageIds?: Set<string>;
   onToggleSelection?: (messageId: string) => void;
   bulkQueueStatusById?: Map<string, DraftStatus>;
+  unreadMessageIds?: Set<string>;
 }
 
 const MAX_DEPTH = 4;
@@ -112,6 +113,7 @@ interface SingleMessageProps {
   isReply: boolean;
   isOrphan?: boolean;
   isHighlighted?: boolean;
+  isUnread?: boolean;
   platformStyles: CommentThreadProps['platformStyles'];
   onStartReply: CommentThreadProps['onStartReply'];
   onGenerateDraft: CommentThreadProps['onGenerateDraft'];
@@ -140,6 +142,7 @@ function SingleMessage({
   isReply,
   isOrphan = false,
   isHighlighted = false,
+  isUnread = false,
   platformStyles,
   onStartReply,
   onGenerateDraft,
@@ -189,10 +192,18 @@ function SingleMessage({
       className={cn(
         "group transition-all rounded-lg p-2 -m-2 relative overflow-visible",
         isHighlighted && "bg-gray-200/60",
-        isSelected && "bg-indigo-50/50"
+        isSelected && "bg-indigo-50/50",
+        isUnread && "ring-2 ring-indigo-500/30 bg-indigo-50/30"
       )}
       data-testid={`message-${msg.id}`}
     >
+      {/* Unread indicator - blue dot */}
+      {isUnread && (
+        <div 
+          className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-indigo-500 animate-pulse"
+          data-testid={`unread-indicator-${msg.id}`}
+        />
+      )}
       {/* Selection Checkbox - Positioned in the pl-8 gutter created when selection is enabled */}
       {/* The parent container adds pl-8 (32px) when selectionEnabled, checkbox sits at left:-28px */}
       {selectionEnabled && (
@@ -678,6 +689,7 @@ interface ThreadNodeProps {
   selectedMessageIds?: Set<string>;
   onToggleSelection?: (messageId: string) => void;
   bulkQueueStatusById?: Map<string, DraftStatus>;
+  unreadMessageIds?: Set<string>;
 }
 
 function ThreadNode({
@@ -707,6 +719,7 @@ function ThreadNode({
   selectedMessageIds,
   onToggleSelection,
   bulkQueueStatusById,
+  unreadMessageIds,
 }: ThreadNodeProps) {
   const isReply = depth > 0;
   const hasChildren = node.children.length > 0;
@@ -795,6 +808,7 @@ function ThreadNode({
           isReply={isReply}
           isOrphan={node.isOrphan}
           isHighlighted={highlightedMessageId === node.message.id}
+          isUnread={unreadMessageIds?.has(node.message.id)}
           platformStyles={platformStyles}
           onStartReply={onStartReply}
           onGenerateDraft={onGenerateDraft}
@@ -855,6 +869,7 @@ function ThreadNode({
               selectedMessageIds={selectedMessageIds}
               onToggleSelection={onToggleSelection}
               bulkQueueStatusById={bulkQueueStatusById}
+              unreadMessageIds={unreadMessageIds}
             />
           ))}
         </div>
@@ -895,6 +910,7 @@ export function CommentThread({
   selectedMessageIds,
   onToggleSelection,
   bulkQueueStatusById,
+  unreadMessageIds,
 }: CommentThreadProps) {
   const tree = React.useMemo(() => buildMessageTree(messages), [messages]);
 
@@ -975,6 +991,7 @@ export function CommentThread({
               selectedMessageIds={selectedMessageIds}
               onToggleSelection={onToggleSelection}
               bulkQueueStatusById={bulkQueueStatusById}
+              unreadMessageIds={unreadMessageIds}
             />
         </div>
       ))}
