@@ -444,10 +444,9 @@ export class ReminderService implements IReminderService {
           console.error(`[ReminderService] ${errMsg}`);
           result.errors.push(errMsg);
           
-          await storage.updateReminderEventStatus(
+          await this.handleReminderFailure(
             reminder.id,
-            'failed',
-            undefined,
+            reminder.conversationId,
             String(error)
           );
         }
@@ -457,6 +456,25 @@ export class ReminderService implements IReminderService {
     }
 
     return result;
+  }
+
+  private async handleReminderFailure(
+    reminderId: string,
+    conversationId: string | null,
+    error: string,
+    status: 'failed' | 'cancelled' = 'failed',
+    preserveConversationStatus: boolean = false
+  ): Promise<void> {
+    await storage.updateReminderEventStatus(reminderId, status, undefined, error);
+    
+    if (conversationId && !preserveConversationStatus) {
+      try {
+        await storage.updateConversationReminderStatus(conversationId, 'none' as ReminderStatus);
+        console.log(`[ReminderService] Reset conversation ${conversationId} reminder_status to 'none' after ${status}`);
+      } catch (resetError) {
+        console.error(`[ReminderService] Failed to reset conversation reminder_status:`, resetError);
+      }
+    }
   }
 
   private async sendReminder(reminder: ReminderEvent): Promise<{ success: boolean; error?: string }> {
@@ -470,21 +488,21 @@ export class ReminderService implements IReminderService {
     if (!conversation) {
       const error = 'Conversation not found';
       console.error(`[ReminderService] Conversation ${reminder.conversationId} not found`);
-      await storage.updateReminderEventStatus(reminder.id, 'failed', undefined, error);
+      await this.handleReminderFailure(reminder.id, reminder.conversationId, error);
       return { success: false, error };
     }
 
     if (conversation.status === 'closed') {
       const error = 'Conversation closed';
       console.log(`[ReminderService] Conversation ${conversation.id} is closed, cancelling reminder`);
-      await storage.updateReminderEventStatus(reminder.id, 'cancelled', undefined, error);
+      await this.handleReminderFailure(reminder.id, conversation.id, error, 'cancelled', true);
       return { success: false, error };
     }
 
     if (conversation.reminderStatus === 'opted_out') {
       const error = 'Contact opted out';
       console.log(`[ReminderService] Conversation ${conversation.id} is opted out, cancelling reminder`);
-      await storage.updateReminderEventStatus(reminder.id, 'cancelled', undefined, error);
+      await this.handleReminderFailure(reminder.id, conversation.id, error, 'cancelled', true);
       return { success: false, error };
     }
 
@@ -492,7 +510,7 @@ export class ReminderService implements IReminderService {
     if (!brand) {
       const error = 'Brand not found';
       console.error(`[ReminderService] Brand ${conversation.brandId} not found`);
-      await storage.updateReminderEventStatus(reminder.id, 'failed', undefined, error);
+      await this.handleReminderFailure(reminder.id, conversation.id, error);
       return { success: false, error };
     }
 
@@ -503,7 +521,7 @@ export class ReminderService implements IReminderService {
         (!conversation.threadExternalId || !conversation.customerId)) {
       const error = 'Missing DM identifiers';
       console.error(`[ReminderService] ${error} for ${reminder.id}`);
-      await storage.updateReminderEventStatus(reminder.id, 'failed', undefined, error);
+      await this.handleReminderFailure(reminder.id, conversation.id, error);
       return { success: false, error };
     }
     
@@ -520,7 +538,7 @@ export class ReminderService implements IReminderService {
       if (!commentObjectId) {
         const error = 'Missing comment identifiers (no metricoolId in messages)';
         console.error(`[ReminderService] ${error} for ${reminder.id}`);
-        await storage.updateReminderEventStatus(reminder.id, 'failed', undefined, error);
+        await this.handleReminderFailure(reminder.id, conversation.id, error);
         return { success: false, error };
       }
     }
@@ -552,20 +570,20 @@ export class ReminderService implements IReminderService {
       } else {
         const error = `Unsupported channel: ${deliveryChannel}`;
         console.error(`[ReminderService] ${error}`);
-        await storage.updateReminderEventStatus(reminder.id, 'failed', undefined, error);
+        await this.handleReminderFailure(reminder.id, conversation.id, error);
         return { success: false, error };
       }
       
       if (!sendResult.success) {
         const error = sendResult.error || 'Metricool send failed';
         console.error(`[ReminderService] Metricool send failed: ${error}`);
-        await storage.updateReminderEventStatus(reminder.id, 'failed', undefined, error);
+        await this.handleReminderFailure(reminder.id, conversation.id, error);
         return { success: false, error };
       }
     } catch (error) {
       const errorMsg = String(error);
       console.error(`[ReminderService] Error sending via Metricool:`, error);
-      await storage.updateReminderEventStatus(reminder.id, 'failed', undefined, errorMsg);
+      await this.handleReminderFailure(reminder.id, conversation.id, errorMsg);
       return { success: false, error: errorMsg };
     }
 
