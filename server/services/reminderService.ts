@@ -292,12 +292,22 @@ export class ReminderService implements IReminderService {
       rawData: (lastInbound.rawData as Record<string, any>) || null,
     } : null;
 
-    let customerName = conversation.customerName || '';
+    // Obtener nombre del cliente con prioridad: 
+    // 1. lastInbound.author (para comentarios)
+    // 2. conversation.customerName
+    // 3. Fallback "Cliente"
+    const trimmedConversationName = (conversation.customerName || '').trim();
+    const trimmedAuthor = (lastInbound?.author || '').trim();
     
-    if (conversation.type === 'comment' && lastInbound?.author) {
-      customerName = lastInbound.author;
-    } else if (!customerName && lastInbound?.author) {
-      customerName = lastInbound.author;
+    let customerName = '';
+    
+    // Para comentarios, preferimos el autor del último mensaje inbound
+    if (conversation.type === 'comment' && trimmedAuthor) {
+      customerName = trimmedAuthor;
+    } else if (trimmedConversationName) {
+      customerName = trimmedConversationName;
+    } else if (trimmedAuthor) {
+      customerName = trimmedAuthor;
     }
     
     let crmProfile: ReminderContext['crmProfile'] = null;
