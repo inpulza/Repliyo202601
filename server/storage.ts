@@ -730,6 +730,7 @@ export class DatabaseStorage implements IStorage {
       
       if (shouldIncrementUnread) {
         updates.unreadCount = (existing.unreadCount || 0) + 1;
+        console.log(`[Storage] INCREMENT unread for conv ${existing.id} (${existing.customerName}): ${existing.unreadCount || 0} -> ${updates.unreadCount}`);
       }
       // If shouldIncrementUnread is false, we DON'T touch unreadCount at all
       
