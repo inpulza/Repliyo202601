@@ -51,11 +51,22 @@ class LifecycleScheduler {
     try {
       const brands = await storage.getActiveBrands();
       
+      let totalAutoSolved = 0;
       let totalTransitioned = 0;
       let totalErrors = 0;
 
       for (const brand of brands) {
         try {
+          // First: Auto-solve inactive open conversations (open → solved)
+          const autoSolveResult = await conversationLifecycleService.processAutoClose(brand.id);
+          totalAutoSolved += autoSolveResult.closed;
+          totalErrors += autoSolveResult.errors.length;
+
+          if (autoSolveResult.closed > 0) {
+            log(`[LifecycleScheduler] Brand ${brand.name}: ${autoSolveResult.closed} open→solved (auto)`, "sync");
+          }
+
+          // Then: Close solved conversations (solved → closed)
           const transitionResult = await conversationLifecycleService.processSolvedToClosedTransitions(brand.id);
           totalTransitioned += transitionResult.transitioned;
           totalErrors += transitionResult.errors.length;
@@ -71,8 +82,8 @@ class LifecycleScheduler {
         await this.delay(500);
       }
 
-      if (totalTransitioned > 0 || totalErrors > 0) {
-        log(`[LifecycleScheduler] Cycle complete: ${totalTransitioned} conversations closed, ${totalErrors} errors`, "sync");
+      if (totalAutoSolved > 0 || totalTransitioned > 0 || totalErrors > 0) {
+        log(`[LifecycleScheduler] Cycle complete: ${totalAutoSolved} auto-solved, ${totalTransitioned} closed, ${totalErrors} errors`, "sync");
       }
     } catch (error: any) {
       log(`[LifecycleScheduler] Fatal error: ${error.message}`, "sync");
