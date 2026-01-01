@@ -210,6 +210,8 @@ export function Inbox() {
   
   // Unread message tracking - captures IDs of unread messages when opening a conversation
   const [unreadMessageIds, setUnreadMessageIds] = useState<Set<string>>(new Set());
+  // Track the unreadCount at the moment the conversation was opened
+  const [capturedUnreadCount, setCapturedUnreadCount] = useState<number>(0);
 
   // Bulk Draft Queue Hook
   const bulkDraftQueue = useBulkDraftQueue({
@@ -235,32 +237,40 @@ export function Inbox() {
     },
   });
 
+  // Ref to track if we've captured unread IDs for this conversation
+  const unreadCapturedRef = React.useRef<string | null>(null);
+  
   // Clear selection AND disable selection mode when conversation changes
-  // This ensures Bulk AI mode is scoped per conversation/post
+  // Also capture the unreadCount at the moment of opening
   React.useEffect(() => {
     setSelectedMessageIds(new Set());
     setSelectionEnabled(false);
     setUnreadMessageIds(new Set()); // Reset unread tracking when switching conversations
+    unreadCapturedRef.current = null; // Reset the ref so we can capture for new conversation
+    // Capture the unreadCount at the moment of opening (before it gets reset to 0)
+    setCapturedUnreadCount(activeConversation?.unreadCount || 0);
   }, [activeConversation?.id]);
   
   // Capture unread message IDs when messages load for the active conversation
-  // Merges new unread IDs into existing set so new messages arriving while thread is open are highlighted
+  // Only capture if the conversation had unreadCount > 0 when opened
   React.useEffect(() => {
     if (!activeConversation?.id || !activeConversationMessages?.length) return;
     
-    // Find messages with status='unread' that we haven't captured yet
-    const newUnreadIds = activeConversationMessages
-      .filter(m => m.status === 'unread' && m.direction === 'inbound')
-      .map(m => m.id);
+    // Only capture once per conversation, and only if there were unread messages
+    if (unreadCapturedRef.current === activeConversation.id) return;
+    if (capturedUnreadCount <= 0) return;
     
-    if (newUnreadIds.length > 0) {
-      setUnreadMessageIds(prev => {
-        const merged = new Set(prev);
-        newUnreadIds.forEach(id => merged.add(id));
-        return merged;
-      });
+    // Get the N most recent inbound messages where N = capturedUnreadCount
+    const inboundMessages = activeConversationMessages
+      .filter(m => m.direction === 'inbound')
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, capturedUnreadCount);
+    
+    if (inboundMessages.length > 0) {
+      setUnreadMessageIds(new Set(inboundMessages.map(m => m.id)));
+      unreadCapturedRef.current = activeConversation.id;
     }
-  }, [activeConversation?.id, activeConversationMessages]);
+  }, [activeConversation?.id, activeConversationMessages, capturedUnreadCount]);
 
   const handleToggleSelection = (messageId: string) => {
     setSelectedMessageIds(prev => {

@@ -192,8 +192,7 @@ function SingleMessage({
       className={cn(
         "group transition-all rounded-lg p-2 -m-2 relative overflow-visible",
         isHighlighted && "bg-gray-200/60",
-        isSelected && "bg-indigo-50/50",
-        isUnread && "ring-2 ring-indigo-500/30 bg-indigo-50/30"
+        isSelected && "bg-indigo-50/50"
       )}
       data-testid={`message-${msg.id}`}
     >
