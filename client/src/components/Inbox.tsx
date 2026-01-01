@@ -292,6 +292,15 @@ export function Inbox() {
   const handleClearSelection = () => {
     setSelectedMessageIds(new Set());
   };
+  
+  // Callback when user has seen an unread message (visible in viewport for 6 seconds)
+  const handleUnreadSeen = React.useCallback((messageId: string) => {
+    setUnreadMessageIds(prev => {
+      const next = new Set(prev);
+      next.delete(messageId);
+      return next;
+    });
+  }, []);
 
   const { data: syncStatus } = useQuery<SyncStatus>({
     queryKey: ['/api/sync/status'],
@@ -1680,6 +1689,7 @@ export function Inbox() {
                         onToggleSelection={handleToggleSelection}
                         bulkQueueStatusById={bulkDraftQueue.statusById}
                         unreadMessageIds={unreadMessageIds}
+                        onUnreadSeen={handleUnreadSeen}
                       />
 
                       {/* Spacer to prevent content from being hidden behind the floating card */}

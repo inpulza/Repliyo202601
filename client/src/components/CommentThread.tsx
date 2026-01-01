@@ -66,6 +66,7 @@ interface CommentThreadProps {
   onToggleSelection?: (messageId: string) => void;
   bulkQueueStatusById?: Map<string, DraftStatus>;
   unreadMessageIds?: Set<string>;
+  onUnreadSeen?: (messageId: string) => void;
 }
 
 const MAX_DEPTH = 4;
@@ -114,6 +115,7 @@ interface SingleMessageProps {
   isOrphan?: boolean;
   isHighlighted?: boolean;
   isUnread?: boolean;
+  onUnreadSeen?: (messageId: string) => void;
   platformStyles: CommentThreadProps['platformStyles'];
   onStartReply: CommentThreadProps['onStartReply'];
   onGenerateDraft: CommentThreadProps['onGenerateDraft'];
@@ -143,6 +145,7 @@ function SingleMessage({
   isOrphan = false,
   isHighlighted = false,
   isUnread = false,
+  onUnreadSeen,
   platformStyles,
   onStartReply,
   onGenerateDraft,
@@ -183,6 +186,47 @@ function SingleMessage({
       messageRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [isHighlighted]);
+  
+  // Auto-hide unread indicator after 6 seconds when visible in viewport
+  React.useEffect(() => {
+    if (!isUnread || !onUnreadSeen || !messageRef.current) return;
+    
+    let timeoutId: NodeJS.Timeout | null = null;
+    let hasFired = false; // Guard to ensure we only fire once
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0]; // Only one element being observed
+        if (!entry) return;
+        
+        if (entry.isIntersecting && !hasFired) {
+          // Message is visible - clear any existing timer first, then start new one
+          if (timeoutId) clearTimeout(timeoutId);
+          
+          timeoutId = setTimeout(() => {
+            if (!hasFired) {
+              hasFired = true;
+              onUnreadSeen(msg.id);
+            }
+          }, 6000);
+        } else if (!entry.isIntersecting) {
+          // Message left viewport - cancel timer
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+          }
+        }
+      },
+      { threshold: 0.5 } // 50% of the message must be visible
+    );
+    
+    observer.observe(messageRef.current);
+    
+    return () => {
+      observer.disconnect();
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [isUnread, onUnreadSeen, msg.id]);
 
   // IMPORTANT: Do NOT change p-2 -m-2 values - they affect L-shape connector positioning
   // overflow-visible ensures absolutely positioned gutter checkbox is visible outside this element
@@ -689,6 +733,7 @@ interface ThreadNodeProps {
   onToggleSelection?: (messageId: string) => void;
   bulkQueueStatusById?: Map<string, DraftStatus>;
   unreadMessageIds?: Set<string>;
+  onUnreadSeen?: (messageId: string) => void;
 }
 
 function ThreadNode({
@@ -719,6 +764,7 @@ function ThreadNode({
   onToggleSelection,
   bulkQueueStatusById,
   unreadMessageIds,
+  onUnreadSeen,
 }: ThreadNodeProps) {
   const isReply = depth > 0;
   const hasChildren = node.children.length > 0;
@@ -808,6 +854,7 @@ function ThreadNode({
           isOrphan={node.isOrphan}
           isHighlighted={highlightedMessageId === node.message.id}
           isUnread={unreadMessageIds?.has(node.message.id)}
+          onUnreadSeen={onUnreadSeen}
           platformStyles={platformStyles}
           onStartReply={onStartReply}
           onGenerateDraft={onGenerateDraft}
@@ -869,6 +916,7 @@ function ThreadNode({
               onToggleSelection={onToggleSelection}
               bulkQueueStatusById={bulkQueueStatusById}
               unreadMessageIds={unreadMessageIds}
+              onUnreadSeen={onUnreadSeen}
             />
           ))}
         </div>
@@ -910,6 +958,7 @@ export function CommentThread({
   onToggleSelection,
   bulkQueueStatusById,
   unreadMessageIds,
+  onUnreadSeen,
 }: CommentThreadProps) {
   const tree = React.useMemo(() => buildMessageTree(messages), [messages]);
 
@@ -991,6 +1040,7 @@ export function CommentThread({
               onToggleSelection={onToggleSelection}
               bulkQueueStatusById={bulkQueueStatusById}
               unreadMessageIds={unreadMessageIds}
+              onUnreadSeen={onUnreadSeen}
             />
         </div>
       ))}
