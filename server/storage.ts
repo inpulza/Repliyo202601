@@ -839,7 +839,15 @@ export class DatabaseStorage implements IStorage {
         return updated!;
       }
       
-      const updated = await this.updateMessage(existing.id, insertMessage);
+      // PROTECTION PRIORITY 3: Always preserve message status for existing messages
+      // The sync should NEVER change a message from 'read' back to 'unread'
+      // Status is a user-managed field, not a sync-managed field
+      const preservedStatus = existing.status;
+      
+      const updated = await this.updateMessage(existing.id, {
+        ...insertMessage,
+        status: preservedStatus, // Always keep the existing status
+      });
       return updated!;
     }
 
