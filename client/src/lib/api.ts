@@ -726,10 +726,16 @@ export const api = {
       return data.events || [];
     },
 
-    getEventsByBrand: async (brandId: string, options?: { status?: string; limit?: number }): Promise<ReminderEvent[]> => {
+    getEventsByBrand: async (brandId: string, options?: { status?: string; limit?: number; includeConversation?: boolean }): Promise<Array<ReminderEvent & {
+      conversationType?: string | null;
+      conversationPlatform?: string | null;
+      customerName?: string | null;
+      postId?: string | null;
+    }>> => {
       const params = new URLSearchParams();
       if (options?.status) params.append('status', options.status);
       if (options?.limit) params.append('limit', options.limit.toString());
+      if (options?.includeConversation) params.append('includeConversation', 'true');
       const url = `${API_BASE}/brands/${brandId}/reminder-events${params.toString() ? '?' + params.toString() : ''}`;
       const res = await fetch(url);
       if (!res.ok) {

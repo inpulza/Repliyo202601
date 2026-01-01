@@ -74,7 +74,7 @@ export function useReminderEvents(conversationId: string | undefined) {
 export function useBrandReminderEvents(brandId: string | undefined, options?: { status?: string; limit?: number }) {
   return useQuery({
     queryKey: ['brand-reminder-events', brandId, options],
-    queryFn: () => api.reminders.getEventsByBrand(brandId!, options),
+    queryFn: () => api.reminders.getEventsByBrand(brandId!, { ...options, includeConversation: true }),
     enabled: !!brandId,
     staleTime: 30000,
     refetchInterval: 60000,

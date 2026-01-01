@@ -4024,8 +4024,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const brandId = req.params.id;
       const status = req.query.status as string | undefined;
       const limit = parseInt(req.query.limit as string) || 50;
-      const events = await storage.getReminderEventsByBrand(brandId, { status, limit });
-      res.json({ success: true, events });
+      const includeConversation = req.query.includeConversation === 'true';
+      
+      if (includeConversation) {
+        const events = await storage.getReminderEventsWithConversationByBrand(brandId, { status, limit });
+        res.json({ success: true, events });
+      } else {
+        const events = await storage.getReminderEventsByBrand(brandId, { status, limit });
+        res.json({ success: true, events });
+      }
     } catch (error: any) {
       console.error('[Reminders] Get brand events error:', error);
       res.status(500).json({ error: "Failed to get reminder events", details: error.message });

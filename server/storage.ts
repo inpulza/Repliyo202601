@@ -3247,6 +3247,48 @@ export class DatabaseStorage implements IStorage {
     return await query;
   }
 
+  async getReminderEventsWithConversationByBrand(brandId: string, options?: { status?: string; limit?: number }): Promise<Array<ReminderEvent & { 
+    conversationType: string | null;
+    conversationPlatform: string | null;
+    customerName: string | null;
+    postId: string | null;
+  }>> {
+    const conditions = options?.status 
+      ? and(eq(reminderEvents.brandId, brandId), eq(reminderEvents.status, options.status))
+      : eq(reminderEvents.brandId, brandId);
+    
+    let query = db
+      .select({
+        id: reminderEvents.id,
+        brandId: reminderEvents.brandId,
+        conversationId: reminderEvents.conversationId,
+        contactId: reminderEvents.contactId,
+        reminderNumber: reminderEvents.reminderNumber,
+        status: reminderEvents.status,
+        content: reminderEvents.content,
+        contentSource: reminderEvents.contentSource,
+        contextSnapshot: reminderEvents.contextSnapshot,
+        scheduledAt: reminderEvents.scheduledAt,
+        sentAt: reminderEvents.sentAt,
+        errorMessage: reminderEvents.errorMessage,
+        createdAt: reminderEvents.createdAt,
+        conversationType: conversations.type,
+        conversationPlatform: conversations.platform,
+        customerName: conversations.customerName,
+        postId: conversations.postId,
+      })
+      .from(reminderEvents)
+      .leftJoin(conversations, eq(reminderEvents.conversationId, conversations.id))
+      .where(conditions)
+      .orderBy(desc(reminderEvents.createdAt));
+    
+    if (options?.limit) {
+      query = query.limit(options.limit) as typeof query;
+    }
+    
+    return await query;
+  }
+
   async updateReminderEventStatus(id: string, status: string, sentAt?: Date, errorMessage?: string): Promise<ReminderEvent | undefined> {
     const updateData: Record<string, any> = { status };
     if (sentAt) updateData.sentAt = sentAt;

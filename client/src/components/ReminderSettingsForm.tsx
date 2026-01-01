@@ -12,14 +12,46 @@ import { toast } from '@/hooks/use-toast';
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
   Bell, Clock, MessageSquare, Mail, Settings, 
   Save, Loader2, Play, AlertTriangle, Info, Zap, History,
   CheckCircle, XCircle, Clock3, RefreshCw, TrendingUp,
-  BarChart3, Target, BellOff, Timer
+  BarChart3, Target, BellOff, Timer, ChevronDown, ChevronUp, 
+  ExternalLink, Instagram, Facebook, User, AtSign
 } from 'lucide-react';
+import { useLocation } from 'wouter';
+
+type ReminderEventWithConversation = ReminderEvent & {
+  conversationType?: string | null;
+  conversationPlatform?: string | null;
+  customerName?: string | null;
+  postId?: string | null;
+};
+
+const getPlatformIcon = (platform: string | null | undefined) => {
+  switch (platform?.toLowerCase()) {
+    case 'instagram':
+      return <Instagram className="h-3 w-3 text-pink-500" />;
+    case 'facebook':
+      return <Facebook className="h-3 w-3 text-blue-600" />;
+    default:
+      return <MessageSquare className="h-3 w-3 text-muted-foreground" />;
+  }
+};
+
+const getTypeLabel = (type: string | null | undefined) => {
+  switch (type) {
+    case 'dm':
+      return { label: 'DM', icon: <Mail className="h-3 w-3" /> };
+    case 'comment':
+      return { label: 'Comentario', icon: <AtSign className="h-3 w-3" /> };
+    default:
+      return { label: type || 'Desconocido', icon: <MessageSquare className="h-3 w-3" /> };
+  }
+};
 
 interface ReminderSettingsFormProps {
   brandId: string;
@@ -577,41 +609,109 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
               <p>No hay recordatorios registrados todavía</p>
             </div>
           ) : (
-            <div className="space-y-2 max-h-[400px] overflow-y-auto" data-testid="events-list">
-              {events.map((event: ReminderEvent) => (
-                <div
-                  key={event.id}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
-                  data-testid={`event-row-${event.id}`}
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      {getStatusBadge(event.status)}
-                      <span className="text-sm font-medium truncate">
-                        Recordatorio #{event.reminderNumber}
-                      </span>
+            <div className="space-y-2 max-h-[500px] overflow-y-auto" data-testid="events-list">
+              {events.map((event: ReminderEventWithConversation) => {
+                const typeInfo = getTypeLabel(event.conversationType);
+                const customerDisplay = event.customerName?.trim() || 'Cliente';
+                
+                return (
+                  <Collapsible key={event.id}>
+                    <div
+                      className="border rounded-lg hover:bg-muted/50 transition-colors"
+                      data-testid={`event-row-${event.id}`}
+                    >
+                      <CollapsibleTrigger className="w-full">
+                        <div className="flex items-center justify-between p-3">
+                          <div className="flex-1 min-w-0 text-left">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {getStatusBadge(event.status)}
+                              <span className="text-sm font-medium">
+                                #{event.reminderNumber}
+                              </span>
+                              <span className="text-sm text-muted-foreground">→</span>
+                              <div className="flex items-center gap-1 text-sm font-medium text-primary">
+                                <User className="h-3 w-3" />
+                                <span className="truncate max-w-[150px]">{customerDisplay}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 mt-1.5">
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                {getPlatformIcon(event.conversationPlatform)}
+                                <span className="capitalize">{event.conversationPlatform || 'N/A'}</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                {typeInfo.icon}
+                                <span>{typeInfo.label}</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground truncate flex-1">
+                                {event.content ? event.content.substring(0, 40) + '...' : 'Sin mensaje'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 ml-2">
+                            <div className="text-right text-xs text-muted-foreground whitespace-nowrap">
+                              {event.sentAt ? (
+                                <div>
+                                  <p className="font-medium text-green-600">Enviado</p>
+                                  <p>{format(new Date(event.sentAt), 'dd MMM HH:mm', { locale: es })}</p>
+                                </div>
+                              ) : event.scheduledAt ? (
+                                <div>
+                                  <p className="font-medium text-amber-600">Programado</p>
+                                  <p>{format(new Date(event.scheduledAt), 'dd MMM HH:mm', { locale: es })}</p>
+                                </div>
+                              ) : (
+                                <p>{format(new Date(event.createdAt), 'dd MMM HH:mm', { locale: es })}</p>
+                              )}
+                            </div>
+                            <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                          </div>
+                        </div>
+                      </CollapsibleTrigger>
+                      
+                      <CollapsibleContent>
+                        <div className="px-3 pb-3 pt-0 border-t bg-muted/30">
+                          <div className="pt-3 space-y-3">
+                            <div>
+                              <p className="text-xs font-medium text-muted-foreground mb-1">Mensaje completo:</p>
+                              <p className="text-sm bg-background p-2 rounded border">
+                                {event.content || 'Sin contenido'}
+                              </p>
+                            </div>
+                            
+                            {event.errorMessage && (
+                              <div>
+                                <p className="text-xs font-medium text-destructive mb-1">Error:</p>
+                                <p className="text-xs bg-destructive/10 text-destructive p-2 rounded">
+                                  {event.errorMessage}
+                                </p>
+                              </div>
+                            )}
+                            
+                            <div className="flex items-center gap-2 pt-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-xs h-7"
+                                onClick={() => window.open(`/inbox?conversation=${event.conversationId}`, '_blank')}
+                                data-testid={`button-open-conversation-${event.id}`}
+                              >
+                                <ExternalLink className="h-3 w-3 mr-1" />
+                                Ver conversación
+                              </Button>
+                              {event.contentSource && (
+                                <Badge variant="outline" className="text-xs">
+                                  {event.contentSource === 'ai' ? 'Generado con IA' : 'Plantilla'}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </CollapsibleContent>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1 truncate">
-                      {event.content ? event.content.substring(0, 60) + '...' : 'Sin mensaje'}
-                    </p>
-                  </div>
-                  <div className="text-right text-xs text-muted-foreground whitespace-nowrap ml-4">
-                    {event.sentAt ? (
-                      <div>
-                        <p>Enviado:</p>
-                        <p>{format(new Date(event.sentAt), 'dd MMM HH:mm', { locale: es })}</p>
-                      </div>
-                    ) : event.scheduledAt ? (
-                      <div>
-                        <p>Programado:</p>
-                        <p>{format(new Date(event.scheduledAt), 'dd MMM HH:mm', { locale: es })}</p>
-                      </div>
-                    ) : (
-                      <p>{format(new Date(event.createdAt), 'dd MMM HH:mm', { locale: es })}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
+                  </Collapsible>
+                );
+              })}
             </div>
           )}
         </CardContent>
