@@ -27,6 +27,14 @@ interface ReminderContext {
     preferredChannel: string | null;
   } | null;
   otherConversationsSummary: string | null;
+  lastInboundMessage: {
+    id: string;
+    metricoolId: string | null;
+    author: string;
+    content: string | null;
+    timestamp: Date | null;
+    rawData: Record<string, any> | null;
+  } | null;
 }
 
 const ENHANCED_REMINDER_PROMPT = `Eres un asistente de seguimiento amigable para {brand_name}. Tu objetivo es enviar un mensaje breve y personalizado para retomar la conversación con el cliente.
@@ -271,15 +279,21 @@ export class ReminderService implements IReminderService {
       })
       .join('\n');
 
-    // Fallback para nombre: customerName > CRM contact > último mensaje inbound > 'Cliente'
+    const lastInbound = [...messages].reverse().find(m => m.direction === 'inbound');
+    
+    const lastInboundMessage: ReminderContext['lastInboundMessage'] = lastInbound ? {
+      id: lastInbound.id,
+      metricoolId: lastInbound.metricoolId || null,
+      author: lastInbound.author || '',
+      content: lastInbound.content || null,
+      timestamp: lastInbound.timestamp || null,
+      rawData: (lastInbound.rawData as Record<string, any>) || null,
+    } : null;
+
     let customerName = conversation.customerName || '';
     
-    // Si no hay customerName, intentar obtener del último mensaje inbound
-    if (!customerName) {
-      const lastInbound = [...messages].reverse().find(m => m.direction === 'inbound');
-      if (lastInbound?.author) {
-        customerName = lastInbound.author;
-      }
+    if (!customerName && lastInbound?.author) {
+      customerName = lastInbound.author;
     }
     
     let crmProfile: ReminderContext['crmProfile'] = null;
@@ -335,6 +349,7 @@ export class ReminderService implements IReminderService {
       closingIntent: conversation.closingIntent || null,
       crmProfile,
       otherConversationsSummary,
+      lastInboundMessage,
     };
   }
 
@@ -374,12 +389,15 @@ export class ReminderService implements IReminderService {
       const isTerminal = precheck.reason === 'max_reached' || 
                          precheck.reason === 'opted_out' || 
                          precheck.reason === 'not_found' || 
-                         precheck.reason === 'closed';
+                         precheck.reason === 'closed' ||
+                         precheck.reason === 'not_replied';
       console.log(`[ReminderService] Conversation ${conversation.id} not eligible for reminder: ${precheck.reason}`);
       return { scheduled: false, terminal: isTerminal };
     }
 
     const nextReminderNumber = (precheck.currentReminderCount || 0) + 1;
+    
+    const context = await this.assembleReminderContext(conversation);
 
     const generation = await this.generateReminderContent(
       conversation,
@@ -398,9 +416,18 @@ export class ReminderService implements IReminderService {
       return { scheduled: false, terminal: false };
     }
 
-    // scheduledAt = NOW porque ya filtramos conversaciones que pasaron el delay de elegibilidad
-    // No tiene sentido calcular una fecha en el pasado basándose en lastMessageAt
     const scheduledAt = new Date();
+    
+    const contextSnapshot = {
+      targetMessageId: context.lastInboundMessage?.id || null,
+      targetMetricoolId: context.lastInboundMessage?.metricoolId || null,
+      targetAuthor: context.lastInboundMessage?.author || null,
+      customerName: context.customerName,
+      conversationSummary: context.conversationSummary,
+      closingIntent: context.closingIntent,
+      postId: context.lastInboundMessage?.rawData?.postId || 
+              context.lastInboundMessage?.rawData?.permalink?.split('/')?.slice(-2, -1)?.[0] || null,
+    };
 
     const result = await storage.scheduleReminderAtomic(
       conversation.id,
@@ -414,6 +441,7 @@ export class ReminderService implements IReminderService {
         contentSource: rules.useAiContent !== false ? 'ai' : 'template',
         reminderNumber: nextReminderNumber,
         deliveryChannel: conversation.type || 'dm',
+        contextSnapshot,
       },
       'scheduled' as ReminderStatus,
       maxReminders
@@ -545,8 +573,8 @@ export class ReminderService implements IReminderService {
     }
 
     const deliveryChannel = reminder.deliveryChannel || conversation.type || 'dm';
+    const snapshot = (reminder.contextSnapshot as Record<string, any>) || {};
 
-    // Validate required identifiers before attempting Metricool send
     if ((deliveryChannel === 'dm' || deliveryChannel === 'conversation') && 
         (!conversation.threadExternalId || !conversation.customerId)) {
       const error = 'Missing DM identifiers';
@@ -555,22 +583,27 @@ export class ReminderService implements IReminderService {
       return { success: false, error };
     }
     
-    // For comments, get the comment ID from the latest inbound message
     let commentObjectId: string | null = null;
     if (deliveryChannel === 'comment') {
-      const messages = await storage.getMessagesByConversation(conversation.id);
-      const latestInbound = messages
-        .filter(m => m.direction === 'inbound')
-        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
-      
-      commentObjectId = latestInbound?.metricoolId || null;
+      commentObjectId = snapshot.targetMetricoolId || null;
       
       if (!commentObjectId) {
-        const error = 'Missing comment identifiers (no metricoolId in messages)';
+        const messages = await storage.getMessagesByConversation(conversation.id);
+        const latestInbound = messages
+          .filter(m => m.direction === 'inbound')
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+        
+        commentObjectId = latestInbound?.metricoolId || null;
+      }
+      
+      if (!commentObjectId) {
+        const error = 'Missing comment identifiers (no metricoolId in messages or contextSnapshot)';
         console.error(`[ReminderService] ${error} for ${reminder.id}`);
         await this.handleReminderFailure(reminder.id, conversation.id, error);
         return { success: false, error };
       }
+      
+      console.log(`[ReminderService] Will reply to comment ${commentObjectId} (target author: ${snapshot.targetAuthor || 'unknown'})`);
     }
 
     // Send via Metricool

@@ -281,7 +281,7 @@ export interface IStorage {
   countRemindersScheduledAndSentToday(brandId: string): Promise<number>;
   checkConversationEligibleForReminder(conversationId: string, maxReminders: number): Promise<{
     eligible: boolean;
-    reason?: 'not_found' | 'already_scheduled' | 'opted_out' | 'max_reached' | 'closed';
+    reason?: 'not_found' | 'already_scheduled' | 'opted_out' | 'max_reached' | 'closed' | 'not_replied';
     currentReminderCount?: number;
   }>;
   
@@ -3308,7 +3308,7 @@ export class DatabaseStorage implements IStorage {
 
   async checkConversationEligibleForReminder(conversationId: string, maxReminders: number): Promise<{
     eligible: boolean;
-    reason?: 'not_found' | 'already_scheduled' | 'opted_out' | 'max_reached' | 'closed';
+    reason?: 'not_found' | 'already_scheduled' | 'opted_out' | 'max_reached' | 'closed' | 'not_replied';
     currentReminderCount?: number;
   }> {
     const [conversation] = await db
@@ -3339,6 +3339,22 @@ export class DatabaseStorage implements IStorage {
     const currentReminderCount = conversation.reminderCount || 0;
     if (currentReminderCount >= maxReminders) {
       return { eligible: false, reason: 'max_reached', currentReminderCount };
+    }
+    
+    const timestampResult = await db.execute(sql`
+      SELECT 
+        MAX(CASE WHEN direction = 'inbound' THEN timestamp END) as last_inbound_at,
+        MAX(CASE WHEN direction = 'outbound' THEN timestamp END) as last_outbound_at
+      FROM messages
+      WHERE conversation_id = ${conversationId}
+    `);
+    
+    const timestamps = timestampResult.rows[0] as any;
+    const lastInboundAt = timestamps?.last_inbound_at;
+    const lastOutboundAt = timestamps?.last_outbound_at;
+    
+    if (!lastOutboundAt || !lastInboundAt || new Date(lastOutboundAt) <= new Date(lastInboundAt)) {
+      return { eligible: false, reason: 'not_replied', currentReminderCount };
     }
     
     const pendingReminders = await db
@@ -3464,78 +3480,54 @@ export class DatabaseStorage implements IStorage {
   async getConversationsEligibleForReminder(brandId: string, delayHours: number, maxReminders: number, types: string[], forReminderNumber?: number): Promise<Conversation[]> {
     const cutoffTime = new Date(Date.now() - delayHours * 60 * 60 * 1000);
     
-    // Return empty if no types specified
     if (types.length === 0) {
       return [];
     }
     
-    // Build base conditions
-    const conditions = [
-      eq(conversations.brandId, brandId),
-      sql`${conversations.status} NOT IN ('closed')`,
-      inArray(conversations.type, types),
-      sql`COALESCE(${conversations.reminderStatus}, 'none') NOT IN ('scheduled', 'max_reached', 'opted_out')`
-    ];
+    const typesCondition = sql`c.type IN (${sql.join(types.map(t => sql`${t}`), sql`, `)})`;
     
-    // If forReminderNumber is specified, filter by exact reminderCount
-    // Otherwise, filter by reminderCount < maxReminders
-    if (forReminderNumber !== undefined) {
-      // forReminderNumber=1 means we want conversations with reminderCount=0 (no reminders sent yet)
-      // forReminderNumber=2 means we want conversations with reminderCount=1 (one reminder already sent)
-      const targetCount = forReminderNumber - 1;
-      conditions.push(sql`COALESCE(${conversations.reminderCount}, 0) = ${targetCount}`);
-      
-      // For first reminder: check time since last customer message
-      // For subsequent reminders: check time since last reminder was sent
-      if (targetCount === 0) {
-        // First reminder eligibility:
-        // Unified check: NO activity (customer OR agent) within delay period
-        // Uses COALESCE to handle NULL values: lastMessageAt → lastCustomerMessageAt → createdAt
-        // This ensures legacy data with missing timestamps still respects cooldown from creation
-        conditions.push(
-          sql`COALESCE(${conversations.lastMessageAt}, ${conversations.lastCustomerMessageAt}, ${conversations.createdAt}) <= ${cutoffTime}`
-        );
-      } else {
-        // Subsequent reminders require:
-        // 1. lastReminderAt exists and is older than delay
-        // 2. No customer activity since last reminder
-        // 3. No agent/outbound activity since last reminder (lastMessageAt <= lastReminderAt)
-        conditions.push(
-          and(
-            isNotNull(conversations.lastReminderAt),
-            lte(conversations.lastReminderAt, cutoffTime),
-            // Customer has NOT replied after the last reminder
-            or(
-              isNull(conversations.lastCustomerMessageAt),
-              lte(conversations.lastCustomerMessageAt, conversations.lastReminderAt)
-            ),
-            // No agent/outbound activity since last reminder
-            or(
-              isNull(conversations.lastMessageAt),
-              lte(conversations.lastMessageAt, conversations.lastReminderAt)
-            )
-          )
-        );
-      }
-    } else {
-      // Original behavior for backwards compatibility
-      conditions.push(sql`COALESCE(${conversations.reminderCount}, 0) < ${maxReminders}`);
-      conditions.push(
-        or(
-          lte(conversations.lastCustomerMessageAt, cutoffTime),
-          and(
-            isNull(conversations.lastCustomerMessageAt),
-            lte(conversations.lastMessageAt, cutoffTime)
-          )
-        )
-      );
-    }
+    const result = await db.execute(sql`
+      WITH message_timestamps AS (
+        SELECT 
+          m.conversation_id,
+          MAX(CASE WHEN m.direction = 'inbound' THEN m.timestamp END) as last_inbound_at,
+          MAX(CASE WHEN m.direction = 'outbound' THEN m.timestamp END) as last_outbound_at
+        FROM messages m
+        JOIN conversations c ON c.id = m.conversation_id
+        WHERE c.brand_id = ${brandId}
+          AND ${typesCondition}
+        GROUP BY m.conversation_id
+      )
+      SELECT c.*
+      FROM conversations c
+      JOIN message_timestamps mt ON mt.conversation_id = c.id
+      WHERE c.brand_id = ${brandId}
+        AND c.status NOT IN ('closed')
+        AND ${typesCondition}
+        AND COALESCE(c.reminder_status, 'none') NOT IN ('scheduled', 'max_reached', 'opted_out')
+        AND COALESCE(c.reminder_count, 0) < ${maxReminders}
+        ${forReminderNumber !== undefined 
+          ? sql`AND COALESCE(c.reminder_count, 0) = ${forReminderNumber - 1}` 
+          : sql``}
+        -- CRITICAL: Must have responded (outbound) AFTER customer's last message (inbound)
+        AND mt.last_outbound_at IS NOT NULL
+        AND mt.last_inbound_at IS NOT NULL
+        AND mt.last_outbound_at > mt.last_inbound_at
+        -- Customer has not replied since our response
+        AND mt.last_inbound_at <= ${cutoffTime}
+        ${forReminderNumber !== undefined && forReminderNumber > 1
+          ? sql`
+            -- For subsequent reminders, also check time since last reminder
+            AND c.last_reminder_at IS NOT NULL
+            AND c.last_reminder_at <= ${cutoffTime}
+            -- Customer has not replied since last reminder
+            AND mt.last_inbound_at <= c.last_reminder_at
+          `
+          : sql``}
+      ORDER BY mt.last_inbound_at ASC
+    `);
     
-    return await db
-      .select()
-      .from(conversations)
-      .where(and(...conditions))
-      .orderBy(conversations.lastMessageAt);
+    return result.rows as Conversation[];
   }
 
   // Contact Reminder Updates
