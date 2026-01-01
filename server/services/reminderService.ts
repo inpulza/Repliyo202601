@@ -434,7 +434,10 @@ export class ReminderService implements IReminderService {
     let sendResult: { success: boolean; messageId?: string; error?: string; rawResponse?: any };
     
     try {
-      const metricoolService = new MetricoolService();
+      const metricoolService = new MetricoolService({
+        userToken: brand.metricoolToken,
+        userId: brand.metricoolUserId,
+      });
       
       if (deliveryChannel === 'dm' || deliveryChannel === 'conversation') {
         sendResult = await metricoolService.replyToConversation({
