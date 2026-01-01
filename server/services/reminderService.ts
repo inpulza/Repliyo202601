@@ -633,8 +633,18 @@ export class ReminderService implements IReminderService {
         }
       }
       
+      // If we still don't have an objectId and there was a targetMessageId, abort - don't fall back to latest inbound
+      // This prevents sending reminders to the wrong user if the target message was deleted
+      if (!commentObjectId && snapshot.targetMessageId) {
+        const error = `Target message ${snapshot.targetMessageId} not found or has no valid objectId - aborting to prevent misthreading`;
+        console.error(`[ReminderService] ${error}`);
+        await this.handleReminderFailure(reminder.id, conversation.id, error);
+        return { success: false, error };
+      }
+      
+      // Only use fallback for legacy reminders without targetMessageId (backwards compatibility)
       if (!commentObjectId && !snapshot.targetMessageId) {
-        console.log(`[ReminderService] No snapshot data available, falling back to latest inbound message`);
+        console.log(`[ReminderService] Legacy reminder without targetMessageId, falling back to latest inbound`);
         const messages = await storage.getMessagesByConversation(conversation.id);
         const latestInbound = messages
           .filter(m => m.direction === 'inbound')
@@ -642,21 +652,19 @@ export class ReminderService implements IReminderService {
         
         if (latestInbound) {
           const msgRawData = latestInbound.rawData as Record<string, any> | null;
-          // Use parentId for nested comments on any platform
           if (msgRawData?.parentId) {
             commentObjectId = msgRawData.parentId;
             isNestedComment = true;
-            console.log(`[ReminderService] ${platform} nested comment (fallback), using parentId: ${commentObjectId}`);
+            console.log(`[ReminderService] ${platform} nested comment (legacy fallback), using parentId: ${commentObjectId}`);
           } else {
-            // Same fallback logic as auto-reply
             commentObjectId = msgRawData?.id || msgRawData?.root?.id || latestInbound.metricoolId || null;
-            console.log(`[ReminderService] Using objectId from latest inbound (fallback): ${commentObjectId}`);
+            console.log(`[ReminderService] Using objectId from latest inbound (legacy fallback): ${commentObjectId}`);
           }
         }
       }
       
       if (!commentObjectId) {
-        const error = 'Missing comment identifiers (no metricoolId in messages or contextSnapshot)';
+        const error = 'Missing comment identifiers - cannot determine target comment';
         console.error(`[ReminderService] ${error} for ${reminder.id}`);
         await this.handleReminderFailure(reminder.id, conversation.id, error);
         return { success: false, error };
@@ -665,6 +673,10 @@ export class ReminderService implements IReminderService {
       console.log(`[ReminderService] Will reply to comment ${commentObjectId} (target author: ${snapshot.targetAuthor || 'unknown'}, nested: ${isNestedComment})`);
     }
 
+    // Get agent settings for mention functionality
+    const agent = await storage.getAiAgentByBrand(conversation.brandId);
+    const shouldMentionUser = agent?.autoMentionEnabled && deliveryChannel === 'comment' && snapshot.targetAuthor;
+    
     // Send via Metricool
     let sendResult: { success: boolean; messageId?: string; error?: string; rawResponse?: any };
     
@@ -688,7 +700,12 @@ export class ReminderService implements IReminderService {
           objectId: commentObjectId!,
           text: reminder.content,
           blogId: brand.metricoolBlogId || '',
+          mentionUsername: shouldMentionUser ? snapshot.targetAuthor : undefined,
         });
+        
+        if (shouldMentionUser) {
+          console.log(`[ReminderService] Mentioning user @${snapshot.targetAuthor} in reminder`);
+        }
       } else {
         const error = `Unsupported channel: ${deliveryChannel}`;
         console.error(`[ReminderService] ${error}`);
