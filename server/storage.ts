@@ -3341,6 +3341,19 @@ export class DatabaseStorage implements IStorage {
       return { eligible: false, reason: 'max_reached', currentReminderCount };
     }
     
+    const pendingReminders = await db
+      .select({ id: reminderEvents.id })
+      .from(reminderEvents)
+      .where(and(
+        eq(reminderEvents.conversationId, conversationId),
+        eq(reminderEvents.status, 'scheduled')
+      ))
+      .limit(1);
+    
+    if (pendingReminders.length > 0) {
+      return { eligible: false, reason: 'already_scheduled', currentReminderCount };
+    }
+    
     return { eligible: true, currentReminderCount };
   }
 
@@ -3358,7 +3371,8 @@ export class DatabaseStorage implements IStorage {
         const [conversation] = await tx
           .select()
           .from(conversations)
-          .where(eq(conversations.id, conversationId));
+          .where(eq(conversations.id, conversationId))
+          .for('update');
         
         if (!conversation) {
           return { status: 'not_found' };
@@ -3374,6 +3388,19 @@ export class DatabaseStorage implements IStorage {
         
         if (conversation.reminderStatus === 'max_reached') {
           return { status: 'max_reached' };
+        }
+        
+        const pendingReminders = await tx
+          .select({ id: reminderEvents.id })
+          .from(reminderEvents)
+          .where(and(
+            eq(reminderEvents.conversationId, conversationId),
+            eq(reminderEvents.status, 'scheduled')
+          ))
+          .limit(1);
+        
+        if (pendingReminders.length > 0) {
+          return { status: 'already_scheduled' };
         }
         
         const currentReminderCount = conversation.reminderCount || 0;

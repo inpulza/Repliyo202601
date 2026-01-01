@@ -297,12 +297,15 @@ export class ReminderService implements IReminderService {
         
         if (otherConvs.length > 0) {
           const summaries = otherConvs
-            .slice(0, 3)
-            .map(c => c.closingSummary || c.closingIntent || `Conversación ${c.type} en ${c.platform}`)
+            .slice(0, 2)
+            .map(c => {
+              const summary = c.closingSummary || c.closingIntent || `${c.type} en ${c.platform}`;
+              return summary.substring(0, 100);
+            })
             .filter(Boolean);
           
           if (summaries.length > 0) {
-            otherConversationsSummary = `El cliente tiene ${otherConvs.length} conversación(es) previa(s): ${summaries.join('; ')}`;
+            otherConversationsSummary = `${otherConvs.length} conversación(es) previa(s): ${summaries.join('; ')}`;
           }
         }
       }
@@ -376,6 +379,12 @@ export class ReminderService implements IReminderService {
       return { scheduled: false, terminal: false };
     }
 
+    const trimmedContent = generation.content.trim();
+    if (!trimmedContent || trimmedContent.length < 10) {
+      console.error(`[ReminderService] Generated content too short or empty for ${conversation.id}: "${trimmedContent}"`);
+      return { scheduled: false, terminal: false };
+    }
+
     const delayHours = this.getDelayForReminderNumber(rules, nextReminderNumber);
     const baseTime = conversation.lastReminderAt || conversation.lastCustomerMessageAt || conversation.lastMessageAt || new Date();
     const scheduledAt = new Date(new Date(baseTime).getTime() + delayHours * 60 * 60 * 1000);
@@ -388,7 +397,7 @@ export class ReminderService implements IReminderService {
         contactId: conversation.contactId || null,
         status: 'scheduled',
         scheduledAt,
-        content: generation.content,
+        content: trimmedContent,
         contentSource: rules.useAiContent !== false ? 'ai' : 'template',
         reminderNumber: nextReminderNumber,
         deliveryChannel: conversation.type || 'dm',
@@ -481,6 +490,14 @@ export class ReminderService implements IReminderService {
     if (!reminder.conversationId || !reminder.content) {
       const error = 'Invalid reminder data';
       console.error(`[ReminderService] ${error} for ${reminder.id}`);
+      return { success: false, error };
+    }
+
+    const trimmedContent = reminder.content.trim();
+    if (!trimmedContent || trimmedContent.length < 10) {
+      const error = 'Reminder content is empty or too short';
+      console.error(`[ReminderService] ${error} for ${reminder.id}: "${trimmedContent}"`);
+      await this.handleReminderFailure(reminder.id, reminder.conversationId, error);
       return { success: false, error };
     }
 
