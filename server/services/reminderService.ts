@@ -412,11 +412,22 @@ export class ReminderService implements IReminderService {
       return { success: false, error };
     }
     
-    if (deliveryChannel === 'comment' && !conversation.objectExternalId) {
-      const error = 'Missing comment identifiers';
-      console.error(`[ReminderService] ${error} for ${reminder.id}`);
-      await storage.updateReminderEventStatus(reminder.id, 'failed', undefined, error);
-      return { success: false, error };
+    // For comments, get the comment ID from the latest inbound message
+    let commentObjectId: string | null = null;
+    if (deliveryChannel === 'comment') {
+      const messages = await storage.getMessagesByConversation(conversation.id);
+      const latestInbound = messages
+        .filter(m => m.direction === 'inbound')
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+      
+      commentObjectId = latestInbound?.metricoolId || null;
+      
+      if (!commentObjectId) {
+        const error = 'Missing comment identifiers (no metricoolId in messages)';
+        console.error(`[ReminderService] ${error} for ${reminder.id}`);
+        await storage.updateReminderEventStatus(reminder.id, 'failed', undefined, error);
+        return { success: false, error };
+      }
     }
 
     // Send via Metricool
@@ -436,7 +447,7 @@ export class ReminderService implements IReminderService {
       } else if (deliveryChannel === 'comment') {
         sendResult = await metricoolService.replyToComment({
           provider: conversation.platform,
-          objectId: conversation.objectExternalId!,
+          objectId: commentObjectId!,
           text: reminder.content,
           blogId: brand.metricoolBlogId || '',
         });
