@@ -1,0 +1,209 @@
+Razones de Fallo
+Missing comment identifiers (no metricoolId in messages or contextSnapshot)
+30
+Missing comment identifiers
+6
+Cannot read properties of undefined (reading 'userId')
+1
+Historial de Recordatorios
+
+Últimos recordatorios enviados y programados
+Fallido
+Recordatorio #1
+¡Hola squareonpix! Me alegra saber que estás interesado en n...
+
+Programado:
+
+01 ene 14:57
+
+Fallido
+Recordatorio #1
+¡Hola, Jordan! Espero que estés bien. Me quedé pensando en t...
+
+Programado:
+
+10 dic 11:11
+
+Fallido
+Recordatorio #1
+¡Hola, Cliente! Espero que estés bien. Me encantaría saber s...
+
+Programado:
+
+10 dic 11:11
+
+Fallido
+Recordatorio #1
+¡Hola, Cliente! 😊 Solo quería retomar nuestra conversación ...
+
+Programado:
+
+10 dic 11:11
+
+Enviado
+Recordatorio #1
+¡Hola! Solo quería retomar nuestra conversación y ver si has...
+
+Enviado:
+
+01 ene 16:44
+
+Fallido
+Recordatorio #1
+Hola Cliente, espero que estés bien. Solo quería saber si aú...
+
+Programado:
+
+10 dic 11:00
+
+Enviado
+Recordatorio #1
+¡Hola Joshua! Me alegra que la obra te haya resonado de esa ...
+
+Enviado:
+
+01 ene 16:44
+
+Fallido
+Recordatorio #1
+¡Hola, joshuaisherdez! Espero que estés teniendo un gran día...
+
+Programado:
+
+09 dic 21:12
+
+Fallido
+Recordatorio #1
+¡Hola Cliente! Espero que estés bien. Si tienes alguna pregu...
+
+Programado:
+
+09 dic 21:12
+
+Fallido
+Recordatorio #1
+¡Hola Cliente! 😊 Solo quería retomar nuestra conversación y...
+
+Programado:
+
+09 dic 20:46
+
+Fallido
+Recordatorio #1
+¡Hola, Cliente! Espero que estés bien. Solo quería saber si ...
+
+Programado:
+
+02 dic 11:08
+
+Enviado
+Recordatorio #1
+¡Hola, Cliente! Espero que estés teniendo un gran día. ¿Pudi...
+
+Enviado:
+
+01 ene 16:44
+
+Enviado
+Recordatorio #1
+¡Hola! Espero que estés teniendo un gran día. Solo quería sa...
+
+Enviado:
+
+01 ene 16:44
+
+Fallido
+Recordatorio #1
+¡Hola, Cliente! Espero que estés bien. Solo quería saber si ...
+
+Programado:
+
+02 dic 11:08
+
+Enviado
+Recordatorio #1
+¡Hola, Jordan! 😊 Solo quería ver si todavía estás disfrutan...
+
+Enviado:
+
+01 ene 16:44
+
+Fallido
+Recordatorio #1
+¡Hola, Cliente! Espero que estés muy bien. Si tienes alguna ...
+
+Programado:
+
+20 ene 14:14
+
+Enviado
+Recordatorio #1
+¡Hola @jordanldp! Solo quería asegurarme de que hayas podido...
+
+Enviado:
+
+01 ene 16:44
+
+Fallido
+Recordatorio #1
+¡Hola Cliente! Han pasado algunos días desde nuestra última ...
+
+Programado:
+
+16 ene 15:08
+
+Fallido
+Recordatorio #1
+¡Hola, Cliente! 😊 Solo quería retomar nuestra conversación ...
+
+Programado:
+
+16 ene 15:05
+
+Fallido
+Recordatorio #1
+¡Hola, Cliente! Espero que te encuentres bien. Solo quería r...
+
+Programado:
+
+11 ene 18:33
+
+Enviado
+Recordatorio #1
+¡Hola! 😊 Solo quería saber si todavía tienes alguna pregunt...
+
+Enviado:
+
+01 ene 16:44
+
+Fallido
+Recordatorio #1
+¡Hola, Cliente! Espero que estés bien. Si tienes alguna preg...
+
+Programado:
+
+11 ene 17:45
+
+Fallido
+Recordatorio #1
+¡Hola, Cliente! Espero que estés bien. Si tienes alguna preg...
+
+Programado:
+
+11 ene 17:28
+
+Fallido
+Recordatorio #1
+¡Hola Cliente! Espero que estés bien. Si aún tienes pregunta...
+
+Programado:
+
+05 ene 17:09
+
+Enviado
+Recordatorio #1
+Hola, Cliente 😊. Espero que estés bien. Me quedé pensando e...
+
+Enviado:
+
+01 ene 16:44
