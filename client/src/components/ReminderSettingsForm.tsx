@@ -87,6 +87,7 @@ const getStatusBadge = (status: string) => {
 };
 
 export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
+  const [, setLocation] = useLocation();
   const { rules, isLoading, updateRules, isUpdating, runManual, isRunning } = useReminderRules(brandId);
   const { data: events, isLoading: eventsLoading, isFetching: eventsFetching, refetch: refetchEvents } = useBrandReminderEvents(brandId, { limit: 25 });
   const [formData, setFormData] = useState<Partial<ReminderRules>>(DEFAULT_RULES);
@@ -693,7 +694,7 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
                                 variant="outline"
                                 size="sm"
                                 className="text-xs h-7"
-                                onClick={() => window.open(`/inbox?conversation=${event.conversationId}`, '_blank')}
+                                onClick={() => setLocation(`/inbox?conversationId=${event.conversationId}`)}
                                 data-testid={`button-open-conversation-${event.id}`}
                               >
                                 <ExternalLink className="h-3 w-3 mr-1" />
