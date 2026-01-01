@@ -56,7 +56,7 @@ const getStatusBadge = (status: string) => {
 
 export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
   const { rules, isLoading, updateRules, isUpdating, runManual, isRunning } = useReminderRules(brandId);
-  const { data: events, isLoading: eventsLoading, refetch: refetchEvents } = useBrandReminderEvents(brandId, { limit: 25 });
+  const { data: events, isLoading: eventsLoading, isFetching: eventsFetching, refetch: refetchEvents } = useBrandReminderEvents(brandId, { limit: 25 });
   const [formData, setFormData] = useState<Partial<ReminderRules>>(DEFAULT_RULES);
   const [hasChanges, setHasChanges] = useState(false);
   const [analyticsTimeRange, setAnalyticsTimeRange] = useState<TimeRange>('7d');
@@ -556,10 +556,10 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
               variant="ghost"
               size="sm"
               onClick={() => refetchEvents()}
-              disabled={eventsLoading}
+              disabled={eventsFetching}
               data-testid="button-refresh-events"
             >
-              <RefreshCw className={`h-4 w-4 ${eventsLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 ${eventsFetching ? 'animate-spin' : ''}`} />
             </Button>
           </div>
           <CardDescription className="text-xs">
