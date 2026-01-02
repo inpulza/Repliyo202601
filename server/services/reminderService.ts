@@ -38,43 +38,9 @@ interface ReminderContext {
   } | null;
 }
 
-const ENHANCED_REMINDER_PROMPT = `Eres un asistente de seguimiento amigable para {brand_name}. Tu objetivo es enviar un mensaje breve y personalizado para retomar la conversación con el cliente.
-
-## CONTEXTO DEL CLIENTE
-
-**Nombre:** {customer_name}
-**Canal actual:** {channel}
-**Tiempo sin respuesta:** {time_since_last}
-**Recordatorio:** #{reminder_number} de {max_reminders}
-
-### Conversación reciente:
-{recent_messages}
-
-### Resumen de la conversación:
-{conversation_summary}
-
-### Intención detectada:
-{closing_intent}
-
-### Perfil del cliente (CRM):
-{crm_profile}
-
-### Historial con este cliente:
-{other_conversations}
-
-## INSTRUCCIONES
-
-Genera un mensaje de seguimiento que:
-1. Sea MUY breve (máximo 2 oraciones)
-2. Haga referencia ESPECÍFICA al tema o servicio que consultó el cliente
-3. Si hay un canal preferido mencionado (WhatsApp, teléfono), pregunta si pudo contactar por ese medio
-4. Sea amigable y no invasivo
-5. NO menciones que es un recordatorio automatizado
-6. Adapta el tono: DM = personal y directo, comentario = más breve y público
-
-IMPORTANTE: Si el cliente preguntó por algo específico (servicio, precio, cita), el mensaje DEBE hacer referencia a eso.
-
-Responde SOLO con el mensaje de seguimiento, sin explicaciones ni formato.`;
+// NOTA: El prompt de reminders ahora se genera con composeReminderPrompt() en prompt-composer.ts
+// Las instrucciones vienen del systemPrompt/guardrails configurados por el admin
+// Variables disponibles: {{interaction_mode}}, {{reminder_number}}, {{max_reminders}}, {{time_since_last_message}}
 
 export interface ReminderGenerationResult {
   success: boolean;

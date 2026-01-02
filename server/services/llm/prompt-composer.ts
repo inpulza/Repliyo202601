@@ -844,16 +844,22 @@ export function estimateTokens(text: string): number {
 }
 
 /**
- * COMPOSE REMINDER PROMPT
+ * COMPOSE REMINDER PROMPT (v2 - Simplified)
  * 
  * Función especializada para generar prompts de mensajes de seguimiento (reminders).
- * Reutiliza la infraestructura del agent (systemPrompt, guardrails, knowledgeBase)
- * pero con instrucciones específicas para follow-up.
  * 
- * Diferencias con composePrompt():
- * - No responde a un mensaje específico, sino que inicia el follow-up
- * - Instrucciones enfocadas en brevedad y referencia al tema previo
- * - Tono adaptado: DM = personal, comentario = breve
+ * DISEÑO SIMPLIFICADO (basado en best practices de Anthropic/Google):
+ * - Solo inyecta CONTEXTO NEUTRAL (datos, no instrucciones)
+ * - El systemPrompt/guardrails/knowledgeBase del agente controlan TODO el comportamiento
+ * - Las variables {{interaction_mode}}, {{reminder_number}}, etc. permiten al admin
+ *   condicionar su prompt para manejar reminders de forma personalizada
+ * 
+ * Variables disponibles para el admin:
+ * - {{interaction_mode}} = "reminder"
+ * - {{reminder_number}} = 1, 2, etc.
+ * - {{max_reminders}} = 2
+ * - {{time_since_last_message}} = "3 días"
+ * - {{firstName}}, {{username}}, {{platform}}, etc. (heredadas de auto-reply)
  */
 
 export interface ReminderPromptContext {
@@ -881,6 +887,82 @@ export interface ReminderPromptResult {
   userPrompt: string;
 }
 
+/**
+ * Sustituye variables en el texto del prompt para reminders.
+ * Incluye TODAS las variables de auto-reply + variables específicas de reminder.
+ * Debe mantener paridad completa con replaceVariablesBasic + replaceVariables.
+ */
+function replaceReminderVariables(
+  text: string, 
+  vars: {
+    username: string;
+    firstName: string;
+    platform: string;
+    businessName: string;
+    interactionMode: string;
+    reminderNumber: number;
+    maxReminders: number;
+    timeSinceLastMessage: string;
+    isDm: boolean;
+    messageType: string;
+    comment?: string;
+    postContext?: string;
+    dynamicLimit?: number;
+    // Variables adicionales de auto-reply para backward compatibility
+    agentPersona?: string;
+    userGuardrails?: string;
+    knowledgeBase?: string;
+    timeSinceLastInteraction?: number;
+    conversationDepth?: number;
+    relationshipStatus?: string;
+  }
+): string {
+  let result = text;
+  
+  // Variables heredadas de auto-reply (paridad completa con replaceVariablesBasic + replaceVariables)
+  result = result.replace(/\{\{\s*username\s*\}\}/gi, vars.username);
+  result = result.replace(/\{\{\s*firstName\s*\}\}/gi, vars.firstName);
+  result = result.replace(/\{\{\s*first_name\s*\}\}/gi, vars.firstName);
+  result = result.replace(/\{\{\s*platform\s*\}\}/gi, vars.platform);
+  result = result.replace(/\{\{\s*business_name\s*\}\}/gi, vars.businessName);
+  result = result.replace(/\{\{\s*businessName\s*\}\}/gi, vars.businessName);
+  result = result.replace(/\{\{\s*is_dm\s*\}\}/gi, String(vars.isDm));
+  result = result.replace(/\{\{\s*isDm\s*\}\}/gi, String(vars.isDm));
+  result = result.replace(/\{\{\s*message_type\s*\}\}/gi, vars.messageType);
+  result = result.replace(/\{\{\s*messageType\s*\}\}/gi, vars.messageType);
+  result = result.replace(/\{\{\s*comment\s*\}\}/gi, vars.comment || '');
+  result = result.replace(/\{\{\s*post_context\s*\}\}/gi, vars.postContext || '');
+  result = result.replace(/\{\{\s*postContext\s*\}\}/gi, vars.postContext || '');
+  result = result.replace(/\{\{\s*dynamic_limit\s*\}\}/gi, String(vars.dynamicLimit || 280));
+  result = result.replace(/\{\{\s*dynamicLimit\s*\}\}/gi, String(vars.dynamicLimit || 280));
+  
+  // Variables adicionales de auto-reply (para prompts que ya las usan)
+  result = result.replace(/\{\{\s*agent_persona\s*\}\}/gi, vars.agentPersona || '');
+  result = result.replace(/\{\{\s*agentPersona\s*\}\}/gi, vars.agentPersona || '');
+  result = result.replace(/\{\{\s*user_guardrails\s*\}\}/gi, vars.userGuardrails || '');
+  result = result.replace(/\{\{\s*userGuardrails\s*\}\}/gi, vars.userGuardrails || '');
+  result = result.replace(/\{\{\s*knowledge_base\s*\}\}/gi, vars.knowledgeBase || '');
+  result = result.replace(/\{\{\s*knowledgeBase\s*\}\}/gi, vars.knowledgeBase || '');
+  result = result.replace(/\{\{\s*time_since_last_interaction\s*\}\}/gi, String(vars.timeSinceLastInteraction || 0));
+  result = result.replace(/\{\{\s*timeSinceLastInteraction\s*\}\}/gi, String(vars.timeSinceLastInteraction || 0));
+  result = result.replace(/\{\{\s*conversation_depth\s*\}\}/gi, String(vars.conversationDepth || 0));
+  result = result.replace(/\{\{\s*conversationDepth\s*\}\}/gi, String(vars.conversationDepth || 0));
+  result = result.replace(/\{\{\s*relationship_status\s*\}\}/gi, vars.relationshipStatus || 'returning');
+  result = result.replace(/\{\{\s*relationshipStatus\s*\}\}/gi, vars.relationshipStatus || 'returning');
+  
+  // Variables específicas de reminder
+  result = result.replace(/\{\{\s*interaction_mode\s*\}\}/gi, vars.interactionMode);
+  result = result.replace(/\{\{\s*interactionMode\s*\}\}/gi, vars.interactionMode);
+  result = result.replace(/\{\{\s*reminder_number\s*\}\}/gi, String(vars.reminderNumber));
+  result = result.replace(/\{\{\s*reminderNumber\s*\}\}/gi, String(vars.reminderNumber));
+  result = result.replace(/\{\{\s*max_reminders\s*\}\}/gi, String(vars.maxReminders));
+  result = result.replace(/\{\{\s*maxReminders\s*\}\}/gi, String(vars.maxReminders));
+  result = result.replace(/\{\{\s*time_since_last_message\s*\}\}/gi, vars.timeSinceLastMessage);
+  result = result.replace(/\{\{\s*timeSinceLastMessage\s*\}\}/gi, vars.timeSinceLastMessage);
+  
+  return result;
+}
+
 export function composeReminderPrompt(context: ReminderPromptContext): ReminderPromptResult {
   const { 
     agent, 
@@ -900,51 +982,73 @@ export function composeReminderPrompt(context: ReminderPromptContext): ReminderP
   const platform = conversation.platform || 'default';
   const businessName = brand?.name || 'la empresa';
   const firstName = extractFirstName(customerName);
+  const messageType = isDm ? 'dm' : 'comment';
+
+  // Obtener el ÚLTIMO mensaje del cliente para {{comment}} (no el primero)
+  const inboundMessages = conversationHistory.filter(m => m.direction === 'inbound');
+  const lastInboundMessage = inboundMessages.length > 0 ? inboundMessages[inboundMessages.length - 1] : null;
+  const comment = lastInboundMessage?.content || '';
+  const postContext = socialPost?.caption || '';
+
+  // Calcular variables adicionales de auto-reply para backward compatibility
+  const conversationDepth = conversationHistory.length;
+  const relationshipStatus = conversationDepth > 5 ? 'established' : conversationDepth > 1 ? 'returning' : 'new';
+
+  // Variables para sustitución en los prompts del agente
+  // Incluye TODAS las variables de auto-reply + variables de reminder para backward compatibility total
+  const vars = {
+    username: customerName,
+    firstName: firstName || '',
+    platform,
+    businessName,
+    interactionMode: 'reminder',
+    reminderNumber,
+    maxReminders,
+    timeSinceLastMessage,
+    isDm,
+    messageType,
+    comment,
+    postContext,
+    dynamicLimit: 280,
+    // Variables adicionales de auto-reply
+    agentPersona: agent.systemPrompt || '',
+    userGuardrails: agent.guardrailPrompt || '',
+    knowledgeBase: agent.knowledgeBase || '',
+    timeSinceLastInteraction: 0, // N/A for reminders
+    conversationDepth,
+    relationshipStatus,
+  };
 
   // ========== SYSTEM PROMPT ==========
-  // Estructura: CONTEXTO → ROL/PERSONA → BOUNDARIES → INSTRUCCIONES
+  // Estructura simplificada: CONTEXTO NEUTRAL → PROMPT DEL AGENTE (con variables) → TAREA
   
   const systemParts: string[] = [];
 
-  // 1. CONTEXTO
-  systemParts.push(`# CONTEXTO
+  // 1. CONTEXTO NEUTRAL (solo datos, sin instrucciones de comportamiento)
+  systemParts.push(`# CONTEXTO DEL MENSAJE
 
-Eres el agente de seguimiento de ${businessName}.
-Tu objetivo es retomar conversaciones con clientes que no han respondido.
+**Tipo de interacción:** REMINDER (mensaje de seguimiento)
+**Cliente:** ${customerName}${firstName ? ` (${firstName})` : ''}
+**Canal:** ${platform} (${isDm ? 'Mensaje Directo' : 'Comentario público'})
+**Tiempo sin respuesta:** ${timeSinceLastMessage}
+**Recordatorio:** #${reminderNumber} de ${maxReminders}`);
 
-**Situación actual:**
-- Cliente: ${customerName}${firstName ? ` (${firstName})` : ''}
-- Canal: ${platform} (${isDm ? 'Mensaje Directo' : 'Comentario público'})
-- Tiempo sin respuesta: ${timeSinceLastMessage}
-- Recordatorio: #${reminderNumber} de ${maxReminders}`);
-
-  // 2. ROL Y PERSONA (del agent.systemPrompt)
+  // 2. PROMPT DEL AGENTE (con variables sustituidas)
+  // El admin puede usar {{interaction_mode}} para condicionar comportamiento
   if (agent.systemPrompt) {
+    const processedSystemPrompt = replaceReminderVariables(agent.systemPrompt, vars);
     systemParts.push(`
-# ROL Y PERSONA
-
-${agent.systemPrompt}`);
+${processedSystemPrompt}`);
   }
 
-  // 3. BOUNDARIES (guardrails del agente + reglas de reminder)
-  systemParts.push(`
-# BOUNDARIES (LÍMITES)`);
-
+  // 3. GUARDRAILS DEL AGENTE (con variables sustituidas)
   if (agent.guardrailPrompt) {
+    const processedGuardrails = replaceReminderVariables(agent.guardrailPrompt, vars);
     systemParts.push(`
-## Reglas del Agente
-${agent.guardrailPrompt}`);
+${processedGuardrails}`);
   }
 
-  systemParts.push(`
-## Reglas Específicas para Follow-up
-- NO menciones que es un recordatorio automatizado o mensaje programado
-- NO des precios ni información sensible sin contexto
-- NO seas invasivo ni presiones al cliente
-- Si no hay contexto suficiente de qué consultó el cliente, usa mensaje genérico amable
-- PROHIBIDO inventar detalles que no están en el historial`);
-
-  // 4. KNOWLEDGE BASE (si existe)
+  // 4. KNOWLEDGE BASE (sin cambios)
   if (agent.knowledgeBase) {
     systemParts.push(`
 # BASE DE CONOCIMIENTO
@@ -952,27 +1056,10 @@ ${agent.guardrailPrompt}`);
 ${agent.knowledgeBase}`);
   }
 
-  // 5. INSTRUCCIONES DE REMINDER
-  const toneInstruction = isDm 
-    ? 'Tono personal y cercano, como si hablaras por WhatsApp. Puedes usar el nombre si lo tienes.'
-    : 'Tono breve y profesional. Este es un comentario público visible para todos.';
-
-  systemParts.push(`
-# INSTRUCCIONES DE FOLLOW-UP
-
-1. **Analiza el historial**: Identifica el tema/servicio que consultó el cliente
-2. **Genera mensaje breve**: Máximo 2 oraciones
-3. **Referencia específica**: Menciona el tema que consultó (si lo hay)
-4. **Canal preferido**: Si mencionó WhatsApp u otro canal, pregunta si pudo contactar
-5. **${toneInstruction}**
-
-## Formato de salida
-Responde SOLO con el mensaje de seguimiento, sin explicaciones ni formato adicional.`);
-
   const systemPrompt = systemParts.join('\n');
 
   // ========== USER PROMPT ==========
-  // Contiene: resumen persistente + historial reciente + contexto del post + perfil CRM
+  // Contiene: resumen persistente + historial reciente + contexto del post + perfil CRM + tarea
 
   const userParts: string[] = [];
 
@@ -1023,40 +1110,19 @@ ${crmLines.join('\n')}
     }
   }
 
-  // B2: Fallback para contexto faltante
-  const hasConversationContext = conversationHistory.length > 0 || userSummary?.summary;
-  const hasPostContext = socialPost?.caption;
+  // TAREA: Instrucción ligera (el comportamiento detallado viene del systemPrompt del admin)
+  const hasContext = conversationHistory.length > 0 || userSummary?.summary || socialPost?.caption;
   
-  // Instrucción final con fallback
-  if (!hasConversationContext && !hasPostContext) {
-    userParts.push(`
---- TAREA (CONTEXTO LIMITADO) ---
-No hay historial detallado de la conversación disponible.
-
-Genera un mensaje de seguimiento genérico pero amable que:
-1. Pregunte si el cliente aún tiene interés o necesita ayuda
-2. Sea breve y no invasivo (máximo 2 oraciones)
-3. Invite a retomar la conversación sin presionar
-
-Ejemplos de mensajes genéricos:
-- "Hola! ¿Pudiste resolver tu consulta? Estamos aquí si necesitas algo más."
-- "Hola ${firstName || 'ahí'}! Solo queríamos saber si podemos ayudarte en algo."
-
-Responde SOLO con el mensaje, sin explicaciones.`);
-  } else {
-    userParts.push(`
+  userParts.push(`
 --- TAREA ---
-Genera un mensaje de seguimiento breve (máximo 2 oraciones) que:
-1. Haga referencia al tema específico que consultó el cliente (si lo hay en el historial)
-2. Sea amigable y no invasivo
-3. Invite a continuar la conversación
+Genera un mensaje de seguimiento para este cliente.
+${hasContext ? 'Basa tu respuesta en el historial y contexto proporcionado.' : 'No hay historial disponible, genera un mensaje amable y genérico.'}
 
-Responde SOLO con el mensaje, sin explicaciones.`);
-  }
+Responde SOLO con el mensaje, sin explicaciones ni formato adicional.`);
 
   const userPrompt = userParts.join('\n');
 
-  console.log(`[ReminderPromptComposer] Prompt generado para ${customerName}:
+  console.log(`[ReminderPromptComposer v2] Prompt generado para ${customerName}:
 ━━━━━━━━━━━━━━━━━━━━━━━━
 Tipo: ${isDm ? 'DM' : 'Comentario'}
 Reminder: #${reminderNumber}/${maxReminders}
@@ -1066,7 +1132,7 @@ SocialPost: ${socialPost?.caption ? 'Sí' : 'No'}
 CRM Profile: ${crmProfile ? 'Sí' : 'No'}
 Guardrails: ${agent.guardrailPrompt ? 'Sí' : 'No'}
 KnowledgeBase: ${agent.knowledgeBase ? 'Sí' : 'No'}
-FallbackMode: ${!hasConversationContext && !hasPostContext ? 'Sí (contexto limitado)' : 'No'}
+Variables sustituidas: interaction_mode=reminder, reminder_number=${reminderNumber}
 ━━━━━━━━━━━━━━━━━━━━━━━━`);
 
   return {
