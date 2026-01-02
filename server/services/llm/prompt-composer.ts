@@ -842,3 +842,235 @@ export function truncateResponse(
 export function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
+
+/**
+ * COMPOSE REMINDER PROMPT
+ * 
+ * Función especializada para generar prompts de mensajes de seguimiento (reminders).
+ * Reutiliza la infraestructura del agent (systemPrompt, guardrails, knowledgeBase)
+ * pero con instrucciones específicas para follow-up.
+ * 
+ * Diferencias con composePrompt():
+ * - No responde a un mensaje específico, sino que inicia el follow-up
+ * - Instrucciones enfocadas en brevedad y referencia al tema previo
+ * - Tono adaptado: DM = personal, comentario = breve
+ */
+
+export interface ReminderPromptContext {
+  agent: AiAgent;
+  brand?: Brand;
+  conversation: Conversation;
+  conversationHistory: Message[];
+  userSummary?: ConversationUserSummary | null;
+  socialPost?: SocialPost | null;
+  reminderNumber: number;
+  maxReminders: number;
+  customerName: string;
+  timeSinceLastMessage: string;
+  crmProfile?: {
+    lifecycleStage: string | null;
+    status: string | null;
+    serviceInterest: string | null;
+    intent: string | null;
+    preferredChannel: string | null;
+  } | null;
+}
+
+export interface ReminderPromptResult {
+  systemPrompt: string;
+  userPrompt: string;
+}
+
+export function composeReminderPrompt(context: ReminderPromptContext): ReminderPromptResult {
+  const { 
+    agent, 
+    brand, 
+    conversation, 
+    conversationHistory, 
+    userSummary, 
+    socialPost,
+    reminderNumber,
+    maxReminders,
+    customerName,
+    timeSinceLastMessage,
+    crmProfile
+  } = context;
+
+  const isDm = conversation.type === 'conversation';
+  const platform = conversation.platform || 'default';
+  const businessName = brand?.name || 'la empresa';
+  const firstName = extractFirstName(customerName);
+
+  // ========== SYSTEM PROMPT ==========
+  // Estructura: CONTEXTO → ROL/PERSONA → BOUNDARIES → INSTRUCCIONES
+  
+  const systemParts: string[] = [];
+
+  // 1. CONTEXTO
+  systemParts.push(`# CONTEXTO
+
+Eres el agente de seguimiento de ${businessName}.
+Tu objetivo es retomar conversaciones con clientes que no han respondido.
+
+**Situación actual:**
+- Cliente: ${customerName}${firstName ? ` (${firstName})` : ''}
+- Canal: ${platform} (${isDm ? 'Mensaje Directo' : 'Comentario público'})
+- Tiempo sin respuesta: ${timeSinceLastMessage}
+- Recordatorio: #${reminderNumber} de ${maxReminders}`);
+
+  // 2. ROL Y PERSONA (del agent.systemPrompt)
+  if (agent.systemPrompt) {
+    systemParts.push(`
+# ROL Y PERSONA
+
+${agent.systemPrompt}`);
+  }
+
+  // 3. BOUNDARIES (guardrails del agente + reglas de reminder)
+  systemParts.push(`
+# BOUNDARIES (LÍMITES)`);
+
+  if (agent.guardrailPrompt) {
+    systemParts.push(`
+## Reglas del Agente
+${agent.guardrailPrompt}`);
+  }
+
+  systemParts.push(`
+## Reglas Específicas para Follow-up
+- NO menciones que es un recordatorio automatizado o mensaje programado
+- NO des precios ni información sensible sin contexto
+- NO seas invasivo ni presiones al cliente
+- Si no hay contexto suficiente de qué consultó el cliente, usa mensaje genérico amable
+- PROHIBIDO inventar detalles que no están en el historial`);
+
+  // 4. KNOWLEDGE BASE (si existe)
+  if (agent.knowledgeBase) {
+    systemParts.push(`
+# BASE DE CONOCIMIENTO
+
+${agent.knowledgeBase}`);
+  }
+
+  // 5. INSTRUCCIONES DE REMINDER
+  const toneInstruction = isDm 
+    ? 'Tono personal y cercano, como si hablaras por WhatsApp. Puedes usar el nombre si lo tienes.'
+    : 'Tono breve y profesional. Este es un comentario público visible para todos.';
+
+  systemParts.push(`
+# INSTRUCCIONES DE FOLLOW-UP
+
+1. **Analiza el historial**: Identifica el tema/servicio que consultó el cliente
+2. **Genera mensaje breve**: Máximo 2 oraciones
+3. **Referencia específica**: Menciona el tema que consultó (si lo hay)
+4. **Canal preferido**: Si mencionó WhatsApp u otro canal, pregunta si pudo contactar
+5. **${toneInstruction}**
+
+## Formato de salida
+Responde SOLO con el mensaje de seguimiento, sin explicaciones ni formato adicional.`);
+
+  const systemPrompt = systemParts.join('\n');
+
+  // ========== USER PROMPT ==========
+  // Contiene: resumen persistente + historial reciente + contexto del post + perfil CRM
+
+  const userParts: string[] = [];
+
+  // Resumen persistente (memoria a largo plazo)
+  if (userSummary?.summary) {
+    userParts.push(`--- RESUMEN DE INTERACCIONES ANTERIORES ---
+${userSummary.summary}
+--- FIN DEL RESUMEN ---`);
+  }
+
+  // Contexto del post (para comentarios)
+  if (socialPost?.caption && !isDm) {
+    userParts.push(`
+--- CONTEXTO DEL POST COMENTADO ---
+${socialPost.caption.substring(0, 500)}${socialPost.caption.length > 500 ? '...' : ''}
+--- FIN CONTEXTO POST ---`);
+  }
+
+  // Historial de conversación reciente
+  if (conversationHistory.length > 0) {
+    userParts.push(`
+--- HISTORIAL DE CONVERSACIÓN RECIENTE ---`);
+    
+    for (const msg of conversationHistory) {
+      const role = msg.direction === 'inbound' ? 'Cliente' : 'Agente';
+      const content = (msg.content || '').substring(0, 200);
+      const truncated = msg.content && msg.content.length > 200 ? '...' : '';
+      userParts.push(`${role}: ${content}${truncated}`);
+    }
+    
+    userParts.push(`--- FIN DEL HISTORIAL ---`);
+  }
+
+  // Perfil CRM (si existe)
+  if (crmProfile) {
+    const crmLines: string[] = [];
+    if (crmProfile.lifecycleStage) crmLines.push(`- Etapa: ${crmProfile.lifecycleStage}`);
+    if (crmProfile.status) crmLines.push(`- Estado: ${crmProfile.status}`);
+    if (crmProfile.serviceInterest) crmLines.push(`- Interés: ${crmProfile.serviceInterest}`);
+    if (crmProfile.intent) crmLines.push(`- Intención: ${crmProfile.intent}`);
+    if (crmProfile.preferredChannel) crmLines.push(`- Canal preferido: ${crmProfile.preferredChannel}`);
+    
+    if (crmLines.length > 0) {
+      userParts.push(`
+--- PERFIL DEL CLIENTE ---
+${crmLines.join('\n')}
+--- FIN PERFIL ---`);
+    }
+  }
+
+  // B2: Fallback para contexto faltante
+  const hasConversationContext = conversationHistory.length > 0 || userSummary?.summary;
+  const hasPostContext = socialPost?.caption;
+  
+  // Instrucción final con fallback
+  if (!hasConversationContext && !hasPostContext) {
+    userParts.push(`
+--- TAREA (CONTEXTO LIMITADO) ---
+No hay historial detallado de la conversación disponible.
+
+Genera un mensaje de seguimiento genérico pero amable que:
+1. Pregunte si el cliente aún tiene interés o necesita ayuda
+2. Sea breve y no invasivo (máximo 2 oraciones)
+3. Invite a retomar la conversación sin presionar
+
+Ejemplos de mensajes genéricos:
+- "Hola! ¿Pudiste resolver tu consulta? Estamos aquí si necesitas algo más."
+- "Hola ${firstName || 'ahí'}! Solo queríamos saber si podemos ayudarte en algo."
+
+Responde SOLO con el mensaje, sin explicaciones.`);
+  } else {
+    userParts.push(`
+--- TAREA ---
+Genera un mensaje de seguimiento breve (máximo 2 oraciones) que:
+1. Haga referencia al tema específico que consultó el cliente (si lo hay en el historial)
+2. Sea amigable y no invasivo
+3. Invite a continuar la conversación
+
+Responde SOLO con el mensaje, sin explicaciones.`);
+  }
+
+  const userPrompt = userParts.join('\n');
+
+  console.log(`[ReminderPromptComposer] Prompt generado para ${customerName}:
+━━━━━━━━━━━━━━━━━━━━━━━━
+Tipo: ${isDm ? 'DM' : 'Comentario'}
+Reminder: #${reminderNumber}/${maxReminders}
+Historial: ${conversationHistory.length} mensajes
+UserSummary: ${userSummary ? 'Sí' : 'No'}
+SocialPost: ${socialPost?.caption ? 'Sí' : 'No'}
+CRM Profile: ${crmProfile ? 'Sí' : 'No'}
+Guardrails: ${agent.guardrailPrompt ? 'Sí' : 'No'}
+KnowledgeBase: ${agent.knowledgeBase ? 'Sí' : 'No'}
+FallbackMode: ${!hasConversationContext && !hasPostContext ? 'Sí (contexto limitado)' : 'No'}
+━━━━━━━━━━━━━━━━━━━━━━━━`);
+
+  return {
+    systemPrompt,
+    userPrompt,
+  };
+}

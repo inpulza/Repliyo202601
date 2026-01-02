@@ -1,5 +1,6 @@
 import { storage } from "../storage";
 import { createLLMProvider } from "./llm/factory";
+import { composeReminderPrompt, filterHistoryByAuthor } from "./llm/prompt-composer";
 import { MetricoolService } from "./metricool";
 import { 
   type Conversation, 
@@ -225,34 +226,78 @@ export class ReminderService implements IReminderService {
       }
 
       const brand = await storage.getBrand(conversation.brandId);
+      
+      // ========== FASE A: CONTEXTO ENRIQUECIDO ==========
+      
+      // A2: Aumentar historial de 8→20 mensajes para DMs
+      const allMessages = await storage.getMessagesByConversation(conversation.id);
+      const isDm = conversation.type === 'conversation';
+      
+      // Usar 20 mensajes para DMs, 10 para comentarios (filtrados por autor)
+      let conversationHistory: Message[];
+      if (isDm) {
+        conversationHistory = allMessages.slice(-20);
+      } else {
+        // Para comentarios, filtrar por autor del último mensaje inbound
+        const lastInbound = [...allMessages].reverse().find(m => m.direction === 'inbound');
+        if (lastInbound) {
+          conversationHistory = filterHistoryByAuthor(allMessages, lastInbound, 'comment');
+        } else {
+          conversationHistory = allMessages.slice(-10);
+        }
+      }
+      
+      // A4: Obtener resumen persistente (userSummary) para DMs
+      let userSummary = null;
+      if (isDm) {
+        const lastInbound = [...allMessages].reverse().find(m => m.direction === 'inbound');
+        if (lastInbound?.author) {
+          userSummary = await storage.getConversationUserSummary(conversation.id, lastInbound.author);
+          if (userSummary) {
+            console.log(`[ReminderService] Found persistent summary for user ${lastInbound.author}`);
+          }
+        }
+      }
+      
+      // A5: Obtener contexto del video/post para comentarios
+      let socialPost = null;
+      if (!isDm && conversation.socialPostId) {
+        socialPost = await storage.getSocialPost(conversation.socialPostId);
+        if (socialPost?.caption) {
+          console.log(`[ReminderService] Found post context: "${socialPost.caption.substring(0, 80)}..."`);
+        }
+      }
+      
+      // Obtener contexto adicional del cliente
       const context = await this.assembleReminderContext(conversation);
       
-      const crmProfileText = context.crmProfile 
-        ? `- Etapa: ${context.crmProfile.lifecycleStage || 'No definida'}
-- Estado: ${context.crmProfile.status || 'No definido'}
-- Interés en servicio: ${context.crmProfile.serviceInterest || 'No especificado'}
-- Intención detectada: ${context.crmProfile.intent || 'No detectada'}
-- Presupuesto: ${context.crmProfile.budget || 'No mencionado'}
-- Canal preferido: ${context.crmProfile.preferredChannel || 'No especificado'}`
-        : 'No hay perfil CRM disponible';
-
-      const prompt = ENHANCED_REMINDER_PROMPT
-        .replace('{brand_name}', brand?.name || 'la empresa')
-        .replace('{customer_name}', context.customerName)
-        .replace('{channel}', context.channel)
-        .replace('{time_since_last}', context.timeSinceLastMessage)
-        .replace('{reminder_number}', String(reminderNumber))
-        .replace('{max_reminders}', String(rules.maxReminders || 2))
-        .replace('{recent_messages}', context.recentMessages || 'Sin mensajes recientes')
-        .replace('{conversation_summary}', context.conversationSummary || 'Sin resumen disponible')
-        .replace('{closing_intent}', context.closingIntent || 'Sin intención detectada')
-        .replace('{crm_profile}', crmProfileText)
-        .replace('{other_conversations}', context.otherConversationsSummary || 'Sin historial previo');
+      // ========== A1/A3: USAR composeReminderPrompt ==========
+      // Incluye agent.systemPrompt, agent.guardrailPrompt, agent.knowledgeBase
+      
+      const { systemPrompt, userPrompt } = composeReminderPrompt({
+        agent,
+        brand: brand || undefined,
+        conversation,
+        conversationHistory,
+        userSummary,
+        socialPost,
+        reminderNumber,
+        maxReminders: rules.maxReminders || 2,
+        customerName: context.customerName,
+        timeSinceLastMessage: context.timeSinceLastMessage,
+        crmProfile: context.crmProfile ? {
+          lifecycleStage: context.crmProfile.lifecycleStage,
+          status: context.crmProfile.status,
+          serviceInterest: context.crmProfile.serviceInterest,
+          intent: context.crmProfile.intent,
+          preferredChannel: context.crmProfile.preferredChannel,
+        } : null,
+      });
 
       const provider = createLLMProvider(agent, this.secrets);
       const response = await provider.generateRawCompletion(
-        'Eres un asistente de servicio al cliente experto en mensajes de seguimiento personalizados.',
-        prompt,
+        systemPrompt,
+        userPrompt,
         { temperature: 0.7, maxTokens: 150 }
       );
 

@@ -1,0 +1,64 @@
+Mi Opinión sobre el Sistema de Reminders
+Lo que está bien diseñado ✅
+Arquitectura sólida: El sistema tiene 5 capas de defensa contra duplicados y una lógica de elegibilidad muy bien pensada (incluyendo la corrección crítica del 1 de enero que asegura que la marca haya respondido antes de programar reminders).
+
+Prompt de generación claro: El ENHANCED_REMINDER_PROMPT es bueno - incluye:
+
+Contexto del cliente (nombre, canal, tiempo sin respuesta)
+Mensajes recientes (últimos 8 mensajes)
+Resumen de la conversación
+Intención detectada
+Perfil CRM
+Historial con el cliente
+Flujo de contexto adecuado: assembleReminderContext obtiene los últimos 8 mensajes, el resumen persistente, y datos del CRM.
+
+Los problemas que identifico 🔍
+Problema 1: El LLM provider puede fallar silenciosamente
+
+En generateReminderContent (línea 211-225):
+
+const agent = await storage.getAiAgentByBrand(conversation.brandId);
+if (!agent) {
+  // Si no hay agente Y no hay template, falla
+  return { success: false, error: 'No AI agent configured...' };
+}
+Si la marca de prueba (Inpulza Testing) no tiene un AI agent configurado, o el agente no tiene las API keys correctas, el reminder no se genera.
+
+Problema 2: El contexto de la conversación puede estar incompleto
+
+En assembleReminderContext (línea 276-282), solo toma los últimos 8 mensajes con contenido truncado a 150 caracteres:
+
+const content = m.content?.substring(0, 150) || '[sin contenido]';
+Si la conversación es larga o el contexto importante está más atrás, el LLM no tiene suficiente información para generar un reminder personalizado.
+
+Problema 3: No usa el mismo composePrompt que auto-reply
+
+Los DMs/comentarios normales usan prompt-composer.ts con:
+
+buildDynamicPersonalityRules
+Historial de 20 mensajes para DMs
+Resumen persistente de 500+ caracteres
+Guardrails del agente
+Pero los reminders usan un prompt separado (ENHANCED_REMINDER_PROMPT) que:
+
+Solo tiene 8 mensajes (vs 20)
+No incluye el systemPrompt del agente
+No incluye los guardrails del usuario
+No usa composePrompt para consistencia de tono
+Problema 4: El system prompt del LLM es genérico
+
+const response = await provider.generateRawCompletion(
+  'Eres un asistente de servicio al cliente experto en mensajes de seguimiento personalizados.',
+  prompt,
+  { temperature: 0.7, maxTokens: 150 }
+);
+Usa un system prompt genérico en lugar del systemPrompt del agente configurado, ignorando la personalidad, tono y reglas del agente.
+
+Mi recomendación
+El sistema de reminders debería usar la misma infraestructura que el auto-reply:
+
+Usar composePrompt o al menos incluir el systemPrompt del agente
+Incluir los guardrails del agente
+Usar el mismo número de mensajes de historial (20 para DMs)
+Incluir el resumen persistente si existe
+Esto haría que los reminders sean consistentes con el resto de las respuestas de la marca y respeten la configuración del agente IA.
