@@ -7505,14 +7505,122 @@ Tu objetivo es retomar conversaciones con clientes inactivos.
 
 ---
 
-#### 14.8.9 Próximos Pasos
+#### 14.8.9 Plan de Implementación por Fases (Aprobado por Architect)
 
-| # | Tarea | Prioridad | Complejidad |
-|---|-------|-----------|-------------|
-| 1 | Aplicar prompt estructurado a ReminderService | Alta | Media |
-| 2 | Inyectar guardrails del agente en reminders | Alta | Baja |
-| 3 | Aumentar historial de 8→20 mensajes | Alta | Baja |
-| 4 | Evaluar viabilidad de arquitectura multi-agente | Media | Alta |
-| 5 | Diseñar UI para configurar múltiples agentes por marca | Baja | Alta |
+**Estrategia:** Enfoque en fases - primero arreglar el agente actual, luego evaluar multi-agente.
+
+---
+
+##### FASE A: Correcciones Core (Prioridad Alta - Sin cambios de Schema)
+
+**Objetivo:** Arreglar los problemas inmediatos del ReminderService sin romper la UI existente.
+
+| # | Tarea | Descripción | Archivos |
+|---|-------|-------------|----------|
+| A1 | Crear `composeReminderPrompt()` | Nueva función que reutiliza `agent.systemPrompt`, `agent.guardrailPrompt` y estructura Contexto/Rol/Flujo/Límites | `prompt-composer.ts` |
+| A2 | Aumentar historial 8→20 | Para DMs, obtener últimos 20 mensajes en lugar de 8 | `reminderService.ts` |
+| A3 | Inyectar guardrails | Incluir `agent.guardrailPrompt` en el prompt de reminder | `reminderService.ts` |
+| A4 | Agregar resumen persistente | Obtener `userSummary` para DMs (igual que auto-reply) | `reminderService.ts` |
+| A5 | Agregar contexto de video | Para comentarios, obtener `socialPost.caption` | `reminderService.ts` |
+
+**Criterios de Aceptación:**
+- [ ] El reminder hace referencia al tema específico de la conversación
+- [ ] Respeta los guardrails del agente (ej. no da precios si está configurado)
+- [ ] Usa el mismo tono que las respuestas de auto-reply
+- [ ] Historial de 20 mensajes para DMs
+
+---
+
+##### FASE B: Mejoras Contextuales (Prioridad Media)
+
+| # | Tarea | Descripción |
+|---|-------|-------------|
+| B1 | Reutilizar helpers de autoReply | En lugar de duplicar lógica, importar funciones de contexto |
+| B2 | Fallback para contexto faltante | Si no hay resumen/video, usar mensaje genérico amable |
+| B3 | Diferenciar prompt DM vs Comentario | Ajustar instrucciones según tipo de conversación |
+| B4 | Logging mejorado | Agregar logs de qué contexto se inyectó al prompt |
+
+---
+
+##### FASE C: Evaluación Multi-Agente (Prioridad Baja - Post Fase A)
+
+**Prerequisito:** Confirmar que las mejoras de Fase A funcionan correctamente.
+
+| # | Tarea | Descripción | Complejidad |
+|---|-------|-------------|-------------|
+| C1 | Diseñar schema multi-agente | Romper constraint de 1 agente por marca | Alta |
+| C2 | Definir routing rules | ¿Cómo decidir qué agente usar? | Media |
+| C3 | Diseñar UI para múltiples agentes | Tabs o lista de agentes por marca | Alta |
+| C4 | Plan de migración | Cómo migrar marcas existentes | Media |
+
+**Decisión pendiente:** ¿Multi-agente real o configuración por contexto?
+- **Opción A**: Tabla `ai_agents` permite múltiples agentes por marca (reminder_agent, comment_agent)
+- **Opción B**: Un agente pero con prompts específicos por tipo de interacción (más sencillo)
+
+---
+
+##### Orden de Implementación Recomendado
+
+```
+Semana 1: A1 + A2 + A3 (Core fixes - quick wins)
+Semana 2: A4 + A5 (Contexto completo)
+Semana 3: B1 + B2 + B3 (Refinamiento)
+Futuro:   C1-C4 (Multi-agente si se valida necesidad)
+```
+
+---
+
+##### Diagrama de Flujo Propuesto para Reminder
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    REMINDER GENERATION FLOW                      │
+└─────────────────────────────────────────────────────────────────┘
+
+1. getConversation(conversationId)
+   │
+2. ¿Es DM o Comentario?
+   │
+   ├─── DM ────────────────────────┐
+   │    │                          │
+   │    ├─ getMessageHistory(20)   │
+   │    ├─ getUserSummary()        │
+   │    └─ getCrmProfile()         │
+   │                               │
+   └─── Comentario ────────────────┤
+        │                          │
+        ├─ getSocialPost()         │  ← caption del video
+        ├─ getMessageHistory(10)   │
+        └─ getLastInboundMessage() │
+                                   │
+3. composeReminderPrompt({         │
+     agent,                        │
+     context,                      │
+     conversationType,             │
+     reminderNumber                │
+   })                              │
+   │
+   ├── # CONTEXTO                  │
+   │   "Eres agente de follow-up   │
+   │    de {brand_name}"           │
+   │                               │
+   ├── # ROL Y PERSONA             │
+   │   {agent.systemPrompt}        │
+   │                               │
+   ├── # BOUNDARIES                │
+   │   {agent.guardrailPrompt}     │
+   │   + restricciones reminder    │
+   │                               │
+   └── # INSTRUCCIONES REMINDER    │
+       "Genera mensaje breve,      │
+        referencia tema previo,    │
+        máximo 2 oraciones"        │
+                                   │
+4. llmProvider.generateRawCompletion()
+   │
+5. Validar contenido (>10 chars, no vacío)
+   │
+6. scheduleReminderAtomic()
+```
 
 ---
