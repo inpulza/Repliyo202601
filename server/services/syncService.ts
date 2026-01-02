@@ -315,9 +315,10 @@ class SyncService {
           const isInbound = !isFromBrand;
           const metricoolId = `conv_${conv.id}_${msg.id || msg.timestamp}`;
 
-          // Check if message already exists BEFORE updating conversation unread count
-          const existingMessage = await storage.getMessageByMetricoolId(metricoolId, brandId);
-          const isNewMessage = !existingMessage;
+          // Check if message already exists GLOBALLY (not just for this brand)
+          // This prevents cross-brand counter duplication when both accounts are connected to Metricool
+          const messageExistsGlobally = await storage.messageExistsGlobally(metricoolId);
+          const isNewMessage = !messageExistsGlobally;
           
           // PROTECTION: Additional check to prevent incrementing unread for brand's own messages
           // that were incorrectly detected as inbound
@@ -677,9 +678,10 @@ class SyncService {
             
             const replyDirection = isReplyFromBrand ? 'outbound' : 'inbound';
 
-            // Check if reply already exists BEFORE incrementing
-            const existingReply = await storage.getMessageByMetricoolId(reply.id, brandId);
-            const isNewReply = !existingReply;
+            // Check if reply already exists GLOBALLY (not just for this brand)
+            // This prevents cross-brand counter duplication when both accounts are connected to Metricool
+            const replyExistsGlobally = await storage.messageExistsGlobally(reply.id);
+            const isNewReply = !replyExistsGlobally;
             
             // Update conversation unread count only if this is a NEW inbound reply
             if (isNewReply && !isReplyFromBrand) {

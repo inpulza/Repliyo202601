@@ -81,6 +81,7 @@ export interface IStorage {
   getMessagesByConversation(conversationId: string): Promise<Message[]>;
   getMessage(id: string): Promise<Message | undefined>;
   getMessageByMetricoolId(metricoolId: string, brandId: string): Promise<Message | undefined>;
+  messageExistsGlobally(metricoolId: string): Promise<boolean>;
   getMessagesWithPendingTranscription(brandId: string, limit?: number): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
   upsertMessage(message: InsertMessage): Promise<Message>;
@@ -801,6 +802,15 @@ export class DatabaseStorage implements IStorage {
         )
       );
     return message || undefined;
+  }
+
+  async messageExistsGlobally(metricoolId: string): Promise<boolean> {
+    const [message] = await db
+      .select({ id: messages.id })
+      .from(messages)
+      .where(eq(messages.metricoolId, metricoolId))
+      .limit(1);
+    return !!message;
   }
 
   async getMessagesWithPendingTranscription(brandId: string, limit: number = 10): Promise<Message[]> {
