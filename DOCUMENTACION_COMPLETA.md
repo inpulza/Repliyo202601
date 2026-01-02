@@ -7533,6 +7533,113 @@ Tu objetivo es retomar conversaciones con clientes inactivos.
 
 ---
 
+##### FASE A.2: Arquitectura Simplificada de Prompts (2 Enero 2026)
+
+**Estado:** ✅ COMPLETADA
+
+**Objetivo:** Eliminar instrucciones hardcodeadas del código y permitir que el admin controle todo el comportamiento a través de su `systemPrompt` configurado.
+
+**Cambio Arquitectónico:**
+Se refactorizó `composeReminderPrompt()` para seguir el principio "Contexto Neutral + Variables":
+
+```
+ANTES (problemático):
+┌─────────────────────────────────────────────────────────────┐
+│ composeReminderPrompt()                                     │
+├─────────────────────────────────────────────────────────────┤
+│ + Contexto neutral (OK)                                     │
+│ + agent.systemPrompt (OK)                                   │
+│ + ENHANCED_REMINDER_PROMPT (❌ 37 líneas hardcodeadas)      │
+│ + Instrucciones de seguimiento (❌ sobrescriben admin)      │
+└─────────────────────────────────────────────────────────────┘
+
+AHORA (limpio):
+┌─────────────────────────────────────────────────────────────┐
+│ composeReminderPrompt()                                     │
+├─────────────────────────────────────────────────────────────┤
+│ 1. CONTEXTO NEUTRAL (solo datos, sin instrucciones)         │
+│    - Tipo: REMINDER                                         │
+│    - Cliente: {{username}} ({{firstName}})                  │
+│    - Canal: {{platform}} (DM/Comentario)                    │
+│    - Tiempo sin respuesta: {{time_since_last_message}}      │
+│    - Recordatorio #{{reminder_number}} de {{max_reminders}} │
+│                                                             │
+│ 2. PROMPT DEL AGENTE (con variables sustituidas)            │
+│    - {{agent.systemPrompt}}                                 │
+│                                                             │
+│ 3. GUARDRAILS DEL AGENTE (con variables sustituidas)        │
+│    - {{agent.guardrailPrompt}}                              │
+│                                                             │
+│ 4. KNOWLEDGE BASE                                           │
+│    - {{agent.knowledgeBase}}                                │
+│                                                             │
+│ 5. TAREA ESPECÍFICA (mínima, solo formato)                  │
+│    - "Genera un mensaje de seguimiento breve y natural"     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Variables Disponibles para Reminders:**
+
+El admin puede usar estas variables en su `systemPrompt`, `guardrailPrompt` o `knowledgeBase`:
+
+| Variable | Descripción | Ejemplo |
+|----------|-------------|---------|
+| `{{interaction_mode}}` | Tipo de interacción | `"reminder"` |
+| `{{reminder_number}}` | Número del recordatorio | `1`, `2`, `3` |
+| `{{max_reminders}}` | Límite de recordatorios | `3` |
+| `{{time_since_last_message}}` | Tiempo transcurrido | `"hace 2 días"` |
+| `{{username}}` | Nombre de usuario | `@pandita_cute` |
+| `{{firstName}}` / `{{first_name}}` | Primer nombre | `Panda` |
+| `{{platform}}` | Plataforma social | `instagram` |
+| `{{businessName}}` / `{{business_name}}` | Nombre del negocio | `Inpulza Testing` |
+| `{{isDm}}` / `{{is_dm}}` | ¿Es mensaje directo? | `true` / `false` |
+| `{{messageType}}` / `{{message_type}}` | Tipo de mensaje | `dm` / `comment` |
+| `{{comment}}` | Último mensaje del cliente | `"Me interesa..."` |
+| `{{postContext}}` / `{{post_context}}` | Caption del post (comentarios) | `"Nuevo video..."` |
+| `{{dynamicLimit}}` / `{{dynamic_limit}}` | Límite de caracteres | `280` |
+| `{{conversationDepth}}` / `{{conversation_depth}}` | Profundidad conversación | `5` |
+| `{{relationshipStatus}}` / `{{relationship_status}}` | Estado de relación | `new` / `returning` / `established` |
+
+**IMPORTANTE - Solo Sustitución Simple:**
+
+El sistema **solo soporta sustitución de variables** `{{variable}}`. **NO** soporta lógica condicional tipo Jinja/Liquid (`{% if %}`). Las variables se reemplazan por sus valores antes de enviar al LLM.
+
+**Recomendación para el Admin:**
+
+Dado que el sistema inyecta automáticamente `interaction_mode: REMINDER` en el contexto neutral, el LLM sabe que está generando un reminder. El admin puede incluir instrucciones para ambos modos en su systemPrompt:
+
+```
+Eres Marta, asistente de ventas de Inpulza.
+
+## INSTRUCCIONES GENERALES
+- Siempre saluda al cliente por su nombre: {{firstName}}
+- Mantén un tono amigable y profesional
+
+## CUANDO GENERES RESPUESTAS NORMALES (auto-reply)
+- Responde de forma completa y detallada
+- Incluye información relevante del producto/servicio
+
+## CUANDO GENERES RECORDATORIOS (reminders)
+El contexto indicará que es un REMINDER. En ese caso:
+- Sé breve (1-2 oraciones máximo)
+- Ofrece ayuda adicional, no presiones
+- No repitas información ya mencionada
+```
+
+El LLM recibirá el contexto `**Tipo de interacción:** REMINDER` y seleccionará la sección correcta de instrucciones.
+
+**Archivos Modificados:**
+- `server/services/llm/prompt-composer.ts` - Nueva función `composeReminderPrompt()` + `replaceReminderVariables()`
+- `server/services/reminderService.ts` - Eliminada constante `ENHANCED_REMINDER_PROMPT`
+- `server/scripts/test-reminder-prompt.ts` - Tests actualizados
+
+**Tests Ejecutados:**
+- 4 conversaciones reales de Inpulza Testing
+- Todos generan reminders contextualizados correctamente
+- Los mensajes hacen referencia a temas específicos de cada conversación
+
+---
+
 ##### FASE B: Mejoras Contextuales (Prioridad Media)
 
 **Estado:** ✅ COMPLETADA (2 de Enero 2026)
