@@ -7513,32 +7513,36 @@ Tu objetivo es retomar conversaciones con clientes inactivos.
 
 ##### FASE A: Correcciones Core (Prioridad Alta - Sin cambios de Schema)
 
+**Estado:** ✅ COMPLETADA (2 de Enero 2026)
+
 **Objetivo:** Arreglar los problemas inmediatos del ReminderService sin romper la UI existente.
 
-| # | Tarea | Descripción | Archivos |
-|---|-------|-------------|----------|
-| A1 | Crear `composeReminderPrompt()` | Nueva función que reutiliza `agent.systemPrompt`, `agent.guardrailPrompt` y estructura Contexto/Rol/Flujo/Límites | `prompt-composer.ts` |
-| A2 | Aumentar historial 8→20 | Para DMs, obtener últimos 20 mensajes en lugar de 8 | `reminderService.ts` |
-| A3 | Inyectar guardrails | Incluir `agent.guardrailPrompt` en el prompt de reminder | `reminderService.ts` |
-| A4 | Agregar resumen persistente | Obtener `userSummary` para DMs (igual que auto-reply) | `reminderService.ts` |
-| A5 | Agregar contexto de video | Para comentarios, obtener `socialPost.caption` | `reminderService.ts` |
+| # | Tarea | Descripción | Archivos | Estado |
+|---|-------|-------------|----------|--------|
+| A1 | Crear `composeReminderPrompt()` | Nueva función que reutiliza `agent.systemPrompt`, `agent.guardrailPrompt` y estructura Contexto/Rol/Flujo/Límites | `prompt-composer.ts` | ✅ |
+| A2 | Aumentar historial 8→20 | Para DMs, obtener últimos 20 mensajes en lugar de 8 | `reminderService.ts` | ✅ |
+| A3 | Inyectar guardrails | Incluir `agent.guardrailPrompt` en el prompt de reminder | `reminderService.ts` | ✅ |
+| A4 | Agregar resumen persistente | Obtener `userSummary` para DMs (igual que auto-reply) | `reminderService.ts` | ✅ |
+| A5 | Agregar contexto de video | Para comentarios, obtener `socialPost.caption` | `reminderService.ts` | ✅ |
 
 **Criterios de Aceptación:**
-- [ ] El reminder hace referencia al tema específico de la conversación
-- [ ] Respeta los guardrails del agente (ej. no da precios si está configurado)
-- [ ] Usa el mismo tono que las respuestas de auto-reply
-- [ ] Historial de 20 mensajes para DMs
+- [x] El reminder hace referencia al tema específico de la conversación
+- [x] Respeta los guardrails del agente (ej. no da precios si está configurado)
+- [x] Usa el mismo tono que las respuestas de auto-reply
+- [x] Historial de 20 mensajes para DMs
 
 ---
 
 ##### FASE B: Mejoras Contextuales (Prioridad Media)
 
-| # | Tarea | Descripción |
-|---|-------|-------------|
-| B1 | Reutilizar helpers de autoReply | En lugar de duplicar lógica, importar funciones de contexto |
-| B2 | Fallback para contexto faltante | Si no hay resumen/video, usar mensaje genérico amable |
-| B3 | Diferenciar prompt DM vs Comentario | Ajustar instrucciones según tipo de conversación |
-| B4 | Logging mejorado | Agregar logs de qué contexto se inyectó al prompt |
+**Estado:** ✅ COMPLETADA (2 de Enero 2026)
+
+| # | Tarea | Descripción | Estado |
+|---|-------|-------------|--------|
+| B1 | Reutilizar helpers de autoReply | Importar `filterHistoryByAuthor` de prompt-composer | ✅ |
+| B2 | Fallback para contexto faltante | Si no hay resumen/video, usar mensaje genérico amable | ✅ |
+| B3 | Diferenciar prompt DM vs Comentario | Tono personal para DM, breve para comentarios | ✅ |
+| B4 | Logging mejorado | Agregar logs de qué contexto se inyectó al prompt | ✅ |
 
 ---
 
