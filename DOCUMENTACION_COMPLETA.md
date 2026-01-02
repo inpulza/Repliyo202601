@@ -29,7 +29,93 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 - **Smart Digest**: ✅ Notificaciones humanizadas con nombres de autores
 - **Deep Links**: ✅ Click en notificación navega a conversación con scroll + highlight
 - **Filtros Mejorados**: ✅ Badges muestran solo no leídos, filtro conjunto automático
+- **Filtros por Tipo de Mensaje**: ✅ Control granular de auto-reply para DMs y comentarios por plataforma
 - **Próximo Paso**: Tests unitarios, rate limiting, dashboard de métricas IA
+
+---
+
+## Filtros de Auto-Reply por Tipo de Mensaje (DM vs Comentarios) - 2 Enero 2026
+
+### Problema Resuelto
+Los usuarios necesitaban poder activar/desactivar el auto-reply de forma separada para DMs y comentarios. Por ejemplo, permitir que la IA responda automáticamente a comentarios pero manejar manualmente las conversaciones privadas (DMs).
+
+### Solución Implementada
+Se añadió una tercera capa de filtros al sistema de auto-reply:
+
+#### Jerarquía de Filtros (de mayor a menor prioridad):
+```
+1. Switch General (autoReplyMode) - off/auto
+   └── 2. Por Plataforma (isActive) - true/false por cuenta social
+       └── 3. Por Tipo de Mensaje (NUEVO)
+           ├── dmEnabled - true/false (default: true)
+           └── commentsEnabled - true/false (default: true)
+```
+
+### Cambios en Schema
+```typescript
+// shared/schema.ts - channelSettingsSchema
+export const channelSettingsSchema = z.object({
+  enabled: z.boolean().default(false),
+  bufferDelaySeconds: z.number().int().min(0).max(300).nullable().optional(),
+  cooldownSeconds: z.number().int().min(0).max(3600).nullable().optional(),
+  cooldownRandomness: z.number().int().min(0).max(120).nullable().optional(),
+  cooldownPerConversation: z.boolean().nullable().optional(),
+  dmEnabled: z.boolean().nullable().optional(),      // ← NUEVO
+  commentsEnabled: z.boolean().nullable().optional(), // ← NUEVO
+});
+```
+
+### Lógica en Backend
+```typescript
+// server/services/autoReplyService.ts
+// Verificación añadida en processNewMessage() y processNewMessageWithBuffering()
+
+if (normalizedProvider) {
+  const channelSettings = getEffectiveChannelSettings(agent, normalizedProvider);
+  const isDm = message.type === 'conversation';
+  
+  if (isDm && !channelSettings.dmEnabled) {
+    return { success: false, skippedReason: "dm_disabled" };
+  }
+  
+  if (!isDm && !channelSettings.commentsEnabled) {
+    return { success: false, skippedReason: "comments_disabled" };
+  }
+}
+```
+
+### Configuración UI
+Toggle en pestaña "Plataformas" del AIAgentConfig:
+- **Ubicación**: Dentro de cada tarjeta de plataforma (visible solo cuando IA está activa)
+- **Iconos**: MessageSquare (DMs), MessageCircle (Comentarios)
+- **Default**: Ambos activados (true)
+- **Feedback visual**: Mensaje amarillo indicando el estado actual
+
+### Comportamiento
+```
+dmEnabled=true, commentsEnabled=true (default):
+  → Auto-reply para todos los mensajes
+
+dmEnabled=false, commentsEnabled=true:
+  → Auto-reply solo para comentarios
+
+dmEnabled=true, commentsEnabled=false:
+  → Auto-reply solo para DMs
+
+dmEnabled=false, commentsEnabled=false:
+  → Auto-reply desactivado (aunque isActive=true)
+```
+
+### Archivos Modificados
+| Archivo | Cambio |
+|---------|--------|
+| `shared/schema.ts` | Campos `dmEnabled` y `commentsEnabled` en channelSettingsSchema, función `getEffectiveChannelSettings` actualizada |
+| `server/services/autoReplyService.ts` | Verificación de filtros por tipo en `processNewMessage()` y `processNewMessageWithBuffering()` |
+| `client/src/components/AIAgentConfig.tsx` | Toggles en pestaña Plataformas con iconos y feedback visual |
+
+### Data-TestIDs Añadidos
+- `switch-dm-{provider}` - Toggle para activar/desactivar DMs
+- `switch-comments-{provider}` - Toggle para activar/desactivar comentarios
 
 ---
 

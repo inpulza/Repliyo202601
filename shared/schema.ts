@@ -401,6 +401,8 @@ export const channelSettingsSchema = z.object({
   cooldownSeconds: z.number().int().min(0).max(3600).nullable().optional(),
   cooldownRandomness: z.number().int().min(0).max(120).nullable().optional(),
   cooldownPerConversation: z.boolean().nullable().optional(),
+  dmEnabled: z.boolean().nullable().optional(),
+  commentsEnabled: z.boolean().nullable().optional(),
 });
 export type ChannelSettings = z.infer<typeof channelSettingsSchema>;
 
@@ -417,7 +419,7 @@ export type PlatformSettings = z.infer<typeof platformSettingsSchema>;
 export function getEffectiveChannelSettings(
   agent: AiAgent,
   provider: SocialProvider
-): { bufferDelaySeconds: number; cooldownSeconds: number; cooldownRandomness: number; cooldownPerConversation: boolean } {
+): { bufferDelaySeconds: number; cooldownSeconds: number; cooldownRandomness: number; cooldownPerConversation: boolean; dmEnabled: boolean; commentsEnabled: boolean } {
   const platformSettings = agent.platformSettings as PlatformSettings | null;
   const channelOverride = platformSettings?.[provider];
   
@@ -426,6 +428,8 @@ export function getEffectiveChannelSettings(
     cooldownSeconds: channelOverride?.cooldownSeconds ?? agent.cooldownSeconds,
     cooldownRandomness: channelOverride?.cooldownRandomness ?? agent.cooldownRandomness,
     cooldownPerConversation: channelOverride?.cooldownPerConversation ?? agent.cooldownPerConversation,
+    dmEnabled: channelOverride?.dmEnabled ?? true,
+    commentsEnabled: channelOverride?.commentsEnabled ?? true,
   };
 }
 

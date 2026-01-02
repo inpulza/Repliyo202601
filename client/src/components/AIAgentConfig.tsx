@@ -27,7 +27,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { 
-  Bot, Settings, MessageSquare, Zap, Shield, History, 
+  Bot, Settings, MessageSquare, MessageCircle, Zap, Shield, History, 
   Play, Save, Loader2, Sparkles, Brain, BookOpen,
   Clock, AlertTriangle, CheckCircle, XCircle, Share2, Variable, Copy,
   ChevronDown, ChevronUp, Filter, RotateCcw, Eye, Info, Pencil, X,
@@ -978,53 +978,111 @@ export function AIAgentConfig() {
                         if (!providerKey) return null;
                         const config = PLATFORM_CONFIG[providerKey];
                         const Icon = config.icon;
+                        const platformSettings = (formData.platformSettings as Record<string, any>) || {};
+                        const channelSettings = platformSettings[providerKey] || {};
+                        const dmEnabled = channelSettings.dmEnabled ?? true;
+                        const commentsEnabled = channelSettings.commentsEnabled ?? true;
                         
                         return (
                           <div 
                             key={account.id}
-                            className="flex flex-col sm:flex-row sm:items-center justify-between p-3 md:p-4 border border-border rounded-lg hover:bg-muted/30 transition-colors gap-3"
+                            className="p-3 md:p-4 border border-border rounded-lg hover:bg-muted/30 transition-colors"
                             data-testid={`platform-card-${providerKey}`}
                           >
-                            <div className="flex items-center gap-3 md:gap-4">
-                              <div className="p-2 rounded-lg bg-muted/30 border border-border shrink-0">
-                                <Icon className={`h-5 w-5 ${config.color}`} />
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                              <div className="flex items-center gap-3 md:gap-4">
+                                <div className="p-2 rounded-lg bg-muted/30 border border-border shrink-0">
+                                  <Icon className={`h-5 w-5 ${config.color}`} />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="font-medium text-sm flex items-center gap-2 flex-wrap">
+                                    {config.name}
+                                    {account.accountName && (
+                                      <span className="text-xs text-muted-foreground truncate">
+                                        @{account.accountName}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    Límite: {config.charLimit} caracteres
+                                  </div>
+                                </div>
                               </div>
-                              <div className="min-w-0">
-                                <div className="font-medium text-sm flex items-center gap-2 flex-wrap">
-                                  {config.name}
-                                  {account.accountName && (
-                                    <span className="text-xs text-muted-foreground truncate">
-                                      @{account.accountName}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  Límite: {config.charLimit} caracteres
-                                </div>
+                              <div className="flex items-center justify-between sm:justify-end gap-3 md:gap-4 ml-11 sm:ml-0">
+                                <Badge 
+                                  variant="outline"
+                                  className={`text-xs ${account.isActive 
+                                    ? "bg-green-50 text-green-700 border-green-200" 
+                                    : "bg-muted text-muted-foreground border-border"
+                                  }`}
+                                >
+                                  {account.isActive ? 'IA Activa' : 'IA Inactiva'}
+                                </Badge>
+                                <Switch
+                                  checked={account.isActive}
+                                  onCheckedChange={(checked) => 
+                                    updateSocialAccountMutation.mutate({ 
+                                      provider: account.provider, 
+                                      isActive: checked 
+                                    })
+                                  }
+                                  disabled={updateSocialAccountMutation.isPending}
+                                  data-testid={`switch-platform-${account.provider}`}
+                                />
                               </div>
                             </div>
-                            <div className="flex items-center justify-between sm:justify-end gap-3 md:gap-4 ml-11 sm:ml-0">
-                              <Badge 
-                                variant="outline"
-                                className={`text-xs ${account.isActive 
-                                  ? "bg-green-50 text-green-700 border-green-200" 
-                                  : "bg-muted text-muted-foreground border-border"
-                                }`}
-                              >
-                                {account.isActive ? 'IA Activa' : 'IA Inactiva'}
-                              </Badge>
-                              <Switch
-                                checked={account.isActive}
-                                onCheckedChange={(checked) => 
-                                  updateSocialAccountMutation.mutate({ 
-                                    provider: account.provider, 
-                                    isActive: checked 
-                                  })
-                                }
-                                disabled={updateSocialAccountMutation.isPending}
-                                data-testid={`switch-platform-${account.provider}`}
-                              />
-                            </div>
+                            
+                            {account.isActive && (
+                              <div className="mt-4 pt-4 border-t border-border space-y-3">
+                                <p className="text-xs text-muted-foreground font-medium">Tipo de mensaje con auto-reply:</p>
+                                <div className="flex flex-col sm:flex-row gap-3 sm:gap-6">
+                                  <div className="flex items-center justify-between sm:justify-start gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                                      <span className="text-sm">DMs</span>
+                                    </div>
+                                    <Switch
+                                      checked={dmEnabled}
+                                      onCheckedChange={(checked) => {
+                                        const newSettings = {
+                                          ...platformSettings,
+                                          [providerKey]: { ...channelSettings, dmEnabled: checked }
+                                        };
+                                        setFormData({ ...formData, platformSettings: newSettings });
+                                      }}
+                                      data-testid={`switch-dm-${providerKey}`}
+                                    />
+                                  </div>
+                                  <div className="flex items-center justify-between sm:justify-start gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                                      <span className="text-sm">Comentarios</span>
+                                    </div>
+                                    <Switch
+                                      checked={commentsEnabled}
+                                      onCheckedChange={(checked) => {
+                                        const newSettings = {
+                                          ...platformSettings,
+                                          [providerKey]: { ...channelSettings, commentsEnabled: checked }
+                                        };
+                                        setFormData({ ...formData, platformSettings: newSettings });
+                                      }}
+                                      data-testid={`switch-comments-${providerKey}`}
+                                    />
+                                  </div>
+                                </div>
+                                {(!dmEnabled || !commentsEnabled) && (
+                                  <p className="text-xs text-amber-600">
+                                    {!dmEnabled && !commentsEnabled 
+                                      ? "Auto-reply desactivado para DMs y comentarios"
+                                      : !dmEnabled 
+                                        ? "Auto-reply solo para comentarios" 
+                                        : "Auto-reply solo para DMs"
+                                    }
+                                  </p>
+                                )}
+                              </div>
+                            )}
                           </div>
                         );
                       })}

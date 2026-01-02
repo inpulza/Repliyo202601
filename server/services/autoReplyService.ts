@@ -62,6 +62,15 @@ class AutoReplyService {
 
     // Read buffer delay from database - supports per-channel overrides
     const provider = normalizeProvider(message.platform);
+    
+    // Check if DM auto-reply is enabled for this platform
+    if (provider) {
+      const channelSettings = getEffectiveChannelSettings(agent, provider);
+      if (!channelSettings.dmEnabled) {
+        log(`[AutoReply] DM auto-reply disabled for platform ${provider}, skipping buffer`, "sync");
+        return { success: false, skippedReason: "dm_disabled" };
+      }
+    }
     const bufferDelayMs = provider 
       ? getEffectiveChannelSettings(agent, provider).bufferDelaySeconds * 1000
       : agent.dmBatchDelaySeconds * 1000; // Fallback to global if unknown provider
@@ -162,6 +171,22 @@ class AutoReplyService {
 
       // Normalize and validate platform
       const normalizedProvider = normalizeProvider(message.platform);
+
+      // MESSAGE TYPE FILTER: Check if auto-reply is enabled for this message type (DM vs comment)
+      if (normalizedProvider) {
+        const channelSettings = getEffectiveChannelSettings(agent, normalizedProvider);
+        const isDm = message.type === 'conversation';
+        
+        if (isDm && !channelSettings.dmEnabled) {
+          log(`${logPrefix} DM auto-reply disabled for platform ${normalizedProvider}, skipping`, "sync");
+          return { success: false, skippedReason: "dm_disabled" };
+        }
+        
+        if (!isDm && !channelSettings.commentsEnabled) {
+          log(`${logPrefix} Comments auto-reply disabled for platform ${normalizedProvider}, skipping`, "sync");
+          return { success: false, skippedReason: "comments_disabled" };
+        }
+      }
       const cooldownResult = this.checkCooldown(agent, conversation, normalizedProvider || undefined);
       if (!cooldownResult.canReply) {
         const channelSettings = normalizedProvider 
