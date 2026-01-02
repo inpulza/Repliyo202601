@@ -7144,3 +7144,201 @@ interface ConversationTimelineProps {
 - **Respond.io AI Agent Actions:** https://respond.io/help/ai-agents/using-ai-agent-actions
 
 ---
+
+## FASE 14: Análisis y Mejora del Sistema de Reminders (Enero 2026)
+
+**Estado:** 🔄 En Análisis
+**Fecha de inicio:** 2 de Enero 2026
+**Objetivo:** Corregir los problemas de contexto y generación de contenido en el sistema de Reminders, alineándolo con la infraestructura de prompts que funciona correctamente en auto-reply.
+
+---
+
+### 14.1 Problemas Detectados
+
+#### Problema Principal
+El sistema de Reminders está **completamente aislado** del sistema de prompts (`prompt-composer.ts`) que funciona bien para auto-reply. Esto causa:
+1. El LLM no recibe el contexto correcto de la comunicación
+2. Los reminders no respetan la personalidad ni reglas del agente configurado
+3. Tono inconsistente con el resto de las respuestas de la marca
+
+#### Problemas Específicos Reportados por Usuario
+- No encontraba al LLM correcto para enviar la respuesta
+- No le enviaba el contexto correcto de la comunicación/comentario al LLM
+
+---
+
+### 14.2 Comparativa: AutoReplyService vs ReminderService
+
+| Aspecto | AutoReplyService (✅ Funciona) | ReminderService (❌ Problemas) |
+|---------|-------------------------------|--------------------------------|
+| System Prompt | Usa `agent.systemPrompt` (personalidad configurada) | Usa texto genérico hardcodeado |
+| Guardrails | Incluye `agent.guardrailPrompt` (reglas del usuario) | **NO los incluye** |
+| Knowledge Base | Incluye `agent.knowledgeBase` | **NO la incluye** |
+| Historial de mensajes | 20 mensajes para DMs | Solo 8 mensajes truncados a 150 chars |
+| Resumen persistente | Sí (userSummary de 500+ chars) | **NO lo usa** |
+| Filtrado por autor | Sí (`filterHistoryByAuthor`) | NO |
+| Contexto del post | Sí (socialPost.caption) | NO |
+| Prompt Composer | Usa `composePrompt()` completo | NO usa prompt-composer |
+
+---
+
+### 14.3 Análisis Técnico del Código
+
+#### Ubicación del Problema: `server/services/reminderService.ts`
+
+**Líneas 40-76 - Prompt hardcodeado:**
+```typescript
+const ENHANCED_REMINDER_PROMPT = `Eres un asistente de seguimiento amigable para {brand_name}...
+// Este prompt NO incluye:
+// - agent.systemPrompt (personalidad)
+// - agent.guardrailPrompt (reglas)
+// - agent.knowledgeBase (información del negocio)
+```
+
+**Líneas 252-257 - Generación de contenido:**
+```typescript
+const provider = createLLMProvider(agent, this.secrets);
+const response = await provider.generateRawCompletion(
+  'Eres un asistente de servicio al cliente experto...', // ❌ System prompt genérico
+  prompt, // ❌ No incluye guardrails ni personalidad
+  { temperature: 0.7, maxTokens: 150 }
+);
+```
+
+**Línea 274 - Historial limitado:**
+```typescript
+const recentMessages = messages.slice(-8); // Solo 8 mensajes vs 20 en auto-reply
+```
+
+**Línea 279 - Truncamiento agresivo:**
+```typescript
+const content = m.content?.substring(0, 150) || '[sin contenido]'; // Trunca a 150 chars
+```
+
+#### Infraestructura que NO se reutiliza
+
+El `prompt-composer.ts` tiene funciones que el reminder debería usar:
+
+| Función | Propósito | Usado en Auto-Reply | Usado en Reminders |
+|---------|-----------|---------------------|-------------------|
+| `composePrompt()` | Construye prompt completo con agente | ✅ | ❌ |
+| `filterHistoryByAuthor()` | Segrega historial por usuario en comentarios | ✅ | ❌ |
+| `buildDynamicPersonalityRules()` | Reglas contextuales (DM vs comentario) | ✅ | ❌ |
+| `buildSituationCard()` | Ficha de situación para el LLM | ✅ | ❌ |
+| `extractFirstName()` | Extrae nombre del username | ✅ | ❌ |
+
+---
+
+### 14.4 Causa Raíz
+
+El ReminderService fue implementado como un módulo independiente sin reutilizar la infraestructura existente del sistema de LLM. Específicamente:
+
+1. **Usa `generateRawCompletion`** en lugar de `generateReply`
+   - `generateRawCompletion`: Método simple que solo envía system + user prompt
+   - `generateReply`: Método completo que usa `composePrompt()` con todo el contexto
+
+2. **Prompt propio vs prompt-composer**
+   - El `ENHANCED_REMINDER_PROMPT` fue creado desde cero
+   - No aprovecha las funciones de `prompt-composer.ts`
+
+3. **Context assembly separado**
+   - `assembleReminderContext()` es una implementación paralela más limitada
+   - No obtiene los mismos artefactos que usa auto-reply
+
+---
+
+### 14.5 Plan de Corrección Propuesto
+
+#### Opción A: Crear ReminderPromptBuilder (Recomendada)
+Crear un builder específico que reutilice `composePrompt` y agregue instrucciones de reminder.
+
+```typescript
+// Propuesta de nueva arquitectura
+function buildReminderPrompt(context: ReminderPromptContext): {
+  systemPrompt: string;
+  userPrompt: string;
+} {
+  // 1. Reutilizar composePrompt del prompt-composer
+  const basePrompt = composePrompt({
+    agent,
+    message: syntheticMessage,
+    conversation,
+    brand,
+    conversationHistory: filteredHistory, // 20 msgs
+    userSummary,
+    socialPost,
+  });
+  
+  // 2. Agregar instrucciones específicas de reminder
+  const reminderInstructions = buildReminderInstructions(reminderNumber, maxReminders);
+  
+  // 3. Combinar
+  return {
+    systemPrompt: basePrompt.systemPrompt + reminderInstructions,
+    userPrompt: basePrompt.userPrompt,
+  };
+}
+```
+
+#### Opción B: Inyectar contexto de agente en reminder actual
+Modificar `generateReminderContent()` para incluir los campos faltantes.
+
+#### Tareas Específicas
+
+| # | Tarea | Descripción |
+|---|-------|-------------|
+| 1 | Enriquecer contexto | Aumentar historial 8→20, agregar userSummary, socialPost |
+| 2 | Incluir prompt del agente | Agregar systemPrompt, guardrailPrompt, knowledgeBase |
+| 3 | Usar filterHistoryByAuthor | Para comentarios, segmentar por autor |
+| 4 | Agregar instrucciones reminder | Mantener restricciones (2 oraciones, follow-up) |
+| 5 | Usar generateReply | Cambiar de generateRawCompletion a generateReply |
+
+---
+
+### 14.6 Impacto Esperado
+
+#### Beneficios de la Corrección
+1. **Consistencia de tono**: Los reminders sonarán como el resto de las respuestas
+2. **Respeto de reglas**: Guardrails (ej. "prohibido dar precios") se aplicarán
+3. **Mejor contexto**: El LLM entenderá la conversación completa
+4. **Personalización**: Usará knowledge base para respuestas precisas
+5. **Menos errores**: El LLM correcto siempre se seleccionará
+
+#### Riesgos a Mitigar
+- Reminders más largos si se incluye demasiado contexto → Mantener instrucción de 2 oraciones
+- Conflicto entre guardrails y objetivo de reminder → Priorizar guardrails
+
+---
+
+### 14.7 Archivos Involucrados
+
+| Archivo | Cambios Propuestos |
+|---------|-------------------|
+| `server/services/reminderService.ts` | Refactorizar `generateReminderContent()` |
+| `server/services/llm/prompt-composer.ts` | Posible nueva función `composeReminderPrompt()` |
+| `server/services/llm/types.ts` | Nuevos tipos para ReminderPromptContext |
+
+---
+
+### 14.8 Investigación en Curso: Arquitectura Multi-Agente
+
+**Estado:** Pendiente análisis de documentación Respond.io
+
+Se está investigando la posibilidad de implementar una arquitectura multi-agente donde diferentes agentes especializados manejen diferentes tipos de interacciones:
+
+| Agente Propuesto | Responsabilidad |
+|------------------|-----------------|
+| Agente Recepcionista | Primer contacto, clasificación de intención |
+| Agente de Ventas | Conversiones, cotizaciones, cierre |
+| Agente de Comentarios | Respuestas a comentarios públicos |
+| Agente de Follow-up | Reminders y seguimientos |
+| Agente de Soporte | Resolución de problemas, FAQ |
+
+Esta arquitectura podría resolver los problemas actuales al:
+1. Especializar cada agente para su tarea específica
+2. Configurar guardrails específicos por tipo de interacción
+3. Permitir diferentes personalidades según el contexto
+
+**Próximo paso:** Análisis de PDF con investigación de Respond.io AI Agents.
+
+---
