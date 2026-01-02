@@ -231,7 +231,7 @@ export class ReminderService implements IReminderService {
       
       // A2: Aumentar historial de 8→20 mensajes para DMs
       const allMessages = await storage.getMessagesByConversation(conversation.id);
-      const isDm = conversation.type === 'conversation';
+      const isDm = conversation.type === 'conversation' || conversation.type === 'dm';
       
       // Usar 20 mensajes para DMs, 10 para comentarios (filtrados por autor)
       let conversationHistory: Message[];

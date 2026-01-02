@@ -896,7 +896,7 @@ export function composeReminderPrompt(context: ReminderPromptContext): ReminderP
     crmProfile
   } = context;
 
-  const isDm = conversation.type === 'conversation';
+  const isDm = conversation.type === 'conversation' || conversation.type === 'dm';
   const platform = conversation.platform || 'default';
   const businessName = brand?.name || 'la empresa';
   const firstName = extractFirstName(customerName);
