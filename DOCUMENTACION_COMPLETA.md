@@ -7320,25 +7320,199 @@ Modificar `generateReminderContent()` para incluir los campos faltantes.
 
 ---
 
-### 14.8 Investigación en Curso: Arquitectura Multi-Agente
+### 14.8 Investigación: Arquitectura Multi-Agente basada en Respond.io
 
-**Estado:** Pendiente análisis de documentación Respond.io
+**Estado:** ✅ Análisis Completado
+**Fecha:** 2 de Enero 2026
+**Fuente:** Guía Técnica Agentes Respond.io (PDF guardado en `docs/knowledge-base/`)
 
-Se está investigando la posibilidad de implementar una arquitectura multi-agente donde diferentes agentes especializados manejen diferentes tipos de interacciones:
+---
 
-| Agente Propuesto | Responsabilidad |
-|------------------|-----------------|
-| Agente Recepcionista | Primer contacto, clasificación de intención |
-| Agente de Ventas | Conversiones, cotizaciones, cierre |
-| Agente de Comentarios | Respuestas a comentarios públicos |
-| Agente de Follow-up | Reminders y seguimientos |
-| Agente de Soporte | Resolución de problemas, FAQ |
+#### 14.8.1 Cambio de Paradigma: Lógica Determinista → Probabilística
 
-Esta arquitectura podría resolver los problemas actuales al:
-1. Especializar cada agente para su tarea específica
-2. Configurar guardrails específicos por tipo de interacción
-3. Permitir diferentes personalidades según el contexto
+Según la investigación de Respond.io, la industria CX está en transición desde:
+- **Sistemas basados en reglas rígidas** (árboles de decisión, workflows visuales)
+- Hacia **arquitecturas cognitivas autónomas** (LLMs + RAG)
 
-**Próximo paso:** Análisis de PDF con investigación de Respond.io AI Agents.
+> "Los nuevos Agentes de IA introducen una arquitectura probabilística impulsada por LLMs y RAG. Estos agentes no siguen un guion lineal predefinido; operan bajo un conjunto de Instrucciones y Límites que definen su comportamiento."
+
+**Implicación para Repliyo:** El trabajo se desplaza del diseño de flujos visuales a la **ingeniería de prompts** y **curación de conocimiento**.
+
+---
+
+#### 14.8.2 Anatomía de una Instrucción Efectiva (System Prompt)
+
+Respond.io recomienda estructurar el prompt modularmente:
+
+| Capa | Propósito | Ejemplo |
+|------|-----------|---------|
+| **1. Contexto** | Define el entorno operativo | ¿Quién es la empresa? ¿Qué productos? ¿Cliente típico? |
+| **2. Identidad y Rol** | Define la voz de la marca | Especialista de Soporte Nivel 1, Asesor de Ventas |
+| **3. Flujo de Nivel Superior** | Mapa mental de la conversación | Inicio → Indagación → Resolución |
+| **4. Límites y Restricciones** | Reglas negativas de operación | Qué NO hacer, cuándo escalar |
+
+##### Definición Técnica de Persona (Tabla Comparativa)
+
+| Componente | ❌ Vago | ✅ Técnico |
+|------------|---------|-----------|
+| Rol | "Eres un agente de ayuda" | "Actúa como Especialista de Soporte Técnico Nivel 1 para [Empresa]. Tu objetivo es triaje y resolución al primer contacto." |
+| Tono | "Sé amable y profesional" | "Utiliza tono profesional, conciso y empático. Evita jerga técnica. Mantén respuestas bajo 50 palabras." |
+| Comportamiento | "Responde preguntas" | "Prioriza respuestas basadas en hechos de las Fuentes de Conocimiento. Si la información es ambigua, solicita clarificación." |
+
+---
+
+#### 14.8.3 Sistema de Restricciones Negativas (Boundaries)
+
+Las restricciones deben codificarse en el prompt usando encabezados Markdown (`# BOUNDARIES`):
+
+```markdown
+# BOUNDARIES (LÍMITES)
+
+1. No proporciones consejos médicos ni legales. Si el usuario lo solicita, 
+   declara cortésmente tu limitación y sugiere consultar a un profesional.
+
+2. No inventes niveles de stock. Si la información no está en las fuentes, 
+   pide disculpas y ofrece transferir a un agente humano.
+
+3. Si no encuentras la respuesta, NO inventes. Pide disculpas e indica que 
+   no tienes esa información específica.
+```
+
+**Estrategia de Redirección Positiva:** En lugar de "No puedo hacer eso" (frustrante), usar redirección constructiva.
+
+---
+
+#### 14.8.4 Motor RAG y Fuentes de Conocimiento
+
+El agente usa **búsqueda semántica pura** sobre las Knowledge Sources:
+
+| Característica | Detalle |
+|----------------|---------|
+| Formatos soportados | PDF, TXT, DOCX, CSV, Markdown |
+| Límite por archivo | 20 MB |
+| Límite total | 100 archivos por Workspace |
+| Priorización | **Semántica**, NO por nombre de archivo |
+
+##### Cebado de Palabras Clave (Keyword Priming)
+
+Para guiar al agente hacia la fuente correcta:
+
+```
+❌ Incorrecto: "Busca la respuesta en el archivo Lista de Precios 2025"
+
+✅ Correcto: "Para consultas sobre costos o tarifas, busca términos específicos 
+como 'Suscripción Mensual', 'Plan Anual' o 'Tarifas por Usuario' en el contexto."
+```
+
+---
+
+#### 14.8.5 Framework de Acciones (Function Calling)
+
+Respond.io implementa acciones que el agente puede ejecutar:
+
+| Acción | Sintaxis | Uso |
+|--------|----------|-----|
+| **Cerrar conversación** | "Close the conversation" | Higiene del Inbox, métricas KPI |
+| **Asignar a equipo/agente** | "Assign to @[Nombre del Equipo]" | Escalado, routing inteligente |
+| **Actualizar campo CRM** | "Update the [Field Name] with value" | Captura de datos, cualificación leads |
+| **Disparar Workflow** | "Trigger!nombre_del_workflow" | Integraciones externas (APIs) |
+
+##### Anti-Patrón: Doble Respuesta
+
+> "Un error común es permitir que el agente siga conversando después de asignar el chat a un humano."
+
+**Solución:** Instrucción imperativa de silencio post-asignación:
+```
+"Do not respond to the Contact when assigning conversations to @Sales Team"
+```
+
+---
+
+#### 14.8.6 Propuesta de Arquitectura Multi-Agente para Repliyo
+
+Basándose en los patrones de Respond.io, se propone separar responsabilidades:
+
+| Agente | Rol | Instrucciones Específicas |
+|--------|-----|---------------------------|
+| **Agente Recepcionista** | Primer contacto, clasificación | Detectar intención, recopilar info básica, enrutar |
+| **Agente de Comentarios** | Respuestas a comentarios públicos | Brevedad, CTA, tono público, no dar precios |
+| **Agente de DMs** | Conversaciones privadas | Tono personal, historial completo, cualificación |
+| **Agente de Follow-up** | Reminders y seguimientos | Breve, contextual, referencia a tema previo |
+| **Agente de Ventas** | Conversiones y cierre | Enfocado en CTA, WhatsApp, cotizaciones |
+
+##### Beneficios de Multi-Agente
+
+1. **Especialización**: Cada agente optimizado para su tarea
+2. **Guardrails específicos**: Reglas diferentes por contexto
+3. **Personalidades distintas**: Tono formal en comentarios, casual en DMs
+4. **Menor confusión**: El LLM no mezcla contextos
+
+##### Desafíos de Implementación
+
+1. **Routing**: ¿Cómo decidir qué agente usa cada interacción?
+2. **Transiciones**: ¿Cómo pasar contexto entre agentes?
+3. **Configuración UI**: ¿Cómo configurar múltiples agentes por marca?
+4. **Costos**: Más agentes = más configuración y mantenimiento
+
+---
+
+#### 14.8.7 Aplicación Inmediata: Mejorar ReminderService
+
+Antes de implementar multi-agente completo, aplicar lecciones de Respond.io al reminder actual:
+
+| Problema Actual | Solución Respond.io Style |
+|-----------------|---------------------------|
+| Prompt genérico | Estructurar con Contexto/Rol/Flujo/Límites |
+| Sin guardrails | Agregar sección `# BOUNDARIES` con reglas del agente |
+| Poco contexto (8 msgs) | Aumentar a 20 msgs + resumen persistente |
+| Sin personalidad | Usar `agent.systemPrompt` para tono consistente |
+
+##### Propuesta de Prompt Estructurado para Reminders
+
+```markdown
+# CONTEXTO
+Eres el agente de seguimiento de {brand_name}. 
+Tu objetivo es retomar conversaciones con clientes inactivos.
+
+# ROL Y PERSONA
+{agent.systemPrompt} // Inyectar personalidad del agente configurado
+
+# FLUJO DE REMINDER
+1. Revisa el historial de conversación
+2. Identifica el tema/servicio que consultó el cliente
+3. Genera mensaje breve (máximo 2 oraciones) haciendo referencia específica a ese tema
+4. Si hay canal preferido (WhatsApp), pregunta si pudo contactar por ese medio
+
+# BOUNDARIES
+{agent.guardrailPrompt} // Inyectar guardrails del agente
+
+## RESTRICCIONES ADICIONALES PARA REMINDERS
+- NO menciones que es un recordatorio automatizado
+- NO des precios ni información sensible
+- Si no tienes contexto suficiente, usa mensaje genérico amable
+```
+
+---
+
+#### 14.8.8 Documentos de Referencia
+
+| Documento | Ubicación | Contenido |
+|-----------|-----------|-----------|
+| Guía Técnica Agentes Respond.io | `docs/knowledge-base/Guía_Técnica_Agentes_Respond.io_*.pdf` | Arquitectura, prompts, acciones |
+| Investigación Técnica Respond.io CRM | `docs/knowledge-base/Investigación_Técnica_Respond.io_CRM_*.pdf` | Sistema CRM, lifecycle |
+| Guía de Diseño CRM SaaS Conversacional | `docs/knowledge-base/Guía_de_Diseño_CRM_SaaS_Conversacional_*.pdf` | UX/UI patterns |
+| Cierre Perfecto en SaaS B2B | `docs/knowledge-base/Cierre_Perfecto_en_SaaS_B2B_*.pdf` | Estrategias de cierre |
+
+---
+
+#### 14.8.9 Próximos Pasos
+
+| # | Tarea | Prioridad | Complejidad |
+|---|-------|-----------|-------------|
+| 1 | Aplicar prompt estructurado a ReminderService | Alta | Media |
+| 2 | Inyectar guardrails del agente en reminders | Alta | Baja |
+| 3 | Aumentar historial de 8→20 mensajes | Alta | Baja |
+| 4 | Evaluar viabilidad de arquitectura multi-agente | Media | Alta |
+| 5 | Diseñar UI para configurar múltiples agentes por marca | Baja | Alta |
 
 ---
