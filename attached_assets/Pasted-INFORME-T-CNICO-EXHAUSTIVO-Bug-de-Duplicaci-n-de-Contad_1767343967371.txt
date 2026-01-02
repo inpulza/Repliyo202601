@@ -1,0 +1,111 @@
+INFORME TÉCNICO EXHAUSTIVO: Bug de Duplicación de Contadores Unread en DMs Cross-Brand
+Fecha: 1 de Enero 2026
+Prioridad: CRÍTICA
+Componentes Afectados: server/services/syncService.ts, server/storage.ts
+Conversaciones Específicas: Dos DMs de Instagram en la marca INPULZA (brandId: 72307812-2edb-43a6-884b-e19f1a9cf200)
+
+EL PROBLEMA
+Existen exactamente dos conversaciones de DM de Instagram en la marca INPULZA cuyos contadores de mensajes no leídos (unread_count) se incrementan de manera errónea en cada ciclo de sincronización con Metricool, a pesar de que no hay mensajes nuevos reales. Los contadores pasan de 4 a 7, luego a 14, 28, etc., duplicándose o triplicándose en cada sync.
+
+Conversaciones afectadas:
+
+squareonpix - conversation_id: 5ffddce1-ff2a-443c-8b6e-f85ce33b10e8 - El contador debería ser 4, pero sigue subiendo.
+bo_trust_service - conversation_id: 99bfc925-5625-4a86-8386-1f9b03ac25a1 - El contador debería ser 4.
+POR QUÉ ESTAS DOS CONVERSACIONES SON ESPECIALES
+Estas no son conversaciones normales con clientes externos. Son conversaciones cross-brand, es decir, ambos participantes son cuentas de Instagram que están conectadas al mismo sistema Metricool:
+
+Conversación en INPULZA	El "cliente" es	Que pertenece a la marca
+squareonpix	@squareonpix	Inpulza Testing (brandId: 83a64a0b-5ac8-4bf7-8a0e-b6da839d77b0)
+bo_trust_service	@bo_trust_service	BO Trust (brandId: 866600f9-4c0e-4d5e-b9d4-62fc9113426b)
+Esto significa que cuando Inpulza (@jordan.inpulza) habla con @squareonpix por Instagram DM, Metricool ve la misma conversación desde ambos lados porque ambas cuentas están conectadas. El historial completo del DM se envía a ambas marcas en cada sync.
+
+LA CAUSA RAÍZ SOSPECHADA
+Metricool API envía el transcript completo de cada DM a TODAS las marcas conectadas que participan en esa conversación. El flujo problemático es:
+
+Sync de Inpulza: El sistema recibe la conversación con @squareonpix y todos sus mensajes.
+Verificación de existencia: Para cada mensaje, el código hace storage.getMessageByMetricoolId(metricoolId, brandId) donde brandId = Inpulza.
+El problema: Si el mensaje fue originalmente guardado con brandId = Inpulza Testing (porque esa marca lo sincronizó primero), la búsqueda por brandId = Inpulza no lo encuentra.
+Falso positivo: El sistema cree que el mensaje es "nuevo" (isNewMessage = true) e incrementa el contador.
+El mensaje no se duplica: El upsertMessage tiene lógica para no duplicar por metricoolId global, pero el contador YA se incrementó.
+INTENTOS DE FIX REALIZADOS
+Fix 1: Mover el incremento del contador DESPUÉS del upsertMessage y verificar que savedMessage.brandId === brandId antes de incrementar.
+
+Resultado: Los logs muestran incrementedUnread=false para todos los mensajes, pero el contador SIGUE subiendo.
+Hipótesis: Hay otro lugar en el código que está incrementando el contador, posiblemente en el procesamiento de comentarios o en otra función.
+Fix 2: Añadir helper incrementConversationUnread() en storage.ts con logging específico.
+
+Resultado: No se ven logs de "POST-UPSERT INCREMENT" para estas conversaciones, pero el contador sube.
+CÓDIGO RELEVANTE A REVISAR
+Archivo: server/services/syncService.ts
+
+Líneas 319-394 (procesamiento de DMs):
+
+// Check if message already exists BEFORE updating conversation unread count
+const existingMessage = await storage.getMessageByMetricoolId(metricoolId, brandId);
+const isNewMessage = !existingMessage;
+// CRITICAL FIX: Do NOT increment unread here
+const conversationRecord = await storage.upsertConversation({...}, false);
+const savedMessage = await storage.upsertMessage(messageData);
+// Check if this is truly a new message by verifying it belongs to THIS brand
+const isReallyNew = isNewMessage && savedMessage.brandId === brandId;
+// CRITICAL FIX: Increment unread counter ONLY AFTER verifying message belongs to this brand
+if (isReallyNew && isInbound && !isSuspiciousInbound) {
+  await storage.incrementConversationUnread(conversationRecord.id);
+}
+Archivo: server/storage.ts
+
+Función getMessageByMetricoolId (líneas 777-790):
+
+async getMessageByMetricoolId(metricoolId: string, brandId: string): Promise<Message | undefined> {
+  const [message] = await db
+    .select()
+    .from(messages)
+    .where(
+      and(
+        eq(messages.metricoolId, metricoolId),
+        eq(messages.brandId, brandId)  // <-- Esta condición puede ser el problema
+      )
+    );
+  return message || undefined;
+}
+PREGUNTAS PARA INVESTIGAR
+¿Hay otro lugar en el código que incremente unread_count además del sync de DMs? Buscar unreadCount o unread_count en todo el proyecto.
+
+¿El upsertConversation tiene algún trigger o side-effect que incremente el contador aunque se pase shouldIncrementUnread=false?
+
+¿Los mensajes de estas conversaciones cross-brand tienen el campo brandId correcto en la tabla messages? Verificar con:
+
+SELECT m.id, m.metricool_id, m.brand_id, m.author, m.direction 
+FROM messages m 
+WHERE m.conversation_id = '5ffddce1-ff2a-443c-8b6e-f85ce33b10e8' 
+ORDER BY m.timestamp DESC LIMIT 10;
+¿Existe un proceso de sync separado o un cron job que esté ejecutando lógica diferente?
+
+¿El endpoint de marcar como leído (/api/conversations/:id/read) se está llamando incorrectamente y reseteando el contador a un valor incorrecto?
+
+DATOS PARA DEBUGGING
+Query para ver el estado actual:
+
+SELECT 
+  c.id, 
+  c.customer_name, 
+  c.unread_count,
+  COUNT(m.id) FILTER (WHERE m.status = 'unread' AND m.direction = 'inbound') as real_unread
+FROM conversations c
+LEFT JOIN messages m ON m.conversation_id = c.id AND m.brand_id = c.brand_id
+WHERE c.id IN (
+  '5ffddce1-ff2a-443c-8b6e-f85ce33b10e8',
+  '99bfc925-5625-4a86-8386-1f9b03ac25a1'
+)
+GROUP BY c.id;
+Para resetear temporalmente los contadores:
+
+UPDATE conversations SET unread_count = 4 
+WHERE id IN (
+  '5ffddce1-ff2a-443c-8b6e-f85ce33b10e8',
+  '99bfc925-5625-4a86-8386-1f9b03ac25a1'
+);
+SOLUCIÓN PROPUESTA
+La solución más robusta sería no buscar mensajes por brandId sino por metricoolId globalmente, y luego verificar si ya existe para CUALQUIER marca. Si existe para otra marca, no es un mensaje nuevo y no debe incrementar el contador de ninguna marca.
+
+Alternativa: Añadir una tabla de tracking synced_messages que registre qué combinación de (metricoolId, brandId) ya fue procesada, independiente de dónd
