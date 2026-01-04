@@ -276,16 +276,6 @@ Estado de relación: ${context.relationshipStatus}${batchInfo}`);
       ? `Usa el nombre "${context.firstName}" para personalizar: "Hola, ${context.firstName}, ..." o "...te esperamos, ${context.firstName}"`
       : `No se detectó nombre del usuario, responde sin nombre.`;
     
-    // CTA específico por plataforma - TikTok SIEMPRE usa WhatsApp
-    const normalizedPlatform = context.platform.toLowerCase().trim();
-    let ctaInstruction: string;
-    
-    if (normalizedPlatform === 'tiktok') {
-      ctaInstruction = `SIEMPRE incluye CTA de WhatsApp: "Escríbenos al WhatsApp 📱" o "Contáctanos por WhatsApp". NUNCA uses "al DM" o "al privado" en TikTok.`;
-    } else {
-      ctaInstruction = `Incluye un CTA cuando aplique: "Escríbenos al WhatsApp 📱", "Escríbenos al DM 📩", o "Más info en bio". Se prefiere WhatsApp.`;
-    }
-    
     rules.push(`
 [MODO COMENTARIO PÚBLICO ACTIVADO]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -293,7 +283,7 @@ Estado de relación: ${context.relationshipStatus}${batchInfo}`);
    - Sé BREVE y DIRECTO (máximo 2-3 líneas).
    - Tono profesional pero accesible.
    - ${nameInstruction}
-   - ${ctaInstruction}
+   - Para el CTA (llamada a la acción), USA LAS INSTRUCCIONES ESPECÍFICAS del System Prompt del agente.
    - Emojis permitidos con moderación (1-2 máximo).
    - Evita respuestas largas o conversacionales en público.`);
   }
