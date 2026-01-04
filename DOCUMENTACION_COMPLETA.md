@@ -45,7 +45,7 @@ Cuando múltiples usuarios comentaban en el mismo post de redes sociales, los re
 ### Causa Raíz
 `assembleReminderContext` seleccionaba el mensaje inbound más reciente sin considerar que había múltiples hilos de conversación con diferentes autores en el mismo post.
 
-### Solución Implementada
+### Solución Implementada (Versión Final)
 
 #### 1. Tipo ThreadSelectionMethod
 ```typescript
@@ -54,29 +54,65 @@ type ThreadSelectionMethod =
   | 'legacy_single_author'      // Un solo autor sin metadata (seguro)
   | 'ineligible_ambiguous'      // Múltiples autores sin metadata = NO programar
   | 'ineligible_no_metadata'    // Sin datos = NO programar
+  | 'ineligible_delay_not_met'  // Ningún outbound ha pasado el threshold de delay
   | 'dm';                       // DMs (comportamiento original)
 ```
 
-#### 2. Priorización por Antigüedad
-Se selecciona el outbound MÁS ANTIGUO cuyo autor no ha respondido (no el más reciente). Esto asegura que el hilo que lleva más tiempo sin respuesta recibe el recordatorio primero.
+#### 2. Validación de Delay por Outbound
+- `delayHours` se pasa desde `scheduleReminder` a `assembleReminderContext`
+- Se calcula `cutoffTime = Date.now() - delayHours * 60 * 60 * 1000`
+- Solo se seleccionan outbounds cuyo timestamp sea menor que cutoffTime
+- Si ningún outbound pasa el threshold, se marca como `ineligible_delay_not_met`
 
-#### 3. Rechazo de Casos Ambiguos
-Si hay múltiples autores en un post y no hay metadata de `parentMessageId` para identificar el hilo exacto, la conversación se marca como `ineligible_ambiguous` y NO se programa recordatorio.
+#### 3. Priorización por Antigüedad
+Se selecciona el outbound MÁS ANTIGUO que:
+1. Haya pasado el threshold de delay (cutoffTime)
+2. Su autor NO haya respondido después
 
-#### 4. Persistencia del Target
-- `targetMessageId` se persiste en `contextSnapshot` al programar
-- `sendReminder` usa el `targetMessageId` del snapshot (no recalcula)
-- Si el mensaje target fue eliminado, se aborta el envío
+#### 4. Persistencia Completa del Target
+- `targetMessageId` (inbound) + `targetMetricoolId` + `targetAuthor`
+- `targetOutboundId` + `targetOutboundTimestamp` ← NUEVO
+- `threadSelectionMethod` para trazabilidad
 
-#### 5. Preservación de CustomerName
+#### 5. Validación en Send-Time
+Antes de enviar el recordatorio, `sendReminder` verifica:
+- Si el autor target ha respondido después del outbound guardado
+- Si respondió: cancela el recordatorio (ya no es necesario)
+- Esto previene enviar a hilos que ya están activos
+
+#### 6. Preservación de CustomerName
 Para comentarios, se preserva el `customerName` del autor del mensaje target en lugar de sobrescribir con datos de CRM.
 
-### Archivos Modificados
-- `server/services/reminderService.ts`: Lógica de selección de hilo y validación
+### Flujo Completo
+```
+1. scheduleRemindersForBrand(brandId)
+   └─> getConversationsEligibleForReminder(brandId, delayHours)
+       └─> Retorna conversaciones elegibles a nivel de conversación
 
-### Limitaciones Conocidas
-- La elegibilidad se determina a nivel de conversación, no por hilo individual
-- Si un usuario responde después de programar el recordatorio pero antes de enviarlo, el snapshot persistido se usará aunque sea obsoleto (mitigado por la validación de que el mensaje target siga existiendo)
+2. scheduleReminder(conversation, rules, delayHours)
+   └─> assembleReminderContext(conversation, delayHours)
+       └─> Filtra outbounds que NO hayan pasado cutoffTime
+       └─> Selecciona el outbound MÁS ANTIGUO sin respuesta
+       └─> Retorna { lastInboundMessage, selectedOutboundMessage, threadSelectionMethod }
+   └─> Si threadSelectionMethod.startsWith('ineligible_') → NO programar
+   └─> Persiste contextSnapshot con targetMessageId + targetOutboundId
+
+3. sendReminder(reminder)
+   └─> Obtiene snapshot.targetOutboundId y snapshot.targetAuthor
+   └─> Verifica si targetAuthor respondió después de targetOutboundTimestamp
+   └─> Si respondió → Cancelar recordatorio
+   └─> Si NO respondió → Enviar al hilo correcto
+```
+
+### Archivos Modificados
+- `server/services/reminderService.ts`: Lógica completa de selección y validación
+
+### Logs de Diagnóstico
+- `[ReminderService] Skipping outbound {id}: hasn't met delay threshold yet`
+- `[ReminderService] Comment thread (via parentMessageId): Target "{author}" from outbound at {timestamp} (delay threshold met)`
+- `[ReminderService] Comment thread INELIGIBLE: No outbound has met the delay threshold yet`
+- `[ReminderService] Validated: {author} has NOT replied since outbound at {timestamp}`
+- `[ReminderService] Target author "{author}" has replied since scheduling - reminder no longer needed`
 
 ---
 
