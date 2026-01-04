@@ -11,6 +11,8 @@ import {
   type Message
 } from "@shared/schema";
 
+type ThreadSelectionMethod = 'parentMessageId' | 'legacy_single_author' | 'ineligible_ambiguous' | 'ineligible_no_metadata' | 'dm';
+
 interface ReminderContext {
   customerName: string;
   channel: string;
@@ -36,6 +38,7 @@ interface ReminderContext {
     timestamp: Date | null;
     rawData: Record<string, any> | null;
   } | null;
+  threadSelectionMethod: ThreadSelectionMethod;
 }
 
 // NOTA: El prompt de reminders ahora se genera con composeReminderPrompt() en prompt-composer.ts
@@ -292,7 +295,95 @@ export class ReminderService implements IReminderService {
       })
       .join('\n');
 
-    const lastInbound = [...messages].reverse().find(m => m.direction === 'inbound');
+    // IMPORTANTE: Para comentarios, necesitamos encontrar el hilo CORRECTO al que responder
+    // El recordatorio debe ir al hilo donde: la marca respondió Y el cliente NO ha respondido después
+    // Usamos parentMessageId para tracking PRECISO y DETERMINÍSTICO del hilo
+    // Si no hay metadata determinística o hay ambigüedad, retornamos null para marcar como inelegible
+    let lastInbound: Message | undefined;
+    let threadSelectionMethod: 'parentMessageId' | 'legacy_single_author' | 'ineligible_ambiguous' | 'ineligible_no_metadata' | 'dm' = 'dm';
+    
+    if (conversation.type === 'comment') {
+      // Ordenar mensajes por timestamp
+      const sortedMessages = [...messages].sort((a, b) => 
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
+      
+      // Crear mapa de mensajes por ID para búsqueda rápida
+      const messageById = new Map(messages.map(m => [m.id, m]));
+      
+      // ESTRATEGIA ÚNICA: Usar parentMessageId (DETERMINÍSTICA)
+      // Solo procesamos si hay tracking preciso del hilo
+      // IMPORTANTE: Ordenamos por timestamp ASCENDENTE para priorizar el hilo
+      // que lleva MÁS TIEMPO sin respuesta (el que más necesita recordatorio)
+      const outboundsWithParent = [...sortedMessages]
+        .filter(m => m.direction === 'outbound' && m.parentMessageId);
+        // Ya está ordenado ascendente por sortedMessages, NO invertimos
+      
+      if (outboundsWithParent.length > 0) {
+        // Encontrar el outbound MÁS ANTIGUO cuyo autor NO ha respondido
+        // Este es el que lleva más tiempo esperando y debería recibir el recordatorio primero
+        for (const outbound of outboundsWithParent) {
+          const parentInbound = messageById.get(outbound.parentMessageId!);
+          if (!parentInbound || parentInbound.direction !== 'inbound') continue;
+          
+          const outboundTime = new Date(outbound.timestamp).getTime();
+          const parentAuthor = parentInbound.author;
+          
+          // Verificar si este autor ha respondido después de nuestro outbound
+          const authorRepliedAfter = sortedMessages.some(m => 
+            m.direction === 'inbound' && 
+            m.author === parentAuthor &&
+            new Date(m.timestamp).getTime() > outboundTime
+          );
+          
+          if (!authorRepliedAfter) {
+            // Este es el hilo correcto: respondimos a este usuario y no ha contestado
+            lastInbound = parentInbound;
+            threadSelectionMethod = 'parentMessageId';
+            console.log(`[ReminderService] Comment thread (via parentMessageId): Target "${lastInbound.author}" from outbound at ${outbound.timestamp}`);
+            break;
+          }
+        }
+      } else {
+        // Caso legacy: no hay outbounds con parentMessageId
+        // Solo procesar si hay UN SOLO autor (determinístico)
+        const lastOutbound = [...sortedMessages].reverse().find(m => m.direction === 'outbound');
+        
+        if (lastOutbound) {
+          const outboundTime = new Date(lastOutbound.timestamp).getTime();
+          
+          // Buscar todos los inbounds antes del outbound
+          const inboundsBefore = sortedMessages.filter(m => 
+            m.direction === 'inbound' && 
+            new Date(m.timestamp).getTime() < outboundTime
+          );
+          
+          // Obtener autores únicos
+          const uniqueAuthors = new Set(inboundsBefore.map(m => m.author));
+          
+          if (uniqueAuthors.size === 1 && inboundsBefore.length > 0) {
+            // Solo un autor = determinístico
+            lastInbound = inboundsBefore[inboundsBefore.length - 1];
+            threadSelectionMethod = 'legacy_single_author';
+            console.log(`[ReminderService] Comment thread (legacy single-author): Target "${lastInbound.author}"`);
+          } else if (uniqueAuthors.size > 1) {
+            // AMBIGÜEDAD: múltiples autores sin parentMessageId = INELEGIBLE
+            threadSelectionMethod = 'ineligible_ambiguous';
+            console.log(`[ReminderService] Comment thread INELIGIBLE: ${uniqueAuthors.size} authors without parentMessageId tracking. Authors: ${Array.from(uniqueAuthors).join(', ')}`);
+          } else {
+            threadSelectionMethod = 'ineligible_no_metadata';
+            console.log(`[ReminderService] Comment thread INELIGIBLE: No inbound messages found before outbound`);
+          }
+        } else {
+          threadSelectionMethod = 'ineligible_no_metadata';
+          console.log(`[ReminderService] Comment thread INELIGIBLE: No outbound messages found`);
+        }
+      }
+    } else {
+      // Para DMs: usar el último inbound (comportamiento original)
+      lastInbound = [...messages].reverse().find(m => m.direction === 'inbound');
+      threadSelectionMethod = 'dm';
+    }
     
     const lastInboundMessage: ReminderContext['lastInboundMessage'] = lastInbound ? {
       id: lastInbound.id,
@@ -303,18 +394,19 @@ export class ReminderService implements IReminderService {
       rawData: (lastInbound.rawData as Record<string, any>) || null,
     } : null;
 
-    // Obtener nombre del cliente con prioridad: 
-    // 1. lastInbound.author (para comentarios)
-    // 2. conversation.customerName
-    // 3. Fallback "Cliente"
+    // IMPORTANTE: Para comentarios, el nombre del cliente DEBE venir del mismo mensaje
+    // al que vamos a responder (lastInbound), NO del CRM ni de conversation.customerName
+    // Esto asegura que el nombre y el hilo estén sincronizados
     const trimmedConversationName = (conversation.customerName || '').trim();
     const trimmedAuthor = (lastInbound?.author || '').trim();
     
     let customerName = '';
     
-    // Para comentarios, preferimos el autor del último mensaje inbound
+    // Para comentarios, SIEMPRE usar el autor del mensaje target (lastInbound)
+    // para asegurar que el nombre coincida con el hilo al que responderemos
     if (conversation.type === 'comment' && trimmedAuthor) {
       customerName = trimmedAuthor;
+      console.log(`[ReminderService] Comment reminder: Using author from target message: "${customerName}"`);
     } else if (trimmedConversationName) {
       customerName = trimmedConversationName;
     } else if (trimmedAuthor) {
@@ -327,7 +419,11 @@ export class ReminderService implements IReminderService {
     if (conversation.contactId) {
       const contact = await storage.getCrmContact(conversation.contactId);
       if (contact) {
-        customerName = contact.displayName || contact.firstName || customerName;
+        // Para comentarios: NO sobrescribir el nombre del autor del mensaje target
+        // El nombre debe coincidir con el hilo al que responderemos
+        if (conversation.type !== 'comment') {
+          customerName = contact.displayName || contact.firstName || customerName;
+        }
         
         const customFields = (contact.customFields || {}) as Record<string, any>;
         
@@ -375,6 +471,7 @@ export class ReminderService implements IReminderService {
       crmProfile,
       otherConversationsSummary,
       lastInboundMessage,
+      threadSelectionMethod,
     };
   }
 
@@ -424,6 +521,13 @@ export class ReminderService implements IReminderService {
     
     const context = await this.assembleReminderContext(conversation);
 
+    // Para comentarios: verificar que tenemos un target determinístico
+    // Si hay ambigüedad o falta metadata, NO programar el recordatorio
+    if (context.threadSelectionMethod.startsWith('ineligible_')) {
+      console.log(`[ReminderService] Conversation ${conversation.id} ineligible for comment reminder: ${context.threadSelectionMethod}`);
+      return { scheduled: false, terminal: false };
+    }
+
     const generation = await this.generateReminderContent(
       conversation,
       nextReminderNumber,
@@ -455,6 +559,7 @@ export class ReminderService implements IReminderService {
       closingIntent: context.closingIntent || null,
       postId: rawData?.postId || 
               rawData?.permalink?.split('/')?.slice(-2, -1)?.[0] || null,
+      threadSelectionMethod: context.threadSelectionMethod,
     };
     
     console.log(`[ReminderService] Context snapshot for ${conversation.id}:`, JSON.stringify({

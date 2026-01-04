@@ -34,6 +34,52 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 
 ---
 
+## Fix Crítico: Recordatorios en Comentarios Multi-Autor - 4 Enero 2026
+
+### Problema Identificado
+Cuando múltiples usuarios comentaban en el mismo post de redes sociales, los recordatorios podían enviarse al hilo incorrecto. Por ejemplo:
+- Usuario A comenta → Marca responde
+- Usuario B comenta → Marca responde  
+- Recordatorio para Usuario A se enviaba erróneamente al hilo de Usuario B
+
+### Causa Raíz
+`assembleReminderContext` seleccionaba el mensaje inbound más reciente sin considerar que había múltiples hilos de conversación con diferentes autores en el mismo post.
+
+### Solución Implementada
+
+#### 1. Tipo ThreadSelectionMethod
+```typescript
+type ThreadSelectionMethod = 
+  | 'parentMessageId'           // Determinístico: usa campo parentMessageId
+  | 'legacy_single_author'      // Un solo autor sin metadata (seguro)
+  | 'ineligible_ambiguous'      // Múltiples autores sin metadata = NO programar
+  | 'ineligible_no_metadata'    // Sin datos = NO programar
+  | 'dm';                       // DMs (comportamiento original)
+```
+
+#### 2. Priorización por Antigüedad
+Se selecciona el outbound MÁS ANTIGUO cuyo autor no ha respondido (no el más reciente). Esto asegura que el hilo que lleva más tiempo sin respuesta recibe el recordatorio primero.
+
+#### 3. Rechazo de Casos Ambiguos
+Si hay múltiples autores en un post y no hay metadata de `parentMessageId` para identificar el hilo exacto, la conversación se marca como `ineligible_ambiguous` y NO se programa recordatorio.
+
+#### 4. Persistencia del Target
+- `targetMessageId` se persiste en `contextSnapshot` al programar
+- `sendReminder` usa el `targetMessageId` del snapshot (no recalcula)
+- Si el mensaje target fue eliminado, se aborta el envío
+
+#### 5. Preservación de CustomerName
+Para comentarios, se preserva el `customerName` del autor del mensaje target en lugar de sobrescribir con datos de CRM.
+
+### Archivos Modificados
+- `server/services/reminderService.ts`: Lógica de selección de hilo y validación
+
+### Limitaciones Conocidas
+- La elegibilidad se determina a nivel de conversación, no por hilo individual
+- Si un usuario responde después de programar el recordatorio pero antes de enviarlo, el snapshot persistido se usará aunque sea obsoleto (mitigado por la validación de que el mensaje target siga existiendo)
+
+---
+
 ## Filtros de Auto-Reply por Tipo de Mensaje (DM vs Comentarios) - 2 Enero 2026
 
 ### Problema Resuelto
