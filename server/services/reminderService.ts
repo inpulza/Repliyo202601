@@ -11,7 +11,7 @@ import {
   type Message
 } from "@shared/schema";
 
-type ThreadSelectionMethod = 'parentMessageId' | 'legacy_single_author' | 'ineligible_ambiguous' | 'ineligible_no_metadata' | 'dm';
+type ThreadSelectionMethod = 'parentMessageId' | 'legacy_single_author' | 'ineligible_ambiguous' | 'ineligible_no_metadata' | 'ineligible_delay_not_met' | 'dm';
 
 interface ReminderContext {
   customerName: string;
@@ -37,6 +37,10 @@ interface ReminderContext {
     content: string | null;
     timestamp: Date | null;
     rawData: Record<string, any> | null;
+  } | null;
+  selectedOutboundMessage: {
+    id: string;
+    timestamp: Date | null;
   } | null;
   threadSelectionMethod: ThreadSelectionMethod;
 }
@@ -127,7 +131,7 @@ export class ReminderService implements IReminderService {
 
         for (const conversation of toProcess) {
           try {
-            const scheduleResult = await this.scheduleReminder(conversation, rules);
+            const scheduleResult = await this.scheduleReminder(conversation, rules, delayHours);
             if (scheduleResult.scheduled) {
               result.scheduled++;
               remainingQuota--;
@@ -283,7 +287,7 @@ export class ReminderService implements IReminderService {
     }
   }
 
-  private async assembleReminderContext(conversation: Conversation): Promise<ReminderContext> {
+  private async assembleReminderContext(conversation: Conversation, delayHours?: number): Promise<ReminderContext> {
     const messages = await storage.getMessagesByConversation(conversation.id);
     const recentMessages = messages.slice(-8);
     
@@ -295,12 +299,18 @@ export class ReminderService implements IReminderService {
       })
       .join('\n');
 
+    // Calcular el cutoff time basado en delayHours (si se proporciona)
+    const cutoffTime = delayHours 
+      ? new Date(Date.now() - delayHours * 60 * 60 * 1000).getTime()
+      : 0; // Si no hay delayHours, cualquier outbound es válido
+
     // IMPORTANTE: Para comentarios, necesitamos encontrar el hilo CORRECTO al que responder
     // El recordatorio debe ir al hilo donde: la marca respondió Y el cliente NO ha respondido después
     // Usamos parentMessageId para tracking PRECISO y DETERMINÍSTICO del hilo
     // Si no hay metadata determinística o hay ambigüedad, retornamos null para marcar como inelegible
     let lastInbound: Message | undefined;
-    let threadSelectionMethod: 'parentMessageId' | 'legacy_single_author' | 'ineligible_ambiguous' | 'ineligible_no_metadata' | 'dm' = 'dm';
+    let selectedOutbound: Message | undefined;
+    let threadSelectionMethod: 'parentMessageId' | 'legacy_single_author' | 'ineligible_ambiguous' | 'ineligible_no_metadata' | 'ineligible_delay_not_met' | 'dm' = 'dm';
     
     if (conversation.type === 'comment') {
       // Ordenar mensajes por timestamp
@@ -320,7 +330,9 @@ export class ReminderService implements IReminderService {
         // Ya está ordenado ascendente por sortedMessages, NO invertimos
       
       if (outboundsWithParent.length > 0) {
-        // Encontrar el outbound MÁS ANTIGUO cuyo autor NO ha respondido
+        // Encontrar el outbound MÁS ANTIGUO que:
+        // 1. Pasó el threshold de delay (cutoffTime)
+        // 2. Su autor NO ha respondido después
         // Este es el que lleva más tiempo esperando y debería recibir el recordatorio primero
         for (const outbound of outboundsWithParent) {
           const parentInbound = messageById.get(outbound.parentMessageId!);
@@ -328,6 +340,13 @@ export class ReminderService implements IReminderService {
           
           const outboundTime = new Date(outbound.timestamp).getTime();
           const parentAuthor = parentInbound.author;
+          
+          // NUEVO: Validar que el outbound haya pasado el threshold de delay
+          // El outbound debe ser más viejo que el cutoffTime
+          if (cutoffTime > 0 && outboundTime > cutoffTime) {
+            console.log(`[ReminderService] Skipping outbound ${outbound.id}: hasn't met delay threshold yet (outbound: ${new Date(outboundTime).toISOString()}, cutoff: ${new Date(cutoffTime).toISOString()})`);
+            continue; // Este outbound aún no ha pasado el delay requerido
+          }
           
           // Verificar si este autor ha respondido después de nuestro outbound
           const authorRepliedAfter = sortedMessages.some(m => 
@@ -337,12 +356,19 @@ export class ReminderService implements IReminderService {
           );
           
           if (!authorRepliedAfter) {
-            // Este es el hilo correcto: respondimos a este usuario y no ha contestado
+            // Este es el hilo correcto: respondimos a este usuario, pasó el delay, y no ha contestado
             lastInbound = parentInbound;
+            selectedOutbound = outbound;
             threadSelectionMethod = 'parentMessageId';
-            console.log(`[ReminderService] Comment thread (via parentMessageId): Target "${lastInbound.author}" from outbound at ${outbound.timestamp}`);
+            console.log(`[ReminderService] Comment thread (via parentMessageId): Target "${lastInbound.author}" from outbound at ${outbound.timestamp} (delay threshold met)`);
             break;
           }
+        }
+        
+        // Si todos los outbounds no pasaron el delay, marcar como ineligible
+        if (!lastInbound && outboundsWithParent.length > 0) {
+          threadSelectionMethod = 'ineligible_delay_not_met';
+          console.log(`[ReminderService] Comment thread INELIGIBLE: No outbound has met the delay threshold yet`);
         }
       } else {
         // Caso legacy: no hay outbounds con parentMessageId
@@ -461,6 +487,11 @@ export class ReminderService implements IReminderService {
     // Fallback final si no se encontró ningún nombre
     const finalCustomerName = customerName || 'Cliente';
 
+    const selectedOutboundMessage = selectedOutbound ? {
+      id: selectedOutbound.id,
+      timestamp: selectedOutbound.timestamp || null,
+    } : null;
+
     return {
       customerName: finalCustomerName,
       channel: conversation.type || 'dm',
@@ -471,6 +502,7 @@ export class ReminderService implements IReminderService {
       crmProfile,
       otherConversationsSummary,
       lastInboundMessage,
+      selectedOutboundMessage,
       threadSelectionMethod,
     };
   }
@@ -498,7 +530,8 @@ export class ReminderService implements IReminderService {
 
   private async scheduleReminder(
     conversation: Conversation,
-    rules: ReminderRules
+    rules: ReminderRules,
+    delayHours?: number
   ): Promise<{ scheduled: boolean; terminal: boolean }> {
     const maxReminders = rules.maxReminders || 2;
 
@@ -519,7 +552,9 @@ export class ReminderService implements IReminderService {
 
     const nextReminderNumber = (precheck.currentReminderCount || 0) + 1;
     
-    const context = await this.assembleReminderContext(conversation);
+    // IMPORTANTE: Pasar delayHours a assembleReminderContext para que valide
+    // que el outbound seleccionado haya pasado el threshold de tiempo
+    const context = await this.assembleReminderContext(conversation, delayHours);
 
     // Para comentarios: verificar que tenemos un target determinístico
     // Si hay ambigüedad o falta metadata, NO programar el recordatorio
@@ -554,6 +589,8 @@ export class ReminderService implements IReminderService {
       targetMetricoolId: context.lastInboundMessage?.metricoolId || null,
       targetAuthor: context.lastInboundMessage?.author || null,
       targetParentId: rawData?.parentId || null,
+      targetOutboundId: context.selectedOutboundMessage?.id || null,
+      targetOutboundTimestamp: context.selectedOutboundMessage?.timestamp || null,
       customerName: context.customerName,
       conversationSummary: context.conversationSummary || null,
       closingIntent: context.closingIntent || null,
@@ -719,6 +756,31 @@ export class ReminderService implements IReminderService {
 
     const deliveryChannel = reminder.deliveryChannel || conversation.type || 'dm';
     const snapshot = (reminder.contextSnapshot as Record<string, any>) || {};
+
+    // VALIDACIÓN: Para comentarios, verificar que el autor del hilo target no haya respondido
+    // desde que se programó el recordatorio (previene enviar a hilos ya activos)
+    if (deliveryChannel === 'comment' && snapshot.targetOutboundId && snapshot.targetAuthor) {
+      const messages = await storage.getMessagesByConversation(conversation.id);
+      const outboundTime = snapshot.targetOutboundTimestamp 
+        ? new Date(snapshot.targetOutboundTimestamp).getTime()
+        : new Date(reminder.scheduledAt || reminder.createdAt || 0).getTime();
+      
+      // Verificar si el autor target ha respondido después del outbound guardado
+      const targetAuthorReplied = messages.some(m => 
+        m.direction === 'inbound' && 
+        m.author === snapshot.targetAuthor &&
+        new Date(m.timestamp).getTime() > outboundTime
+      );
+      
+      if (targetAuthorReplied) {
+        const error = `Target author "${snapshot.targetAuthor}" has replied since scheduling - reminder no longer needed`;
+        console.log(`[ReminderService] ${error} for ${reminder.id}`);
+        await this.handleReminderFailure(reminder.id, conversation.id, error, 'cancelled', true);
+        return { success: false, error };
+      }
+      
+      console.log(`[ReminderService] Validated: ${snapshot.targetAuthor} has NOT replied since outbound at ${new Date(outboundTime).toISOString()}`);
+    }
 
     if ((deliveryChannel === 'dm' || deliveryChannel === 'conversation') && 
         (!conversation.threadExternalId || !conversation.customerId)) {
