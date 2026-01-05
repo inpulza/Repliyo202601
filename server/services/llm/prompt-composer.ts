@@ -105,12 +105,56 @@ interface VariableContext {
 }
 
 /**
+ * Diccionario de nombres comunes en español e inglés para detección en usernames.
+ * Ordenados por longitud descendente para priorizar matches más largos.
+ */
+const COMMON_FIRST_NAMES = new Set([
+  // Nombres en español (más comunes en Miami/Latinoamérica)
+  'alejandra', 'alejandro', 'alexandra', 'alexander', 'alfredo', 'alicia', 'amanda', 'andrea', 
+  'andres', 'angela', 'antonio', 'armando', 'arturo', 'beatriz', 'brenda', 'camila', 'carla', 
+  'carlos', 'carmen', 'carolina', 'cesar', 'christian', 'claudia', 'cristian', 'cristina', 
+  'daniel', 'daniela', 'david', 'diana', 'diego', 'eduardo', 'elena', 'elizabeth', 'elizenia',
+  'emilio', 'enrique', 'erica', 'ernesto', 'esperanza', 'esteban', 'estefania', 'eugenia', 
+  'fabian', 'fernando', 'flor', 'francisco', 'gabriel', 'gabriela', 'gerardo', 'gloria', 
+  'gonzalo', 'graciela', 'guadalupe', 'guillermo', 'gustavo', 'hector', 'henry', 'hugo', 
+  'ignacio', 'irene', 'isabel', 'ivan', 'jacqueline', 'jaime', 'javier', 'jennifer', 'jesus', 
+  'joaquin', 'jorge', 'jose', 'josefina', 'joshua', 'juan', 'juana', 'julia', 'julian', 
+  'julio', 'karen', 'karina', 'karla', 'laura', 'leonardo', 'leticia', 'lilia', 'liliana', 
+  'lorena', 'lucia', 'luis', 'luisa', 'manuel', 'marcela', 'marco', 'marcos', 'margarita', 
+  'maria', 'mariana', 'mariela', 'mario', 'martha', 'martin', 'mauricio', 'mercedes', 
+  'miguel', 'miriam', 'monica', 'nancy', 'natalia', 'nicolas', 'niurbys', 'norma', 'octavio', 
+  'olga', 'omar', 'oscar', 'pablo', 'patricia', 'pedro', 'pilar', 'rafael', 'ramiro', 'ramon', 
+  'raquel', 'raul', 'rebeca', 'regina', 'ricardo', 'roberto', 'rocio', 'rodrigo', 'rosa', 
+  'rosario', 'ruben', 'salvador', 'samuel', 'sandra', 'santiago', 'sara', 'sergio', 'silvia', 
+  'sofia', 'susana', 'teresa', 'tomas', 'valeria', 'veronica', 'victor', 'victoria', 'virginia', 
+  'ximena', 'yolanda', 'marbely', 'yesenia', 'yamilet', 'yaneth', 'yaritza', 'mary',
+  // Nombres en inglés (comunes en USA)
+  'aaron', 'adam', 'adrian', 'aiden', 'alex', 'alice', 'allison', 'amber', 'amy', 'andrew', 
+  'angela', 'anna', 'anthony', 'ashley', 'austin', 'benjamin', 'brandon', 'brian', 'brittany', 
+  'brooke', 'bryan', 'caleb', 'cameron', 'charles', 'charlotte', 'chelsea', 'chloe', 'chris', 
+  'christina', 'christopher', 'claire', 'cody', 'connor', 'courtney', 'danielle', 'derek', 
+  'destiny', 'dylan', 'edward', 'elijah', 'emily', 'emma', 'eric', 'ethan', 'evan', 'faith', 
+  'grace', 'hannah', 'heather', 'hunter', 'isaiah', 'jack', 'jacob', 'james', 'jason', 
+  'jayden', 'jeremy', 'jessica', 'john', 'jonathan', 'jordan', 'joseph', 'justin', 'katelyn', 
+  'katherine', 'kayla', 'keith', 'kelly', 'kevin', 'kimberly', 'kyle', 'lauren', 'logan', 
+  'lucas', 'luke', 'madison', 'maria', 'mark', 'mason', 'matthew', 'megan', 'melissa', 
+  'michael', 'michelle', 'nathan', 'nicholas', 'nicole', 'noah', 'olivia', 'patrick', 'paul', 
+  'rachel', 'rebecca', 'richard', 'robert', 'ryan', 'samantha', 'sarah', 'sean', 'sophia', 
+  'stephanie', 'steven', 'taylor', 'thomas', 'timothy', 'tyler', 'vanessa', 'william', 'zachary',
+  // Nombres cortos comunes
+  'ana', 'ben', 'bob', 'dan', 'eli', 'eva', 'gia', 'ian', 'ivy', 'joe', 'jon', 'joy', 'kay', 
+  'kim', 'lea', 'leo', 'lia', 'liv', 'liz', 'luz', 'max', 'mia', 'nia', 'ray', 'rey', 'rio', 
+  'rob', 'sam', 'sol', 'sue', 'ted', 'tim', 'tom', 'zoe'
+]);
+
+/**
  * Extrae el primer nombre probable de un username de redes sociales.
  * Maneja patrones comunes como:
  * - maria_perez_1985 → María
  * - CarlosGomez → Carlos
  * - juanito_123 → Juanito
- * - lacubanitaniurbys → (difícil, devuelve vacío)
+ * - joshuaisherdez → Joshua (NUEVO: busca nombres en prefijos)
+ * - elizeniasv → Elizenia (NUEVO: busca nombres en prefijos)
  * 
  * @returns El primer nombre capitalizado, o cadena vacía si no se puede determinar
  */
@@ -157,16 +201,19 @@ function extractFirstName(username: string): string {
   }
   
   // Estrategia 1: Separar por _, -, o . y tomar el primer segmento
-  const segments = clean.split(/[_\-\.]+/);
-  let candidate = segments[0];
-  
-  // Si el primer segmento parece un nombre (solo letras, 2-15 chars)
-  if (candidate && /^[a-záéíóúñü]+$/i.test(candidate) && candidate.length >= 2 && candidate.length <= 15) {
-    // Verificar que no sea una palabra común que no es nombre
-    const notNames = ['the', 'its', 'hey', 'xox', 'xxx', 'lol', 'omg', 'wtf', 'pro', 'vip', 'top'];
-    if (!notNames.includes(candidate.toLowerCase())) {
-      // Capitalizar primera letra
-      return candidate.charAt(0).toUpperCase() + candidate.slice(1).toLowerCase();
+  // SOLO si realmente hay separadores en el username
+  if (/[_\-\.]/.test(clean)) {
+    const segments = clean.split(/[_\-\.]+/);
+    let candidate = segments[0];
+    
+    // Si el primer segmento parece un nombre (solo letras, 2-15 chars)
+    if (candidate && /^[a-záéíóúñü]+$/i.test(candidate) && candidate.length >= 2 && candidate.length <= 15) {
+      // Verificar que no sea una palabra común que no es nombre
+      const notNames = ['the', 'its', 'hey', 'xox', 'xxx', 'lol', 'omg', 'wtf', 'pro', 'vip', 'top'];
+      if (!notNames.includes(candidate.toLowerCase())) {
+        // Capitalizar primera letra
+        return candidate.charAt(0).toUpperCase() + candidate.slice(1).toLowerCase();
+      }
     }
   }
   
@@ -176,10 +223,128 @@ function extractFirstName(username: string): string {
     return camelMatch[1];
   }
   
-  // Estrategia 3: Si es todo minúsculas sin separadores, 
+  // ESTRATEGIA 4 (NUEVA): Buscar nombres comunes al INICIO del username
+  // Ej: "joshuaisherdez" → busca si "joshua" está al inicio → "Joshua"
+  // Ej: "elizeniasv" → busca si "elizenia" está al inicio → "Elizenia"
+  // Probamos desde el nombre más largo posible (10 chars) hasta el más corto (4 chars)
+  // IMPORTANTE: Usamos mínimo 4 chars para evitar falsos positivos con nombres cortos como "eli", "ana", "mark"
+  const cleanLower = clean.toLowerCase();
+  
+  // Palabras que NO deben ser detectadas como nombres (palabras inglesas comunes)
+  const commonEnglishWords = new Set([
+    'marketing', 'market', 'marks', 'marked', 'marker',
+    'anna', 'anas', 'anal', 
+    'eric', 'erica',
+    'elite', 'eli',
+    'max', 'maxim', 'maximum',
+    'the', 'their', 'them', 'then', 'there',
+    'sam', 'same', 'sample',
+    'ray', 'rays',
+    'ben', 'bend', 'bent',
+    'dan', 'dance', 'danger',
+    'joe', 'john', 'join', 'joint',
+    'tom', 'tone', 'top', 'total'
+  ]);
+  
+  // Si el username completo parece una palabra inglesa común, no extraer nombre
+  if (commonEnglishWords.has(cleanLower)) {
+    // No extraer nombre de palabras comunes
+  } else {
+    for (let len = Math.min(10, clean.length); len >= 4; len--) {
+      const prefix = cleanLower.substring(0, len);
+      if (COMMON_FIRST_NAMES.has(prefix)) {
+        const remaining = cleanLower.substring(len);
+        const remainingLength = remaining.length;
+        
+        // Si el username es exactamente el nombre, aceptar
+        if (remainingLength === 0) {
+          return prefix.charAt(0).toUpperCase() + prefix.slice(1).toLowerCase();
+        }
+        
+        // El texto restante debe parecer un apellido, no una continuación de palabra
+        // Apellidos típicos empiezan con: consonantes fuertes (g, h, l, m, n, p, r, s, t, v)
+        // o con letras que no forman sílaba continua con la última vocal del nombre
+        const apellidoStarters = 'bcdfghjklmnpqrstvwxyz';
+        const firstRemainingChar = remaining[0];
+        
+        // Si quedan al menos 3 caracteres y empieza con consonante típica de apellido
+        // O si el nombre termina en vocal y el apellido empieza con vocal diferente (ej: joshua + isherdez)
+        const vowels = 'aeiouáéíóúy';
+        const lastNameChar = prefix[prefix.length - 1];
+        const nameEndsInVowel = vowels.includes(lastNameChar);
+        const suffixStartsWithConsonant = apellidoStarters.includes(firstRemainingChar);
+        
+        if (remainingLength >= 3) {
+          // Verificar que no sea una palabra inglesa común
+          const fullWord = cleanLower;
+          if (!commonEnglishWords.has(fullWord)) {
+            // Aceptar si:
+            // 1. Empieza con consonante (típico de apellidos)
+            // 2. O el nombre termina en vocal (posible apellido compuesto)
+            if (suffixStartsWithConsonant || nameEndsInVowel) {
+              return prefix.charAt(0).toUpperCase() + prefix.slice(1).toLowerCase();
+            }
+          }
+        }
+        
+        // Caso especial: sufijos cortos como "sv", "123", etc. son válidos
+        if (remainingLength <= 2 && !/^[aeiou]/.test(remaining)) {
+          return prefix.charAt(0).toUpperCase() + prefix.slice(1).toLowerCase();
+        }
+      }
+    }
+  }
+  
+  // ESTRATEGIA 5 (NUEVA): Buscar nombres comunes al FINAL del username
+  // Ej: "lacubanitaniurbys" → busca si "niurbys" está al final → "Niurbys"
+  // Ej: "drlaura" → busca si "laura" está al final → "Laura"
+  // Prefijos conocidos que indican título/profesión (válidos)
+  const validPrefixes = new Set(['dr', 'dra', 'lic', 'ing', 'prof', 'sr', 'sra', 'la', 'el', 'mr', 'mrs', 'ms']);
+  // Palabras de negocio que invalidan la detección de sufijo
+  const businessWords = ['marketing', 'market', 'shop', 'store', 'agency', 'studio', 'tech', 'digital', 'media', 'oregon', 'texas', 'florida', 'miami'];
+  
+  for (let len = Math.min(10, clean.length); len >= 4; len--) {
+    const suffix = cleanLower.substring(clean.length - len);
+    if (COMMON_FIRST_NAMES.has(suffix)) {
+      const prefixPart = cleanLower.substring(0, clean.length - len);
+      // El prefijo debe ser corto (2-5 chars) como "dr", "la", "el", etc.
+      if (prefixPart.length >= 2 && prefixPart.length <= 10) {
+        // Verificar que el username no sea una palabra inglesa común
+        if (!commonEnglishWords.has(cleanLower)) {
+          // Verificar que el prefijo no sea una palabra de negocio
+          let isBusinessPrefix = false;
+          for (const bw of businessWords) {
+            if (prefixPart.includes(bw) || bw.includes(prefixPart)) {
+              isBusinessPrefix = true;
+              break;
+            }
+          }
+          // Aceptar si:
+          // 1. Es un prefijo conocido (dr, la, el, etc.)
+          // 2. Es un prefijo muy corto (2-3 chars)
+          // 3. Es un prefijo largo que no contiene palabras de negocio (ej: "lacubanita")
+          const isValidPrefix = validPrefixes.has(prefixPart) || 
+                                prefixPart.length <= 3 || 
+                                (prefixPart.length >= 4 && !isBusinessPrefix);
+          if (!isBusinessPrefix && isValidPrefix) {
+            return suffix.charAt(0).toUpperCase() + suffix.slice(1).toLowerCase();
+          }
+        }
+      }
+    }
+  }
+  
+  // ESTRATEGIA 3 (MOVIDA AL FINAL): Si es todo minúsculas sin separadores, 
   // tomar solo si parece un nombre corto (2-8 chars)
+  // PERO excluir palabras inglesas comunes
+  const commonEnglishWordsForShortCheck = new Set([
+    'marks', 'anas', 'rays', 'bens', 'dans', 'joes', 'toms', 'sams',
+    'market', 'marketing', 'elite', 'maxim', 'total', 'joint'
+  ]);
   if (/^[a-záéíóúñü]+$/.test(clean) && clean.length >= 2 && clean.length <= 8) {
-    return clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
+    if (!commonEnglishWordsForShortCheck.has(cleanLower)) {
+      return clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
+    }
   }
   
   // No se pudo extraer un nombre confiable
@@ -1114,10 +1279,16 @@ ${crmLines.join('\n')}
   // TAREA: Instrucción ligera (el comportamiento detallado viene del systemPrompt del admin)
   const hasContext = conversationHistory.length > 0 || userSummary?.summary || socialPost?.caption;
   
+  // Instrucción sobre menciones: para comentarios, NO usar @ (el sistema lo agrega si está configurado)
+  const mentionInstruction = !isDm 
+    ? `\n\n**IMPORTANTE sobre menciones:** NO uses @ antes del nombre del usuario (ej: escribe "Hola ${firstName || customerName}" NO "Hola @${customerName}"). El sistema maneja las menciones automáticamente.`
+    : '';
+  
   userParts.push(`
 --- TAREA ---
 Genera un mensaje de seguimiento para este cliente.
 ${hasContext ? 'Basa tu respuesta en el historial y contexto proporcionado.' : 'No hay historial disponible, genera un mensaje amable y genérico.'}
+${firstName ? `\nUsa el nombre "${firstName}" para saludar al cliente (ya fue extraído del username).` : ''}${mentionInstruction}
 
 Responde SOLO con el mensaje, sin explicaciones ni formato adicional.`);
 
