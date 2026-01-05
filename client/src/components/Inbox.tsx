@@ -1632,7 +1632,7 @@ export function Inbox() {
                 <div className="flex-1 relative overflow-hidden">
                   <div 
                     ref={threadScrollRef}
-                    className="absolute inset-0 overflow-y-auto p-4 md:p-8"
+                    className="absolute inset-0 overflow-y-auto overflow-x-hidden p-4 md:p-8"
                     onScroll={(e) => {
                       const target = e.currentTarget;
                       const scrollPercentage = target.scrollTop / (target.scrollHeight - target.clientHeight);

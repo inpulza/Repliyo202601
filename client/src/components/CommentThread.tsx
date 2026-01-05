@@ -334,7 +334,7 @@ function SingleMessage({
         </div>
         
         <div className={cn(
-          "py-2 text-sm leading-relaxed relative",
+          "py-2 text-sm leading-relaxed relative break-words",
           (() => {
             if (msg.direction === 'inbound') {
               return platformStyles.userBubble;
