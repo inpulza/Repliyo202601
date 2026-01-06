@@ -1284,11 +1284,15 @@ ${crmLines.join('\n')}
     ? `\n\n**IMPORTANTE sobre menciones:** NO uses @ antes del nombre del usuario (ej: escribe "Hola ${firstName || customerName}" NO "Hola @${customerName}"). El sistema maneja las menciones automáticamente.`
     : '';
   
+  // Obtener guía de longitud específica por plataforma (CRÍTICO para TikTok)
+  const platformGuidelines = PLATFORM_LENGTH_GUIDELINES[platform.toLowerCase()] || PLATFORM_LENGTH_GUIDELINES.default;
+  const lengthInstruction = `\n\n**LÍMITE DE CARACTERES (${platform.toUpperCase()}):** ${platformGuidelines.style}`;
+  
   userParts.push(`
 --- TAREA ---
 Genera un mensaje de seguimiento para este cliente.
 ${hasContext ? 'Basa tu respuesta en el historial y contexto proporcionado.' : 'No hay historial disponible, genera un mensaje amable y genérico.'}
-${firstName ? `\nUsa el nombre "${firstName}" para saludar al cliente (ya fue extraído del username).` : ''}${mentionInstruction}
+${firstName ? `\nUsa el nombre "${firstName}" para saludar al cliente (ya fue extraído del username).` : ''}${mentionInstruction}${lengthInstruction}
 
 Responde SOLO con el mensaje, sin explicaciones ni formato adicional.`);
 
