@@ -734,6 +734,9 @@ interface ThreadNodeProps {
   bulkQueueStatusById?: Map<string, DraftStatus>;
   unreadMessageIds?: Set<string>;
   onUnreadSeen?: (messageId: string) => void;
+  // Collapsible threaded comments props
+  expandedIds: Set<string>;
+  onToggleExpand: (messageId: string) => void;
 }
 
 function ThreadNode({
@@ -765,10 +768,15 @@ function ThreadNode({
   bulkQueueStatusById,
   unreadMessageIds,
   onUnreadSeen,
+  expandedIds,
+  onToggleExpand,
 }: ThreadNodeProps) {
   const isReply = depth > 0;
   const hasChildren = node.children.length > 0;
   const canNest = depth < MAX_DEPTH;
+  
+  // Collapsible state: check if this node is expanded (default is collapsed)
+  const isExpanded = expandedIds.has(node.message.id);
 
   const FLEX_GAP = 12; // gap-3 in the message flex container
   const AVATAR_MT = 4; // mt-1 on avatar
@@ -880,45 +888,77 @@ function ThreadNode({
       </div>
 
       {hasChildren && canNest && (
-        <div 
-          className="thread-children relative mt-8"
-          style={{
-            marginLeft: `${CHILD_MARGIN_LEFT}px`,
-          }}
-        >
-          {node.children.map((childNode, index) => (
-            <ThreadNode
-              key={childNode.message.id}
-              node={childNode}
-              depth={depth + 1}
-              isLastChild={index === node.children.length - 1}
-              parentMessageHeight={myMessageHeight}
-              platformStyles={platformStyles}
-              onStartReply={onStartReply}
-              onGenerateDraft={onGenerateDraft}
-              generatingDraftIds={generatingDraftIds}
-              editingDraftId={editingDraftId}
-              editingDraftText={editingDraftText}
-              setEditingDraftText={setEditingDraftText}
-              startEditingDraft={startEditingDraft}
-              cancelEditingDraft={cancelEditingDraft}
-              handleSaveDraftEdit={handleSaveDraftEdit}
-              handleDiscardDraft={handleDiscardDraft}
-              handleRegenerateDraft={handleRegenerateDraft}
-              handleSendDraft={handleSendDraft}
-              showRegenerateConfirm={showRegenerateConfirm}
-              setShowRegenerateConfirm={setShowRegenerateConfirm}
-              highlightedMessageId={highlightedMessageId}
-              AudioPlayer={AudioPlayer}
-              SentimentIndicator={SentimentIndicator}
-              selectionEnabled={selectionEnabled}
-              selectedMessageIds={selectedMessageIds}
-              onToggleSelection={onToggleSelection}
-              bulkQueueStatusById={bulkQueueStatusById}
-              unreadMessageIds={unreadMessageIds}
-              onUnreadSeen={onUnreadSeen}
-            />
-          ))}
+        <div className="mt-3">
+          {/* Toggle button for collapsible replies */}
+          <button
+            onClick={() => onToggleExpand(node.message.id)}
+            className="flex items-center gap-2 text-[11px] font-medium text-gray-500 hover:text-indigo-600 transition-colors py-1"
+            data-testid={`toggle-replies-${node.message.id}`}
+          >
+            <span className="flex items-center gap-1.5">
+              {isExpanded ? (
+                <>
+                  <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 15l-6-6-6 6"/>
+                  </svg>
+                  Ocultar respuestas
+                </>
+              ) : (
+                <>
+                  <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M6 9l6 6 6-6"/>
+                  </svg>
+                  Ver {node.children.length} respuesta{node.children.length > 1 ? 's' : ''}
+                </>
+              )}
+            </span>
+          </button>
+
+          {/* Render children only when expanded */}
+          {isExpanded && (
+            <div 
+              className="thread-children relative mt-8"
+              style={{
+                marginLeft: `${CHILD_MARGIN_LEFT}px`,
+              }}
+            >
+              {node.children.map((childNode, index) => (
+                <ThreadNode
+                  key={childNode.message.id}
+                  node={childNode}
+                  depth={depth + 1}
+                  isLastChild={index === node.children.length - 1}
+                  parentMessageHeight={myMessageHeight}
+                  platformStyles={platformStyles}
+                  onStartReply={onStartReply}
+                  onGenerateDraft={onGenerateDraft}
+                  generatingDraftIds={generatingDraftIds}
+                  editingDraftId={editingDraftId}
+                  editingDraftText={editingDraftText}
+                  setEditingDraftText={setEditingDraftText}
+                  startEditingDraft={startEditingDraft}
+                  cancelEditingDraft={cancelEditingDraft}
+                  handleSaveDraftEdit={handleSaveDraftEdit}
+                  handleDiscardDraft={handleDiscardDraft}
+                  handleRegenerateDraft={handleRegenerateDraft}
+                  handleSendDraft={handleSendDraft}
+                  showRegenerateConfirm={showRegenerateConfirm}
+                  setShowRegenerateConfirm={setShowRegenerateConfirm}
+                  highlightedMessageId={highlightedMessageId}
+                  AudioPlayer={AudioPlayer}
+                  SentimentIndicator={SentimentIndicator}
+                  selectionEnabled={selectionEnabled}
+                  selectedMessageIds={selectedMessageIds}
+                  onToggleSelection={onToggleSelection}
+                  bulkQueueStatusById={bulkQueueStatusById}
+                  unreadMessageIds={unreadMessageIds}
+                  onUnreadSeen={onUnreadSeen}
+                  expandedIds={expandedIds}
+                  onToggleExpand={onToggleExpand}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -961,6 +1001,72 @@ export function CommentThread({
   onUnreadSeen,
 }: CommentThreadProps) {
   const tree = React.useMemo(() => buildMessageTree(messages), [messages]);
+  
+  // State for collapsible threaded comments - tracks which nodes are expanded
+  const [expandedIds, setExpandedIds] = React.useState<Set<string>>(new Set());
+  
+  // Helper function to find all ancestor IDs for a given message ID in the tree
+  const findAncestorIds = React.useCallback((targetId: string, nodes: MessageNode[]): string[] => {
+    const ancestors: string[] = [];
+    
+    const search = (nodeList: MessageNode[], path: string[]): boolean => {
+      for (const node of nodeList) {
+        if (node.message.id === targetId) {
+          ancestors.push(...path);
+          return true;
+        }
+        if (node.children.length > 0) {
+          if (search(node.children, [...path, node.message.id])) {
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+    
+    search(nodes, []);
+    return ancestors;
+  }, []);
+  
+  // Auto-expand ancestors when highlightedMessageId or unreadMessageIds change
+  React.useEffect(() => {
+    const idsToExpand = new Set<string>();
+    
+    // Expand ancestors of highlighted message
+    if (highlightedMessageId) {
+      const ancestors = findAncestorIds(highlightedMessageId, tree);
+      ancestors.forEach(id => idsToExpand.add(id));
+    }
+    
+    // Expand ancestors of unread messages
+    if (unreadMessageIds && unreadMessageIds.size > 0) {
+      unreadMessageIds.forEach(unreadId => {
+        const ancestors = findAncestorIds(unreadId, tree);
+        ancestors.forEach(id => idsToExpand.add(id));
+      });
+    }
+    
+    // Only update if there are new IDs to expand
+    if (idsToExpand.size > 0) {
+      setExpandedIds(prev => {
+        const next = new Set(prev);
+        idsToExpand.forEach(id => next.add(id));
+        return next;
+      });
+    }
+  }, [highlightedMessageId, unreadMessageIds, tree, findAncestorIds]);
+  
+  const handleToggleExpand = React.useCallback((messageId: string) => {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(messageId)) {
+        next.delete(messageId);
+      } else {
+        next.add(messageId);
+      }
+      return next;
+    });
+  }, []);
 
   const nodesWithDateInfo = React.useMemo(() => {
     const getDateKey = (timestamp: string | Date): string => {
@@ -1041,6 +1147,8 @@ export function CommentThread({
               bulkQueueStatusById={bulkQueueStatusById}
               unreadMessageIds={unreadMessageIds}
               onUnreadSeen={onUnreadSeen}
+              expandedIds={expandedIds}
+              onToggleExpand={handleToggleExpand}
             />
         </div>
       ))}
