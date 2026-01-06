@@ -889,10 +889,11 @@ function ThreadNode({
 
       {hasChildren && canNest && (
         <div className="mt-3">
-          {/* Toggle button for collapsible replies */}
+          {/* Toggle button for collapsible replies - aligned with message content (after avatar) */}
           <button
             onClick={() => onToggleExpand(node.message.id)}
             className="flex items-center gap-2 text-[11px] font-medium text-gray-500 hover:text-indigo-600 transition-colors py-1"
+            style={{ marginLeft: `${thisAvatarSize + FLEX_GAP}px` }}
             data-testid={`toggle-replies-${node.message.id}`}
           >
             <span className="flex items-center gap-1.5">
