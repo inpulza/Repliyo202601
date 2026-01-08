@@ -118,8 +118,9 @@ export const PromptEditor = React.forwardRef<PromptEditorHandle, PromptEditorPro
             maxHeight,
             background: 'transparent',
             color: 'transparent',
-            caretColor: 'currentColor',
+            caretColor: 'hsl(var(--foreground))',
             lineHeight: '1.8',
+            WebkitTextFillColor: 'transparent',
           }}
           data-testid={testId}
         />
