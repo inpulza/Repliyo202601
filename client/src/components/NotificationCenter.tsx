@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNexus } from '@/context/NexusContext';
 import { 
   Bell, Check, CheckCheck, MessageSquare, AlertCircle, Bot, Settings, 
-  ExternalLink, Loader2, FileEdit
+  ExternalLink, Loader2, FileEdit, Filter, X
 } from 'lucide-react';
 import { FaInstagram, FaTiktok, FaFacebook, FaLinkedin, FaYoutube, FaWhatsapp } from 'react-icons/fa';
 import { Button } from '@/components/ui/button';
@@ -95,6 +95,27 @@ const platformColors: Record<string, string> = {
   'google-business': 'bg-blue-500',
 };
 
+const typeLabels: Record<string, string> = {
+  'new_messages': 'Nuevos mensajes',
+  'ai_auto_reply': 'IA enviada',
+  'draft_pending': 'Borrador',
+  'sync_error': 'Error sync',
+  'sync_success': 'Sync OK',
+  'config_change': 'Config',
+};
+
+const platformLabels: Record<string, string> = {
+  'instagram': 'Instagram',
+  'tiktok': 'TikTok',
+  'facebook': 'Facebook',
+  'linkedin': 'LinkedIn',
+  'youtube': 'YouTube',
+  'whatsapp': 'WhatsApp',
+  'google-business': 'Google',
+};
+
+type ReadFilter = 'all' | 'unread' | 'read';
+
 interface NotificationCenterProps {
   isCollapsed?: boolean;
 }
@@ -103,6 +124,10 @@ export function NotificationCenter({ isCollapsed = false }: NotificationCenterPr
   const { activeClient } = useNexus();
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = React.useState(false);
+  const [showFilters, setShowFilters] = React.useState(false);
+  const [selectedTypes, setSelectedTypes] = React.useState<string[]>([]);
+  const [selectedPlatforms, setSelectedPlatforms] = React.useState<string[]>([]);
+  const [readFilter, setReadFilter] = React.useState<ReadFilter>('all');
 
   const { data, isLoading, refetch } = useQuery<NotificationsResponse>({
     queryKey: ['notifications', activeClient?.id],
@@ -145,6 +170,46 @@ export function NotificationCenter({ isCollapsed = false }: NotificationCenterPr
 
   const unreadCount = data?.unreadCount || 0;
   const notifications = data?.notifications || [];
+
+  const availableTypes = React.useMemo(() => {
+    const types = new Set(notifications.map(n => n.type));
+    return Array.from(types).filter(t => typeLabels[t]);
+  }, [notifications]);
+
+  const availablePlatforms = React.useMemo(() => {
+    const platforms = new Set(notifications.map(n => n.platform).filter(Boolean) as string[]);
+    return Array.from(platforms).filter(p => platformLabels[p]);
+  }, [notifications]);
+
+  const filteredNotifications = React.useMemo(() => {
+    return notifications.filter(n => {
+      if (selectedTypes.length > 0 && !selectedTypes.includes(n.type)) return false;
+      if (selectedPlatforms.length > 0 && (!n.platform || !selectedPlatforms.includes(n.platform))) return false;
+      if (readFilter === 'unread' && n.isRead) return false;
+      if (readFilter === 'read' && !n.isRead) return false;
+      return true;
+    });
+  }, [notifications, selectedTypes, selectedPlatforms, readFilter]);
+
+  const hasActiveFilters = selectedTypes.length > 0 || selectedPlatforms.length > 0 || readFilter !== 'all';
+
+  const clearFilters = () => {
+    setSelectedTypes([]);
+    setSelectedPlatforms([]);
+    setReadFilter('all');
+  };
+
+  const toggleType = (type: string) => {
+    setSelectedTypes(prev => 
+      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+    );
+  };
+
+  const togglePlatform = (platform: string) => {
+    setSelectedPlatforms(prev => 
+      prev.includes(platform) ? prev.filter(p => p !== platform) : [...prev, platform]
+    );
+  };
 
   const handleNotificationClick = (notification: Notification) => {
     if (!notification.isRead) {
@@ -214,12 +279,12 @@ export function NotificationCenter({ isCollapsed = false }: NotificationCenterPr
           </div>
         </div>
         
-        {unreadCount > 0 && (
-          <div className="px-5 py-2 border-b bg-blue-50/50">
+        <div className="px-5 py-2 border-b bg-gray-50/50 flex items-center justify-between gap-2">
+          {unreadCount > 0 && (
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-100 w-full justify-center gap-1.5"
+              className="h-7 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-100 gap-1.5"
               onClick={() => markAllAsReadMutation.mutate()}
               disabled={markAllAsReadMutation.isPending}
               data-testid="button-mark-all-read"
@@ -227,6 +292,110 @@ export function NotificationCenter({ isCollapsed = false }: NotificationCenterPr
               <CheckCheck className="h-3.5 w-3.5" />
               Marcar todas como leídas
             </Button>
+          )}
+          <div className="flex-1" />
+          <Button
+            variant={showFilters ? "secondary" : "ghost"}
+            size="sm"
+            className={cn(
+              "h-7 text-xs gap-1.5",
+              hasActiveFilters && "text-indigo-600"
+            )}
+            onClick={() => setShowFilters(!showFilters)}
+            data-testid="button-toggle-filters"
+          >
+            <Filter className="h-3.5 w-3.5" />
+            Filtros
+            {hasActiveFilters && (
+              <span className="ml-0.5 h-4 min-w-4 px-1 rounded-full bg-indigo-500 text-white text-[10px] font-medium flex items-center justify-center">
+                {selectedTypes.length + selectedPlatforms.length + (readFilter !== 'all' ? 1 : 0)}
+              </span>
+            )}
+          </Button>
+        </div>
+
+        {showFilters && (
+          <div className="px-4 py-3 border-b bg-gray-50 space-y-3">
+            {availableTypes.length > 0 && (
+              <div>
+                <p className="text-[10px] font-medium text-gray-500 uppercase mb-1.5">Tipo</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {availableTypes.map(type => (
+                    <button
+                      key={type}
+                      onClick={() => toggleType(type)}
+                      className={cn(
+                        "px-2 py-1 text-[11px] rounded-full border transition-colors",
+                        selectedTypes.includes(type)
+                          ? "bg-indigo-100 border-indigo-300 text-indigo-700"
+                          : "bg-white border-gray-200 text-gray-600 hover:bg-gray-100"
+                      )}
+                      data-testid={`filter-type-${type}`}
+                    >
+                      {typeLabels[type]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {availablePlatforms.length > 0 && (
+              <div>
+                <p className="text-[10px] font-medium text-gray-500 uppercase mb-1.5">Red social</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {availablePlatforms.map(platform => (
+                    <button
+                      key={platform}
+                      onClick={() => togglePlatform(platform)}
+                      className={cn(
+                        "px-2 py-1 text-[11px] rounded-full border transition-colors flex items-center gap-1",
+                        selectedPlatforms.includes(platform)
+                          ? "bg-indigo-100 border-indigo-300 text-indigo-700"
+                          : "bg-white border-gray-200 text-gray-600 hover:bg-gray-100"
+                      )}
+                      data-testid={`filter-platform-${platform}`}
+                    >
+                      {platformIcons[platform]}
+                      {platformLabels[platform]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <p className="text-[10px] font-medium text-gray-500 uppercase mb-1.5">Estado</p>
+              <div className="flex flex-wrap gap-1.5">
+                {(['all', 'unread', 'read'] as ReadFilter[]).map(filter => (
+                  <button
+                    key={filter}
+                    onClick={() => setReadFilter(filter)}
+                    className={cn(
+                      "px-2 py-1 text-[11px] rounded-full border transition-colors",
+                      readFilter === filter
+                        ? "bg-indigo-100 border-indigo-300 text-indigo-700"
+                        : "bg-white border-gray-200 text-gray-600 hover:bg-gray-100"
+                    )}
+                    data-testid={`filter-read-${filter}`}
+                  >
+                    {filter === 'all' ? 'Todas' : filter === 'unread' ? 'Sin leer' : 'Leídas'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-[11px] text-gray-500 hover:text-gray-700 px-2"
+                onClick={clearFilters}
+                data-testid="button-clear-filters"
+              >
+                <X className="h-3 w-3 mr-1" />
+                Limpiar filtros
+              </Button>
+            )}
           </div>
         )}
         
@@ -245,9 +414,28 @@ export function NotificationCenter({ isCollapsed = false }: NotificationCenterPr
                 Las notificaciones de nuevos mensajes, respuestas IA y errores aparecerán aquí
               </p>
             </div>
+          ) : filteredNotifications.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 text-gray-400 px-8">
+              <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                <Filter className="h-8 w-8 text-gray-300" />
+              </div>
+              <p className="text-sm font-medium text-gray-500">Sin resultados</p>
+              <p className="text-xs text-gray-400 text-center mt-1">
+                No hay notificaciones que coincidan con los filtros seleccionados
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-3 h-7 text-xs text-indigo-600"
+                onClick={clearFilters}
+                data-testid="button-clear-filters-empty"
+              >
+                Limpiar filtros
+              </Button>
+            </div>
           ) : (
             <div className="divide-y divide-gray-100">
-              {notifications.map((notification) => (
+              {filteredNotifications.map((notification) => (
                 <NotificationItem
                   key={notification.id}
                   notification={notification}

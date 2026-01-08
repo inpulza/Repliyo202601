@@ -26,6 +26,7 @@ Sistema de gestión de mensajes de redes sociales que se integra con Metricool p
 - **Agentes IA - Paso 5**: ✅ Playground conectado a IA real (endpoint test-generate)
 - **Agentes IA - Paso 6**: ✅ Botón "Generar con IA" en Inbox (endpoint generate-reply)
 - **Notificaciones**: ✅ Sistema central con panel deslizante estilo Instagram
+- **Filtros de Notificaciones**: ✅ Filtrado por tipo, plataforma y estado de lectura (8 Ene 2026)
 - **Smart Digest**: ✅ Notificaciones humanizadas con nombres de autores
 - **Deep Links**: ✅ Click en notificación navega a conversación con scroll + highlight
 - **Filtros Mejorados**: ✅ Badges muestran solo no leídos, filtro conjunto automático
@@ -877,6 +878,25 @@ Cuando llega un DM nuevo, el sistema arma el siguiente prompt:
 - ✅ Filtro conjunto: al pinchar plataforma con badge, se activa automáticamente `showOnlyUnread=true`
 - ✅ Al pinchar plataforma sin mensajes nuevos o "All", se desactiva el filtro de no leídos
 - ✅ Comportamiento sincronizado con el botón de bandeja de entrada del header
+
+#### 9.8 Filtros en Centro de Notificaciones (8 Enero 2026)
+- ✅ Botón "Filtros" junto a "Marcar todas como leídas" para expandir/colapsar panel de filtros
+- ✅ Badge con contador de filtros activos (ej: "3" si hay 3 filtros seleccionados)
+- ✅ **Filtros disponibles:**
+  - **Por Tipo**: Nuevos mensajes, IA enviada, Borrador, Error sync, Sync OK, Config
+  - **Por Red Social**: Instagram, TikTok, Facebook, LinkedIn, YouTube, WhatsApp, Google
+  - **Por Estado**: Todas, Sin leer, Leídas
+- ✅ Filtrado local (frontend) sin llamadas adicionales al servidor
+- ✅ Tipos y plataformas se muestran dinámicamente (solo opciones con notificaciones existentes)
+- ✅ Pills/chips compactos con estilo seleccionado (indigo) vs no seleccionado (gris)
+- ✅ Botón "Limpiar filtros" cuando hay filtros activos
+- ✅ Estado vacío específico cuando los filtros no encuentran resultados
+- ✅ **Data-testids implementados:**
+  - `button-toggle-filters` - Botón para expandir/colapsar filtros
+  - `filter-type-{type}` - Pills de tipo de notificación
+  - `filter-platform-{platform}` - Pills de red social
+  - `filter-read-{all|unread|read}` - Pills de estado de lectura
+  - `button-clear-filters` - Botón para limpiar filtros
 
 #### Archivos Principales Modificados:
 - `shared/schema.ts` - Tabla notifications con tipos de notificación
