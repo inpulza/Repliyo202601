@@ -327,5 +327,77 @@ parentMessageId: chunk.partIndex === 1 ? message.id : null,
 
 ---
 
+## FEATURE: Reminder Badges en UI - Contadores Visuales (8 Enero 2026)
+
+**Objetivo:**
+Mostrar de un vistazo cuántos reminders hay en cada hilo y cuántos reminders se han enviado a cada usuario.
+
+**Funcionalidades Implementadas:**
+
+### 1. Badge de Reminders por Hilo (Nivel Comentario Padre)
+- **Ubicación:** En la línea de información del comentario padre (junto al badge de tipo)
+- **Estilo:** Badge púrpura con icono de campana
+- **Texto:** "Hilo: X" donde X es el número de reminders en ese hilo completo
+- **Solo visible:** En comentarios padre (depth === 0) que tienen reminders
+
+### 2. Badge de Reminders por Autor (Nivel Mensaje Individual)
+- **Ubicación:** En la línea de información de cada mensaje inbound
+- **Estilo:** Badge ámbar con icono de campana
+- **Texto:** Número de reminders enviados a ese autor
+- **Solo visible:** Para mensajes inbound de autores que han recibido reminders
+
+**Implementación Técnica:**
+
+```typescript
+// Nueva función en CommentThread.tsx
+function computeReminderStats(messages: Message[]): ReminderStats {
+  // Filtra mensajes que son reminders
+  const reminderMessages = messages.filter(m => 
+    m.direction === 'outbound' && 
+    (m.internalOrigin === 'reminder' || m.source === 'reminder_service')
+  );
+  
+  // Para cada reminder:
+  // 1. Encuentra el mensaje padre (via parentMessageId)
+  // 2. Sube al mensaje raíz del hilo
+  // 3. Incrementa contador del hilo
+  // 4. Incrementa contador del autor del mensaje padre
+}
+```
+
+**Props Agregadas:**
+- `SingleMessageProps`: `threadReminderCount`, `authorReminderCount`
+- `ThreadNodeProps`: `threadReminderCounts`, `authorReminderCounts`
+
+**UI Elements:**
+```jsx
+// Badge de autor (ámbar)
+{msg.direction === 'inbound' && authorReminderCount > 0 && (
+  <span className="... bg-amber-50 text-amber-700 border-amber-200">
+    <Bell className="h-2.5 w-2.5" />
+    <span>{authorReminderCount}</span>
+  </span>
+)}
+
+// Badge de hilo (púrpura)
+{!isReply && threadReminderCount > 0 && (
+  <span className="... bg-purple-50 text-purple-700 border-purple-200">
+    <Bell className="h-2.5 w-2.5" />
+    <span>Hilo: {threadReminderCount}</span>
+  </span>
+)}
+```
+
+**Archivos Modificados:**
+- `client/src/components/CommentThread.tsx`
+
+**Beneficios UX:**
+- Visibilidad inmediata de hilos con reminders enviados
+- Identificación rápida de usuarios que ya recibieron seguimiento
+- Prevención de envío de reminders duplicados
+- Mejor gestión del flujo de trabajo de customer service
+
+---
+
 *Documento creado: Enero 2026*
 *Última actualización: 8 Enero 2026*

@@ -31,6 +31,48 @@ interface MessageNode {
   isOrphan?: boolean;
 }
 
+interface ReminderStats {
+  threadReminderCounts: Map<string, number>;
+  authorReminderCounts: Map<string, number>;
+}
+
+function computeReminderStats(messages: Message[]): ReminderStats {
+  const threadReminderCounts = new Map<string, number>();
+  const authorReminderCounts = new Map<string, number>();
+  
+  const reminderMessages = messages.filter(m => 
+    m.direction === 'outbound' && 
+    (m.internalOrigin === 'reminder' || m.source === 'reminder_service')
+  );
+  
+  reminderMessages.forEach(reminder => {
+    if (reminder.parentMessageId) {
+      const parentMsg = messages.find(m => m.id === reminder.parentMessageId);
+      if (parentMsg) {
+        let rootId = parentMsg.id;
+        let current = parentMsg;
+        while (current.parentMessageId) {
+          const parent = messages.find(m => m.id === current.parentMessageId);
+          if (parent) {
+            rootId = parent.id;
+            current = parent;
+          } else {
+            break;
+          }
+        }
+        threadReminderCounts.set(rootId, (threadReminderCounts.get(rootId) || 0) + 1);
+        
+        if (parentMsg.author) {
+          const authorKey = parentMsg.author.toLowerCase();
+          authorReminderCounts.set(authorKey, (authorReminderCounts.get(authorKey) || 0) + 1);
+        }
+      }
+    }
+  });
+  
+  return { threadReminderCounts, authorReminderCounts };
+}
+
 import type { DraftStatus } from '@/hooks/useBulkDraftQueue';
 
 interface CommentThreadProps {
@@ -142,6 +184,8 @@ interface SingleMessageProps {
   isExpanded?: boolean;
   onToggleExpand?: (messageId: string) => void;
   canNest?: boolean;
+  threadReminderCount?: number;
+  authorReminderCount?: number;
 }
 
 function SingleMessage({
@@ -177,6 +221,8 @@ function SingleMessage({
   isExpanded = false,
   onToggleExpand,
   canNest = true,
+  threadReminderCount = 0,
+  authorReminderCount = 0,
 }: SingleMessageProps) {
   const isOutbound = msg.direction === 'outbound';
   const isOwner = isOutbound;
@@ -340,6 +386,26 @@ function SingleMessage({
           )}
           {msg.direction === 'inbound' && !isOwner && (
             <SentimentIndicator sentiment={(msg.sentiment || 'neutral') as Sentiment} />
+          )}
+          {msg.direction === 'inbound' && authorReminderCount > 0 && (
+            <span 
+              className="flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200"
+              title={`${authorReminderCount} reminder${authorReminderCount > 1 ? 's' : ''} enviado${authorReminderCount > 1 ? 's' : ''} a este usuario`}
+              data-testid={`badge-author-reminders-${msg.id}`}
+            >
+              <Bell className="h-2.5 w-2.5" />
+              <span>{authorReminderCount}</span>
+            </span>
+          )}
+          {!isReply && threadReminderCount > 0 && (
+            <span 
+              className="flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200"
+              title={`${threadReminderCount} reminder${threadReminderCount > 1 ? 's' : ''} en este hilo`}
+              data-testid={`badge-thread-reminders-${msg.id}`}
+            >
+              <Bell className="h-2.5 w-2.5" />
+              <span>Hilo: {threadReminderCount}</span>
+            </span>
           )}
         </div>
         
@@ -804,6 +870,9 @@ interface ThreadNodeProps {
   // Collapsible threaded comments props
   expandedIds: Set<string>;
   onToggleExpand: (messageId: string) => void;
+  // Reminder stats
+  threadReminderCounts: Map<string, number>;
+  authorReminderCounts: Map<string, number>;
 }
 
 function ThreadNode({
@@ -837,6 +906,8 @@ function ThreadNode({
   onUnreadSeen,
   expandedIds,
   onToggleExpand,
+  threadReminderCounts,
+  authorReminderCounts,
 }: ThreadNodeProps) {
   const isReply = depth > 0;
   const hasChildren = node.children.length > 0;
@@ -956,6 +1027,8 @@ function ThreadNode({
           isExpanded={isExpanded}
           onToggleExpand={onToggleExpand}
           canNest={canNest}
+          threadReminderCount={depth === 0 ? threadReminderCounts.get(node.message.id) || 0 : 0}
+          authorReminderCount={node.message.author ? authorReminderCounts.get(node.message.author.toLowerCase()) || 0 : 0}
         />
       </div>
 
@@ -1000,6 +1073,8 @@ function ThreadNode({
                   onUnreadSeen={onUnreadSeen}
                   expandedIds={expandedIds}
                   onToggleExpand={onToggleExpand}
+                  threadReminderCounts={threadReminderCounts}
+                  authorReminderCounts={authorReminderCounts}
                 />
               ))}
             </div>
@@ -1045,6 +1120,9 @@ export function CommentThread({
   onUnreadSeen,
 }: CommentThreadProps) {
   const tree = React.useMemo(() => buildMessageTree(messages), [messages]);
+  
+  // Compute reminder statistics for badges
+  const reminderStats = React.useMemo(() => computeReminderStats(messages), [messages]);
   
   // State for collapsible threaded comments - tracks which nodes are expanded
   const [expandedIds, setExpandedIds] = React.useState<Set<string>>(new Set());
@@ -1193,6 +1271,8 @@ export function CommentThread({
               onUnreadSeen={onUnreadSeen}
               expandedIds={expandedIds}
               onToggleExpand={handleToggleExpand}
+              threadReminderCounts={reminderStats.threadReminderCounts}
+              authorReminderCounts={reminderStats.authorReminderCounts}
             />
         </div>
       ))}
