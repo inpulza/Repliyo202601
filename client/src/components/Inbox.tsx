@@ -56,6 +56,7 @@ import {
   Pencil,
   RotateCw,
   AlertCircle,
+  Bell,
 } from 'lucide-react';
 import { FaInstagram, FaFacebook, FaLinkedin, FaTiktok, FaYoutube, FaWhatsapp } from 'react-icons/fa';
 import { GoogleBusinessIcon } from './GoogleBusinessIcon';
@@ -456,6 +457,11 @@ export function Inbox() {
   const [showScrollToTop, setShowScrollToTop] = useState(false);
   const [isBulkButtonHovered, setIsBulkButtonHovered] = useState(false);
   const threadScrollRef = React.useRef<HTMLDivElement>(null);
+  
+  // Thread-level filters (reset when conversation changes)
+  const [threadFilterNoReply, setThreadFilterNoReply] = useState(false);
+  const [threadFilterWithDraft, setThreadFilterWithDraft] = useState(false);
+  const [threadFilterWithReminder, setThreadFilterWithReminder] = useState(false);
   const [location, setLocation] = useLocation();
 
   // Handler for platform filter clicks - activates unread filter if platform has unread messages
@@ -694,6 +700,132 @@ export function Inbox() {
   // For backward compatibility, selectedMessage prioritizes the draft, then last inbound (which is now the first in the array)
   const selectedMessage = activeDraftMessage || lastInboundMessage || threadMessages[0];
 
+  // Compute thread filter statistics
+  const threadFilterStats = React.useMemo(() => {
+    if (!threadMessages.length) return { noReplyCount: 0, withDraftCount: 0, withReminderCount: 0, noReplyIds: new Set<string>(), withDraftIds: new Set<string>(), withReminderIds: new Set<string>() };
+    
+    const noReplyIds = new Set<string>();
+    const withDraftIds = new Set<string>();
+    const withReminderIds = new Set<string>();
+    
+    // Separate counters for display (count unique items, not expanded IDs)
+    let draftCount = 0;
+    let reminderCount = 0;
+    
+    // Build parent-child map for quick lookup
+    const childrenByParent = new Map<string, typeof threadMessages>();
+    threadMessages.forEach(m => {
+      if (m.parentMessageId) {
+        const siblings = childrenByParent.get(m.parentMessageId) || [];
+        siblings.push(m);
+        childrenByParent.set(m.parentMessageId, siblings);
+      }
+    });
+    
+    // Helper to get root message ID for any message
+    const getRootId = (msgId: string): string => {
+      const msg = threadMessages.find(m => m.id === msgId);
+      if (!msg || !msg.parentMessageId) return msgId;
+      return getRootId(msg.parentMessageId);
+    };
+    
+    // Identify root inbound messages (comments from users) 
+    const rootInboundMessages = threadMessages.filter(m => !m.parentMessageId && m.direction === 'inbound');
+    
+    rootInboundMessages.forEach(root => {
+      // Check if this root has any outbound reply (direct or nested)
+      const hasOutboundReply = (msgId: string): boolean => {
+        const children = childrenByParent.get(msgId) || [];
+        for (const child of children) {
+          if (child.direction === 'outbound') return true;
+          if (hasOutboundReply(child.id)) return true;
+        }
+        return false;
+      };
+      
+      if (!hasOutboundReply(root.id)) {
+        noReplyIds.add(root.id);
+      }
+    });
+    
+    // Check for messages with drafts (aiReplyStatus === 'drafted')
+    threadMessages.forEach(m => {
+      if (m.aiReplyStatus === 'drafted' && m.aiSuggestedReply) {
+        draftCount++; // Count the actual draft, not the expanded IDs
+        // Add both the message with draft and its root for visibility
+        withDraftIds.add(m.id);
+        const rootId = getRootId(m.id);
+        if (rootId !== m.id) withDraftIds.add(rootId);
+      }
+    });
+    
+    // Check for messages with reminders (outbound from reminder_service)
+    threadMessages.forEach(m => {
+      if (m.direction === 'outbound' && (m.internalOrigin === 'reminder' || m.source === 'reminder_service')) {
+        reminderCount++; // Count the actual reminder, not the expanded IDs
+        // Add the reminder and its parent thread for visibility
+        withReminderIds.add(m.id);
+        if (m.parentMessageId) {
+          const rootId = getRootId(m.parentMessageId);
+          withReminderIds.add(rootId);
+        }
+      }
+    });
+    
+    return {
+      noReplyCount: noReplyIds.size,
+      withDraftCount: draftCount,
+      withReminderCount: reminderCount,
+      noReplyIds,
+      withDraftIds,
+      withReminderIds,
+    };
+  }, [threadMessages]);
+
+  // Apply thread filters to get filtered messages
+  const filteredThreadMessages = React.useMemo(() => {
+    const anyFilterActive = threadFilterNoReply || threadFilterWithDraft || threadFilterWithReminder;
+    if (!anyFilterActive) return threadMessages;
+    
+    // Build set of message IDs to show
+    const visibleIds = new Set<string>();
+    
+    // Helper to add a message and all its ancestors/descendants
+    const addThreadBranch = (msgId: string) => {
+      // Add the message itself
+      visibleIds.add(msgId);
+      
+      // Add all ancestors (parents)
+      let current = threadMessages.find(m => m.id === msgId);
+      while (current?.parentMessageId) {
+        visibleIds.add(current.parentMessageId);
+        current = threadMessages.find(m => m.id === current?.parentMessageId);
+      }
+      
+      // Add all descendants (children recursively)
+      const addChildren = (parentId: string) => {
+        threadMessages.filter(m => m.parentMessageId === parentId).forEach(child => {
+          visibleIds.add(child.id);
+          addChildren(child.id);
+        });
+      };
+      addChildren(msgId);
+    };
+    
+    // Add messages based on active filters
+    if (threadFilterNoReply) {
+      threadFilterStats.noReplyIds.forEach(id => addThreadBranch(id));
+    }
+    if (threadFilterWithDraft) {
+      threadFilterStats.withDraftIds.forEach(id => addThreadBranch(id));
+    }
+    if (threadFilterWithReminder) {
+      threadFilterStats.withReminderIds.forEach(id => addThreadBranch(id));
+    }
+    
+    return threadMessages.filter(m => visibleIds.has(m.id));
+  }, [threadMessages, threadFilterNoReply, threadFilterWithDraft, threadFilterWithReminder, threadFilterStats]);
+
   // Auto-select first conversation (Desktop Only)
   useEffect(() => {
     if (isMobile) return;
@@ -703,10 +835,13 @@ export function Inbox() {
     }
   }, [filteredConversations, activeConversation, isMobile, setActiveConversation]);
 
-  // Reset editing state and local draft overrides when selecting a new conversation
+  // Reset editing state, local draft overrides, and thread filters when selecting a new conversation
   useEffect(() => {
     setIsEditing(false);
     setLocalDraftOverrides(new Map());
+    setThreadFilterNoReply(false);
+    setThreadFilterWithDraft(false);
+    setThreadFilterWithReminder(false);
   }, [activeConversation?.id]);
 
   const handleSyncData = async () => {
@@ -1653,19 +1788,98 @@ export function Inbox() {
                     <>
                       {/* Thread Header - Show if multiple messages in thread */}
                       {threadMessages.length > 1 && (
-                        <div className="flex items-center justify-center gap-2 mb-4">
-                          <div className="h-px flex-1 bg-gray-300" />
-                          <span className="text-[10px] font-medium text-gray-500 px-3 py-1 flex items-center gap-1.5">
-                            <MessageCircle className="h-3 w-3" />
-                            Thread · {threadMessages.length} messages
-                          </span>
-                          <div className="h-px flex-1 bg-gray-300" />
+                        <div className="space-y-3 mb-4">
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="h-px flex-1 bg-gray-300" />
+                            <span className="text-[10px] font-medium text-gray-500 px-3 py-1 flex items-center gap-1.5">
+                              <MessageCircle className="h-3 w-3" />
+                              Thread · {filteredThreadMessages.length === threadMessages.length 
+                                ? `${threadMessages.length} messages` 
+                                : `${filteredThreadMessages.length} de ${threadMessages.length} messages`}
+                            </span>
+                            <div className="h-px flex-1 bg-gray-300" />
+                          </div>
+                          
+                          {/* Thread Filter Chips */}
+                          <div className="flex items-center justify-center gap-2 flex-wrap">
+                            <button
+                              onClick={() => setThreadFilterNoReply(!threadFilterNoReply)}
+                              disabled={threadFilterStats.noReplyCount === 0}
+                              className={cn(
+                                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all",
+                                threadFilterNoReply 
+                                  ? "bg-indigo-100 text-indigo-700 border border-indigo-300" 
+                                  : "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200",
+                                threadFilterStats.noReplyCount === 0 && "opacity-40 cursor-not-allowed"
+                              )}
+                              data-testid="filter-no-reply"
+                            >
+                              <MessageCircle className="h-3 w-3" />
+                              Sin respuesta
+                              {threadFilterStats.noReplyCount > 0 && (
+                                <span className={cn(
+                                  "ml-0.5 px-1.5 py-0.5 rounded-full text-[10px]",
+                                  threadFilterNoReply ? "bg-indigo-200" : "bg-gray-200"
+                                )}>
+                                  {threadFilterStats.noReplyCount}
+                                </span>
+                              )}
+                            </button>
+                            
+                            <button
+                              onClick={() => setThreadFilterWithDraft(!threadFilterWithDraft)}
+                              disabled={threadFilterStats.withDraftCount === 0}
+                              className={cn(
+                                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all",
+                                threadFilterWithDraft 
+                                  ? "bg-amber-100 text-amber-700 border border-amber-300" 
+                                  : "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200",
+                                threadFilterStats.withDraftCount === 0 && "opacity-40 cursor-not-allowed"
+                              )}
+                              data-testid="filter-with-draft"
+                            >
+                              <Pencil className="h-3 w-3" />
+                              Con borrador
+                              {threadFilterStats.withDraftCount > 0 && (
+                                <span className={cn(
+                                  "ml-0.5 px-1.5 py-0.5 rounded-full text-[10px]",
+                                  threadFilterWithDraft ? "bg-amber-200" : "bg-gray-200"
+                                )}>
+                                  {threadFilterStats.withDraftCount}
+                                </span>
+                              )}
+                            </button>
+                            
+                            <button
+                              onClick={() => setThreadFilterWithReminder(!threadFilterWithReminder)}
+                              disabled={threadFilterStats.withReminderCount === 0}
+                              className={cn(
+                                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all",
+                                threadFilterWithReminder 
+                                  ? "bg-purple-100 text-purple-700 border border-purple-300" 
+                                  : "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200",
+                                threadFilterStats.withReminderCount === 0 && "opacity-40 cursor-not-allowed"
+                              )}
+                              data-testid="filter-with-reminder"
+                            >
+                              <Bell className="h-3 w-3" />
+                              Con recordatorio
+                              {threadFilterStats.withReminderCount > 0 && (
+                                <span className={cn(
+                                  "ml-0.5 px-1.5 py-0.5 rounded-full text-[10px]",
+                                  threadFilterWithReminder ? "bg-purple-200" : "bg-gray-200"
+                                )}>
+                                  {threadFilterStats.withReminderCount}
+                                </span>
+                              )}
+                            </button>
+                          </div>
                         </div>
                       )}
 
                       {/* Render threaded messages with visual connection lines */}
                       <CommentThread
-                        messages={threadMessages}
+                        messages={filteredThreadMessages}
                         platformStyles={getPlatformStyles((activeConversation.platform || 'instagram') as Platform)}
                         onStartReply={handleStartReply}
                         onGenerateDraft={handleGenerateDraft}
