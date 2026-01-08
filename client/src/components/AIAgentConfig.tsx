@@ -33,7 +33,7 @@ import {
   ChevronDown, ChevronUp, Filter, RotateCcw, Eye, Info, Pencil, X,
   FileText, Plus, Trash2, Tag, AtSign, Bell
 } from 'lucide-react';
-import { ReminderSettingsForm } from './ReminderSettingsForm';
+import { ReminderSettingsForm, type ReminderSettingsFormHandle } from './ReminderSettingsForm';
 import { FaFacebook, FaInstagram, FaTwitter, FaTiktok, FaLinkedin, FaYoutube, FaGoogle } from 'react-icons/fa';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -123,6 +123,7 @@ export function AIAgentConfig() {
   const [testMessage, setTestMessage] = useState('');
   const [testResponse, setTestResponse] = useState('');
   const [isTesting, setIsTesting] = useState(false);
+  const reminderFormRef = React.useRef<ReminderSettingsFormHandle>(null);
   
   const [filterPlatform, setFilterPlatform] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -394,6 +395,9 @@ export function AIAgentConfig() {
   const handleSave = () => {
     saveMutation.mutate(formData);
     hasFormChangesRef.current = false;
+    if (reminderFormRef.current?.hasChanges()) {
+      reminderFormRef.current.save();
+    }
   };
 
   const handleTestPlayground = async () => {
@@ -1965,7 +1969,7 @@ export function AIAgentConfig() {
 
             <TabsContent value="reminders" className="mt-0">
               {activeClient?.id && (
-                <ReminderSettingsForm brandId={activeClient.id} />
+                <ReminderSettingsForm ref={reminderFormRef} brandId={activeClient.id} />
               )}
             </TabsContent>
           </div>

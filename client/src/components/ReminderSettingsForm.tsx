@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useReminderRules, useBrandReminderEvents, useReminderStats, useReminderTimeline, useReminderFailures, type TimeRange } from '@/hooks/useReminderRules';
 import type { ReminderRules, ReminderEvent } from '@shared/schema';
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,11 @@ import {
   ExternalLink, Instagram, Facebook, User, AtSign
 } from 'lucide-react';
 import { useLocation } from 'wouter';
+
+export interface ReminderSettingsFormHandle {
+  save: () => void;
+  hasChanges: () => boolean;
+}
 
 type ReminderEventWithConversation = ReminderEvent & {
   conversationType?: string | null;
@@ -86,12 +91,13 @@ const getStatusBadge = (status: string) => {
   }
 };
 
-export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
+export const ReminderSettingsForm = forwardRef<ReminderSettingsFormHandle, ReminderSettingsFormProps>(
+  function ReminderSettingsForm({ brandId }, ref) {
   const [, setLocation] = useLocation();
   const { rules, isLoading, updateRules, isUpdating, runManual, isRunning } = useReminderRules(brandId);
   const { data: events, isLoading: eventsLoading, isFetching: eventsFetching, refetch: refetchEvents } = useBrandReminderEvents(brandId, { limit: 25 });
   const [formData, setFormData] = useState<Partial<ReminderRules>>(DEFAULT_RULES);
-  const [hasChanges, setHasChanges] = useState(false);
+  const [hasChangesState, setHasChangesState] = useState(false);
   const [analyticsTimeRange, setAnalyticsTimeRange] = useState<TimeRange>('7d');
 
   // Analytics hooks
@@ -116,13 +122,13 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
         autoCloseAfterMaxReminders: rules.autoCloseAfterMaxReminders ?? true,
         autoCloseDelayHours: rules.autoCloseDelayHours ?? 48,
       });
-      setHasChanges(false);
+      setHasChangesState(false);
     }
   }, [rules, isEditing]);
 
   const handleChange = (field: keyof ReminderRules, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    setHasChanges(true);
+    setHasChangesState(true);
     setIsEditing(true);
   };
 
@@ -130,8 +136,13 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
     console.log('[ReminderSettingsForm] Saving reminder rules:', formData);
     setIsEditing(false);
     updateRules(formData);
-    setHasChanges(false);
+    setHasChangesState(false);
   };
+
+  useImperativeHandle(ref, () => ({
+    save: handleSave,
+    hasChanges: () => hasChangesState,
+  }), [handleSave, hasChangesState]);
 
   const handleRunManual = () => {
     runManual();
@@ -437,7 +448,7 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
 
         <Button
           onClick={handleSave}
-          disabled={isUpdating || !hasChanges}
+          disabled={isUpdating || !hasChangesState}
           data-testid="button-save"
         >
           {isUpdating ? (
@@ -724,4 +735,4 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
       </Card>
     </div>
   );
-}
+});
