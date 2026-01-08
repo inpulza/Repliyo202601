@@ -358,8 +358,10 @@ export function AIAgentConfig() {
     },
   });
 
+  const hasFormChangesRef = React.useRef(false);
+  
   useEffect(() => {
-    if (agent) {
+    if (agent && !hasFormChangesRef.current) {
       setFormData({
         provider: agent.provider || 'openai',
         model: agent.model || 'gpt-4o-mini',
@@ -384,8 +386,14 @@ export function AIAgentConfig() {
     }
   }, [agent]);
 
+  const handleFormChange = (updates: Partial<typeof formData>) => {
+    setFormData(prev => ({ ...prev, ...updates }));
+    hasFormChangesRef.current = true;
+  };
+
   const handleSave = () => {
     saveMutation.mutate(formData);
+    hasFormChangesRef.current = false;
   };
 
   const handleTestPlayground = async () => {
