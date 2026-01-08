@@ -691,7 +691,7 @@ class SyncService {
               });
             }
 
-            await storage.upsertMessage({
+            const savedReply = await storage.upsertMessage({
               brandId,
               conversationId: conversationRecord.id,
               metricoolId: reply.id,
@@ -718,8 +718,27 @@ class SyncService {
             });
             savedCount++;
             
+            // Check if this nested reply is truly new for THIS brand (avoid cross-brand duplicates)
+            const isReplyReallyNew = isNewReply && savedReply.brandId === brandId;
+            
+            // Trigger auto-reply for NEW INBOUND nested replies (same logic as parent comments)
+            if (isReplyReallyNew && !isReplyFromBrand) {
+              log(`[SyncService] 🔷 NEW nested reply from ${replyAuthor} in thread, triggering auto-reply`, "sync");
+              
+              websocketService.notifyNewMessage(brandId, {
+                id: savedReply.id,
+                platform,
+                author: replyAuthor,
+                content: replyContent.substring(0, 100),
+                type: 'comment',
+                conversationId: conversationRecord.id,
+              });
+              
+              this.triggerAutoReply(brandId, savedReply, conversationRecord);
+            }
+            
             // CRM Traffic Controller: Route nested reply to limbo or existing contact
-            if (isNewReply && !isReplyFromBrand) {
+            if (isReplyReallyNew && !isReplyFromBrand) {
               try {
                 // Normalize replyOwnerId: ensure it's never empty for CRM routing
                 let replyExternalId = replyOwnerId || reply.id || `${platform}_reply_${Date.now()}`;
