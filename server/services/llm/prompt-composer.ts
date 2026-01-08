@@ -1276,7 +1276,7 @@ ${crmLines.join('\n')}
     }
   }
 
-  // TAREA: Instrucción ligera (el comportamiento detallado viene del systemPrompt del admin)
+  // TAREA: Instrucción específica para follow-ups (NO repetir respuesta original)
   const hasContext = conversationHistory.length > 0 || userSummary?.summary || socialPost?.caption;
   
   // Instrucción sobre menciones: para comentarios, NO usar @ (el sistema lo agrega si está configurado)
@@ -1288,13 +1288,36 @@ ${crmLines.join('\n')}
   const platformGuidelines = PLATFORM_LENGTH_GUIDELINES[platform.toLowerCase()] || PLATFORM_LENGTH_GUIDELINES.default;
   const lengthInstruction = `\n\n**LÍMITE DE CARACTERES (${platform.toUpperCase()}):** ${platformGuidelines.style}`;
   
+  // Encontrar la última respuesta del agente para referencia
+  const outboundMessages = conversationHistory.filter(m => m.direction === 'outbound');
+  const lastAgentMessage = outboundMessages.length > 0 ? outboundMessages[outboundMessages.length - 1] : null;
+  const actionFromLastMessage = lastAgentMessage?.content?.substring(0, 100) || '';
+  
   userParts.push(`
---- TAREA ---
-Genera un mensaje de seguimiento para este cliente.
-${hasContext ? 'Basa tu respuesta en el historial y contexto proporcionado.' : 'No hay historial disponible, genera un mensaje amable y genérico.'}
-${firstName ? `\nUsa el nombre "${firstName}" para saludar al cliente (ya fue extraído del username).` : ''}${mentionInstruction}${lengthInstruction}
+--- TAREA: MENSAJE DE FOLLOW-UP ---
+**ESTO ES UN RECORDATORIO/FOLLOW-UP, NO UNA NUEVA RESPUESTA.**
 
-Responde SOLO con el mensaje, sin explicaciones ni formato adicional.`);
+Tu objetivo es generar un mensaje BREVE que:
+1. **Pregunte si el cliente pudo realizar la acción** que le sugeriste anteriormente (ej: contactar por WhatsApp, visitar el local, revisar información)
+2. **NO repitas la información original** - el cliente ya la recibió
+3. **Ofrece ayuda adicional** si la necesita
+
+${lastAgentMessage ? `Tu último mensaje al cliente fue: "${actionFromLastMessage}${actionFromLastMessage.length >= 100 ? '...' : ''}"` : ''}
+
+**EJEMPLOS DE BUEN FOLLOW-UP:**
+- "Hola ${firstName || 'cliente'}! ¿Pudiste contactarnos por WhatsApp? Estamos aquí si tienes alguna pregunta 😊"
+- "Hey ${firstName || ''}! Solo quería saber si pudiste revisar la información. ¿Necesitas ayuda con algo más?"
+- "Hola! ¿Todo bien? ¿Pudiste comunicarte con nosotros? Aquí estamos para ayudarte"
+
+**EJEMPLOS DE MAL FOLLOW-UP (NO HACER):**
+- Repetir la misma respuesta anterior
+- Volver a dar toda la información de contacto
+- Responder como si fuera un mensaje nuevo
+
+${hasContext ? 'Usa el historial para entender qué acción sugeriste y pregunta específicamente por ella.' : 'No hay historial disponible, genera un mensaje amable preguntando si necesita ayuda.'}
+${firstName ? `\nUsa el nombre "${firstName}" para personalizar.` : ''}${mentionInstruction}${lengthInstruction}
+
+Responde SOLO con el mensaje de follow-up, sin explicaciones.`);
 
   const userPrompt = userParts.join('\n');
 
