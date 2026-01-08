@@ -17,6 +17,53 @@ interface PromptEditorProps {
   "data-testid"?: string;
 }
 
+interface TokenRange {
+  start: number;
+  end: number;
+  text: string;
+}
+
+function getVariableRanges(text: string): TokenRange[] {
+  const regex = /\{\{[^}]+\}\}/g;
+  const ranges: TokenRange[] = [];
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    ranges.push({
+      start: match.index,
+      end: match.index + match[0].length,
+      text: match[0],
+    });
+  }
+  return ranges;
+}
+
+function findTokenAtPosition(ranges: TokenRange[], position: number): TokenRange | null {
+  for (const range of ranges) {
+    if (position > range.start && position <= range.end) {
+      return range;
+    }
+  }
+  return null;
+}
+
+function findTokenBeforePosition(ranges: TokenRange[], position: number): TokenRange | null {
+  for (const range of ranges) {
+    if (range.end === position) {
+      return range;
+    }
+  }
+  return null;
+}
+
+function findTokenAfterPosition(ranges: TokenRange[], position: number): TokenRange | null {
+  for (const range of ranges) {
+    if (range.start === position) {
+      return range;
+    }
+  }
+  return null;
+}
+
 export const PromptEditor = React.forwardRef<PromptEditorHandle, PromptEditorProps>(
   ({ value, onChange, placeholder, className, minHeight = "180px", maxHeight = "70vh", disabled, "data-testid": testId }, ref) => {
     const textareaRef = React.useRef<HTMLTextAreaElement>(null);
@@ -55,6 +102,96 @@ export const PromptEditor = React.forwardRef<PromptEditorHandle, PromptEditorPro
       insertVariable,
       focus: () => textareaRef.current?.focus(),
     }), [insertVariable]);
+
+    const handleKeyDown = React.useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+
+      const currentValue = value || '';
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const ranges = getVariableRanges(currentValue);
+
+      if (e.key === 'Backspace') {
+        if (start === end) {
+          const tokenBefore = findTokenBeforePosition(ranges, start);
+          const tokenAt = findTokenAtPosition(ranges, start);
+          const tokenToDelete = tokenAt || tokenBefore;
+          
+          if (tokenToDelete) {
+            e.preventDefault();
+            const newValue = currentValue.substring(0, tokenToDelete.start) + currentValue.substring(tokenToDelete.end);
+            onChange(newValue);
+            setTimeout(() => {
+              textarea.focus();
+              textarea.setSelectionRange(tokenToDelete.start, tokenToDelete.start);
+            }, 0);
+            return;
+          }
+        } else {
+          for (const range of ranges) {
+            if ((start < range.end && end > range.start)) {
+              e.preventDefault();
+              let deleteStart = start;
+              let deleteEnd = end;
+              for (const r of ranges) {
+                if (start < r.end && end > r.start) {
+                  deleteStart = Math.min(deleteStart, r.start);
+                  deleteEnd = Math.max(deleteEnd, r.end);
+                }
+              }
+              const newValue = currentValue.substring(0, deleteStart) + currentValue.substring(deleteEnd);
+              onChange(newValue);
+              setTimeout(() => {
+                textarea.focus();
+                textarea.setSelectionRange(deleteStart, deleteStart);
+              }, 0);
+              return;
+            }
+          }
+        }
+      }
+
+      if (e.key === 'Delete') {
+        if (start === end) {
+          const tokenAfter = findTokenAfterPosition(ranges, start);
+          const tokenAt = findTokenAtPosition(ranges, start);
+          const tokenToDelete = tokenAt || tokenAfter;
+          
+          if (tokenToDelete) {
+            e.preventDefault();
+            const newValue = currentValue.substring(0, tokenToDelete.start) + currentValue.substring(tokenToDelete.end);
+            onChange(newValue);
+            setTimeout(() => {
+              textarea.focus();
+              textarea.setSelectionRange(tokenToDelete.start, tokenToDelete.start);
+            }, 0);
+            return;
+          }
+        } else {
+          for (const range of ranges) {
+            if ((start < range.end && end > range.start)) {
+              e.preventDefault();
+              let deleteStart = start;
+              let deleteEnd = end;
+              for (const r of ranges) {
+                if (start < r.end && end > r.start) {
+                  deleteStart = Math.min(deleteStart, r.start);
+                  deleteEnd = Math.max(deleteEnd, r.end);
+                }
+              }
+              const newValue = currentValue.substring(0, deleteStart) + currentValue.substring(deleteEnd);
+              onChange(newValue);
+              setTimeout(() => {
+                textarea.focus();
+                textarea.setSelectionRange(deleteStart, deleteStart);
+              }, 0);
+              return;
+            }
+          }
+        }
+      }
+    }, [value, onChange]);
 
     const renderHighlightedContent = () => {
       if (!value) return null;
@@ -107,6 +244,7 @@ export const PromptEditor = React.forwardRef<PromptEditorHandle, PromptEditorPro
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onScroll={syncScroll}
+          onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={disabled}
           className={cn(
