@@ -283,5 +283,49 @@ if (isReplyReallyNew && !isReplyFromBrand) {
 
 ---
 
+## BUG FIX: Reminder Messages Appearing as "Floating" Comments (8 Enero 2026)
+
+**Problema Detectado:**
+Los mensajes de reminder para comentarios aparecían como "flotantes" en la UI en lugar de estar agrupados dentro del hilo del comentario al que respondían.
+
+**Causa Raíz:**
+Cuando `reminderService.ts` creaba el mensaje del reminder, no asignaba `parentMessageId`. El frontend (`CommentThread.tsx`) agrupa mensajes en hilos usando este campo - sin él, los mensajes aparecen como raíz (flotantes).
+
+**Solución Implementada:**
+Modificación en `server/services/reminderService.ts`:
+
+```javascript
+// ANTES: Sin parentMessageId
+await storage.createMessage({
+  // ...
+  metricoolId: sendResult.messageId || null,
+  rawData: {...}
+});
+
+// DESPUÉS: Con parentMessageId para comentarios
+await storage.createMessage({
+  // ...
+  metricoolId: sendResult.messageId || null,
+  parentMessageId: deliveryChannel === 'comment' ? (snapshot.targetMessageId || null) : null,
+  rawData: {...}
+});
+```
+
+**Decisión de Diseño:**
+- `parentMessageId` solo se asigna cuando `deliveryChannel === 'comment'`
+- DMs no tienen `parentMessageId` porque su modelo de threading es diferente
+- Los reminders existentes sin `parentMessageId` seguirán flotando (requieren backfill si se desea corregir)
+
+**Consistencia con Auto-Replies:**
+Este fix es consistente con cómo `autoReplyService.ts` asigna `parentMessageId`:
+```javascript
+parentMessageId: chunk.partIndex === 1 ? message.id : null,
+```
+
+**Archivos Modificados:**
+- `server/services/reminderService.ts` (línea ~944)
+
+---
+
 *Documento creado: Enero 2026*
 *Última actualización: 8 Enero 2026*
