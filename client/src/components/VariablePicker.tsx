@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Braces } from "lucide-react";
+import { Code2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ export function VariablePicker({ onSelectVariable, disabled }: VariablePickerPro
           disabled={disabled}
           data-testid="button-variable-picker"
         >
-          <Braces className="h-3.5 w-3.5" />
+          <Code2 className="h-3.5 w-3.5" />
           Variables
         </Button>
       </PopoverTrigger>
