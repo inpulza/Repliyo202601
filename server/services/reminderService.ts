@@ -938,6 +938,7 @@ export class ReminderService implements IReminderService {
         source: 'reminder_service',
         internalOrigin: 'reminder',
         metricoolId: sendResult.messageId || null,
+        parentMessageId: deliveryChannel === 'comment' ? (snapshot.targetMessageId || null) : null,
         rawData: {
           isReminder: true,
           reminderNumber: reminder.reminderNumber,
