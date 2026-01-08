@@ -34,6 +34,8 @@ import {
   FileText, Plus, Trash2, Tag, AtSign, Bell
 } from 'lucide-react';
 import { ReminderSettingsForm, type ReminderSettingsFormHandle } from './ReminderSettingsForm';
+import { PromptEditor, type PromptEditorHandle } from './PromptEditor';
+import { VariablePicker } from './VariablePicker';
 import { FaFacebook, FaInstagram, FaTwitter, FaTiktok, FaLinkedin, FaYoutube, FaGoogle } from 'react-icons/fa';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -124,6 +126,10 @@ export function AIAgentConfig() {
   const [testResponse, setTestResponse] = useState('');
   const [isTesting, setIsTesting] = useState(false);
   const reminderFormRef = React.useRef<ReminderSettingsFormHandle>(null);
+  
+  const systemPromptRef = React.useRef<PromptEditorHandle>(null);
+  const knowledgeBaseRef = React.useRef<PromptEditorHandle>(null);
+  const guardrailRef = React.useRef<PromptEditorHandle>(null);
   
   const [filterPlatform, setFilterPlatform] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -691,49 +697,6 @@ export function AIAgentConfig() {
             </TabsContent>
 
             <TabsContent value="prompts" className="mt-0 space-y-6">
-              <Card className="border border-border shadow-none bg-muted/30">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-base font-semibold">
-                    <Variable className="h-4 w-4 text-muted-foreground" />
-                    Variables Dinámicas
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    Usa estas variables en tus prompts para personalizar las respuestas automáticamente
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {DYNAMIC_VARIABLES.map((variable) => (
-                      <div
-                        key={variable.key}
-                        className="flex items-start gap-3 p-3 rounded-lg border border-border bg-background"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <code className="text-xs font-mono bg-primary/10 text-primary px-2 py-0.5 rounded">
-                              {variable.placeholder}
-                            </code>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                navigator.clipboard.writeText(variable.placeholder);
-                                toast({ title: "Copiado", description: `${variable.placeholder} copiado al portapapeles` });
-                              }}
-                              className="p-1 hover:bg-muted rounded transition-colors"
-                              data-testid={`button-copy-${variable.key}`}
-                            >
-                              <Copy className="h-3 w-3 text-muted-foreground" />
-                            </button>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">{variable.description}</p>
-                          <p className="text-xs text-muted-foreground/70 mt-0.5">Ej: {variable.example}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
               <Card className="border border-border shadow-none">
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
@@ -742,6 +705,9 @@ export function AIAgentConfig() {
                       System Prompt
                     </CardTitle>
                     <div className="flex items-center gap-1">
+                      <VariablePicker 
+                        onSelectVariable={(placeholder) => systemPromptRef.current?.insertVariable(placeholder)} 
+                      />
                       <Button
                         variant="ghost"
                         size="sm"
@@ -775,12 +741,14 @@ export function AIAgentConfig() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <Textarea
+                  <PromptEditor
+                    ref={systemPromptRef}
                     value={formData.systemPrompt || ''}
-                    onChange={(e) => setFormData({ ...formData, systemPrompt: e.target.value })}
+                    onChange={(value) => setFormData({ ...formData, systemPrompt: value })}
                     placeholder="## 1. Rol y Objetivo&#10;Eres un asistente de IA que emula a...&#10;&#10;## 2. Estilo y Tono&#10;- Profesional y empático&#10;- Clara y accesible&#10;&#10;## 3. Estructura de Respuesta&#10;1. Saludo personalizado&#10;2. Cuerpo del mensaje&#10;3. Cierre con información de contacto&#10;&#10;## 4. Ejemplos de Casos de Uso&#10;**Caso 1:** ...&#10;**Respuesta:** ..."
-                    className="min-h-[400px] font-mono text-sm shadow-none resize-y"
-                    style={{ maxHeight: '70vh' }}
+                    minHeight="400px"
+                    maxHeight="70vh"
+                    className="shadow-none"
                     data-testid="textarea-system-prompt"
                   />
                   <p className="text-xs text-muted-foreground">
@@ -797,6 +765,9 @@ export function AIAgentConfig() {
                       Knowledge Base
                     </CardTitle>
                     <div className="flex items-center gap-1">
+                      <VariablePicker 
+                        onSelectVariable={(placeholder) => knowledgeBaseRef.current?.insertVariable(placeholder)} 
+                      />
                       <Button
                         variant="ghost"
                         size="sm"
@@ -830,11 +801,13 @@ export function AIAgentConfig() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Textarea
+                  <PromptEditor
+                    ref={knowledgeBaseRef}
                     value={formData.knowledgeBase || ''}
-                    onChange={(e) => setFormData({ ...formData, knowledgeBase: e.target.value })}
+                    onChange={(value) => setFormData({ ...formData, knowledgeBase: value })}
                     placeholder="Horarios de atención: Lunes a Viernes 9:00-18:00..."
-                    className="min-h-[180px] font-mono text-sm shadow-none"
+                    minHeight="180px"
+                    className="shadow-none"
                     data-testid="textarea-knowledge-base"
                   />
                 </CardContent>
@@ -848,6 +821,9 @@ export function AIAgentConfig() {
                       Guardrails
                     </CardTitle>
                     <div className="flex items-center gap-1">
+                      <VariablePicker 
+                        onSelectVariable={(placeholder) => guardrailRef.current?.insertVariable(placeholder)} 
+                      />
                       <Button
                         variant="ghost"
                         size="sm"
@@ -881,11 +857,13 @@ export function AIAgentConfig() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Textarea
+                  <PromptEditor
+                    ref={guardrailRef}
                     value={formData.guardrailPrompt || ''}
-                    onChange={(e) => setFormData({ ...formData, guardrailPrompt: e.target.value })}
+                    onChange={(value) => setFormData({ ...formData, guardrailPrompt: value })}
                     placeholder="No compartas información confidencial..."
-                    className="min-h-[140px] font-mono text-sm shadow-none"
+                    minHeight="140px"
+                    className="shadow-none"
                     data-testid="textarea-guardrails"
                   />
                 </CardContent>

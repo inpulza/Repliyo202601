@@ -399,5 +399,74 @@ function computeReminderStats(messages: Message[]): ReminderStats {
 
 ---
 
+## FEATURE: Sistema de Variables Dinámicas con Blue Chips (Enero 2026)
+
+### Descripción
+Implementación de un sistema visual para inserción de variables dinámicas en los prompts del AI Agent, inspirado en Respond.io. Las variables se muestran como "blue chips" (píldoras visuales azules) dentro de los campos de texto.
+
+### Componentes Creados
+
+**1. VariablePicker (`client/src/components/VariablePicker.tsx`)**
+- Popover con búsqueda de variables dinámicas
+- Trigger: botón de icono Variable en el header de cada prompt card
+- Filtrado en tiempo real con Command (cmdk)
+- Muestra placeholder + descripción para cada variable
+
+**2. PromptEditor (`client/src/components/PromptEditor.tsx`)**
+- Reemplazo del Textarea estándar con visualización de blue chips
+- Overlay para resaltar variables `{{variable}}` con estilo píldora
+- Mantiene funcionalidad de textarea nativa (cursor, selección, scroll)
+- Refs para inserción de variables en posición del cursor
+
+### Integración en AIAgentConfig
+
+```tsx
+// Header de cada prompt card ahora incluye:
+<VariablePicker 
+  onSelectVariable={(placeholder) => insertVariableAtCursor(systemPromptRef, 'systemPrompt', placeholder)} 
+/>
+
+// Textarea reemplazado por:
+<PromptEditor
+  ref={systemPromptRef}
+  value={formData.systemPrompt || ''}
+  onChange={(value) => setFormData({ ...formData, systemPrompt: value })}
+  minHeight="400px"
+  data-testid="textarea-system-prompt"
+/>
+```
+
+### Variables Dinámicas Disponibles
+
+| Variable | Descripción | Ejemplo |
+|----------|-------------|---------|
+| `{{interaction_mode}}` | Tipo de interacción: "reply" o "reminder" | reminder |
+| `{{reminder_number}}` | Número del recordatorio (1, 2, etc.) | 1 |
+| `{{username}}` | Nombre o @handle del usuario | @jordanldp |
+| `{{platform}}` | Nombre de la red social | instagram |
+| `{{comment}}` | Contenido del mensaje o comentario | Me encanta! |
+| `{{post_context}}` | Contexto del post original | Post sobre productos |
+| `{{is_dm}}` | Si es mensaje directo | true |
+| `{{message_type}}` | Tipo: "dm" o "comment" | dm |
+| `{{time_since_last_interaction}}` | Minutos desde última respuesta | 15 |
+| `{{conversation_depth}}` | Número total de mensajes | 8 |
+| `{{relationship_status}}` | Estado: "new", "active", "reengagement" | active |
+
+### Beneficios UX
+- **Reducción de espacio:** Eliminado el panel grande de "Variables Dinámicas"
+- **Inserción contextual:** Variables se insertan donde está el cursor
+- **Visualización clara:** Blue chips resaltan visualmente las variables en el prompt
+- **Búsqueda rápida:** Filtrado instantáneo en el popover
+
+### Archivos Modificados
+- `client/src/components/AIAgentConfig.tsx` - Integración de componentes
+- `shared/dynamicVariables.ts` - Agregadas nuevas variables (interaction_mode, reminder_number)
+
+### Archivos Creados
+- `client/src/components/VariablePicker.tsx`
+- `client/src/components/PromptEditor.tsx`
+
+---
+
 *Documento creado: Enero 2026*
 *Última actualización: 8 Enero 2026*
