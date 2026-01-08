@@ -3976,21 +3976,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/brands/:id/reminder-rules", requireAuth, filterByBrand('id'), async (req, res) => {
     try {
       const brandId = req.params.id;
+      console.log('[Reminders] POST reminder-rules - brandId:', brandId);
+      console.log('[Reminders] POST reminder-rules - req.body:', JSON.stringify(req.body, null, 2));
+      
       const existing = await storage.getReminderRules(brandId);
+      console.log('[Reminders] POST reminder-rules - existing rules:', existing ? 'found' : 'not found');
       
       // Validate and whitelist fields
       const validatedData = updateReminderRulesSchema.parse(req.body);
+      console.log('[Reminders] POST reminder-rules - validated data:', JSON.stringify(validatedData, null, 2));
       
       let rules;
       if (existing) {
+        console.log('[Reminders] POST reminder-rules - calling updateReminderRules');
         rules = await storage.updateReminderRules(brandId, validatedData);
+        console.log('[Reminders] POST reminder-rules - update result:', JSON.stringify(rules, null, 2));
       } else {
+        console.log('[Reminders] POST reminder-rules - calling upsertReminderRules');
         rules = await storage.upsertReminderRules({ ...validatedData, brandId });
+        console.log('[Reminders] POST reminder-rules - upsert result:', JSON.stringify(rules, null, 2));
       }
       
       res.json({ success: true, rules });
     } catch (error: any) {
       if (error.name === 'ZodError') {
+        console.error('[Reminders] Zod validation error:', JSON.stringify(error.errors, null, 2));
         return res.status(400).json({ error: "Invalid reminder rules data", details: error.errors });
       }
       console.error('[Reminders] Save rules error:', error);
