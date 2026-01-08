@@ -68,10 +68,11 @@ export const PromptEditor = React.forwardRef<PromptEditorHandle, PromptEditorPro
           return (
             <span
               key={index}
-              className="inline-flex items-center rounded bg-primary/15 px-1 text-primary font-medium"
+              className="inline-flex items-center justify-center rounded-md bg-primary/20 px-1.5 py-0.5 text-primary font-medium text-xs"
               style={{ 
-                margin: '0 1px',
-                lineHeight: 'inherit',
+                margin: '0 2px',
+                verticalAlign: 'middle',
+                lineHeight: '1.4',
               }}
             >
               {part}
@@ -87,13 +88,15 @@ export const PromptEditor = React.forwardRef<PromptEditorHandle, PromptEditorPro
         <div
           ref={overlayRef}
           className={cn(
-            "absolute inset-0 pointer-events-none overflow-auto whitespace-pre-wrap break-words font-mono text-sm p-3 text-transparent",
+            "absolute inset-0 pointer-events-none overflow-auto whitespace-pre-wrap break-words font-mono text-sm p-3",
             className
           )}
           style={{ 
             minHeight, 
             maxHeight,
             wordBreak: 'break-word',
+            lineHeight: '1.8',
+            color: 'inherit',
           }}
           aria-hidden="true"
         >
@@ -116,6 +119,7 @@ export const PromptEditor = React.forwardRef<PromptEditorHandle, PromptEditorPro
             background: 'transparent',
             color: 'transparent',
             caretColor: 'currentColor',
+            lineHeight: '1.8',
           }}
           data-testid={testId}
         />
