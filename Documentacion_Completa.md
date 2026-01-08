@@ -222,5 +222,66 @@ FASE 3 (Testing)
 
 ---
 
+## Cambios Implementados
+
+### 8 Enero 2026 - Fix: Auto-Reply para Comentarios Anidados en Hilos
+
+**Problema Identificado:**
+Los replies anidados dentro de hilos de comentarios (TikTok, Instagram, Facebook, etc.) no recibían respuesta automática de la IA. Solo el comentario padre recibía respuesta.
+
+**Ejemplo del bug:**
+- Usuario "Ramón" comenta en un post → IA responde ✅
+- Usuario "Juan" responde dentro del hilo de Ramón → NO recibe respuesta ❌
+
+**Causa Raíz:**
+En `syncService.ts`, la función `triggerAutoReply()` solo se llamaba para comentarios padre (línea 654), pero no para los replies anidados procesados en el loop de `nestedReplies` (líneas 659-747).
+
+**Solución Implementada:**
+Modificación en `server/services/syncService.ts`:
+
+```javascript
+// ANTES: Solo se guardaba el reply sin disparar auto-reply
+await storage.upsertMessage({...});
+
+// DESPUÉS: Se captura el resultado y se dispara auto-reply si es nuevo e inbound
+const savedReply = await storage.upsertMessage({...});
+
+// Check para evitar duplicados cross-brand
+const isReplyReallyNew = isNewReply && savedReply.brandId === brandId;
+
+// Trigger auto-reply para NEW INBOUND nested replies
+if (isReplyReallyNew && !isReplyFromBrand) {
+  log(`[SyncService] 🔷 NEW nested reply from ${replyAuthor} in thread, triggering auto-reply`, "sync");
+  
+  websocketService.notifyNewMessage(brandId, {
+    id: savedReply.id,
+    platform,
+    author: replyAuthor,
+    content: replyContent.substring(0, 100),
+    type: 'comment',
+    conversationId: conversationRecord.id,
+  });
+  
+  this.triggerAutoReply(brandId, savedReply, conversationRecord);
+}
+```
+
+**Verificaciones de Seguridad:**
+1. `isReplyReallyNew` previene duplicados cross-brand
+2. `!isReplyFromBrand` evita responder a nuestros propios comentarios
+3. El `rawData.id` del reply contiene el `objectId` correcto para responder al comentario específico
+4. Compatibilidad con cooldowns por conversación
+
+**Archivos Modificados:**
+- `server/services/syncService.ts` (líneas ~697-741)
+
+**Caso de Prueba Documentado:**
+- Conversación: `2d8960df-8986-4aaf-966e-7e3ad50eb51b` (TikTok)
+- Comentario padre de `cr99397` → tenía respuesta
+- Reply de `sandra.lopera.rod` en el hilo → NO tenía respuesta (bug confirmado)
+- rawData del reply contenía `id` correcto para responder
+
+---
+
 *Documento creado: Enero 2026*
-*Última actualización: [Actualizar con cada implementación]*
+*Última actualización: 8 Enero 2026*
