@@ -37,6 +37,12 @@ The user interface includes an "Orchestration" tab for managing timing configura
   - Defense layers: Eligibility query, pre-check, transaction checks, unique partial index, structured responses with terminal state tracking.
   - Daily cap enforcement counting both scheduled + sent reminders to prevent over-scheduling.
   - **Corrección Crítica (1 Ene 2026):** Reminders solo se programan DESPUÉS de que la marca haya respondido al cliente (`last_outbound_at > last_inbound_at`). Se guarda `contextSnapshot` con `targetMessageId`/`targetMetricoolId` para responder al mensaje correcto en Metricool.
+- **Comment Thread Filters:** Sistema de filtros para hilos de comentarios que permite:
+  - Toggle chips para filtrar: "Sin respuesta", "Con borrador", "Con recordatorio"
+  - Filtros combinables (AND logic) con contadores en tiempo real
+  - Reset automático al cambiar de conversación
+  - Visibilidad jerárquica: muestra padres e hijos juntos cuando coincide cualquier elemento del hilo
+  - Conteo preciso: separa contadores de display de IDs de visibilidad para evitar doble conteo
 - **Customer Journey Timeline:** Visualización cronológica de todos los puntos de contacto clave con cada cliente. Combina:
   - Datos de: `messages`, `conversation_user_summaries`, `reminder_events`, `conversationStatusHistory`
   - Tipos de eventos: primer contacto, mensajes in/out, respuestas IA, recordatorios, cambios de estado, resúmenes
