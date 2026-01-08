@@ -2,14 +2,18 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 const promptEditorStyles = `
+  .prompt-editor-textarea {
+    color: transparent !important;
+    -webkit-text-fill-color: transparent !important;
+  }
   .prompt-editor-textarea::selection {
     background-color: hsl(var(--primary) / 0.3);
-    color: transparent;
-    -webkit-text-fill-color: transparent;
+    color: transparent !important;
+    -webkit-text-fill-color: transparent !important;
   }
   .prompt-editor-textarea::-moz-selection {
     background-color: hsl(var(--primary) / 0.3);
-    color: transparent;
+    color: transparent !important;
   }
 `;
 
