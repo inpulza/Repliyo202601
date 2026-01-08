@@ -44,7 +44,7 @@ export function VariablePicker({ onSelectVariable, disabled }: VariablePickerPro
                   key={variable.key}
                   value={`${variable.key} ${variable.description}`}
                   onSelect={() => handleSelect(variable.placeholder)}
-                  className="flex flex-col items-start gap-0.5 cursor-pointer"
+                  className="flex flex-col items-start gap-1 cursor-pointer py-2"
                   data-testid={`variable-item-${variable.key}`}
                 >
                   <div className="flex items-center gap-2">
@@ -52,7 +52,7 @@ export function VariablePicker({ onSelectVariable, disabled }: VariablePickerPro
                       {variable.placeholder}
                     </span>
                   </div>
-                  <span className="text-xs text-muted-foreground line-clamp-1">
+                  <span className="text-xs text-muted-foreground whitespace-normal leading-relaxed">
                     {variable.description}
                   </span>
                 </CommandItem>
