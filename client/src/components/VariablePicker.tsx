@@ -1,9 +1,8 @@
 import * as React from "react";
-import { Variable } from "lucide-react";
+import { Braces } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DYNAMIC_VARIABLES } from "@shared/dynamicVariables";
 
 interface VariablePickerProps {
@@ -21,25 +20,19 @@ export function VariablePicker({ onSelectVariable, disabled }: VariablePickerPro
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <PopoverTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              disabled={disabled}
-              data-testid="button-variable-picker"
-            >
-              <Variable className="h-4 w-4" />
-            </Button>
-          </PopoverTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="top">
-          <p>Insertar variable</p>
-        </TooltipContent>
-      </Tooltip>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+          disabled={disabled}
+          data-testid="button-variable-picker"
+        >
+          <Braces className="h-3.5 w-3.5" />
+          Variables
+        </Button>
+      </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="start" side="bottom">
         <Command>
           <CommandInput placeholder="Buscar variable..." data-testid="input-variable-search" />

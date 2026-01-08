@@ -705,9 +705,6 @@ export function AIAgentConfig() {
                       System Prompt
                     </CardTitle>
                     <div className="flex items-center gap-1">
-                      <VariablePicker 
-                        onSelectVariable={(placeholder) => systemPromptRef.current?.insertVariable(placeholder)} 
-                      />
                       <Button
                         variant="ghost"
                         size="sm"
@@ -740,7 +737,7 @@ export function AIAgentConfig() {
                     Define la personalidad, tono, estructura de respuesta y ejemplos (Few-Shot). Puedes incluir prompts extensos con múltiples secciones.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-2">
+                <CardContent className="space-y-3">
                   <PromptEditor
                     ref={systemPromptRef}
                     value={formData.systemPrompt || ''}
@@ -751,9 +748,14 @@ export function AIAgentConfig() {
                     className="shadow-none"
                     data-testid="textarea-system-prompt"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    {(formData.systemPrompt?.length || 0).toLocaleString()} caracteres
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <VariablePicker 
+                      onSelectVariable={(placeholder) => systemPromptRef.current?.insertVariable(placeholder)} 
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {(formData.systemPrompt?.length || 0).toLocaleString()} caracteres
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -765,9 +767,6 @@ export function AIAgentConfig() {
                       Knowledge Base
                     </CardTitle>
                     <div className="flex items-center gap-1">
-                      <VariablePicker 
-                        onSelectVariable={(placeholder) => knowledgeBaseRef.current?.insertVariable(placeholder)} 
-                      />
                       <Button
                         variant="ghost"
                         size="sm"
@@ -800,7 +799,7 @@ export function AIAgentConfig() {
                     Información del negocio, FAQs, horarios, políticas que el agente debe conocer
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-3">
                   <PromptEditor
                     ref={knowledgeBaseRef}
                     value={formData.knowledgeBase || ''}
@@ -810,6 +809,11 @@ export function AIAgentConfig() {
                     className="shadow-none"
                     data-testid="textarea-knowledge-base"
                   />
+                  <div className="flex items-center justify-start">
+                    <VariablePicker 
+                      onSelectVariable={(placeholder) => knowledgeBaseRef.current?.insertVariable(placeholder)} 
+                    />
+                  </div>
                 </CardContent>
               </Card>
 
@@ -821,9 +825,6 @@ export function AIAgentConfig() {
                       Guardrails
                     </CardTitle>
                     <div className="flex items-center gap-1">
-                      <VariablePicker 
-                        onSelectVariable={(placeholder) => guardrailRef.current?.insertVariable(placeholder)} 
-                      />
                       <Button
                         variant="ghost"
                         size="sm"
@@ -856,7 +857,7 @@ export function AIAgentConfig() {
                     Restricciones de seguridad y límites para las respuestas del agente
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-3">
                   <PromptEditor
                     ref={guardrailRef}
                     value={formData.guardrailPrompt || ''}
@@ -866,6 +867,11 @@ export function AIAgentConfig() {
                     className="shadow-none"
                     data-testid="textarea-guardrails"
                   />
+                  <div className="flex items-center justify-start">
+                    <VariablePicker 
+                      onSelectVariable={(placeholder) => guardrailRef.current?.insertVariable(placeholder)} 
+                    />
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
