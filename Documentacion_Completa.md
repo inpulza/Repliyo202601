@@ -408,25 +408,35 @@ Implementación de un sistema visual para inserción de variables dinámicas en 
 
 **1. VariablePicker (`client/src/components/VariablePicker.tsx`)**
 - Popover con búsqueda de variables dinámicas
-- Trigger: botón de icono Variable en el header de cada prompt card
+- Trigger: botón con icono `</>` (Code2) y texto "Variables" en la parte inferior izquierda de cada prompt
 - Filtrado en tiempo real con Command (cmdk)
-- Muestra placeholder + descripción para cada variable
+- Muestra placeholder + descripción completa para cada variable (texto hace wrap en varias líneas)
 
 **2. PromptEditor (`client/src/components/PromptEditor.tsx`)**
 - Reemplazo del Textarea estándar con visualización de blue chips
-- Overlay para resaltar variables `{{variable}}` con estilo píldora
-- Mantiene funcionalidad de textarea nativa (cursor, selección, scroll)
-- Refs para inserción de variables en posición del cursor
+- Overlay para resaltar variables `{{variable}}` con estilo píldora azul
+- Mantiene funcionalidad de textarea nativa (cursor visible, selección, scroll)
+- Expone `PromptEditorHandle` con métodos `insertVariable()` y `focus()` via useImperativeHandle
+- **Borrado atómico:** Al presionar Backspace/Delete en un blue chip, se elimina toda la variable completa (no carácter por carácter)
+- Token range tracker que detecta cuando el cursor está dentro de una variable
+- Line-height 1.8 para mejor espaciado entre chips
 
 ### Integración en AIAgentConfig
 
 ```tsx
-// Header de cada prompt card ahora incluye:
-<VariablePicker 
-  onSelectVariable={(placeholder) => insertVariableAtCursor(systemPromptRef, 'systemPrompt', placeholder)} 
-/>
+// Debajo de cada PromptEditor, en la parte inferior izquierda:
+<div className="flex items-center justify-between">
+  <VariablePicker 
+    onSelectVariable={(placeholder) => systemPromptRef.current?.insertVariable(placeholder)} 
+  />
+  <p className="text-xs text-muted-foreground">
+    {(formData.systemPrompt?.length || 0).toLocaleString()} caracteres
+  </p>
+</div>
 
-// Textarea reemplazado por:
+// PromptEditor con ref tipado:
+const systemPromptRef = React.useRef<PromptEditorHandle>(null);
+
 <PromptEditor
   ref={systemPromptRef}
   value={formData.systemPrompt || ''}
@@ -452,21 +462,51 @@ Implementación de un sistema visual para inserción de variables dinámicas en 
 | `{{conversation_depth}}` | Número total de mensajes | 8 |
 | `{{relationship_status}}` | Estado: "new", "active", "reengagement" | active |
 
+### Características Técnicas
+
+**Borrado Atómico de Variables:**
+```typescript
+// PromptEditor intercepta keydown para Backspace/Delete
+function getVariableRanges(text: string): TokenRange[] {
+  const regex = /\{\{[^}]+\}\}/g;
+  // Retorna array de {start, end, text} para cada variable
+}
+
+// Si el cursor está dentro o junto a una variable, se borra toda completa
+if (tokenToDelete) {
+  e.preventDefault();
+  const newValue = currentValue.substring(0, tokenToDelete.start) + 
+                   currentValue.substring(tokenToDelete.end);
+  onChange(newValue);
+}
+```
+
+**Cursor Visible:**
+```css
+/* El textarea tiene texto transparente pero cursor visible */
+color: transparent;
+caretColor: hsl(var(--foreground));
+WebkitTextFillColor: transparent;
+```
+
 ### Beneficios UX
 - **Reducción de espacio:** Eliminado el panel grande de "Variables Dinámicas"
 - **Inserción contextual:** Variables se insertan donde está el cursor
 - **Visualización clara:** Blue chips resaltan visualmente las variables en el prompt
 - **Búsqueda rápida:** Filtrado instantáneo en el popover
+- **Borrado inteligente:** Las variables se eliminan como unidad atómica
+- **Descripciones legibles:** El popover muestra descripciones completas en varias líneas
+- **Posición intuitiva:** Botón de Variables en la parte inferior izquierda de cada campo
 
 ### Archivos Modificados
-- `client/src/components/AIAgentConfig.tsx` - Integración de componentes
+- `client/src/components/AIAgentConfig.tsx` - Integración de componentes, refs tipados
 - `shared/dynamicVariables.ts` - Agregadas nuevas variables (interaction_mode, reminder_number)
 
 ### Archivos Creados
-- `client/src/components/VariablePicker.tsx`
-- `client/src/components/PromptEditor.tsx`
+- `client/src/components/VariablePicker.tsx` - Popover de selección con búsqueda
+- `client/src/components/PromptEditor.tsx` - Editor con blue chips y borrado atómico
 
 ---
 
 *Documento creado: Enero 2026*
-*Última actualización: 8 Enero 2026*
+*Última actualización: 8 Enero 2026 - Sistema de Blue Chips con borrado atómico y mejoras UX*
