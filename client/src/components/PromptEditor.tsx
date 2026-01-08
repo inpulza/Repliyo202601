@@ -210,7 +210,12 @@ export const PromptEditor = React.forwardRef<PromptEditorHandle, PromptEditorPro
     }, [value, onChange]);
 
     const renderHighlightedContent = () => {
-      if (!value) return null;
+      if (!value) {
+        // Show placeholder in overlay when empty
+        return placeholder ? (
+          <span className="text-muted-foreground">{placeholder}</span>
+        ) : null;
+      }
       
       const regex = /(\{\{[^}]+\}\})/g;
       const parts = value.split(regex);
