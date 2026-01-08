@@ -99,8 +99,10 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
   const { data: timeline, isLoading: timelineLoading } = useReminderTimeline(brandId, analyticsTimeRange);
   const { data: failures, isLoading: failuresLoading } = useReminderFailures(brandId, analyticsTimeRange);
 
+  const hasChangesRef = React.useRef(false);
+  
   useEffect(() => {
-    if (rules) {
+    if (rules && !hasChangesRef.current) {
       setFormData({
         enabled: rules.enabled ?? false,
         delayHours1: rules.delayHours1 ?? 24,
@@ -121,11 +123,13 @@ export function ReminderSettingsForm({ brandId }: ReminderSettingsFormProps) {
   const handleChange = (field: keyof ReminderRules, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setHasChanges(true);
+    hasChangesRef.current = true;
   };
 
   const handleSave = () => {
     updateRules(formData);
     setHasChanges(false);
+    hasChangesRef.current = false;
   };
 
   const handleRunManual = () => {
