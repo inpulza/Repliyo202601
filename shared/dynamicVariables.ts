@@ -7,6 +7,18 @@ export interface DynamicVariable {
 
 export const DYNAMIC_VARIABLES: DynamicVariable[] = [
   {
+    key: 'interaction_mode',
+    placeholder: '{{interaction_mode}}',
+    description: 'Tipo de interacción: "reply" (respuesta normal) o "reminder" (follow-up automático)',
+    example: 'reminder',
+  },
+  {
+    key: 'reminder_number',
+    placeholder: '{{reminder_number}}',
+    description: 'Número del recordatorio (1, 2, etc.) - Solo aplica cuando interaction_mode es "reminder"',
+    example: '1',
+  },
+  {
     key: 'username',
     placeholder: '{{username}}',
     description: 'Nombre o @handle del usuario (con @ en Instagram/TikTok)',
