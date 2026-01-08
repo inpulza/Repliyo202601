@@ -1,6 +1,18 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
+const promptEditorStyles = `
+  .prompt-editor-textarea::selection {
+    background-color: hsl(var(--primary) / 0.3);
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+  .prompt-editor-textarea::-moz-selection {
+    background-color: hsl(var(--primary) / 0.3);
+    color: transparent;
+  }
+`;
+
 export interface PromptEditorHandle {
   insertVariable: (text: string) => void;
   focus: () => void;
@@ -222,6 +234,7 @@ export const PromptEditor = React.forwardRef<PromptEditorHandle, PromptEditorPro
 
     return (
       <div className="relative">
+        <style>{promptEditorStyles}</style>
         <div
           ref={overlayRef}
           className={cn(
@@ -248,7 +261,7 @@ export const PromptEditor = React.forwardRef<PromptEditorHandle, PromptEditorPro
           placeholder={placeholder}
           disabled={disabled}
           className={cn(
-            "flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm font-mono resize-y",
+            "prompt-editor-textarea flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm font-mono resize-y",
             className
           )}
           style={{ 
@@ -259,6 +272,7 @@ export const PromptEditor = React.forwardRef<PromptEditorHandle, PromptEditorPro
             caretColor: 'hsl(var(--foreground))',
             lineHeight: '1.8',
             WebkitTextFillColor: 'transparent',
+            textShadow: 'none',
           }}
           data-testid={testId}
         />
