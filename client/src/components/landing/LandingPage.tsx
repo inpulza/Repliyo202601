@@ -493,9 +493,8 @@ function HowItWorksSection() {
     const ctx = gsap.context(() => {
       const stepPanels = gsap.utils.toArray('.how-step-panel') as HTMLElement[];
       const totalSteps = stepPanels.length;
-      const scrollPerStep = window.innerHeight * 1.2;
-      const extraEndBuffer = window.innerHeight * 0.8;
-      const totalScrollDistance = totalSteps * scrollPerStep + extraEndBuffer;
+      const scrollPerStep = window.innerHeight * 1.5;
+      const totalScrollDistance = totalSteps * scrollPerStep;
       
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -504,11 +503,16 @@ function HowItWorksSection() {
           end: () => `+=${totalScrollDistance}`,
           pin: containerRef.current,
           anticipatePin: 1,
-          scrub: 0.8,
+          scrub: 1,
+          snap: {
+            snapTo: 1 / (totalSteps - 1),
+            duration: { min: 0.2, max: 0.5 },
+            delay: 0,
+            ease: 'power1.inOut'
+          },
           onUpdate: (self) => {
             const progress = self.progress;
-            const adjustedProgress = progress * (totalScrollDistance / (totalSteps * scrollPerStep));
-            const stepIndex = Math.min(Math.floor(adjustedProgress * totalSteps), totalSteps - 1);
+            const stepIndex = Math.min(Math.floor(progress * totalSteps), totalSteps - 1);
             setActiveStep(stepIndex);
           }
         }
@@ -517,8 +521,8 @@ function HowItWorksSection() {
       stepPanels.forEach((step, index) => {
         gsap.set(step, { 
           opacity: index === 0 ? 1 : 0, 
-          y: index === 0 ? 0 : 60,
-          scale: index === 0 ? 1 : 0.96,
+          x: index === 0 ? 0 : 80,
+          scale: index === 0 ? 1 : 0.95,
           zIndex: index === 0 ? 10 : 1
         });
       });
@@ -527,23 +531,23 @@ function HowItWorksSection() {
         if (index === 0) {
           tl.to(step, {
             opacity: 0,
-            y: -40,
-            scale: 0.96,
+            x: -80,
+            scale: 0.9,
             zIndex: 1,
-            duration: 0.4,
-            ease: 'power1.out'
-          }, 0.6);
+            duration: 0.3,
+            ease: 'power2.inOut'
+          }, 0.7);
         } else {
-          const enterTime = (index - 1) * 1 + 0.5;
+          const enterTime = (index - 1) + 0.7;
           
           tl.fromTo(step, 
-            { opacity: 0, y: 60, scale: 0.96, zIndex: 1 },
+            { opacity: 0, x: 80, scale: 0.95, zIndex: 1 },
             { 
               opacity: 1, 
-              y: 0, 
+              x: 0, 
               scale: 1, 
               zIndex: 10,
-              duration: 0.5,
+              duration: 0.3,
               ease: 'power2.out'
             }, 
             enterTime
@@ -552,17 +556,15 @@ function HowItWorksSection() {
           if (index < totalSteps - 1) {
             tl.to(step, {
               opacity: 0,
-              y: -40,
-              scale: 0.96,
+              x: -80,
+              scale: 0.9,
               zIndex: 1,
-              duration: 0.4,
-              ease: 'power1.out'
-            }, enterTime + 0.6);
+              duration: 0.3,
+              ease: 'power2.inOut'
+            }, enterTime + 0.7);
           }
         }
       });
-      
-      tl.to({}, { duration: 0.5 });
     }, sectionRef);
     
     return () => ctx.revert();
