@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring } from 'framer-motion';
-import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Bell, MessageSquare, BarChart2, Instagram, Music2, Facebook, Send, Zap, Clock, Heart, Sun, Moon } from 'lucide-react';
+import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Sun, Moon } from 'lucide-react';
+import { FaInstagram, FaTiktok, FaFacebook } from 'react-icons/fa';
 import { ParallaxProvider, useParallax, Parallax } from 'react-scroll-parallax';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -115,7 +116,7 @@ function InboxMockup() {
               <div>
                 <span className="username">María G.</span>
                 <span className="platform-badge">
-                  <Instagram className="w-3 h-3" /> Instagram
+                  <FaInstagram className="w-3 h-3" /> Instagram
                 </span>
               </div>
             </div>
@@ -531,21 +532,21 @@ function HowItWorksSection() {
               transition={{ repeat: Infinity, duration: 2, delay: 0 }}
               className="connect-icon instagram"
             >
-              <Instagram className="w-8 h-8" />
+              <FaInstagram className="w-8 h-8" />
             </motion.div>
             <motion.div 
               animate={{ scale: [1, 1.1, 1], y: [0, -5, 0] }}
               transition={{ repeat: Infinity, duration: 2, delay: 0.3 }}
               className="connect-icon tiktok"
             >
-              <Music2 className="w-8 h-8" />
+              <FaTiktok className="w-8 h-8" />
             </motion.div>
             <motion.div 
               animate={{ scale: [1, 1.1, 1], y: [0, -5, 0] }}
               transition={{ repeat: Infinity, duration: 2, delay: 0.6 }}
               className="connect-icon facebook"
             >
-              <Facebook className="w-8 h-8" />
+              <FaFacebook className="w-8 h-8" />
             </motion.div>
           </div>
           <div className="connect-lines">
