@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Sun, Moon } from 'lucide-react';
+import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Sun, Moon, Tags, Filter } from 'lucide-react';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
 import avatarMaria from '../../assets/avatars/latina_woman_avatar_headshot.png';
@@ -524,6 +524,86 @@ function FeatureAnalyticsMockup() {
       </div>
       <div className="analytics-labels">
         <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
+      </div>
+    </div>
+  );
+}
+
+function FeatureFiltersMockup() {
+  const [activeFilter, setActiveFilter] = useState(0);
+  const [cycle, setCycle] = useState(0);
+  
+  const filters = [
+    { label: 'Todos', count: 24 },
+    { label: 'Sin leer', count: 8 },
+    { label: 'Prioritarios', count: 3 },
+  ];
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveFilter(f => (f + 1) % filters.length);
+    }, 1500);
+    return () => clearInterval(interval);
+  }, []);
+  
+  return (
+    <div className="feature-filters-mockup">
+      <div className="filters-row">
+        {filters.map((f, idx) => (
+          <motion.div
+            key={f.label}
+            className={`filter-chip ${activeFilter === idx ? 'active' : ''}`}
+            animate={{ scale: activeFilter === idx ? 1.05 : 1 }}
+          >
+            <span className="filter-label">{f.label}</span>
+            <span className="filter-count">{f.count}</span>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FeatureTagsMockup() {
+  const [visibleTags, setVisibleTags] = useState<number[]>([]);
+  const [cycle, setCycle] = useState(0);
+  
+  const tags = [
+    { label: 'VIP', color: 'gold' },
+    { label: 'Lead', color: 'blue' },
+    { label: 'Nuevo', color: 'green' },
+    { label: 'Urgente', color: 'red' },
+  ];
+  
+  useEffect(() => {
+    setVisibleTags([]);
+    const timers: NodeJS.Timeout[] = [];
+    
+    tags.forEach((_, idx) => {
+      timers.push(setTimeout(() => {
+        setVisibleTags(prev => [...prev, idx]);
+      }, idx * 400));
+    });
+    
+    timers.push(setTimeout(() => setCycle(c => c + 1), 4000));
+    
+    return () => timers.forEach(clearTimeout);
+  }, [cycle]);
+  
+  return (
+    <div className="feature-tags-mockup">
+      <div className="tags-grid">
+        {tags.map((tag, idx) => (
+          <motion.div
+            key={tag.label}
+            className={`tag-item ${tag.color}`}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={visibleTags.includes(idx) ? { scale: 1, opacity: 1 } : {}}
+            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+          >
+            {tag.label}
+          </motion.div>
+        ))}
       </div>
     </div>
   );
@@ -1480,9 +1560,16 @@ function FeaturesSection() {
     { 
       icon: Inbox, 
       title: 'Inbox unificado', 
-      description: 'Todas tus conversaciones de Instagram, TikTok y Facebook en un solo lugar ordenadas por prioridad.',
-      size: 'large',
+      description: 'Todos tus DMs de Instagram, TikTok y Facebook en un solo lugar.',
+      size: 'medium',
       mockup: <FeatureInboxMockup />
+    },
+    { 
+      icon: Filter, 
+      title: 'Filtros inteligentes', 
+      description: 'Ordena por prioridad, sin leer, o por red social.',
+      size: 'medium',
+      mockup: <FeatureFiltersMockup />
     },
     { 
       icon: Sparkles, 
@@ -1501,22 +1588,29 @@ function FeaturesSection() {
     { 
       icon: Bell, 
       title: 'Recordatorios', 
-      description: 'Seguimiento automático para leads inactivos. Nunca pierdas una oportunidad.',
-      size: 'medium',
+      description: 'Seguimiento automático para leads inactivos.',
+      size: 'small',
       mockup: <FeatureReminderMockup />
     },
     { 
       icon: MessageSquare, 
       title: 'Comentarios', 
-      description: 'Gestiona comentarios de posts directamente desde el inbox.',
-      size: 'medium',
+      description: 'Gestiona comentarios de posts desde el inbox.',
+      size: 'small',
       mockup: <FeatureCommentsMockup />
+    },
+    { 
+      icon: Tags, 
+      title: 'Etiquetas', 
+      description: 'Organiza contactos con etiquetas personalizadas.',
+      size: 'small',
+      mockup: <FeatureTagsMockup />
     },
     { 
       icon: BarChart2, 
       title: 'Analytics', 
-      description: 'Métricas de rendimiento y tiempo de respuesta en tiempo real.',
-      size: 'medium',
+      description: 'Métricas y tiempo de respuesta en tiempo real.',
+      size: 'small',
       mockup: <FeatureAnalyticsMockup />
     },
   ];
