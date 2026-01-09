@@ -493,8 +493,9 @@ function HowItWorksSection() {
     const ctx = gsap.context(() => {
       const stepPanels = gsap.utils.toArray('.how-step-panel') as HTMLElement[];
       const totalSteps = stepPanels.length;
-      const scrollPerStep = window.innerHeight * 1.5;
-      const totalScrollDistance = totalSteps * scrollPerStep;
+      const scrollPerStep = window.innerHeight * 1.8;
+      const holdAtEnd = window.innerHeight * 1.2;
+      const totalScrollDistance = totalSteps * scrollPerStep + holdAtEnd;
       
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -503,16 +504,11 @@ function HowItWorksSection() {
           end: () => `+=${totalScrollDistance}`,
           pin: containerRef.current,
           anticipatePin: 1,
-          scrub: 1,
-          snap: {
-            snapTo: 1 / (totalSteps - 1),
-            duration: { min: 0.2, max: 0.5 },
-            delay: 0,
-            ease: 'power1.inOut'
-          },
+          scrub: 0.8,
           onUpdate: (self) => {
             const progress = self.progress;
-            const stepIndex = Math.min(Math.floor(progress * totalSteps), totalSteps - 1);
+            const adjustedProgress = progress * (totalSteps * scrollPerStep) / (totalSteps * scrollPerStep + holdAtEnd);
+            const stepIndex = Math.min(Math.floor(adjustedProgress * totalSteps / (totalSteps - 0.5)), totalSteps - 1);
             setActiveStep(stepIndex);
           }
         }
@@ -520,48 +516,60 @@ function HowItWorksSection() {
 
       stepPanels.forEach((step, index) => {
         gsap.set(step, { 
-          opacity: index === 0 ? 1 : 0, 
-          x: index === 0 ? 0 : 80,
-          scale: index === 0 ? 1 : 0.95,
+          autoAlpha: index === 0 ? 1 : 0, 
+          x: index === 0 ? 0 : 100,
+          scale: index === 0 ? 1 : 0.92,
           zIndex: index === 0 ? 10 : 1
         });
       });
 
       stepPanels.forEach((step, index) => {
+        const stepDuration = 1;
+        const holdDuration = 0.8;
+        const exitDuration = 0.4;
+        
         if (index === 0) {
+          tl.to({}, { duration: holdDuration }, 0);
+          
           tl.to(step, {
-            opacity: 0,
-            x: -80,
-            scale: 0.9,
+            autoAlpha: 0,
+            x: -100,
+            scale: 0.88,
             zIndex: 1,
-            duration: 0.3,
-            ease: 'power2.inOut'
-          }, 0.7);
+            duration: exitDuration,
+            ease: 'power1.inOut'
+          }, holdDuration);
         } else {
-          const enterTime = (index - 1) + 0.7;
+          const prevExitEnd = (index - 1) * stepDuration + holdDuration + exitDuration;
           
           tl.fromTo(step, 
-            { opacity: 0, x: 80, scale: 0.95, zIndex: 1 },
+            { autoAlpha: 0, x: 100, scale: 0.92, zIndex: 1 },
             { 
-              opacity: 1, 
+              autoAlpha: 1, 
               x: 0, 
               scale: 1, 
               zIndex: 10,
-              duration: 0.3,
+              duration: 0.5,
               ease: 'power2.out'
             }, 
-            enterTime
+            prevExitEnd
           );
           
+          const enterEnd = prevExitEnd + 0.5;
+          
           if (index < totalSteps - 1) {
+            tl.to({}, { duration: holdDuration }, enterEnd);
+            
             tl.to(step, {
-              opacity: 0,
-              x: -80,
-              scale: 0.9,
+              autoAlpha: 0,
+              x: -100,
+              scale: 0.88,
               zIndex: 1,
-              duration: 0.3,
-              ease: 'power2.inOut'
-            }, enterTime + 0.7);
+              duration: exitDuration,
+              ease: 'power1.inOut'
+            }, enterEnd + holdDuration);
+          } else {
+            tl.to({}, { duration: holdDuration * 2 }, enterEnd);
           }
         }
       });

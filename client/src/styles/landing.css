@@ -850,7 +850,7 @@
    ============================================ */
 .how-pinned-section {
   position: relative;
-  height: 500vh;
+  height: 700vh;
 }
 
 .how-pinned-container {
@@ -918,12 +918,12 @@
   transform: translate(-50%, -50%);
   width: 100%;
   max-width: 1100px;
-  z-index: 1;
   will-change: transform, opacity;
+  visibility: hidden;
 }
 
 .how-step-panel.active {
-  z-index: 10;
+  visibility: visible;
 }
 
 .how-step-content {
