@@ -1,22 +1,50 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
-import { AuthProvider } from "@/context/AuthContext";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { NexusProvider } from "@/context/NexusContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Inbox } from "@/components/Inbox";
 import { Overview } from "@/pages/Overview";
 import { AIAgentConfig } from "@/components/AIAgentConfig";
 import { AiMetrics } from "@/pages/AiMetrics";
+import { useEffect } from "react";
 
 import { Connections } from "@/pages/Connections";
 import { IntegrationsPage } from "@/pages/Integrations";
 import { Login } from "@/pages/Login";
 import { ProfileSettings } from "@/pages/ProfileSettings";
 import { CRM } from "@/pages/CRM";
+import { LandingPage } from "@/components/landing/LandingPage";
+import { Loader2 } from "lucide-react";
+
+function HomeRedirect() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      setLocation('/inbox');
+    }
+  }, [isLoading, isAuthenticated, setLocation]);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-[#050505]">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return null;
+  }
+
+  return <LandingPage />;
+}
 
 function Router() {
   return (
@@ -79,10 +107,7 @@ function Router() {
         )}
       </Route>
       <Route path="/">
-        {() => {
-          window.location.href = '/inbox';
-          return null;
-        }}
+        {() => <HomeRedirect />}
       </Route>
       <Route component={NotFound} />
     </Switch>
