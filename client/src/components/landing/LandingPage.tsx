@@ -14,6 +14,365 @@ import '../../styles/landing.css';
 
 gsap.registerPlugin(ScrollTrigger);
 
+function Step2AIMockup() {
+  const [phase, setPhase] = useState(0);
+  const [typedText, setTypedText] = useState('');
+  const fullResponse = '¡Hola! El precio es $299 con envío gratis. ¿Te gustaría ordenar?';
+  
+  useEffect(() => {
+    const timers: NodeJS.Timeout[] = [];
+    const intervals: NodeJS.Timeout[] = [];
+    
+    const runCycle = () => {
+      setPhase(0);
+      setTypedText('');
+      
+      timers.push(setTimeout(() => setPhase(1), 500));
+      timers.push(setTimeout(() => setPhase(2), 2000));
+      timers.push(setTimeout(() => {
+        setPhase(3);
+        let charIndex = 0;
+        const typeInterval = setInterval(() => {
+          if (charIndex < fullResponse.length) {
+            setTypedText(fullResponse.slice(0, charIndex + 1));
+            charIndex++;
+          } else {
+            clearInterval(typeInterval);
+          }
+        }, 25);
+        intervals.push(typeInterval);
+      }, 2500));
+      
+      timers.push(setTimeout(() => {
+        runCycle();
+      }, 7000));
+    };
+    
+    runCycle();
+    
+    return () => {
+      timers.forEach(clearTimeout);
+      intervals.forEach(clearInterval);
+    };
+  }, []);
+  
+  return (
+    <div className="step-mockup ai-mockup-v2">
+      <div className="ai-chat-panel">
+        <div className="ai-chat-header">
+          <div className="ai-chat-avatar">
+            <img src={avatarMaria} alt="Cliente" />
+          </div>
+          <div className="ai-chat-info">
+            <span className="ai-chat-name">María García</span>
+            <span className="ai-chat-platform">Instagram DM</span>
+          </div>
+        </div>
+        <div className="ai-chat-messages">
+          <motion.div 
+            className="ai-msg incoming"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: phase >= 1 ? 1 : 0, x: phase >= 1 ? 0 : -20 }}
+          >
+            ¿Cuánto cuesta el producto?
+          </motion.div>
+          
+          {phase === 2 && (
+            <motion.div 
+              className="ai-analyzing"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <Sparkles className="w-4 h-4 text-purple-400" />
+              <span>IA analizando estilo...</span>
+              <div className="analyzing-dots"><span /><span /><span /></div>
+            </motion.div>
+          )}
+          
+          {phase >= 3 && (
+            <motion.div 
+              className="ai-msg outgoing"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+            >
+              <div className="ai-draft-badge">
+                <Sparkles className="w-3 h-3" /> Borrador IA
+              </div>
+              {typedText}
+              {typedText.length < fullResponse.length && <span className="typing-cursor" />}
+            </motion.div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Step3SendMockup() {
+  const [phase, setPhase] = useState(0);
+  
+  useEffect(() => {
+    const timers: NodeJS.Timeout[] = [];
+    
+    const runCycle = () => {
+      setPhase(0);
+      timers.push(setTimeout(() => setPhase(1), 500));
+      timers.push(setTimeout(() => setPhase(2), 1500));
+      timers.push(setTimeout(() => setPhase(3), 2500));
+      timers.push(setTimeout(() => setPhase(4), 3500));
+      timers.push(setTimeout(() => runCycle(), 6000));
+    };
+    
+    runCycle();
+    return () => timers.forEach(clearTimeout);
+  }, []);
+  
+  return (
+    <div className="step-mockup send-mockup-v2">
+      <div className="send-timeline">
+        <motion.div 
+          className={`timeline-step ${phase >= 1 ? 'active' : ''}`}
+          animate={{ scale: phase === 1 ? [1, 1.1, 1] : 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="timeline-icon send-icon">
+            <Send className="w-4 h-4" />
+          </div>
+          <div className="timeline-content">
+            <span className="timeline-title">Enviar respuesta</span>
+            {phase >= 1 && <span className="timeline-status">Listo para enviar</span>}
+          </div>
+        </motion.div>
+        
+        <div className={`timeline-connector ${phase >= 2 ? 'active' : ''}`} />
+        
+        <motion.div 
+          className={`timeline-step ${phase >= 2 ? 'active' : ''}`}
+          animate={{ scale: phase === 2 ? [1, 1.1, 1] : 1 }}
+        >
+          <div className="timeline-icon check-icon">
+            <Check className="w-4 h-4" />
+          </div>
+          <div className="timeline-content">
+            <span className="timeline-title">Mensaje enviado</span>
+            {phase >= 2 && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="timeline-status success">Entregado ✓</motion.span>}
+          </div>
+        </motion.div>
+        
+        <div className={`timeline-connector ${phase >= 3 ? 'active' : ''}`} />
+        
+        <motion.div 
+          className={`timeline-step ${phase >= 3 ? 'active' : ''}`}
+          animate={{ scale: phase === 3 ? [1, 1.1, 1] : 1 }}
+        >
+          <div className="timeline-icon bell-icon">
+            <Bell className="w-4 h-4" />
+          </div>
+          <div className="timeline-content">
+            <span className="timeline-title">Recordatorio</span>
+            {phase >= 3 && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="timeline-status warning">Programado 24h</motion.span>}
+          </div>
+        </motion.div>
+        
+        <div className={`timeline-connector ${phase >= 4 ? 'active' : ''}`} />
+        
+        <motion.div 
+          className={`timeline-step ${phase >= 4 ? 'active' : ''}`}
+          animate={{ scale: phase === 4 ? [1, 1.1, 1] : 1 }}
+        >
+          <div className="timeline-icon follow-icon">
+            <MessageSquare className="w-4 h-4" />
+          </div>
+          <div className="timeline-content">
+            <span className="timeline-title">Follow-up</span>
+            {phase >= 4 && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="timeline-status">Auto-enviado</motion.span>}
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+function FeatureInboxMockup() {
+  const platforms = ['instagram', 'tiktok', 'facebook', 'instagram'];
+  const names = ['María G.', 'Carlos R.', 'Ana L.', 'Pedro S.'];
+  
+  return (
+    <div className="feature-inbox-mockup">
+      <div className="inbox-list">
+        {platforms.map((platform, idx) => (
+          <motion.div
+            key={idx}
+            className={`inbox-item ${idx === 0 ? 'selected' : ''}`}
+            initial={{ x: 30, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ 
+              repeat: Infinity, 
+              repeatDelay: 4,
+              duration: 0.4, 
+              delay: idx * 0.3 
+            }}
+          >
+            <div className={`inbox-platform-dot ${platform}`} />
+            <div className="inbox-item-content">
+              <span className="inbox-item-name">{names[idx]}</span>
+              <span className="inbox-item-preview">Nuevo mensaje...</span>
+            </div>
+            {idx < 2 && <div className="inbox-unread-badge" />}
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FeatureAIMockup() {
+  const [text, setText] = useState('');
+  const fullText = '¡Hola! Gracias por escribirnos...';
+  
+  useEffect(() => {
+    let charIndex = 0;
+    const interval = setInterval(() => {
+      if (charIndex < fullText.length) {
+        setText(fullText.slice(0, charIndex + 1));
+        charIndex++;
+      } else {
+        setTimeout(() => {
+          setText('');
+          charIndex = 0;
+        }, 1500);
+      }
+    }, 60);
+    return () => clearInterval(interval);
+  }, []);
+  
+  return (
+    <div className="feature-ai-mockup">
+      <div className="ai-text-box">
+        <Sparkles className="w-4 h-4 text-purple-400" />
+        <span className="ai-generated-text">
+          {text}
+          <span className="typing-cursor" />
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function FeatureCRMMockup() {
+  return (
+    <div className="feature-crm-mockup">
+      <div className="crm-mini-card">
+        <div className="crm-mini-avatar">
+          <img src={avatarMaria} alt="Cliente" />
+        </div>
+        <div className="crm-mini-info">
+          <span className="crm-mini-name">María García</span>
+          <div className="crm-mini-tags">
+            <span className="crm-mini-tag vip">VIP</span>
+            <span className="crm-mini-tag">$1.2k</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FeatureReminderMockup() {
+  const [phase, setPhase] = useState(0);
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPhase(p => (p + 1) % 4);
+    }, 1200);
+    return () => clearInterval(interval);
+  }, []);
+  
+  return (
+    <div className="feature-reminder-mockup">
+      <div className="reminder-timeline">
+        <div className={`reminder-event ${phase >= 0 ? 'active' : ''}`}>
+          <MessageSquare className="w-4 h-4" />
+          <span>Mensaje enviado</span>
+        </div>
+        <div className={`reminder-line ${phase >= 1 ? 'active' : ''}`} />
+        <div className={`reminder-event pause ${phase >= 1 ? 'active' : ''}`}>
+          <Clock className="w-4 h-4" />
+          <span>24h sin respuesta</span>
+        </div>
+        <div className={`reminder-line ${phase >= 2 ? 'active' : ''}`} />
+        <motion.div 
+          className={`reminder-event bell ${phase >= 2 ? 'active' : ''}`}
+          animate={phase === 2 ? { scale: [1, 1.1, 1] } : {}}
+        >
+          <Bell className="w-4 h-4" />
+          <span>Recordatorio</span>
+        </motion.div>
+        <div className={`reminder-line ${phase >= 3 ? 'active' : ''}`} />
+        <motion.div 
+          className={`reminder-event follow ${phase >= 3 ? 'active' : ''}`}
+          animate={phase === 3 ? { scale: [1, 1.1, 1] } : {}}
+        >
+          <Send className="w-4 h-4" />
+          <span>Follow-up auto</span>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+function FeatureCommentsMockup() {
+  return (
+    <div className="feature-comments-mockup">
+      <div className="comment-thread">
+        <div className="comment-bubble user">
+          <FaInstagram className="w-3 h-3 text-pink-400" />
+          <span>¿Precio del producto?</span>
+        </div>
+        <motion.div 
+          className="comment-bubble reply"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ repeat: Infinity, repeatDelay: 3, duration: 0.4, delay: 0.8 }}
+        >
+          <Sparkles className="w-3 h-3 text-purple-400" />
+          <span>¡$299 con envío gratis!</span>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+function FeatureAnalyticsMockup() {
+  const bars = [40, 65, 45, 80, 60, 90, 75];
+  
+  return (
+    <div className="feature-analytics-mockup">
+      <div className="analytics-chart">
+        {bars.map((height, idx) => (
+          <motion.div
+            key={idx}
+            className="analytics-bar"
+            initial={{ height: 0 }}
+            animate={{ height: `${height}%` }}
+            transition={{ 
+              repeat: Infinity,
+              repeatDelay: 3,
+              duration: 0.6, 
+              delay: idx * 0.1,
+              ease: 'easeOut'
+            }}
+          />
+        ))}
+      </div>
+      <div className="analytics-labels">
+        <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
+      </div>
+    </div>
+  );
+}
+
 function AnimatedCounter({ target, duration = 2 }: { target: number; duration?: number }) {
   const [count, setCount] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
@@ -835,51 +1194,87 @@ function HowItWorksSection() {
       title: 'Conecta tus redes',
       description: 'Vincula Instagram, TikTok, Facebook, YouTube, LinkedIn y Google My Business en minutos. Todos tus DMs y comentarios aparecerán en un solo lugar.',
       mockup: (
-        <div className="step-mockup connect-mockup">
-          <div className="connect-icons-grid">
+        <div className="step-mockup connect-mockup-v2">
+          <div className="connect-center-inbox">
+            <Inbox className="w-8 h-8 text-white" />
             <motion.div 
-              animate={{ scale: [1, 1.1, 1], y: [0, -5, 0] }}
-              transition={{ repeat: Infinity, duration: 2, delay: 0 }}
-              className="connect-icon instagram"
-            >
-              <FaInstagram className="w-7 h-7" />
-            </motion.div>
-            <motion.div 
-              animate={{ scale: [1, 1.1, 1], y: [0, -5, 0] }}
-              transition={{ repeat: Infinity, duration: 2, delay: 0.2 }}
-              className="connect-icon tiktok"
-            >
-              <FaTiktok className="w-7 h-7" style={{ color: '#ffffff' }} />
-            </motion.div>
-            <motion.div 
-              animate={{ scale: [1, 1.1, 1], y: [0, -5, 0] }}
-              transition={{ repeat: Infinity, duration: 2, delay: 0.4 }}
-              className="connect-icon facebook"
-            >
-              <FaFacebook className="w-7 h-7" />
-            </motion.div>
-            <motion.div 
-              animate={{ scale: [1, 1.1, 1], y: [0, -5, 0] }}
-              transition={{ repeat: Infinity, duration: 2, delay: 0.6 }}
-              className="connect-icon youtube"
-            >
-              <FaYoutube className="w-7 h-7" />
-            </motion.div>
-            <motion.div 
-              animate={{ scale: [1, 1.1, 1], y: [0, -5, 0] }}
-              transition={{ repeat: Infinity, duration: 2, delay: 0.8 }}
-              className="connect-icon linkedin"
-            >
-              <FaLinkedin className="w-7 h-7" />
-            </motion.div>
-            <motion.div 
-              animate={{ scale: [1, 1.1, 1], y: [0, -5, 0] }}
-              transition={{ repeat: Infinity, duration: 2, delay: 1.0 }}
-              className="connect-icon google"
-            >
-              <GoogleBusinessIcon className="w-7 h-7" />
-            </motion.div>
+              className="inbox-pulse-ring"
+              animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+              transition={{ repeat: Infinity, duration: 2 }}
+            />
           </div>
+          <motion.div 
+            className="flying-icon instagram"
+            animate={{ 
+              x: [0, 60, 60], 
+              y: [0, 40, 40],
+              scale: [1, 0.6, 0],
+              opacity: [1, 0.8, 0]
+            }}
+            transition={{ repeat: Infinity, duration: 3, delay: 0, times: [0, 0.6, 1] }}
+          >
+            <FaInstagram className="w-6 h-6" />
+          </motion.div>
+          <motion.div 
+            className="flying-icon tiktok"
+            animate={{ 
+              x: [0, -20, -20], 
+              y: [0, 50, 50],
+              scale: [1, 0.6, 0],
+              opacity: [1, 0.8, 0]
+            }}
+            transition={{ repeat: Infinity, duration: 3, delay: 0.5, times: [0, 0.6, 1] }}
+          >
+            <FaTiktok className="w-6 h-6 text-white" />
+          </motion.div>
+          <motion.div 
+            className="flying-icon facebook"
+            animate={{ 
+              x: [0, -50, -50], 
+              y: [0, 20, 20],
+              scale: [1, 0.6, 0],
+              opacity: [1, 0.8, 0]
+            }}
+            transition={{ repeat: Infinity, duration: 3, delay: 1, times: [0, 0.6, 1] }}
+          >
+            <FaFacebook className="w-6 h-6" />
+          </motion.div>
+          <motion.div 
+            className="flying-icon youtube"
+            animate={{ 
+              x: [0, 40, 40], 
+              y: [0, -30, -30],
+              scale: [1, 0.6, 0],
+              opacity: [1, 0.8, 0]
+            }}
+            transition={{ repeat: Infinity, duration: 3, delay: 1.5, times: [0, 0.6, 1] }}
+          >
+            <FaYoutube className="w-6 h-6" />
+          </motion.div>
+          <motion.div 
+            className="flying-icon linkedin"
+            animate={{ 
+              x: [0, -40, -40], 
+              y: [0, -40, -40],
+              scale: [1, 0.6, 0],
+              opacity: [1, 0.8, 0]
+            }}
+            transition={{ repeat: Infinity, duration: 3, delay: 2, times: [0, 0.6, 1] }}
+          >
+            <FaLinkedin className="w-6 h-6" />
+          </motion.div>
+          <motion.div 
+            className="flying-icon google"
+            animate={{ 
+              x: [0, 20, 20], 
+              y: [0, -50, -50],
+              scale: [1, 0.6, 0],
+              opacity: [1, 0.8, 0]
+            }}
+            transition={{ repeat: Infinity, duration: 3, delay: 2.5, times: [0, 0.6, 1] }}
+          >
+            <GoogleBusinessIcon className="w-6 h-6" />
+          </motion.div>
         </div>
       )
     },
@@ -887,60 +1282,13 @@ function HowItWorksSection() {
       number: '02',
       title: 'La IA aprende tu estilo',
       description: 'Entrena al asistente con ejemplos de tus mejores respuestas. Genera borradores que suenan exactamente como tú, manteniendo tu tono único y personalizado para cada cliente.',
-      mockup: (
-        <div className="step-mockup ai-mockup">
-          <div className="ai-chat">
-            <div className="ai-message incoming">
-              ¿Cuánto cuesta el producto?
-            </div>
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: [0, 1, 1, 0] }}
-              transition={{ repeat: Infinity, duration: 3, times: [0, 0.2, 0.8, 1] }}
-              className="ai-typing-indicator"
-            >
-              <Sparkles className="w-4 h-4 text-purple-400" />
-              <span>Generando respuesta...</span>
-            </motion.div>
-            <motion.div 
-              animate={{ opacity: [0, 0, 1, 1] }}
-              transition={{ repeat: Infinity, duration: 3, times: [0, 0.3, 0.4, 1] }}
-              className="ai-message outgoing"
-            >
-              ¡Hola! El precio es $299 con envío gratis. ¿Te gustaría ordenar?
-            </motion.div>
-          </div>
-        </div>
-      )
+      mockup: <Step2AIMockup />
     },
     {
       number: '03',
       title: 'Responde y haz seguimiento',
       description: 'Revisa, edita si quieres, y envía. Los recordatorios automáticos aseguran que ningún lead se enfríe. Programa follow-ups y nunca pierdas una oportunidad de venta.',
-      mockup: (
-        <div className="step-mockup send-mockup">
-          <motion.div 
-            animate={{ y: [0, -10, 0] }}
-            transition={{ repeat: Infinity, duration: 1.5 }}
-            className="send-button-preview"
-          >
-            <Send className="w-5 h-5" />
-            <span>Enviar respuesta</span>
-          </motion.div>
-          <div className="reminder-preview">
-            <Bell className="w-4 h-4 text-orange-400" />
-            <span>Recordatorio programado en 24h</span>
-          </div>
-          <motion.div 
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{ repeat: Infinity, duration: 2 }}
-            className="success-indicator"
-          >
-            <Check className="w-5 h-5 text-green-400" />
-            <span>Mensaje enviado</span>
-          </motion.div>
-        </div>
-      )
+      mockup: <Step3SendMockup />
     }
   ];
 
@@ -1061,77 +1409,42 @@ function FeaturesSection() {
       title: 'Inbox unificado', 
       description: 'Todas tus conversaciones de Instagram, TikTok y Facebook en un solo lugar ordenadas por prioridad.',
       size: 'large',
-      mockup: (
-        <div className="feature-mini-mockup inbox-mini">
-          <div className="mini-messages">
-            {[1, 2, 3].map((n) => (
-              <motion.div 
-                key={n}
-                animate={{ x: [20, 0], opacity: [0, 1] }}
-                transition={{ repeat: Infinity, duration: 2, delay: n * 0.5 }}
-                className="mini-message"
-              >
-                <div className="mini-avatar" />
-                <div className="mini-text" />
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      )
+      mockup: <FeatureInboxMockup />
     },
     { 
       icon: Sparkles, 
       title: 'Respuestas IA', 
       description: 'Borradores que capturan tu tono de voz único.',
       size: 'small',
-      mockup: (
-        <div className="feature-mini-mockup ai-mini">
-          <motion.div 
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ repeat: Infinity, duration: 1.5 }}
-            className="ai-sparkle"
-          >
-            <Sparkles className="w-6 h-6 text-purple-400" />
-          </motion.div>
-        </div>
-      )
+      mockup: <FeatureAIMockup />
     },
     { 
       icon: Users, 
       title: 'CRM integrado', 
       description: 'Perfil completo de cada contacto con historial.',
       size: 'small',
-      mockup: null
+      mockup: <FeatureCRMMockup />
     },
     { 
       icon: Bell, 
       title: 'Recordatorios', 
       description: 'Seguimiento automático para leads inactivos. Nunca pierdas una oportunidad.',
       size: 'medium',
-      mockup: (
-        <div className="feature-mini-mockup reminder-mini">
-          <motion.div 
-            animate={{ rotate: [0, 15, -15, 0] }}
-            transition={{ repeat: Infinity, duration: 1, ease: "easeInOut" }}
-          >
-            <Bell className="w-8 h-8 text-orange-400" />
-          </motion.div>
-        </div>
-      )
+      mockup: <FeatureReminderMockup />
     },
     { 
       icon: MessageSquare, 
       title: 'Comentarios', 
       description: 'Gestiona comentarios de posts directamente desde el inbox.',
       size: 'medium',
-      mockup: null
+      mockup: <FeatureCommentsMockup />
     },
     { 
       icon: BarChart2, 
       title: 'Analytics', 
       description: 'Métricas de rendimiento y tiempo de respuesta en tiempo real.',
-      size: 'small',
-      mockup: null
+      size: 'medium',
+      mockup: <FeatureAnalyticsMockup />
     },
   ];
 
