@@ -30,21 +30,9 @@ function Step1ConnectMockup() {
     <div className="step-mockup connect-mockup-v3">
       <div className="connect-center-inbox-v3">
         <Inbox className="w-8 h-8 text-white" />
-        <motion.div 
-          className="radar-ring ring-1"
-          animate={{ scale: [1, 1.8], opacity: [0.4, 0] }}
-          transition={{ repeat: Infinity, duration: 3, ease: [0.4, 0, 0.2, 1] }}
-        />
-        <motion.div 
-          className="radar-ring ring-2"
-          animate={{ scale: [1, 1.8], opacity: [0.3, 0] }}
-          transition={{ repeat: Infinity, duration: 3, delay: 1, ease: [0.4, 0, 0.2, 1] }}
-        />
-        <motion.div 
-          className="radar-ring ring-3"
-          animate={{ scale: [1, 1.8], opacity: [0.2, 0] }}
-          transition={{ repeat: Infinity, duration: 3, delay: 2, ease: [0.4, 0, 0.2, 1] }}
-        />
+        <div className="radar-ring-css ring-1" />
+        <div className="radar-ring-css ring-2" />
+        <div className="radar-ring-css ring-3" />
       </div>
       
       <motion.div 

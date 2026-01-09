@@ -2396,17 +2396,33 @@
   box-shadow: 0 0 50px rgba(168, 85, 247, 0.5);
 }
 
-.radar-ring {
+.radar-ring-css {
   position: absolute;
   inset: 0;
-  border: 1.5px solid var(--landing-primary);
+  border: 1.5px solid rgba(168, 85, 247, 0.5);
   border-radius: 18px;
   pointer-events: none;
+  animation: radarPulse 3s ease-out infinite;
 }
 
-.radar-ring.ring-1 { border-color: rgba(168, 85, 247, 0.6); }
-.radar-ring.ring-2 { border-color: rgba(168, 85, 247, 0.4); }
-.radar-ring.ring-3 { border-color: rgba(168, 85, 247, 0.25); }
+.radar-ring-css.ring-2 {
+  animation-delay: 1s;
+}
+
+.radar-ring-css.ring-3 {
+  animation-delay: 2s;
+}
+
+@keyframes radarPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
 
 .orbit-ring-container {
   position: absolute;
