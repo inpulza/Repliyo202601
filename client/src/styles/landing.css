@@ -138,7 +138,7 @@
 }
 
 .landing-page.theme-light .step-mockup-container {
-  background: rgba(0,0,0,0.03);
+  background: rgba(0,0,0,0.04);
 }
 
 .landing-page.theme-light .message-preview .preview,
@@ -154,7 +154,7 @@
 }
 
 .landing-page.theme-light .ai-message.incoming {
-  background: rgba(0,0,0,0.05);
+  background: rgba(0,0,0,0.06);
   color: var(--landing-text);
 }
 
@@ -185,15 +185,15 @@
 }
 
 .landing-page.theme-light .mini-message {
-  background: rgba(0,0,0,0.03);
+  background: rgba(0,0,0,0.04);
 }
 
 .landing-page.theme-light .mini-text {
-  background: rgba(0,0,0,0.1);
+  background: rgba(0,0,0,0.12);
 }
 
 .landing-page.theme-light footer {
-  background: #FFFFFF !important;
+  background: var(--landing-bg-card) !important;
 }
 
 .landing-page.theme-light footer a,
@@ -210,15 +210,98 @@
 }
 
 .landing-page.theme-light .mockup-glow {
-  background: radial-gradient(ellipse at center, rgba(168, 85, 247, 0.15) 0%, transparent 70%);
+  background: radial-gradient(ellipse at center, rgba(168, 85, 247, 0.12) 0%, transparent 70%);
 }
 
 .landing-page.theme-light .marquee-content span {
-  color: var(--landing-text-subtle);
+  color: var(--landing-text-muted);
 }
 
 .landing-page.theme-light .marquee-content span:hover {
+  color: var(--landing-text);
+}
+
+.landing-page.theme-light .mockup-window {
+  background: #FFFFFF;
+  border-color: rgba(0,0,0,0.1);
+  box-shadow: 
+    0 0 0 1px rgba(0,0,0,0.05),
+    0 25px 50px -12px rgba(0,0,0,0.12),
+    0 0 100px -20px rgba(168, 85, 247, 0.15);
+}
+
+.landing-page.theme-light .mockup-sidebar {
+  background: rgba(0,0,0,0.02);
+  border-right-color: rgba(0,0,0,0.06);
+}
+
+.landing-page.theme-light .mockup-header {
+  background: rgba(0,0,0,0.02);
+  border-bottom-color: rgba(0,0,0,0.06);
+}
+
+.landing-page.theme-light .mockup-title {
   color: var(--landing-text-muted);
+}
+
+.landing-page.theme-light .message-preview:hover {
+  background: rgba(0,0,0,0.03);
+}
+
+.landing-page.theme-light .message-preview.unread {
+  background: rgba(168, 85, 247, 0.06);
+}
+
+.landing-page.theme-light .message-preview .username,
+.landing-page.theme-light .chat-header .username {
+  color: var(--landing-text);
+}
+
+.landing-page.theme-light .chat-bubble.incoming {
+  background: rgba(0,0,0,0.06);
+  color: var(--landing-text);
+}
+
+.landing-page.theme-light .chat-input {
+  border-top-color: rgba(0,0,0,0.06);
+}
+
+.landing-page.theme-light .chat-input input {
+  background: rgba(0,0,0,0.03);
+  border-color: rgba(0,0,0,0.1);
+  color: var(--landing-text);
+}
+
+.landing-page.theme-light .chat-input input::placeholder {
+  color: var(--landing-text-muted);
+}
+
+.landing-page.theme-light .inbox-mini {
+  background: rgba(0,0,0,0.03);
+}
+
+.landing-page.theme-light .ai-mini {
+  background: rgba(168, 85, 247, 0.06);
+}
+
+.landing-page.theme-light .reminder-mini {
+  background: rgba(249, 115, 22, 0.06);
+}
+
+.section-dark {
+  background: #080808;
+}
+
+.landing-page.theme-light .section-dark {
+  background: var(--landing-bg-card);
+}
+
+.landing-page.theme-light .border-t.border-white\/5,
+.landing-page.theme-light .border-y.border-white\/5,
+.landing-page.theme-light .border-r.border-white\/5,
+.landing-page.theme-light .border-b.border-white\/5,
+.landing-page.theme-light .border-l.border-white\/5 {
+  border-color: var(--landing-border) !important;
 }
 
 .theme-toggle {

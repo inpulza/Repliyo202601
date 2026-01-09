@@ -305,7 +305,7 @@ function MarqueeSection() {
   const items = ['DMs', 'Comentarios', 'Respuestas IA', 'Recordatorios', 'CRM', 'Analytics', 'Multi-plataforma'];
   
   return (
-    <section className="py-8 border-y border-white/5 bg-[#080808] relative overflow-hidden">
+    <section className="py-8 border-y border-white/5 section-dark relative overflow-hidden">
       <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-4" : "marquee-container"}>
         <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-4" : "marquee-content"}>
           {(prefersReducedMotion ? items : [...items, ...items]).map((item, i) => (
@@ -773,7 +773,7 @@ function FeaturesSection() {
   ];
 
   return (
-    <section id="features" ref={sectionRef} className="py-32 bg-[#080808] relative overflow-hidden">
+    <section id="features" ref={sectionRef} className="py-32 section-dark relative overflow-hidden">
       <Parallax speed={-3} className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-purple-500/5 blur-3xl" />
       </Parallax>
@@ -941,7 +941,7 @@ function Footer() {
   };
 
   return (
-    <footer className="bg-[#080808] border-t border-white/5">
+    <footer className="section-dark border-t border-white/5">
       <div className="grid grid-cols-2 md:grid-cols-4">
         {Object.entries(links).map(([category, items]) => (
           <div key={category} className="p-8 md:p-12 border-r border-b border-white/5 last:border-r-0">
