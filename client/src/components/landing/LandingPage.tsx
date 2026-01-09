@@ -56,19 +56,22 @@ function InboxMockup() {
     { id: 5, user: 'Laura Martín', avatarImg: avatarAna, initials: 'LM', message: 'Me encantó el producto, gracias!', platform: 'tiktok', time: '12m', unread: false },
   ];
 
+  const floatingBubbles = [
+    { id: 1, user: 'María García', avatar: avatarMaria, platform: 'instagram', position: 'pos-top-left', message: '¿Tienen disponible el vestido azul en talla M?' },
+    { id: 2, user: 'Carlos Rodríguez', avatar: avatarCarlos, platform: 'tiktok', position: 'pos-top-right', message: 'Quiero reservar una mesa para el sábado' },
+    { id: 3, user: 'Ana López', avatar: avatarAna, platform: 'facebook', position: 'pos-bottom-left', message: '¿Hacen envíos internacionales a Madrid?' },
+    { id: 4, user: 'Pedro Sánchez', avatar: avatarCarlos, platform: 'instagram', position: 'pos-bottom-right', message: '¿Cuánto tarda el envío a Barcelona?' },
+  ];
+
   const [visibleMessages, setVisibleMessages] = useState<number[]>([]);
   const [inboxCount, setInboxCount] = useState(12);
   const [selectedMsg, setSelectedMsg] = useState(1);
   
   const [chatPhase, setChatPhase] = useState(0);
-  const [typingText, setTypingText] = useState('');
   const [animationCycle, setAnimationCycle] = useState(0);
   
-  const typingMessages = [
-    '¡Perfecto! Lo reservo entonces',
-    '¿Cuándo puedo pasar a recogerlo?',
-    'Gracias por la ayuda! 😊'
-  ];
+  const [bubbleTypingTexts, setBubbleTypingTexts] = useState<Record<number, string>>({});
+  const [visibleBubbles, setVisibleBubbles] = useState<number[]>([]);
 
   const chatConversation = [
     { type: 'incoming', text: '¿Tienen disponible el vestido azul en talla M?', time: '14:32' },
@@ -79,65 +82,83 @@ function InboxMockup() {
     { type: 'outgoing', text: '¡Perfecto María! Te esperamos mañana. Te enviaré un recordatorio. ¿Algo más en lo que pueda ayudarte?', time: '14:39', isAI: true },
   ];
 
+  const bubbleSchedule = [
+    { bubbleId: 1, showAt: 100, typingDuration: 1800, inboxArrival: 2000 },
+    { bubbleId: 2, showAt: 2200, typingDuration: 1600, inboxArrival: 4000 },
+    { bubbleId: 3, showAt: 4200, typingDuration: 1800, inboxArrival: 6200 },
+    { bubbleId: 4, showAt: 8000, typingDuration: 1600, inboxArrival: 9800 },
+  ];
+
   useEffect(() => {
     if (prefersReducedMotion) {
       setVisibleMessages([1, 2, 3, 4, 5]);
       setChatPhase(6);
       setInboxCount(17);
+      setVisibleBubbles([1, 2, 3, 4]);
+      setBubbleTypingTexts({
+        1: floatingBubbles[0].message,
+        2: floatingBubbles[1].message,
+        3: floatingBubbles[2].message,
+        4: floatingBubbles[3].message,
+      });
       return;
     }
     
     setVisibleMessages([]);
     setChatPhase(0);
     setInboxCount(12);
-    setTypingText('');
+    setVisibleBubbles([]);
+    setBubbleTypingTexts({});
     
     const timers: NodeJS.Timeout[] = [];
+    const intervals: NodeJS.Timeout[] = [];
     
-    timers.push(setTimeout(() => { setVisibleMessages([1]); setInboxCount(13); }, 600));
-    timers.push(setTimeout(() => { setVisibleMessages([1, 2]); setInboxCount(14); }, 1400));
-    timers.push(setTimeout(() => { setVisibleMessages([1, 2, 3]); setInboxCount(15); }, 2200));
+    bubbleSchedule.forEach((schedule, idx) => {
+      const bubble = floatingBubbles[idx];
+      const charDelay = schedule.typingDuration / bubble.message.length;
+      
+      timers.push(setTimeout(() => {
+        setVisibleBubbles(prev => [...prev, schedule.bubbleId]);
+        
+        let charIndex = 0;
+        const interval = setInterval(() => {
+          if (charIndex < bubble.message.length) {
+            setBubbleTypingTexts(prev => ({
+              ...prev,
+              [bubble.id]: bubble.message.slice(0, charIndex + 1)
+            }));
+            charIndex++;
+          } else {
+            clearInterval(interval);
+          }
+        }, charDelay);
+        intervals.push(interval);
+      }, schedule.showAt));
+      
+      timers.push(setTimeout(() => {
+        setVisibleMessages(prev => [...prev, schedule.bubbleId]);
+        setInboxCount(prev => prev + 1);
+      }, schedule.inboxArrival));
+    });
     
-    timers.push(setTimeout(() => setChatPhase(1), 1000));
-    timers.push(setTimeout(() => setChatPhase(2), 3500));
-    timers.push(setTimeout(() => setChatPhase(3), 5500));
-    timers.push(setTimeout(() => setChatPhase(4), 8000));
-    timers.push(setTimeout(() => setChatPhase(5), 10500));
-    timers.push(setTimeout(() => setChatPhase(6), 13000));
+    timers.push(setTimeout(() => { setVisibleMessages(prev => [...prev, 5]); setInboxCount(17); }, 12000));
     
-    timers.push(setTimeout(() => { setVisibleMessages([1, 2, 3, 4]); setInboxCount(16); }, 7000));
-    timers.push(setTimeout(() => { setVisibleMessages([1, 2, 3, 4, 5]); setInboxCount(17); }, 11000));
+    timers.push(setTimeout(() => setChatPhase(1), 2200));
+    timers.push(setTimeout(() => setChatPhase(2), 4500));
+    timers.push(setTimeout(() => setChatPhase(3), 6500));
+    timers.push(setTimeout(() => setChatPhase(4), 9000));
+    timers.push(setTimeout(() => setChatPhase(5), 11500));
+    timers.push(setTimeout(() => setChatPhase(6), 14000));
     
     timers.push(setTimeout(() => {
       setAnimationCycle(c => c + 1);
     }, 18000));
     
-    return () => timers.forEach(clearTimeout);
+    return () => {
+      timers.forEach(clearTimeout);
+      intervals.forEach(clearInterval);
+    };
   }, [prefersReducedMotion, animationCycle]);
-
-  useEffect(() => {
-    if (prefersReducedMotion) return;
-    
-    let interval: NodeJS.Timeout;
-    const currentTypingIndex = Math.floor((chatPhase - 1) / 2);
-    
-    if (chatPhase > 0 && chatPhase % 2 === 0 && currentTypingIndex < typingMessages.length) {
-      const targetText = typingMessages[currentTypingIndex] || '';
-      let charIndex = 0;
-      setTypingText('');
-      
-      interval = setInterval(() => {
-        if (charIndex < targetText.length) {
-          setTypingText(targetText.slice(0, charIndex + 1));
-          charIndex++;
-        } else {
-          clearInterval(interval);
-        }
-      }, 50);
-    }
-    
-    return () => clearInterval(interval);
-  }, [chatPhase, prefersReducedMotion]);
 
   useEffect(() => {
     if (chatContainerRef.current && chatPhase > 0) {
@@ -315,16 +336,12 @@ function InboxMockup() {
               </button>
             </div>
             
-            <div className="chat-input-v2">
-              <button className="emoji-btn">😊</button>
-              <div className="typing-input-wrapper">
-                <span className="typing-text">{typingText}</span>
-                <span className="typing-cursor" />
-                {!typingText && <span className="typing-placeholder">Escribe tu mensaje...</span>}
+            <div className="auto-reply-indicator">
+              <div className="auto-reply-badge">
+                <Sparkles className="w-4 h-4" />
+                <span>Respuesta automática activa</span>
               </div>
-              <button className="send-btn-v2">
-                <Send className="w-4 h-4" />
-              </button>
+              <span className="auto-reply-status">IA respondiendo en tiempo real</span>
             </div>
           </div>
           
@@ -361,6 +378,39 @@ function InboxMockup() {
       </div>
       
       <div className="mockup-glow-v2" />
+      
+      <div className="floating-bubbles-container">
+        {floatingBubbles.map((bubble) => (
+          <div
+            key={bubble.id}
+            className={`floating-bubble ${bubble.platform} ${bubble.position} ${visibleBubbles.includes(bubble.id) ? 'visible' : ''}`}
+          >
+            <div className="bubble-platform-header">
+              <div className={`bubble-platform-icon ${bubble.platform}`}>
+                {bubble.platform === 'instagram' && <FaInstagram className="w-3.5 h-3.5 text-white" />}
+                {bubble.platform === 'tiktok' && <FaTiktok className="w-3.5 h-3.5 text-white" />}
+                {bubble.platform === 'facebook' && <FaFacebook className="w-3.5 h-3.5 text-white" />}
+              </div>
+              <span className="bubble-platform-name">
+                {bubble.platform === 'instagram' ? 'Instagram' : bubble.platform === 'tiktok' ? 'TikTok' : 'Messenger'}
+              </span>
+            </div>
+            <div className="bubble-user-row">
+              <img src={bubble.avatar} alt={bubble.user} className="bubble-avatar" />
+              <span className="bubble-user-name">{bubble.user}</span>
+            </div>
+            <div className="bubble-input-area">
+              <span className="bubble-typing-text">
+                {bubbleTypingTexts[bubble.id] || ''}
+              </span>
+              {visibleBubbles.includes(bubble.id) && (bubbleTypingTexts[bubble.id]?.length || 0) < bubble.message.length && (
+                <span className="bubble-typing-cursor" />
+              )}
+              <Send className="w-4 h-4 bubble-send-icon" />
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
