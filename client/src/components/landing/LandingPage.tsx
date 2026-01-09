@@ -1170,7 +1170,7 @@ function MarqueeSection() {
           <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-4" : "marquee-content"}>
             {(prefersReducedMotion ? items : [...items, ...items]).map((item, i) => (
               <span key={i} className="inline-flex items-center gap-4 px-8">
-                <span className="font-display text-2xl md:text-3xl font-medium text-white/20 hover:text-white/60 transition-colors cursor-default">
+                <span className="font-display text-2xl md:text-3xl font-medium hover:text-white/60 transition-colors cursor-default text-[#ffffff]">
                   {item}
                 </span>
                 <span className="w-2 h-2 rounded-full bg-[var(--landing-primary)]" />
@@ -1813,7 +1813,6 @@ function Footer() {
           </div>
         ))}
       </div>
-
       <div className="relative w-full overflow-hidden border-t border-white/5 py-16">
         <motion.h1 
           initial={{ opacity: 0 }}
