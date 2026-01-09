@@ -1560,16 +1560,9 @@ function FeaturesSection() {
     { 
       icon: Inbox, 
       title: 'Inbox unificado', 
-      description: 'Todos tus DMs de Instagram, TikTok y Facebook en un solo lugar.',
-      size: 'medium',
+      description: 'Todas tus conversaciones de Instagram, TikTok y Facebook en un solo lugar ordenadas por prioridad.',
+      size: 'large',
       mockup: <FeatureInboxMockup />
-    },
-    { 
-      icon: Filter, 
-      title: 'Filtros inteligentes', 
-      description: 'Ordena por prioridad, sin leer, o por red social.',
-      size: 'medium',
-      mockup: <FeatureFiltersMockup />
     },
     { 
       icon: Sparkles, 
@@ -1588,29 +1581,22 @@ function FeaturesSection() {
     { 
       icon: Bell, 
       title: 'Recordatorios', 
-      description: 'Seguimiento automático para leads inactivos.',
-      size: 'small',
+      description: 'Seguimiento automático para leads inactivos. Nunca pierdas una oportunidad.',
+      size: 'medium',
       mockup: <FeatureReminderMockup />
     },
     { 
       icon: MessageSquare, 
       title: 'Comentarios', 
-      description: 'Gestiona comentarios de posts desde el inbox.',
-      size: 'small',
+      description: 'Gestiona comentarios de posts directamente desde el inbox.',
+      size: 'medium',
       mockup: <FeatureCommentsMockup />
-    },
-    { 
-      icon: Tags, 
-      title: 'Etiquetas', 
-      description: 'Organiza contactos con etiquetas personalizadas.',
-      size: 'small',
-      mockup: <FeatureTagsMockup />
     },
     { 
       icon: BarChart2, 
       title: 'Analytics', 
-      description: 'Métricas y tiempo de respuesta en tiempo real.',
-      size: 'small',
+      description: 'Métricas de rendimiento y tiempo de respuesta en tiempo real.',
+      size: 'medium',
       mockup: <FeatureAnalyticsMockup />
     },
   ];
