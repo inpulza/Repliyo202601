@@ -3862,3 +3862,171 @@
 .landing-page.theme-light .testimonial-dot.active {
   background: var(--landing-primary);
 }
+
+/* ============================================
+   LIGHT MODE CONTRAST FIXES
+   ============================================ */
+
+/* Navigation links */
+.nav-link {
+  color: var(--landing-text-muted);
+  transition: color 0.2s ease;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.nav-link:hover {
+  color: var(--landing-text);
+}
+
+/* TikTok icons - use dark gray instead of black for better contrast */
+.landing-page.theme-light .message-preview .avatar.tiktok {
+  background: #1a1a2e;
+  border-color: #00f2ea;
+}
+
+.landing-page.theme-light .bubble-platform-icon.tiktok {
+  background: #1a1a2e;
+}
+
+.landing-page.theme-light .connect-icon.tiktok {
+  background: #1a1a2e !important;
+}
+
+.landing-page.theme-light .orbit-icon-static.tiktok {
+  background: #1a1a2e;
+}
+
+.landing-page.theme-light .flying-icon.tiktok {
+  background: #1a1a2e;
+}
+
+.landing-page.theme-light .inbox-platform-badge.tiktok {
+  background: #1a1a2e;
+  border-color: #00f2ea;
+}
+
+.landing-page.theme-light .platform-indicator.tiktok {
+  background: #1a1a2e;
+}
+
+/* Floating bubbles - ensure text is visible */
+.landing-page.theme-light .floating-bubble .bubble-send-icon {
+  color: var(--landing-primary);
+}
+
+/* Inbox mockup items */
+.landing-page.theme-light .inbox-item-name-v2 {
+  color: var(--landing-text);
+}
+
+.landing-page.theme-light .inbox-item-preview-v2 {
+  color: var(--landing-text-muted);
+}
+
+.landing-page.theme-light .inbox-item-time {
+  color: rgba(0,0,0,0.4);
+}
+
+.landing-page.theme-light .inbox-count {
+  color: var(--landing-primary);
+}
+
+.landing-page.theme-light .inbox-header-mini {
+  background: rgba(0,0,0,0.03);
+}
+
+.landing-page.theme-light .inbox-item-v2 {
+  background: rgba(0,0,0,0.02);
+}
+
+.landing-page.theme-light .inbox-item-v2.selected {
+  background: rgba(168, 85, 247, 0.08);
+  border-color: rgba(168, 85, 247, 0.2);
+}
+
+/* Multiagent mockup */
+.landing-page.theme-light .multiagent-count {
+  color: #16a34a;
+}
+
+.landing-page.theme-light .agent-typing-indicator {
+  background: #16a34a;
+  border-color: var(--landing-bg-card);
+}
+
+.landing-page.theme-light .status-dot {
+  background: #16a34a;
+}
+
+.landing-page.theme-light .status-text {
+  color: var(--landing-text-muted);
+}
+
+/* Hero section badge */
+.landing-page.theme-light .inline-flex.items-center.gap-2.px-4.py-2.rounded-full {
+  background: rgba(0,0,0,0.04);
+  border-color: rgba(0,0,0,0.1);
+}
+
+.landing-page.theme-light .inline-flex.items-center.gap-2.px-4.py-2.rounded-full span {
+  color: var(--landing-text-muted);
+}
+
+/* Problem/Solution section */
+.landing-page.theme-light .problem-item {
+  background: rgba(239, 68, 68, 0.05);
+  border-color: rgba(239, 68, 68, 0.15);
+}
+
+.landing-page.theme-light .problem-item p {
+  color: var(--landing-text);
+}
+
+.landing-page.theme-light .solution-item {
+  background: rgba(34, 197, 94, 0.05);
+  border-color: rgba(34, 197, 94, 0.15);
+}
+
+.landing-page.theme-light .solution-item p {
+  color: var(--landing-text);
+}
+
+/* Metric section text */
+.landing-page.theme-light .text-white\/50 {
+  color: var(--landing-text-muted) !important;
+}
+
+/* Testimonial section */
+.landing-page.theme-light .testimonial-slide blockquote {
+  color: var(--landing-text);
+}
+
+.landing-page.theme-light .testimonial-slide .inline-flex {
+  background: rgba(0,0,0,0.03);
+  border-color: rgba(0,0,0,0.1);
+}
+
+.landing-page.theme-light .testimonial-slide .font-semibold {
+  color: var(--landing-text);
+}
+
+.landing-page.theme-light .testimonial-slide .text-white\/60 {
+  color: var(--landing-text-muted);
+}
+
+/* CTA section */
+.landing-page.theme-light .text-outline {
+  -webkit-text-stroke: 2px var(--landing-text);
+  color: transparent;
+}
+
+.landing-page.theme-light .text-outline:hover {
+  color: var(--landing-text);
+}
+
+/* Unread dot */
+.landing-page.theme-light .inbox-unread-dot {
+  background: var(--landing-primary);
+}

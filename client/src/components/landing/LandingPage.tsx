@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring } from 'framer-motion';
-import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Sun, Moon } from 'lucide-react';
+import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart } from 'lucide-react';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
 import avatarMaria from '../../assets/avatars/latina_woman_avatar_headshot.png';
@@ -1028,7 +1028,7 @@ function InboxMockup() {
   );
 }
 
-function Header({ theme, toggleTheme }: { theme: 'dark' | 'light'; toggleTheme: () => void }) {
+function Header() {
   const [scrolled, setScrolled] = useState(false);
   const prefersReducedMotion = useReducedMotion();
 
@@ -1050,20 +1050,12 @@ function Header({ theme, toggleTheme }: { theme: 'dark' | 'light'; toggleTheme: 
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         <a href="/" className="font-display font-bold text-2xl text-gradient" data-testid="link-logo">Repliyo</a>
         <nav className="hidden md:flex items-center gap-8">
-          <a href="#features" className="text-white/60 hover:text-white transition-colors text-sm font-medium" data-testid="link-nav-producto">Producto</a>
-          <a href="#how" className="text-white/60 hover:text-white transition-colors text-sm font-medium" data-testid="link-nav-como-funciona">Cómo funciona</a>
-          <a href="#testimonial" className="text-white/60 hover:text-white transition-colors text-sm font-medium" data-testid="link-nav-testimonios">Testimonios</a>
+          <a href="#features" className="nav-link" data-testid="link-nav-producto">Producto</a>
+          <a href="#how" className="nav-link" data-testid="link-nav-como-funciona">Cómo funciona</a>
+          <a href="#testimonial" className="nav-link" data-testid="link-nav-testimonios">Testimonios</a>
         </nav>
         <div className="flex items-center gap-3">
-          <button 
-            onClick={toggleTheme}
-            className="theme-toggle"
-            data-testid="button-theme-toggle"
-            aria-label={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-          >
-            {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </button>
-          <a href="/login" className="text-white/60 hover:text-white transition-colors text-sm font-medium hidden sm:block" data-testid="link-login">
+          <a href="/login" className="nav-link hidden sm:block" data-testid="link-login">
             Iniciar sesión
           </a>
           <a href="/login" className="btn-primary text-sm py-2.5 px-5" data-testid="button-probar-gratis-header">
@@ -1888,25 +1880,10 @@ function Footer() {
 }
 
 export function LandingPage() {
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('landing-theme');
-      if (saved === 'light' || saved === 'dark') return saved;
-      if (window.matchMedia('(prefers-color-scheme: light)').matches) return 'light';
-    }
-    return 'dark';
-  });
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(newTheme);
-    localStorage.setItem('landing-theme', newTheme);
-  };
-
   return (
     <ParallaxProvider>
-      <div className={`landing-page ${theme === 'light' ? 'theme-light' : ''}`} data-testid="landing-page">
-        <Header theme={theme} toggleTheme={toggleTheme} />
+      <div className="landing-page theme-light" data-testid="landing-page">
+        <Header />
         <main>
           <HeroSection />
           <MarqueeSection />
