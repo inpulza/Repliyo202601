@@ -488,63 +488,81 @@ function HowItWorksSection() {
   const [activeStep, setActiveStep] = useState(0);
 
   useGSAP(() => {
-    if (prefersReducedMotion || !containerRef.current) return;
+    if (prefersReducedMotion || !containerRef.current || !sectionRef.current) return;
     
     const ctx = gsap.context(() => {
-      const steps = gsap.utils.toArray('.how-step-panel');
-      const totalSteps = steps.length;
+      const stepPanels = gsap.utils.toArray('.how-step-panel') as HTMLElement[];
+      const totalSteps = stepPanels.length;
+      const scrollPerStep = window.innerHeight * 1.5;
+      const totalScrollDistance = totalSteps * scrollPerStep;
       
-      ScrollTrigger.create({
-        trigger: sectionRef.current,
-        start: 'top top',
-        end: () => `+=${totalSteps * 100}vh`,
-        pin: containerRef.current,
-        anticipatePin: 1,
-        scrub: 0.5,
-        onUpdate: (self) => {
-          const progress = self.progress;
-          const stepIndex = Math.min(Math.floor(progress * totalSteps), totalSteps - 1);
-          setActiveStep(stepIndex);
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: 'top top',
+          end: () => `+=${totalScrollDistance}`,
+          pin: containerRef.current,
+          anticipatePin: 1,
+          scrub: 1,
+          snap: {
+            snapTo: 1 / (totalSteps - 1),
+            duration: { min: 0.2, max: 0.5 },
+            delay: 0,
+            ease: 'power1.inOut'
+          },
+          onUpdate: (self) => {
+            const progress = self.progress;
+            const stepIndex = Math.min(Math.floor(progress * totalSteps), totalSteps - 1);
+            setActiveStep(stepIndex);
+          }
         }
       });
 
-      steps.forEach((step, index) => {
-        const startProgress = index / totalSteps;
-        const endProgress = (index + 0.8) / totalSteps;
-        
-        gsap.fromTo(step as Element,
-          { 
-            opacity: 0, 
-            x: 100,
-            scale: 0.9
-          },
-          {
-            opacity: 1,
-            x: 0,
-            scale: 1,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: sectionRef.current,
-              start: `top+=${index * 100}vh top`,
-              end: `top+=${index * 100 + 80}vh top`,
-              scrub: 0.5,
-            }
+      stepPanels.forEach((step, index) => {
+        gsap.set(step, { 
+          opacity: index === 0 ? 1 : 0, 
+          x: index === 0 ? 0 : 80,
+          scale: index === 0 ? 1 : 0.95,
+          zIndex: index === 0 ? 10 : 1
+        });
+      });
+
+      stepPanels.forEach((step, index) => {
+        if (index === 0) {
+          tl.to(step, {
+            opacity: 0,
+            x: -80,
+            scale: 0.9,
+            zIndex: 1,
+            duration: 0.3,
+            ease: 'power2.inOut'
+          }, 0.7);
+        } else {
+          const enterTime = (index - 1) + 0.7;
+          
+          tl.fromTo(step, 
+            { opacity: 0, x: 80, scale: 0.95, zIndex: 1 },
+            { 
+              opacity: 1, 
+              x: 0, 
+              scale: 1, 
+              zIndex: 10,
+              duration: 0.3,
+              ease: 'power2.out'
+            }, 
+            enterTime
+          );
+          
+          if (index < totalSteps - 1) {
+            tl.to(step, {
+              opacity: 0,
+              x: -80,
+              scale: 0.9,
+              zIndex: 1,
+              duration: 0.3,
+              ease: 'power2.inOut'
+            }, enterTime + 0.7);
           }
-        );
-        
-        if (index < totalSteps - 1) {
-          gsap.to(step as Element, {
-            opacity: 0.3,
-            scale: 0.95,
-            x: -50,
-            ease: 'power2.in',
-            scrollTrigger: {
-              trigger: sectionRef.current,
-              start: `top+=${(index + 1) * 100}vh top`,
-              end: `top+=${(index + 1) * 100 + 50}vh top`,
-              scrub: 0.5,
-            }
-          });
         }
       });
     }, sectionRef);
