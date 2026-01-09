@@ -1029,6 +1029,12 @@
   gap: 24px;
 }
 
+.connect-icons-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
 .connect-icon {
   width: 56px;
   height: 56px;
@@ -1050,6 +1056,11 @@
   fill: #ffffff !important;
 }
 .connect-icon.facebook { background: #1877F2; }
+.connect-icon.youtube { background: #FF0000; }
+.connect-icon.linkedin { background: #0A66C2; }
+.connect-icon.google { 
+  background: #4285F4; 
+}
 
 .connect-lines {
   position: relative;

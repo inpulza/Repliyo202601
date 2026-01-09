@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring } from 'framer-motion';
 import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Sun, Moon } from 'lucide-react';
-import { FaInstagram, FaTiktok, FaFacebook } from 'react-icons/fa';
+import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin, FaGoogle } from 'react-icons/fa';
 import { ParallaxProvider, useParallax, Parallax } from 'react-scroll-parallax';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -585,41 +585,52 @@ function HowItWorksSection() {
     {
       number: '01',
       title: 'Conecta tus redes',
-      description: 'Vincula Instagram, TikTok y Facebook en menos de 2 minutos. Sin configuración técnica. Simplemente autoriza el acceso y todos tus DMs y comentarios aparecerán en un solo lugar.',
+      description: 'Vincula Instagram, TikTok, Facebook, YouTube, LinkedIn y Google My Business en minutos. Todos tus DMs y comentarios aparecerán en un solo lugar.',
       mockup: (
         <div className="step-mockup connect-mockup">
-          <div className="connect-icons">
+          <div className="connect-icons-grid">
             <motion.div 
               animate={{ scale: [1, 1.1, 1], y: [0, -5, 0] }}
               transition={{ repeat: Infinity, duration: 2, delay: 0 }}
               className="connect-icon instagram"
             >
-              <FaInstagram className="w-8 h-8" />
+              <FaInstagram className="w-7 h-7" />
             </motion.div>
             <motion.div 
               animate={{ scale: [1, 1.1, 1], y: [0, -5, 0] }}
-              transition={{ repeat: Infinity, duration: 2, delay: 0.3 }}
+              transition={{ repeat: Infinity, duration: 2, delay: 0.2 }}
               className="connect-icon tiktok"
             >
-              <FaTiktok className="w-8 h-8" style={{ color: '#ffffff' }} />
+              <FaTiktok className="w-7 h-7" style={{ color: '#ffffff' }} />
+            </motion.div>
+            <motion.div 
+              animate={{ scale: [1, 1.1, 1], y: [0, -5, 0] }}
+              transition={{ repeat: Infinity, duration: 2, delay: 0.4 }}
+              className="connect-icon facebook"
+            >
+              <FaFacebook className="w-7 h-7" />
             </motion.div>
             <motion.div 
               animate={{ scale: [1, 1.1, 1], y: [0, -5, 0] }}
               transition={{ repeat: Infinity, duration: 2, delay: 0.6 }}
-              className="connect-icon facebook"
+              className="connect-icon youtube"
             >
-              <FaFacebook className="w-8 h-8" />
+              <FaYoutube className="w-7 h-7" />
             </motion.div>
-          </div>
-          <div className="connect-lines">
             <motion.div 
-              animate={{ scaleX: [0, 1] }}
-              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-              className="connect-line"
-            />
-          </div>
-          <div className="connect-center">
-            <div className="repliyo-logo">R</div>
+              animate={{ scale: [1, 1.1, 1], y: [0, -5, 0] }}
+              transition={{ repeat: Infinity, duration: 2, delay: 0.8 }}
+              className="connect-icon linkedin"
+            >
+              <FaLinkedin className="w-7 h-7" />
+            </motion.div>
+            <motion.div 
+              animate={{ scale: [1, 1.1, 1], y: [0, -5, 0] }}
+              transition={{ repeat: Infinity, duration: 2, delay: 1.0 }}
+              className="connect-icon google"
+            >
+              <FaGoogle className="w-7 h-7" />
+            </motion.div>
           </div>
         </div>
       )
