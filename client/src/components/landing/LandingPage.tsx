@@ -3,6 +3,9 @@ import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring
 import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Sun, Moon } from 'lucide-react';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
+import avatarMaria from '../../assets/avatars/latina_woman_avatar_headshot.png';
+import avatarCarlos from '../../assets/avatars/hispanic_man_avatar_headshot.png';
+import avatarAna from '../../assets/avatars/european_woman_avatar_headshot.png';
 import { ParallaxProvider, useParallax, Parallax } from 'react-scroll-parallax';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -45,19 +48,20 @@ function InboxMockup() {
   const prefersReducedMotion = useReducedMotion();
   
   const messages = [
-    { id: 1, user: 'María G.', avatar: 'MG', message: '¿Tienen disponible el vestido azul?', platform: 'instagram', time: '2m', unread: true },
-    { id: 2, user: 'Carlos R.', avatar: 'CR', message: 'Quiero reservar para el sábado', platform: 'tiktok', time: '5m', unread: true },
-    { id: 3, user: 'Ana L.', avatar: 'AL', message: '¿Hacen envíos a Madrid?', platform: 'facebook', time: '12m', unread: false },
+    { id: 1, user: 'María García', avatarImg: avatarMaria, message: '¿Tienen disponible el vestido azul en talla M?', platform: 'instagram', time: '2m', unread: true },
+    { id: 2, user: 'Carlos Rodríguez', avatarImg: avatarCarlos, message: 'Quiero reservar una mesa para el sábado', platform: 'tiktok', time: '5m', unread: true },
+    { id: 3, user: 'Ana López', avatarImg: avatarAna, message: '¿Hacen envíos internacionales a Madrid?', platform: 'facebook', time: '12m', unread: false },
   ];
 
   const [visibleMessages, setVisibleMessages] = useState<number[]>([]);
   const [aiTyping, setAiTyping] = useState(false);
   const [aiResponse, setAiResponse] = useState('');
+  const [selectedMsg, setSelectedMsg] = useState(1);
 
   useEffect(() => {
     if (prefersReducedMotion) {
       setVisibleMessages([1, 2, 3]);
-      setAiResponse('¡Hola María! Sí, tenemos el vestido azul disponible en tallas S, M y L. ¿Te gustaría reservar alguna?');
+      setAiResponse('¡Hola María! Sí, tenemos el vestido azul disponible en talla M. ¿Te gustaría que te lo reserve? También tenemos envío express gratis.');
       return;
     }
     
@@ -68,105 +72,187 @@ function InboxMockup() {
     timers.push(setTimeout(() => setAiTyping(true), 2500));
     timers.push(setTimeout(() => {
       setAiTyping(false);
-      setAiResponse('¡Hola María! Sí, tenemos el vestido azul disponible en tallas S, M y L. ¿Te gustaría reservar alguna?');
+      setAiResponse('¡Hola María! Sí, tenemos el vestido azul disponible en talla M. ¿Te gustaría que te lo reserve? También tenemos envío express gratis.');
     }, 4000));
     
     return () => timers.forEach(clearTimeout);
   }, [prefersReducedMotion]);
 
+  const PlatformIcon = ({ platform }: { platform: string }) => {
+    switch(platform) {
+      case 'instagram': return <FaInstagram className="w-3 h-3 text-pink-500" />;
+      case 'tiktok': return <FaTiktok className="w-3 h-3 text-black" />;
+      case 'facebook': return <FaFacebook className="w-3 h-3 text-blue-600" />;
+      default: return null;
+    }
+  };
+
   return (
-    <div ref={mockupRef} className="mockup-container">
-      <div className="mockup-window">
-        <div className="mockup-header">
+    <div ref={mockupRef} className="mockup-container-v2">
+      <div className="mockup-window-v2">
+        <div className="mockup-header-v2">
           <div className="mockup-dots">
             <span className="dot red" />
             <span className="dot yellow" />
             <span className="dot green" />
           </div>
-          <span className="mockup-title">Repliyo Inbox</span>
+          <div className="mockup-nav">
+            <span className="nav-item active">
+              <Inbox className="w-4 h-4" />
+              Inbox
+              <span className="nav-badge">12</span>
+            </span>
+            <span className="nav-item">
+              <Users className="w-4 h-4" />
+              CRM
+            </span>
+            <span className="nav-item">
+              <BarChart2 className="w-4 h-4" />
+              Analytics
+            </span>
+          </div>
         </div>
         
-        <div className="mockup-content">
-          <div className="mockup-sidebar">
-            <div className="sidebar-header">
-              <Inbox className="w-4 h-4" />
-              <span>Inbox</span>
-              <span className="badge">12</span>
-            </div>
+        <div className="mockup-filters">
+          <div className="filter-chip active">Todos</div>
+          <div className="filter-chip"><FaInstagram className="w-3 h-3" /></div>
+          <div className="filter-chip"><FaTiktok className="w-3 h-3" /></div>
+          <div className="filter-chip"><FaFacebook className="w-3 h-3" /></div>
+          <div className="filter-chip"><FaYoutube className="w-3 h-3" /></div>
+        </div>
+        
+        <div className="mockup-content-v2">
+          <div className="mockup-sidebar-v2">
             {messages.map((msg) => (
               <motion.div
                 key={msg.id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={visibleMessages.includes(msg.id) ? { opacity: 1, x: 0 } : {}}
                 transition={{ duration: 0.4 }}
-                className={`message-preview ${msg.unread ? 'unread' : ''}`}
+                className={`message-preview-v2 ${msg.unread ? 'unread' : ''} ${selectedMsg === msg.id ? 'selected' : ''}`}
+                onClick={() => setSelectedMsg(msg.id)}
               >
-                <div className={`avatar ${msg.platform}`}>{msg.avatar}</div>
-                <div className="message-info">
-                  <span className="username">{msg.user}</span>
-                  <span className="preview">{msg.message.slice(0, 25)}...</span>
+                <div className="avatar-container">
+                  <img src={msg.avatarImg} alt={msg.user} className="avatar-img" />
+                  <span className={`platform-indicator ${msg.platform}`}>
+                    <PlatformIcon platform={msg.platform} />
+                  </span>
                 </div>
-                <span className="time">{msg.time}</span>
+                <div className="message-info-v2">
+                  <div className="message-header">
+                    <span className="username">{msg.user}</span>
+                    <span className="time">{msg.time}</span>
+                  </div>
+                  <span className="preview">{msg.message.slice(0, 35)}...</span>
+                </div>
+                {msg.unread && <span className="unread-dot" />}
               </motion.div>
             ))}
           </div>
           
-          <div className="mockup-main">
-            <div className="chat-header">
-              <div className="avatar instagram">MG</div>
-              <div>
-                <span className="username">María G.</span>
-                <span className="platform-badge">
-                  <FaInstagram className="w-3 h-3" /> Instagram
-                </span>
+          <div className="mockup-main-v2">
+            <div className="chat-header-v2">
+              <div className="chat-user-info">
+                <img src={avatarMaria} alt="María García" className="chat-avatar" />
+                <div className="chat-user-details">
+                  <span className="chat-username">María García</span>
+                  <span className="chat-platform">
+                    <FaInstagram className="w-3 h-3 text-pink-500" />
+                    Instagram Direct
+                  </span>
+                </div>
+              </div>
+              <div className="chat-actions">
+                <button className="action-btn">
+                  <Users className="w-4 h-4" />
+                </button>
+                <button className="action-btn">
+                  <Bell className="w-4 h-4" />
+                </button>
               </div>
             </div>
             
-            <div className="chat-messages">
+            <div className="chat-messages-v2">
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={visibleMessages.includes(1) ? { opacity: 1, y: 0 } : {}}
-                className="chat-bubble incoming"
+                className="chat-bubble-v2 incoming"
               >
-                ¿Tienen disponible el vestido azul?
+                <img src={avatarMaria} alt="María" className="bubble-avatar" />
+                <div className="bubble-content">
+                  ¿Tienen disponible el vestido azul en talla M?
+                  <span className="bubble-time">14:32</span>
+                </div>
               </motion.div>
               
               {aiTyping && (
-                <div className="ai-typing">
-                  <Sparkles className="w-3 h-3 text-purple-400" />
-                  <span>AI generando respuesta</span>
-                  <span className="typing-dots">
-                    <span>.</span><span>.</span><span>.</span>
-                  </span>
-                </div>
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="ai-typing-v2"
+                >
+                  <Sparkles className="w-4 h-4 text-purple-500" />
+                  <span>Repliyo AI está generando una respuesta...</span>
+                  <div className="typing-indicator">
+                    <span></span><span></span><span></span>
+                  </div>
+                </motion.div>
               )}
               
               {aiResponse && (
                 <motion.div
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  className="chat-bubble outgoing ai-generated"
+                  className="chat-bubble-v2 outgoing ai-generated"
                 >
-                  <div className="ai-badge">
-                    <Sparkles className="w-3 h-3" /> Borrador IA
+                  <div className="bubble-content">
+                    <div className="ai-badge-v2">
+                      <Sparkles className="w-3 h-3" /> Borrador IA
+                    </div>
+                    {aiResponse}
+                    <span className="bubble-time">Ahora</span>
                   </div>
-                  {aiResponse}
                 </motion.div>
               )}
             </div>
             
-            <div className="chat-input">
-              <input type="text" placeholder="Escribe un mensaje..." readOnly />
-              <button className="send-btn">
+            <div className="chat-input-v2">
+              <button className="emoji-btn">😊</button>
+              <input type="text" placeholder="Escribe tu mensaje..." readOnly />
+              <button className="send-btn-v2">
                 <Send className="w-4 h-4" />
               </button>
+            </div>
+          </div>
+          
+          <div className="mockup-crm-panel">
+            <div className="crm-header">
+              <Users className="w-4 h-4" />
+              <span>Perfil del cliente</span>
+            </div>
+            <div className="crm-content">
+              <img src={avatarMaria} alt="María" className="crm-avatar" />
+              <div className="crm-name">María García</div>
+              <div className="crm-stats">
+                <div className="crm-stat">
+                  <span className="stat-value">8</span>
+                  <span className="stat-label">Conversaciones</span>
+                </div>
+                <div className="crm-stat">
+                  <span className="stat-value">$1,250</span>
+                  <span className="stat-label">Valor total</span>
+                </div>
+              </div>
+              <div className="crm-tags">
+                <span className="crm-tag">VIP</span>
+                <span className="crm-tag">Recurrente</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
       
-      <div className="mockup-glow" />
-      <div className="mockup-reflection" />
+      <div className="mockup-glow-v2" />
     </div>
   );
 }
@@ -223,14 +309,14 @@ function HeroSection() {
   const prefersReducedMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end start'] });
   
-  const textY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [0, 200]);
-  const mockupY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [0, -50]);
-  const mockupScale = useTransform(scrollYProgress, [0, 0.5], prefersReducedMotion ? [1, 1] : [1, 0.9]);
-  const opacity = useTransform(scrollYProgress, [0, 0.3], [1, 0]);
+  const textY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [0, 150]);
+  const mockupY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [0, -30]);
+  const mockupScale = useTransform(scrollYProgress, [0, 0.5], prefersReducedMotion ? [1, 1] : [1, 0.95]);
+  const opacity = useTransform(scrollYProgress, [0, 0.4], [1, 0]);
 
   return (
-    <section ref={containerRef} className="relative min-h-[130vh] md:min-h-[140vh] overflow-hidden">
-      <div className="sticky top-0 min-h-screen flex flex-col items-center justify-center pt-20 overflow-hidden">
+    <section ref={containerRef} className="hero-section relative min-h-[160vh] md:min-h-[180vh] overflow-visible pb-32">
+      <div className="sticky top-0 min-h-screen flex flex-col items-center justify-start pt-24 pb-20 overflow-visible">
         <div className="absolute inset-0 bg-radial-gradient" />
         <div className="absolute inset-0 bg-grid-pattern opacity-30" />
         
@@ -239,19 +325,19 @@ function HeroSection() {
           <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] rounded-full bg-orange-500/5 blur-3xl" />
         </Parallax>
         
-        <motion.div style={{ y: textY, opacity }} className="relative z-10 max-w-5xl mx-auto px-6 text-center mb-16">
+        <motion.div style={{ y: textY, opacity }} className="relative z-10 max-w-5xl mx-auto px-6 text-center mb-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 mb-8"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 mb-6"
           >
             <Sparkles className="w-4 h-4 text-[var(--landing-accent)]" />
             <span className="text-sm text-white/70">Respuestas IA personalizadas</span>
           </motion.div>
 
           <motion.h1 
-            className="font-display font-bold text-5xl md:text-7xl lg:text-8xl leading-[0.95] tracking-tight mb-8"
+            className="font-display font-bold text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight mb-6"
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
@@ -265,7 +351,7 @@ function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.6 }}
-            className="text-lg md:text-xl text-white/50 max-w-2xl mx-auto mb-10 leading-relaxed"
+            className="text-base md:text-lg text-white/50 max-w-xl mx-auto mb-8 leading-relaxed"
           >
             Unifica todos tus DMs y comentarios de Instagram, TikTok y Facebook en un inbox inteligente que responde automáticamente.
           </motion.p>
@@ -287,7 +373,7 @@ function HeroSection() {
         
         <motion.div 
           style={{ y: mockupY, scale: mockupScale }}
-          className="relative z-20 w-full max-w-5xl mx-auto px-6"
+          className="relative z-20 w-full max-w-6xl mx-auto px-4"
         >
           <motion.div
             initial={{ opacity: 0, y: 60 }}
@@ -307,17 +393,20 @@ function MarqueeSection() {
   const items = ['DMs', 'Comentarios', 'Respuestas IA', 'Recordatorios', 'CRM', 'Analytics', 'Multi-plataforma'];
   
   return (
-    <section className="py-8 border-y border-white/5 section-dark relative overflow-hidden">
-      <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-4" : "marquee-container"}>
-        <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-4" : "marquee-content"}>
-          {(prefersReducedMotion ? items : [...items, ...items]).map((item, i) => (
-            <span key={i} className="inline-flex items-center gap-4 px-8">
-              <span className="font-display text-2xl md:text-3xl font-medium text-white/20 hover:text-white/60 transition-colors cursor-default">
-                {item}
+    <section className="marquee-section relative z-30">
+      <div className="marquee-overlap-shadow" />
+      <div className="marquee-inner py-8 border-y border-white/5 section-dark relative">
+        <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-4" : "marquee-container"}>
+          <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-4" : "marquee-content"}>
+            {(prefersReducedMotion ? items : [...items, ...items]).map((item, i) => (
+              <span key={i} className="inline-flex items-center gap-4 px-8">
+                <span className="font-display text-2xl md:text-3xl font-medium text-white/20 hover:text-white/60 transition-colors cursor-default">
+                  {item}
+                </span>
+                <span className="w-2 h-2 rounded-full bg-[var(--landing-primary)]" />
               </span>
-              <span className="w-2 h-2 rounded-full bg-[var(--landing-primary)]" />
-            </span>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </section>
