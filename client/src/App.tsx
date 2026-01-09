@@ -106,6 +106,9 @@ function Router() {
           </DashboardLayout>
         )}
       </Route>
+      <Route path="/landing">
+        {() => <LandingPage />}
+      </Route>
       <Route path="/">
         {() => <HomeRedirect />}
       </Route>
