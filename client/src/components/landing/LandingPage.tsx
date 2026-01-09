@@ -185,7 +185,7 @@ function Header({ theme, toggleTheme }: { theme: 'dark' | 'light'; toggleTheme: 
       animate={{ y: 0, opacity: 1 }}
       transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.6, ease: 'easeOut' }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? 'bg-[#050505]/80 backdrop-blur-xl border-b border-white/5' : ''
+        scrolled ? 'header-scrolled backdrop-blur-xl' : ''
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
@@ -227,7 +227,7 @@ function HeroSection() {
   const opacity = useTransform(scrollYProgress, [0, 0.3], [1, 0]);
 
   return (
-    <section ref={containerRef} className="relative min-h-[200vh] overflow-hidden">
+    <section ref={containerRef} className="relative min-h-[130vh] md:min-h-[140vh] overflow-hidden">
       <div className="sticky top-0 min-h-screen flex flex-col items-center justify-center pt-20 overflow-hidden">
         <div className="absolute inset-0 bg-radial-gradient" />
         <div className="absolute inset-0 bg-grid-pattern opacity-30" />
