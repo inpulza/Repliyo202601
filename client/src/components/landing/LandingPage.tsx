@@ -15,23 +15,16 @@ import '../../styles/landing.css';
 gsap.registerPlugin(ScrollTrigger);
 
 function Step1ConnectMockup() {
-  const [captureIndex, setCaptureIndex] = useState(-1);
-  
   const orbitIcons = [
-    { Icon: FaInstagram, platform: 'instagram', angle: 0 },
-    { Icon: FaTiktok, platform: 'tiktok', angle: 60 },
-    { Icon: FaFacebook, platform: 'facebook', angle: 120 },
-    { Icon: FaYoutube, platform: 'youtube', angle: 180 },
-    { Icon: FaLinkedin, platform: 'linkedin', angle: 240 },
-    { Icon: GoogleBusinessIcon, platform: 'google', angle: 300 },
+    { Icon: FaInstagram, platform: 'instagram' },
+    { Icon: FaTiktok, platform: 'tiktok' },
+    { Icon: FaFacebook, platform: 'facebook' },
+    { Icon: FaYoutube, platform: 'youtube' },
+    { Icon: FaLinkedin, platform: 'linkedin' },
+    { Icon: GoogleBusinessIcon, platform: 'google' },
   ];
   
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCaptureIndex(prev => (prev + 1) % 6);
-    }, 2000);
-    return () => clearInterval(interval);
-  }, []);
+  const radius = 85;
   
   return (
     <div className="step-mockup connect-mockup-v3">
@@ -39,63 +32,52 @@ function Step1ConnectMockup() {
         <Inbox className="w-8 h-8 text-white" />
         <motion.div 
           className="radar-ring ring-1"
-          animate={{ scale: [1, 2.5], opacity: [0.6, 0] }}
-          transition={{ repeat: Infinity, duration: 2, ease: 'easeOut' }}
+          animate={{ scale: [1, 2.2], opacity: [0.5, 0] }}
+          transition={{ repeat: Infinity, duration: 2.5, ease: 'linear' }}
         />
         <motion.div 
           className="radar-ring ring-2"
-          animate={{ scale: [1, 2.5], opacity: [0.4, 0] }}
-          transition={{ repeat: Infinity, duration: 2, delay: 0.5, ease: 'easeOut' }}
+          animate={{ scale: [1, 2.2], opacity: [0.35, 0] }}
+          transition={{ repeat: Infinity, duration: 2.5, delay: 0.8, ease: 'linear' }}
         />
         <motion.div 
           className="radar-ring ring-3"
-          animate={{ scale: [1, 2.5], opacity: [0.3, 0] }}
-          transition={{ repeat: Infinity, duration: 2, delay: 1, ease: 'easeOut' }}
+          animate={{ scale: [1, 2.2], opacity: [0.2, 0] }}
+          transition={{ repeat: Infinity, duration: 2.5, delay: 1.6, ease: 'linear' }}
         />
       </div>
       
-      <motion.div 
-        className="orbit-container"
-        animate={{ rotate: 360 }}
-        transition={{ repeat: Infinity, duration: 20, ease: 'linear' }}
-      >
-        {orbitIcons.map((item, idx) => {
-          const isCapturing = captureIndex === idx;
-          return (
-            <motion.div
-              key={item.platform}
-              className={`orbit-icon ${item.platform}`}
-              style={{
-                position: 'absolute',
-                left: '50%',
-                top: '50%',
-                transform: `rotate(${item.angle}deg) translateX(90px) rotate(-${item.angle}deg)`,
-              }}
-              animate={isCapturing ? {
-                scale: [1, 1.3, 0],
-                x: [0, 0, 45 - 90 * Math.cos(item.angle * Math.PI / 180)],
-                y: [0, 0, 45 - 90 * Math.sin(item.angle * Math.PI / 180)],
-                opacity: [1, 1, 0],
-              } : {
-                scale: 1,
-                opacity: 1,
-              }}
-              transition={isCapturing ? {
-                duration: 0.8,
-                times: [0, 0.3, 1],
-              } : { duration: 0.3 }}
-            >
-              <motion.div
-                animate={{ rotate: -360 }}
-                transition={{ repeat: Infinity, duration: 20, ease: 'linear' }}
-                className="orbit-icon-inner"
-              >
-                <item.Icon className={`w-5 h-5 ${item.platform === 'tiktok' ? 'text-white' : ''}`} />
-              </motion.div>
-            </motion.div>
-          );
-        })}
-      </motion.div>
+      <div className="orbit-ring" />
+      
+      {orbitIcons.map((item, idx) => {
+        const baseAngle = (idx * 60) - 90;
+        const x = Math.cos(baseAngle * Math.PI / 180) * radius;
+        const y = Math.sin(baseAngle * Math.PI / 180) * radius;
+        
+        return (
+          <motion.div
+            key={item.platform}
+            className={`orbit-icon-static ${item.platform}`}
+            style={{ x, y }}
+            animate={{
+              scale: [1, 1.15, 1],
+              boxShadow: [
+                '0 4px 20px rgba(0,0,0,0.3)',
+                '0 4px 30px rgba(168, 85, 247, 0.5)',
+                '0 4px 20px rgba(0,0,0,0.3)'
+              ]
+            }}
+            transition={{
+              repeat: Infinity,
+              duration: 3,
+              delay: idx * 0.5,
+              ease: 'easeInOut'
+            }}
+          >
+            <item.Icon className={`w-5 h-5 ${item.platform === 'tiktok' ? 'text-white' : ''}`} />
+          </motion.div>
+        );
+      })}
     </div>
   );
 }
