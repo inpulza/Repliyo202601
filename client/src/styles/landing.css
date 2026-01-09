@@ -1831,7 +1831,29 @@
   padding: 40px;
   background: transparent;
   border: none;
-  border-radius: 0;
+  border-radius: 32px;
+  position: relative;
+}
+
+.how-step-content::before {
+  content: '';
+  position: absolute;
+  inset: -60px;
+  background: 
+    radial-gradient(ellipse 70% 50% at center, rgba(168, 85, 247, 0.25) 0%, transparent 50%),
+    radial-gradient(ellipse 90% 70% at center, rgba(236, 72, 153, 0.15) 0%, transparent 60%),
+    radial-gradient(ellipse 100% 90% at center, rgba(168, 85, 247, 0.08) 0%, transparent 70%);
+  filter: blur(50px);
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.landing-page.theme-light .how-step-content::before {
+  background: 
+    radial-gradient(ellipse 70% 50% at center, rgba(168, 85, 247, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse 90% 70% at center, rgba(236, 72, 153, 0.1) 0%, transparent 60%);
+  opacity: 0.7;
 }
 
 .landing-page.theme-light .how-step-content {
