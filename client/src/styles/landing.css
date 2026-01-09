@@ -850,7 +850,8 @@
    ============================================ */
 .how-pinned-section {
   position: relative;
-  height: 500vh;
+  height: 450vh;
+  z-index: 5;
 }
 
 .how-pinned-container {
@@ -862,6 +863,7 @@
   padding: 60px 40px;
   background: var(--landing-bg);
   overflow: hidden;
+  z-index: 10;
 }
 
 .landing-page.theme-light .how-pinned-container {
