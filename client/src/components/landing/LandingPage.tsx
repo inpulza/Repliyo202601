@@ -523,13 +523,15 @@ function HowItWorksSection() {
         });
       });
 
+      const enterDuration = 0.5;
+      const holdDuration = 0.8;
+      const exitDuration = 0.4;
+      let currentTime = 0;
+
       stepPanels.forEach((step, index) => {
-        const stepDuration = 1;
-        const holdDuration = 0.8;
-        const exitDuration = 0.4;
-        
         if (index === 0) {
-          tl.to({}, { duration: holdDuration }, 0);
+          tl.to({}, { duration: holdDuration }, currentTime);
+          currentTime += holdDuration;
           
           tl.to(step, {
             autoAlpha: 0,
@@ -538,10 +540,9 @@ function HowItWorksSection() {
             zIndex: 1,
             duration: exitDuration,
             ease: 'power1.inOut'
-          }, holdDuration);
+          }, currentTime);
+          currentTime += exitDuration;
         } else {
-          const prevExitEnd = (index - 1) * stepDuration + holdDuration + exitDuration;
-          
           tl.fromTo(step, 
             { autoAlpha: 0, x: 100, scale: 0.92, zIndex: 1 },
             { 
@@ -549,17 +550,17 @@ function HowItWorksSection() {
               x: 0, 
               scale: 1, 
               zIndex: 10,
-              duration: 0.5,
+              duration: enterDuration,
               ease: 'power2.out'
             }, 
-            prevExitEnd
+            currentTime
           );
+          currentTime += enterDuration;
           
-          const enterEnd = prevExitEnd + 0.5;
+          tl.to({}, { duration: holdDuration }, currentTime);
+          currentTime += holdDuration;
           
           if (index < totalSteps - 1) {
-            tl.to({}, { duration: holdDuration }, enterEnd);
-            
             tl.to(step, {
               autoAlpha: 0,
               x: -100,
@@ -567,9 +568,11 @@ function HowItWorksSection() {
               zIndex: 1,
               duration: exitDuration,
               ease: 'power1.inOut'
-            }, enterEnd + holdDuration);
+            }, currentTime);
+            currentTime += exitDuration;
           } else {
-            tl.to({}, { duration: holdDuration * 2 }, enterEnd);
+            tl.to({}, { duration: holdDuration }, currentTime);
+            currentTime += holdDuration;
           }
         }
       });
