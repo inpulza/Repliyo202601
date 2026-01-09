@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring } from 'framer-motion';
 import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Sun, Moon } from 'lucide-react';
-import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin, FaGoogle } from 'react-icons/fa';
+import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
+import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
 import { ParallaxProvider, useParallax, Parallax } from 'react-scroll-parallax';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -629,7 +630,7 @@ function HowItWorksSection() {
               transition={{ repeat: Infinity, duration: 2, delay: 1.0 }}
               className="connect-icon google"
             >
-              <FaGoogle className="w-7 h-7" />
+              <GoogleBusinessIcon className="w-7 h-7" />
             </motion.div>
           </div>
         </div>
