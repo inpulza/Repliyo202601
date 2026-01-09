@@ -2372,7 +2372,7 @@
   font-family: 'Space Grotesk', sans-serif;
 }
 
-/* Step 1 V3 - Orbiting Icons with Radar */
+/* Step 1 V3 - Static Icons with Radar Pulse */
 .connect-mockup-v3 {
   position: relative;
   width: 100%;
@@ -2392,69 +2392,60 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
+  z-index: 5;
   box-shadow: 0 0 50px rgba(168, 85, 247, 0.5);
 }
 
 .radar-ring {
   position: absolute;
   inset: 0;
-  border: 2px solid var(--landing-primary);
+  border: 1.5px solid var(--landing-primary);
   border-radius: 18px;
   pointer-events: none;
 }
 
-.radar-ring.ring-1 { border-color: rgba(168, 85, 247, 0.8); }
-.radar-ring.ring-2 { border-color: rgba(168, 85, 247, 0.5); }
-.radar-ring.ring-3 { border-color: rgba(168, 85, 247, 0.3); }
+.radar-ring.ring-1 { border-color: rgba(168, 85, 247, 0.6); }
+.radar-ring.ring-2 { border-color: rgba(168, 85, 247, 0.4); }
+.radar-ring.ring-3 { border-color: rgba(168, 85, 247, 0.25); }
 
-.orbit-container {
+.orbit-ring {
   position: absolute;
-  width: 180px;
-  height: 180px;
-  left: 50%;
-  top: 50%;
-  margin-left: -90px;
-  margin-top: -90px;
+  width: 170px;
+  height: 170px;
+  border: 1px dashed rgba(168, 85, 247, 0.2);
+  border-radius: 50%;
+  pointer-events: none;
 }
 
-.orbit-icon {
+.orbit-icon-static {
+  position: absolute;
   width: 42px;
   height: 42px;
-  margin-left: -21px;
-  margin-top: -21px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-  z-index: 5;
+  z-index: 15;
 }
 
-.orbit-icon-inner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.orbit-icon.instagram { 
+.orbit-icon-static.instagram { 
   background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); 
 }
-.orbit-icon.tiktok { 
+.orbit-icon-static.tiktok { 
   background: #000; 
   border: 2px solid #00f2ea;
 }
-.orbit-icon.facebook { 
+.orbit-icon-static.facebook { 
   background: #1877F2; 
 }
-.orbit-icon.youtube { 
+.orbit-icon-static.youtube { 
   background: #FF0000; 
 }
-.orbit-icon.linkedin { 
+.orbit-icon-static.linkedin { 
   background: #0A66C2; 
 }
-.orbit-icon.google { 
+.orbit-icon-static.google { 
   background: #4285F4; 
 }
 
