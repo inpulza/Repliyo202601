@@ -250,8 +250,6 @@ function Step3SendMockup() {
 }
 
 function FeatureInboxMockup() {
-  const [scrollOffset, setScrollOffset] = useState(0);
-  
   const messagesLeft = [
     { platform: 'instagram', name: 'María G.', avatar: avatarMaria, preview: '¿Tienen talla M?', Icon: FaInstagram, unread: true },
     { platform: 'tiktok', name: 'Carlos R.', avatar: avatarCarlos, preview: 'Vi tu video!', Icon: FaTiktok, unread: true },
@@ -265,21 +263,9 @@ function FeatureInboxMockup() {
     { platform: 'tiktok', name: 'Sofía R.', avatar: avatarMaria, preview: '¿Descuentos?', Icon: FaTiktok, unread: false },
     { platform: 'facebook', name: 'Pablo G.', avatar: avatarCarlos, preview: 'Gracias!', Icon: FaFacebook, unread: false },
   ];
-  
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setScrollOffset(prev => (prev + 1) % messagesLeft.length);
-    }, 2000);
-    return () => clearInterval(interval);
-  }, []);
-  
-  const getVisibleMessages = (messages: typeof messagesLeft, offset: number) => {
-    const result = [];
-    for (let i = 0; i < 3; i++) {
-      result.push(messages[(offset + i) % messages.length]);
-    }
-    return result;
-  };
+
+  const doubledLeft = [...messagesLeft, ...messagesLeft];
+  const doubledRight = [...messagesRight, ...messagesRight];
   
   return (
     <div className="feature-inbox-split">
@@ -289,13 +275,9 @@ function FeatureInboxMockup() {
           <span>DMs</span>
         </div>
         <div className="inbox-scroll-mask">
-          <motion.div 
-            className="inbox-scroll-content"
-            animate={{ y: -scrollOffset * 48 }}
-            transition={{ duration: 0.5, ease: 'easeInOut' }}
-          >
-            {[...messagesLeft, ...messagesLeft].map((msg, idx) => (
-              <div key={idx} className={`inbox-item-v3 ${idx === scrollOffset ? 'selected' : ''}`}>
+          <div className="inbox-scroll-content scroll-anim-left">
+            {doubledLeft.map((msg, idx) => (
+              <div key={idx} className={`inbox-item-v3 ${idx % messagesLeft.length === 0 ? 'selected' : ''}`}>
                 <div className="inbox-avatar-wrap-sm">
                   <img src={msg.avatar} alt={msg.name} className="inbox-avatar-img" />
                   <div className={`inbox-platform-badge-sm ${msg.platform}`}>
@@ -309,7 +291,7 @@ function FeatureInboxMockup() {
                 {msg.unread && <div className="inbox-unread-dot-sm" />}
               </div>
             ))}
-          </motion.div>
+          </div>
         </div>
       </div>
       
@@ -319,12 +301,8 @@ function FeatureInboxMockup() {
           <span>Comentarios</span>
         </div>
         <div className="inbox-scroll-mask">
-          <motion.div 
-            className="inbox-scroll-content"
-            animate={{ y: -(scrollOffset + 1) % messagesRight.length * 48 }}
-            transition={{ duration: 0.5, ease: 'easeInOut', delay: 0.3 }}
-          >
-            {[...messagesRight, ...messagesRight].map((msg, idx) => (
+          <div className="inbox-scroll-content scroll-anim-right">
+            {doubledRight.map((msg, idx) => (
               <div key={idx} className="inbox-item-v3">
                 <div className="inbox-avatar-wrap-sm">
                   <img src={msg.avatar} alt={msg.name} className="inbox-avatar-img" />
@@ -339,7 +317,7 @@ function FeatureInboxMockup() {
                 {msg.unread && <div className="inbox-unread-dot-sm" />}
               </div>
             ))}
-          </motion.div>
+          </div>
         </div>
       </div>
     </div>
@@ -380,31 +358,20 @@ function FeatureAIMockup() {
 }
 
 function FeatureCRMMockup() {
-  const [scrollOffset, setScrollOffset] = useState(0);
-  
   const contacts = [
     { name: 'María G.', avatar: avatarMaria, tag: 'VIP', tagColor: 'gold', spent: '$1.2k' },
     { name: 'Carlos R.', avatar: avatarCarlos, tag: 'Lead', tagColor: 'blue', spent: '$450' },
     { name: 'Ana L.', avatar: avatarAna, tag: 'Nuevo', tagColor: 'green', spent: '$0' },
   ];
-  
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setScrollOffset(prev => (prev + 1) % contacts.length);
-    }, 2500);
-    return () => clearInterval(interval);
-  }, []);
+
+  const doubled = [...contacts, ...contacts];
   
   return (
     <div className="feature-crm-mockup">
       <div className="crm-scroll-mask">
-        <motion.div 
-          className="crm-scroll-content"
-          animate={{ y: -scrollOffset * 56 }}
-          transition={{ duration: 0.5, ease: 'easeInOut' }}
-        >
-          {[...contacts, ...contacts].map((contact, idx) => (
-            <div key={idx} className={`crm-contact-row ${idx === scrollOffset ? 'selected' : ''}`}>
+        <div className="crm-scroll-content scroll-anim-crm">
+          {doubled.map((contact, idx) => (
+            <div key={idx} className={`crm-contact-row ${idx % contacts.length === 0 ? 'selected' : ''}`}>
               <div className="crm-contact-avatar">
                 <img src={contact.avatar} alt={contact.name} />
               </div>
@@ -415,7 +382,7 @@ function FeatureCRMMockup() {
               <span className={`crm-contact-tag ${contact.tagColor}`}>{contact.tag}</span>
             </div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </div>
   );
@@ -465,31 +432,20 @@ function FeatureReminderMockup() {
 }
 
 function FeatureCommentsMockup() {
-  const [scrollOffset, setScrollOffset] = useState(0);
-  
   const threads = [
     { q: '¿Precio?', a: '$299 + envío gratis' },
     { q: '¿Colores?', a: 'Negro, blanco y azul' },
     { q: '¿Tallas?', a: 'S, M, L y XL' },
     { q: '¿Envío?', a: 'Gratis a todo el país' },
   ];
-  
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setScrollOffset(prev => (prev + 1) % threads.length);
-    }, 2000);
-    return () => clearInterval(interval);
-  }, []);
+
+  const doubled = [...threads, ...threads];
   
   return (
     <div className="feature-comments-mockup-v3">
       <div className="comments-scroll-mask">
-        <motion.div 
-          className="comments-scroll-content"
-          animate={{ y: -scrollOffset * 52 }}
-          transition={{ duration: 0.5, ease: 'easeInOut' }}
-        >
-          {[...threads, ...threads].map((t, idx) => (
+        <div className="comments-scroll-content scroll-anim-comments">
+          {doubled.map((t, idx) => (
             <div key={idx} className="comment-thread-item">
               <div className="comment-q-v3">
                 <FaInstagram className="w-2.5 h-2.5 text-pink-400 flex-shrink-0" />
@@ -501,7 +457,7 @@ function FeatureCommentsMockup() {
               </div>
             </div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </div>
   );
