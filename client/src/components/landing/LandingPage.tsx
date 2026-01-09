@@ -1,30 +1,13 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { motion, useInView, useScroll, useTransform, useReducedMotion } from 'framer-motion';
-import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Bell, MessageSquare, BarChart2, Instagram, Music2, Facebook } from 'lucide-react';
+import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
+import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring } from 'framer-motion';
+import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Bell, MessageSquare, BarChart2, Instagram, Music2, Facebook, Send, Zap, Clock, Heart } from 'lucide-react';
+import { ParallaxProvider, useParallax, Parallax } from 'react-scroll-parallax';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useGSAP } from '@gsap/react';
 import '../../styles/landing.css';
 
-const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
-};
-
-const fadeInUpReduced = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.1 } }
-};
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1, delayChildren: 0.1 }
-  }
-};
-
-const staggerContainerReduced = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.1 } }
-};
+gsap.registerPlugin(ScrollTrigger);
 
 function AnimatedCounter({ target, duration = 2 }: { target: number; duration?: number }) {
   const [count, setCount] = useState(0);
@@ -52,37 +35,138 @@ function AnimatedCounter({ target, duration = 2 }: { target: number; duration?: 
     return () => clearInterval(timer);
   }, [isInView, target, duration, prefersReducedMotion]);
 
-  return <span ref={ref} className="counter-number">{count}</span>;
+  return <span ref={ref}>{count}</span>;
 }
 
-function TypewriterText({ text, delay = 0 }: { text: string; delay?: number }) {
-  const [displayText, setDisplayText] = useState('');
-  const ref = useRef<HTMLSpanElement>(null);
-  const isInView = useInView(ref, { once: true });
+function InboxMockup() {
+  const mockupRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
+  
+  const messages = [
+    { id: 1, user: 'María G.', avatar: 'MG', message: '¿Tienen disponible el vestido azul?', platform: 'instagram', time: '2m', unread: true },
+    { id: 2, user: 'Carlos R.', avatar: 'CR', message: 'Quiero reservar para el sábado', platform: 'tiktok', time: '5m', unread: true },
+    { id: 3, user: 'Ana L.', avatar: 'AL', message: '¿Hacen envíos a Madrid?', platform: 'facebook', time: '12m', unread: false },
+  ];
+
+  const [visibleMessages, setVisibleMessages] = useState<number[]>([]);
+  const [aiTyping, setAiTyping] = useState(false);
+  const [aiResponse, setAiResponse] = useState('');
 
   useEffect(() => {
-    if (!isInView) return;
     if (prefersReducedMotion) {
-      setDisplayText(text);
+      setVisibleMessages([1, 2, 3]);
+      setAiResponse('¡Hola María! Sí, tenemos el vestido azul disponible en tallas S, M y L. ¿Te gustaría reservar alguna?');
       return;
     }
-    const timeout = setTimeout(() => {
-      let i = 0;
-      const timer = setInterval(() => {
-        if (i < text.length) {
-          setDisplayText(text.slice(0, i + 1));
-          i++;
-        } else {
-          clearInterval(timer);
-        }
-      }, 40);
-      return () => clearInterval(timer);
-    }, delay);
-    return () => clearTimeout(timeout);
-  }, [isInView, text, delay, prefersReducedMotion]);
+    
+    const timers: NodeJS.Timeout[] = [];
+    timers.push(setTimeout(() => setVisibleMessages([1]), 500));
+    timers.push(setTimeout(() => setVisibleMessages([1, 2]), 1200));
+    timers.push(setTimeout(() => setVisibleMessages([1, 2, 3]), 1900));
+    timers.push(setTimeout(() => setAiTyping(true), 2500));
+    timers.push(setTimeout(() => {
+      setAiTyping(false);
+      setAiResponse('¡Hola María! Sí, tenemos el vestido azul disponible en tallas S, M y L. ¿Te gustaría reservar alguna?');
+    }, 4000));
+    
+    return () => timers.forEach(clearTimeout);
+  }, [prefersReducedMotion]);
 
-  return <span ref={ref}>{displayText}{!prefersReducedMotion && <span className="animate-pulse">|</span>}</span>;
+  return (
+    <div ref={mockupRef} className="mockup-container">
+      <div className="mockup-window">
+        <div className="mockup-header">
+          <div className="mockup-dots">
+            <span className="dot red" />
+            <span className="dot yellow" />
+            <span className="dot green" />
+          </div>
+          <span className="mockup-title">Repliyo Inbox</span>
+        </div>
+        
+        <div className="mockup-content">
+          <div className="mockup-sidebar">
+            <div className="sidebar-header">
+              <Inbox className="w-4 h-4" />
+              <span>Inbox</span>
+              <span className="badge">12</span>
+            </div>
+            {messages.map((msg) => (
+              <motion.div
+                key={msg.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={visibleMessages.includes(msg.id) ? { opacity: 1, x: 0 } : {}}
+                transition={{ duration: 0.4 }}
+                className={`message-preview ${msg.unread ? 'unread' : ''}`}
+              >
+                <div className={`avatar ${msg.platform}`}>{msg.avatar}</div>
+                <div className="message-info">
+                  <span className="username">{msg.user}</span>
+                  <span className="preview">{msg.message.slice(0, 25)}...</span>
+                </div>
+                <span className="time">{msg.time}</span>
+              </motion.div>
+            ))}
+          </div>
+          
+          <div className="mockup-main">
+            <div className="chat-header">
+              <div className="avatar instagram">MG</div>
+              <div>
+                <span className="username">María G.</span>
+                <span className="platform-badge">
+                  <Instagram className="w-3 h-3" /> Instagram
+                </span>
+              </div>
+            </div>
+            
+            <div className="chat-messages">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={visibleMessages.includes(1) ? { opacity: 1, y: 0 } : {}}
+                className="chat-bubble incoming"
+              >
+                ¿Tienen disponible el vestido azul?
+              </motion.div>
+              
+              {aiTyping && (
+                <div className="ai-typing">
+                  <Sparkles className="w-3 h-3 text-purple-400" />
+                  <span>AI generando respuesta</span>
+                  <span className="typing-dots">
+                    <span>.</span><span>.</span><span>.</span>
+                  </span>
+                </div>
+              )}
+              
+              {aiResponse && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  className="chat-bubble outgoing ai-generated"
+                >
+                  <div className="ai-badge">
+                    <Sparkles className="w-3 h-3" /> Borrador IA
+                  </div>
+                  {aiResponse}
+                </motion.div>
+              )}
+            </div>
+            
+            <div className="chat-input">
+              <input type="text" placeholder="Escribe un mensaje..." readOnly />
+              <button className="send-btn">
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="mockup-glow" />
+      <div className="mockup-reflection" />
+    </div>
+  );
 }
 
 function Header() {
@@ -125,93 +209,85 @@ function Header() {
 }
 
 function HeroSection() {
-  const ref = useRef(null);
+  const containerRef = useRef(null);
   const prefersReducedMotion = useReducedMotion();
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] });
-  const y = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [0, 150]);
-  const opacity = useTransform(scrollYProgress, [0, 0.5], prefersReducedMotion ? [1, 1] : [1, 0]);
-
-  const containerVariants = prefersReducedMotion ? staggerContainerReduced : staggerContainer;
-  const itemVariants = prefersReducedMotion ? fadeInUpReduced : fadeInUp;
+  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end start'] });
+  
+  const textY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [0, 200]);
+  const mockupY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [0, -50]);
+  const mockupScale = useTransform(scrollYProgress, [0, 0.5], prefersReducedMotion ? [1, 1] : [1, 0.9]);
+  const opacity = useTransform(scrollYProgress, [0, 0.3], [1, 0]);
 
   return (
-    <section ref={ref} className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
-      <div className="absolute inset-0 bg-radial-gradient" />
-      <div className="absolute inset-0 bg-grid-pattern opacity-30" />
-      
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full border border-white/5 opacity-30" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full border border-white/5 opacity-20" />
-      
-      <motion.div style={prefersReducedMotion ? {} : { y, opacity }} className="relative z-10 max-w-6xl mx-auto px-6 text-center">
-        <motion.div
-          initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.5 }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 mb-8"
-        >
-          <Sparkles className="w-4 h-4 text-[var(--landing-accent)]" />
-          <span className="text-sm text-white/70">Respuestas IA personalizadas</span>
-        </motion.div>
+    <section ref={containerRef} className="relative min-h-[200vh] overflow-hidden">
+      <div className="sticky top-0 min-h-screen flex flex-col items-center justify-center pt-20 overflow-hidden">
+        <div className="absolute inset-0 bg-radial-gradient" />
+        <div className="absolute inset-0 bg-grid-pattern opacity-30" />
+        
+        <Parallax speed={-10} className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-purple-500/5 blur-3xl" />
+          <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] rounded-full bg-orange-500/5 blur-3xl" />
+        </Parallax>
+        
+        <motion.div style={{ y: textY, opacity }} className="relative z-10 max-w-5xl mx-auto px-6 text-center mb-16">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 mb-8"
+          >
+            <Sparkles className="w-4 h-4 text-[var(--landing-accent)]" />
+            <span className="text-sm text-white/70">Respuestas IA personalizadas</span>
+          </motion.div>
 
-        <motion.h1 
-          className="font-display font-bold text-5xl md:text-7xl lg:text-8xl leading-[0.95] tracking-tight mb-8"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <motion.span variants={itemVariants} className="block text-white">Responde más rápido.</motion.span>
-          <motion.span variants={itemVariants} className="block text-gradient">Vende más.</motion.span>
-          <motion.span variants={itemVariants} className="block text-white/40">Con IA.</motion.span>
-        </motion.h1>
+          <motion.h1 
+            className="font-display font-bold text-5xl md:text-7xl lg:text-8xl leading-[0.95] tracking-tight mb-8"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+          >
+            <span className="block text-white">Responde más rápido.</span>
+            <span className="block text-gradient">Vende más.</span>
+            <span className="block text-white/40">Con IA.</span>
+          </motion.h1>
 
-        <motion.p 
-          initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.4, duration: 0.6 }}
-          className="text-lg md:text-xl text-white/50 max-w-2xl mx-auto mb-10 leading-relaxed"
-        >
-          Unifica todos tus DMs y comentarios de Instagram, TikTok y Facebook en un inbox inteligente que responde automáticamente.
-        </motion.p>
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+            className="text-lg md:text-xl text-white/50 max-w-2xl mx-auto mb-10 leading-relaxed"
+          >
+            Unifica todos tus DMs y comentarios de Instagram, TikTok y Facebook en un inbox inteligente que responde automáticamente.
+          </motion.p>
 
-        <motion.div 
-          initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.5, duration: 0.6 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12"
-        >
-          <a href="/login" className="btn-primary" data-testid="button-empezar-gratis-hero">
-            Empezar gratis <ArrowRight className="w-4 h-4" />
-          </a>
-          <button className="btn-secondary" data-testid="button-ver-demo">
-            <Play className="w-4 h-4" /> Ver demo
-          </button>
-        </motion.div>
-
-        <motion.div
-          initial={prefersReducedMotion ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.6, duration: 0.6 }}
-          className="flex items-center justify-center gap-6 text-white/40 text-sm"
-        >
-          <span>Conecta:</span>
-          <div className="flex items-center gap-4">
-            <Instagram className="w-5 h-5 text-pink-500" />
-            <Music2 className="w-5 h-5 text-white" />
-            <Facebook className="w-5 h-5 text-blue-500" />
-          </div>
-        </motion.div>
-      </motion.div>
-
-      {!prefersReducedMotion && (
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/30">
-          <span className="text-xs uppercase tracking-widest">Scroll</span>
           <motion.div 
-            animate={{ y: [0, 8, 0] }}
-            transition={{ repeat: Infinity, duration: 1.5 }}
-            className="w-px h-12 bg-gradient-to-b from-white/30 to-transparent"
-          />
-        </div>
-      )}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.6 }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+          >
+            <a href="/login" className="btn-primary" data-testid="button-empezar-gratis-hero">
+              Empezar gratis <ArrowRight className="w-4 h-4" />
+            </a>
+            <button className="btn-secondary" data-testid="button-ver-demo">
+              <Play className="w-4 h-4" /> Ver demo
+            </button>
+          </motion.div>
+        </motion.div>
+        
+        <motion.div 
+          style={{ y: mockupY, scale: mockupScale }}
+          className="relative z-20 w-full max-w-5xl mx-auto px-6"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 60 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <InboxMockup />
+          </motion.div>
+        </motion.div>
+      </div>
     </section>
   );
 }
@@ -221,7 +297,7 @@ function MarqueeSection() {
   const items = ['DMs', 'Comentarios', 'Respuestas IA', 'Recordatorios', 'CRM', 'Analytics', 'Multi-plataforma'];
   
   return (
-    <section className="py-8 border-y border-white/5 bg-[#080808]">
+    <section className="py-8 border-y border-white/5 bg-[#080808] relative overflow-hidden">
       <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-4" : "marquee-container"}>
         <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-4" : "marquee-content"}>
           {(prefersReducedMotion ? items : [...items, ...items]).map((item, i) => (
@@ -238,72 +314,122 @@ function MarqueeSection() {
   );
 }
 
-function ProblemSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-100px' });
+function ProblemSolutionSection() {
+  const sectionRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
-  const containerVariants = prefersReducedMotion ? staggerContainerReduced : staggerContainer;
-  const itemVariants = prefersReducedMotion ? fadeInUpReduced : fadeInUp;
+
+  useGSAP(() => {
+    if (prefersReducedMotion) return;
+    
+    const ctx = gsap.context(() => {
+      const problems = gsap.utils.toArray('.problem-item');
+      const solutions = gsap.utils.toArray('.solution-item');
+      
+      problems.forEach((item) => {
+        gsap.fromTo(item as Element, 
+          { opacity: 0, x: -80, rotateY: -15 },
+          {
+            opacity: 1, x: 0, rotateY: 0,
+            duration: 0.8,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: item as Element,
+              start: 'top 85%',
+              end: 'top 50%',
+              scrub: 1
+            }
+          }
+        );
+      });
+      
+      solutions.forEach((item) => {
+        gsap.fromTo(item as Element, 
+          { opacity: 0, x: 80, rotateY: 15 },
+          {
+            opacity: 1, x: 0, rotateY: 0,
+            duration: 0.8,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: item as Element,
+              start: 'top 85%',
+              end: 'top 50%',
+              scrub: 1
+            }
+          }
+        );
+      });
+    }, sectionRef);
+    
+    return () => ctx.revert();
+  }, { scope: sectionRef });
 
   const problems = [
-    'Saltar entre Instagram, TikTok y Facebook todo el día',
-    'Olvidar responder mensajes de clientes potenciales',
-    'Copiar y pegar las mismas respuestas una y otra vez',
-    'Perder ventas porque los leads se enfrían sin seguimiento'
+    { icon: Clock, text: 'Saltar entre Instagram, TikTok y Facebook todo el día' },
+    { icon: X, text: 'Olvidar responder mensajes de clientes potenciales' },
+    { icon: MessageSquare, text: 'Copiar y pegar las mismas respuestas una y otra vez' },
+    { icon: Zap, text: 'Perder ventas porque los leads se enfrían sin seguimiento' }
   ];
 
   const solutions = [
-    'Todos tus mensajes en una sola pantalla',
-    'La IA genera respuestas personalizadas en segundos',
-    'Recordatorios automáticos para leads sin respuesta',
-    'CRM integrado para conocer a cada cliente'
+    { icon: Inbox, text: 'Todos tus mensajes en una sola pantalla' },
+    { icon: Sparkles, text: 'La IA genera respuestas personalizadas en segundos' },
+    { icon: Bell, text: 'Recordatorios automáticos para leads sin respuesta' },
+    { icon: Users, text: 'CRM integrado para conocer a cada cliente' }
   ];
 
   return (
-    <section ref={ref} className="py-24 md:py-32">
+    <section ref={sectionRef} className="py-32 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="grid md:grid-cols-2 gap-16 md:gap-24">
-          <motion.div
-            initial={prefersReducedMotion ? false : { opacity: 0, x: -40 }}
-            animate={isInView ? { opacity: 1, x: 0 } : {}}
-            transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.6 }}
-          >
-            <span className="text-xs uppercase tracking-[0.2em] text-red-500 font-semibold mb-4 block">El problema</span>
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-white mb-8 leading-tight">
-              Responder mensajes en 5 apps es agotador
-            </h2>
-            <motion.ul className="space-y-4" variants={containerVariants} initial="hidden" animate={isInView ? "visible" : "hidden"}>
-              {problems.map((problem, i) => (
-                <motion.li key={i} variants={itemVariants} className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <X className="w-3 h-3 text-red-500" />
-                  </div>
-                  <span className="text-white/60">{problem}</span>
-                </motion.li>
-              ))}
-            </motion.ul>
-          </motion.div>
+        <div className="grid md:grid-cols-2 gap-20 md:gap-32">
+          <div className="space-y-8">
+            <div className="sticky top-32">
+              <span className="text-xs uppercase tracking-[0.3em] text-red-500 font-semibold mb-4 block">
+                El problema
+              </span>
+              <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-12 leading-tight">
+                Responder mensajes en 5 apps es <span className="text-red-500">agotador</span>
+              </h2>
+              
+              <div className="space-y-6">
+                {problems.map((problem, i) => {
+                  const Icon = problem.icon;
+                  return (
+                    <div key={i} className="problem-item flex items-start gap-4 p-5 rounded-2xl bg-red-500/5 border border-red-500/10">
+                      <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                        <Icon className="w-5 h-5 text-red-400" />
+                      </div>
+                      <span className="text-white/70 text-lg leading-relaxed">{problem.text}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
 
-          <motion.div
-            initial={prefersReducedMotion ? false : { opacity: 0, x: 40 }}
-            animate={isInView ? { opacity: 1, x: 0 } : {}}
-            transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.6, delay: 0.2 }}
-          >
-            <span className="text-xs uppercase tracking-[0.2em] text-green-500 font-semibold mb-4 block">La solución</span>
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-white mb-8 leading-tight">
-              Un inbox inteligente que trabaja por ti
-            </h2>
-            <motion.ul className="space-y-4" variants={containerVariants} initial="hidden" animate={isInView ? "visible" : "hidden"}>
-              {solutions.map((solution, i) => (
-                <motion.li key={i} variants={itemVariants} className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Check className="w-3 h-3 text-green-500" />
-                  </div>
-                  <span className="text-white/60">{solution}</span>
-                </motion.li>
-              ))}
-            </motion.ul>
-          </motion.div>
+          <div className="space-y-8">
+            <div className="sticky top-32">
+              <span className="text-xs uppercase tracking-[0.3em] text-green-500 font-semibold mb-4 block">
+                La solución
+              </span>
+              <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-12 leading-tight">
+                Un inbox inteligente que <span className="text-gradient">trabaja por ti</span>
+              </h2>
+              
+              <div className="space-y-6">
+                {solutions.map((solution, i) => {
+                  const Icon = solution.icon;
+                  return (
+                    <div key={i} className="solution-item flex items-start gap-4 p-5 rounded-2xl bg-green-500/5 border border-green-500/10">
+                      <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                        <Icon className="w-5 h-5 text-green-400" />
+                      </div>
+                      <span className="text-white/70 text-lg leading-relaxed">{solution.text}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -314,25 +440,31 @@ function MetricSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: '-100px' });
   const prefersReducedMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
+  
+  const scale = useTransform(scrollYProgress, [0, 0.5], prefersReducedMotion ? [1, 1] : [0.8, 1]);
+  const opacity = useTransform(scrollYProgress, [0, 0.3], prefersReducedMotion ? [1, 1] : [0, 1]);
 
   return (
-    <section ref={ref} className="py-24 md:py-32 relative overflow-hidden">
+    <section ref={ref} className="py-32 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-[var(--landing-primary)]/10 via-transparent to-transparent" />
-      <div className="absolute inset-0 bg-grid-pattern opacity-20" />
+      
+      <Parallax speed={-5} className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full border border-purple-500/10" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full border border-purple-500/5" />
+      </Parallax>
       
       <motion.div 
-        initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.9 }}
-        animate={isInView ? { opacity: 1, scale: 1 } : {}}
-        transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.8 }}
+        style={{ scale, opacity }}
         className="relative z-10 max-w-5xl mx-auto px-6 text-center"
       >
-        <div className="font-display font-black text-[20vw] md:text-[15vw] leading-none text-gradient mb-4">
+        <div className="font-display font-black text-[25vw] md:text-[18vw] leading-none text-gradient mb-4">
           <AnimatedCounter target={80} />%
         </div>
-        <h2 className="font-display text-2xl md:text-4xl font-bold text-white mb-4">
+        <h2 className="font-display text-3xl md:text-5xl font-bold text-white mb-4">
           menos tiempo respondiendo
         </h2>
-        <p className="text-white/50 text-lg max-w-xl mx-auto">
+        <p className="text-white/50 text-xl max-w-xl mx-auto">
           Nuestros usuarios reducen drásticamente el tiempo dedicado a gestionar mensajes de redes sociales.
         </p>
       </motion.div>
@@ -341,116 +473,177 @@ function MetricSection() {
 }
 
 function HowItWorksSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-100px' });
+  const sectionRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
+
+  useGSAP(() => {
+    if (prefersReducedMotion) return;
+    
+    const ctx = gsap.context(() => {
+      const cards = gsap.utils.toArray('.how-card');
+      
+      cards.forEach((card) => {
+        gsap.fromTo(card as Element,
+          { 
+            opacity: 0, 
+            y: 100,
+            rotateX: -15,
+            transformPerspective: 1000
+          },
+          {
+            opacity: 1,
+            y: 0,
+            rotateX: 0,
+            duration: 1,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: card as Element,
+              start: 'top 85%',
+              end: 'top 40%',
+              scrub: 1
+            }
+          }
+        );
+      });
+    }, sectionRef);
+    
+    return () => ctx.revert();
+  }, { scope: sectionRef });
 
   const steps = [
     {
       number: '01',
       title: 'Conecta tus redes',
       description: 'Vincula Instagram, TikTok y Facebook en menos de 2 minutos. Sin configuración técnica.',
-      visual: 'connect'
+      mockup: (
+        <div className="step-mockup connect-mockup">
+          <div className="connect-icons">
+            <motion.div 
+              animate={{ scale: [1, 1.1, 1], y: [0, -5, 0] }}
+              transition={{ repeat: Infinity, duration: 2, delay: 0 }}
+              className="connect-icon instagram"
+            >
+              <Instagram className="w-8 h-8" />
+            </motion.div>
+            <motion.div 
+              animate={{ scale: [1, 1.1, 1], y: [0, -5, 0] }}
+              transition={{ repeat: Infinity, duration: 2, delay: 0.3 }}
+              className="connect-icon tiktok"
+            >
+              <Music2 className="w-8 h-8" />
+            </motion.div>
+            <motion.div 
+              animate={{ scale: [1, 1.1, 1], y: [0, -5, 0] }}
+              transition={{ repeat: Infinity, duration: 2, delay: 0.6 }}
+              className="connect-icon facebook"
+            >
+              <Facebook className="w-8 h-8" />
+            </motion.div>
+          </div>
+          <div className="connect-lines">
+            <motion.div 
+              animate={{ scaleX: [0, 1] }}
+              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+              className="connect-line"
+            />
+          </div>
+          <div className="connect-center">
+            <div className="repliyo-logo">R</div>
+          </div>
+        </div>
+      )
     },
     {
       number: '02',
       title: 'La IA aprende tu estilo',
       description: 'Entrena al asistente con ejemplos de tus mejores respuestas. Genera borradores que suenan como tú.',
-      visual: 'ai'
+      mockup: (
+        <div className="step-mockup ai-mockup">
+          <div className="ai-chat">
+            <div className="ai-message incoming">
+              ¿Cuánto cuesta el producto?
+            </div>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 1, 1, 0] }}
+              transition={{ repeat: Infinity, duration: 3, times: [0, 0.2, 0.8, 1] }}
+              className="ai-typing-indicator"
+            >
+              <Sparkles className="w-4 h-4 text-purple-400" />
+              <span>Generando respuesta...</span>
+            </motion.div>
+            <motion.div 
+              animate={{ opacity: [0, 0, 1, 1] }}
+              transition={{ repeat: Infinity, duration: 3, times: [0, 0.3, 0.4, 1] }}
+              className="ai-message outgoing"
+            >
+              ¡Hola! El precio es $299 con envío gratis. ¿Te gustaría ordenar?
+            </motion.div>
+          </div>
+        </div>
+      )
     },
     {
       number: '03',
       title: 'Responde y haz seguimiento',
       description: 'Revisa, edita si quieres, y envía. Los recordatorios aseguran que ningún lead se enfríe.',
-      visual: 'send'
+      mockup: (
+        <div className="step-mockup send-mockup">
+          <motion.div 
+            animate={{ y: [0, -10, 0] }}
+            transition={{ repeat: Infinity, duration: 1.5 }}
+            className="send-button-preview"
+          >
+            <Send className="w-5 h-5" />
+            <span>Enviar respuesta</span>
+          </motion.div>
+          <div className="reminder-preview">
+            <Bell className="w-4 h-4 text-orange-400" />
+            <span>Recordatorio programado en 24h</span>
+          </div>
+          <motion.div 
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ repeat: Infinity, duration: 2 }}
+            className="success-indicator"
+          >
+            <Check className="w-5 h-5 text-green-400" />
+            <span>Mensaje enviado</span>
+          </motion.div>
+        </div>
+      )
     }
   ];
 
   return (
-    <section id="how" ref={ref} className="py-24 md:py-32">
+    <section id="how" ref={sectionRef} className="py-32 relative">
       <div className="max-w-7xl mx-auto px-6">
         <motion.div
-          initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={prefersReducedMotion ? { duration: 0 } : undefined}
-          className="text-center mb-16"
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="text-center mb-20"
         >
-          <span className="text-xs uppercase tracking-[0.2em] text-[var(--landing-primary)] font-semibold mb-4 block">
+          <span className="text-xs uppercase tracking-[0.3em] text-[var(--landing-primary)] font-semibold mb-4 block">
             Cómo funciona
           </span>
-          <h2 className="font-display text-3xl md:text-5xl font-bold text-white">
-            De caos a control en 3 pasos
+          <h2 className="font-display text-4xl md:text-6xl font-bold text-white">
+            De caos a control en <span className="text-gradient">3 pasos</span>
           </h2>
         </motion.div>
 
         <div className="grid md:grid-cols-3 gap-8">
           {steps.map((step, i) => (
-            <motion.div
-              key={step.number}
-              initial={prefersReducedMotion ? false : { opacity: 0, y: 40 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={prefersReducedMotion ? { duration: 0 } : { delay: i * 0.15, duration: 0.6 }}
-              className="card-landing hover-lift group"
-            >
-              <span className="font-display text-6xl font-bold text-white/10 group-hover:text-[var(--landing-primary)]/20 transition-colors">
-                {step.number}
-              </span>
-              <h3 className="font-display text-xl font-bold text-white mt-4 mb-3">{step.title}</h3>
-              <p className="text-white/50 text-sm leading-relaxed">{step.description}</p>
-              
-              <div className="mt-6 h-40 rounded-lg bg-[var(--landing-bg-elevated)] border border-white/5 flex items-center justify-center overflow-hidden">
-                {step.visual === 'connect' && (
-                  <div className="flex items-center gap-4">
-                    <motion.div 
-                      animate={prefersReducedMotion ? {} : { scale: [1, 1.1, 1] }}
-                      transition={prefersReducedMotion ? { duration: 0 } : { repeat: Infinity, duration: 2, delay: 0 }}
-                      className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center"
-                    >
-                      <Instagram className="w-6 h-6 text-white" />
-                    </motion.div>
-                    <motion.div 
-                      animate={prefersReducedMotion ? {} : { scale: [1, 1.1, 1] }}
-                      transition={prefersReducedMotion ? { duration: 0 } : { repeat: Infinity, duration: 2, delay: 0.3 }}
-                      className="w-12 h-12 rounded-xl bg-black flex items-center justify-center"
-                    >
-                      <Music2 className="w-6 h-6 text-white" />
-                    </motion.div>
-                    <motion.div 
-                      animate={prefersReducedMotion ? {} : { scale: [1, 1.1, 1] }}
-                      transition={prefersReducedMotion ? { duration: 0 } : { repeat: Infinity, duration: 2, delay: 0.6 }}
-                      className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center"
-                    >
-                      <Facebook className="w-6 h-6 text-white" />
-                    </motion.div>
-                  </div>
-                )}
-                {step.visual === 'ai' && (
-                  <div className="p-4 text-left w-full">
-                    <div className="text-xs text-[var(--landing-primary)] mb-2 flex items-center gap-1">
-                      <Sparkles className="w-3 h-3" /> Borrador IA
-                    </div>
-                    <div className="text-sm text-white/70">
-                      <TypewriterText text="¡Hola! Gracias por tu interés. Te cuento más sobre..." delay={500} />
-                    </div>
-                  </div>
-                )}
-                {step.visual === 'send' && (
-                  <div className="flex flex-col items-center gap-3">
-                    <motion.div
-                      animate={prefersReducedMotion ? {} : { y: [0, -10, 0] }}
-                      transition={prefersReducedMotion ? { duration: 0 } : { repeat: Infinity, duration: 1.5 }}
-                      className="w-full max-w-[160px] h-8 rounded bg-[var(--landing-primary)] flex items-center justify-center text-white text-sm font-medium"
-                    >
-                      Enviar <ArrowRight className="w-3 h-3 ml-1" />
-                    </motion.div>
-                    <div className="flex items-center gap-2 text-xs text-white/40">
-                      <Bell className="w-3 h-3" />
-                      <span>Recordatorio en 24h</span>
-                    </div>
-                  </div>
-                )}
+            <div key={step.number} className="how-card group">
+              <div className="card-inner">
+                <span className="step-number">{step.number}</span>
+                <h3 className="font-display text-2xl font-bold text-white mt-4 mb-3">{step.title}</h3>
+                <p className="text-white/50 text-base leading-relaxed mb-6">{step.description}</p>
+                <div className="step-mockup-container">
+                  {step.mockup}
+                </div>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>
@@ -459,59 +652,164 @@ function HowItWorksSection() {
 }
 
 function FeaturesSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-100px' });
+  const sectionRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
 
+  useGSAP(() => {
+    if (prefersReducedMotion) return;
+    
+    const ctx = gsap.context(() => {
+      const cards = gsap.utils.toArray('.feature-card');
+      
+      cards.forEach((card) => {
+        gsap.fromTo(card as Element,
+          { opacity: 0, y: 60, scale: 0.95 },
+          {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            duration: 0.8,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: card as Element,
+              start: 'top 90%',
+              end: 'top 60%',
+              scrub: 1
+            }
+          }
+        );
+      });
+    }, sectionRef);
+    
+    return () => ctx.revert();
+  }, { scope: sectionRef });
+
   const features = [
-    { icon: Inbox, title: 'Inbox unificado', description: 'Todas tus conversaciones en un solo lugar ordenadas por prioridad.', size: 'large' },
-    { icon: Sparkles, title: 'Respuestas IA', description: 'Borradores que capturan tu tono de voz.', size: 'small' },
-    { icon: Users, title: 'CRM integrado', description: 'Perfil completo de cada contacto.', size: 'small' },
-    { icon: Bell, title: 'Recordatorios', description: 'Seguimiento automático para leads inactivos.', size: 'medium' },
-    { icon: MessageSquare, title: 'Comentarios', description: 'Gestiona comentarios de posts directamente.', size: 'medium' },
-    { icon: BarChart2, title: 'Analytics', description: 'Métricas de rendimiento y tiempo de respuesta.', size: 'small' },
+    { 
+      icon: Inbox, 
+      title: 'Inbox unificado', 
+      description: 'Todas tus conversaciones de Instagram, TikTok y Facebook en un solo lugar ordenadas por prioridad.',
+      size: 'large',
+      mockup: (
+        <div className="feature-mini-mockup inbox-mini">
+          <div className="mini-messages">
+            {[1, 2, 3].map((n) => (
+              <motion.div 
+                key={n}
+                animate={{ x: [20, 0], opacity: [0, 1] }}
+                transition={{ repeat: Infinity, duration: 2, delay: n * 0.5 }}
+                className="mini-message"
+              >
+                <div className="mini-avatar" />
+                <div className="mini-text" />
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )
+    },
+    { 
+      icon: Sparkles, 
+      title: 'Respuestas IA', 
+      description: 'Borradores que capturan tu tono de voz único.',
+      size: 'small',
+      mockup: (
+        <div className="feature-mini-mockup ai-mini">
+          <motion.div 
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ repeat: Infinity, duration: 1.5 }}
+            className="ai-sparkle"
+          >
+            <Sparkles className="w-6 h-6 text-purple-400" />
+          </motion.div>
+        </div>
+      )
+    },
+    { 
+      icon: Users, 
+      title: 'CRM integrado', 
+      description: 'Perfil completo de cada contacto con historial.',
+      size: 'small',
+      mockup: null
+    },
+    { 
+      icon: Bell, 
+      title: 'Recordatorios', 
+      description: 'Seguimiento automático para leads inactivos. Nunca pierdas una oportunidad.',
+      size: 'medium',
+      mockup: (
+        <div className="feature-mini-mockup reminder-mini">
+          <motion.div 
+            animate={{ rotate: [0, 15, -15, 0] }}
+            transition={{ repeat: Infinity, duration: 1, ease: "easeInOut" }}
+          >
+            <Bell className="w-8 h-8 text-orange-400" />
+          </motion.div>
+        </div>
+      )
+    },
+    { 
+      icon: MessageSquare, 
+      title: 'Comentarios', 
+      description: 'Gestiona comentarios de posts directamente desde el inbox.',
+      size: 'medium',
+      mockup: null
+    },
+    { 
+      icon: BarChart2, 
+      title: 'Analytics', 
+      description: 'Métricas de rendimiento y tiempo de respuesta en tiempo real.',
+      size: 'small',
+      mockup: null
+    },
   ];
 
   return (
-    <section id="features" ref={ref} className="py-24 md:py-32 bg-[#080808]">
-      <div className="max-w-7xl mx-auto px-6">
+    <section id="features" ref={sectionRef} className="py-32 bg-[#080808] relative overflow-hidden">
+      <Parallax speed={-3} className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-purple-500/5 blur-3xl" />
+      </Parallax>
+      
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
         <motion.div
-          initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={prefersReducedMotion ? { duration: 0 } : undefined}
-          className="text-center mb-16"
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="text-center mb-20"
         >
-          <span className="text-xs uppercase tracking-[0.2em] text-[var(--landing-primary)] font-semibold mb-4 block">
+          <span className="text-xs uppercase tracking-[0.3em] text-[var(--landing-primary)] font-semibold mb-4 block">
             Características
           </span>
-          <h2 className="font-display text-3xl md:text-5xl font-bold text-white mb-4">
-            Todo lo que necesitas para escalar
+          <h2 className="font-display text-4xl md:text-6xl font-bold text-white mb-6">
+            Todo lo que necesitas para <span className="text-gradient">escalar</span>
           </h2>
-          <p className="text-white/50 text-lg max-w-xl mx-auto">
+          <p className="text-white/50 text-xl max-w-2xl mx-auto">
             Herramientas diseñadas para equipos que manejan cientos de conversaciones al día.
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bento-grid">
           {features.map((feature, i) => {
             const Icon = feature.icon;
             return (
-              <motion.div
+              <div
                 key={feature.title}
-                initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
-                animate={isInView ? { opacity: 1, y: 0 } : {}}
-                transition={prefersReducedMotion ? { duration: 0 } : { delay: i * 0.1, duration: 0.5 }}
-                className={`card-landing hover-lift group ${
-                  feature.size === 'large' ? 'col-span-2 row-span-2' : 
-                  feature.size === 'medium' ? 'col-span-2 md:col-span-1' : ''
-                }`}
+                className={`feature-card bento-${feature.size}`}
               >
-                <div className="w-12 h-12 rounded-xl bg-[var(--landing-primary)]/10 flex items-center justify-center mb-4 group-hover:bg-[var(--landing-primary)]/20 transition-colors">
-                  <Icon className="w-6 h-6 text-[var(--landing-primary)]" />
+                <div className="feature-card-inner">
+                  <div className="feature-icon-wrapper">
+                    <Icon className="w-7 h-7 text-[var(--landing-primary)]" />
+                  </div>
+                  <h3 className="font-display text-xl font-bold text-white mt-4 mb-2">{feature.title}</h3>
+                  <p className="text-white/50 text-sm leading-relaxed">{feature.description}</p>
+                  {feature.mockup && (
+                    <div className="feature-mockup-area">
+                      {feature.mockup}
+                    </div>
+                  )}
                 </div>
-                <h3 className="font-display text-lg font-bold text-white mb-2">{feature.title}</h3>
-                <p className="text-white/50 text-sm">{feature.description}</p>
-              </motion.div>
+              </div>
             );
           })}
         </div>
@@ -522,39 +820,50 @@ function FeaturesSection() {
 
 function TestimonialSection() {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-100px' });
   const prefersReducedMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
-  const y = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [100, -100]);
+  const quoteY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [100, -100]);
+  const quoteRotate = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [-5, 5]);
 
   return (
-    <section id="testimonial" ref={ref} className="py-24 md:py-40 relative overflow-hidden">
-      <motion.div style={prefersReducedMotion ? {} : { y }} className="absolute top-0 left-10 text-[20rem] font-display font-black text-white/[0.02] select-none">
+    <section id="testimonial" ref={ref} className="py-40 relative overflow-hidden">
+      <motion.div 
+        style={{ y: quoteY, rotate: quoteRotate }} 
+        className="absolute top-10 left-10 text-[25rem] font-display font-black text-white/[0.02] select-none leading-none"
+      >
+        "
+      </motion.div>
+      <motion.div 
+        style={{ y: useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [-100, 100]) }} 
+        className="absolute bottom-10 right-10 text-[25rem] font-display font-black text-white/[0.02] select-none leading-none rotate-180"
+      >
         "
       </motion.div>
       
       <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
         <motion.blockquote
-          initial={prefersReducedMotion ? false : { opacity: 0, y: 40 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.8 }}
-          className="font-display text-2xl md:text-4xl font-medium text-white leading-relaxed mb-12"
+          initial={{ opacity: 0, y: 60 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+          className="font-display text-3xl md:text-5xl font-medium text-white leading-relaxed mb-12"
         >
           "Pasamos de responder en 4 horas a responder en 15 minutos. 
           <span className="text-gradient"> Repliyo cambió completamente</span> cómo gestionamos nuestro Instagram de 50k seguidores."
         </motion.blockquote>
 
         <motion.div
-          initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.3, duration: 0.6 }}
-          className="inline-flex items-center gap-4 p-3 pr-6 rounded-full bg-white/5 border border-white/10"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.3, duration: 0.8 }}
+          className="inline-flex items-center gap-4 p-4 pr-8 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm"
         >
-          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[var(--landing-primary)] to-[var(--landing-accent)] flex items-center justify-center text-white font-bold text-lg">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[var(--landing-primary)] to-[var(--landing-accent)] flex items-center justify-center text-white font-bold text-xl">
             MG
           </div>
           <div className="text-left">
-            <div className="font-semibold text-white">María González</div>
+            <div className="font-semibold text-white text-lg">María González</div>
             <div className="text-sm text-white/50">Head of Social Media, FashionBrand</div>
           </div>
         </motion.div>
@@ -565,39 +874,48 @@ function TestimonialSection() {
 
 function CTASection() {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-100px' });
   const prefersReducedMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
+  const bgY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [100, -50]);
 
   return (
-    <section ref={ref} className="relative border-t border-white/5">
-      <div className="grid lg:grid-cols-12">
-        <div className="lg:col-span-8 p-12 md:p-20 border-r border-white/5">
+    <section ref={ref} className="relative border-t border-white/5 overflow-hidden">
+      <motion.div 
+        style={{ y: bgY }}
+        className="absolute inset-0 bg-gradient-to-br from-[var(--landing-primary)]/10 via-transparent to-[var(--landing-accent)]/5"
+      />
+      
+      <div className="grid lg:grid-cols-12 relative z-10">
+        <div className="lg:col-span-7 p-12 md:p-20 lg:p-24">
           <motion.div
-            initial={prefersReducedMotion ? false : { opacity: 0, y: 40 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.8 }}
+            initial={{ opacity: 0, y: 60 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           >
             <h2 className="font-display font-bold text-5xl md:text-7xl lg:text-8xl tracking-tight leading-[0.9] mb-6">
               ¿LISTO PARA<br />
               <span className="text-outline hover:text-white transition-colors duration-500 cursor-default">ESCALAR?</span>
             </h2>
-            <p className="text-white/50 text-lg md:text-xl max-w-md">
+            <p className="text-white/50 text-xl md:text-2xl max-w-lg">
               Automatiza respuestas. Deleita clientes. Sin tarjeta de crédito.
             </p>
           </motion.div>
         </div>
 
-        <div className="lg:col-span-4 p-12 md:p-20 flex items-center justify-center bg-gradient-to-br from-[var(--landing-primary)]/5 to-transparent relative group overflow-hidden">
-          <div className="absolute inset-0 bg-[var(--landing-primary)]/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+        <div className="lg:col-span-5 p-12 md:p-20 lg:p-24 flex items-center justify-center border-t lg:border-t-0 lg:border-l border-white/5">
           <motion.a
             href="/login"
-            initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.8 }}
-            animate={isInView ? { opacity: 1, scale: 1 } : {}}
-            transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.2, duration: 0.6, type: 'spring' }}
-            className="btn-cta-circle relative z-10"
+            initial={{ opacity: 0, scale: 0.8 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ duration: 0.6, type: 'spring' }}
+            className="btn-cta-circle"
             data-testid="button-empezar-cta"
           >
-            <span className="font-display">Empezar</span>
+            <span className="font-display text-xl">Empezar</span>
             <ArrowRight className="w-6 h-6" />
           </motion.a>
         </div>
@@ -635,12 +953,17 @@ function Footer() {
         ))}
       </div>
 
-      <div className="relative w-full overflow-hidden border-t border-white/5 pt-10 pb-6">
-        <h1 className="font-display font-black text-[15vw] leading-[0.75] text-center select-none tracking-tight text-outline">
+      <div className="relative w-full overflow-hidden border-t border-white/5 py-16">
+        <motion.h1 
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="font-display font-black text-[18vw] leading-[0.75] text-center select-none tracking-tight text-outline"
+        >
           REPLIYO
-        </h1>
-        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center text-xs text-white/40 font-mono mt-6">
-          <span>© 2025 Repliyo Inc.</span>
+        </motion.h1>
+        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center text-xs text-white/40 font-mono mt-8">
+          <span>© 2026 Repliyo Inc.</span>
           <div className="flex gap-6">
             <a href="#" className="hover:text-white transition-colors" data-testid="link-footer-privacy">Privacy</a>
             <a href="#" className="hover:text-white transition-colors" data-testid="link-footer-terms">Terms</a>
@@ -653,19 +976,21 @@ function Footer() {
 
 export function LandingPage() {
   return (
-    <div className="landing-page" data-testid="landing-page">
-      <Header />
-      <main>
-        <HeroSection />
-        <MarqueeSection />
-        <ProblemSection />
-        <MetricSection />
-        <HowItWorksSection />
-        <FeaturesSection />
-        <TestimonialSection />
-        <CTASection />
-      </main>
-      <Footer />
-    </div>
+    <ParallaxProvider>
+      <div className="landing-page" data-testid="landing-page">
+        <Header />
+        <main>
+          <HeroSection />
+          <MarqueeSection />
+          <ProblemSolutionSection />
+          <MetricSection />
+          <HowItWorksSection />
+          <FeaturesSection />
+          <TestimonialSection />
+          <CTASection />
+        </main>
+        <Footer />
+      </div>
+    </ParallaxProvider>
   );
 }
