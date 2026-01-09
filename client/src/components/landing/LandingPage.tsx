@@ -14,6 +14,92 @@ import '../../styles/landing.css';
 
 gsap.registerPlugin(ScrollTrigger);
 
+function Step1ConnectMockup() {
+  const [captureIndex, setCaptureIndex] = useState(-1);
+  
+  const orbitIcons = [
+    { Icon: FaInstagram, platform: 'instagram', angle: 0 },
+    { Icon: FaTiktok, platform: 'tiktok', angle: 60 },
+    { Icon: FaFacebook, platform: 'facebook', angle: 120 },
+    { Icon: FaYoutube, platform: 'youtube', angle: 180 },
+    { Icon: FaLinkedin, platform: 'linkedin', angle: 240 },
+    { Icon: GoogleBusinessIcon, platform: 'google', angle: 300 },
+  ];
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCaptureIndex(prev => (prev + 1) % 6);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+  
+  return (
+    <div className="step-mockup connect-mockup-v3">
+      <div className="connect-center-inbox-v3">
+        <Inbox className="w-8 h-8 text-white" />
+        <motion.div 
+          className="radar-ring ring-1"
+          animate={{ scale: [1, 2.5], opacity: [0.6, 0] }}
+          transition={{ repeat: Infinity, duration: 2, ease: 'easeOut' }}
+        />
+        <motion.div 
+          className="radar-ring ring-2"
+          animate={{ scale: [1, 2.5], opacity: [0.4, 0] }}
+          transition={{ repeat: Infinity, duration: 2, delay: 0.5, ease: 'easeOut' }}
+        />
+        <motion.div 
+          className="radar-ring ring-3"
+          animate={{ scale: [1, 2.5], opacity: [0.3, 0] }}
+          transition={{ repeat: Infinity, duration: 2, delay: 1, ease: 'easeOut' }}
+        />
+      </div>
+      
+      <motion.div 
+        className="orbit-container"
+        animate={{ rotate: 360 }}
+        transition={{ repeat: Infinity, duration: 20, ease: 'linear' }}
+      >
+        {orbitIcons.map((item, idx) => {
+          const isCapturing = captureIndex === idx;
+          return (
+            <motion.div
+              key={item.platform}
+              className={`orbit-icon ${item.platform}`}
+              style={{
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                transform: `rotate(${item.angle}deg) translateX(90px) rotate(-${item.angle}deg)`,
+              }}
+              animate={isCapturing ? {
+                scale: [1, 1.3, 0],
+                x: [0, 0, 45 - 90 * Math.cos(item.angle * Math.PI / 180)],
+                y: [0, 0, 45 - 90 * Math.sin(item.angle * Math.PI / 180)],
+                opacity: [1, 1, 0],
+              } : {
+                scale: 1,
+                opacity: 1,
+              }}
+              transition={isCapturing ? {
+                duration: 0.8,
+                times: [0, 0.3, 1],
+              } : { duration: 0.3 }}
+            >
+              <motion.div
+                animate={{ rotate: -360 }}
+                transition={{ repeat: Infinity, duration: 20, ease: 'linear' }}
+                className="orbit-icon-inner"
+              >
+                <item.Icon className={`w-5 h-5 ${item.platform === 'tiktok' ? 'text-white' : ''}`} />
+              </motion.div>
+            </motion.div>
+          );
+        })}
+      </motion.div>
+    </div>
+  );
+}
+
 function Step2AIMockup() {
   const [phase, setPhase] = useState(0);
   const [typedText, setTypedText] = useState('');
@@ -1193,90 +1279,7 @@ function HowItWorksSection() {
       number: '01',
       title: 'Conecta tus redes',
       description: 'Vincula Instagram, TikTok, Facebook, YouTube, LinkedIn y Google My Business en minutos. Todos tus DMs y comentarios aparecerán en un solo lugar.',
-      mockup: (
-        <div className="step-mockup connect-mockup-v2">
-          <div className="connect-center-inbox">
-            <Inbox className="w-8 h-8 text-white" />
-            <motion.div 
-              className="inbox-pulse-ring"
-              animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
-              transition={{ repeat: Infinity, duration: 2 }}
-            />
-          </div>
-          <motion.div 
-            className="flying-icon instagram"
-            animate={{ 
-              x: [0, 60, 60], 
-              y: [0, 40, 40],
-              scale: [1, 0.6, 0],
-              opacity: [1, 0.8, 0]
-            }}
-            transition={{ repeat: Infinity, duration: 3, delay: 0, times: [0, 0.6, 1] }}
-          >
-            <FaInstagram className="w-6 h-6" />
-          </motion.div>
-          <motion.div 
-            className="flying-icon tiktok"
-            animate={{ 
-              x: [0, -20, -20], 
-              y: [0, 50, 50],
-              scale: [1, 0.6, 0],
-              opacity: [1, 0.8, 0]
-            }}
-            transition={{ repeat: Infinity, duration: 3, delay: 0.5, times: [0, 0.6, 1] }}
-          >
-            <FaTiktok className="w-6 h-6 text-white" />
-          </motion.div>
-          <motion.div 
-            className="flying-icon facebook"
-            animate={{ 
-              x: [0, -50, -50], 
-              y: [0, 20, 20],
-              scale: [1, 0.6, 0],
-              opacity: [1, 0.8, 0]
-            }}
-            transition={{ repeat: Infinity, duration: 3, delay: 1, times: [0, 0.6, 1] }}
-          >
-            <FaFacebook className="w-6 h-6" />
-          </motion.div>
-          <motion.div 
-            className="flying-icon youtube"
-            animate={{ 
-              x: [0, 40, 40], 
-              y: [0, -30, -30],
-              scale: [1, 0.6, 0],
-              opacity: [1, 0.8, 0]
-            }}
-            transition={{ repeat: Infinity, duration: 3, delay: 1.5, times: [0, 0.6, 1] }}
-          >
-            <FaYoutube className="w-6 h-6" />
-          </motion.div>
-          <motion.div 
-            className="flying-icon linkedin"
-            animate={{ 
-              x: [0, -40, -40], 
-              y: [0, -40, -40],
-              scale: [1, 0.6, 0],
-              opacity: [1, 0.8, 0]
-            }}
-            transition={{ repeat: Infinity, duration: 3, delay: 2, times: [0, 0.6, 1] }}
-          >
-            <FaLinkedin className="w-6 h-6" />
-          </motion.div>
-          <motion.div 
-            className="flying-icon google"
-            animate={{ 
-              x: [0, 20, 20], 
-              y: [0, -50, -50],
-              scale: [1, 0.6, 0],
-              opacity: [1, 0.8, 0]
-            }}
-            transition={{ repeat: Infinity, duration: 3, delay: 2.5, times: [0, 0.6, 1] }}
-          >
-            <GoogleBusinessIcon className="w-6 h-6" />
-          </motion.div>
-        </div>
-      )
+      mockup: <Step1ConnectMockup />
     },
     {
       number: '02',
