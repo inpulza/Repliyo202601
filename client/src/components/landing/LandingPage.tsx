@@ -1756,15 +1756,15 @@ function TestimonialSection() {
                 {testimonial.quote.split(testimonial.highlight)[1]}"
               </blockquote>
 
-              <div className="inline-flex items-center gap-4 p-4 pr-8 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
+              <div className="inline-flex items-center gap-5 p-5 pr-10 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
                 <img 
                   src={testimonial.image} 
                   alt={testimonial.name}
-                  className="w-16 h-16 rounded-full object-cover"
+                  className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border-2 border-white/20"
                 />
                 <div className="text-left">
-                  <div className="font-semibold text-white text-lg">{testimonial.name}</div>
-                  <div className="text-sm text-white/50">{testimonial.role}</div>
+                  <div className="font-semibold text-white text-xl md:text-2xl">{testimonial.name}</div>
+                  <div className="text-base md:text-lg text-white/60">{testimonial.role}</div>
                 </div>
               </div>
             </motion.div>

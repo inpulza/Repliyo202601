@@ -3803,10 +3803,17 @@
 /* Testimonial Carousel */
 .testimonial-carousel {
   position: relative;
-  min-height: 320px;
+  min-height: 400px;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-bottom: 40px;
+}
+
+@media (min-width: 768px) {
+  .testimonial-carousel {
+    min-height: 450px;
+  }
 }
 
 .testimonial-slide {
@@ -3817,6 +3824,7 @@
   align-items: center;
   justify-content: center;
   pointer-events: none;
+  padding: 20px;
 }
 
 .testimonial-slide[style*="z-index: 10"] {
@@ -3827,6 +3835,8 @@
   display: flex;
   gap: 12px;
   justify-content: center;
+  position: relative;
+  z-index: 20;
 }
 
 .testimonial-dot {
