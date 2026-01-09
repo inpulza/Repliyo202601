@@ -389,50 +389,56 @@ function ProblemSolutionSection() {
   return (
     <section ref={sectionRef} className="py-32 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="grid md:grid-cols-2 gap-12 md:gap-20">
-          <div>
-            <span className="text-sm uppercase tracking-[0.3em] text-red-500 font-bold mb-6 block h-6">
-              El problema
-            </span>
+        <div className="grid md:grid-cols-2 gap-20 md:gap-32">
+          <div className="space-y-8">
+            <div className="sticky top-32">
+              <span className="text-xs uppercase tracking-[0.3em] text-red-500 font-semibold mb-4 block">
+                El problema
+              </span>
+              <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-12 leading-tight">
+                Responder mensajes en 5 apps es <span className="text-red-500">agotador</span>
+              </h2>
+              
+              <div className="space-y-8">
+                {problems.map((problem, i) => {
+                  const Icon = problem.icon;
+                  return (
+                    <div key={i} className="problem-item flex items-start gap-5 p-6 rounded-2xl bg-red-500/5 border border-red-500/10">
+                      <div className="w-14 h-14 rounded-xl bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                        <Icon className="w-7 h-7 text-red-400" />
+                      </div>
+                      <p className="font-display text-xl md:text-2xl font-semibold text-white leading-snug">{problem.text}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-          <div>
-            <span className="text-sm uppercase tracking-[0.3em] text-green-500 font-bold mb-6 block h-6">
-              La solución
-            </span>
+
+          <div className="space-y-8">
+            <div className="sticky top-32">
+              <span className="text-xs uppercase tracking-[0.3em] text-green-500 font-semibold mb-4 block">
+                La solución
+              </span>
+              <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-12 leading-tight">
+                Un inbox inteligente que <span className="text-gradient">trabaja por ti</span>
+              </h2>
+              
+              <div className="space-y-8">
+                {solutions.map((solution, i) => {
+                  const Icon = solution.icon;
+                  return (
+                    <div key={i} className="solution-item flex items-start gap-5 p-6 rounded-2xl bg-green-500/5 border border-green-500/10">
+                      <div className="w-14 h-14 rounded-xl bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                        <Icon className="w-7 h-7 text-green-400" />
+                      </div>
+                      <p className="font-display text-xl md:text-2xl font-semibold text-white leading-snug">{solution.text}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-        </div>
-        
-        <div className="grid md:grid-cols-2 gap-12 md:gap-20 mt-6">
-          <div>
-            <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight min-h-[120px] md:min-h-[160px]">
-              Responder mensajes en 5 apps es <span className="text-red-500">agotador</span>
-            </h2>
-          </div>
-          <div>
-            <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight min-h-[120px] md:min-h-[160px]">
-              Un inbox inteligente que <span className="text-gradient">trabaja por ti</span>
-            </h2>
-          </div>
-        </div>
-        
-        <div className="grid md:grid-cols-2 gap-12 md:gap-20 mt-12">
-          {problems.map((problem, i) => {
-            const ProblemIcon = problem.icon;
-            const solution = solutions[i];
-            const SolutionIcon = solution.icon;
-            return (
-              <React.Fragment key={i}>
-                <div className="problem-item flex items-start gap-4 min-h-[60px]">
-                  <ProblemIcon className="w-6 h-6 text-red-400 flex-shrink-0 mt-1" />
-                  <p className="font-display text-lg md:text-xl lg:text-2xl font-semibold text-white leading-snug">{problem.text}</p>
-                </div>
-                <div className="solution-item flex items-start gap-4 min-h-[60px]">
-                  <SolutionIcon className="w-6 h-6 text-green-400 flex-shrink-0 mt-1" />
-                  <p className="font-display text-lg md:text-xl lg:text-2xl font-semibold text-white leading-snug">{solution.text}</p>
-                </div>
-              </React.Fragment>
-            );
-          })}
         </div>
       </div>
     </section>
@@ -533,7 +539,7 @@ function HowItWorksSection() {
               transition={{ repeat: Infinity, duration: 2, delay: 0.3 }}
               className="connect-icon tiktok"
             >
-              <FaTiktok className="w-8 h-8 text-white" />
+              <FaTiktok className="w-8 h-8" />
             </motion.div>
             <motion.div 
               animate={{ scale: [1, 1.1, 1], y: [0, -5, 0] }}
