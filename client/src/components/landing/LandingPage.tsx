@@ -1118,7 +1118,7 @@ function MetricSection() {
 
   return (
     <section ref={ref} className="py-48 md:py-56 relative overflow-visible">
-      <div className="absolute inset-0 bg-gradient-to-b from-[var(--landing-primary)]/10 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(168,85,247,0.08)_0%,transparent_70%)]" />
       
       <Parallax speed={-5} className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] md:w-[800px] md:h-[800px] rounded-full border border-purple-500/10" />
