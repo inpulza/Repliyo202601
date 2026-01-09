@@ -932,16 +932,15 @@
   gap: 60px;
   align-items: center;
   padding: 40px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 32px;
-  backdrop-filter: blur(20px);
+  background: transparent;
+  border: none;
+  border-radius: 0;
 }
 
 .landing-page.theme-light .how-step-content {
-  background: rgba(255,255,255,0.8);
-  border-color: rgba(0,0,0,0.08);
-  box-shadow: 0 20px 60px -20px rgba(0,0,0,0.15);
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 .how-step-info {
@@ -962,18 +961,18 @@
 
 .how-step-mockup {
   height: 320px;
-  background: rgba(0,0,0,0.4);
-  border-radius: 24px;
+  background: transparent;
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.05);
+  overflow: visible;
+  border: none;
 }
 
 .landing-page.theme-light .how-step-mockup {
-  background: rgba(0,0,0,0.03);
-  border-color: rgba(0,0,0,0.08);
+  background: transparent;
+  border: none;
 }
 
 .how-step-mockup .step-mockup {
