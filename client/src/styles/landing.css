@@ -352,36 +352,6 @@
   box-shadow: 0 4px 20px -8px rgba(15, 23, 42, 0.15);
 }
 
-.theme-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.7);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.theme-toggle:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-}
-
-.landing-page.theme-light .theme-toggle {
-  background: rgba(0, 0, 0, 0.05);
-  border-color: rgba(0, 0, 0, 0.1);
-  color: rgba(0, 0, 0, 0.6);
-}
-
-.landing-page.theme-light .theme-toggle:hover {
-  background: rgba(0, 0, 0, 0.1);
-  color: var(--landing-text);
-}
-
 .font-display {
   font-family: 'Space Grotesk', sans-serif;
 }
