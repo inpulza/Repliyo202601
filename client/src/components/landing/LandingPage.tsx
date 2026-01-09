@@ -80,9 +80,9 @@ function InboxMockup() {
 
   const PlatformIcon = ({ platform }: { platform: string }) => {
     switch(platform) {
-      case 'instagram': return <FaInstagram className="w-3 h-3 text-pink-500" />;
-      case 'tiktok': return <FaTiktok className="w-3 h-3 text-black" />;
-      case 'facebook': return <FaFacebook className="w-3 h-3 text-blue-600" />;
+      case 'instagram': return <FaInstagram className="w-2.5 h-2.5 text-white" />;
+      case 'tiktok': return <FaTiktok className="w-2.5 h-2.5 text-white" />;
+      case 'facebook': return <FaFacebook className="w-2.5 h-2.5 text-white" />;
       default: return null;
     }
   };
@@ -216,6 +216,21 @@ function InboxMockup() {
               )}
             </div>
             
+            <div className="chat-actions-bar">
+              <button className="chat-action-btn primary">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Generar borrador</span>
+              </button>
+              <button className="chat-action-btn">
+                <Send className="w-3.5 h-3.5" />
+                <span>Responder</span>
+              </button>
+              <button className="chat-action-btn">
+                <Bell className="w-3.5 h-3.5" />
+                <span>Recordatorio</span>
+              </button>
+            </div>
+            
             <div className="chat-input-v2">
               <button className="emoji-btn">😊</button>
               <input type="text" placeholder="Escribe tu mensaje..." readOnly />
@@ -228,24 +243,29 @@ function InboxMockup() {
           <div className="mockup-crm-panel">
             <div className="crm-header">
               <Users className="w-4 h-4" />
-              <span>Perfil del cliente</span>
+              <span>Cliente</span>
             </div>
             <div className="crm-content">
               <img src={avatarMaria} alt="María" className="crm-avatar" />
               <div className="crm-name">María García</div>
-              <div className="crm-stats">
-                <div className="crm-stat">
-                  <span className="stat-value">8</span>
-                  <span className="stat-label">Conversaciones</span>
+              <div className="crm-email">maria.garcia@email.com</div>
+              <div className="crm-stats-grid">
+                <div className="crm-stat-item">
+                  <span className="stat-number">8</span>
+                  <span className="stat-text">Chats</span>
                 </div>
-                <div className="crm-stat">
-                  <span className="stat-value">$1,250</span>
-                  <span className="stat-label">Valor total</span>
+                <div className="crm-stat-item">
+                  <span className="stat-number">$1.2k</span>
+                  <span className="stat-text">Valor</span>
                 </div>
               </div>
               <div className="crm-tags">
-                <span className="crm-tag">VIP</span>
+                <span className="crm-tag vip">VIP</span>
                 <span className="crm-tag">Recurrente</span>
+              </div>
+              <div className="crm-notes">
+                <span className="notes-label">Notas</span>
+                <p className="notes-text">Cliente frecuente, prefiere talla M...</p>
               </div>
             </div>
           </div>
@@ -309,14 +329,14 @@ function HeroSection() {
   const prefersReducedMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end start'] });
   
-  const textY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [0, 150]);
-  const mockupY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [0, -30]);
-  const mockupScale = useTransform(scrollYProgress, [0, 0.5], prefersReducedMotion ? [1, 1] : [1, 0.95]);
+  const textY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [0, 100]);
+  const mockupY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [0, -20]);
+  const mockupScale = useTransform(scrollYProgress, [0, 0.5], prefersReducedMotion ? [1, 1] : [1, 0.98]);
   const opacity = useTransform(scrollYProgress, [0, 0.4], [1, 0]);
 
   return (
-    <section ref={containerRef} className="hero-section relative min-h-[160vh] md:min-h-[180vh] overflow-visible pb-32">
-      <div className="sticky top-0 min-h-screen flex flex-col items-center justify-start pt-24 pb-20 overflow-visible">
+    <section ref={containerRef} className="hero-section relative min-h-[140vh] md:min-h-[150vh] overflow-visible">
+      <div className="sticky top-0 min-h-screen flex flex-col items-center justify-start pt-28 overflow-visible">
         <div className="absolute inset-0 bg-radial-gradient" />
         <div className="absolute inset-0 bg-grid-pattern opacity-30" />
         
@@ -325,19 +345,19 @@ function HeroSection() {
           <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] rounded-full bg-orange-500/5 blur-3xl" />
         </Parallax>
         
-        <motion.div style={{ y: textY, opacity }} className="relative z-10 max-w-5xl mx-auto px-6 text-center mb-10">
+        <motion.div style={{ y: textY, opacity }} className="relative z-10 max-w-5xl mx-auto px-6 text-center mb-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 mb-6"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 mb-5"
           >
             <Sparkles className="w-4 h-4 text-[var(--landing-accent)]" />
             <span className="text-sm text-white/70">Respuestas IA personalizadas</span>
           </motion.div>
 
           <motion.h1 
-            className="font-display font-bold text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight mb-6"
+            className="font-display font-bold text-4xl md:text-5xl lg:text-6xl leading-[0.95] tracking-tight mb-5"
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
@@ -351,7 +371,7 @@ function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.6 }}
-            className="text-base md:text-lg text-white/50 max-w-xl mx-auto mb-8 leading-relaxed"
+            className="text-base md:text-lg text-white/50 max-w-xl mx-auto mb-6 leading-relaxed"
           >
             Unifica todos tus DMs y comentarios de Instagram, TikTok y Facebook en un inbox inteligente que responde automáticamente.
           </motion.p>
@@ -373,7 +393,7 @@ function HeroSection() {
         
         <motion.div 
           style={{ y: mockupY, scale: mockupScale }}
-          className="relative z-20 w-full max-w-6xl mx-auto px-4"
+          className="relative z-20 w-full max-w-7xl mx-auto px-6"
         >
           <motion.div
             initial={{ opacity: 0, y: 60 }}

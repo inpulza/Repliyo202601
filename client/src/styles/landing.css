@@ -434,7 +434,7 @@
 .marquee-section {
   position: relative;
   z-index: 30;
-  margin-top: -120px;
+  margin-top: -80px;
 }
 
 .marquee-overlap-shadow {
@@ -972,10 +972,12 @@
 }
 
 .mockup-sidebar-v2 {
-  width: 300px;
+  width: 280px;
+  min-width: 280px;
   background: rgba(0,0,0,0.3);
   border-right: 1px solid rgba(255,255,255,0.05);
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .message-preview-v2 {
@@ -1032,11 +1034,15 @@
 }
 
 .platform-indicator.tiktok {
-  background: #000;
+  background: linear-gradient(135deg, #25F4EE, #FE2C55);
 }
 
 .platform-indicator.facebook {
   background: #1877F2;
+}
+
+.landing-page.theme-light .platform-indicator {
+  border-color: rgba(255,255,255,0.95);
 }
 
 .message-info-v2 {
@@ -1063,11 +1069,13 @@
 }
 
 .message-info-v2 .preview {
-  font-size: 13px;
+  font-size: 12px;
   color: rgba(255,255,255,0.5);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 180px;
+  display: block;
 }
 
 .unread-dot {
@@ -1315,22 +1323,61 @@
   box-shadow: 0 4px 20px -5px var(--landing-primary);
 }
 
+/* Chat Actions Bar */
+.chat-actions-bar {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(0,0,0,0.2);
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.chat-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.chat-action-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: white;
+}
+
+.chat-action-btn.primary {
+  background: linear-gradient(135deg, var(--landing-primary), var(--landing-accent));
+  color: white;
+}
+
+.chat-action-btn.primary:hover {
+  box-shadow: 0 4px 15px -5px var(--landing-primary);
+  transform: translateY(-1px);
+}
+
+/* CRM Panel Improved */
 .mockup-crm-panel {
-  width: 220px;
+  width: 200px;
   background: rgba(0,0,0,0.4);
   border-left: 1px solid rgba(255,255,255,0.05);
-  padding: 20px;
+  padding: 16px;
+  overflow-y: auto;
 }
 
 .crm-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 6px;
+  font-size: 12px;
   font-weight: 600;
   color: rgba(255,255,255,0.7);
-  margin-bottom: 20px;
-  padding-bottom: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
   border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 
@@ -1339,60 +1386,100 @@
 }
 
 .crm-avatar {
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid rgba(168, 85, 247, 0.3);
-  margin-bottom: 12px;
+  border: 2px solid rgba(168, 85, 247, 0.3);
+  margin-bottom: 10px;
 }
 
 .crm-name {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: white;
-  margin-bottom: 16px;
+  margin-bottom: 4px;
 }
 
-.crm-stats {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-  margin-bottom: 16px;
+.crm-email {
+  font-size: 11px;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 14px;
+  word-break: break-all;
 }
 
-.crm-stat {
+.crm-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.crm-stat-item {
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+  padding: 10px 8px;
   text-align: center;
 }
 
-.stat-value {
+.stat-number {
   display: block;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   color: white;
+  line-height: 1.2;
 }
 
-.stat-label {
+.stat-text {
   font-size: 10px;
   color: rgba(255,255,255,0.4);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .crm-tags {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   justify-content: center;
   flex-wrap: wrap;
+  margin-bottom: 14px;
 }
 
 .crm-tag {
-  padding: 4px 10px;
-  font-size: 11px;
+  padding: 3px 8px;
+  font-size: 10px;
   font-weight: 500;
   background: rgba(168, 85, 247, 0.15);
-  color: var(--landing-primary);
-  border-radius: 6px;
+  color: var(--landing-primary-light);
+  border-radius: 4px;
+}
+
+.crm-tag.vip {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.2));
+  color: #FBBF24;
+}
+
+.crm-notes {
+  text-align: left;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.notes-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.notes-text {
+  font-size: 11px;
+  color: rgba(255,255,255,0.6);
+  line-height: 1.4;
+  margin: 0;
 }
 
 .mockup-glow-v2 {
@@ -1577,6 +1664,49 @@
 
 .landing-page.theme-light .stat-label {
   color: rgba(0,0,0,0.5);
+}
+
+.landing-page.theme-light .stat-number {
+  color: #1a1a2e;
+}
+
+.landing-page.theme-light .stat-text {
+  color: rgba(0,0,0,0.5);
+}
+
+.landing-page.theme-light .crm-email {
+  color: rgba(0,0,0,0.4);
+}
+
+.landing-page.theme-light .crm-stat-item {
+  background: rgba(0,0,0,0.03);
+}
+
+.landing-page.theme-light .notes-label {
+  color: rgba(0,0,0,0.5);
+}
+
+.landing-page.theme-light .notes-text {
+  color: rgba(0,0,0,0.6);
+}
+
+.landing-page.theme-light .crm-notes {
+  border-top-color: rgba(0,0,0,0.06);
+}
+
+.landing-page.theme-light .chat-actions-bar {
+  background: rgba(0,0,0,0.02);
+  border-top-color: rgba(0,0,0,0.06);
+}
+
+.landing-page.theme-light .chat-action-btn {
+  color: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.05);
+}
+
+.landing-page.theme-light .chat-action-btn:hover {
+  background: rgba(0,0,0,0.1);
+  color: rgba(0,0,0,0.8);
 }
 
 .how-card {
