@@ -483,36 +483,69 @@ function MetricSection() {
 
 function HowItWorksSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
+  const [activeStep, setActiveStep] = useState(0);
 
   useGSAP(() => {
-    if (prefersReducedMotion) return;
+    if (prefersReducedMotion || !containerRef.current) return;
     
     const ctx = gsap.context(() => {
-      const cards = gsap.utils.toArray('.how-card');
+      const steps = gsap.utils.toArray('.how-step-panel');
+      const totalSteps = steps.length;
       
-      cards.forEach((card) => {
-        gsap.fromTo(card as Element,
+      ScrollTrigger.create({
+        trigger: sectionRef.current,
+        start: 'top top',
+        end: () => `+=${totalSteps * 100}vh`,
+        pin: containerRef.current,
+        anticipatePin: 1,
+        scrub: 0.5,
+        onUpdate: (self) => {
+          const progress = self.progress;
+          const stepIndex = Math.min(Math.floor(progress * totalSteps), totalSteps - 1);
+          setActiveStep(stepIndex);
+        }
+      });
+
+      steps.forEach((step, index) => {
+        const startProgress = index / totalSteps;
+        const endProgress = (index + 0.8) / totalSteps;
+        
+        gsap.fromTo(step as Element,
           { 
             opacity: 0, 
-            y: 100,
-            rotateX: -15,
-            transformPerspective: 1000
+            x: 100,
+            scale: 0.9
           },
           {
             opacity: 1,
-            y: 0,
-            rotateX: 0,
-            duration: 1,
-            ease: 'power3.out',
+            x: 0,
+            scale: 1,
+            ease: 'power2.out',
             scrollTrigger: {
-              trigger: card as Element,
-              start: 'top 85%',
-              end: 'top 40%',
-              scrub: 1
+              trigger: sectionRef.current,
+              start: `top+=${index * 100}vh top`,
+              end: `top+=${index * 100 + 80}vh top`,
+              scrub: 0.5,
             }
           }
         );
+        
+        if (index < totalSteps - 1) {
+          gsap.to(step as Element, {
+            opacity: 0.3,
+            scale: 0.95,
+            x: -50,
+            ease: 'power2.in',
+            scrollTrigger: {
+              trigger: sectionRef.current,
+              start: `top+=${(index + 1) * 100}vh top`,
+              end: `top+=${(index + 1) * 100 + 50}vh top`,
+              scrub: 0.5,
+            }
+          });
+        }
       });
     }, sectionRef);
     
@@ -523,7 +556,7 @@ function HowItWorksSection() {
     {
       number: '01',
       title: 'Conecta tus redes',
-      description: 'Vincula Instagram, TikTok y Facebook en menos de 2 minutos. Sin configuración técnica.',
+      description: 'Vincula Instagram, TikTok y Facebook en menos de 2 minutos. Sin configuración técnica. Simplemente autoriza el acceso y todos tus DMs y comentarios aparecerán en un solo lugar.',
       mockup: (
         <div className="step-mockup connect-mockup">
           <div className="connect-icons">
@@ -565,7 +598,7 @@ function HowItWorksSection() {
     {
       number: '02',
       title: 'La IA aprende tu estilo',
-      description: 'Entrena al asistente con ejemplos de tus mejores respuestas. Genera borradores que suenan como tú.',
+      description: 'Entrena al asistente con ejemplos de tus mejores respuestas. Genera borradores que suenan exactamente como tú, manteniendo tu tono único y personalizado para cada cliente.',
       mockup: (
         <div className="step-mockup ai-mockup">
           <div className="ai-chat">
@@ -595,7 +628,7 @@ function HowItWorksSection() {
     {
       number: '03',
       title: 'Responde y haz seguimiento',
-      description: 'Revisa, edita si quieres, y envía. Los recordatorios aseguran que ningún lead se enfríe.',
+      description: 'Revisa, edita si quieres, y envía. Los recordatorios automáticos aseguran que ningún lead se enfríe. Programa follow-ups y nunca pierdas una oportunidad de venta.',
       mockup: (
         <div className="step-mockup send-mockup">
           <motion.div 
@@ -623,32 +656,73 @@ function HowItWorksSection() {
     }
   ];
 
+  if (prefersReducedMotion) {
+    return (
+      <section id="how" className="py-32 relative">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-20">
+            <span className="text-xs uppercase tracking-[0.3em] text-[var(--landing-primary)] font-semibold mb-4 block">
+              Cómo funciona
+            </span>
+            <h2 className="font-display text-4xl md:text-6xl font-bold text-white">
+              De caos a control en <span className="text-gradient">3 pasos</span>
+            </h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {steps.map((step) => (
+              <div key={step.number} className="how-card">
+                <div className="card-inner">
+                  <span className="step-number">{step.number}</span>
+                  <h3 className="font-display text-2xl font-bold text-white mt-4 mb-3">{step.title}</h3>
+                  <p className="text-white/50 text-base leading-relaxed mb-6">{step.description}</p>
+                  <div className="step-mockup-container">{step.mockup}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section id="how" ref={sectionRef} className="py-32 relative">
-      <div className="max-w-7xl mx-auto px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-20"
-        >
+    <section id="how" ref={sectionRef} className="how-pinned-section relative">
+      <div ref={containerRef} className="how-pinned-container">
+        <div className="how-header">
           <span className="text-xs uppercase tracking-[0.3em] text-[var(--landing-primary)] font-semibold mb-4 block">
             Cómo funciona
           </span>
-          <h2 className="font-display text-4xl md:text-6xl font-bold text-white">
+          <h2 className="font-display text-4xl md:text-6xl font-bold text-white mb-8">
             De caos a control en <span className="text-gradient">3 pasos</span>
           </h2>
-        </motion.div>
+          
+          <div className="how-progress-dots">
+            {steps.map((_, i) => (
+              <div 
+                key={i} 
+                className={`how-progress-dot ${activeStep >= i ? 'active' : ''}`}
+              />
+            ))}
+          </div>
+        </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="how-steps-wrapper">
           {steps.map((step, i) => (
-            <div key={step.number} className="how-card group">
-              <div className="card-inner">
-                <span className="step-number">{step.number}</span>
-                <h3 className="font-display text-2xl font-bold text-white mt-4 mb-3">{step.title}</h3>
-                <p className="text-white/50 text-base leading-relaxed mb-6">{step.description}</p>
-                <div className="step-mockup-container">
+            <div 
+              key={step.number} 
+              className={`how-step-panel ${activeStep === i ? 'active' : ''}`}
+            >
+              <div className="how-step-content">
+                <div className="how-step-info">
+                  <span className="how-step-number">{step.number}</span>
+                  <h3 className="font-display text-3xl md:text-4xl font-bold text-white mt-4 mb-4">
+                    {step.title}
+                  </h3>
+                  <p className="text-white/60 text-lg md:text-xl leading-relaxed max-w-md">
+                    {step.description}
+                  </p>
+                </div>
+                <div className="how-step-mockup">
                   {step.mockup}
                 </div>
               </div>
