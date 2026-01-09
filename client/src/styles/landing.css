@@ -1487,11 +1487,15 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 120%;
-  height: 120%;
-  background: radial-gradient(ellipse at center, rgba(168, 85, 247, 0.15) 0%, transparent 60%);
+  width: 160%;
+  height: 180%;
+  background: 
+    radial-gradient(ellipse 80% 60% at center, rgba(168, 85, 247, 0.35) 0%, transparent 50%),
+    radial-gradient(ellipse 100% 80% at center, rgba(236, 72, 153, 0.2) 0%, transparent 60%),
+    radial-gradient(ellipse 120% 100% at center, rgba(168, 85, 247, 0.1) 0%, transparent 70%);
   pointer-events: none;
   z-index: -1;
+  filter: blur(40px);
 }
 
 /* Responsive adjustments for mockup v2 */
