@@ -2235,18 +2235,18 @@
 
 .how-step-mockup {
   height: 320px;
-  background: transparent;
-  border-radius: 0;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: visible;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .landing-page.theme-light .how-step-mockup {
-  background: transparent;
-  border: none;
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .how-step-mockup .step-mockup {
