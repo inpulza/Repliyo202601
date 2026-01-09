@@ -3033,6 +3033,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 120px;
+  overflow: hidden;
 }
 
 .feature-mini-mockup {
@@ -3170,6 +3172,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 180px;
 }
 
 .inbox-list-v2 {
@@ -3288,6 +3291,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 130px;
 }
 
 .crm-mini-card-v2 {
@@ -3447,6 +3451,7 @@
   flex: 1;
   display: flex;
   align-items: flex-start;
+  min-height: 140px;
 }
 
 .comments-thread-v2 {
@@ -3575,4 +3580,79 @@
 
 .landing-page.theme-light .analytics-labels {
   color: var(--landing-text-muted);
+}
+
+/* Multi-agent Mockup */
+.feature-multiagent-mockup {
+  margin-top: 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 120px;
+}
+
+.multiagent-avatars {
+  display: flex;
+  align-items: center;
+}
+
+.multiagent-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--landing-bg-card);
+  margin-left: -8px;
+  transition: all 0.3s ease;
+}
+
+.multiagent-avatar:first-child {
+  margin-left: 0;
+}
+
+.multiagent-avatar.active {
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.5);
+  z-index: 10;
+}
+
+.multiagent-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 20px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.7);
+}
+
+.multiagent-status .status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: pulse-dot 1.5s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+.multiagent-status .status-text {
+  font-weight: 500;
+}
+
+.landing-page.theme-light .multiagent-status {
+  background: rgba(0,0,0,0.05);
+  color: var(--landing-text-muted);
+}
+
+.landing-page.theme-light .multiagent-avatar {
+  border-color: var(--landing-bg-card);
 }

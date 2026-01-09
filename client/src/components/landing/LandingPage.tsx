@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
-import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Sun, Moon } from 'lucide-react';
+import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring } from 'framer-motion';
+import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Sun, Moon } from 'lucide-react';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
 import avatarMaria from '../../assets/avatars/latina_woman_avatar_headshot.png';
@@ -284,8 +284,11 @@ function FeatureInboxMockup() {
           <motion.div
             key={idx}
             className={`inbox-item-v2 ${idx === 0 && visibleItems.includes(0) ? 'selected' : ''}`}
-            initial={{ x: 40, opacity: 0, scale: 0.9 }}
-            animate={visibleItems.includes(idx) ? { x: 0, opacity: 1, scale: 1 } : {}}
+            initial={{ opacity: 0 }}
+            animate={{ 
+              opacity: visibleItems.includes(idx) ? 1 : 0,
+              x: visibleItems.includes(idx) ? 0 : 20
+            }}
             transition={{ duration: 0.4, ease: 'easeOut' }}
           >
             <div className="inbox-avatar-wrap">
@@ -372,29 +375,25 @@ function FeatureCRMMockup() {
             </div>
           </div>
         </div>
-        <AnimatePresence>
-          {showDetails && (
-            <motion.div 
-              className="crm-mini-details"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-            >
-              <div className="crm-mini-stat">
-                <span className="crm-stat-label">Compras</span>
-                <span className="crm-stat-value">$1.2k</span>
-              </div>
-              <div className="crm-mini-stat">
-                <span className="crm-stat-label">Mensajes</span>
-                <span className="crm-stat-value">24</span>
-              </div>
-              <div className="crm-mini-tags-v2">
-                <span className="crm-tag vip">VIP</span>
-                <span className="crm-tag loyal">Leal</span>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <motion.div 
+          className="crm-mini-details"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: showDetails ? 1 : 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="crm-mini-stat">
+            <span className="crm-stat-label">Compras</span>
+            <span className="crm-stat-value">$1.2k</span>
+          </div>
+          <div className="crm-mini-stat">
+            <span className="crm-stat-label">Mensajes</span>
+            <span className="crm-stat-value">24</span>
+          </div>
+          <div className="crm-mini-tags-v2">
+            <span className="crm-tag vip">VIP</span>
+            <span className="crm-tag loyal">Leal</span>
+          </div>
+        </motion.div>
       </motion.div>
     </div>
   );
@@ -473,26 +472,30 @@ function FeatureCommentsMockup() {
       <div className="comments-thread-v2">
         {comments.map((c, idx) => (
           <div key={idx} className="comment-pair">
-            {phase >= idx * 2 + 1 && (
-              <motion.div 
-                className="comment-q"
-                initial={{ opacity: 0, x: -15 }}
-                animate={{ opacity: 1, x: 0 }}
-              >
-                <FaInstagram className="w-2.5 h-2.5 text-pink-400" />
-                <span>{c.question}</span>
-              </motion.div>
-            )}
-            {phase >= idx * 2 + 2 && (
-              <motion.div 
-                className="comment-a"
-                initial={{ opacity: 0, x: 15 }}
-                animate={{ opacity: 1, x: 0 }}
-              >
-                <Sparkles className="w-2.5 h-2.5 text-purple-400" />
-                <span>{c.answer}</span>
-              </motion.div>
-            )}
+            <motion.div 
+              className="comment-q"
+              initial={{ opacity: 0, x: -15 }}
+              animate={{ 
+                opacity: phase >= idx * 2 + 1 ? 1 : 0, 
+                x: phase >= idx * 2 + 1 ? 0 : -15 
+              }}
+              transition={{ duration: 0.3 }}
+            >
+              <FaInstagram className="w-2.5 h-2.5 text-pink-400" />
+              <span>{c.question}</span>
+            </motion.div>
+            <motion.div 
+              className="comment-a"
+              initial={{ opacity: 0, x: 15 }}
+              animate={{ 
+                opacity: phase >= idx * 2 + 2 ? 1 : 0, 
+                x: phase >= idx * 2 + 2 ? 0 : 15 
+              }}
+              transition={{ duration: 0.3 }}
+            >
+              <Sparkles className="w-2.5 h-2.5 text-purple-400" />
+              <span>{c.answer}</span>
+            </motion.div>
           </div>
         ))}
       </div>
@@ -525,6 +528,58 @@ function FeatureAnalyticsMockup() {
       <div className="analytics-labels">
         <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
       </div>
+    </div>
+  );
+}
+
+function FeatureMultiAgentMockup() {
+  const [activeAgent, setActiveAgent] = useState(0);
+  const [cycle, setCycle] = useState(0);
+  
+  const agents = [
+    { name: 'Ana', color: 'bg-pink-500', initials: 'AN' },
+    { name: 'Luis', color: 'bg-blue-500', initials: 'LU' },
+    { name: 'Sara', color: 'bg-green-500', initials: 'SA' },
+  ];
+  
+  useEffect(() => {
+    const timers: NodeJS.Timeout[] = [];
+    
+    timers.push(setTimeout(() => setActiveAgent(0), 300));
+    timers.push(setTimeout(() => setActiveAgent(1), 1500));
+    timers.push(setTimeout(() => setActiveAgent(2), 2700));
+    timers.push(setTimeout(() => setCycle(c => c + 1), 4000));
+    
+    return () => timers.forEach(clearTimeout);
+  }, [cycle]);
+  
+  return (
+    <div className="feature-multiagent-mockup">
+      <div className="multiagent-avatars">
+        {agents.map((agent, idx) => (
+          <motion.div
+            key={idx}
+            className={`multiagent-avatar ${agent.color} ${activeAgent === idx ? 'active' : ''}`}
+            animate={{ 
+              scale: activeAgent === idx ? 1.15 : 1,
+              opacity: activeAgent === idx ? 1 : 0.5
+            }}
+            transition={{ duration: 0.3 }}
+          >
+            <span className="text-white text-xs font-bold">{agent.initials}</span>
+          </motion.div>
+        ))}
+      </div>
+      <motion.div 
+        className="multiagent-status"
+        key={activeAgent}
+        initial={{ opacity: 0, y: 5 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <span className="status-dot" />
+        <span className="status-text">{agents[activeAgent].name} respondiendo...</span>
+      </motion.div>
     </div>
   );
 }
@@ -1480,9 +1535,16 @@ function FeaturesSection() {
     { 
       icon: Inbox, 
       title: 'Inbox unificado', 
-      description: 'Todas tus conversaciones de Instagram, TikTok y Facebook en un solo lugar ordenadas por prioridad.',
-      size: 'large',
+      description: 'Todas tus conversaciones de Instagram, TikTok y Facebook en un solo lugar.',
+      size: 'medium',
       mockup: <FeatureInboxMockup />
+    },
+    { 
+      icon: Users2, 
+      title: 'Multi-agente', 
+      description: 'Varios miembros del equipo colaborando en tiempo real.',
+      size: 'medium',
+      mockup: <FeatureMultiAgentMockup />
     },
     { 
       icon: Sparkles, 
@@ -1501,21 +1563,21 @@ function FeaturesSection() {
     { 
       icon: Bell, 
       title: 'Recordatorios', 
-      description: 'Seguimiento automático para leads inactivos. Nunca pierdas una oportunidad.',
+      description: 'Seguimiento automático para leads inactivos.',
       size: 'medium',
       mockup: <FeatureReminderMockup />
     },
     { 
       icon: MessageSquare, 
       title: 'Comentarios', 
-      description: 'Gestiona comentarios de posts directamente desde el inbox.',
+      description: 'Gestiona comentarios de posts desde el inbox.',
       size: 'medium',
       mockup: <FeatureCommentsMockup />
     },
     { 
       icon: BarChart2, 
       title: 'Analytics', 
-      description: 'Métricas de rendimiento y tiempo de respuesta en tiempo real.',
+      description: 'Métricas de rendimiento y tiempo de respuesta.',
       size: 'medium',
       mockup: <FeatureAnalyticsMockup />
     },
