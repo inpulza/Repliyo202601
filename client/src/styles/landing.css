@@ -2112,16 +2112,12 @@
   flex-direction: column;
   justify-content: center;
   padding: 60px 40px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 32px;
-  margin: 0 40px;
+  background: var(--landing-bg);
   overflow: hidden;
 }
 
 .landing-page.theme-light .how-pinned-container {
-  background: rgba(0, 0, 0, 0.02);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: var(--landing-bg-light);
 }
 
 .how-header {
@@ -2165,6 +2161,15 @@
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 32px;
+  padding: 40px;
+}
+
+.landing-page.theme-light .how-steps-wrapper {
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .how-step-panel {
