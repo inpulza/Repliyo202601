@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
-import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring } from 'framer-motion';
+import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Sun, Moon } from 'lucide-react';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
@@ -250,31 +250,55 @@ function Step3SendMockup() {
 }
 
 function FeatureInboxMockup() {
-  const platforms = ['instagram', 'tiktok', 'facebook', 'instagram'];
-  const names = ['María G.', 'Carlos R.', 'Ana L.', 'Pedro S.'];
+  const [visibleItems, setVisibleItems] = useState<number[]>([]);
+  const [cycle, setCycle] = useState(0);
+  
+  const messages = [
+    { platform: 'instagram', name: 'María G.', avatar: avatarMaria, preview: '¿Tienen talla M?', Icon: FaInstagram },
+    { platform: 'tiktok', name: 'Carlos R.', avatar: avatarCarlos, preview: 'Vi tu video!', Icon: FaTiktok },
+    { platform: 'facebook', name: 'Ana L.', avatar: avatarAna, preview: 'Quiero reservar', Icon: FaFacebook },
+    { platform: 'instagram', name: 'Pedro S.', avatar: avatarCarlos, preview: '¿Hacen envíos?', Icon: FaInstagram },
+  ];
+  
+  useEffect(() => {
+    setVisibleItems([]);
+    const timers: NodeJS.Timeout[] = [];
+    
+    messages.forEach((_, idx) => {
+      timers.push(setTimeout(() => {
+        setVisibleItems(prev => [...prev, idx]);
+      }, idx * 600));
+    });
+    
+    timers.push(setTimeout(() => {
+      setCycle(c => c + 1);
+    }, 5000));
+    
+    return () => timers.forEach(clearTimeout);
+  }, [cycle]);
   
   return (
     <div className="feature-inbox-mockup">
-      <div className="inbox-list">
-        {platforms.map((platform, idx) => (
+      <div className="inbox-list-v2">
+        {messages.map((msg, idx) => (
           <motion.div
             key={idx}
-            className={`inbox-item ${idx === 0 ? 'selected' : ''}`}
-            initial={{ x: 30, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ 
-              repeat: Infinity, 
-              repeatDelay: 4,
-              duration: 0.4, 
-              delay: idx * 0.3 
-            }}
+            className={`inbox-item-v2 ${idx === 0 && visibleItems.includes(0) ? 'selected' : ''}`}
+            initial={{ x: 40, opacity: 0, scale: 0.9 }}
+            animate={visibleItems.includes(idx) ? { x: 0, opacity: 1, scale: 1 } : {}}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
           >
-            <div className={`inbox-platform-dot ${platform}`} />
-            <div className="inbox-item-content">
-              <span className="inbox-item-name">{names[idx]}</span>
-              <span className="inbox-item-preview">Nuevo mensaje...</span>
+            <div className="inbox-avatar-wrap">
+              <img src={msg.avatar} alt={msg.name} className="inbox-avatar-img" />
+              <div className={`inbox-platform-badge ${msg.platform}`}>
+                <msg.Icon className="w-2.5 h-2.5 text-white" />
+              </div>
             </div>
-            {idx < 2 && <div className="inbox-unread-badge" />}
+            <div className="inbox-item-info">
+              <span className="inbox-item-name-v2">{msg.name}</span>
+              <span className="inbox-item-preview-v2">{msg.preview}</span>
+            </div>
+            {idx < 2 && <div className="inbox-unread-dot" />}
           </motion.div>
         ))}
       </div>
@@ -316,20 +340,62 @@ function FeatureAIMockup() {
 }
 
 function FeatureCRMMockup() {
+  const [showDetails, setShowDetails] = useState(false);
+  const [cycle, setCycle] = useState(0);
+  
+  useEffect(() => {
+    const timers: NodeJS.Timeout[] = [];
+    setShowDetails(false);
+    
+    timers.push(setTimeout(() => setShowDetails(true), 800));
+    timers.push(setTimeout(() => setCycle(c => c + 1), 4000));
+    
+    return () => timers.forEach(clearTimeout);
+  }, [cycle]);
+  
   return (
     <div className="feature-crm-mockup">
-      <div className="crm-mini-card">
-        <div className="crm-mini-avatar">
-          <img src={avatarMaria} alt="Cliente" />
-        </div>
-        <div className="crm-mini-info">
-          <span className="crm-mini-name">María García</span>
-          <div className="crm-mini-tags">
-            <span className="crm-mini-tag vip">VIP</span>
-            <span className="crm-mini-tag">$1.2k</span>
+      <motion.div 
+        className="crm-mini-card-v2"
+        animate={{ scale: showDetails ? 1 : 0.95 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="crm-mini-header">
+          <div className="crm-mini-avatar-v2">
+            <img src={avatarMaria} alt="Cliente" />
+          </div>
+          <div className="crm-mini-info-v2">
+            <span className="crm-mini-name-v2">María García</span>
+            <div className="crm-mini-channels">
+              <FaInstagram className="w-3 h-3 text-pink-400" />
+              <FaFacebook className="w-3 h-3 text-blue-500" />
+            </div>
           </div>
         </div>
-      </div>
+        <AnimatePresence>
+          {showDetails && (
+            <motion.div 
+              className="crm-mini-details"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+            >
+              <div className="crm-mini-stat">
+                <span className="crm-stat-label">Compras</span>
+                <span className="crm-stat-value">$1.2k</span>
+              </div>
+              <div className="crm-mini-stat">
+                <span className="crm-stat-label">Mensajes</span>
+                <span className="crm-stat-value">24</span>
+              </div>
+              <div className="crm-mini-tags-v2">
+                <span className="crm-tag vip">VIP</span>
+                <span className="crm-tag loyal">Leal</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 }
@@ -378,22 +444,57 @@ function FeatureReminderMockup() {
 }
 
 function FeatureCommentsMockup() {
+  const [phase, setPhase] = useState(0);
+  const [cycle, setCycle] = useState(0);
+  
+  const comments = [
+    { question: '¿Precio?', answer: '$299 + envío gratis' },
+    { question: '¿Colores?', answer: 'Negro, blanco y azul' },
+    { question: '¿Tallas?', answer: 'S, M, L y XL' },
+  ];
+  
+  useEffect(() => {
+    setPhase(0);
+    const timers: NodeJS.Timeout[] = [];
+    
+    timers.push(setTimeout(() => setPhase(1), 400));
+    timers.push(setTimeout(() => setPhase(2), 1200));
+    timers.push(setTimeout(() => setPhase(3), 2000));
+    timers.push(setTimeout(() => setPhase(4), 2800));
+    timers.push(setTimeout(() => setPhase(5), 3600));
+    timers.push(setTimeout(() => setPhase(6), 4400));
+    timers.push(setTimeout(() => setCycle(c => c + 1), 6000));
+    
+    return () => timers.forEach(clearTimeout);
+  }, [cycle]);
+  
   return (
-    <div className="feature-comments-mockup">
-      <div className="comment-thread">
-        <div className="comment-bubble user">
-          <FaInstagram className="w-3 h-3 text-pink-400" />
-          <span>¿Precio del producto?</span>
-        </div>
-        <motion.div 
-          className="comment-bubble reply"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ repeat: Infinity, repeatDelay: 3, duration: 0.4, delay: 0.8 }}
-        >
-          <Sparkles className="w-3 h-3 text-purple-400" />
-          <span>¡$299 con envío gratis!</span>
-        </motion.div>
+    <div className="feature-comments-mockup-v2">
+      <div className="comments-thread-v2">
+        {comments.map((c, idx) => (
+          <div key={idx} className="comment-pair">
+            {phase >= idx * 2 + 1 && (
+              <motion.div 
+                className="comment-q"
+                initial={{ opacity: 0, x: -15 }}
+                animate={{ opacity: 1, x: 0 }}
+              >
+                <FaInstagram className="w-2.5 h-2.5 text-pink-400" />
+                <span>{c.question}</span>
+              </motion.div>
+            )}
+            {phase >= idx * 2 + 2 && (
+              <motion.div 
+                className="comment-a"
+                initial={{ opacity: 0, x: 15 }}
+                animate={{ opacity: 1, x: 0 }}
+              >
+                <Sparkles className="w-2.5 h-2.5 text-purple-400" />
+                <span>{c.answer}</span>
+              </motion.div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
