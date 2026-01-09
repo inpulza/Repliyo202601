@@ -115,54 +115,51 @@ function Step2AIMockup() {
   }, []);
   
   return (
-    <div className="step-mockup ai-mockup-v2">
-      <div className="ai-chat-panel">
-        <div className="ai-chat-header">
-          <div className="ai-chat-avatar">
-            <img src={avatarMaria} alt="Cliente" />
-          </div>
-          <div className="ai-chat-info">
-            <span className="ai-chat-name">María García</span>
-            <span className="ai-chat-platform">Instagram DM</span>
-          </div>
+    <div className="step-mockup ai-mockup-v3">
+      <motion.div 
+        className="floating-msg incoming"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: phase >= 1 ? 1 : 0, y: phase >= 1 ? 0 : 20 }}
+      >
+        <div className="msg-avatar">
+          <img src={avatarMaria} alt="Cliente" />
         </div>
-        <div className="ai-chat-messages">
-          <motion.div 
-            className="ai-msg incoming"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: phase >= 1 ? 1 : 0, x: phase >= 1 ? 0 : -20 }}
-          >
-            ¿Cuánto cuesta el producto?
-          </motion.div>
-          
-          {phase === 2 && (
-            <motion.div 
-              className="ai-analyzing"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <Sparkles className="w-4 h-4 text-purple-400" />
-              <span>IA analizando estilo...</span>
-              <div className="analyzing-dots"><span /><span /><span /></div>
-            </motion.div>
-          )}
-          
-          {phase >= 3 && (
-            <motion.div 
-              className="ai-msg outgoing"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-            >
-              <div className="ai-draft-badge">
-                <Sparkles className="w-3 h-3" /> Borrador IA
-              </div>
+        <div className="msg-content">
+          <span className="msg-name">María García</span>
+          <span className="msg-text">¿Cuánto cuesta el producto?</span>
+        </div>
+      </motion.div>
+      
+      {phase === 2 && (
+        <motion.div 
+          className="floating-analyzing"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <Sparkles className="w-5 h-5 text-purple-400" />
+          <span>IA generando respuesta...</span>
+          <div className="analyzing-dots"><span /><span /><span /></div>
+        </motion.div>
+      )}
+      
+      {phase >= 3 && (
+        <motion.div 
+          className="floating-msg outgoing"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="msg-content">
+            <div className="ai-draft-badge-v2">
+              <Sparkles className="w-3 h-3" /> Borrador IA
+            </div>
+            <span className="msg-text">
               {typedText}
               {typedText.length < fullResponse.length && <span className="typing-cursor" />}
-            </motion.div>
-          )}
-        </div>
-      </div>
+            </span>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }
