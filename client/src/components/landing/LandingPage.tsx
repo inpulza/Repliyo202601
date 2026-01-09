@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring } from 'framer-motion';
-import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Bell, MessageSquare, BarChart2, Instagram, Music2, Facebook, Send, Zap, Clock, Heart } from 'lucide-react';
+import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Bell, MessageSquare, BarChart2, Instagram, Music2, Facebook, Send, Zap, Clock, Heart, Sun, Moon } from 'lucide-react';
 import { ParallaxProvider, useParallax, Parallax } from 'react-scroll-parallax';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -169,7 +169,7 @@ function InboxMockup() {
   );
 }
 
-function Header() {
+function Header({ theme, toggleTheme }: { theme: 'dark' | 'light'; toggleTheme: () => void }) {
   const [scrolled, setScrolled] = useState(false);
   const prefersReducedMotion = useReducedMotion();
 
@@ -196,6 +196,14 @@ function Header() {
           <a href="#testimonial" className="text-white/60 hover:text-white transition-colors text-sm font-medium" data-testid="link-nav-testimonios">Testimonios</a>
         </nav>
         <div className="flex items-center gap-3">
+          <button 
+            onClick={toggleTheme}
+            className="theme-toggle"
+            data-testid="button-theme-toggle"
+            aria-label={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+          >
+            {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          </button>
           <a href="/login" className="text-white/60 hover:text-white transition-colors text-sm font-medium hidden sm:block" data-testid="link-login">
             Iniciar sesión
           </a>
@@ -390,15 +398,15 @@ function ProblemSolutionSection() {
                 Responder mensajes en 5 apps es <span className="text-red-500">agotador</span>
               </h2>
               
-              <div className="space-y-6">
+              <div className="space-y-8">
                 {problems.map((problem, i) => {
                   const Icon = problem.icon;
                   return (
-                    <div key={i} className="problem-item flex items-start gap-4 p-5 rounded-2xl bg-red-500/5 border border-red-500/10">
-                      <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-5 h-5 text-red-400" />
+                    <div key={i} className="problem-item flex items-start gap-5 p-6 rounded-2xl bg-red-500/5 border border-red-500/10">
+                      <div className="w-14 h-14 rounded-xl bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                        <Icon className="w-7 h-7 text-red-400" />
                       </div>
-                      <span className="text-white/70 text-lg leading-relaxed">{problem.text}</span>
+                      <p className="font-display text-xl md:text-2xl font-semibold text-white leading-snug">{problem.text}</p>
                     </div>
                   );
                 })}
@@ -415,15 +423,15 @@ function ProblemSolutionSection() {
                 Un inbox inteligente que <span className="text-gradient">trabaja por ti</span>
               </h2>
               
-              <div className="space-y-6">
+              <div className="space-y-8">
                 {solutions.map((solution, i) => {
                   const Icon = solution.icon;
                   return (
-                    <div key={i} className="solution-item flex items-start gap-4 p-5 rounded-2xl bg-green-500/5 border border-green-500/10">
-                      <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-5 h-5 text-green-400" />
+                    <div key={i} className="solution-item flex items-start gap-5 p-6 rounded-2xl bg-green-500/5 border border-green-500/10">
+                      <div className="w-14 h-14 rounded-xl bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                        <Icon className="w-7 h-7 text-green-400" />
                       </div>
-                      <span className="text-white/70 text-lg leading-relaxed">{solution.text}</span>
+                      <p className="font-display text-xl md:text-2xl font-semibold text-white leading-snug">{solution.text}</p>
                     </div>
                   );
                 })}
@@ -975,10 +983,25 @@ function Footer() {
 }
 
 export function LandingPage() {
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('landing-theme');
+      if (saved === 'light' || saved === 'dark') return saved;
+      if (window.matchMedia('(prefers-color-scheme: light)').matches) return 'light';
+    }
+    return 'dark';
+  });
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    localStorage.setItem('landing-theme', newTheme);
+  };
+
   return (
     <ParallaxProvider>
-      <div className="landing-page" data-testid="landing-page">
-        <Header />
+      <div className={`landing-page ${theme === 'light' ? 'theme-light' : ''}`} data-testid="landing-page">
+        <Header theme={theme} toggleTheme={toggleTheme} />
         <main>
           <HeroSection />
           <MarqueeSection />
