@@ -1165,7 +1165,7 @@ function MarqueeSection() {
   return (
     <section className="marquee-section relative z-30">
       <div className="marquee-overlap-shadow" />
-      <div className="marquee-inner py-8 border-y border-white/5 section-dark relative">
+      <div className="marquee-inner py-8 border-y border-white/20 section-dark relative">
         <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-4" : "marquee-container"}>
           <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-4" : "marquee-content"}>
             {(prefersReducedMotion ? items : [...items, ...items]).map((item, i) => (
