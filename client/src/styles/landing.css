@@ -3799,3 +3799,64 @@
   color: var(--landing-text);
   background: rgba(0,0,0,0.08);
 }
+
+/* Testimonial Carousel */
+.testimonial-carousel {
+  position: relative;
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.testimonial-slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.testimonial-slide[style*="z-index: 10"] {
+  pointer-events: auto;
+}
+
+.testimonial-dots {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.testimonial-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.testimonial-dot:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.testimonial-dot.active {
+  background: var(--landing-primary);
+  transform: scale(1.2);
+}
+
+.landing-page.theme-light .testimonial-dot {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.landing-page.theme-light .testimonial-dot:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.landing-page.theme-light .testimonial-dot.active {
+  background: var(--landing-primary);
+}

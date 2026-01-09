@@ -6,6 +6,7 @@ import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
 import avatarMaria from '../../assets/avatars/latina_woman_avatar_headshot.png';
 import avatarCarlos from '../../assets/avatars/hispanic_man_avatar_headshot.png';
 import avatarAna from '../../assets/avatars/european_woman_avatar_headshot.png';
+import testimonialBettys from '../../assets/testimonial-bettys.jpg';
 import { ParallaxProvider, useParallax, Parallax } from 'react-scroll-parallax';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -1682,9 +1683,42 @@ function FeaturesSection() {
 function TestimonialSection() {
   const ref = useRef(null);
   const prefersReducedMotion = useReducedMotion();
+  const [activeIndex, setActiveIndex] = useState(0);
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
   const quoteY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [100, -100]);
   const quoteRotate = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [-5, 5]);
+
+  const testimonials = [
+    {
+      quote: "Con Repliyo respondemos los DMs de nuestro TikTok de 40k seguidores en minutos. La IA entiende perfectamente el tono de nuestra marca.",
+      name: "Bettys Sarmiento",
+      role: "CEO, BO Trust Services",
+      image: testimonialBettys,
+      highlight: "respondemos los DMs"
+    },
+    {
+      quote: "Pasamos de responder en 4 horas a responder en 15 minutos. Repliyo cambió completamente cómo gestionamos nuestras redes.",
+      name: "Carlos Mendoza",
+      role: "Director de Marketing, TechStartup",
+      image: avatarCarlos,
+      highlight: "15 minutos"
+    },
+    {
+      quote: "Los recordatorios automáticos nos ayudaron a recuperar leads que habíamos perdido. Ahora cerramos un 30% más de ventas.",
+      name: "Ana Rodríguez",
+      role: "Fundadora, StyleBoutique",
+      image: avatarAna,
+      highlight: "30% más de ventas"
+    }
+  ];
+
+  useEffect(() => {
+    if (prefersReducedMotion) return;
+    const interval = setInterval(() => {
+      setActiveIndex(prev => (prev + 1) % testimonials.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [prefersReducedMotion, testimonials.length]);
 
   return (
     <section id="testimonial" ref={ref} className="py-40 relative overflow-hidden">
@@ -1702,32 +1736,51 @@ function TestimonialSection() {
       </motion.div>
       
       <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
-        <motion.blockquote
-          initial={{ opacity: 0, y: 60 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-          className="font-display text-3xl md:text-5xl font-medium text-white leading-relaxed mb-12"
-        >
-          "Pasamos de responder en 4 horas a responder en 15 minutos. 
-          <span className="text-gradient"> Repliyo cambió completamente</span> cómo gestionamos nuestro Instagram de 50k seguidores."
-        </motion.blockquote>
+        <div className="testimonial-carousel">
+          {testimonials.map((testimonial, idx) => (
+            <motion.div
+              key={idx}
+              className="testimonial-slide"
+              initial={false}
+              animate={{
+                opacity: activeIndex === idx ? 1 : 0,
+                filter: activeIndex === idx ? 'blur(0px)' : 'blur(8px)',
+                scale: activeIndex === idx ? 1 : 0.95,
+                zIndex: activeIndex === idx ? 10 : 1
+              }}
+              transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+            >
+              <blockquote className="font-display text-2xl md:text-4xl lg:text-5xl font-medium text-white leading-relaxed mb-12">
+                "{testimonial.quote.split(testimonial.highlight)[0]}
+                <span className="text-gradient">{testimonial.highlight}</span>
+                {testimonial.quote.split(testimonial.highlight)[1]}"
+              </blockquote>
 
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.3, duration: 0.8 }}
-          className="inline-flex items-center gap-4 p-4 pr-8 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm"
-        >
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[var(--landing-primary)] to-[var(--landing-accent)] flex items-center justify-center text-white font-bold text-xl">
-            MG
-          </div>
-          <div className="text-left">
-            <div className="font-semibold text-white text-lg">María González</div>
-            <div className="text-sm text-white/50">Head of Social Media, FashionBrand</div>
-          </div>
-        </motion.div>
+              <div className="inline-flex items-center gap-4 p-4 pr-8 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
+                <img 
+                  src={testimonial.image} 
+                  alt={testimonial.name}
+                  className="w-16 h-16 rounded-full object-cover"
+                />
+                <div className="text-left">
+                  <div className="font-semibold text-white text-lg">{testimonial.name}</div>
+                  <div className="text-sm text-white/50">{testimonial.role}</div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        <div className="testimonial-dots mt-10">
+          {testimonials.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setActiveIndex(idx)}
+              className={`testimonial-dot ${activeIndex === idx ? 'active' : ''}`}
+              aria-label={`Ver testimonio ${idx + 1}`}
+            />
+          ))}
+        </div>
       </div>
     </section>
   );
