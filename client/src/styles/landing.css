@@ -887,15 +887,13 @@
 
 .connect-icon.instagram { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
 .connect-icon.tiktok { 
-  background: #000; 
-  border: 2px solid #00f2ea; 
-  color: white;
+  background: #000 !important; 
+  border: 2px solid #00f2ea !important; 
 }
 
-.landing-page.theme-light .connect-icon.tiktok {
-  background: #000;
-  border-color: #00f2ea;
-  color: white;
+.connect-icon.tiktok svg {
+  color: #ffffff !important;
+  fill: #ffffff !important;
 }
 .connect-icon.facebook { background: #1877F2; }
 
