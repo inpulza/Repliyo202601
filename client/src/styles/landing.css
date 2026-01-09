@@ -2112,12 +2112,16 @@
   flex-direction: column;
   justify-content: center;
   padding: 60px 40px;
-  background: var(--landing-bg);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 32px;
+  margin: 0 40px;
   overflow: hidden;
 }
 
 .landing-page.theme-light .how-pinned-container {
-  background: var(--landing-bg-light);
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .how-header {
@@ -2184,8 +2188,8 @@
   gap: 60px;
   align-items: center;
   padding: 40px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: transparent;
+  border: none;
   border-radius: 32px;
   position: relative;
 }
@@ -2212,8 +2216,8 @@
 }
 
 .landing-page.theme-light .how-step-content {
-  background: rgba(0, 0, 0, 0.02);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: transparent;
+  border: none;
   box-shadow: none;
 }
 
