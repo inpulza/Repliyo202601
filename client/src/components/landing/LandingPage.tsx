@@ -45,38 +45,108 @@ function AnimatedCounter({ target, duration = 2 }: { target: number; duration?: 
 
 function InboxMockup() {
   const mockupRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
   
-  const messages = [
-    { id: 1, user: 'María García', avatarImg: avatarMaria, message: '¿Tienen disponible el vestido azul en talla M?', platform: 'instagram', time: '2m', unread: true },
-    { id: 2, user: 'Carlos Rodríguez', avatarImg: avatarCarlos, message: 'Quiero reservar una mesa para el sábado', platform: 'tiktok', time: '5m', unread: true },
-    { id: 3, user: 'Ana López', avatarImg: avatarAna, message: '¿Hacen envíos internacionales a Madrid?', platform: 'facebook', time: '12m', unread: false },
+  const allMessages = [
+    { id: 1, user: 'María García', avatarImg: avatarMaria, message: '¿Tienen disponible el vestido azul en talla M?', platform: 'instagram', time: 'Ahora', unread: true },
+    { id: 2, user: 'Carlos Rodríguez', avatarImg: avatarCarlos, message: 'Quiero reservar una mesa para el sábado', platform: 'tiktok', time: '2m', unread: true },
+    { id: 3, user: 'Ana López', avatarImg: avatarAna, message: '¿Hacen envíos internacionales a Madrid?', platform: 'facebook', time: '5m', unread: true },
+    { id: 4, user: 'Pedro Sánchez', avatarImg: avatarCarlos, initials: 'PS', message: '¿Cuánto tarda el envío a Barcelona?', platform: 'instagram', time: '8m', unread: true },
+    { id: 5, user: 'Laura Martín', avatarImg: avatarAna, initials: 'LM', message: 'Me encantó el producto, gracias!', platform: 'tiktok', time: '12m', unread: false },
   ];
 
   const [visibleMessages, setVisibleMessages] = useState<number[]>([]);
-  const [aiTyping, setAiTyping] = useState(false);
-  const [aiResponse, setAiResponse] = useState('');
+  const [inboxCount, setInboxCount] = useState(12);
   const [selectedMsg, setSelectedMsg] = useState(1);
+  
+  const [chatPhase, setChatPhase] = useState(0);
+  const [typingText, setTypingText] = useState('');
+  const [animationCycle, setAnimationCycle] = useState(0);
+  
+  const typingMessages = [
+    '¡Perfecto! Lo reservo entonces',
+    '¿Cuándo puedo pasar a recogerlo?',
+    'Gracias por la ayuda! 😊'
+  ];
+
+  const chatConversation = [
+    { type: 'incoming', text: '¿Tienen disponible el vestido azul en talla M?', time: '14:32' },
+    { type: 'outgoing', text: '¡Hola María! Sí, tenemos el vestido azul disponible en talla M. ¿Te gustaría que te lo reserve?', time: '14:33', isAI: true },
+    { type: 'incoming', text: '¡Perfecto! Sí, por favor resérvenlo', time: '14:35' },
+    { type: 'outgoing', text: '¡Listo! Reservado a tu nombre. Puedes recogerlo hoy hasta las 8pm o mañana. ¿Alguna preferencia?', time: '14:36', isAI: true },
+    { type: 'incoming', text: 'Mañana por la tarde me viene mejor', time: '14:38' },
+    { type: 'outgoing', text: '¡Perfecto María! Te esperamos mañana. Te enviaré un recordatorio. ¿Algo más en lo que pueda ayudarte?', time: '14:39', isAI: true },
+  ];
 
   useEffect(() => {
     if (prefersReducedMotion) {
-      setVisibleMessages([1, 2, 3]);
-      setAiResponse('¡Hola María! Sí, tenemos el vestido azul disponible en talla M. ¿Te gustaría que te lo reserve? También tenemos envío express gratis.');
+      setVisibleMessages([1, 2, 3, 4, 5]);
+      setChatPhase(6);
+      setInboxCount(17);
       return;
     }
     
+    setVisibleMessages([]);
+    setChatPhase(0);
+    setInboxCount(12);
+    setTypingText('');
+    
     const timers: NodeJS.Timeout[] = [];
-    timers.push(setTimeout(() => setVisibleMessages([1]), 500));
-    timers.push(setTimeout(() => setVisibleMessages([1, 2]), 1200));
-    timers.push(setTimeout(() => setVisibleMessages([1, 2, 3]), 1900));
-    timers.push(setTimeout(() => setAiTyping(true), 2500));
+    
+    timers.push(setTimeout(() => { setVisibleMessages([1]); setInboxCount(13); }, 600));
+    timers.push(setTimeout(() => { setVisibleMessages([1, 2]); setInboxCount(14); }, 1400));
+    timers.push(setTimeout(() => { setVisibleMessages([1, 2, 3]); setInboxCount(15); }, 2200));
+    
+    timers.push(setTimeout(() => setChatPhase(1), 1000));
+    timers.push(setTimeout(() => setChatPhase(2), 3500));
+    timers.push(setTimeout(() => setChatPhase(3), 5500));
+    timers.push(setTimeout(() => setChatPhase(4), 8000));
+    timers.push(setTimeout(() => setChatPhase(5), 10500));
+    timers.push(setTimeout(() => setChatPhase(6), 13000));
+    
+    timers.push(setTimeout(() => { setVisibleMessages([1, 2, 3, 4]); setInboxCount(16); }, 7000));
+    timers.push(setTimeout(() => { setVisibleMessages([1, 2, 3, 4, 5]); setInboxCount(17); }, 11000));
+    
     timers.push(setTimeout(() => {
-      setAiTyping(false);
-      setAiResponse('¡Hola María! Sí, tenemos el vestido azul disponible en talla M. ¿Te gustaría que te lo reserve? También tenemos envío express gratis.');
-    }, 4000));
+      setAnimationCycle(c => c + 1);
+    }, 18000));
     
     return () => timers.forEach(clearTimeout);
-  }, [prefersReducedMotion]);
+  }, [prefersReducedMotion, animationCycle]);
+
+  useEffect(() => {
+    if (prefersReducedMotion) return;
+    
+    let interval: NodeJS.Timeout;
+    const currentTypingIndex = Math.floor((chatPhase - 1) / 2);
+    
+    if (chatPhase > 0 && chatPhase % 2 === 0 && currentTypingIndex < typingMessages.length) {
+      const targetText = typingMessages[currentTypingIndex] || '';
+      let charIndex = 0;
+      setTypingText('');
+      
+      interval = setInterval(() => {
+        if (charIndex < targetText.length) {
+          setTypingText(targetText.slice(0, charIndex + 1));
+          charIndex++;
+        } else {
+          clearInterval(interval);
+        }
+      }, 50);
+    }
+    
+    return () => clearInterval(interval);
+  }, [chatPhase, prefersReducedMotion]);
+
+  useEffect(() => {
+    if (chatContainerRef.current && chatPhase > 0) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+  }, [chatPhase]);
 
   const PlatformIcon = ({ platform }: { platform: string }) => {
     switch(platform) {
@@ -86,6 +156,8 @@ function InboxMockup() {
       default: return null;
     }
   };
+
+  const showAiTyping = chatPhase === 1 || chatPhase === 3 || chatPhase === 5;
 
   return (
     <div ref={mockupRef} className="mockup-container-v2">
@@ -100,7 +172,14 @@ function InboxMockup() {
             <span className="nav-item active">
               <Inbox className="w-4 h-4" />
               Inbox
-              <span className="nav-badge">12</span>
+              <motion.span 
+                key={inboxCount}
+                initial={{ scale: 1.3 }}
+                animate={{ scale: 1 }}
+                className="nav-badge"
+              >
+                {inboxCount}
+              </motion.span>
             </span>
             <span className="nav-item">
               <Users className="w-4 h-4" />
@@ -123,17 +202,21 @@ function InboxMockup() {
         
         <div className="mockup-content-v2">
           <div className="mockup-sidebar-v2">
-            {messages.map((msg) => (
+            {allMessages.map((msg) => (
               <motion.div
                 key={msg.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={visibleMessages.includes(msg.id) ? { opacity: 1, x: 0 } : {}}
-                transition={{ duration: 0.4 }}
+                initial={{ opacity: 0, x: -30, scale: 0.95 }}
+                animate={visibleMessages.includes(msg.id) ? { opacity: 1, x: 0, scale: 1 } : { opacity: 0, x: -30, scale: 0.95 }}
+                transition={{ duration: 0.4, type: 'spring', stiffness: 300, damping: 25 }}
                 className={`message-preview-v2 ${msg.unread ? 'unread' : ''} ${selectedMsg === msg.id ? 'selected' : ''}`}
                 onClick={() => setSelectedMsg(msg.id)}
               >
                 <div className="avatar-container">
-                  <img src={msg.avatarImg} alt={msg.user} className="avatar-img" />
+                  {msg.initials ? (
+                    <div className="avatar-initials">{msg.initials}</div>
+                  ) : (
+                    <img src={msg.avatarImg} alt={msg.user} className="avatar-img" />
+                  )}
                   <span className={`platform-indicator ${msg.platform}`}>
                     <PlatformIcon platform={msg.platform} />
                   </span>
@@ -143,7 +226,7 @@ function InboxMockup() {
                     <span className="username">{msg.user}</span>
                     <span className="time">{msg.time}</span>
                   </div>
-                  <span className="preview">{msg.message.slice(0, 35)}...</span>
+                  <span className="preview">{msg.message.slice(0, 32)}...</span>
                 </div>
                 {msg.unread && <span className="unread-dot" />}
               </motion.div>
@@ -172,45 +255,46 @@ function InboxMockup() {
               </div>
             </div>
             
-            <div className="chat-messages-v2">
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={visibleMessages.includes(1) ? { opacity: 1, y: 0 } : {}}
-                className="chat-bubble-v2 incoming"
-              >
-                <img src={avatarMaria} alt="María" className="bubble-avatar" />
-                <div className="bubble-content">
-                  ¿Tienen disponible el vestido azul en talla M?
-                  <span className="bubble-time">14:32</span>
-                </div>
-              </motion.div>
+            <div ref={chatContainerRef} className="chat-messages-v2">
+              {chatConversation.slice(0, Math.ceil(chatPhase / 1)).map((msg, idx) => {
+                const shouldShow = idx < chatPhase;
+                if (!shouldShow) return null;
+                
+                return (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, y: 15, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.4 }}
+                    className={`chat-bubble-v2 ${msg.type}`}
+                  >
+                    {msg.type === 'incoming' && (
+                      <img src={avatarMaria} alt="María" className="bubble-avatar" />
+                    )}
+                    <div className="bubble-content">
+                      {msg.isAI && (
+                        <div className="ai-badge-v2">
+                          <Sparkles className="w-3 h-3" /> Borrador IA
+                        </div>
+                      )}
+                      {msg.text}
+                      <span className="bubble-time">{msg.time}</span>
+                    </div>
+                  </motion.div>
+                );
+              })}
               
-              {aiTyping && (
+              {showAiTyping && (
                 <motion.div 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
                   className="ai-typing-v2"
                 >
                   <Sparkles className="w-4 h-4 text-purple-500" />
-                  <span>Repliyo AI está generando una respuesta...</span>
+                  <span>Repliyo AI está generando...</span>
                   <div className="typing-indicator">
                     <span></span><span></span><span></span>
-                  </div>
-                </motion.div>
-              )}
-              
-              {aiResponse && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  className="chat-bubble-v2 outgoing ai-generated"
-                >
-                  <div className="bubble-content">
-                    <div className="ai-badge-v2">
-                      <Sparkles className="w-3 h-3" /> Borrador IA
-                    </div>
-                    {aiResponse}
-                    <span className="bubble-time">Ahora</span>
                   </div>
                 </motion.div>
               )}
@@ -233,7 +317,11 @@ function InboxMockup() {
             
             <div className="chat-input-v2">
               <button className="emoji-btn">😊</button>
-              <input type="text" placeholder="Escribe tu mensaje..." readOnly />
+              <div className="typing-input-wrapper">
+                <span className="typing-text">{typingText}</span>
+                <span className="typing-cursor" />
+                {!typingText && <span className="typing-placeholder">Escribe tu mensaje...</span>}
+              </div>
               <button className="send-btn-v2">
                 <Send className="w-4 h-4" />
               </button>
