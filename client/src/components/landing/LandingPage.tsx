@@ -392,21 +392,19 @@ function ProblemSolutionSection() {
         <div className="grid md:grid-cols-2 gap-20 md:gap-32">
           <div className="space-y-8">
             <div className="sticky top-32">
-              <span className="text-xs uppercase tracking-[0.3em] text-red-500 font-semibold mb-4 block">
+              <span className="text-sm uppercase tracking-[0.3em] text-red-500 font-bold mb-6 block">
                 El problema
               </span>
-              <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-12 leading-tight">
+              <h2 className="font-display text-5xl md:text-6xl font-bold text-white mb-16 leading-tight">
                 Responder mensajes en 5 apps es <span className="text-red-500">agotador</span>
               </h2>
               
-              <div className="space-y-8">
+              <div className="space-y-6">
                 {problems.map((problem, i) => {
                   const Icon = problem.icon;
                   return (
-                    <div key={i} className="problem-item flex items-start gap-5 p-6 rounded-2xl bg-red-500/5 border border-red-500/10">
-                      <div className="w-14 h-14 rounded-xl bg-red-500/20 flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-7 h-7 text-red-400" />
-                      </div>
+                    <div key={i} className="problem-item flex items-center gap-5">
+                      <Icon className="w-6 h-6 text-red-400 flex-shrink-0" />
                       <p className="font-display text-xl md:text-2xl font-semibold text-white leading-snug">{problem.text}</p>
                     </div>
                   );
@@ -417,21 +415,19 @@ function ProblemSolutionSection() {
 
           <div className="space-y-8">
             <div className="sticky top-32">
-              <span className="text-xs uppercase tracking-[0.3em] text-green-500 font-semibold mb-4 block">
+              <span className="text-sm uppercase tracking-[0.3em] text-green-500 font-bold mb-6 block">
                 La solución
               </span>
-              <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-12 leading-tight">
+              <h2 className="font-display text-5xl md:text-6xl font-bold text-white mb-16 leading-tight">
                 Un inbox inteligente que <span className="text-gradient">trabaja por ti</span>
               </h2>
               
-              <div className="space-y-8">
+              <div className="space-y-6">
                 {solutions.map((solution, i) => {
                   const Icon = solution.icon;
                   return (
-                    <div key={i} className="solution-item flex items-start gap-5 p-6 rounded-2xl bg-green-500/5 border border-green-500/10">
-                      <div className="w-14 h-14 rounded-xl bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-7 h-7 text-green-400" />
-                      </div>
+                    <div key={i} className="solution-item flex items-center gap-5">
+                      <Icon className="w-6 h-6 text-green-400 flex-shrink-0" />
                       <p className="font-display text-xl md:text-2xl font-semibold text-white leading-snug">{solution.text}</p>
                     </div>
                   );
