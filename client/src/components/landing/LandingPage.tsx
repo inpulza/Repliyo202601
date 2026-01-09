@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Sun, Moon, Tags, Filter } from 'lucide-react';
+import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Sun, Moon } from 'lucide-react';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
 import avatarMaria from '../../assets/avatars/latina_woman_avatar_headshot.png';
@@ -250,75 +250,57 @@ function Step3SendMockup() {
 }
 
 function FeatureInboxMockup() {
-  const messagesLeft = [
-    { platform: 'instagram', name: 'María G.', avatar: avatarMaria, preview: '¿Tienen talla M?', Icon: FaInstagram, unread: true },
-    { platform: 'tiktok', name: 'Carlos R.', avatar: avatarCarlos, preview: 'Vi tu video!', Icon: FaTiktok, unread: true },
-    { platform: 'facebook', name: 'Ana L.', avatar: avatarAna, preview: 'Quiero reservar', Icon: FaFacebook, unread: false },
-    { platform: 'instagram', name: 'Pedro S.', avatar: avatarCarlos, preview: '¿Hacen envíos?', Icon: FaInstagram, unread: false },
+  const [visibleItems, setVisibleItems] = useState<number[]>([]);
+  const [cycle, setCycle] = useState(0);
+  
+  const messages = [
+    { platform: 'instagram', name: 'María G.', avatar: avatarMaria, preview: '¿Tienen talla M?', Icon: FaInstagram },
+    { platform: 'tiktok', name: 'Carlos R.', avatar: avatarCarlos, preview: 'Vi tu video!', Icon: FaTiktok },
+    { platform: 'facebook', name: 'Ana L.', avatar: avatarAna, preview: 'Quiero reservar', Icon: FaFacebook },
+    { platform: 'instagram', name: 'Pedro S.', avatar: avatarCarlos, preview: '¿Hacen envíos?', Icon: FaInstagram },
   ];
   
-  const messagesRight = [
-    { platform: 'facebook', name: 'Laura M.', avatar: avatarAna, preview: '¿Horarios?', Icon: FaFacebook, unread: true },
-    { platform: 'instagram', name: 'Diego P.', avatar: avatarCarlos, preview: 'Me encanta!', Icon: FaInstagram, unread: true },
-    { platform: 'tiktok', name: 'Sofía R.', avatar: avatarMaria, preview: '¿Descuentos?', Icon: FaTiktok, unread: false },
-    { platform: 'facebook', name: 'Pablo G.', avatar: avatarCarlos, preview: 'Gracias!', Icon: FaFacebook, unread: false },
-  ];
-
-  const doubledLeft = [...messagesLeft, ...messagesLeft];
-  const doubledRight = [...messagesRight, ...messagesRight];
+  useEffect(() => {
+    setVisibleItems([]);
+    const timers: NodeJS.Timeout[] = [];
+    
+    messages.forEach((_, idx) => {
+      timers.push(setTimeout(() => {
+        setVisibleItems(prev => [...prev, idx]);
+      }, idx * 600));
+    });
+    
+    timers.push(setTimeout(() => {
+      setCycle(c => c + 1);
+    }, 5000));
+    
+    return () => timers.forEach(clearTimeout);
+  }, [cycle]);
   
   return (
-    <div className="feature-inbox-split">
-      <div className="inbox-column">
-        <div className="inbox-column-header">
-          <FaInstagram className="w-3 h-3 text-pink-400" />
-          <span>DMs</span>
-        </div>
-        <div className="inbox-scroll-mask">
-          <div className="inbox-scroll-content scroll-anim-left">
-            {doubledLeft.map((msg, idx) => (
-              <div key={idx} className={`inbox-item-v3 ${idx % messagesLeft.length === 0 ? 'selected' : ''}`}>
-                <div className="inbox-avatar-wrap-sm">
-                  <img src={msg.avatar} alt={msg.name} className="inbox-avatar-img" />
-                  <div className={`inbox-platform-badge-sm ${msg.platform}`}>
-                    <msg.Icon className="w-2 h-2 text-white" />
-                  </div>
-                </div>
-                <div className="inbox-item-info-sm">
-                  <span className="inbox-item-name-sm">{msg.name}</span>
-                  <span className="inbox-item-preview-sm">{msg.preview}</span>
-                </div>
-                {msg.unread && <div className="inbox-unread-dot-sm" />}
+    <div className="feature-inbox-mockup">
+      <div className="inbox-list-v2">
+        {messages.map((msg, idx) => (
+          <motion.div
+            key={idx}
+            className={`inbox-item-v2 ${idx === 0 && visibleItems.includes(0) ? 'selected' : ''}`}
+            initial={{ x: 40, opacity: 0, scale: 0.9 }}
+            animate={visibleItems.includes(idx) ? { x: 0, opacity: 1, scale: 1 } : {}}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
+          >
+            <div className="inbox-avatar-wrap">
+              <img src={msg.avatar} alt={msg.name} className="inbox-avatar-img" />
+              <div className={`inbox-platform-badge ${msg.platform}`}>
+                <msg.Icon className="w-2.5 h-2.5 text-white" />
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      
-      <div className="inbox-column">
-        <div className="inbox-column-header">
-          <MessageSquare className="w-3 h-3 text-purple-400" />
-          <span>Comentarios</span>
-        </div>
-        <div className="inbox-scroll-mask">
-          <div className="inbox-scroll-content scroll-anim-right">
-            {doubledRight.map((msg, idx) => (
-              <div key={idx} className="inbox-item-v3">
-                <div className="inbox-avatar-wrap-sm">
-                  <img src={msg.avatar} alt={msg.name} className="inbox-avatar-img" />
-                  <div className={`inbox-platform-badge-sm ${msg.platform}`}>
-                    <msg.Icon className="w-2 h-2 text-white" />
-                  </div>
-                </div>
-                <div className="inbox-item-info-sm">
-                  <span className="inbox-item-name-sm">{msg.name}</span>
-                  <span className="inbox-item-preview-sm">{msg.preview}</span>
-                </div>
-                {msg.unread && <div className="inbox-unread-dot-sm" />}
-              </div>
-            ))}
-          </div>
-        </div>
+            </div>
+            <div className="inbox-item-info">
+              <span className="inbox-item-name-v2">{msg.name}</span>
+              <span className="inbox-item-preview-v2">{msg.preview}</span>
+            </div>
+            {idx < 2 && <div className="inbox-unread-dot" />}
+          </motion.div>
+        ))}
       </div>
     </div>
   );
@@ -358,32 +340,62 @@ function FeatureAIMockup() {
 }
 
 function FeatureCRMMockup() {
-  const contacts = [
-    { name: 'María G.', avatar: avatarMaria, tag: 'VIP', tagColor: 'gold', spent: '$1.2k' },
-    { name: 'Carlos R.', avatar: avatarCarlos, tag: 'Lead', tagColor: 'blue', spent: '$450' },
-    { name: 'Ana L.', avatar: avatarAna, tag: 'Nuevo', tagColor: 'green', spent: '$0' },
-  ];
-
-  const doubled = [...contacts, ...contacts];
+  const [showDetails, setShowDetails] = useState(false);
+  const [cycle, setCycle] = useState(0);
+  
+  useEffect(() => {
+    const timers: NodeJS.Timeout[] = [];
+    setShowDetails(false);
+    
+    timers.push(setTimeout(() => setShowDetails(true), 800));
+    timers.push(setTimeout(() => setCycle(c => c + 1), 4000));
+    
+    return () => timers.forEach(clearTimeout);
+  }, [cycle]);
   
   return (
     <div className="feature-crm-mockup">
-      <div className="crm-scroll-mask">
-        <div className="crm-scroll-content scroll-anim-crm">
-          {doubled.map((contact, idx) => (
-            <div key={idx} className={`crm-contact-row ${idx % contacts.length === 0 ? 'selected' : ''}`}>
-              <div className="crm-contact-avatar">
-                <img src={contact.avatar} alt={contact.name} />
-              </div>
-              <div className="crm-contact-info">
-                <span className="crm-contact-name">{contact.name}</span>
-                <span className="crm-contact-spent">{contact.spent}</span>
-              </div>
-              <span className={`crm-contact-tag ${contact.tagColor}`}>{contact.tag}</span>
+      <motion.div 
+        className="crm-mini-card-v2"
+        animate={{ scale: showDetails ? 1 : 0.95 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="crm-mini-header">
+          <div className="crm-mini-avatar-v2">
+            <img src={avatarMaria} alt="Cliente" />
+          </div>
+          <div className="crm-mini-info-v2">
+            <span className="crm-mini-name-v2">María García</span>
+            <div className="crm-mini-channels">
+              <FaInstagram className="w-3 h-3 text-pink-400" />
+              <FaFacebook className="w-3 h-3 text-blue-500" />
             </div>
-          ))}
+          </div>
         </div>
-      </div>
+        <AnimatePresence>
+          {showDetails && (
+            <motion.div 
+              className="crm-mini-details"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+            >
+              <div className="crm-mini-stat">
+                <span className="crm-stat-label">Compras</span>
+                <span className="crm-stat-value">$1.2k</span>
+              </div>
+              <div className="crm-mini-stat">
+                <span className="crm-stat-label">Mensajes</span>
+                <span className="crm-stat-value">24</span>
+              </div>
+              <div className="crm-mini-tags-v2">
+                <span className="crm-tag vip">VIP</span>
+                <span className="crm-tag loyal">Leal</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 }
@@ -432,32 +444,57 @@ function FeatureReminderMockup() {
 }
 
 function FeatureCommentsMockup() {
-  const threads = [
-    { q: '¿Precio?', a: '$299 + envío gratis' },
-    { q: '¿Colores?', a: 'Negro, blanco y azul' },
-    { q: '¿Tallas?', a: 'S, M, L y XL' },
-    { q: '¿Envío?', a: 'Gratis a todo el país' },
+  const [phase, setPhase] = useState(0);
+  const [cycle, setCycle] = useState(0);
+  
+  const comments = [
+    { question: '¿Precio?', answer: '$299 + envío gratis' },
+    { question: '¿Colores?', answer: 'Negro, blanco y azul' },
+    { question: '¿Tallas?', answer: 'S, M, L y XL' },
   ];
-
-  const doubled = [...threads, ...threads];
+  
+  useEffect(() => {
+    setPhase(0);
+    const timers: NodeJS.Timeout[] = [];
+    
+    timers.push(setTimeout(() => setPhase(1), 400));
+    timers.push(setTimeout(() => setPhase(2), 1200));
+    timers.push(setTimeout(() => setPhase(3), 2000));
+    timers.push(setTimeout(() => setPhase(4), 2800));
+    timers.push(setTimeout(() => setPhase(5), 3600));
+    timers.push(setTimeout(() => setPhase(6), 4400));
+    timers.push(setTimeout(() => setCycle(c => c + 1), 6000));
+    
+    return () => timers.forEach(clearTimeout);
+  }, [cycle]);
   
   return (
-    <div className="feature-comments-mockup-v3">
-      <div className="comments-scroll-mask">
-        <div className="comments-scroll-content scroll-anim-comments">
-          {doubled.map((t, idx) => (
-            <div key={idx} className="comment-thread-item">
-              <div className="comment-q-v3">
-                <FaInstagram className="w-2.5 h-2.5 text-pink-400 flex-shrink-0" />
-                <span>{t.q}</span>
-              </div>
-              <div className="comment-a-v3">
-                <Sparkles className="w-2.5 h-2.5 text-purple-400 flex-shrink-0" />
-                <span>{t.a}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+    <div className="feature-comments-mockup-v2">
+      <div className="comments-thread-v2">
+        {comments.map((c, idx) => (
+          <div key={idx} className="comment-pair">
+            {phase >= idx * 2 + 1 && (
+              <motion.div 
+                className="comment-q"
+                initial={{ opacity: 0, x: -15 }}
+                animate={{ opacity: 1, x: 0 }}
+              >
+                <FaInstagram className="w-2.5 h-2.5 text-pink-400" />
+                <span>{c.question}</span>
+              </motion.div>
+            )}
+            {phase >= idx * 2 + 2 && (
+              <motion.div 
+                className="comment-a"
+                initial={{ opacity: 0, x: 15 }}
+                animate={{ opacity: 1, x: 0 }}
+              >
+                <Sparkles className="w-2.5 h-2.5 text-purple-400" />
+                <span>{c.answer}</span>
+              </motion.div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -487,86 +524,6 @@ function FeatureAnalyticsMockup() {
       </div>
       <div className="analytics-labels">
         <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
-      </div>
-    </div>
-  );
-}
-
-function FeatureFiltersMockup() {
-  const [activeFilter, setActiveFilter] = useState(0);
-  const [cycle, setCycle] = useState(0);
-  
-  const filters = [
-    { label: 'Todos', count: 24 },
-    { label: 'Sin leer', count: 8 },
-    { label: 'Prioritarios', count: 3 },
-  ];
-  
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveFilter(f => (f + 1) % filters.length);
-    }, 1500);
-    return () => clearInterval(interval);
-  }, []);
-  
-  return (
-    <div className="feature-filters-mockup">
-      <div className="filters-row">
-        {filters.map((f, idx) => (
-          <motion.div
-            key={f.label}
-            className={`filter-chip ${activeFilter === idx ? 'active' : ''}`}
-            animate={{ scale: activeFilter === idx ? 1.05 : 1 }}
-          >
-            <span className="filter-label">{f.label}</span>
-            <span className="filter-count">{f.count}</span>
-          </motion.div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function FeatureTagsMockup() {
-  const [visibleTags, setVisibleTags] = useState<number[]>([]);
-  const [cycle, setCycle] = useState(0);
-  
-  const tags = [
-    { label: 'VIP', color: 'gold' },
-    { label: 'Lead', color: 'blue' },
-    { label: 'Nuevo', color: 'green' },
-    { label: 'Urgente', color: 'red' },
-  ];
-  
-  useEffect(() => {
-    setVisibleTags([]);
-    const timers: NodeJS.Timeout[] = [];
-    
-    tags.forEach((_, idx) => {
-      timers.push(setTimeout(() => {
-        setVisibleTags(prev => [...prev, idx]);
-      }, idx * 400));
-    });
-    
-    timers.push(setTimeout(() => setCycle(c => c + 1), 4000));
-    
-    return () => timers.forEach(clearTimeout);
-  }, [cycle]);
-  
-  return (
-    <div className="feature-tags-mockup">
-      <div className="tags-grid">
-        {tags.map((tag, idx) => (
-          <motion.div
-            key={tag.label}
-            className={`tag-item ${tag.color}`}
-            initial={{ scale: 0, opacity: 0 }}
-            animate={visibleTags.includes(idx) ? { scale: 1, opacity: 1 } : {}}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-          >
-            {tag.label}
-          </motion.div>
-        ))}
       </div>
     </div>
   );
