@@ -254,10 +254,12 @@ function FeatureInboxMockup() {
   const [cycle, setCycle] = useState(0);
   
   const messages = [
-    { platform: 'instagram', name: 'María G.', avatar: avatarMaria, preview: '¿Tienen talla M?', Icon: FaInstagram },
-    { platform: 'tiktok', name: 'Carlos R.', avatar: avatarCarlos, preview: 'Vi tu video!', Icon: FaTiktok },
-    { platform: 'facebook', name: 'Ana L.', avatar: avatarAna, preview: 'Quiero reservar', Icon: FaFacebook },
-    { platform: 'instagram', name: 'Pedro S.', avatar: avatarCarlos, preview: '¿Hacen envíos?', Icon: FaInstagram },
+    { platform: 'instagram', name: 'María G.', avatar: avatarMaria, preview: '¿Tienen talla M?', Icon: FaInstagram, time: 'Ahora' },
+    { platform: 'tiktok', name: 'Carlos R.', avatar: avatarCarlos, preview: 'Vi tu video!', Icon: FaTiktok, time: '2m' },
+    { platform: 'facebook', name: 'Ana L.', avatar: avatarAna, preview: 'Quiero reservar', Icon: FaFacebook, time: '5m' },
+    { platform: 'instagram', name: 'Pedro S.', avatar: avatarCarlos, preview: '¿Hacen envíos?', Icon: FaInstagram, time: '8m' },
+    { platform: 'tiktok', name: 'Laura M.', avatar: avatarMaria, preview: '¡Me encanta!', Icon: FaTiktok, time: '12m' },
+    { platform: 'facebook', name: 'Diego R.', avatar: avatarAna, preview: '¿Precio?', Icon: FaFacebook, time: '15m' },
   ];
   
   useEffect(() => {
@@ -267,7 +269,7 @@ function FeatureInboxMockup() {
     messages.forEach((_, idx) => {
       timers.push(setTimeout(() => {
         setVisibleItems(prev => [...prev, idx]);
-      }, idx * 600));
+      }, idx * 400));
     });
     
     timers.push(setTimeout(() => {
@@ -279,6 +281,14 @@ function FeatureInboxMockup() {
   
   return (
     <div className="feature-inbox-mockup">
+      <div className="inbox-header-mini">
+        <span className="inbox-count">{messages.length} nuevos</span>
+        <div className="inbox-platforms-mini">
+          <FaInstagram className="w-3 h-3 text-pink-400" />
+          <FaTiktok className="w-3 h-3 text-white" />
+          <FaFacebook className="w-3 h-3 text-blue-500" />
+        </div>
+      </div>
       <div className="inbox-list-v2">
         {messages.map((msg, idx) => (
           <motion.div
@@ -298,10 +308,13 @@ function FeatureInboxMockup() {
               </div>
             </div>
             <div className="inbox-item-info">
-              <span className="inbox-item-name-v2">{msg.name}</span>
+              <div className="inbox-item-row">
+                <span className="inbox-item-name-v2">{msg.name}</span>
+                <span className="inbox-item-time">{msg.time}</span>
+              </div>
               <span className="inbox-item-preview-v2">{msg.preview}</span>
             </div>
-            {idx < 2 && <div className="inbox-unread-dot" />}
+            {idx < 3 && <div className="inbox-unread-dot" />}
           </motion.div>
         ))}
       </div>
@@ -537,36 +550,49 @@ function FeatureMultiAgentMockup() {
   const [cycle, setCycle] = useState(0);
   
   const agents = [
-    { name: 'Ana', color: 'bg-pink-500', initials: 'AN' },
-    { name: 'Luis', color: 'bg-blue-500', initials: 'LU' },
-    { name: 'Sara', color: 'bg-green-500', initials: 'SA' },
+    { name: 'Ana', color: 'bg-pink-500', initials: 'AN', conversations: 12 },
+    { name: 'Luis', color: 'bg-blue-500', initials: 'LU', conversations: 8 },
+    { name: 'Sara', color: 'bg-green-500', initials: 'SA', conversations: 15 },
+    { name: 'Carlos', color: 'bg-orange-500', initials: 'CA', conversations: 6 },
+    { name: 'María', color: 'bg-purple-500', initials: 'MA', conversations: 10 },
   ];
   
   useEffect(() => {
     const timers: NodeJS.Timeout[] = [];
     
-    timers.push(setTimeout(() => setActiveAgent(0), 300));
-    timers.push(setTimeout(() => setActiveAgent(1), 1500));
-    timers.push(setTimeout(() => setActiveAgent(2), 2700));
-    timers.push(setTimeout(() => setCycle(c => c + 1), 4000));
+    agents.forEach((_, idx) => {
+      timers.push(setTimeout(() => setActiveAgent(idx), 300 + idx * 1000));
+    });
+    timers.push(setTimeout(() => setCycle(c => c + 1), 300 + agents.length * 1000 + 500));
     
     return () => timers.forEach(clearTimeout);
   }, [cycle]);
   
   return (
     <div className="feature-multiagent-mockup">
+      <div className="multiagent-header">
+        <span className="multiagent-title">Equipo activo</span>
+        <span className="multiagent-count">{agents.length} online</span>
+      </div>
       <div className="multiagent-avatars">
         {agents.map((agent, idx) => (
           <motion.div
             key={idx}
             className={`multiagent-avatar ${agent.color} ${activeAgent === idx ? 'active' : ''}`}
             animate={{ 
-              scale: activeAgent === idx ? 1.15 : 1,
-              opacity: activeAgent === idx ? 1 : 0.5
+              scale: activeAgent === idx ? 1.2 : 1,
+              opacity: activeAgent === idx ? 1 : 0.6
             }}
             transition={{ duration: 0.3 }}
           >
             <span className="text-white text-xs font-bold">{agent.initials}</span>
+            {activeAgent === idx && (
+              <motion.div 
+                className="agent-typing-indicator"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+              />
+            )}
           </motion.div>
         ))}
       </div>
@@ -580,6 +606,22 @@ function FeatureMultiAgentMockup() {
         <span className="status-dot" />
         <span className="status-text">{agents[activeAgent].name} respondiendo...</span>
       </motion.div>
+      <div className="multiagent-stats">
+        {agents.slice(0, 3).map((agent, idx) => (
+          <motion.div 
+            key={idx} 
+            className="agent-stat"
+            animate={{ 
+              opacity: activeAgent === idx ? 1 : 0.5,
+              scale: activeAgent === idx ? 1.05 : 1
+            }}
+          >
+            <span className={`agent-stat-dot ${agent.color}`} />
+            <span className="agent-stat-name">{agent.name}</span>
+            <span className="agent-stat-count">{agent.conversations}</span>
+          </motion.div>
+        ))}
+      </div>
     </div>
   );
 }
