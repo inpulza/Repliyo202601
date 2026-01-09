@@ -539,7 +539,7 @@ function HowItWorksSection() {
               transition={{ repeat: Infinity, duration: 2, delay: 0.3 }}
               className="connect-icon tiktok"
             >
-              <FaTiktok className="w-8 h-8" />
+              <FaTiktok className="w-8 h-8 text-white" />
             </motion.div>
             <motion.div 
               animate={{ scale: [1, 1.1, 1], y: [0, -5, 0] }}

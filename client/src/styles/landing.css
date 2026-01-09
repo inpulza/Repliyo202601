@@ -166,10 +166,6 @@
   color: var(--landing-text);
 }
 
-.landing-page.theme-light .connect-icon.tiktok {
-  background: #FFFFFF;
-  border-color: #00f2ea;
-}
 
 .landing-page.theme-light .repliyo-logo {
   color: white;
@@ -890,7 +886,17 @@
 }
 
 .connect-icon.instagram { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
-.connect-icon.tiktok { background: #000; border: 2px solid #00f2ea; }
+.connect-icon.tiktok { 
+  background: #000; 
+  border: 2px solid #00f2ea; 
+  color: white;
+}
+
+.landing-page.theme-light .connect-icon.tiktok {
+  background: #000;
+  border-color: #00f2ea;
+  color: white;
+}
 .connect-icon.facebook { background: #1877F2; }
 
 .connect-lines {
