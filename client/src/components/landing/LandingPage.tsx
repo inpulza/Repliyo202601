@@ -6,6 +6,11 @@ import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
 import avatarMaria from '../../assets/avatars/latina_woman_avatar_headshot.png';
 import avatarCarlos from '../../assets/avatars/hispanic_man_avatar_headshot.png';
 import avatarAna from '../../assets/avatars/european_woman_avatar_headshot.png';
+import agentAna from '@assets/generated_images/ana_agent_headshot_portrait.png';
+import agentLuis from '@assets/generated_images/luis_agent_headshot_portrait.png';
+import agentSara from '@assets/generated_images/sara_agent_headshot_portrait.png';
+import agentCarlos from '@assets/generated_images/carlos_agent_headshot_portrait.png';
+import agentMaria from '@assets/generated_images/maria_agent_headshot_portrait.png';
 import testimonialBettys from '../../assets/testimonial-bettys.jpg';
 import { ParallaxProvider, useParallax, Parallax } from 'react-scroll-parallax';
 import gsap from 'gsap';
@@ -552,11 +557,11 @@ function FeatureMultiAgentMockup() {
   const [visibleAssignments, setVisibleAssignments] = useState<number[]>([]);
   
   const agents = [
-    { name: 'Ana', color: 'bg-pink-500', initials: 'AN', conversations: 12, responseTime: '2m' },
-    { name: 'Luis', color: 'bg-blue-500', initials: 'LU', conversations: 8, responseTime: '3m' },
-    { name: 'Sara', color: 'bg-green-500', initials: 'SA', conversations: 15, responseTime: '1m' },
-    { name: 'Carlos', color: 'bg-orange-500', initials: 'CA', conversations: 6, responseTime: '4m' },
-    { name: 'María', color: 'bg-purple-500', initials: 'MA', conversations: 10, responseTime: '2m' },
+    { name: 'Ana', color: 'bg-pink-500', initials: 'AN', avatar: agentAna, conversations: 12, responseTime: '2m' },
+    { name: 'Luis', color: 'bg-blue-500', initials: 'LU', avatar: agentLuis, conversations: 8, responseTime: '3m' },
+    { name: 'Sara', color: 'bg-green-500', initials: 'SA', avatar: agentSara, conversations: 15, responseTime: '1m' },
+    { name: 'Carlos', color: 'bg-orange-500', initials: 'CA', avatar: agentCarlos, conversations: 6, responseTime: '4m' },
+    { name: 'María', color: 'bg-purple-500', initials: 'MA', avatar: agentMaria, conversations: 10, responseTime: '2m' },
   ];
 
   const recentAssignments = [
@@ -593,13 +598,13 @@ function FeatureMultiAgentMockup() {
         {agents.map((agent, idx) => (
           <motion.div
             key={idx}
-            className={`multiagent-avatar ${agent.color} ${activeAgent === idx ? 'active' : 'inactive'}`}
+            className={`multiagent-avatar ${activeAgent === idx ? 'active' : 'inactive'}`}
             animate={{ 
               scale: activeAgent === idx ? 1.2 : 1
             }}
             transition={{ duration: 0.3 }}
           >
-            <span className="text-white text-xs font-bold">{agent.initials}</span>
+            <img src={agent.avatar} alt={agent.name} className="agent-avatar-img" />
             {activeAgent === idx && (
               <motion.div 
                 className="agent-typing-indicator"
