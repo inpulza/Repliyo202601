@@ -1743,7 +1743,7 @@ function HowItWorksSection() {
         <div className="how-steps-wrapper" style={{ 
           backgroundImage: `url(${stepsBgLight})`,
           backgroundSize: 'cover',
-          backgroundPosition: 'center 25%'
+          backgroundPosition: 'center 10%'
         }}>
           {steps.map((step, i) => (
             <div 
