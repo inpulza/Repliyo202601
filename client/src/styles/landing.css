@@ -4262,21 +4262,21 @@
 
 /* Problem/Solution section */
 .landing-page.theme-light .problem-item {
-  background: rgba(239, 68, 68, 0.05);
-  border-color: rgba(239, 68, 68, 0.15);
+  background: #ffffff;
+  border: none;
 }
 
 .landing-page.theme-light .problem-item p {
-  color: var(--landing-text);
+  color: #ef4444;
 }
 
 .landing-page.theme-light .solution-item {
-  background: rgba(34, 197, 94, 0.05);
-  border-color: rgba(34, 197, 94, 0.15);
+  background: #ffffff;
+  border: none;
 }
 
 .landing-page.theme-light .solution-item p {
-  color: var(--landing-text);
+  color: #22c55e;
 }
 
 /* Metric section text */
