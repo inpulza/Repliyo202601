@@ -2276,37 +2276,6 @@
   background: var(--landing-bg-light);
 }
 
-/* Header Dial Animation */
-.how-header-dial-wrapper {
-  display: inline-block;
-  position: relative;
-}
-
-.how-header-dial-viewport {
-  display: inline-block;
-  height: 1.15em;
-  overflow: hidden;
-  vertical-align: bottom;
-  position: relative;
-}
-
-.how-header-dial-track {
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.how-header-dial-item {
-  display: block;
-  height: 1.15em;
-  line-height: 1.15;
-  color: var(--landing-primary);
-}
-
-.landing-page.theme-light .how-header-dial-item {
-  color: var(--landing-primary);
-}
-
 .how-header {
   text-align: center;
   margin-bottom: 40px;
