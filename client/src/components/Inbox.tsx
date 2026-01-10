@@ -499,7 +499,7 @@ export function Inbox() {
       setTimeout(() => setHighlightedConversationId(null), 3000);
       
       // Clear URL params immediately
-      window.history.replaceState({}, '', '/inbox');
+      window.history.replaceState({}, '', '/app/inbox');
     }
   }, []);
 

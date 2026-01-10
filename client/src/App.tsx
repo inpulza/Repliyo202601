@@ -65,12 +65,30 @@ function HomeRoute() {
   return <LandingPage />;
 }
 
+function LegacyRedirect({ newPath }: { newPath: string }) {
+  const [, setLocation] = useLocation();
+  useEffect(() => {
+    setLocation(newPath);
+  }, [setLocation, newPath]);
+  return null;
+}
+
 function Router() {
   return (
     <Switch>
       {/* Public routes */}
       <Route path="/" component={HomeRoute} />
       <Route path="/login" component={Login} />
+      
+      {/* Legacy URL redirects (for old bookmarks) */}
+      <Route path="/inbox">{() => <LegacyRedirect newPath="/app/inbox" />}</Route>
+      <Route path="/crm">{() => <LegacyRedirect newPath="/app/crm" />}</Route>
+      <Route path="/overview">{() => <LegacyRedirect newPath="/app/overview" />}</Route>
+      <Route path="/connections">{() => <LegacyRedirect newPath="/app/connections" />}</Route>
+      <Route path="/integrations">{() => <LegacyRedirect newPath="/app/integrations" />}</Route>
+      <Route path="/settings">{() => <LegacyRedirect newPath="/app/settings" />}</Route>
+      <Route path="/ai-metrics">{() => <LegacyRedirect newPath="/app/ai-metrics" />}</Route>
+      <Route path="/profile">{() => <LegacyRedirect newPath="/app/profile" />}</Route>
       
       {/* Authenticated routes under /app */}
       <Route path="/app/connections">

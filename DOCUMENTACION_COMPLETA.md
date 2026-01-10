@@ -8654,6 +8654,60 @@ password: text("password").notNull(),  // ← Bloquea usuarios OAuth
 
 ---
 
+### Estructura de URLs (Actualizado 10-Ene-2026)
+
+**Patrón SaaS estándar implementado:**
+
+| Ruta | Tipo | Descripción |
+|------|------|-------------|
+| `/` | Pública | Landing page (Repliyo.com). Usuarios autenticados son redirigidos a `/app/inbox` |
+| `/login` | Pública | Página de login (email/password + OAuth) |
+| `/app/inbox` | Autenticada | Smart Inbox (vista principal) |
+| `/app/overview` | Autenticada | Dashboard de métricas |
+| `/app/crm` | Autenticada | CRM de contactos |
+| `/app/connections` | Autenticada | Conexiones de marcas |
+| `/app/integrations` | Autenticada | Integraciones de terceros |
+| `/app/settings` | Autenticada | Configuración del agente IA |
+| `/app/ai-metrics` | Autenticada | Métricas de IA |
+| `/app/profile` | Autenticada | Perfil de usuario |
+
+**Redirects Legacy (para bookmarks antiguos):**
+- `/inbox` → `/app/inbox`
+- `/crm` → `/app/crm`
+- `/overview` → `/app/overview`
+- `/connections` → `/app/connections`
+- `/integrations` → `/app/integrations`
+- `/settings` → `/app/settings`
+- `/ai-metrics` → `/app/ai-metrics`
+- `/profile` → `/app/profile`
+
+---
+
+### Checklist de Navegación y Redirecciones (10-Ene-2026)
+
+| Flujo | Origen | Destino | Estado |
+|-------|--------|---------|--------|
+| Login exitoso (email/password) | `/login` | `/app/inbox` | ✅ Verificado |
+| Login exitoso (OAuth) | `/api/callback` | `/app/inbox` | ✅ Verificado |
+| Logout (legacy) | Sidebar | `/` (landing) | ✅ Verificado |
+| Logout (OAuth) | `/api/logout` | `/` (landing) | ✅ Verificado |
+| Sesión expirada (401) | Cualquier página | `/login` | ✅ Verificado |
+| Usuario autenticado visita `/` | `/` | `/app/inbox` | ✅ Verificado |
+| Usuario no autenticado visita `/app/*` | `/app/*` | `/login` | ✅ Verificado |
+| Deep link conversación | Notificación | `/app/inbox?conversationId=...` | ✅ Verificado |
+| Bookmark legacy `/inbox` | Enlace externo | `/app/inbox` | ✅ Verificado |
+
+**Archivos modificados:**
+- `client/src/App.tsx` - Rutas y componentes HomeRoute, LegacyRedirect
+- `client/src/components/Sidebar.tsx` - Links de navegación
+- `client/src/components/BottomNav.tsx` - Links de navegación móvil
+- `client/src/pages/Login.tsx` - Redirect post-login
+- `client/src/context/AuthContext.tsx` - Logout redirect a `/`
+- `client/src/components/Inbox.tsx` - Deep link URL cleanup
+- `server/replit_integrations/auth/replitAuth.ts` - OAuth callback redirect
+
+---
+
 ### Arquitectura de Autenticación Post-Implementación
 
 ```
