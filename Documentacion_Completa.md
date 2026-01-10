@@ -213,8 +213,8 @@ FASE 4 (Autenticación Social) ← NUEVA
 | Fase 1: Componentes | 4 | 18 | 2-3 semanas |
 | Fase 2: Arquitectura | 3 | 19 | 2-3 semanas |
 | Fase 3: Testing | 3 | 17 | 2-3 semanas |
-| Fase 4: Autenticación Social | 7 | 37 | 1-2 semanas |
-| **TOTAL** | **17** | **91** | **7-11 semanas** |
+| Fase 4: Autenticación Social | 7 | 44 | 1-2 semanas |
+| **TOTAL** | **17** | **98** | **7-11 semanas** |
 
 ---
 
@@ -537,20 +537,65 @@ WebkitTextFillColor: transparent;
 | Filtrado por brandId | ✅ Implementado | Middleware `filterByBrand` protege recursos |
 | Verificación de acceso | ✅ Implementado | Clientes solo acceden a su marca |
 | Autenticación social OAuth | ❌ No implementado | Solo muestra toast "Próximamente" |
-| Tabla de sesiones persistentes | ❌ No existe | Necesaria para Replit Auth |
+| Tabla de sesiones persistentes | ✅ YA EXISTE | `server/sessionStore.ts` usa `connect-pg-simple` con tabla `session` |
+| SESSION_SECRET | ✅ YA EXISTE | Configurado en `sessionStore.ts` |
 | Migración de usuarios existentes | ⚠️ Pendiente | Usuarios con email/password necesitan compatibilidad |
+| Campo password | ⚠️ CONFLICTO | Actualmente `notNull()` - debe ser nullable para OAuth |
+
+### Notas Críticas de Compatibilidad
+
+> **IMPORTANTE:** Se han detectado varios puntos de conflicto con la infraestructura existente que deben abordarse cuidadosamente:
+
+**1. Tabla de Sesiones (Ya Existe)**
+```typescript
+// server/sessionStore.ts - YA IMPLEMENTADO
+export const sessionStore = new PgStore({
+  pool: pool as any,
+  tableName: 'session',
+  createTableIfMissing: true
+});
+```
+- La tabla `session` ya existe y funciona con `connect-pg-simple`
+- Replit Auth puede reutilizar esta infraestructura
+- NO crear tabla duplicada
+
+**2. Campo Password NOT NULL (CONFLICTO)**
+```typescript
+// shared/schema.ts línea 40 - PROBLEMA
+password: text("password").notNull(),  // ← Bloquea usuarios OAuth
+```
+- Los usuarios OAuth no tienen contraseña
+- Se debe cambiar a `password: text("password")` (nullable)
+- Requiere migración sin afectar usuarios existentes
+
+**3. Coexistencia de Rutas de Auth**
+| Ruta | Sistema | Propósito |
+|------|---------|-----------|
+| `/api/login` | Replit Auth (NUEVO) | Inicia flujo OAuth |
+| `/api/logout` | Replit Auth (NUEVO) | Termina sesión OAuth |
+| `/api/auth/login` | Legacy (EXISTENTE) | Login email/password |
+| `/api/auth/logout` | Legacy (EXISTENTE) | Logout email/password |
+| `/api/auth/me` | Legacy (EXISTENTE) | Obtener usuario actual |
+
+**4. Estructura de req.user (DIFERENTE)**
+- Sistema actual: `req.session.userId` → buscar en DB → `req.user`
+- Replit Auth: `req.user.claims.sub` contiene ID de Replit
+- Se necesita middleware híbrido que unifique ambos formatos
 
 ### Subfase 4.1: Preparación de Infraestructura de Base de Datos
 
-**Objetivo:** Crear tablas y schemas necesarios para Replit Auth
+**Objetivo:** Adaptar tablas y schemas existentes para soportar Replit Auth
 
 | Tarea | Descripción | Criterio de Éxito | Estado |
 |-------|-------------|-------------------|--------|
-| 4.1.1 | Exportar schema de auth desde `shared/models/auth.ts` | Schema accesible en `shared/schema.ts` | ⬜ |
-| 4.1.2 | Crear tabla `sessions` para almacenamiento persistente | Tabla creada en PostgreSQL | ⬜ |
-| 4.1.3 | Modificar tabla `users` para soportar auth social (agregar campos: `replitId`, `profileImageUrl`, `authProvider`) | Migración ejecutada sin errores | ⬜ |
+| 4.1.0 | **DECISIÓN:** Definir estrategia de integración - ¿Adaptar tabla `users` existente o usar tabla de Replit Auth por separado? | Decisión documentada | ⬜ |
+| 4.1.1 | Exportar schema de auth desde `shared/models/auth.ts` (si se crea nuevo) | Schema accesible en `shared/schema.ts` | ⬜ |
+| 4.1.2 | ~~Crear tabla `sessions`~~ → **YA EXISTE** en `server/sessionStore.ts` - Verificar compatibilidad con Replit Auth | Sesiones funcionan con ambos sistemas | ✅ |
+| 4.1.3a | **CRÍTICO:** Cambiar campo `password` de `notNull()` a nullable en `shared/schema.ts` | Campo permite NULL | ⬜ |
+| 4.1.3b | Agregar campos: `replitId` (varchar, nullable, unique), `profileImageUrl` (text, nullable), `authProvider` (text, default 'local') | Migración ejecutada sin errores | ⬜ |
 | 4.1.4 | Ejecutar `npm run db:push` para aplicar cambios | Base de datos actualizada | ⬜ |
-| 4.1.5 | Verificar que usuarios existentes no se ven afectados | Query de verificación pasa | ⬜ |
+| 4.1.5 | Verificar que usuarios existentes mantienen acceso (query: `SELECT * FROM users WHERE password IS NOT NULL`) | Usuarios legacy funcionan | ⬜ |
+| 4.1.6 | Actualizar valor `authProvider='local'` para todos los usuarios existentes | Migración de datos | ⬜ |
 
 ### Subfase 4.2: Integración del Módulo Replit Auth
 
@@ -558,36 +603,46 @@ WebkitTextFillColor: transparent;
 
 | Tarea | Descripción | Criterio de Éxito | Estado |
 |-------|-------------|-------------------|--------|
-| 4.2.1 | Agregar blueprint `javascript_log_in_with_replit` al proyecto | Archivos de integración creados | ⬜ |
-| 4.2.2 | Configurar `setupAuth(app)` en `server/index.ts` ANTES de otras rutas | Auth inicializado correctamente | ⬜ |
-| 4.2.3 | Registrar rutas de auth con `registerAuthRoutes(app)` | Rutas `/api/login`, `/api/logout` disponibles | ⬜ |
-| 4.2.4 | Verificar que `SESSION_SECRET` está configurado en environment | Variable disponible | ⬜ |
-| 4.2.5 | Probar flujo de login básico en desarrollo | Usuario puede autenticarse | ⬜ |
+| 4.2.1 | Agregar blueprint `javascript_log_in_with_replit` al proyecto | Archivos de integración creados en `server/replit_integrations/auth/` | ⬜ |
+| 4.2.2 | Configurar `setupAuth(app)` en `server/app.ts` ANTES de `registerRoutes(app)` | Auth inicializado correctamente | ⬜ |
+| 4.2.3 | Registrar rutas con `registerAuthRoutes(app)` - **NOTA:** Esto crea `/api/login` (nuevo), NO conflicta con `/api/auth/login` (existente) | Ambas rutas disponibles | ⬜ |
+| 4.2.4 | ~~Verificar SESSION_SECRET~~ → **YA EXISTE** en `sessionStore.ts` | Variable ya configurada | ✅ |
+| 4.2.5 | Adaptar módulo Replit Auth para usar `sessionStore` existente en lugar de crear nuevo | Una sola configuración de sesión | ⬜ |
+| 4.2.6 | Probar flujo de login OAuth en desarrollo | Usuario puede autenticarse con Google | ⬜ |
 
 ### Subfase 4.3: Compatibilidad con Sistema Existente
 
 **Objetivo:** Mantener login email/password funcionando junto con OAuth
 
+> **ARQUITECTURA HÍBRIDA:** El sistema tendrá DOS formas de autenticarse:
+> - **Legacy:** POST `/api/auth/login` con email/password → `req.session.userId`
+> - **OAuth:** GET `/api/login` → Replit Auth → `req.user.claims.sub`
+
 | Tarea | Descripción | Criterio de Éxito | Estado |
 |-------|-------------|-------------------|--------|
-| 4.3.1 | Crear middleware híbrido que soporte ambos métodos de auth | Sesiones legacy y OAuth funcionan | ⬜ |
-| 4.3.2 | Modificar `storage.ts` para buscar usuarios por `replitId` O `email` | Función `upsertUser` implementada | ⬜ |
-| 4.3.3 | Implementar lógica de "merge" cuando usuario OAuth tiene email existente | Cuentas se vinculan automáticamente | ⬜ |
-| 4.3.4 | Mantener ruta `/api/auth/login` existente para email/password | Ambos métodos coexisten | ⬜ |
-| 4.3.5 | Agregar campo `authProvider` a usuarios ('local', 'replit') | Distinguir método de auth | ⬜ |
+| 4.3.1 | Crear middleware `requireAuthHybrid` que detecte ambos tipos de sesión (legacy userId o OAuth claims) | Middleware unificado | ⬜ |
+| 4.3.2 | Modificar `storage.ts` - crear función `getUserByReplitId(replitId)` | Función implementada | ⬜ |
+| 4.3.3 | Modificar `storage.ts` - crear función `upsertUserFromOAuth(claims)` que busque por email primero | Función implementada | ⬜ |
+| 4.3.4 | Implementar lógica de "merge": si OAuth email = email existente → vincular `replitId` a cuenta existente | Cuentas se vinculan automáticamente | ⬜ |
+| 4.3.5 | Mantener rutas `/api/auth/login` y `/api/auth/logout` existentes SIN modificar | Login legacy funciona | ⬜ |
+| 4.3.6 | Actualizar middleware `requireAuth` para soportar ambos formatos de sesión | Rutas protegidas funcionan con ambos auth | ⬜ |
+| 4.3.7 | Asegurar que `filterByBrand` funciona con usuarios OAuth (verificar `brandId`) | Aislamiento mantiene | ⬜ |
 
 ### Subfase 4.4: Actualización del Frontend
 
 **Objetivo:** Conectar botones de login social con flujo OAuth real
 
+> **NOTA:** Replit Auth usa una sola ruta `/api/login` que muestra UI con TODOS los proveedores disponibles (Google, GitHub, Apple, Twitter). No necesitamos rutas separadas por proveedor.
+
 | Tarea | Descripción | Criterio de Éxito | Estado |
 |-------|-------------|-------------------|--------|
-| 4.4.1 | Modificar `Login.tsx` - cambiar botón Google para redirigir a `/api/login` | Redirección funciona | ⬜ |
-| 4.4.2 | Actualizar botones de GitHub, Apple, Twitter (reemplazar Facebook) | UI actualizada | ⬜ |
-| 4.4.3 | Implementar hook `useAuth` para estado de autenticación | Hook funcional | ⬜ |
-| 4.4.4 | Agregar manejo de error 401 con redirección a login | UX mejorada | ⬜ |
-| 4.4.5 | Mostrar foto de perfil del usuario si viene de OAuth | UI personalizada | ⬜ |
-| 4.4.6 | Actualizar página de registro para nuevos usuarios OAuth | Flujo de onboarding | ⬜ |
+| 4.4.1 | Modificar `Login.tsx` - cambiar `handleSocialLogin()` de toast a `window.location.href = '/api/login'` | Redirección funciona | ⬜ |
+| 4.4.2 | Reemplazar botón Facebook por Twitter (X) - cambiar icono y texto | UI actualizada | ⬜ |
+| 4.4.3 | Decidir: ¿Mantener 4 botones separados o usar 1 botón "Login con Replit"? | Decisión tomada | ⬜ |
+| 4.4.4 | Usar hook `useAuth` proporcionado por Replit Auth (en `client/src/hooks/use-auth.ts`) | Hook integrado | ⬜ |
+| 4.4.5 | Agregar manejo de error 401 con redirección usando `isUnauthorizedError` de Replit Auth | UX mejorada | ⬜ |
+| 4.4.6 | Mostrar `profileImageUrl` del usuario en header/navbar si viene de OAuth | Avatar visible | ⬜ |
+| 4.4.7 | Actualizar componente que muestra usuario actual para soportar ambos tipos de auth | UI funciona con legacy y OAuth | ⬜ |
 
 ### Subfase 4.5: Aislamiento de Datos por Usuario
 
@@ -660,30 +715,44 @@ WebkitTextFillColor: transparent;
 │                        FRONTEND                             │
 ├─────────────────────────────────────────────────────────────┤
 │  Login.tsx                                                  │
-│  ├─ Botón "Google" ──────────► /api/login                  │
-│  ├─ Botón "GitHub" ──────────► /api/login                  │
-│  ├─ Botón "Apple" ───────────► /api/login                  │
-│  ├─ Botón "Twitter" ─────────► /api/login                  │
-│  └─ Form Email/Password ─────► /api/auth/login (legacy)    │
+│  ├─ Botones Sociales ────────► /api/login (Replit Auth UI) │
+│  │   └─ Google, GitHub, Apple, Twitter - todos al mismo    │
+│  │      endpoint, Replit muestra selector de proveedor     │
+│  │                                                          │
+│  └─ Form Email/Password ─────► /api/auth/login (LEGACY)    │
+│      └─ Sistema actual, se mantiene sin cambios            │
 │                                                             │
-│  useAuth Hook                                               │
-│  └─ GET /api/auth/user ──────► Estado de sesión            │
+│  Estado de Sesión:                                          │
+│  ├─ useAuth (Replit) ────────► GET /api/auth/user (OAuth)  │
+│  └─ useQuery /api/auth/me ───► GET /api/auth/me (Legacy)   │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                        BACKEND                              │
 ├─────────────────────────────────────────────────────────────┤
-│  Replit Auth Module (server/replit_integrations/auth/)      │
-│  ├─ replitAuth.ts ───────► OIDC con Passport               │
-│  ├─ storage.ts ──────────► upsertUser, getUser             │
-│  └─ routes.ts ───────────► /api/auth/user                  │
+│  SISTEMA HÍBRIDO DE AUTENTICACIÓN                           │
+│  ═══════════════════════════════════════════════════════════│
 │                                                             │
-│  Middleware Stack                                           │
-│  ├─ setupAuth(app) ──────► Inicializa sesiones             │
-│  ├─ isAuthenticated ─────► Verifica sesión OAuth           │
-│  ├─ requireAuth ─────────► Verifica sesión legacy (híbrido)│
-│  └─ filterByBrand ───────► Aislamiento de datos            │
+│  ┌─ Replit Auth (NUEVO) ──────────────────────────────────┐│
+│  │  server/replit_integrations/auth/                       ││
+│  │  ├─ replitAuth.ts ─────► OIDC con Passport             ││
+│  │  ├─ storage.ts ────────► upsertUser (vincula a users)  ││
+│  │  └─ routes.ts ─────────► /api/login, /api/logout       ││
+│  │                          /api/auth/user                 ││
+│  └─────────────────────────────────────────────────────────┘│
+│                                                             │
+│  ┌─ Legacy Auth (EXISTENTE) ──────────────────────────────┐│
+│  │  server/routes.ts + server/auth.ts                      ││
+│  │  ├─ /api/auth/login ───► Email/password + bcrypt       ││
+│  │  ├─ /api/auth/logout ──► Destruye sesión               ││
+│  │  └─ /api/auth/me ──────► Retorna usuario actual        ││
+│  └─────────────────────────────────────────────────────────┘│
+│                                                             │
+│  Middleware Unificado:                                      │
+│  ├─ sessionMiddleware ───► server/sessionStore.ts (ÚNICO)  │
+│  ├─ requireAuthHybrid ───► Detecta OAuth O Legacy          │
+│  └─ filterByBrand ───────► Aislamiento por brandId         │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -723,32 +792,85 @@ WebkitTextFillColor: transparent;
 
 ---
 
-### Estimación de Esfuerzo - Fase 4
+### Estimación de Esfuerzo - Fase 4 (ACTUALIZADA)
 
 | Subfase | Tareas | Duración Estimada |
 |---------|--------|-------------------|
-| 4.1 Preparación DB | 5 | 2-3 horas |
-| 4.2 Integración Replit Auth | 5 | 3-4 horas |
-| 4.3 Compatibilidad Legacy | 5 | 4-5 horas |
-| 4.4 Frontend Updates | 6 | 3-4 horas |
+| 4.1 Preparación DB | 8 | 3-4 horas |
+| 4.2 Integración Replit Auth | 6 | 3-4 horas |
+| 4.3 Compatibilidad Legacy | 7 | 4-5 horas |
+| 4.4 Frontend Updates | 7 | 3-4 horas |
 | 4.5 Aislamiento de Datos | 5 | 2-3 horas |
 | 4.6 Onboarding Flow | 5 | 3-4 horas |
 | 4.7 Testing | 6 | 2-3 horas |
-| **TOTAL** | **37** | **1-2 semanas** |
+| **TOTAL** | **44** | **1-2 semanas** |
 
 ---
 
 ### Checklist Pre-Deploy
 
-- [ ] `SESSION_SECRET` configurado en producción
-- [ ] Tabla `sessions` creada y funcionando
+- [x] `SESSION_SECRET` configurado (ya existe en `sessionStore.ts`)
+- [x] Tabla `session` creada y funcionando (ya existe con `connect-pg-simple`)
+- [ ] Campo `password` cambiado a nullable en schema
+- [ ] Campos `replitId`, `profileImageUrl`, `authProvider` agregados
 - [ ] Migración de schema `users` aplicada
+- [ ] Valor `authProvider='local'` asignado a usuarios existentes
+- [ ] Middleware híbrido `requireAuthHybrid` implementado
 - [ ] Tests de aislamiento de datos pasados
-- [ ] Usuarios existentes pueden seguir entrando
+- [ ] Usuarios existentes pueden seguir entrando con email/password
 - [ ] Flujo OAuth funciona end-to-end
 - [ ] Logs de autenticación configurados
 
 ---
 
+### Riesgos y Puntos de Atención
+
+| Riesgo | Probabilidad | Impacto | Mitigación |
+|--------|--------------|---------|------------|
+| Usuarios existentes pierden acceso | Baja | Alto | Migración cuidadosa de `authProvider='local'`, tests antes de deploy |
+| Conflicto de tablas `users` (Replit vs existente) | Media | Alto | Decisión en 4.1.0: adaptar tabla existente, NO crear nueva |
+| Sesión no persistente entre auth methods | Media | Medio | Usar MISMO `sessionStore` para ambos sistemas |
+| OAuth user sin brandId no puede acceder | Alta | Medio | Implementar flujo de onboarding (4.6) |
+| WebSocket no reconoce sesión OAuth | Media | Medio | Verificar en 4.5.3 |
+
+---
+
+### Archivos Críticos a Modificar
+
+| Archivo | Cambios Necesarios |
+|---------|-------------------|
+| `shared/schema.ts` | Cambiar `password` a nullable, agregar 3 campos nuevos |
+| `server/app.ts` | Agregar `setupAuth(app)` y `registerAuthRoutes(app)` |
+| `server/routes.ts` | Actualizar `requireAuth` para ser híbrido |
+| `server/storage.ts` | Agregar funciones para OAuth users |
+| `client/src/pages/Login.tsx` | Cambiar botones sociales, reemplazar Facebook |
+| `server/sessionStore.ts` | Posiblemente adaptar para Replit Auth |
+
+---
+
+### Orden de Ejecución Recomendado
+
+```
+1. [4.1.0] DECISIÓN: Estrategia de integración de tabla users
+        ↓
+2. [4.1.3a-b] Modificar schema (password nullable + campos nuevos)
+        ↓
+3. [4.1.4-6] Migración DB + backfill authProvider
+        ↓
+4. [4.2.1-6] Integrar módulo Replit Auth
+        ↓
+5. [4.3.1-7] Crear middleware híbrido (CRÍTICO - no romper legacy)
+        ↓
+6. [4.4.1-7] Actualizar frontend
+        ↓
+7. [4.5.1-5] Verificar aislamiento
+        ↓
+8. [4.6.1-5] Onboarding para nuevos usuarios
+        ↓
+9. [4.7.1-6] Testing final
+```
+
+---
+
 *Documento creado: Enero 2026*
-*Última actualización: 10 Enero 2026 - Agregada Fase 4: Autenticación Social con Replit Auth*
+*Última actualización: 10 Enero 2026 - Fase 4 revisada con notas de compatibilidad, riesgos y orden de ejecución*
