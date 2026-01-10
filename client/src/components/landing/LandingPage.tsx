@@ -11,6 +11,14 @@ import agentLuis from '@assets/generated_images/luis_agent_headshot_portrait.png
 import agentSara from '@assets/generated_images/sara_agent_headshot_portrait.png';
 import agentCarlos from '@assets/generated_images/carlos_agent_headshot_portrait.png';
 import agentMaria from '@assets/generated_images/maria_agent_headshot_portrait.png';
+import icon3dClock from '@assets/generated_images/3d_clock_icon_red_background.png';
+import icon3dX from '@assets/generated_images/3d_x_mark_icon_red_background.png';
+import icon3dMessage from '@assets/generated_images/3d_message_bubble_icon_red.png';
+import icon3dLightning from '@assets/generated_images/3d_lightning_bolt_icon_red.png';
+import icon3dInbox from '@assets/generated_images/3d_inbox_tray_icon_green.png';
+import icon3dSparkles from '@assets/generated_images/3d_sparkles_magic_icon_green.png';
+import icon3dBell from '@assets/generated_images/3d_bell_notification_icon_green.png';
+import icon3dUsers from '@assets/generated_images/3d_users_group_icon_green.png';
 import testimonialBettys from '../../assets/testimonial-bettys.jpg';
 import { ParallaxProvider, useParallax, Parallax } from 'react-scroll-parallax';
 import gsap from 'gsap';
@@ -1262,17 +1270,17 @@ function ProblemSolutionSection() {
   }, { scope: sectionRef });
 
   const problems = [
-    { icon: Clock, text: 'Saltar entre Instagram, TikTok y Facebook todo el día' },
-    { icon: X, text: 'Olvidar responder mensajes de clientes potenciales' },
-    { icon: MessageSquare, text: 'Copiar y pegar las mismas respuestas una y otra vez' },
-    { icon: Zap, text: 'Perder ventas porque los leads se enfrían sin seguimiento' }
+    { image: icon3dClock, text: 'Saltar entre Instagram, TikTok y Facebook todo el día' },
+    { image: icon3dX, text: 'Olvidar responder mensajes de clientes potenciales' },
+    { image: icon3dMessage, text: 'Copiar y pegar las mismas respuestas una y otra vez' },
+    { image: icon3dLightning, text: 'Perder ventas porque los leads se enfrían sin seguimiento' }
   ];
 
   const solutions = [
-    { icon: Inbox, text: 'Todos tus mensajes en una sola pantalla' },
-    { icon: Sparkles, text: 'La IA genera respuestas personalizadas en segundos' },
-    { icon: Bell, text: 'Recordatorios automáticos para leads sin respuesta' },
-    { icon: Users, text: 'CRM integrado para conocer a cada cliente' }
+    { image: icon3dInbox, text: 'Todos tus mensajes en una sola pantalla' },
+    { image: icon3dSparkles, text: 'La IA genera respuestas personalizadas en segundos' },
+    { image: icon3dBell, text: 'Recordatorios automáticos para leads sin respuesta' },
+    { image: icon3dUsers, text: 'CRM integrado para conocer a cada cliente' }
   ];
 
   return (
@@ -1290,11 +1298,10 @@ function ProblemSolutionSection() {
               
               <div className="space-y-8">
                 {problems.map((problem, i) => {
-                  const Icon = problem.icon;
                   return (
                     <div key={i} className="problem-item flex items-start gap-5 p-6 rounded-2xl bg-red-500/5 border border-red-500/10">
-                      <div className="w-14 h-14 rounded-xl bg-red-500/20 flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-7 h-7 text-red-400" />
+                      <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
+                        <img src={problem.image} alt="" className="w-full h-full object-cover" />
                       </div>
                       <p className="font-display text-xl md:text-2xl font-semibold text-white leading-snug">{problem.text}</p>
                     </div>
@@ -1315,11 +1322,10 @@ function ProblemSolutionSection() {
               
               <div className="space-y-8">
                 {solutions.map((solution, i) => {
-                  const Icon = solution.icon;
                   return (
                     <div key={i} className="solution-item flex items-start gap-5 p-6 rounded-2xl bg-green-500/5 border border-green-500/10">
-                      <div className="w-14 h-14 rounded-xl bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-7 h-7 text-green-400" />
+                      <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
+                        <img src={solution.image} alt="" className="w-full h-full object-cover" />
                       </div>
                       <p className="font-display text-xl md:text-2xl font-semibold text-white leading-snug">{solution.text}</p>
                     </div>
