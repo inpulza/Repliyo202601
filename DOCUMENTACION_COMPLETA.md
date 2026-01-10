@@ -8534,7 +8534,7 @@ password: text("password").notNull(),  // ← Bloquea usuarios OAuth
 | 4.2.3 | Registrar rutas con `registerAuthRoutes(app)` - **NOTA:** Esto crea `/api/login` (nuevo), NO conflicta con `/api/auth/login` (existente) | Ambas rutas disponibles | ✅ (10-Ene-2026) |
 | 4.2.4 | ~~Verificar SESSION_SECRET~~ → **YA EXISTE** en `sessionStore.ts` | Variable ya configurada | ✅ |
 | 4.2.5 | Adaptar módulo Replit Auth para usar `sessionStore` existente en lugar de crear nuevo | Una sola configuración de sesión | ✅ (10-Ene-2026) replitAuth.ts usa passport con session existente |
-| 4.2.6 | Probar flujo de login OAuth en desarrollo | Usuario puede autenticarse con Google | ⬜ Pendiente test manual por usuario |
+| 4.2.6 | Probar flujo de login OAuth en desarrollo | Usuario puede autenticarse con Google | ✅ (10-Ene-2026) Usuario inpulza.solutions@gmail.com creado via Google OAuth |
 
 ### Subfase 4.3: Compatibilidad con Sistema Existente
 
