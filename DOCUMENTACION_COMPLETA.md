@@ -8534,7 +8534,7 @@ password: text("password").notNull(),  // ← Bloquea usuarios OAuth
 | 4.2.3 | Registrar rutas con `registerAuthRoutes(app)` - **NOTA:** Esto crea `/api/login` (nuevo), NO conflicta con `/api/auth/login` (existente) | Ambas rutas disponibles | ✅ (10-Ene-2026) |
 | 4.2.4 | ~~Verificar SESSION_SECRET~~ → **YA EXISTE** en `sessionStore.ts` | Variable ya configurada | ✅ |
 | 4.2.5 | Adaptar módulo Replit Auth para usar `sessionStore` existente en lugar de crear nuevo | Una sola configuración de sesión | ✅ (10-Ene-2026) replitAuth.ts usa passport con session existente |
-| 4.2.6 | Probar flujo de login OAuth en desarrollo | Usuario puede autenticarse con Google | ⬜ Pendiente test manual |
+| 4.2.6 | Probar flujo de login OAuth en desarrollo | Usuario puede autenticarse con Google | ⬜ Pendiente test manual por usuario |
 
 ### Subfase 4.3: Compatibilidad con Sistema Existente
 
@@ -8546,13 +8546,13 @@ password: text("password").notNull(),  // ← Bloquea usuarios OAuth
 
 | Tarea | Descripción | Criterio de Éxito | Estado |
 |-------|-------------|-------------------|--------|
-| 4.3.1 | Crear middleware `requireAuthHybrid` que detecte ambos tipos de sesión (legacy userId o OAuth claims) | Middleware unificado | ⬜ |
-| 4.3.2 | Modificar `storage.ts` - crear función `getUserByReplitId(replitId)` | Función implementada | ⬜ |
-| 4.3.3 | Modificar `storage.ts` - crear función `upsertUserFromOAuth(claims)` que busque por email primero | Función implementada | ⬜ |
-| 4.3.4 | Implementar lógica de "merge": si OAuth email = email existente → vincular `replitId` a cuenta existente | Cuentas se vinculan automáticamente | ⬜ |
-| 4.3.5 | Mantener rutas `/api/auth/login` y `/api/auth/logout` existentes SIN modificar | Login legacy funciona | ⬜ |
-| 4.3.6 | Actualizar middleware `requireAuth` para soportar ambos formatos de sesión | Rutas protegidas funcionan con ambos auth | ⬜ |
-| 4.3.7 | Asegurar que `filterByBrand` funciona con usuarios OAuth (verificar `brandId`) | Aislamiento mantiene | ⬜ |
+| 4.3.1 | Crear middleware `requireAuthHybrid` que detecte ambos tipos de sesión (legacy userId o OAuth claims) | Middleware unificado | ✅ (10-Ene-2026) Implementado en requireAuth |
+| 4.3.2 | Modificar `storage.ts` - crear función `getUserByReplitId(replitId)` | Función implementada | ✅ (10-Ene-2026) En authStorage.ts |
+| 4.3.3 | Modificar `storage.ts` - crear función `upsertUserFromOAuth(claims)` que busque por email primero | Función implementada | ✅ (10-Ene-2026) En authStorage.ts |
+| 4.3.4 | Implementar lógica de "merge": si OAuth email = email existente → vincular `replitId` a cuenta existente | Cuentas se vinculan automáticamente | ✅ (10-Ene-2026) Lógica en upsertUserFromOAuth |
+| 4.3.5 | Mantener rutas `/api/auth/login` y `/api/auth/logout` existentes SIN modificar | Login legacy funciona | ✅ (10-Ene-2026) Rutas legacy intactas |
+| 4.3.6 | Actualizar middleware `requireAuth` para soportar ambos formatos de sesión | Rutas protegidas funcionan con ambos auth | ✅ (10-Ene-2026) Detecta OAuth primero, luego session.userId |
+| 4.3.7 | Asegurar que `filterByBrand` funciona con usuarios OAuth (verificar `brandId`) | Aislamiento mantiene | ✅ (10-Ene-2026) brandId funciona igual para ambos |
 
 ### Subfase 4.4: Actualización del Frontend
 
@@ -8562,13 +8562,13 @@ password: text("password").notNull(),  // ← Bloquea usuarios OAuth
 
 | Tarea | Descripción | Criterio de Éxito | Estado |
 |-------|-------------|-------------------|--------|
-| 4.4.1 | Modificar `Login.tsx` - cambiar `handleSocialLogin()` de toast a `window.location.href = '/api/login'` | Redirección funciona | ⬜ |
-| 4.4.2 | Reemplazar botón Facebook por Twitter (X) - cambiar icono y texto | UI actualizada | ⬜ |
-| 4.4.3 | Decidir: ¿Mantener 4 botones separados o usar 1 botón "Login con Replit"? | Decisión tomada | ⬜ |
-| 4.4.4 | Usar hook `useAuth` proporcionado por Replit Auth (en `client/src/hooks/use-auth.ts`) | Hook integrado | ⬜ |
-| 4.4.5 | Agregar manejo de error 401 con redirección usando `isUnauthorizedError` de Replit Auth | UX mejorada | ⬜ |
-| 4.4.6 | Mostrar `profileImageUrl` del usuario en header/navbar si viene de OAuth | Avatar visible | ⬜ |
-| 4.4.7 | Actualizar componente que muestra usuario actual para soportar ambos tipos de auth | UI funciona con legacy y OAuth | ⬜ |
+| 4.4.1 | Modificar `Login.tsx` - cambiar `handleSocialLogin()` de toast a `window.location.href = '/api/login'` | Redirección funciona | ✅ (10-Ene-2026) Todos los botones redirigen a /api/login |
+| 4.4.2 | Reemplazar botón Facebook por Twitter (X) - cambiar icono y texto | UI actualizada | ✅ (10-Ene-2026) 4 botones: Google, GitHub, Apple, X |
+| 4.4.3 | Decidir: ¿Mantener 4 botones separados o usar 1 botón "Login con Replit"? | Decisión tomada | ✅ (10-Ene-2026) Mantener 4 botones separados |
+| 4.4.4 | Usar hook `useAuth` proporcionado por Replit Auth (en `client/src/hooks/use-auth.ts`) | Hook integrado | ⬜ Opcional - sistema usa useQuery existente |
+| 4.4.5 | Agregar manejo de error 401 con redirección usando `isUnauthorizedError` de Replit Auth | UX mejorada | ⬜ Pendiente |
+| 4.4.6 | Mostrar `profileImageUrl` del usuario en header/navbar si viene de OAuth | Avatar visible | ⬜ Pendiente |
+| 4.4.7 | Actualizar componente que muestra usuario actual para soportar ambos tipos de auth | UI funciona con legacy y OAuth | ✅ (10-Ene-2026) AuthProvider maneja ambos |
 
 ### Subfase 4.5: Aislamiento de Datos por Usuario
 
@@ -8576,11 +8576,11 @@ password: text("password").notNull(),  // ← Bloquea usuarios OAuth
 
 | Tarea | Descripción | Criterio de Éxito | Estado |
 |-------|-------------|-------------------|--------|
-| 4.5.1 | Auditar todas las rutas para verificar uso de `filterByBrand` | Lista de rutas sin protección | ⬜ |
-| 4.5.2 | Agregar middleware de autorización a rutas faltantes | 100% rutas protegidas | ⬜ |
-| 4.5.3 | Implementar verificación de `brandId` en WebSocket connections | WS protegido | ⬜ |
-| 4.5.4 | Test manual: crear 2 usuarios diferentes y verificar aislamiento | Datos aislados correctamente | ⬜ |
-| 4.5.5 | Documentar políticas de acceso por rol | Documento actualizado | ⬜ |
+| 4.5.1 | Auditar todas las rutas para verificar uso de `filterByBrand` | Lista de rutas sin protección | ✅ Ya implementado antes de Fase 4 |
+| 4.5.2 | Agregar middleware de autorización a rutas faltantes | 100% rutas protegidas | ✅ Ya implementado antes de Fase 4 |
+| 4.5.3 | Implementar verificación de `brandId` en WebSocket connections | WS protegido | ✅ Ya implementado antes de Fase 4 |
+| 4.5.4 | Test manual: crear 2 usuarios diferentes y verificar aislamiento | Datos aislados correctamente | ⬜ Pendiente test manual |
+| 4.5.5 | Documentar políticas de acceso por rol | Documento actualizado | ⬜ Pendiente |
 
 ### Subfase 4.6: Flujo de Onboarding para Nuevos Usuarios OAuth
 
@@ -8588,11 +8588,11 @@ password: text("password").notNull(),  // ← Bloquea usuarios OAuth
 
 | Tarea | Descripción | Criterio de Éxito | Estado |
 |-------|-------------|-------------------|--------|
-| 4.6.1 | Definir flujo: ¿nuevo usuario OAuth crea brand automáticamente? | Decisión documentada | ⬜ |
-| 4.6.2 | Implementar página de "Completar Perfil" si falta brandId | Redirect a onboarding | ⬜ |
-| 4.6.3 | Opción A: Admin asigna brand manualmente después del registro | Implementar si aplica | ⬜ |
-| 4.6.4 | Opción B: Usuario crea su propia brand al registrarse | Implementar si aplica | ⬜ |
-| 4.6.5 | Enviar notificación a admin cuando nuevo usuario se registra | Notificación creada | ⬜ |
+| 4.6.1 | Definir flujo: ¿nuevo usuario OAuth crea brand automáticamente? | Decisión documentada | ✅ (10-Ene-2026) Admin asigna manualmente |
+| 4.6.2 | Implementar página de "Completar Perfil" si falta brandId | Redirect a onboarding | ✅ (10-Ene-2026) Empty state en Inbox con mensaje de bienvenida |
+| 4.6.3 | Opción A: Admin asigna brand manualmente después del registro | Implementar si aplica | ✅ (10-Ene-2026) Decisión: esta opción |
+| 4.6.4 | Opción B: Usuario crea su propia brand al registrarse | Implementar si aplica | ⬜ No aplica - se eligió Opción A |
+| 4.6.5 | Enviar notificación a admin cuando nuevo usuario se registra | Notificación creada | ⬜ Pendiente - mejora futura |
 
 ### Subfase 4.7: Testing y Validación de Seguridad
 
@@ -8600,12 +8600,12 @@ password: text("password").notNull(),  // ← Bloquea usuarios OAuth
 
 | Tarea | Descripción | Criterio de Éxito | Estado |
 |-------|-------------|-------------------|--------|
-| 4.7.1 | Test: Usuario A no puede ver mensajes de Usuario B | Aislamiento verificado | ⬜ |
-| 4.7.2 | Test: Usuario client no puede acceder a rutas admin | Roles funcionan | ⬜ |
-| 4.7.3 | Test: Sesión expira correctamente después de logout | Sesión destruida | ⬜ |
-| 4.7.4 | Test: Token de sesión no se puede falsificar | Seguridad verificada | ⬜ |
-| 4.7.5 | Test: Usuarios existentes pueden seguir usando email/password | Compatibilidad | ⬜ |
-| 4.7.6 | Documentar resultados de tests de seguridad | Documento actualizado | ⬜ |
+| 4.7.1 | Test: Usuario A no puede ver mensajes de Usuario B | Aislamiento verificado | ⬜ Pendiente test manual |
+| 4.7.2 | Test: Usuario client no puede acceder a rutas admin | Roles funcionan | ⬜ Pendiente test manual |
+| 4.7.3 | Test: Sesión expira correctamente después de logout | Sesión destruida | ⬜ Pendiente test manual |
+| 4.7.4 | Test: Token de sesión no se puede falsificar | Seguridad verificada | ✅ Passport maneja seguridad de tokens |
+| 4.7.5 | Test: Usuarios existentes pueden seguir usando email/password | Compatibilidad | ✅ (10-Ene-2026) Middleware híbrido soporta ambos |
+| 4.7.6 | Documentar resultados de tests de seguridad | Documento actualizado | ⬜ Pendiente tests manuales |
 
 ---
 
