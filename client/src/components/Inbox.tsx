@@ -57,6 +57,8 @@ import {
   RotateCw,
   AlertCircle,
   Bell,
+  PanelRightOpen,
+  PanelRightClose,
 } from 'lucide-react';
 import { FaInstagram, FaFacebook, FaLinkedin, FaTiktok, FaYoutube, FaWhatsapp } from 'react-icons/fa';
 import { GoogleBusinessIcon } from './GoogleBusinessIcon';
@@ -448,7 +450,7 @@ export function Inbox() {
   const [platformFilter, setPlatformFilter] = useState<Platform | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<MessageType | 'all'>('all');
   const [fireMode, setFireMode] = useState(false);
-  const [isCRMOpen, setIsCRMOpen] = useState(false);
+  const [isCRMOpen, setIsCRMOpen] = useState(true);
   const [showInactiveNetworks, setShowInactiveNetworks] = useState(false);
   const [showOnlyUnread, setShowOnlyUnread] = useState(false);
   const [highlightedConversationId, setHighlightedConversationId] = useState<string | null>(null);
@@ -1694,12 +1696,33 @@ export function Inbox() {
 
                  {/* Right Actions */}
                  <div className="flex items-center gap-1 shrink-0">
+                    {/* CRM Panel Toggle Button */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => setIsCRMOpen(!isCRMOpen)}
+                          className={cn(
+                            "text-gray-400 hover:text-gray-600 transition-colors",
+                            isCRMOpen && "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700"
+                          )}
+                          data-testid="button-toggle-crm-panel"
+                        >
+                          {isCRMOpen ? <PanelRightClose className="h-5 w-5" /> : <PanelRightOpen className="h-5 w-5" />}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p>{isCRMOpen ? "Ocultar panel CRM" : "Mostrar panel CRM"}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    
                     <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button 
                             variant="ghost" 
                             size="icon" 
-                            className={cn("text-gray-400 hover:text-gray-600", isCRMOpen && "bg-gray-100 text-gray-600")}
+                            className="text-gray-400 hover:text-gray-600"
                             title="More options"
                         >
                             <MoreVertical className="h-5 w-5" />
