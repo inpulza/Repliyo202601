@@ -2868,7 +2868,7 @@
   border: 1px solid rgba(2, 145, 250, 0.25);
   border-radius: 24px;
   font-size: 0.75rem;
-  color: #c084fc;
+  color: #38B6FF;
   box-shadow: 0 8px 24px rgba(2, 145, 250, 0.2);
 }
 
@@ -4191,7 +4191,7 @@
 }
 
 .landing-page.theme-light .assignment-agent {
-  color: rgb(168, 85, 247);
+  color: rgb(2, 145, 250);
 }
 
 .landing-page.theme-light .assignment-time {
