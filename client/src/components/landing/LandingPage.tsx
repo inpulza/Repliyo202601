@@ -1572,6 +1572,8 @@ function MetricSection() {
 function HowItWorksSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const progressFillRef = useRef<HTMLDivElement>(null);
+  const checkpointsRef = useRef<(HTMLDivElement | null)[]>([]);
   const prefersReducedMotion = useReducedMotion();
   const [activeStep, setActiveStep] = useState(0);
 
@@ -1595,9 +1597,25 @@ function HowItWorksSection() {
           scrub: 0.8,
           onUpdate: (self) => {
             const progress = self.progress;
-            const adjustedProgress = progress * (totalSteps * scrollPerStep) / (totalSteps * scrollPerStep + holdAtEnd);
-            const stepIndex = Math.min(Math.floor(adjustedProgress * totalSteps / (totalSteps - 0.5)), totalSteps - 1);
+            const effectiveScrollRatio = (totalSteps * scrollPerStep) / totalScrollDistance;
+            const effectiveProgress = Math.min(progress / effectiveScrollRatio, 1);
+            const stepIndex = Math.min(Math.floor(effectiveProgress * totalSteps), totalSteps - 1);
             setActiveStep(stepIndex);
+            
+            if (progressFillRef.current) {
+              gsap.set(progressFillRef.current, { width: `${effectiveProgress * 100}%` });
+            }
+            
+            checkpointsRef.current.forEach((checkpoint, i) => {
+              if (!checkpoint) return;
+              const stepThreshold = (i + 1) / totalSteps;
+              const isCompleted = effectiveProgress >= stepThreshold - 0.01;
+              if (isCompleted) {
+                checkpoint.classList.add('completed');
+              } else {
+                checkpoint.classList.remove('completed');
+              }
+            });
           }
         }
       });
@@ -1769,34 +1787,23 @@ function HowItWorksSection() {
 
         <div className="how-scroll-progress">
           <div className="how-scroll-progress-bar">
-            <motion.div 
+            <div 
+              ref={progressFillRef}
               className="how-scroll-progress-fill"
-              initial={{ width: '0%' }}
-              animate={{ width: `${((activeStep + 1) / steps.length) * 100}%` }}
-              transition={{ duration: 0.5, ease: 'easeOut' }}
+              style={{ width: '0%' }}
             />
           </div>
           <div className="how-scroll-checkmarks">
             {steps.map((_, i) => (
-              <motion.div
+              <div
                 key={i}
-                className={`how-scroll-checkpoint ${activeStep >= i ? 'completed' : ''}`}
-                initial={{ scale: 0.8, opacity: 0.5 }}
-                animate={{ 
-                  scale: activeStep >= i ? 1 : 0.8,
-                  opacity: activeStep >= i ? 1 : 0.5
-                }}
-                transition={{ duration: 0.3, ease: 'easeOut' }}
+                ref={(el) => { checkpointsRef.current[i] = el; }}
+                className="how-scroll-checkpoint"
               >
-                <motion.div
-                  className="checkpoint-check"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: activeStep >= i ? 1 : 0 }}
-                  transition={{ duration: 0.3, delay: 0.1 }}
-                >
+                <div className="checkpoint-check">
                   <Check className="w-3 h-3" />
-                </motion.div>
-              </motion.div>
+                </div>
+              </div>
             ))}
           </div>
         </div>
