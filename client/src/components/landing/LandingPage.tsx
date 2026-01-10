@@ -3,9 +3,9 @@ import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring
 import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart } from 'lucide-react';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
-import avatarMaria from '../../assets/avatars/latina_woman_avatar_headshot.png';
-import avatarCarlos from '../../assets/avatars/hispanic_man_avatar_headshot.png';
-import avatarAna from '../../assets/avatars/european_woman_avatar_headshot.png';
+import avatarMaria from '@assets/generated_images/maria_customer_avatar_headshot.png';
+import avatarCarlos from '@assets/generated_images/carlos_customer_avatar_headshot.png';
+import avatarAna from '@assets/generated_images/ana_customer_avatar_headshot.png';
 import agentAna from '@assets/generated_images/ana_agent_headshot_portrait.png';
 import agentLuis from '@assets/generated_images/luis_agent_headshot_portrait.png';
 import agentSara from '@assets/generated_images/sara_agent_headshot_portrait.png';
