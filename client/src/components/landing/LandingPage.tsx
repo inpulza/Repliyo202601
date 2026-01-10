@@ -1699,8 +1699,8 @@ function FeaturesSection() {
                 className={`feature-card bento-${feature.size}`}
               >
                 <div className="feature-card-inner">
-                  <div className="feature-icon-wrapper overflow-hidden bg-[#a855f700]">
-                    <img src={feature.iconImage} alt="" className="w-10 h-10 object-contain" />
+                  <div className="feature-icon-wrapper overflow-hidden bg-transparent">
+                    <img src={feature.iconImage} alt="" className="w-14 h-14 object-contain" />
                   </div>
                   <h3 className="font-display text-xl font-bold text-white mt-4 mb-2">{feature.title}</h3>
                   <p className="text-white/50 text-sm leading-relaxed">{feature.description}</p>
