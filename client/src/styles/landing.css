@@ -176,9 +176,9 @@
 }
 
 .landing-page.theme-light {
-  --landing-bg: #F3F4F6;
-  --landing-bg-dark: #F3F4F6;
-  --landing-bg-light: #F3F4F6;
+  --landing-bg: #FFFFFF;
+  --landing-bg-dark: #FFFFFF;
+  --landing-bg-light: #FFFFFF;
   --landing-bg-card: #FFFFFF;
   --landing-bg-elevated: #FAFAFA;
   --landing-border: rgba(0, 0, 0, 0.08);
