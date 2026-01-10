@@ -150,56 +150,67 @@ function Slide2_AutomateResponses() {
   return (
     <div className="flex flex-col items-center justify-center h-full px-8">
       <div className="relative mb-10">
-        <div className="relative w-72 h-52 flex items-center justify-center">
-          <div className="w-20 h-20 bg-gradient-to-br from-violet-400 to-purple-600 rounded-3xl shadow-2xl flex items-center justify-center animate-pulse-slow">
-            <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 8V4H8"/>
-              <rect x="4" y="4" width="16" height="12" rx="2"/>
-              <path d="M2 14h2"/>
-              <path d="M20 14h2"/>
-              <path d="M15 13v2"/>
-              <path d="M9 13v2"/>
-              <path d="M12 17v4"/>
-              <path d="M8 21h8"/>
-            </svg>
+        <div className="relative w-72 h-48 bg-white rounded-xl shadow-2xl overflow-hidden">
+          <div className="bg-gray-100 h-8 flex items-center px-3 gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+            <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
+            <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
+            <span className="ml-2 text-xs text-gray-500 font-medium">Chat con María</span>
           </div>
-          
-          <div className="absolute -top-2 -left-4 bg-white rounded-2xl shadow-lg p-3 animate-float" style={{ animationDelay: '0s' }}>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500" />
-              <div className="space-y-1">
-                <div className="h-2 w-16 bg-gray-200 rounded" />
-                <div className="h-2 w-12 bg-gray-100 rounded" />
+          <div className="p-3 space-y-2">
+            <div className="flex justify-start">
+              <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-3 py-2 max-w-[85%]">
+                <p className="text-xs text-gray-700">Hola! ¿Cuáles son sus horarios de atención?</p>
+                <span className="text-[10px] text-gray-400">10:32 AM</span>
               </div>
             </div>
-          </div>
-          
-          <div className="absolute top-6 -right-8 bg-white rounded-2xl shadow-lg p-3 animate-float" style={{ animationDelay: '0.5s' }}>
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
-                <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                  <polyline points="20 6 9 17 4 12"/>
-                </svg>
+            <div className="flex justify-end">
+              <div className="bg-gradient-to-r from-indigo-500 to-violet-500 rounded-2xl rounded-tr-sm px-3 py-2 max-w-[85%]">
+                <div className="flex items-center gap-1 mb-1">
+                  <svg className="w-3 h-3 text-indigo-200" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                  </svg>
+                  <span className="text-[10px] text-indigo-200 font-medium">IA</span>
+                </div>
+                <p className="text-xs text-white">¡Hola María! Estamos disponibles de Lunes a Viernes de 9AM a 6PM. ¿En qué puedo ayudarte?</p>
+                <span className="text-[10px] text-indigo-200">10:32 AM · Automático</span>
               </div>
-              <span className="text-xs text-gray-600 font-medium">Enviado</span>
             </div>
-          </div>
-          
-          <div className="absolute -bottom-4 left-8 bg-white rounded-2xl shadow-lg p-3 animate-float" style={{ animationDelay: '1s' }}>
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-              </svg>
-              <span className="text-xs text-gray-600 font-medium">24/7</span>
+            <div className="flex items-center justify-center gap-2 pt-1">
+              <div className="flex items-center gap-1 bg-green-50 px-2 py-1 rounded-full">
+                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-[10px] text-green-600 font-medium">Respondido en 2s</span>
+              </div>
             </div>
-          </div>
-          
-          <div className="absolute bottom-8 -right-6 bg-white rounded-2xl shadow-lg p-3 animate-float" style={{ animationDelay: '1.5s' }}>
-            <svg className="w-5 h-5 text-amber-500" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/>
-            </svg>
           </div>
         </div>
+        
+        <FloatingIcon delay={0} position="-top-4 -right-6">
+          <div className="flex items-center gap-1">
+            <svg className="w-4 h-4 text-indigo-500" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+            <span className="text-xs font-bold text-gray-700">24/7</span>
+          </div>
+        </FloatingIcon>
+        <FloatingIcon delay={0.5} position="-left-8 top-12">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center">
+            <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 8V4H8"/>
+              <rect x="4" y="4" width="16" height="12" rx="2"/>
+              <path d="M8 21h8"/>
+              <path d="M12 17v4"/>
+            </svg>
+          </div>
+        </FloatingIcon>
+        <FloatingIcon delay={1} position="-bottom-2 -right-4">
+          <div className="flex items-center gap-1">
+            <svg className="w-4 h-4 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span className="text-xs font-medium text-gray-600">Auto</span>
+          </div>
+        </FloatingIcon>
       </div>
       
       <h3 className="text-2xl font-bold text-white text-center mb-3">
