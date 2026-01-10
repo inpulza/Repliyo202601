@@ -10,6 +10,8 @@ import { triggerSummaryUpdateAsync, checkAndUpdateSummary } from "./services/sum
 import { authRateLimiter, syncRateLimiter, aiRateLimiter, sendMessageRateLimiter } from "./middleware/rateLimiter";
 import { authStorage } from "./replit_integrations/auth";
 import { z } from "zod";
+import crypto from "crypto";
+import { sendVerificationEmail, sendWelcomeEmail } from "./services/emailService";
 
 // Extend Express Request to include our user type (compatible with Passport)
 declare global {
@@ -163,6 +165,190 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  const publicRegisterSchema = z.object({
+    email: z.string().email("Email inválido"),
+    password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
+    name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
+  });
+
+  function generateCode(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  function hashCode(code: string): string {
+    return crypto.createHash('sha256').update(code).digest('hex');
+  }
+
+  app.post("/api/auth/public-register", authRateLimiter, async (req, res) => {
+    try {
+      const { email, password, name } = publicRegisterSchema.parse(req.body);
+
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        if ((existingUser as any).status === 'pending') {
+          return res.status(400).json({ 
+            error: "Email pendiente de verificación",
+            code: "PENDING_VERIFICATION",
+            userId: existingUser.id
+          });
+        }
+        return res.status(400).json({ error: "Este email ya está registrado" });
+      }
+
+      const hashedPassword = await hashPassword(password);
+      const user = await storage.createUser({
+        email,
+        password: hashedPassword,
+        name,
+        role: 'client',
+        brandId: null,
+        authProvider: 'local',
+        status: 'pending',
+      } as any);
+
+      const code = generateCode();
+      const codeHash = hashCode(code);
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+      
+      await storage.createVerificationCode(user.id, codeHash, expiresAt);
+      
+      const emailSent = await sendVerificationEmail(email, name, code);
+      if (!emailSent) {
+        console.error('[Auth] Failed to send verification email to:', email);
+      }
+
+      console.log(`[Auth] New registration - email: ${email}, userId: ${user.id}`);
+      
+      res.status(201).json({ 
+        success: true,
+        userId: user.id,
+        message: "Código de verificación enviado a tu email"
+      });
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ error: error.errors[0]?.message || "Datos inválidos" });
+      }
+      console.error('[Auth] Registration error:', error);
+      res.status(500).json({ error: "Error al crear la cuenta" });
+    }
+  });
+
+  app.post("/api/auth/verify-email", authRateLimiter, async (req, res) => {
+    try {
+      const { userId, code } = z.object({
+        userId: z.string(),
+        code: z.string().length(6),
+      }).parse(req.body);
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "Usuario no encontrado" });
+      }
+
+      if ((user as any).status === 'active') {
+        return res.status(400).json({ error: "Esta cuenta ya está verificada" });
+      }
+
+      const activeCode = await storage.getActiveVerificationCode(userId);
+      if (!activeCode) {
+        return res.status(400).json({ 
+          error: "Código expirado o inválido",
+          code: "CODE_EXPIRED"
+        });
+      }
+
+      if (activeCode.attempts >= 5) {
+        return res.status(429).json({ 
+          error: "Demasiados intentos. Solicita un nuevo código.",
+          code: "TOO_MANY_ATTEMPTS"
+        });
+      }
+
+      const codeHash = hashCode(code);
+      if (codeHash !== activeCode.codeHash) {
+        await storage.incrementVerificationAttempts(activeCode.id);
+        const remaining = 5 - activeCode.attempts - 1;
+        return res.status(400).json({ 
+          error: `Código incorrecto. ${remaining > 0 ? `Te quedan ${remaining} intentos.` : 'Solicita un nuevo código.'}`,
+          code: "INVALID_CODE",
+          attemptsRemaining: remaining
+        });
+      }
+
+      await storage.consumeVerificationCode(activeCode.id);
+      const activatedUser = await storage.activateUser(userId);
+      
+      sendWelcomeEmail(user.email, user.name).catch(console.error);
+
+      req.session.userId = userId;
+      req.session.save((err) => {
+        if (err) {
+          console.error('[Auth] Session save error after verification:', err);
+        }
+        console.log(`[Auth] Email verified - userId: ${userId}`);
+        res.json({ 
+          success: true,
+          user: sanitizeUser(activatedUser!),
+          message: "¡Cuenta verificada exitosamente!"
+        });
+      });
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ error: "Datos inválidos" });
+      }
+      console.error('[Auth] Verification error:', error);
+      res.status(500).json({ error: "Error al verificar email" });
+    }
+  });
+
+  app.post("/api/auth/resend-code", authRateLimiter, async (req, res) => {
+    try {
+      const { userId } = z.object({
+        userId: z.string(),
+      }).parse(req.body);
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "Usuario no encontrado" });
+      }
+
+      if ((user as any).status === 'active') {
+        return res.status(400).json({ error: "Esta cuenta ya está verificada" });
+      }
+
+      const canResend = await storage.canResendCode(userId);
+      if (!canResend.canResend) {
+        return res.status(429).json({ 
+          error: canResend.reason,
+          code: "RATE_LIMITED"
+        });
+      }
+
+      const code = generateCode();
+      const codeHash = hashCode(code);
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+      
+      const existingCode = await storage.getActiveVerificationCode(userId);
+      if (existingCode) {
+        await storage.updateCodeResent(existingCode.id);
+      }
+      await storage.createVerificationCode(userId, codeHash, expiresAt);
+      
+      const emailSent = await sendVerificationEmail(user.email, user.name, code);
+      
+      res.json({ 
+        success: true,
+        message: emailSent ? "Nuevo código enviado a tu email" : "Error al enviar el email"
+      });
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ error: "Datos inválidos" });
+      }
+      console.error('[Auth] Resend code error:', error);
+      res.status(500).json({ error: "Error al reenviar código" });
+    }
+  });
+
   app.post("/api/auth/login", authRateLimiter, async (req, res) => {
     try {
       const { email, password } = loginSchema.parse(req.body);
@@ -175,6 +361,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isValid = await verifyPassword(password, user.password);
       if (!isValid) {
         return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      if ((user as any).status === 'pending') {
+        return res.status(403).json({ 
+          error: "Email not verified",
+          code: "EMAIL_NOT_VERIFIED",
+          userId: user.id,
+          message: "Por favor verifica tu email antes de iniciar sesión."
+        });
+      }
+
+      if ((user as any).status === 'suspended') {
+        return res.status(403).json({ 
+          error: "Account suspended",
+          message: "Tu cuenta ha sido suspendida. Contacta al administrador."
+        });
       }
 
       if (user.role === 'client' && user.brandId) {
