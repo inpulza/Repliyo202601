@@ -4017,12 +4017,6 @@
   background: transparent;
 }
 
-/* Feature mockup areas - light theme */
-.landing-page.theme-light .feature-mockup-area {
-  background: rgba(0, 0, 0, 0.02);
-  border-radius: 12px;
-}
-
 /* Step mockup - light theme */
 .landing-page.theme-light .step-mockup {
   background: rgba(255, 255, 255, 0.9);
