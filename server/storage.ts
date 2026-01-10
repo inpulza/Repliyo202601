@@ -2,7 +2,7 @@ import {
   brands, users, messages, socialPosts, conversations, socialAccounts, aiAgents, aiAgentAuditLog, conversationUserSummaries, aiModelPricing, notifications, playgroundTemplates,
   crmContacts, crmContactChannels, crmContactLimbo,
   conversationStatusHistory, brandLifecycleSettings,
-  reminderRules, reminderEvents,
+  reminderRules, reminderEvents, verificationCodes,
   type Brand, type InsertBrand, 
   type User, type InsertUser, 
   type Message, type InsertMessage, type UpdateMessage,
@@ -58,6 +58,14 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<InsertUser>): Promise<User | undefined>;
   updateUserPassword(id: string, hashedPassword: string): Promise<void>;
+  activateUser(id: string): Promise<User | undefined>;
+  
+  createVerificationCode(userId: string, codeHash: string, expiresAt: Date): Promise<{ id: string }>;
+  getActiveVerificationCode(userId: string): Promise<{ id: string; codeHash: string; expiresAt: Date; attempts: number; lastSentAt: Date; resendCount: number } | undefined>;
+  incrementVerificationAttempts(id: string): Promise<number>;
+  consumeVerificationCode(id: string): Promise<void>;
+  canResendCode(userId: string): Promise<{ canResend: boolean; reason?: string }>;
+  updateCodeResent(id: string): Promise<void>;
   
   getSocialPosts(brandId: string): Promise<SocialPost[]>;
   getSocialPost(id: string): Promise<SocialPost | undefined>;
@@ -453,6 +461,95 @@ export class DatabaseStorage implements IStorage {
       .update(users)
       .set({ password: hashedPassword })
       .where(eq(users.id, id));
+  }
+
+  async activateUser(id: string): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ status: 'active', emailVerifiedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user || undefined;
+  }
+
+  async createVerificationCode(userId: string, codeHash: string, expiresAt: Date): Promise<{ id: string }> {
+    await db.delete(verificationCodes).where(eq(verificationCodes.userId, userId));
+    
+    const [code] = await db
+      .insert(verificationCodes)
+      .values({
+        userId,
+        codeHash,
+        expiresAt,
+        purpose: 'email_verification'
+      })
+      .returning({ id: verificationCodes.id });
+    return code;
+  }
+
+  async getActiveVerificationCode(userId: string): Promise<{ id: string; codeHash: string; expiresAt: Date; attempts: number; lastSentAt: Date; resendCount: number } | undefined> {
+    const [code] = await db
+      .select({
+        id: verificationCodes.id,
+        codeHash: verificationCodes.codeHash,
+        expiresAt: verificationCodes.expiresAt,
+        attempts: verificationCodes.attempts,
+        lastSentAt: verificationCodes.lastSentAt,
+        resendCount: verificationCodes.resendCount
+      })
+      .from(verificationCodes)
+      .where(
+        and(
+          eq(verificationCodes.userId, userId),
+          isNull(verificationCodes.consumedAt),
+          gte(verificationCodes.expiresAt, new Date())
+        )
+      );
+    return code || undefined;
+  }
+
+  async incrementVerificationAttempts(id: string): Promise<number> {
+    const [updated] = await db
+      .update(verificationCodes)
+      .set({ attempts: sql`${verificationCodes.attempts} + 1` })
+      .where(eq(verificationCodes.id, id))
+      .returning({ attempts: verificationCodes.attempts });
+    return updated?.attempts || 0;
+  }
+
+  async consumeVerificationCode(id: string): Promise<void> {
+    await db
+      .update(verificationCodes)
+      .set({ consumedAt: new Date() })
+      .where(eq(verificationCodes.id, id));
+  }
+
+  async canResendCode(userId: string): Promise<{ canResend: boolean; reason?: string }> {
+    const code = await this.getActiveVerificationCode(userId);
+    if (!code) {
+      return { canResend: true };
+    }
+    
+    const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+    if (code.lastSentAt > oneMinuteAgo) {
+      return { canResend: false, reason: 'Espera 1 minuto antes de reenviar' };
+    }
+    
+    if (code.resendCount >= 5) {
+      return { canResend: false, reason: 'Límite diario de reenvíos alcanzado' };
+    }
+    
+    return { canResend: true };
+  }
+
+  async updateCodeResent(id: string): Promise<void> {
+    await db
+      .update(verificationCodes)
+      .set({ 
+        lastSentAt: new Date(),
+        resendCount: sql`${verificationCodes.resendCount} + 1`
+      })
+      .where(eq(verificationCodes.id, id));
   }
 
   async getSocialPosts(brandId: string): Promise<SocialPost[]> {
