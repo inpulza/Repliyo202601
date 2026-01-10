@@ -26,6 +26,10 @@ import featureIconCRM from '@assets/generated_images/modern_flat_crm_contact_ico
 import featureIconReminder from '@assets/generated_images/modern_flat_reminder_bell_icon.png';
 import featureIconComments from '@assets/generated_images/modern_flat_comments_icon.png';
 import featureIconAnalytics from '@assets/generated_images/modern_flat_analytics_chart_icon.png';
+import timelineSendIcon from '@assets/generated_images/purple_send_icon_white_symbol.png';
+import timelineCheckIcon from '@assets/generated_images/green_check_icon_white_symbol.png';
+import timelineBellIcon from '@assets/generated_images/orange_bell_icon_white_symbol.png';
+import timelineChatIcon from '@assets/generated_images/blue_chat_icon_white_symbol.png';
 import testimonialBettys from '../../assets/testimonial-bettys.jpg';
 import { ParallaxProvider, useParallax, Parallax } from 'react-scroll-parallax';
 import gsap from 'gsap';
@@ -212,8 +216,8 @@ function Step3SendMockup() {
           animate={{ scale: phase === 1 ? [1, 1.1, 1] : 1 }}
           transition={{ duration: 0.3 }}
         >
-          <div className="timeline-icon send-icon">
-            <Send className="w-4 h-4" />
+          <div className="timeline-icon send-icon overflow-hidden p-0">
+            <img src={timelineSendIcon} alt="" className="w-full h-full object-cover" />
           </div>
           <div className="timeline-content">
             <span className="timeline-title">Enviar respuesta</span>
@@ -227,8 +231,8 @@ function Step3SendMockup() {
           className={`timeline-step ${phase >= 2 ? 'active' : ''}`}
           animate={{ scale: phase === 2 ? [1, 1.1, 1] : 1 }}
         >
-          <div className="timeline-icon check-icon">
-            <Check className="w-4 h-4" />
+          <div className="timeline-icon check-icon overflow-hidden p-0">
+            <img src={timelineCheckIcon} alt="" className="w-full h-full object-cover" />
           </div>
           <div className="timeline-content">
             <span className="timeline-title">Mensaje enviado</span>
@@ -242,8 +246,8 @@ function Step3SendMockup() {
           className={`timeline-step ${phase >= 3 ? 'active' : ''}`}
           animate={{ scale: phase === 3 ? [1, 1.1, 1] : 1 }}
         >
-          <div className="timeline-icon bell-icon">
-            <Bell className="w-4 h-4" />
+          <div className="timeline-icon bell-icon overflow-hidden p-0">
+            <img src={timelineBellIcon} alt="" className="w-full h-full object-cover" />
           </div>
           <div className="timeline-content">
             <span className="timeline-title">Recordatorio</span>
@@ -257,8 +261,8 @@ function Step3SendMockup() {
           className={`timeline-step ${phase >= 4 ? 'active' : ''}`}
           animate={{ scale: phase === 4 ? [1, 1.1, 1] : 1 }}
         >
-          <div className="timeline-icon follow-icon">
-            <MessageSquare className="w-4 h-4" />
+          <div className="timeline-icon follow-icon overflow-hidden p-0">
+            <img src={timelineChatIcon} alt="" className="w-full h-full object-cover" />
           </div>
           <div className="timeline-content">
             <span className="timeline-title">Follow-up</span>
