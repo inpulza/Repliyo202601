@@ -52,6 +52,26 @@ The user interface includes an "Orchestration" tab for managing timing configura
   - UI: Componente `ConversationTimeline.tsx` integrado en `CRMContextPanel.tsx` como sección "Customer Journey"
   - Soporta ambos modos: conversationId (individual) y contactId (agregado de todas las conversaciones)
 
+### URL Structure (Updated 10-Jan-2026)
+- **`/`** - Public landing page (Repliyo.com). Authenticated users auto-redirect to `/app/inbox`.
+- **`/login`** - Login page with email/password and OAuth (Google, GitHub, Apple, Twitter via Replit Auth).
+- **`/app/*`** - All authenticated dashboard routes:
+  - `/app/inbox` - Smart Inbox (main view)
+  - `/app/overview` - Dashboard overview
+  - `/app/crm` - CRM contacts
+  - `/app/connections` - Brand connections
+  - `/app/integrations` - Third-party integrations
+  - `/app/settings` - Agent settings
+  - `/app/ai-metrics` - AI metrics dashboard
+  - `/app/profile` - User profile settings
+
+### Authentication System (Updated 10-Jan-2026)
+- **Hybrid Auth:** Supports both email/password (legacy) and OAuth via Replit Auth.
+- **OAuth Providers:** Google, GitHub, Apple, Twitter (X) - all through Replit's OIDC.
+- **User Fields:** `replitId`, `profileImageUrl`, `authProvider` added to users table.
+- **Session Management:** Single session store (`server/sessionStore.ts`) shared by both auth methods.
+- **New OAuth Users:** Created with `role: 'client'` and `brand_id: null`; admin assigns brand manually.
+
 ### System Design Choices
 - **Multi-Tenant Architecture:** Data isolation per brand using `brandId`.
 - **Idempotent Operations:** Designed for safe re-execution of migration scripts and CRM contact creation.
