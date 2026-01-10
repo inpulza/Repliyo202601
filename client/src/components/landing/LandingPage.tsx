@@ -650,7 +650,7 @@ function FeatureMultiAgentMockup() {
       </div>
 
       <div className="multiagent-stats">
-        {agents.slice(0, 4).map((agent, idx) => (
+        {agents.slice(0, 3).map((agent, idx) => (
           <motion.div 
             key={idx} 
             className="agent-stat"
