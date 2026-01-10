@@ -167,7 +167,7 @@ function Step2AIMockup() {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0 }}
         >
-          <Sparkles className="w-5 h-5 text-purple-400" />
+          <Sparkles className="w-5 h-5 text-blue-400" />
           <span>IA generando respuesta...</span>
           <div className="analyzing-dots"><span /><span /><span /></div>
         </motion.div>
@@ -375,7 +375,7 @@ function FeatureAIMockup() {
   return (
     <div className="feature-ai-mockup">
       <div className="ai-text-box">
-        <Sparkles className="w-4 h-4 text-purple-400" />
+        <Sparkles className="w-4 h-4 text-blue-400" />
         <span className="ai-generated-text">
           {text}
           <span className="typing-cursor" />
@@ -536,7 +536,7 @@ function FeatureCommentsMockup() {
               }}
               transition={{ duration: 0.3 }}
             >
-              <Sparkles className="w-2.5 h-2.5 text-purple-400" />
+              <Sparkles className="w-2.5 h-2.5 text-blue-400" />
               <span>{c.answer}</span>
             </motion.div>
           </div>
@@ -585,7 +585,7 @@ function FeatureMultiAgentMockup() {
     { name: 'Luis', color: 'bg-blue-500', initials: 'LU', avatar: agentLuis, conversations: 8, responseTime: '3m' },
     { name: 'Sara', color: 'bg-green-500', initials: 'SA', avatar: agentSara, conversations: 15, responseTime: '1m' },
     { name: 'Carlos', color: 'bg-orange-500', initials: 'CA', avatar: agentCarlos, conversations: 6, responseTime: '4m' },
-    { name: 'María', color: 'bg-purple-500', initials: 'MA', avatar: agentMaria, conversations: 10, responseTime: '2m' },
+    { name: 'María', color: 'bg-blue-500', initials: 'MA', avatar: agentMaria, conversations: 10, responseTime: '2m' },
   ];
 
   const recentAssignments = [
@@ -996,7 +996,7 @@ function InboxMockup() {
                   exit={{ opacity: 0 }}
                   className="ai-typing-v2"
                 >
-                  <Sparkles className="w-4 h-4 text-purple-500" />
+                  <Sparkles className="w-4 h-4 text-blue-500" />
                   <span>Repliyo AI está generando...</span>
                   <div className="typing-indicator">
                     <span></span><span></span><span></span>
@@ -1155,7 +1155,7 @@ function HeroSection() {
         <div className="absolute inset-0 bg-grid-pattern opacity-30" />
         
         <Parallax speed={-10} className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-purple-500/5 blur-3xl" />
+          <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-blue-500/5 blur-3xl" />
           <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] rounded-full bg-orange-500/5 blur-3xl" />
         </Parallax>
         
@@ -1367,11 +1367,11 @@ function MetricSection() {
 
   return (
     <section ref={ref} className="py-48 md:py-56 relative overflow-visible">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(168,85,247,0.08)_0%,transparent_70%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,145,250,0.08)_0%,transparent_70%)]" />
       
       <Parallax speed={-5} className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] md:w-[800px] md:h-[800px] rounded-full border border-purple-500/10" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] h-[450px] md:w-[600px] md:h-[600px] rounded-full border border-purple-500/5" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] md:w-[800px] md:h-[800px] rounded-full border border-blue-500/10" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] h-[450px] md:w-[600px] md:h-[600px] rounded-full border border-blue-500/5" />
       </Parallax>
       
       <motion.div 
@@ -1683,7 +1683,7 @@ function FeaturesSection() {
   return (
     <section id="features" ref={sectionRef} className="py-32 section-dark relative overflow-hidden">
       <Parallax speed={-3} className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-purple-500/5 blur-3xl" />
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-blue-500/5 blur-3xl" />
       </Parallax>
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <motion.div
