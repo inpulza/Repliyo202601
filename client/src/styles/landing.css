@@ -3916,10 +3916,23 @@
   background: #1a1a2e;
 }
 
-/* Ensure all platform icons have white icons */
+/* Ensure all platform icons have white icons - ALL contexts */
 .bubble-platform-icon svg,
 .flying-icon svg,
-.platform-indicator svg {
+.platform-indicator svg,
+.orbit-icon-static svg,
+.connect-icon svg,
+.inbox-platform-badge svg {
+  color: white !important;
+}
+
+/* Light theme: force white icons on colored backgrounds */
+.landing-page.theme-light .bubble-platform-icon svg,
+.landing-page.theme-light .flying-icon svg,
+.landing-page.theme-light .platform-indicator svg,
+.landing-page.theme-light .orbit-icon-static svg,
+.landing-page.theme-light .connect-icon svg,
+.landing-page.theme-light .inbox-platform-badge svg {
   color: white !important;
 }
 
