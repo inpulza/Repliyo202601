@@ -1292,15 +1292,19 @@ function ProblemMockup() {
       <div className="chaos-overlay">
         <div className="floating-notification n1">
           <Bell className="w-3 h-3" />
-          <span>+15 mensajes sin leer</span>
+          <span>+82 mensajes sin leer</span>
         </div>
         <div className="floating-notification n2">
           <Clock className="w-3 h-3" />
-          <span>Lead esperando 4h</span>
+          <span>Lead esperando 4 horas</span>
         </div>
         <div className="floating-notification n3">
           <AlertCircle className="w-3 h-3" />
           <span>Cliente frustrado</span>
+        </div>
+        <div className="floating-notification n4">
+          <MessageSquare className="w-3 h-3" />
+          <span>Venta perdida</span>
         </div>
       </div>
     </div>

@@ -4790,21 +4790,27 @@
 }
 
 .floating-notification.n1 {
-  top: -8%;
-  right: -12%;
+  top: -10%;
+  right: -8%;
   animation-delay: 0s;
 }
 
 .floating-notification.n2 {
-  top: 40%;
-  left: -15%;
-  animation-delay: 1s;
+  top: 20%;
+  left: -12%;
+  animation-delay: 0.8s;
 }
 
 .floating-notification.n3 {
-  bottom: -5%;
-  right: -8%;
-  animation-delay: 2s;
+  bottom: 25%;
+  right: -10%;
+  animation-delay: 1.6s;
+}
+
+.floating-notification.n4 {
+  bottom: -8%;
+  left: -6%;
+  animation-delay: 2.4s;
 }
 
 @keyframes float-notification {
