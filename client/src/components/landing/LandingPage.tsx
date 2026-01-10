@@ -1119,7 +1119,7 @@ function Header() {
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-        <a href="/" className="font-display font-bold text-2xl text-gradient" data-testid="link-logo">Repliyo</a>
+        <a href="/" className="font-display font-bold text-2xl text-white" data-testid="link-logo">Repliyo</a>
         <nav className="hidden md:flex items-center gap-8">
           <a href="#features" className="nav-link" data-testid="link-nav-producto">Producto</a>
           <a href="#how" className="nav-link" data-testid="link-nav-como-funciona">Cómo funciona</a>
@@ -1167,7 +1167,7 @@ function HeroSection() {
             transition={{ duration: 0.8, delay: 0.2 }}
           >
             <span className="block text-white">Responde más rápido.</span>
-            <span className="block"><span className="text-gradient">Vende más</span> <span className="text-white">con IA.</span></span>
+            <span className="block"><span className="text-white/60">Vende más</span> <span className="text-white">con IA.</span></span>
           </motion.h1>
 
           <motion.p 
@@ -1378,7 +1378,7 @@ function MetricSection() {
         style={{ scale, opacity }}
         className="relative z-10 max-w-5xl mx-auto px-6 text-center"
       >
-        <div className="font-display font-black text-[25vw] md:text-[18vw] leading-none text-gradient mb-4">
+        <div className="font-display font-black text-[25vw] md:text-[18vw] leading-none text-white mb-4">
           <AnimatedCounter target={80} />%
         </div>
         <h2 className="font-display text-3xl md:text-5xl font-bold text-white mb-4">
@@ -1522,7 +1522,7 @@ function HowItWorksSection() {
               Cómo funciona
             </span>
             <h2 className="font-display text-4xl md:text-6xl font-bold text-white">
-              De caos a control en <span className="text-gradient">3 pasos</span>
+              De caos a control en <span className="text-white/60">3 pasos</span>
             </h2>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
@@ -1550,7 +1550,7 @@ function HowItWorksSection() {
             Cómo funciona
           </span>
           <h2 className="font-display text-4xl md:text-6xl font-bold text-white mb-8">
-            De caos a control en <span className="text-gradient">3 pasos</span>
+            De caos a control en <span className="text-white/60">3 pasos</span>
           </h2>
           
           <div className="how-progress-dots">
@@ -1697,7 +1697,7 @@ function FeaturesSection() {
             Características
           </span>
           <h2 className="font-display text-4xl md:text-6xl font-bold text-white mb-6">
-            Todo lo que necesitas para <span className="text-gradient">escalar</span>
+            Todo lo que necesitas para <span className="text-white/60">escalar</span>
           </h2>
           <p className="text-white/50 text-xl max-w-2xl mx-auto">
             Herramientas diseñadas para equipos que manejan cientos de conversaciones al día.
@@ -1804,7 +1804,7 @@ function TestimonialSection() {
             >
               <blockquote className="font-display text-2xl md:text-4xl lg:text-5xl font-medium text-white leading-relaxed mb-12">
                 "{testimonial.quote.split(testimonial.highlight)[0]}
-                <span className="text-gradient">{testimonial.highlight}</span>
+                <span className="text-white/60">{testimonial.highlight}</span>
                 {testimonial.quote.split(testimonial.highlight)[1]}"
               </blockquote>
 
