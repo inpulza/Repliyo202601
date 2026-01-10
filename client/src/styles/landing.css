@@ -2477,14 +2477,13 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: #e5e7eb;
-  border: 2px solid rgba(0, 0, 0, 0.1);
+  background: #d1d5db;
+  border: 2px solid #9ca3af;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   transform: scale(0.85);
-  opacity: 0.6;
 }
 
 .how-scroll-checkpoint.completed {
@@ -2514,8 +2513,8 @@
 }
 
 .landing-page:not(.theme-light) .how-scroll-checkpoint {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: #374151;
+  border-color: #4b5563;
 }
 
 .landing-page:not(.theme-light) .how-scroll-checkpoint.completed {
