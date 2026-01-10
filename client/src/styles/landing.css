@@ -2323,24 +2323,7 @@
 }
 
 .how-steps-wrapper::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to bottom, 
-    rgba(243, 244, 246, 1) 0%,
-    rgba(243, 244, 246, 0.98) 5%,
-    rgba(243, 244, 246, 0.95) 10%,
-    rgba(243, 244, 246, 0.9) 15%,
-    rgba(243, 244, 246, 0.8) 25%,
-    rgba(243, 244, 246, 0.6) 40%,
-    rgba(243, 244, 246, 0.35) 55%,
-    rgba(243, 244, 246, 0.15) 70%,
-    rgba(243, 244, 246, 0.05) 85%,
-    transparent 100%
-  );
-  pointer-events: none;
-  z-index: 1;
+  display: none;
 }
 
 .landing-page.theme-light .how-steps-wrapper {
@@ -2349,19 +2332,7 @@
 }
 
 .landing-page.theme-light .how-steps-wrapper::before {
-  background: linear-gradient(
-    to bottom, 
-    rgba(243, 244, 246, 1) 0%,
-    rgba(243, 244, 246, 0.99) 5%,
-    rgba(243, 244, 246, 0.97) 10%,
-    rgba(243, 244, 246, 0.93) 15%,
-    rgba(243, 244, 246, 0.85) 25%,
-    rgba(243, 244, 246, 0.7) 40%,
-    rgba(243, 244, 246, 0.45) 55%,
-    rgba(243, 244, 246, 0.2) 70%,
-    rgba(243, 244, 246, 0.08) 85%,
-    transparent 100%
-  );
+  display: none;
 }
 
 .how-step-panel {
