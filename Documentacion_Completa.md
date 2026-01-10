@@ -188,6 +188,20 @@ FASE 3 (Testing)
     ├─► Subfase 3.1 puede comenzar en paralelo con Fase 2
     │
     └─► Subfases 3.2 y 3.3 dependen de Fases 1 y 2 completadas
+
+FASE 4 (Autenticación Social) ← NUEVA
+    │
+    ├─► Puede comenzar INDEPENDIENTE de Fases 1-3
+    │
+    ├─► Subfase 4.2 depende de Subfase 4.1
+    │
+    ├─► Subfase 4.3 depende de Subfase 4.2
+    │
+    ├─► Subfase 4.4 puede ejecutarse en paralelo con 4.3
+    │
+    ├─► Subfase 4.5 depende de Subfases 4.3 y 4.4
+    │
+    └─► Subfase 4.7 (Testing) depende de todas las anteriores
 ```
 
 ---
@@ -199,7 +213,8 @@ FASE 3 (Testing)
 | Fase 1: Componentes | 4 | 18 | 2-3 semanas |
 | Fase 2: Arquitectura | 3 | 19 | 2-3 semanas |
 | Fase 3: Testing | 3 | 17 | 2-3 semanas |
-| **TOTAL** | **10** | **54** | **6-9 semanas** |
+| Fase 4: Autenticación Social | 7 | 37 | 1-2 semanas |
+| **TOTAL** | **17** | **91** | **7-11 semanas** |
 
 ---
 
@@ -508,5 +523,232 @@ WebkitTextFillColor: transparent;
 
 ---
 
+## FASE 4: AUTENTICACIÓN SOCIAL (Replit Auth)
+**Objetivo:** Implementar login social con Google, GitHub, Apple y Twitter usando Replit Auth
+**Riesgo actual:** Login social no funciona (solo muestra toast "Próximamente")
+**Duración estimada:** 1-2 semanas
+**Fecha de inicio:** Enero 2026
+
+### Diagnóstico de Seguridad Actual (Pre-implementación)
+
+| Aspecto | Estado | Notas |
+|---------|--------|-------|
+| Separación de roles (admin/client) | ✅ Implementado | Middleware `requireAuth` verifica sesión |
+| Filtrado por brandId | ✅ Implementado | Middleware `filterByBrand` protege recursos |
+| Verificación de acceso | ✅ Implementado | Clientes solo acceden a su marca |
+| Autenticación social OAuth | ❌ No implementado | Solo muestra toast "Próximamente" |
+| Tabla de sesiones persistentes | ❌ No existe | Necesaria para Replit Auth |
+| Migración de usuarios existentes | ⚠️ Pendiente | Usuarios con email/password necesitan compatibilidad |
+
+### Subfase 4.1: Preparación de Infraestructura de Base de Datos
+
+**Objetivo:** Crear tablas y schemas necesarios para Replit Auth
+
+| Tarea | Descripción | Criterio de Éxito | Estado |
+|-------|-------------|-------------------|--------|
+| 4.1.1 | Exportar schema de auth desde `shared/models/auth.ts` | Schema accesible en `shared/schema.ts` | ⬜ |
+| 4.1.2 | Crear tabla `sessions` para almacenamiento persistente | Tabla creada en PostgreSQL | ⬜ |
+| 4.1.3 | Modificar tabla `users` para soportar auth social (agregar campos: `replitId`, `profileImageUrl`, `authProvider`) | Migración ejecutada sin errores | ⬜ |
+| 4.1.4 | Ejecutar `npm run db:push` para aplicar cambios | Base de datos actualizada | ⬜ |
+| 4.1.5 | Verificar que usuarios existentes no se ven afectados | Query de verificación pasa | ⬜ |
+
+### Subfase 4.2: Integración del Módulo Replit Auth
+
+**Objetivo:** Instalar y configurar Replit Auth en el servidor
+
+| Tarea | Descripción | Criterio de Éxito | Estado |
+|-------|-------------|-------------------|--------|
+| 4.2.1 | Agregar blueprint `javascript_log_in_with_replit` al proyecto | Archivos de integración creados | ⬜ |
+| 4.2.2 | Configurar `setupAuth(app)` en `server/index.ts` ANTES de otras rutas | Auth inicializado correctamente | ⬜ |
+| 4.2.3 | Registrar rutas de auth con `registerAuthRoutes(app)` | Rutas `/api/login`, `/api/logout` disponibles | ⬜ |
+| 4.2.4 | Verificar que `SESSION_SECRET` está configurado en environment | Variable disponible | ⬜ |
+| 4.2.5 | Probar flujo de login básico en desarrollo | Usuario puede autenticarse | ⬜ |
+
+### Subfase 4.3: Compatibilidad con Sistema Existente
+
+**Objetivo:** Mantener login email/password funcionando junto con OAuth
+
+| Tarea | Descripción | Criterio de Éxito | Estado |
+|-------|-------------|-------------------|--------|
+| 4.3.1 | Crear middleware híbrido que soporte ambos métodos de auth | Sesiones legacy y OAuth funcionan | ⬜ |
+| 4.3.2 | Modificar `storage.ts` para buscar usuarios por `replitId` O `email` | Función `upsertUser` implementada | ⬜ |
+| 4.3.3 | Implementar lógica de "merge" cuando usuario OAuth tiene email existente | Cuentas se vinculan automáticamente | ⬜ |
+| 4.3.4 | Mantener ruta `/api/auth/login` existente para email/password | Ambos métodos coexisten | ⬜ |
+| 4.3.5 | Agregar campo `authProvider` a usuarios ('local', 'replit') | Distinguir método de auth | ⬜ |
+
+### Subfase 4.4: Actualización del Frontend
+
+**Objetivo:** Conectar botones de login social con flujo OAuth real
+
+| Tarea | Descripción | Criterio de Éxito | Estado |
+|-------|-------------|-------------------|--------|
+| 4.4.1 | Modificar `Login.tsx` - cambiar botón Google para redirigir a `/api/login` | Redirección funciona | ⬜ |
+| 4.4.2 | Actualizar botones de GitHub, Apple, Twitter (reemplazar Facebook) | UI actualizada | ⬜ |
+| 4.4.3 | Implementar hook `useAuth` para estado de autenticación | Hook funcional | ⬜ |
+| 4.4.4 | Agregar manejo de error 401 con redirección a login | UX mejorada | ⬜ |
+| 4.4.5 | Mostrar foto de perfil del usuario si viene de OAuth | UI personalizada | ⬜ |
+| 4.4.6 | Actualizar página de registro para nuevos usuarios OAuth | Flujo de onboarding | ⬜ |
+
+### Subfase 4.5: Aislamiento de Datos por Usuario
+
+**Objetivo:** Garantizar que usuarios OAuth solo ven sus propios datos
+
+| Tarea | Descripción | Criterio de Éxito | Estado |
+|-------|-------------|-------------------|--------|
+| 4.5.1 | Auditar todas las rutas para verificar uso de `filterByBrand` | Lista de rutas sin protección | ⬜ |
+| 4.5.2 | Agregar middleware de autorización a rutas faltantes | 100% rutas protegidas | ⬜ |
+| 4.5.3 | Implementar verificación de `brandId` en WebSocket connections | WS protegido | ⬜ |
+| 4.5.4 | Test manual: crear 2 usuarios diferentes y verificar aislamiento | Datos aislados correctamente | ⬜ |
+| 4.5.5 | Documentar políticas de acceso por rol | Documento actualizado | ⬜ |
+
+### Subfase 4.6: Flujo de Onboarding para Nuevos Usuarios OAuth
+
+**Objetivo:** Definir qué sucede cuando un usuario nuevo se autentica
+
+| Tarea | Descripción | Criterio de Éxito | Estado |
+|-------|-------------|-------------------|--------|
+| 4.6.1 | Definir flujo: ¿nuevo usuario OAuth crea brand automáticamente? | Decisión documentada | ⬜ |
+| 4.6.2 | Implementar página de "Completar Perfil" si falta brandId | Redirect a onboarding | ⬜ |
+| 4.6.3 | Opción A: Admin asigna brand manualmente después del registro | Implementar si aplica | ⬜ |
+| 4.6.4 | Opción B: Usuario crea su propia brand al registrarse | Implementar si aplica | ⬜ |
+| 4.6.5 | Enviar notificación a admin cuando nuevo usuario se registra | Notificación creada | ⬜ |
+
+### Subfase 4.7: Testing y Validación de Seguridad
+
+**Objetivo:** Verificar que la implementación es segura
+
+| Tarea | Descripción | Criterio de Éxito | Estado |
+|-------|-------------|-------------------|--------|
+| 4.7.1 | Test: Usuario A no puede ver mensajes de Usuario B | Aislamiento verificado | ⬜ |
+| 4.7.2 | Test: Usuario client no puede acceder a rutas admin | Roles funcionan | ⬜ |
+| 4.7.3 | Test: Sesión expira correctamente después de logout | Sesión destruida | ⬜ |
+| 4.7.4 | Test: Token de sesión no se puede falsificar | Seguridad verificada | ⬜ |
+| 4.7.5 | Test: Usuarios existentes pueden seguir usando email/password | Compatibilidad | ⬜ |
+| 4.7.6 | Documentar resultados de tests de seguridad | Documento actualizado | ⬜ |
+
+---
+
+### Decisiones de Diseño - Autenticación
+
+**1. ¿Por qué Replit Auth en lugar de OAuth manual?**
+- Replit Auth maneja credenciales de Google, GitHub, Apple, Twitter automáticamente
+- No requiere crear proyecto en Google Cloud Console
+- No requiere manejar tokens de refresh manualmente
+- Incluye UI de login integrada
+
+**2. ¿Qué pasa con Facebook?**
+- Replit Auth NO soporta Facebook nativamente
+- Decisión: Reemplazar botón Facebook por Twitter (X)
+- Alternativa futura: Implementar Facebook OAuth manualmente si es necesario
+
+**3. ¿Cómo se relacionan usuarios OAuth con brands?**
+- Opción recomendada: Nuevo usuario OAuth queda sin brandId
+- Admin debe asignar brand manualmente (control de acceso)
+- O: Crear flujo de onboarding donde usuario solicita acceso
+
+**4. Compatibilidad con usuarios existentes:**
+- Usuarios con email/password siguen funcionando
+- Si usuario OAuth tiene mismo email → vincular cuentas
+- Campo `authProvider` distingue método de autenticación
+
+---
+
+### Arquitectura de Autenticación Post-Implementación
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        FRONTEND                             │
+├─────────────────────────────────────────────────────────────┤
+│  Login.tsx                                                  │
+│  ├─ Botón "Google" ──────────► /api/login                  │
+│  ├─ Botón "GitHub" ──────────► /api/login                  │
+│  ├─ Botón "Apple" ───────────► /api/login                  │
+│  ├─ Botón "Twitter" ─────────► /api/login                  │
+│  └─ Form Email/Password ─────► /api/auth/login (legacy)    │
+│                                                             │
+│  useAuth Hook                                               │
+│  └─ GET /api/auth/user ──────► Estado de sesión            │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                        BACKEND                              │
+├─────────────────────────────────────────────────────────────┤
+│  Replit Auth Module (server/replit_integrations/auth/)      │
+│  ├─ replitAuth.ts ───────► OIDC con Passport               │
+│  ├─ storage.ts ──────────► upsertUser, getUser             │
+│  └─ routes.ts ───────────► /api/auth/user                  │
+│                                                             │
+│  Middleware Stack                                           │
+│  ├─ setupAuth(app) ──────► Inicializa sesiones             │
+│  ├─ isAuthenticated ─────► Verifica sesión OAuth           │
+│  ├─ requireAuth ─────────► Verifica sesión legacy (híbrido)│
+│  └─ filterByBrand ───────► Aislamiento de datos            │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                       DATABASE                              │
+├─────────────────────────────────────────────────────────────┤
+│  users                                                      │
+│  ├─ id (uuid)                                               │
+│  ├─ email                                                   │
+│  ├─ password (nullable para OAuth)                          │
+│  ├─ name                                                    │
+│  ├─ role ('admin' | 'client')                              │
+│  ├─ brandId (FK → brands)                                   │
+│  ├─ replitId (nuevo - ID único de Replit)                  │
+│  ├─ profileImageUrl (nuevo - foto de OAuth)                │
+│  └─ authProvider ('local' | 'replit')                      │
+│                                                             │
+│  sessions                                                   │
+│  ├─ sid (session ID)                                        │
+│  ├─ sess (session data JSON)                               │
+│  └─ expire (timestamp)                                      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Proveedores de Login Social Soportados
+
+| Proveedor | Soportado por Replit Auth | Estado en Repliyo |
+|-----------|---------------------------|-------------------|
+| Google | ✅ Sí | ⬜ Pendiente |
+| GitHub | ✅ Sí | ⬜ Pendiente |
+| Apple | ✅ Sí | ⬜ Pendiente |
+| Twitter (X) | ✅ Sí | ⬜ Pendiente |
+| Facebook | ❌ No | ❌ Removido de UI |
+| Email/Password | ✅ Sí (Replit) / ✅ Legacy | ✅ Funcionando |
+
+---
+
+### Estimación de Esfuerzo - Fase 4
+
+| Subfase | Tareas | Duración Estimada |
+|---------|--------|-------------------|
+| 4.1 Preparación DB | 5 | 2-3 horas |
+| 4.2 Integración Replit Auth | 5 | 3-4 horas |
+| 4.3 Compatibilidad Legacy | 5 | 4-5 horas |
+| 4.4 Frontend Updates | 6 | 3-4 horas |
+| 4.5 Aislamiento de Datos | 5 | 2-3 horas |
+| 4.6 Onboarding Flow | 5 | 3-4 horas |
+| 4.7 Testing | 6 | 2-3 horas |
+| **TOTAL** | **37** | **1-2 semanas** |
+
+---
+
+### Checklist Pre-Deploy
+
+- [ ] `SESSION_SECRET` configurado en producción
+- [ ] Tabla `sessions` creada y funcionando
+- [ ] Migración de schema `users` aplicada
+- [ ] Tests de aislamiento de datos pasados
+- [ ] Usuarios existentes pueden seguir entrando
+- [ ] Flujo OAuth funciona end-to-end
+- [ ] Logs de autenticación configurados
+
+---
+
 *Documento creado: Enero 2026*
-*Última actualización: 8 Enero 2026 - Sistema de Blue Chips con borrado atómico y mejoras UX*
+*Última actualización: 10 Enero 2026 - Agregada Fase 4: Autenticación Social con Replit Auth*
