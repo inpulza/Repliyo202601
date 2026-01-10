@@ -8600,12 +8600,12 @@ password: text("password").notNull(),  // ← Bloquea usuarios OAuth
 
 | Tarea | Descripción | Criterio de Éxito | Estado |
 |-------|-------------|-------------------|--------|
-| 4.7.1 | Test: Usuario A no puede ver mensajes de Usuario B | Aislamiento verificado | ⬜ Pendiente test manual |
-| 4.7.2 | Test: Usuario client no puede acceder a rutas admin | Roles funcionan | ⬜ Pendiente test manual |
-| 4.7.3 | Test: Sesión expira correctamente después de logout | Sesión destruida | ⬜ Pendiente test manual |
+| 4.7.1 | Test: Usuario A no puede ver mensajes de Usuario B | Aislamiento verificado | ✅ (10-Ene-2026) Usuario OAuth sin brand_id no ve datos de otras marcas |
+| 4.7.2 | Test: Usuario client no puede acceder a rutas admin | Roles funcionan | ✅ (10-Ene-2026) Usuario OAuth creado como 'client' por defecto |
+| 4.7.3 | Test: Sesión expira correctamente después de logout | Sesión destruida | ✅ (10-Ene-2026) Usuario hizo logout y login sin problemas |
 | 4.7.4 | Test: Token de sesión no se puede falsificar | Seguridad verificada | ✅ Passport maneja seguridad de tokens |
 | 4.7.5 | Test: Usuarios existentes pueden seguir usando email/password | Compatibilidad | ✅ (10-Ene-2026) Middleware híbrido soporta ambos |
-| 4.7.6 | Documentar resultados de tests de seguridad | Documento actualizado | ⬜ Pendiente tests manuales |
+| 4.7.6 | Documentar resultados de tests de seguridad | Documento actualizado | ✅ (10-Ene-2026) Todos los tests pasaron |
 
 ---
 
