@@ -1406,7 +1406,19 @@ function SolutionMockup() {
         </div>
         <div className="indicator i2">
           <Zap className="w-3 h-3" />
-          <span>IA lista</span>
+          <span>IA genera borradores</span>
+        </div>
+        <div className="indicator i3">
+          <MessageSquare className="w-3 h-3" />
+          <span>Un solo inbox</span>
+        </div>
+        <div className="indicator i4">
+          <Users className="w-3 h-3" />
+          <span>CRM integrado</span>
+        </div>
+        <div className="indicator i5">
+          <Bell className="w-3 h-3" />
+          <span>Recordatorios automáticos</span>
         </div>
       </div>
     </div>
