@@ -1299,11 +1299,11 @@ function ProblemSolutionSection() {
               <div className="space-y-8">
                 {problems.map((problem, i) => {
                   return (
-                    <div key={i} className="problem-item flex items-start gap-5 p-6 rounded-2xl bg-red-500/5 border border-red-500/10">
+                    <div key={i} className="problem-item flex items-start gap-5 p-6 rounded-2xl bg-white">
                       <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
                         <img src={problem.image} alt="" className="w-full h-full object-cover" />
                       </div>
-                      <p className="font-display text-xl md:text-2xl font-semibold text-white leading-snug">{problem.text}</p>
+                      <p className="font-display text-xl md:text-2xl font-semibold text-gray-800 leading-snug">{problem.text}</p>
                     </div>
                   );
                 })}
@@ -1323,11 +1323,11 @@ function ProblemSolutionSection() {
               <div className="space-y-8">
                 {solutions.map((solution, i) => {
                   return (
-                    <div key={i} className="solution-item flex items-start gap-5 p-6 rounded-2xl bg-green-500/5 border border-green-500/10">
+                    <div key={i} className="solution-item flex items-start gap-5 p-6 rounded-2xl bg-white">
                       <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
                         <img src={solution.image} alt="" className="w-full h-full object-cover" />
                       </div>
-                      <p className="font-display text-xl md:text-2xl font-semibold text-white leading-snug">{solution.text}</p>
+                      <p className="font-display text-xl md:text-2xl font-semibold text-gray-800 leading-snug">{solution.text}</p>
                     </div>
                   );
                 })}
