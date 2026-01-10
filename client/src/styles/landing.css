@@ -142,7 +142,7 @@
 }
 
 .landing-page.theme-light .step-mockup-container {
-  background: rgba(0,0,0,0.04);
+  background: transparent;
 }
 
 .landing-page.theme-light .message-preview .preview,
@@ -4017,18 +4017,7 @@
   background: transparent;
 }
 
-/* Step mockup - light theme */
-.landing-page.theme-light .step-mockup {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 16px;
-}
 
-.landing-page.theme-light .send-mockup-v2 {
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 16px;
-}
 
 .landing-page.theme-light .send-timeline {
   background: rgba(0, 0, 0, 0.02);
