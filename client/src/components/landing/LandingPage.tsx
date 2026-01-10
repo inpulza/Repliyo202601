@@ -1088,16 +1088,6 @@ function HeroSection() {
         </Parallax>
         
         <motion.div style={{ y: textY, opacity }} className="relative z-10 max-w-5xl mx-auto px-6 text-center mb-16">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 mb-5"
-          >
-            <Sparkles className="w-4 h-4 text-[var(--landing-accent)]" />
-            <span className="text-sm text-white/70">Respuestas IA personalizadas</span>
-          </motion.div>
-
           <motion.h1 
             className="font-display font-bold text-4xl md:text-5xl lg:text-6xl leading-[0.95] tracking-tight mb-5"
             initial={{ opacity: 0, y: 40 }}
