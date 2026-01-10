@@ -26,13 +26,18 @@ function FloatingIcon({ delay, children, position }: { delay: number; children: 
   );
 }
 
-function SlackIcon() {
+function YouTubeIcon() {
   return (
-    <svg className="w-5 h-5" viewBox="0 0 24 24">
-      <path fill="#E01E5A" d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313z"/>
-      <path fill="#36C5F0" d="M8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312z"/>
-      <path fill="#2EB67D" d="M18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312z"/>
-      <path fill="#ECB22E" d="M15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/>
+    <svg className="w-6 h-6" viewBox="0 0 24 24">
+      <path fill="#FF0000" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+    </svg>
+  );
+}
+
+function TikTokIcon() {
+  return (
+    <svg className="w-6 h-6" viewBox="0 0 24 24">
+      <path fill="#000000" d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
     </svg>
   );
 }
@@ -84,63 +89,70 @@ function MetaIcon() {
 function Slide1_ConnectApps() {
   return (
     <div className="flex flex-col items-center justify-center h-full px-8">
-      <div className="relative mb-10">
-        <div className="relative w-72 h-48 bg-white rounded-xl shadow-2xl overflow-hidden">
-          <div className="bg-gray-100 h-8 flex items-center px-3 gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
-            <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
-            <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
+      <div className="relative mb-8">
+        <div className="relative w-80 h-56 bg-white rounded-xl shadow-2xl overflow-hidden">
+          <div className="bg-gray-100 h-10 flex items-center px-4 gap-2">
+            <div className="w-3 h-3 rounded-full bg-red-400" />
+            <div className="w-3 h-3 rounded-full bg-yellow-400" />
+            <div className="w-3 h-3 rounded-full bg-green-400" />
+            <span className="ml-3 text-sm text-gray-500 font-medium">Inbox Unificado</span>
           </div>
-          <div className="p-3 space-y-2">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center">
-                <div className="w-4 h-4 bg-white/30 rounded-full" />
+          <div className="p-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center">
+                <InstagramIcon />
               </div>
-              <div className="flex-1 space-y-1">
-                <div className="h-2 bg-gray-200 rounded w-3/4" />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-2.5 bg-gray-200 rounded w-3/4" />
                 <div className="h-2 bg-gray-100 rounded w-1/2" />
               </div>
+              <div className="w-2 h-2 rounded-full bg-green-400" />
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center">
-                <div className="w-4 h-4 bg-white/30 rounded-full" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                <FacebookIcon />
               </div>
-              <div className="flex-1 space-y-1">
-                <div className="h-2 bg-gray-200 rounded w-2/3" />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-2.5 bg-gray-200 rounded w-2/3" />
                 <div className="h-2 bg-gray-100 rounded w-1/3" />
               </div>
+              <div className="w-2 h-2 rounded-full bg-amber-400" />
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
-                <div className="w-4 h-4 bg-white/30 rounded-full" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center">
+                <TikTokIcon />
               </div>
-              <div className="flex-1 space-y-1">
-                <div className="h-2 bg-gray-200 rounded w-4/5" />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-2.5 bg-gray-200 rounded w-4/5" />
                 <div className="h-2 bg-gray-100 rounded w-2/5" />
               </div>
+              <div className="w-2 h-2 rounded-full bg-green-400" />
             </div>
           </div>
         </div>
         
-        <FloatingIcon delay={0} position="-top-4 -right-6">
-          <SlackIcon />
+        <FloatingIcon delay={0} position="-top-5 -right-8">
+          <YouTubeIcon />
         </FloatingIcon>
-        <FloatingIcon delay={0.4} position="-left-8 top-8">
+        <FloatingIcon delay={0.4} position="-left-10 top-10">
           <InstagramIcon />
         </FloatingIcon>
-        <FloatingIcon delay={0.8} position="bottom-8 -right-10">
-          <GoogleIcon />
+        <FloatingIcon delay={0.8} position="bottom-10 -right-12">
+          <TikTokIcon />
         </FloatingIcon>
-        <FloatingIcon delay={1.2} position="-bottom-2 -left-4">
-          <MetaIcon />
+        <FloatingIcon delay={1.2} position="-bottom-3 -left-6">
+          <FacebookIcon />
+        </FloatingIcon>
+        <FloatingIcon delay={1.6} position="top-1/2 -right-10">
+          <GoogleIcon />
         </FloatingIcon>
       </div>
       
       <h3 className="text-2xl font-bold text-white text-center mb-3">
-        Conecta con todas tus aplicaciones
+        Conecta con todas tus redes
       </h3>
       <p className="text-indigo-100 text-center text-sm max-w-xs">
-        Todo lo que necesitas en un dashboard fácil de personalizar
+        Instagram, Facebook, YouTube, TikTok y más en un solo lugar
       </p>
     </div>
   );
@@ -149,53 +161,56 @@ function Slide1_ConnectApps() {
 function Slide2_AutomateResponses() {
   return (
     <div className="flex flex-col items-center justify-center h-full px-8">
-      <div className="relative mb-10">
-        <div className="relative w-72 h-48 bg-white rounded-xl shadow-2xl overflow-hidden">
-          <div className="bg-gray-100 h-8 flex items-center px-3 gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
-            <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
-            <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
-            <span className="ml-2 text-xs text-gray-500 font-medium">Chat con María</span>
+      <div className="relative mb-8">
+        <div className="relative w-80 h-64 bg-white rounded-xl shadow-2xl overflow-hidden">
+          <div className="bg-gray-100 h-10 flex items-center px-4 gap-2">
+            <div className="w-3 h-3 rounded-full bg-red-400" />
+            <div className="w-3 h-3 rounded-full bg-yellow-400" />
+            <div className="w-3 h-3 rounded-full bg-green-400" />
+            <div className="ml-3 flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-pink-400 to-rose-500" />
+              <span className="text-sm text-gray-600 font-medium">María García</span>
+            </div>
           </div>
-          <div className="p-3 space-y-2">
+          <div className="p-4 space-y-3">
             <div className="flex justify-start">
-              <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-3 py-2 max-w-[85%]">
-                <p className="text-xs text-gray-700">Hola! ¿Cuáles son sus horarios de atención?</p>
-                <span className="text-[10px] text-gray-400">10:32 AM</span>
+              <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[90%]">
+                <p className="text-sm text-gray-700">Hola! ¿Tienen disponibilidad para mañana?</p>
+                <span className="text-xs text-gray-400 mt-1 block">10:32 AM</span>
               </div>
             </div>
             <div className="flex justify-end">
-              <div className="bg-gradient-to-r from-indigo-500 to-violet-500 rounded-2xl rounded-tr-sm px-3 py-2 max-w-[85%]">
-                <div className="flex items-center gap-1 mb-1">
-                  <svg className="w-3 h-3 text-indigo-200" viewBox="0 0 24 24" fill="currentColor">
+              <div className="bg-gradient-to-r from-indigo-500 to-violet-500 rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[90%]">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <svg className="w-3.5 h-3.5 text-indigo-200" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
                   </svg>
-                  <span className="text-[10px] text-indigo-200 font-medium">IA</span>
+                  <span className="text-xs text-indigo-200 font-medium">Respuesta IA</span>
                 </div>
-                <p className="text-xs text-white">¡Hola María! Estamos disponibles de Lunes a Viernes de 9AM a 6PM. ¿En qué puedo ayudarte?</p>
-                <span className="text-[10px] text-indigo-200">10:32 AM · Automático</span>
+                <p className="text-sm text-white">¡Hola María! Sí, tenemos disponibilidad mañana de 10AM a 5PM. ¿Qué horario te conviene?</p>
+                <span className="text-xs text-indigo-200 mt-1 block">10:32 AM · Automático</span>
               </div>
             </div>
-            <div className="flex items-center justify-center gap-2 pt-1">
-              <div className="flex items-center gap-1 bg-green-50 px-2 py-1 rounded-full">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-[10px] text-green-600 font-medium">Respondido en 2s</span>
+            <div className="flex items-center justify-center">
+              <div className="flex items-center gap-2 bg-green-50 px-3 py-1.5 rounded-full">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-xs text-green-600 font-medium">Respondido en 2 segundos</span>
               </div>
             </div>
           </div>
         </div>
         
-        <FloatingIcon delay={0} position="-top-4 -right-6">
-          <div className="flex items-center gap-1">
-            <svg className="w-4 h-4 text-indigo-500" viewBox="0 0 24 24" fill="currentColor">
+        <FloatingIcon delay={0} position="-top-5 -right-8">
+          <div className="flex items-center gap-1.5">
+            <svg className="w-5 h-5 text-indigo-500" viewBox="0 0 24 24" fill="currentColor">
               <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
             </svg>
-            <span className="text-xs font-bold text-gray-700">24/7</span>
+            <span className="text-sm font-bold text-gray-700">24/7</span>
           </div>
         </FloatingIcon>
-        <FloatingIcon delay={0.5} position="-left-8 top-12">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center">
-            <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <FloatingIcon delay={0.5} position="-left-10 top-16">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center">
+            <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 8V4H8"/>
               <rect x="4" y="4" width="16" height="12" rx="2"/>
               <path d="M8 21h8"/>
@@ -203,12 +218,12 @@ function Slide2_AutomateResponses() {
             </svg>
           </div>
         </FloatingIcon>
-        <FloatingIcon delay={1} position="-bottom-2 -right-4">
-          <div className="flex items-center gap-1">
-            <svg className="w-4 h-4 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <FloatingIcon delay={1} position="-bottom-3 -right-6">
+          <div className="flex items-center gap-1.5">
+            <svg className="w-5 h-5 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="20 6 9 17 4 12"/>
             </svg>
-            <span className="text-xs font-medium text-gray-600">Auto</span>
+            <span className="text-sm font-medium text-gray-600">Auto</span>
           </div>
         </FloatingIcon>
       </div>
@@ -226,81 +241,90 @@ function Slide2_AutomateResponses() {
 function Slide3_IntegratedCRM() {
   return (
     <div className="flex flex-col items-center justify-center h-full px-8">
-      <div className="relative mb-10">
-        <div className="relative w-72 h-52 flex items-center justify-center">
-          <div className="w-64 h-44 bg-white rounded-xl shadow-2xl overflow-hidden">
-            <div className="bg-gradient-to-r from-indigo-500 to-violet-500 h-10 flex items-center px-3 gap-2">
-              <div className="flex -space-x-2">
-                <div className="w-6 h-6 rounded-full bg-pink-400 border-2 border-white" />
-                <div className="w-6 h-6 rounded-full bg-blue-400 border-2 border-white" />
-                <div className="w-6 h-6 rounded-full bg-green-400 border-2 border-white" />
-              </div>
-              <span className="text-white text-xs font-medium ml-2">+127 contactos</span>
+      <div className="relative mb-8">
+        <div className="relative w-80 h-56 bg-white rounded-xl shadow-2xl overflow-hidden">
+          <div className="bg-gradient-to-r from-indigo-500 to-violet-500 h-10 flex items-center px-4 gap-2">
+            <div className="flex -space-x-2">
+              <div className="w-7 h-7 rounded-full bg-pink-400 border-2 border-white" />
+              <div className="w-7 h-7 rounded-full bg-blue-400 border-2 border-white" />
+              <div className="w-7 h-7 rounded-full bg-green-400 border-2 border-white" />
+              <div className="w-7 h-7 rounded-full bg-amber-400 border-2 border-white" />
             </div>
-            <div className="p-3 space-y-2">
-              <div className="flex items-center gap-2 p-2 bg-indigo-50 rounded-lg">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white text-xs font-bold">
-                  MC
-                </div>
-                <div className="flex-1">
-                  <div className="text-xs font-medium text-gray-800">María Castro</div>
-                  <div className="text-xs text-gray-500">Interesado en Premium</div>
-                </div>
-                <div className="w-2 h-2 rounded-full bg-green-400" />
-              </div>
-              <div className="flex items-center gap-2 p-2 rounded-lg">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center text-white text-xs font-bold">
-                  JL
-                </div>
-                <div className="flex-1">
-                  <div className="text-xs font-medium text-gray-800">Juan López</div>
-                  <div className="text-xs text-gray-500">Nuevo mensaje</div>
-                </div>
-                <div className="w-2 h-2 rounded-full bg-amber-400" />
-              </div>
-            </div>
+            <span className="text-white text-sm font-medium ml-2">+127 contactos</span>
           </div>
-          
-          <div className="absolute -top-4 -right-4 bg-white rounded-xl shadow-lg p-2 animate-float" style={{ animationDelay: '0s' }}>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center">
-                <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-                  <polyline points="17 6 23 6 23 12"/>
-                </svg>
+          <div className="p-4 space-y-2.5">
+            <div className="flex items-center gap-3 p-2.5 bg-indigo-50 rounded-lg">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white text-sm font-bold">
+                MC
               </div>
-              <div className="text-xs">
-                <div className="font-bold text-gray-800">+34%</div>
-                <div className="text-gray-500">conversión</div>
+              <div className="flex-1">
+                <div className="text-sm font-medium text-gray-800">María Castro</div>
+                <div className="text-xs text-gray-500">Interesado en Premium</div>
               </div>
-            </div>
-          </div>
-          
-          <div className="absolute -bottom-2 -left-6 bg-white rounded-xl shadow-lg p-2 animate-float" style={{ animationDelay: '0.6s' }}>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center">
-                <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                </svg>
-              </div>
-              <div className="text-xs">
-                <div className="font-bold text-gray-800">127</div>
-                <div className="text-gray-500">leads</div>
+              <div className="flex items-center gap-1.5">
+                <InstagramIcon />
+                <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
               </div>
             </div>
-          </div>
-          
-          <div className="absolute top-12 -left-8 bg-white rounded-xl shadow-lg p-2 animate-float" style={{ animationDelay: '1.2s' }}>
-            <svg className="w-5 h-5 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="3" width="18" height="18" rx="2"/>
-              <path d="M3 9h18"/>
-              <path d="M9 21V9"/>
-            </svg>
+            <div className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center text-white text-sm font-bold">
+                JL
+              </div>
+              <div className="flex-1">
+                <div className="text-sm font-medium text-gray-800">Juan López</div>
+                <div className="text-xs text-gray-500">Nuevo mensaje</div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <FacebookIcon />
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+              </div>
+            </div>
           </div>
         </div>
+        
+        <FloatingIcon delay={0} position="-top-5 -right-8">
+          <div className="flex items-center gap-1.5">
+            <svg className="w-5 h-5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+              <polyline points="17 6 23 6 23 12"/>
+            </svg>
+            <div className="text-xs">
+              <div className="font-bold text-gray-700">+34%</div>
+              <div className="text-gray-500">conversión</div>
+            </div>
+          </div>
+        </FloatingIcon>
+        <FloatingIcon delay={0.5} position="-left-10 top-12">
+          <div className="flex items-center gap-1.5">
+            <svg className="w-5 h-5 text-violet-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            <div className="text-xs">
+              <div className="font-bold text-gray-700">127</div>
+              <div className="text-gray-500">leads</div>
+            </div>
+          </div>
+        </FloatingIcon>
+        <FloatingIcon delay={1} position="-bottom-3 -right-6">
+          <div className="flex items-center gap-1.5">
+            <svg className="w-5 h-5 text-amber-500" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            <span className="text-sm font-medium text-gray-600">VIP</span>
+          </div>
+        </FloatingIcon>
+        <FloatingIcon delay={1.5} position="bottom-12 -left-8">
+          <div className="flex items-center gap-1.5">
+            <svg className="w-5 h-5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            <span className="text-sm font-medium text-gray-600">Verificado</span>
+          </div>
+        </FloatingIcon>
       </div>
       
       <h3 className="text-2xl font-bold text-white text-center mb-3">
@@ -561,7 +585,7 @@ export function Login() {
             <CarouselContent>
               {slides.map((SlideComponent, index) => (
                 <CarouselItem key={index}>
-                  <div className="h-[400px] flex items-center justify-center">
+                  <div className="h-[520px] flex items-center justify-center">
                     <SlideComponent />
                   </div>
                 </CarouselItem>
