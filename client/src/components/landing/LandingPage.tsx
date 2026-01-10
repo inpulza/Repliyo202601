@@ -1380,9 +1380,10 @@ function SolutionMockup() {
           <div className="inbox-header-bar">
             <div className="platform-tabs">
               <span className="tab active">Todos</span>
-              <span className="tab"><FaInstagram className="w-3 h-3" /></span>
-              <span className="tab"><FaTiktok className="w-3 h-3" /></span>
-              <span className="tab"><FaFacebook className="w-3 h-3" /></span>
+              <span className="tab"><FaInstagram className="w-3 h-3 text-[#E1306C]" /></span>
+              <span className="tab"><FaTiktok className="w-3 h-3 text-white" /></span>
+              <span className="tab"><FaFacebook className="w-3 h-3 text-[#1877F2]" /></span>
+              <span className="tab"><FaYoutube className="w-3 h-3 text-[#FF0000]" /></span>
             </div>
           </div>
           
