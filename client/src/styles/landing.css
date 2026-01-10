@@ -2144,14 +2144,28 @@
   margin: 0 auto;
   width: 100%;
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: none;
   border-radius: 32px;
   padding: 40px;
+  overflow: hidden;
+}
+
+.how-steps-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.15) 0%, transparent 30%, transparent 100%);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .landing-page.theme-light .how-steps-wrapper {
   background: rgba(0, 0, 0, 0.02);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  border: none;
+}
+
+.landing-page.theme-light .how-steps-wrapper::before {
+  background: linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, transparent 35%, transparent 100%);
 }
 
 .how-step-panel {
@@ -2215,13 +2229,17 @@
 .how-step-number {
   font-size: 72px;
   font-weight: 900;
-  background: var(--landing-gradient-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  opacity: 0.4;
+  color: rgba(255, 255, 255, 0.5);
+  background: none;
+  -webkit-background-clip: unset;
+  -webkit-text-fill-color: unset;
+  background-clip: unset;
   font-family: 'Space Grotesk', sans-serif;
   line-height: 1;
+}
+
+.landing-page.theme-light .how-step-number {
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .how-step-mockup {
