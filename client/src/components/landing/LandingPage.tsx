@@ -1245,12 +1245,11 @@ function ProblemMockup() {
             <div className="phone-notch" />
           </div>
           <div className="phone-app-bar">
-            <Instagram className="w-4 h-4" />
+            <FaInstagram className="w-4 h-4" />
             <span>Instagram</span>
             <div className="notification-badge">23</div>
           </div>
           <div className="phone-messages">
-            <div className="unread-msg" />
             <div className="unread-msg" />
             <div className="unread-msg" />
             <div className="unread-msg faded" />
@@ -1262,7 +1261,7 @@ function ProblemMockup() {
             <div className="phone-notch" />
           </div>
           <div className="phone-app-bar">
-            <Music className="w-4 h-4" />
+            <FaTiktok className="w-4 h-4" />
             <span>TikTok</span>
             <div className="notification-badge">47</div>
           </div>
@@ -1278,9 +1277,55 @@ function ProblemMockup() {
             <div className="phone-notch" />
           </div>
           <div className="phone-app-bar">
-            <Facebook className="w-4 h-4" />
+            <FaFacebook className="w-4 h-4" />
             <span>Facebook</span>
             <div className="notification-badge">12</div>
+          </div>
+          <div className="phone-messages">
+            <div className="unread-msg" />
+            <div className="unread-msg faded" />
+          </div>
+        </div>
+
+        <div className="chaos-phone linkedin">
+          <div className="phone-header">
+            <div className="phone-notch" />
+          </div>
+          <div className="phone-app-bar">
+            <FaLinkedin className="w-4 h-4" />
+            <span>LinkedIn</span>
+            <div className="notification-badge">8</div>
+          </div>
+          <div className="phone-messages">
+            <div className="unread-msg" />
+            <div className="unread-msg faded" />
+          </div>
+        </div>
+
+        <div className="chaos-phone youtube">
+          <div className="phone-header">
+            <div className="phone-notch" />
+          </div>
+          <div className="phone-app-bar">
+            <FaYoutube className="w-4 h-4" />
+            <span>YouTube</span>
+            <div className="notification-badge">31</div>
+          </div>
+          <div className="phone-messages">
+            <div className="unread-msg" />
+            <div className="unread-msg" />
+            <div className="unread-msg faded" />
+          </div>
+        </div>
+
+        <div className="chaos-phone google">
+          <div className="phone-header">
+            <div className="phone-notch" />
+          </div>
+          <div className="phone-app-bar">
+            <GoogleBusinessIcon className="w-4 h-4" />
+            <span>Google</span>
+            <div className="notification-badge">5</div>
           </div>
           <div className="phone-messages">
             <div className="unread-msg" />
@@ -1335,9 +1380,9 @@ function SolutionMockup() {
           <div className="inbox-header-bar">
             <div className="platform-tabs">
               <span className="tab active">Todos</span>
-              <span className="tab"><Instagram className="w-3 h-3" /></span>
-              <span className="tab"><Music className="w-3 h-3" /></span>
-              <span className="tab"><Facebook className="w-3 h-3" /></span>
+              <span className="tab"><FaInstagram className="w-3 h-3" /></span>
+              <span className="tab"><FaTiktok className="w-3 h-3" /></span>
+              <span className="tab"><FaFacebook className="w-3 h-3" /></span>
             </div>
           </div>
           
