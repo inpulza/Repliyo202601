@@ -2445,8 +2445,12 @@
 }
 
 .landing-page.theme-light .how-steps-wrapper .floating-msg.outgoing {
-  background: rgba(2, 145, 250, 0.08);
-  border: 1px solid rgba(2, 145, 250, 0.2);
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.landing-page.theme-light .how-steps-wrapper .floating-msg.outgoing .msg-text {
+  color: #4a4a5a;
 }
 
 .landing-page.theme-light .how-steps-wrapper .floating-msg .msg-name {
