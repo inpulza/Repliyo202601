@@ -579,10 +579,9 @@ function FeatureMultiAgentMockup() {
         {agents.map((agent, idx) => (
           <motion.div
             key={idx}
-            className={`multiagent-avatar ${agent.color} ${activeAgent === idx ? 'active' : ''}`}
+            className={`multiagent-avatar ${agent.color} ${activeAgent === idx ? 'active' : 'inactive'}`}
             animate={{ 
-              scale: activeAgent === idx ? 1.2 : 1,
-              opacity: activeAgent === idx ? 1 : 0.6
+              scale: activeAgent === idx ? 1.2 : 1
             }}
             transition={{ duration: 0.3 }}
           >
