@@ -501,8 +501,17 @@ function CRMPanelContent({
               qualifiers: 'Observaciones',
               budget: 'Presupuesto',
             };
+            const fieldOrder = ['intent', 'serviceInterest', 'budget', 'qualifiers'];
             const displayableFields = Object.entries(crmContact.customFields || {})
-              .filter(([key]) => !key.startsWith('_') && !hiddenFields.includes(key));
+              .filter(([key]) => !key.startsWith('_') && !hiddenFields.includes(key))
+              .sort((a, b) => {
+                const aIndex = fieldOrder.indexOf(a[0]);
+                const bIndex = fieldOrder.indexOf(b[0]);
+                if (aIndex === -1 && bIndex === -1) return 0;
+                if (aIndex === -1) return 1;
+                if (bIndex === -1) return -1;
+                return aIndex - bIndex;
+              });
             
             if (displayableFields.length === 0) return null;
             
@@ -514,15 +523,15 @@ function CRMPanelContent({
                     <Sparkles className="h-3 w-3 text-amber-500" />
                     Datos Extraídos
                   </h4>
-                  <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                  <div className="bg-gray-50 rounded-lg p-3 space-y-3">
                     {displayableFields.map(([key, value]) => (
-                      <div key={key} className="flex items-start justify-between gap-2">
-                        <span className="text-xs text-gray-500 shrink-0">
+                      <div key={key} className="space-y-0.5">
+                        <p className="text-[11px] text-gray-400 uppercase tracking-wide">
                           {fieldLabels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </span>
-                        <span className="text-xs text-gray-700 text-right break-words max-w-[60%]">
+                        </p>
+                        <p className="text-xs text-gray-700 break-words">
                           {String(value)}
-                        </span>
+                        </p>
                       </div>
                     ))}
                   </div>
