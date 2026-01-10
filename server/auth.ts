@@ -20,9 +20,7 @@ declare module "express-session" {
   }
 }
 
-export interface AuthenticatedUser extends User {
-  password?: never;
-}
+export type AuthenticatedUser = Omit<User, 'password'>;
 
 export function sanitizeUser(user: User): AuthenticatedUser {
   const { password, ...sanitizedUser } = user;

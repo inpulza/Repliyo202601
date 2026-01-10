@@ -1,32 +1,53 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertBrandSchema, insertUserSchema, insertMessageSchema, updateMessageSchema, updateConversationSchema, insertSocialAccountSchema, updateReminderRulesSchema } from "@shared/schema";
+import { insertBrandSchema, insertUserSchema, insertMessageSchema, updateMessageSchema, updateConversationSchema, insertSocialAccountSchema, updateReminderRulesSchema, type User } from "@shared/schema";
 import { hashPassword, verifyPassword, sanitizeUser, sanitizeBrand, type AuthenticatedUser } from "./auth";
 import { MetricoolService } from "./services/metricool";
 import { syncService } from "./services/syncService";
 import { websocketService } from "./services/websocketService";
 import { triggerSummaryUpdateAsync, checkAndUpdateSummary } from "./services/summaryService";
 import { authRateLimiter, syncRateLimiter, aiRateLimiter, sendMessageRateLimiter } from "./middleware/rateLimiter";
+import { authStorage } from "./replit_integrations/auth";
 import { z } from "zod";
 
+// Extend Express Request to include our user type (compatible with Passport)
 declare global {
   namespace Express {
+    interface User extends Omit<AuthenticatedUser, 'password'> {}
     interface Request {
       user?: AuthenticatedUser;
     }
   }
 }
 
+// Hybrid authentication middleware: supports both OAuth (Passport) and Legacy (session.userId)
 const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
-  if (!req.session.userId) {
-    return res.status(401).json({ error: "Not authenticated" });
+  let user = null;
+  
+  // 1. Check OAuth authentication (Passport/Replit Auth)
+  // Passport stores user with claims in req.user after OIDC callback
+  if (req.isAuthenticated && req.isAuthenticated() && (req.user as any)?.claims?.sub) {
+    const replitId = (req.user as any).claims.sub;
+    user = await authStorage.getUserByReplitId(replitId);
+    if (!user) {
+      // User was authenticated via OAuth but not found in DB - upsert them
+      user = await authStorage.upsertUserFromOAuth((req.user as any).claims);
+    }
   }
-
-  const user = await storage.getUser(req.session.userId);
+  
+  // 2. Check Legacy authentication (session.userId)
+  if (!user && req.session.userId) {
+    user = await storage.getUser(req.session.userId);
+    if (!user) {
+      req.session.destroy(() => {});
+      return res.status(401).json({ error: "User not found" });
+    }
+  }
+  
+  // 3. No valid authentication found
   if (!user) {
-    req.session.destroy(() => {});
-    return res.status(401).json({ error: "User not found" });
+    return res.status(401).json({ error: "Not authenticated" });
   }
 
   req.user = sanitizeUser(user);
