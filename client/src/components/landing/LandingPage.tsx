@@ -1146,23 +1146,22 @@ function HeroSection() {
           <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] rounded-full bg-orange-500/5 blur-3xl" />
         </Parallax>
         
-        <motion.div style={{ y: textY, opacity }} className="relative z-10 max-w-5xl mx-auto px-6 text-center mb-16">
+        <motion.div style={{ y: textY, opacity }} className="relative z-10 max-w-5xl mx-auto px-6 text-center mb-20">
           <motion.h1 
-            className="font-display font-bold text-4xl md:text-5xl lg:text-6xl leading-[0.95] tracking-tight mb-5"
+            className="font-display font-bold text-5xl md:text-6xl lg:text-7xl xl:text-8xl leading-[0.95] tracking-tight mb-8"
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
             <span className="block text-white">Responde más rápido.</span>
-            <span className="block text-gradient">Vende más.</span>
-            <span className="block text-white/40">Con IA.</span>
+            <span className="block"><span className="text-gradient">Vende más</span> <span className="text-white">con IA.</span></span>
           </motion.h1>
 
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.6 }}
-            className="text-base md:text-lg text-white/50 max-w-xl mx-auto mb-6 leading-relaxed"
+            className="text-lg md:text-xl lg:text-2xl text-white/50 max-w-2xl mx-auto mb-8 leading-relaxed"
           >
             Unifica todos tus DMs y comentarios de Instagram, TikTok y Facebook en un inbox inteligente que responde automáticamente.
           </motion.p>
