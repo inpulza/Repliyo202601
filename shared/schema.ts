@@ -44,6 +44,21 @@ export const users = pgTable("users", {
   replitId: varchar("replit_id").unique(),
   profileImageUrl: text("profile_image_url"),
   authProvider: text("auth_provider").notNull().default('local'),
+  status: text("status").notNull().default('active'), // 'pending' | 'active' | 'suspended'
+  emailVerifiedAt: timestamp("email_verified_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const verificationCodes = pgTable("verification_codes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  codeHash: text("code_hash").notNull(),
+  purpose: text("purpose").notNull().default('email_verification'), // 'email_verification' | 'password_reset'
+  expiresAt: timestamp("expires_at").notNull(),
+  consumedAt: timestamp("consumed_at"),
+  attempts: integer("attempts").notNull().default(0),
+  lastSentAt: timestamp("last_sent_at").defaultNow().notNull(),
+  resendCount: integer("resend_count").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
