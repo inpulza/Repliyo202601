@@ -201,15 +201,15 @@ function Slide2_AutomateResponses() {
               </div>
             </div>
             <div className="flex justify-end">
-              <div className="bg-gradient-to-r from-indigo-500 to-violet-500 rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[90%]">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <svg className="w-3.5 h-3.5 text-indigo-200" viewBox="0 0 24 24" fill="currentColor">
+              <div className="bg-gradient-to-r from-indigo-500 to-violet-500 rounded-2xl rounded-tr-sm px-3 py-2 max-w-[85%]">
+                <div className="flex items-center gap-1 mb-0.5">
+                  <svg className="w-3 h-3 text-indigo-200" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
                   </svg>
-                  <span className="text-xs text-indigo-200 font-medium">Respuesta IA</span>
+                  <span className="text-[10px] text-indigo-200 font-medium">Respuesta IA</span>
                 </div>
-                <p className="text-sm text-white">¡Hola María! Sí, tenemos disponibilidad mañana de 10AM a 5PM. ¿Qué horario te conviene?</p>
-                <span className="text-xs text-indigo-200 mt-1 block">10:32 AM · Automático</span>
+                <p className="text-xs text-white leading-relaxed">¡Hola María! Sí, tenemos disponibilidad mañana. ¿Qué horario te conviene?</p>
+                <span className="text-[10px] text-indigo-200 mt-0.5 block">10:32 AM · Automático</span>
               </div>
             </div>
             <div className="flex items-center justify-center">
