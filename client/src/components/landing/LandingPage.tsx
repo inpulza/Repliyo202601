@@ -26,10 +26,10 @@ import featureIconCRM from '@assets/generated_images/modern_flat_crm_contact_ico
 import featureIconReminder from '@assets/generated_images/modern_flat_reminder_bell_icon.png';
 import featureIconComments from '@assets/generated_images/modern_flat_comments_icon.png';
 import featureIconAnalytics from '@assets/generated_images/modern_flat_analytics_chart_icon.png';
-import timelineSendIcon from '@assets/generated_images/purple_filled_send_icon.png';
-import timelineCheckIcon from '@assets/generated_images/green_filled_check_icon.png';
-import timelineBellIcon from '@assets/generated_images/orange_filled_bell_icon.png';
-import timelineChatIcon from '@assets/generated_images/blue_filled_chat_icon.png';
+import timelineSendIcon from '@assets/generated_images/square_purple_send_icon.png';
+import timelineCheckIcon from '@assets/generated_images/square_green_check_icon.png';
+import timelineBellIcon from '@assets/generated_images/square_orange_bell_icon.png';
+import timelineChatIcon from '@assets/generated_images/square_blue_chat_icon.png';
 import testimonialBettys from '../../assets/testimonial-bettys.jpg';
 import { ParallaxProvider, useParallax, Parallax } from 'react-scroll-parallax';
 import gsap from 'gsap';
