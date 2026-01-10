@@ -1672,7 +1672,6 @@ function FeaturesSection() {
       <Parallax speed={-3} className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-purple-500/5 blur-3xl" />
       </Parallax>
-      
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
@@ -1700,7 +1699,7 @@ function FeaturesSection() {
                 className={`feature-card bento-${feature.size}`}
               >
                 <div className="feature-card-inner">
-                  <div className="feature-icon-wrapper overflow-hidden">
+                  <div className="feature-icon-wrapper overflow-hidden bg-[#a855f700]">
                     <img src={feature.iconImage} alt="" className="w-10 h-10 object-contain" />
                   </div>
                   <h3 className="font-display text-xl font-bold text-white mt-4 mb-2">{feature.title}</h3>
