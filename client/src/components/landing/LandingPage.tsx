@@ -1766,6 +1766,40 @@ function HowItWorksSection() {
             </div>
           ))}
         </div>
+
+        <div className="how-scroll-progress">
+          <div className="how-scroll-progress-bar">
+            <motion.div 
+              className="how-scroll-progress-fill"
+              initial={{ width: '0%' }}
+              animate={{ width: `${((activeStep + 1) / steps.length) * 100}%` }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+            />
+          </div>
+          <div className="how-scroll-checkmarks">
+            {steps.map((_, i) => (
+              <motion.div
+                key={i}
+                className={`how-scroll-checkpoint ${activeStep >= i ? 'completed' : ''}`}
+                initial={{ scale: 0.8, opacity: 0.5 }}
+                animate={{ 
+                  scale: activeStep >= i ? 1 : 0.8,
+                  opacity: activeStep >= i ? 1 : 0.5
+                }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+              >
+                <motion.div
+                  className="checkpoint-check"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: activeStep >= i ? 1 : 0 }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                >
+                  <Check className="w-3 h-3" />
+                </motion.div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );
