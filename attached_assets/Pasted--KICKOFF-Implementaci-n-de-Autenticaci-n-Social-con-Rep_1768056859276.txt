@@ -1,0 +1,51 @@
+# KICKOFF: Implementación de Autenticación Social con Replit Auth
+
+## Objetivo
+Implementar login social con Google, GitHub, Apple y Twitter (X) usando Replit Auth nativo, manteniendo compatibilidad con el sistema de autenticación email/password existente.
+
+## Contexto del Proyecto
+Este es un Social Media Inbox Management System (Repliyo) integrado con Metricool. Ya tiene autenticación funcional con email/password, y ahora necesitamos agregar OAuth social.
+
+## Documentación Completa
+**Lee primero:** `DOCUMENTACION_COMPLETA.md`
+- La **FASE 4: AUTENTICACIÓN SOCIAL** está en la línea ~8452
+- Contiene 7 subfases con 44 tareas detalladas
+- Incluye diagnóstico de compatibilidad, riesgos y recomendaciones
+
+## Archivos Críticos a Revisar
+1. `shared/schema.ts` - Tabla `users` (línea ~40, password es notNull - CAMBIAR)
+2. `server/sessionStore.ts` - Sesiones ya configuradas (NO crear nueva)
+3. `server/routes.ts` - Rutas de auth existentes
+4. `server/auth.ts` - Middleware actual
+5. `client/src/pages/Login.tsx` - UI de login actual
+
+## Tareas Pendientes (con ⬜)
+Busca en DOCUMENTACION_COMPLETA.md las tareas marcadas con ⬜ y ve marcándolas con ✅ conforme las completes.
+
+## Decisiones Ya Tomadas
+1. **4.1.0:** Adaptar tabla `users` existente (NO crear nueva)
+2. **4.4.3:** Mantener 4 botones separados (Google, GitHub, Apple, X)
+3. **4.6.1:** Nuevos usuarios OAuth quedan sin brandId, requieren asignación admin
+
+## Orden de Ejecución
+1. Subfase 4.1 → Preparar DB (password nullable, campos nuevos)
+2. Subfase 4.2 → Integrar Replit Auth
+3. Subfase 4.3 → Middleware híbrido (CRÍTICO)
+4. Subfase 4.4 → Frontend
+5. Subfase 4.5 → Verificar aislamiento
+6. Subfase 4.6 → Onboarding
+7. Subfase 4.7 → Testing
+
+## Advertencias Importantes
+- ⚠️ NO romper login legacy (email/password)
+- ⚠️ Crear checkpoint git antes de modificar schema
+- ⚠️ Tabla `session` YA EXISTE - reutilizarla
+- ⚠️ SESSION_SECRET YA EXISTE - no crear nuevo
+
+## Primer Paso
+1. Lee la sección FASE 4 en DOCUMENTACION_COMPLETA.md
+2. Usa `search_integrations` con query "replit auth" para obtener el blueprint
+3. Comienza con tarea 4.1.0 (ya decidida: adaptar tabla existente)
+4. Continúa con 4.1.3a (cambiar password a nullable)
+
+Por favor confirma que has leído la documentación y crea una lista de tareas basada en la Fase 4 para comenzar la implementación.
