@@ -15,24 +15,6 @@ import {
 } from '@/components/ui/carousel';
 import Autoplay from 'embla-carousel-autoplay';
 
-const carouselSlides = [
-  {
-    title: "Conecta con todas tus aplicaciones",
-    description: "Todo lo que necesitas en un dashboard fácil de personalizar",
-    icons: ['slack', 'google', 'meta', 'instagram']
-  },
-  {
-    title: "Automatiza tus respuestas",
-    description: "IA inteligente que responde por ti mientras descansas",
-    icons: ['bot', 'message', 'zap', 'clock']
-  },
-  {
-    title: "CRM integrado",
-    description: "Gestiona tus contactos y conversaciones en un solo lugar",
-    icons: ['users', 'inbox', 'chart', 'target']
-  }
-];
-
 function FloatingIcon({ delay, children, position }: { delay: number; children: React.ReactNode; position: string }) {
   return (
     <div 
@@ -44,81 +26,277 @@ function FloatingIcon({ delay, children, position }: { delay: number; children: 
   );
 }
 
-function DashboardMockup() {
+function SlackIcon() {
   return (
-    <div className="relative w-72 h-48 bg-white rounded-xl shadow-2xl overflow-hidden">
-      <div className="bg-gray-100 h-8 flex items-center px-3 gap-1.5">
-        <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
-        <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
-        <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
+    <svg className="w-5 h-5" viewBox="0 0 24 24">
+      <path fill="#E01E5A" d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313z"/>
+      <path fill="#36C5F0" d="M8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312z"/>
+      <path fill="#2EB67D" d="M18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312z"/>
+      <path fill="#ECB22E" d="M15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/>
+    </svg>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg className="w-5 h-5" viewBox="0 0 24 24">
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+    </svg>
+  );
+}
+
+function FacebookIcon() {
+  return (
+    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#1877F2">
+      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+    </svg>
+  );
+}
+
+function InstagramIcon() {
+  return (
+    <svg className="w-5 h-5" viewBox="0 0 24 24">
+      <defs>
+        <linearGradient id="instagram-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#FFDC80"/>
+          <stop offset="25%" stopColor="#F77737"/>
+          <stop offset="50%" stopColor="#E1306C"/>
+          <stop offset="75%" stopColor="#C13584"/>
+          <stop offset="100%" stopColor="#833AB4"/>
+        </linearGradient>
+      </defs>
+      <path fill="url(#instagram-gradient)" d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+    </svg>
+  );
+}
+
+function MetaIcon() {
+  return (
+    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#0081FB">
+      <path d="M12 2C6.477 2 2 6.477 2 12c0 5.013 3.693 9.153 8.505 9.876V14.65H8.031v-2.629h2.474v-1.749c0-2.896 1.411-4.167 3.818-4.167 1.153 0 1.762.086 2.051.124v2.294h-1.642c-1.022 0-1.379.969-1.379 2.061v1.437h2.995l-.406 2.629h-2.588v7.247C18.235 21.236 22 17.062 22 12c0-5.523-4.477-10-10-10z"/>
+    </svg>
+  );
+}
+
+function Slide1_ConnectApps() {
+  return (
+    <div className="flex flex-col items-center justify-center h-full px-8">
+      <div className="relative mb-10">
+        <div className="relative w-72 h-48 bg-white rounded-xl shadow-2xl overflow-hidden">
+          <div className="bg-gray-100 h-8 flex items-center px-3 gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+            <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
+            <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
+          </div>
+          <div className="p-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center">
+                <div className="w-4 h-4 bg-white/30 rounded-full" />
+              </div>
+              <div className="flex-1 space-y-1">
+                <div className="h-2 bg-gray-200 rounded w-3/4" />
+                <div className="h-2 bg-gray-100 rounded w-1/2" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center">
+                <div className="w-4 h-4 bg-white/30 rounded-full" />
+              </div>
+              <div className="flex-1 space-y-1">
+                <div className="h-2 bg-gray-200 rounded w-2/3" />
+                <div className="h-2 bg-gray-100 rounded w-1/3" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+                <div className="w-4 h-4 bg-white/30 rounded-full" />
+              </div>
+              <div className="flex-1 space-y-1">
+                <div className="h-2 bg-gray-200 rounded w-4/5" />
+                <div className="h-2 bg-gray-100 rounded w-2/5" />
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <FloatingIcon delay={0} position="-top-4 -right-6">
+          <SlackIcon />
+        </FloatingIcon>
+        <FloatingIcon delay={0.4} position="-left-8 top-8">
+          <InstagramIcon />
+        </FloatingIcon>
+        <FloatingIcon delay={0.8} position="bottom-8 -right-10">
+          <GoogleIcon />
+        </FloatingIcon>
+        <FloatingIcon delay={1.2} position="-bottom-2 -left-4">
+          <MetaIcon />
+        </FloatingIcon>
       </div>
-      <div className="p-3 space-y-2">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500" />
-          <div className="flex-1 space-y-1">
-            <div className="h-2 bg-gray-200 rounded w-3/4" />
-            <div className="h-2 bg-gray-100 rounded w-1/2" />
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-rose-500" />
-          <div className="flex-1 space-y-1">
-            <div className="h-2 bg-gray-200 rounded w-2/3" />
-            <div className="h-2 bg-gray-100 rounded w-1/3" />
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500" />
-          <div className="flex-1 space-y-1">
-            <div className="h-2 bg-gray-200 rounded w-4/5" />
-            <div className="h-2 bg-gray-100 rounded w-2/5" />
-          </div>
-        </div>
-      </div>
+      
+      <h3 className="text-2xl font-bold text-white text-center mb-3">
+        Conecta con todas tus aplicaciones
+      </h3>
+      <p className="text-indigo-100 text-center text-sm max-w-xs">
+        Todo lo que necesitas en un dashboard fácil de personalizar
+      </p>
     </div>
   );
 }
 
-function CarouselSlide({ slide }: { slide: typeof carouselSlides[0] }) {
+function Slide2_AutomateResponses() {
   return (
     <div className="flex flex-col items-center justify-center h-full px-8">
-      <div className="relative mb-12">
-        <DashboardMockup />
-        <FloatingIcon delay={0} position="top-0 -right-8">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-            <span className="text-white text-xs font-bold">#</span>
-          </div>
-        </FloatingIcon>
-        <FloatingIcon delay={0.5} position="-left-10 top-1/4">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center">
-            <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+      <div className="relative mb-10">
+        <div className="relative w-72 h-52 flex items-center justify-center">
+          <div className="w-20 h-20 bg-gradient-to-br from-violet-400 to-purple-600 rounded-3xl shadow-2xl flex items-center justify-center animate-pulse-slow">
+            <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 8V4H8"/>
+              <rect x="4" y="4" width="16" height="12" rx="2"/>
+              <path d="M2 14h2"/>
+              <path d="M20 14h2"/>
+              <path d="M15 13v2"/>
+              <path d="M9 13v2"/>
+              <path d="M12 17v4"/>
+              <path d="M8 21h8"/>
             </svg>
           </div>
-        </FloatingIcon>
-        <FloatingIcon delay={1} position="bottom-4 -right-12">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center">
-            <svg className="w-6 h-6" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          
+          <div className="absolute -top-2 -left-4 bg-white rounded-2xl shadow-lg p-3 animate-float" style={{ animationDelay: '0s' }}>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500" />
+              <div className="space-y-1">
+                <div className="h-2 w-16 bg-gray-200 rounded" />
+                <div className="h-2 w-12 bg-gray-100 rounded" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="absolute top-6 -right-8 bg-white rounded-2xl shadow-lg p-3 animate-float" style={{ animationDelay: '0.5s' }}>
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
+                <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </div>
+              <span className="text-xs text-gray-600 font-medium">Enviado</span>
+            </div>
+          </div>
+          
+          <div className="absolute -bottom-4 left-8 bg-white rounded-2xl shadow-lg p-3 animate-float" style={{ animationDelay: '1s' }}>
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+              </svg>
+              <span className="text-xs text-gray-600 font-medium">24/7</span>
+            </div>
+          </div>
+          
+          <div className="absolute bottom-8 -right-6 bg-white rounded-2xl shadow-lg p-3 animate-float" style={{ animationDelay: '1.5s' }}>
+            <svg className="w-5 h-5 text-amber-500" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/>
             </svg>
           </div>
-        </FloatingIcon>
-        <FloatingIcon delay={1.5} position="-bottom-4 -left-6">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center">
-            <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-            </svg>
-          </div>
-        </FloatingIcon>
+        </div>
       </div>
+      
       <h3 className="text-2xl font-bold text-white text-center mb-3">
-        {slide.title}
+        Automatiza tus respuestas
       </h3>
       <p className="text-indigo-100 text-center text-sm max-w-xs">
-        {slide.description}
+        IA inteligente que responde por ti mientras descansas
+      </p>
+    </div>
+  );
+}
+
+function Slide3_IntegratedCRM() {
+  return (
+    <div className="flex flex-col items-center justify-center h-full px-8">
+      <div className="relative mb-10">
+        <div className="relative w-72 h-52 flex items-center justify-center">
+          <div className="w-64 h-44 bg-white rounded-xl shadow-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-indigo-500 to-violet-500 h-10 flex items-center px-3 gap-2">
+              <div className="flex -space-x-2">
+                <div className="w-6 h-6 rounded-full bg-pink-400 border-2 border-white" />
+                <div className="w-6 h-6 rounded-full bg-blue-400 border-2 border-white" />
+                <div className="w-6 h-6 rounded-full bg-green-400 border-2 border-white" />
+              </div>
+              <span className="text-white text-xs font-medium ml-2">+127 contactos</span>
+            </div>
+            <div className="p-3 space-y-2">
+              <div className="flex items-center gap-2 p-2 bg-indigo-50 rounded-lg">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white text-xs font-bold">
+                  MC
+                </div>
+                <div className="flex-1">
+                  <div className="text-xs font-medium text-gray-800">María Castro</div>
+                  <div className="text-xs text-gray-500">Interesado en Premium</div>
+                </div>
+                <div className="w-2 h-2 rounded-full bg-green-400" />
+              </div>
+              <div className="flex items-center gap-2 p-2 rounded-lg">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center text-white text-xs font-bold">
+                  JL
+                </div>
+                <div className="flex-1">
+                  <div className="text-xs font-medium text-gray-800">Juan López</div>
+                  <div className="text-xs text-gray-500">Nuevo mensaje</div>
+                </div>
+                <div className="w-2 h-2 rounded-full bg-amber-400" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="absolute -top-4 -right-4 bg-white rounded-xl shadow-lg p-2 animate-float" style={{ animationDelay: '0s' }}>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                  <polyline points="17 6 23 6 23 12"/>
+                </svg>
+              </div>
+              <div className="text-xs">
+                <div className="font-bold text-gray-800">+34%</div>
+                <div className="text-gray-500">conversión</div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="absolute -bottom-2 -left-6 bg-white rounded-xl shadow-lg p-2 animate-float" style={{ animationDelay: '0.6s' }}>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </div>
+              <div className="text-xs">
+                <div className="font-bold text-gray-800">127</div>
+                <div className="text-gray-500">leads</div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="absolute top-12 -left-8 bg-white rounded-xl shadow-lg p-2 animate-float" style={{ animationDelay: '1.2s' }}>
+            <svg className="w-5 h-5 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <path d="M3 9h18"/>
+              <path d="M9 21V9"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      
+      <h3 className="text-2xl font-bold text-white text-center mb-3">
+        CRM integrado
+      </h3>
+      <p className="text-indigo-100 text-center text-sm max-w-xs">
+        Gestiona tus contactos y conversaciones en un solo lugar
       </p>
     </div>
   );
@@ -190,6 +368,8 @@ export function Login() {
     });
   };
 
+  const slides = [Slide1_ConnectApps, Slide2_AutomateResponses, Slide3_IntegratedCRM];
+
   return (
     <div className="min-h-screen flex">
       {/* Left Panel - Login Form */}
@@ -222,13 +402,8 @@ export function Login() {
               onClick={() => handleSocialLogin('Google')}
               data-testid="button-google-login"
             >
-              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-              </svg>
-              Google
+              <GoogleIcon />
+              <span className="ml-2">Google</span>
             </Button>
             <Button
               type="button"
@@ -237,10 +412,8 @@ export function Login() {
               onClick={() => handleSocialLogin('Facebook')}
               data-testid="button-facebook-login"
             >
-              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="#1877F2">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-              </svg>
-              Facebook
+              <FacebookIcon />
+              <span className="ml-2">Facebook</span>
             </Button>
           </div>
 
@@ -359,43 +532,47 @@ export function Login() {
       </div>
 
       {/* Right Panel - Carousel */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700 relative overflow-hidden items-center justify-center">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
         
-        <Carousel
-          setApi={setApi}
-          opts={{ loop: true }}
-          plugins={[
-            Autoplay({
-              delay: 5000,
-              stopOnInteraction: false,
-            }),
-          ]}
-          className="w-full h-full"
-        >
-          <CarouselContent className="h-full">
-            {carouselSlides.map((slide, index) => (
-              <CarouselItem key={index} className="h-full flex items-center justify-center">
-                <CarouselSlide slide={slide} />
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-        </Carousel>
+        <div className="w-full h-full flex flex-col items-center justify-center">
+          <Carousel
+            setApi={setApi}
+            opts={{ loop: true }}
+            plugins={[
+              Autoplay({
+                delay: 5000,
+                stopOnInteraction: false,
+              }),
+            ]}
+            className="w-full max-w-lg"
+          >
+            <CarouselContent>
+              {slides.map((SlideComponent, index) => (
+                <CarouselItem key={index}>
+                  <div className="h-[400px] flex items-center justify-center">
+                    <SlideComponent />
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
 
-        {/* Carousel Dots */}
-        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex gap-2" data-testid="carousel-dots">
-          {carouselSlides.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => api?.scrollTo(index)}
-              className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
-                current === index
-                  ? 'bg-white w-6'
-                  : 'bg-white/40 hover:bg-white/60'
-              }`}
-              data-testid={`carousel-dot-${index}`}
-            />
-          ))}
+          {/* Carousel Dots */}
+          <div className="flex gap-2 mt-8" data-testid="carousel-dots">
+            {slides.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => api?.scrollTo(index)}
+                className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                  current === index
+                    ? 'bg-white w-6'
+                    : 'bg-white/40 hover:bg-white/60'
+                }`}
+                data-testid={`carousel-dot-${index}`}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
@@ -407,6 +584,13 @@ export function Login() {
         }
         .animate-float {
           animation: float 3s ease-in-out infinite;
+        }
+        .animate-pulse-slow {
+          animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.8; }
         }
       `}</style>
     </div>
