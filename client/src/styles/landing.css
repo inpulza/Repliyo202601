@@ -4764,13 +4764,13 @@
   position: absolute;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  background: rgba(239, 68, 68, 0.85);
+  gap: 10px;
+  padding: 12px 20px;
+  background: rgba(239, 68, 68, 0.9);
   color: white;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
-  border-radius: 20px;
+  border-radius: 24px;
   box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
   animation: float-notification 3s ease-in-out infinite;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -4779,6 +4779,8 @@
 
 .floating-notification svg {
   color: white;
+  width: 18px;
+  height: 18px;
 }
 
 .floating-notification.n1 {
@@ -5063,13 +5065,13 @@
 .indicator {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
+  gap: 10px;
+  padding: 12px 20px;
   background: rgba(2, 145, 250, 0.9);
   color: white;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
-  border-radius: 20px;
+  border-radius: 24px;
   box-shadow: 0 8px 24px rgba(2, 145, 250, 0.4);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -5077,6 +5079,8 @@
 
 .indicator svg {
   color: white;
+  width: 18px;
+  height: 18px;
 }
 
 .indicator.i1 {
