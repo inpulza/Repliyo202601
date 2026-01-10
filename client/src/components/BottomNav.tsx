@@ -14,17 +14,17 @@ export function BottomNav() {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
 
   const mainNavItems = [
-    { href: '/overview', icon: BarChart3, label: 'Overview' },
-    { href: '/inbox', icon: Inbox, label: 'Inbox' },
-    { href: '/crm', icon: Users, label: 'CRM' },
-    { href: '/connections', icon: LayoutDashboard, label: 'Connect' },
+    { href: '/app/overview', icon: BarChart3, label: 'Overview' },
+    { href: '/app/inbox', icon: Inbox, label: 'Inbox' },
+    { href: '/app/crm', icon: Users, label: 'CRM' },
+    { href: '/app/connections', icon: LayoutDashboard, label: 'Connect' },
   ];
 
   const moreNavItems = [
-    { href: '/settings', icon: Settings, label: 'Agent Settings' },
-    { href: '/integrations', icon: Command, label: 'Integrations' },
-    { href: '/ai-metrics', icon: Bot, label: 'IA Metrics' },
-    { href: '/profile', icon: User, label: 'Profile' },
+    { href: '/app/settings', icon: Settings, label: 'Agent Settings' },
+    { href: '/app/integrations', icon: Command, label: 'Integrations' },
+    { href: '/app/ai-metrics', icon: Bot, label: 'IA Metrics' },
+    { href: '/app/profile', icon: User, label: 'Profile' },
   ];
 
   const isMoreActive = moreNavItems.some(item => location === item.href);

@@ -394,7 +394,7 @@ export function Login() {
       });
 
       await refreshAuth();
-      setLocation('/inbox');
+      setLocation('/app/inbox');
     } catch (error: any) {
       console.error('Login error:', error);
       toast({

@@ -21,13 +21,32 @@ import { CRM } from "@/pages/CRM";
 import { LandingPage } from "@/components/landing/LandingPage";
 import { Loader2 } from "lucide-react";
 
-function HomeRedirect() {
+function AppRedirect() {
   const { isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      setLocation('/inbox');
+      setLocation('/app/inbox');
+    } else if (!isLoading && !isAuthenticated) {
+      setLocation('/login');
+    }
+  }, [isLoading, isAuthenticated, setLocation]);
+
+  return (
+    <div className="flex h-screen w-full items-center justify-center bg-[#050505]">
+      <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+    </div>
+  );
+}
+
+function HomeRoute() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      setLocation('/app/inbox');
     }
   }, [isLoading, isAuthenticated, setLocation]);
 
@@ -49,69 +68,71 @@ function HomeRedirect() {
 function Router() {
   return (
     <Switch>
+      {/* Public routes */}
+      <Route path="/" component={HomeRoute} />
       <Route path="/login" component={Login} />
-      <Route path="/connections">
+      
+      {/* Authenticated routes under /app */}
+      <Route path="/app/connections">
         {() => (
           <DashboardLayout>
             <Connections />
           </DashboardLayout>
         )}
       </Route>
-      <Route path="/integrations">
+      <Route path="/app/integrations">
         {() => (
           <DashboardLayout>
             <IntegrationsPage />
           </DashboardLayout>
         )}
       </Route>
-      <Route path="/overview">
+      <Route path="/app/overview">
         {() => (
           <DashboardLayout>
             <Overview />
           </DashboardLayout>
         )}
       </Route>
-      <Route path="/settings">
+      <Route path="/app/settings">
         {() => (
           <DashboardLayout>
             <AIAgentConfig />
           </DashboardLayout>
         )}
       </Route>
-      <Route path="/ai-metrics">
+      <Route path="/app/ai-metrics">
         {() => (
           <DashboardLayout>
             <AiMetrics />
           </DashboardLayout>
         )}
       </Route>
-      <Route path="/profile">
+      <Route path="/app/profile">
         {() => (
           <DashboardLayout>
             <ProfileSettings />
           </DashboardLayout>
         )}
       </Route>
-      <Route path="/crm">
+      <Route path="/app/crm">
         {() => (
           <DashboardLayout>
             <CRM />
           </DashboardLayout>
         )}
       </Route>
-      <Route path="/inbox">
+      <Route path="/app/inbox">
         {() => (
           <DashboardLayout>
             <Inbox />
           </DashboardLayout>
         )}
       </Route>
-      <Route path="/landing">
-        {() => <LandingPage />}
+      <Route path="/app">
+        {() => <AppRedirect />}
       </Route>
-      <Route path="/">
-        {() => <HomeRedirect />}
-      </Route>
+      
       <Route component={NotFound} />
     </Switch>
   );

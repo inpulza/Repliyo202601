@@ -64,13 +64,13 @@ export function Sidebar() {
   };
 
   const navItems = [
-    { href: "/overview", icon: BarChart3, label: "Overview" },
-    { href: "/inbox", icon: Inbox, label: "Smart Inbox" },
-    { href: "/crm", icon: Users, label: "CRM" },
-    { href: "/connections", icon: LayoutDashboard, label: "Connections" },
-    { href: "/integrations", icon: Command, label: "Integrations" },
-    { href: "/settings", icon: Settings, label: "Agent Settings" },
-    { href: "/ai-metrics", icon: Bot, label: "IA Metrics" },
+    { href: "/app/overview", icon: BarChart3, label: "Overview" },
+    { href: "/app/inbox", icon: Inbox, label: "Smart Inbox" },
+    { href: "/app/crm", icon: Users, label: "CRM" },
+    { href: "/app/connections", icon: LayoutDashboard, label: "Connections" },
+    { href: "/app/integrations", icon: Command, label: "Integrations" },
+    { href: "/app/settings", icon: Settings, label: "Agent Settings" },
+    { href: "/app/ai-metrics", icon: Bot, label: "IA Metrics" },
   ];
 
   return (
@@ -290,7 +290,7 @@ export function Sidebar() {
               <DropdownMenuSeparator className="bg-gray-100" />
               <DropdownMenuItem 
                 className="gap-2 cursor-pointer focus:bg-gray-50 focus:text-gray-900"
-                onClick={() => setLocation('/profile')}
+                onClick={() => setLocation('/app/profile')}
                 data-testid="button-profile-settings"
               >
                 <span className="text-sm">Profile Settings</span>

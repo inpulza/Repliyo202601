@@ -710,7 +710,7 @@ export const ReminderSettingsForm = forwardRef<ReminderSettingsFormHandle, Remin
                                 variant="outline"
                                 size="sm"
                                 className="text-xs h-7"
-                                onClick={() => setLocation(`/inbox?conversationId=${event.conversationId}`)}
+                                onClick={() => setLocation(`/app/inbox?conversationId=${event.conversationId}`)}
                                 data-testid={`button-open-conversation-${event.id}`}
                               >
                                 <ExternalLink className="h-3 w-3 mr-1" />
