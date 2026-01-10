@@ -6,6 +6,7 @@ interface User {
   name: string;
   role: 'admin' | 'client';
   brandId: string | null;
+  profileImageUrl: string | null;
 }
 
 interface AuthContextType {
@@ -14,6 +15,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   logout: () => Promise<void>;
   refreshAuth: () => Promise<void>;
+  fetchWithAuth: (url: string, options?: RequestInit) => Promise<Response>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -59,6 +61,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await checkAuth();
   };
 
+  const fetchWithAuth = async (url: string, options?: RequestInit): Promise<Response> => {
+    const res = await fetch(url, {
+      ...options,
+      credentials: 'include',
+    });
+    
+    if (res.status === 401) {
+      setUser(null);
+      window.location.href = '/login';
+      throw new Error('Session expired');
+    }
+    
+    return res;
+  };
+
   useEffect(() => {
     checkAuth();
   }, []);
@@ -71,6 +88,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isAuthenticated: !!user,
         logout,
         refreshAuth,
+        fetchWithAuth,
       }}
     >
       {children}

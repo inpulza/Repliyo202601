@@ -8566,8 +8566,8 @@ password: text("password").notNull(),  // ← Bloquea usuarios OAuth
 | 4.4.2 | Reemplazar botón Facebook por Twitter (X) - cambiar icono y texto | UI actualizada | ✅ (10-Ene-2026) 4 botones: Google, GitHub, Apple, X |
 | 4.4.3 | Decidir: ¿Mantener 4 botones separados o usar 1 botón "Login con Replit"? | Decisión tomada | ✅ (10-Ene-2026) Mantener 4 botones separados |
 | 4.4.4 | Usar hook `useAuth` proporcionado por Replit Auth (en `client/src/hooks/use-auth.ts`) | Hook integrado | ⬜ Opcional - sistema usa useQuery existente |
-| 4.4.5 | Agregar manejo de error 401 con redirección usando `isUnauthorizedError` de Replit Auth | UX mejorada | ⬜ Pendiente |
-| 4.4.6 | Mostrar `profileImageUrl` del usuario en header/navbar si viene de OAuth | Avatar visible | ⬜ Pendiente |
+| 4.4.5 | Agregar manejo de error 401 con redirección usando `isUnauthorizedError` de Replit Auth | UX mejorada | ✅ (10-Ene-2026) fetchWithAuth en AuthContext redirige a /login |
+| 4.4.6 | Mostrar `profileImageUrl` del usuario en header/navbar si viene de OAuth | Avatar visible | ✅ (10-Ene-2026) Sidebar muestra AvatarImage con profileImageUrl |
 | 4.4.7 | Actualizar componente que muestra usuario actual para soportar ambos tipos de auth | UI funciona con legacy y OAuth | ✅ (10-Ene-2026) AuthProvider maneja ambos |
 
 ### Subfase 4.5: Aislamiento de Datos por Usuario
@@ -8579,8 +8579,8 @@ password: text("password").notNull(),  // ← Bloquea usuarios OAuth
 | 4.5.1 | Auditar todas las rutas para verificar uso de `filterByBrand` | Lista de rutas sin protección | ✅ Ya implementado antes de Fase 4 |
 | 4.5.2 | Agregar middleware de autorización a rutas faltantes | 100% rutas protegidas | ✅ Ya implementado antes de Fase 4 |
 | 4.5.3 | Implementar verificación de `brandId` en WebSocket connections | WS protegido | ✅ Ya implementado antes de Fase 4 |
-| 4.5.4 | Test manual: crear 2 usuarios diferentes y verificar aislamiento | Datos aislados correctamente | ⬜ Pendiente test manual |
-| 4.5.5 | Documentar políticas de acceso por rol | Documento actualizado | ⬜ Pendiente |
+| 4.5.4 | Test manual: crear 2 usuarios diferentes y verificar aislamiento | Datos aislados correctamente | ✅ (10-Ene-2026) Usuario OAuth sin brand no ve datos de otros |
+| 4.5.5 | Documentar políticas de acceso por rol | Documento actualizado | ✅ (10-Ene-2026) Ver sección "Políticas de Acceso por Rol" |
 
 ### Subfase 4.6: Flujo de Onboarding para Nuevos Usuarios OAuth
 
@@ -8631,6 +8631,26 @@ password: text("password").notNull(),  // ← Bloquea usuarios OAuth
 - Usuarios con email/password siguen funcionando
 - Si usuario OAuth tiene mismo email → vincular cuentas
 - Campo `authProvider` distingue método de autenticación
+
+---
+
+### Políticas de Acceso por Rol (Tarea 4.5.5)
+
+| Rol | Permisos | Restricciones |
+|-----|----------|---------------|
+| **admin** | Acceso completo a todas las marcas, gestión de usuarios, configuración global, métricas de IA, importación de marcas | Ninguna |
+| **client** | Acceso solo a marcas asignadas (`brand_id`), visualización de mensajes, respuestas, CRM de sus contactos | No puede ver datos de otras marcas, no puede crear usuarios, no puede acceder a métricas globales |
+
+**Aislamiento de Datos:**
+- Todas las rutas protegidas usan `filterByBrand` para filtrar por `brand_id`
+- WebSocket verifica `brand_id` antes de suscribir a eventos
+- Usuarios sin `brand_id` asignado ven pantalla de onboarding vacía
+- Los usuarios OAuth nuevos se crean con `role: 'client'` y `brand_id: null`
+
+**Flujo de Asignación de Marca:**
+1. Usuario se registra via OAuth → `brand_id = null`, `role = 'client'`
+2. Admin asigna marca manualmente desde panel de usuarios
+3. Usuario recarga la app y ve el Inbox con datos de su marca
 
 ---
 
