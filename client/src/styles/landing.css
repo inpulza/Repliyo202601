@@ -2439,7 +2439,7 @@
   width: 100%;
   max-width: 600px;
   margin: 24px auto 0;
-  padding: 0 20px;
+  padding: 0 44px;
 }
 
 .how-scroll-progress-bar {
@@ -2465,8 +2465,8 @@
 .how-scroll-checkmarks {
   position: absolute;
   top: 50%;
-  left: 20px;
-  right: 20px;
+  left: 32px;
+  right: 32px;
   transform: translateY(-50%);
   display: flex;
   justify-content: space-between;
@@ -2478,7 +2478,7 @@
   height: 24px;
   border-radius: 50%;
   background: #d1d5db;
-  border: 2px solid #9ca3af;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2488,7 +2488,7 @@
 
 .how-scroll-checkpoint.completed {
   background: var(--landing-primary);
-  border-color: var(--landing-primary);
+  border: none;
   box-shadow: 0 0 16px rgba(2, 145, 250, 0.5);
   transform: scale(1);
   opacity: 1;
@@ -2514,12 +2514,12 @@
 
 .landing-page:not(.theme-light) .how-scroll-checkpoint {
   background: #374151;
-  border-color: #4b5563;
+  border: none;
 }
 
 .landing-page:not(.theme-light) .how-scroll-checkpoint.completed {
   background: var(--landing-primary);
-  border-color: var(--landing-primary);
+  border: none;
 }
 
 .landing-page.theme-light .how-step-mockup {
