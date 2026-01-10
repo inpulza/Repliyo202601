@@ -28,6 +28,34 @@
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* GPU Acceleration Hints for Smooth Animations */
+.landing-page [class*="motion"],
+.landing-page .orbit-ring-container,
+.landing-page .orbit-icon-static,
+.landing-page .floating-msg,
+.landing-page .floating-analyzing,
+.landing-page .radar-ring-css,
+.landing-page .parallax-wrapper,
+.landing-page .hero-content,
+.landing-page .feature-card,
+.landing-page .testimonial-card,
+.landing-page .step-mockup {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.landing-page .orbit-ring-container,
+.landing-page .floating-msg,
+.landing-page .hero-content {
+  will-change: transform, opacity;
+}
+
+/* Contain layout for better paint performance */
+.landing-page section {
+  contain: layout style;
+}
+
 .landing-page.theme-light {
   --landing-bg: #F3F4F6;
   --landing-bg-dark: #F3F4F6;

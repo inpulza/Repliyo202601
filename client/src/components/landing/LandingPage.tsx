@@ -3,10 +3,10 @@ import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring
 import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart } from 'lucide-react';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
-import avatarMaria from '../../assets/avatars/latina_woman_avatar_headshot.png';
-import avatarCarlos from '../../assets/avatars/hispanic_man_avatar_headshot.png';
-import avatarAna from '../../assets/avatars/european_woman_avatar_headshot.png';
-import testimonialBettys from '../../assets/testimonial-bettys.jpg';
+import avatarMaria from '../../assets/avatars/latina_woman_avatar_headshot.webp';
+import avatarCarlos from '../../assets/avatars/hispanic_man_avatar_headshot.webp';
+import avatarAna from '../../assets/avatars/european_woman_avatar_headshot.webp';
+import testimonialBettys from '../../assets/testimonial-bettys.webp';
 import { ParallaxProvider, useParallax, Parallax } from 'react-scroll-parallax';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
