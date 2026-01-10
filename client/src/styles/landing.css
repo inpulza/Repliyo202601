@@ -2264,7 +2264,16 @@
 }
 
 .landing-page.theme-light .how-step-number {
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Ensure all text in how-steps is white for the dark background */
+.landing-page.theme-light .how-steps-wrapper .how-step-info h3 {
+  color: white !important;
+}
+
+.landing-page.theme-light .how-steps-wrapper .how-step-info p {
+  color: rgba(255, 255, 255, 0.85) !important;
 }
 
 .how-step-mockup {
