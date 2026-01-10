@@ -19,6 +19,13 @@ import icon3dInbox from '@assets/generated_images/modern_flat_inbox_icon.png';
 import icon3dSparkles from '@assets/generated_images/modern_flat_sparkles_icon.png';
 import icon3dBell from '@assets/generated_images/modern_flat_bell_icon.png';
 import icon3dUsers from '@assets/generated_images/modern_flat_users_group_icon.png';
+import featureIconInbox from '@assets/generated_images/modern_flat_unified_inbox_icon.png';
+import featureIconMultiAgent from '@assets/generated_images/modern_flat_multi-agent_team_icon.png';
+import featureIconAI from '@assets/generated_images/modern_flat_ai_sparkles_icon.png';
+import featureIconCRM from '@assets/generated_images/modern_flat_crm_contact_icon.png';
+import featureIconReminder from '@assets/generated_images/modern_flat_reminder_bell_icon.png';
+import featureIconComments from '@assets/generated_images/modern_flat_comments_icon.png';
+import featureIconAnalytics from '@assets/generated_images/modern_flat_analytics_chart_icon.png';
 import testimonialBettys from '../../assets/testimonial-bettys.jpg';
 import { ParallaxProvider, useParallax, Parallax } from 'react-scroll-parallax';
 import gsap from 'gsap';
@@ -1610,49 +1617,49 @@ function FeaturesSection() {
 
   const features = [
     { 
-      icon: Inbox, 
+      iconImage: featureIconInbox, 
       title: 'Inbox unificado', 
       description: 'Todas tus conversaciones de Instagram, TikTok y Facebook en un solo lugar.',
       size: 'medium',
       mockup: <FeatureInboxMockup />
     },
     { 
-      icon: Users2, 
+      iconImage: featureIconMultiAgent, 
       title: 'Multi-agente', 
       description: 'Varios miembros del equipo colaborando en tiempo real.',
       size: 'medium',
       mockup: <FeatureMultiAgentMockup />
     },
     { 
-      icon: Sparkles, 
+      iconImage: featureIconAI, 
       title: 'Respuestas IA', 
       description: 'Borradores que capturan tu tono de voz único.',
       size: 'small',
       mockup: <FeatureAIMockup />
     },
     { 
-      icon: Users, 
+      iconImage: featureIconCRM, 
       title: 'CRM integrado', 
       description: 'Perfil completo de cada contacto con historial.',
       size: 'small',
       mockup: <FeatureCRMMockup />
     },
     { 
-      icon: Bell, 
+      iconImage: featureIconReminder, 
       title: 'Recordatorios', 
       description: 'Seguimiento automático para leads inactivos.',
       size: 'medium',
       mockup: <FeatureReminderMockup />
     },
     { 
-      icon: MessageSquare, 
+      iconImage: featureIconComments, 
       title: 'Comentarios', 
       description: 'Gestiona comentarios de posts desde el inbox.',
       size: 'medium',
       mockup: <FeatureCommentsMockup />
     },
     { 
-      icon: BarChart2, 
+      iconImage: featureIconAnalytics, 
       title: 'Analytics', 
       description: 'Métricas de rendimiento y tiempo de respuesta.',
       size: 'medium',
@@ -1687,15 +1694,14 @@ function FeaturesSection() {
 
         <div className="bento-grid">
           {features.map((feature, i) => {
-            const Icon = feature.icon;
             return (
               <div
                 key={feature.title}
                 className={`feature-card bento-${feature.size}`}
               >
                 <div className="feature-card-inner">
-                  <div className="feature-icon-wrapper">
-                    <Icon className="w-7 h-7 text-[var(--landing-primary)]" />
+                  <div className="feature-icon-wrapper overflow-hidden">
+                    <img src={feature.iconImage} alt="" className="w-10 h-10 object-contain" />
                   </div>
                   <h3 className="font-display text-xl font-bold text-white mt-4 mb-2">{feature.title}</h3>
                   <p className="text-white/50 text-sm leading-relaxed">{feature.description}</p>
