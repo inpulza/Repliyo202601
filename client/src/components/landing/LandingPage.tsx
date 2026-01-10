@@ -562,7 +562,6 @@ function FeatureMultiAgentMockup() {
   const recentAssignments = [
     { customer: 'Pedro M.', platform: 'instagram', agent: 'Ana', time: 'Ahora' },
     { customer: 'Laura G.', platform: 'tiktok', agent: 'Luis', time: '1m' },
-    { customer: 'Diego R.', platform: 'facebook', agent: 'Sara', time: '3m' },
   ];
   
   useEffect(() => {
@@ -651,7 +650,7 @@ function FeatureMultiAgentMockup() {
       </div>
 
       <div className="multiagent-stats">
-        {agents.slice(0, 3).map((agent, idx) => (
+        {agents.slice(0, 4).map((agent, idx) => (
           <motion.div 
             key={idx} 
             className="agent-stat"
@@ -665,21 +664,6 @@ function FeatureMultiAgentMockup() {
             <span className="agent-stat-count">{agent.conversations}</span>
           </motion.div>
         ))}
-      </div>
-
-      <div className="multiagent-metrics">
-        <div className="metric-item">
-          <span className="metric-value">51</span>
-          <span className="metric-label">Total hoy</span>
-        </div>
-        <div className="metric-item">
-          <span className="metric-value success">2.3m</span>
-          <span className="metric-label">Tiempo resp.</span>
-        </div>
-        <div className="metric-item">
-          <span className="metric-value">98%</span>
-          <span className="metric-label">Satisfacción</span>
-        </div>
       </div>
     </div>
   );
