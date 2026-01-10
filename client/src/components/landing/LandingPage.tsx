@@ -1572,6 +1572,7 @@ function MetricSection() {
 function HowItWorksSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dialTrackRef = useRef<HTMLSpanElement>(null);
   const prefersReducedMotion = useReducedMotion();
   const [activeStep, setActiveStep] = useState(0);
 
@@ -1580,6 +1581,7 @@ function HowItWorksSection() {
     
     const ctx = gsap.context(() => {
       const stepPanels = gsap.utils.toArray('.how-step-panel') as HTMLElement[];
+      const dialTrack = dialTrackRef.current;
       const totalSteps = stepPanels.length;
       const scrollPerStep = window.innerHeight * 1.8;
       const holdAtEnd = window.innerHeight * 1.2;
@@ -1598,6 +1600,15 @@ function HowItWorksSection() {
             const adjustedProgress = progress * (totalSteps * scrollPerStep) / (totalSteps * scrollPerStep + holdAtEnd);
             const stepIndex = Math.min(Math.floor(adjustedProgress * totalSteps / (totalSteps - 0.5)), totalSteps - 1);
             setActiveStep(stepIndex);
+            
+            // Animate dial directly with GSAP
+            if (dialTrack) {
+              gsap.to(dialTrack, {
+                yPercent: -stepIndex * 100,
+                duration: 0.3,
+                ease: 'power2.out'
+              });
+            }
           }
         }
       });
@@ -1731,8 +1742,8 @@ function HowItWorksSection() {
             <span className="how-header-dial-wrapper">
               <span className="how-header-dial-viewport">
                 <span 
+                  ref={dialTrackRef}
                   className="how-header-dial-track"
-                  style={{ transform: `translateY(${-activeStep * 100}%)` }}
                 >
                   <span className="how-header-dial-item">1 paso</span>
                   <span className="how-header-dial-item">2 pasos</span>
