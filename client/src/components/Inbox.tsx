@@ -1729,12 +1729,8 @@ export function Inbox() {
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem onClick={() => setIsCRMOpen(!isCRMOpen)}>
-                            {isCRMOpen ? "Hide CRM Panel" : "Show CRM Panel"}
-                        </DropdownMenuItem>
                         {activeConversation.type === 'dm' && (
                           <>
-                            <DropdownMenuSeparator />
                             <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
                                 Change Status
                             </DropdownMenuLabel>
