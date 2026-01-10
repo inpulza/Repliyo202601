@@ -2276,6 +2276,62 @@
   background: var(--landing-bg-light);
 }
 
+/* Step Number Dial - Outside the card container */
+.how-step-dial {
+  position: absolute;
+  left: 40px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  transform-style: preserve-3d;
+}
+
+.dial-number {
+  font-family: var(--font-display);
+  font-size: 5rem;
+  font-weight: 800;
+  color: var(--landing-primary);
+  text-shadow: 0 0 40px rgba(2, 145, 250, 0.4);
+  position: absolute;
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
+  line-height: 1;
+}
+
+.landing-page.theme-light .dial-number {
+  color: var(--landing-primary);
+  text-shadow: 0 4px 20px rgba(2, 145, 250, 0.3);
+}
+
+@media (max-width: 1200px) {
+  .how-step-dial {
+    left: 20px;
+  }
+  
+  .dial-number {
+    font-size: 4rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .how-step-dial {
+    position: relative;
+    left: auto;
+    top: auto;
+    transform: none;
+    margin-bottom: 20px;
+    height: 60px;
+  }
+  
+  .dial-number {
+    font-size: 3rem;
+  }
+}
+
 .how-header {
   text-align: center;
   margin-bottom: 40px;

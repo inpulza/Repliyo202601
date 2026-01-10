@@ -1740,6 +1740,31 @@ function HowItWorksSection() {
           </div>
         </div>
 
+        {/* Step Number Dial - Outside the card */}
+        <div className="how-step-dial" style={{ perspective: '800px' }}>
+          {steps.map((step, i) => {
+            const offset = i - activeStep;
+            return (
+              <motion.div
+                key={step.number}
+                className="dial-number"
+                initial={false}
+                animate={{
+                  y: offset * 80,
+                  rotateX: offset * -25,
+                  z: offset === 0 ? 0 : -100,
+                  opacity: offset === 0 ? 1 : offset === 1 ? 0.3 : offset === -1 ? 0.15 : 0,
+                  scale: offset === 0 ? 1 : 0.7,
+                  filter: offset === 0 ? 'blur(0px)' : 'blur(2px)'
+                }}
+                transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+              >
+                {step.number}
+              </motion.div>
+            );
+          })}
+        </div>
+
         <div className="how-steps-wrapper" style={{ 
           backgroundImage: `url(${stepsBgLight})`,
           backgroundSize: 'cover',
@@ -1752,8 +1777,7 @@ function HowItWorksSection() {
             >
               <div className="how-step-content">
                 <div className="how-step-info">
-                  <span className="how-step-number">{step.number}</span>
-                  <h3 className="font-display text-3xl md:text-4xl font-bold text-white mt-4 mb-4">
+                  <h3 className="font-display text-3xl md:text-4xl font-bold text-white mb-4">
                     {step.title}
                   </h3>
                   <p className="text-white text-lg md:text-xl leading-relaxed max-w-md">
