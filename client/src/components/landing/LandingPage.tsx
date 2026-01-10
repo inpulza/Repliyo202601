@@ -30,6 +30,9 @@ import timelineSendIcon from '@assets/generated_images/square_purple_send_icon.p
 import timelineCheckIcon from '@assets/generated_images/square_green_check_icon.png';
 import timelineBellIcon from '@assets/generated_images/square_orange_bell_icon.png';
 import timelineChatIcon from '@assets/generated_images/square_blue_chat_icon.png';
+import stepsBgPurple from '@assets/generated_images/purple_gradient_grain_background.png';
+import stepsBgBlue from '@assets/generated_images/blue_gradient_grain_background.png';
+import stepsBgGreen from '@assets/generated_images/green_gradient_grain_background.png';
 import testimonialBettys from '../../assets/testimonial-bettys.jpg';
 import { ParallaxProvider, useParallax, Parallax } from 'react-scroll-parallax';
 import gsap from 'gsap';
@@ -1558,7 +1561,11 @@ function HowItWorksSection() {
           </div>
         </div>
 
-        <div className="how-steps-wrapper">
+        <div className="how-steps-wrapper" style={{ 
+          backgroundImage: `url(${stepsBgPurple})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}>
           {steps.map((step, i) => (
             <div 
               key={step.number} 
