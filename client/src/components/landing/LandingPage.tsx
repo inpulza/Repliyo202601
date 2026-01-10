@@ -1562,7 +1562,7 @@ function HowItWorksSection() {
         </div>
 
         <div className="how-steps-wrapper" style={{ 
-          backgroundImage: `url(${stepsBgPurple})`,
+          backgroundImage: `url(${stepsBgBlue})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center'
         }}>
@@ -1577,7 +1577,7 @@ function HowItWorksSection() {
                   <h3 className="font-display text-3xl md:text-4xl font-bold text-white mt-4 mb-4">
                     {step.title}
                   </h3>
-                  <p className="text-white/60 text-lg md:text-xl leading-relaxed max-w-md">
+                  <p className="text-white text-lg md:text-xl leading-relaxed max-w-md">
                     {step.description}
                   </p>
                 </div>
