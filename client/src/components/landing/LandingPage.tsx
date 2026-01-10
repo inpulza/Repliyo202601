@@ -34,7 +34,7 @@ import stepsBgPurple from '@assets/generated_images/purple_gradient_grain_backgr
 import stepsBgBlue from '@assets/generated_images/blue_gradient_grain_background.png';
 import stepsBgGreen from '@assets/generated_images/green_gradient_grain_background.png';
 import stepsBgVibrant from '@assets/generated_images/vibrant_blue_violet_gradient.png';
-import stepsBgLight from '@assets/generated_images/light_blue_cyan_gradient.png';
+import stepsBgLight from '@assets/generated_images/teal_cyan_bottom_to_top_gradient.png';
 import testimonialBettys from '../../assets/testimonial-bettys.jpg';
 import { ParallaxProvider, useParallax, Parallax } from 'react-scroll-parallax';
 import gsap from 'gsap';
