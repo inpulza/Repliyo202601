@@ -208,23 +208,23 @@ function Slide2_AutomateResponses() {
             </div>
             <div className="flex justify-end">
               <div className="bg-gradient-to-r from-indigo-500 to-violet-500 rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-                  </svg>
-                  <span className="text-xs text-white font-medium">Respuesta IA</span>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                    </svg>
+                    <span className="text-xs text-white font-medium">Respuesta IA</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-300 animate-pulse" />
+                    <span className="text-[10px] text-indigo-200">2s</span>
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <div className="h-2 bg-white/30 rounded w-full" />
                   <div className="h-2 bg-white/30 rounded w-4/5" />
                   <div className="h-2 bg-white/30 rounded w-2/3" />
                 </div>
-              </div>
-            </div>
-            <div className="flex items-center justify-center">
-              <div className="flex items-center gap-2 bg-green-50 px-3 py-1.5 rounded-full">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-xs text-green-600 font-medium">Respondido en 2s</span>
               </div>
             </div>
           </div>
