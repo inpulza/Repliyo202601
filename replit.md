@@ -55,6 +55,7 @@ The user interface includes an "Orchestration" tab for managing timing configura
 ### URL Structure (Updated 10-Jan-2026)
 - **`/`** - Public landing page (Repliyo.com). Authenticated users auto-redirect to `/app/inbox`.
 - **`/login`** - Login page with email/password and OAuth (Google, GitHub, Apple, Twitter via Replit Auth).
+- **`/register`** - Public registration page with email verification (OTP).
 - **`/app/*`** - All authenticated dashboard routes:
   - `/app/inbox` - Smart Inbox (main view)
   - `/app/overview` - Dashboard overview
@@ -68,9 +69,17 @@ The user interface includes an "Orchestration" tab for managing timing configura
 ### Authentication System (Updated 10-Jan-2026)
 - **Hybrid Auth:** Supports both email/password (legacy) and OAuth via Replit Auth.
 - **OAuth Providers:** Google, GitHub, Apple, Twitter (X) - all through Replit's OIDC.
-- **User Fields:** `replitId`, `profileImageUrl`, `authProvider` added to users table.
+- **User Fields:** `replitId`, `profileImageUrl`, `authProvider`, `status`, `emailVerifiedAt` added to users table.
 - **Session Management:** Single session store (`server/sessionStore.ts`) shared by both auth methods.
 - **New OAuth Users:** Created with `role: 'client'` and `brand_id: null`; admin assigns brand manually.
+- **Email Registration Flow (10-Jan-2026):**
+  - New users register at `/register` with name, email, and password
+  - User created with `status: 'pending'` and 6-digit OTP sent via Resend
+  - OTP stored as SHA256 hash in `verification_codes` table with 10-minute expiry
+  - Security: max 5 verification attempts, 1-minute resend cooldown, 5 resends/day
+  - After verification: `status` → 'active', `emailVerifiedAt` set, session created, redirect to `/app/inbox`
+  - Login blocked for `status: 'pending'` users until email verified
+  - Endpoints: `POST /api/auth/public-register`, `/api/auth/verify-email`, `/api/auth/resend-code`
 
 ### System Design Choices
 - **Multi-Tenant Architecture:** Data isolation per brand using `brandId`.
