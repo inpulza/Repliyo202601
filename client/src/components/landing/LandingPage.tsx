@@ -1303,7 +1303,7 @@ function ProblemSolutionSection() {
                       <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
                         <img src={problem.image} alt="" className="w-full h-full object-cover" />
                       </div>
-                      <p className="font-display text-xl md:text-2xl font-semibold text-gray-800 leading-snug">{problem.text}</p>
+                      <p className="font-display text-xl md:text-2xl font-semibold text-red-500 leading-snug">{problem.text}</p>
                     </div>
                   );
                 })}
@@ -1327,7 +1327,7 @@ function ProblemSolutionSection() {
                       <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
                         <img src={solution.image} alt="" className="w-full h-full object-cover" />
                       </div>
-                      <p className="font-display text-xl md:text-2xl font-semibold text-gray-800 leading-snug">{solution.text}</p>
+                      <p className="font-display text-xl md:text-2xl font-semibold text-green-500 leading-snug">{solution.text}</p>
                     </div>
                   );
                 })}
