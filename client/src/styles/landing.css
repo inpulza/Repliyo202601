@@ -4667,7 +4667,7 @@
     0 25px 50px -12px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   overflow: visible;
-  margin-top: 24px;
+  margin-top: 48px;
 }
 
 .mockup-phone-grid {
@@ -4817,7 +4817,7 @@
     0 0 40px -10px rgba(2, 145, 250, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   overflow: visible;
-  margin-top: 24px;
+  margin-top: 48px;
 }
 
 .unified-inbox-preview {
@@ -5054,11 +5054,12 @@
 
 .success-indicators {
   position: absolute;
-  bottom: -20px;
-  right: -16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  inset: 0;
+  pointer-events: none;
+}
+
+.success-indicators .indicator {
+  position: absolute;
 }
 
 .indicator {
@@ -5081,22 +5082,32 @@
 }
 
 .indicator.i1 {
+  top: -12%;
+  right: -10%;
   animation: slide-in-indicator 0.5s ease-out 0.3s both;
 }
 
 .indicator.i2 {
+  top: 15%;
+  left: -18%;
   animation: slide-in-indicator 0.5s ease-out 0.5s both;
 }
 
 .indicator.i3 {
+  top: 45%;
+  right: -15%;
   animation: slide-in-indicator 0.5s ease-out 0.7s both;
 }
 
 .indicator.i4 {
+  bottom: 25%;
+  left: -12%;
   animation: slide-in-indicator 0.5s ease-out 0.9s both;
 }
 
 .indicator.i5 {
+  bottom: -8%;
+  right: -8%;
   animation: slide-in-indicator 0.5s ease-out 1.1s both;
 }
 
