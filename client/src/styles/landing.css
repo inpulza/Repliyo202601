@@ -3980,6 +3980,14 @@
   background: #1877F2;
 }
 
+/* Force ALL platform badge icons to be white in light theme */
+.landing-page.theme-light .inbox-platform-badge.instagram svg,
+.landing-page.theme-light .inbox-platform-badge.tiktok svg,
+.landing-page.theme-light .inbox-platform-badge.facebook svg {
+  color: white !important;
+  fill: white !important;
+}
+
 .landing-page.theme-light .platform-indicator.tiktok {
   background: #1a1a2e;
 }
