@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring } from 'framer-motion';
-import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart } from 'lucide-react';
+import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle } from 'lucide-react';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
 import avatarMaria from '@assets/generated_images/maria_customer_avatar_headshot.png';
@@ -1236,120 +1236,225 @@ function MarqueeSection() {
   );
 }
 
+function ProblemMockup() {
+  return (
+    <div className="problem-mockup-card">
+      <div className="mockup-phone-grid">
+        <div className="chaos-phone instagram">
+          <div className="phone-header">
+            <div className="phone-notch" />
+          </div>
+          <div className="phone-app-bar">
+            <Instagram className="w-4 h-4" />
+            <span>Instagram</span>
+            <div className="notification-badge">23</div>
+          </div>
+          <div className="phone-messages">
+            <div className="unread-msg" />
+            <div className="unread-msg" />
+            <div className="unread-msg" />
+            <div className="unread-msg faded" />
+          </div>
+        </div>
+        
+        <div className="chaos-phone tiktok">
+          <div className="phone-header">
+            <div className="phone-notch" />
+          </div>
+          <div className="phone-app-bar">
+            <Music className="w-4 h-4" />
+            <span>TikTok</span>
+            <div className="notification-badge">47</div>
+          </div>
+          <div className="phone-messages">
+            <div className="unread-msg" />
+            <div className="unread-msg" />
+            <div className="unread-msg faded" />
+          </div>
+        </div>
+        
+        <div className="chaos-phone facebook">
+          <div className="phone-header">
+            <div className="phone-notch" />
+          </div>
+          <div className="phone-app-bar">
+            <Facebook className="w-4 h-4" />
+            <span>Facebook</span>
+            <div className="notification-badge">12</div>
+          </div>
+          <div className="phone-messages">
+            <div className="unread-msg" />
+            <div className="unread-msg faded" />
+          </div>
+        </div>
+      </div>
+      
+      <div className="chaos-overlay">
+        <div className="floating-notification n1">
+          <Bell className="w-3 h-3" />
+          <span>+15 mensajes sin leer</span>
+        </div>
+        <div className="floating-notification n2">
+          <Clock className="w-3 h-3" />
+          <span>Lead esperando 4h</span>
+        </div>
+        <div className="floating-notification n3">
+          <AlertCircle className="w-3 h-3" />
+          <span>Cliente frustrado</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SolutionMockup() {
+  return (
+    <div className="solution-mockup-card">
+      <div className="unified-inbox-preview">
+        <div className="inbox-sidebar">
+          <div className="sidebar-item active">
+            <MessageSquare className="w-4 h-4" />
+            <span>Inbox</span>
+            <div className="count-badge">0</div>
+          </div>
+          <div className="sidebar-item">
+            <Users className="w-4 h-4" />
+            <span>CRM</span>
+          </div>
+          <div className="sidebar-item">
+            <Bell className="w-4 h-4" />
+            <span>Recordatorios</span>
+          </div>
+        </div>
+        
+        <div className="inbox-main">
+          <div className="inbox-header-bar">
+            <div className="platform-tabs">
+              <span className="tab active">Todos</span>
+              <span className="tab"><Instagram className="w-3 h-3" /></span>
+              <span className="tab"><Music className="w-3 h-3" /></span>
+              <span className="tab"><Facebook className="w-3 h-3" /></span>
+            </div>
+          </div>
+          
+          <div className="conversation-list-mini">
+            <div className="conv-item answered">
+              <div className="conv-avatar" />
+              <div className="conv-content">
+                <div className="conv-name" />
+                <div className="conv-preview" />
+              </div>
+              <div className="conv-status">
+                <Check className="w-3 h-3 text-[var(--landing-primary)]" />
+              </div>
+            </div>
+            <div className="conv-item answered">
+              <div className="conv-avatar" />
+              <div className="conv-content">
+                <div className="conv-name" />
+                <div className="conv-preview" />
+              </div>
+              <div className="conv-status">
+                <Check className="w-3 h-3 text-[var(--landing-primary)]" />
+              </div>
+            </div>
+            <div className="conv-item ai-draft">
+              <div className="conv-avatar" />
+              <div className="conv-content">
+                <div className="conv-name" />
+                <div className="conv-preview" />
+              </div>
+              <div className="conv-status">
+                <Sparkles className="w-3 h-3 text-[var(--landing-primary)]" />
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="inbox-detail">
+          <div className="detail-header">
+            <div className="customer-info">
+              <div className="customer-avatar" />
+              <div className="customer-meta">
+                <div className="customer-name" />
+                <div className="customer-platform">
+                  <Instagram className="w-3 h-3" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="ai-response-preview">
+            <div className="ai-badge">
+              <Sparkles className="w-3 h-3" />
+              <span>IA</span>
+            </div>
+            <div className="response-lines">
+              <div className="line" />
+              <div className="line short" />
+            </div>
+            <button className="send-btn">
+              <Send className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div className="success-indicators">
+        <div className="indicator i1">
+          <Check className="w-3 h-3" />
+          <span>Respuesta en 2 min</span>
+        </div>
+        <div className="indicator i2">
+          <Zap className="w-3 h-3" />
+          <span>IA lista</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ProblemSolutionSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
-
-  useGSAP(() => {
-    if (prefersReducedMotion) return;
-    
-    const ctx = gsap.context(() => {
-      const problems = gsap.utils.toArray('.problem-item');
-      const solutions = gsap.utils.toArray('.solution-item');
-      
-      problems.forEach((item) => {
-        gsap.fromTo(item as Element, 
-          { opacity: 0, x: -80, rotateY: -15 },
-          {
-            opacity: 1, x: 0, rotateY: 0,
-            duration: 0.8,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: item as Element,
-              start: 'top 85%',
-              end: 'top 50%',
-              scrub: 1
-            }
-          }
-        );
-      });
-      
-      solutions.forEach((item) => {
-        gsap.fromTo(item as Element, 
-          { opacity: 0, x: 80, rotateY: 15 },
-          {
-            opacity: 1, x: 0, rotateY: 0,
-            duration: 0.8,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: item as Element,
-              start: 'top 85%',
-              end: 'top 50%',
-              scrub: 1
-            }
-          }
-        );
-      });
-    }, sectionRef);
-    
-    return () => ctx.revert();
-  }, { scope: sectionRef });
-
-  const problems = [
-    { image: icon3dClock, text: 'Saltar entre Instagram, TikTok y Facebook todo el día' },
-    { image: icon3dX, text: 'Olvidar responder mensajes de clientes potenciales' },
-    { image: icon3dMessage, text: 'Copiar y pegar las mismas respuestas una y otra vez' },
-    { image: icon3dLightning, text: 'Perder ventas porque los leads se enfrían sin seguimiento' }
-  ];
-
-  const solutions = [
-    { image: icon3dInbox, text: 'Todos tus mensajes en una sola pantalla' },
-    { image: icon3dSparkles, text: 'La IA genera respuestas personalizadas en segundos' },
-    { image: icon3dBell, text: 'Recordatorios automáticos para leads sin respuesta' },
-    { image: icon3dUsers, text: 'CRM integrado para conocer a cada cliente' }
-  ];
+  const { scrollYProgress } = useScroll({ 
+    target: sectionRef, 
+    offset: ['start end', 'end start'] 
+  });
+  
+  const problemY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [100, -50]);
+  const solutionY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [150, -30]);
+  const problemOpacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0.5]);
+  const solutionOpacity = useTransform(scrollYProgress, [0, 0.25, 0.8, 1], [0, 1, 1, 0.5]);
 
   return (
-    <section ref={sectionRef} className="py-32 relative overflow-hidden">
+    <section ref={sectionRef} className="py-32 md:py-48 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="grid md:grid-cols-2 gap-20 md:gap-32">
-          <div className="space-y-8">
-            <div className="sticky top-32">
-              <span className="text-xs uppercase tracking-[0.3em] text-red-500 font-semibold mb-4 block">
-                El problema
-              </span>
-              <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-12 leading-tight">
-                Responder mensajes en 5 apps es <span className="text-red-500">agotador</span>
-              </h2>
-              
-              <div className="space-y-8">
-                {problems.map((problem, i) => {
-                  return (
-                    <div key={i} className="problem-item flex items-start gap-5 p-6 rounded-2xl bg-white">
-                      <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
-                        <img src={problem.image} alt="" className="w-full h-full object-cover" />
-                      </div>
-                      <p className="font-display text-xl md:text-2xl font-semibold text-red-500 leading-snug">{problem.text}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+        <div className="grid md:grid-cols-2 gap-12 md:gap-20 items-start">
+          <motion.div 
+            style={{ y: problemY, opacity: problemOpacity }}
+            className="problem-side"
+          >
+            <span className="text-xs uppercase tracking-[0.3em] text-white/40 font-semibold mb-4 block">
+              El problema
+            </span>
+            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-8 leading-tight">
+              Responder mensajes en 5 apps es <span className="text-white/50">agotador</span>
+            </h2>
+            <ProblemMockup />
+          </motion.div>
 
-          <div className="space-y-8">
-            <div className="sticky top-32">
-              <span className="text-xs uppercase tracking-[0.3em] text-green-500 font-semibold mb-4 block">
-                La solución
-              </span>
-              <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-12 leading-tight">
-                Un inbox inteligente que <span className="text-green-500">trabaja por ti</span>
-              </h2>
-              
-              <div className="space-y-8">
-                {solutions.map((solution, i) => {
-                  return (
-                    <div key={i} className="solution-item flex items-start gap-5 p-6 rounded-2xl bg-white">
-                      <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
-                        <img src={solution.image} alt="" className="w-full h-full object-cover" />
-                      </div>
-                      <p className="font-display text-xl md:text-2xl font-semibold text-green-500 leading-snug">{solution.text}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+          <motion.div 
+            style={{ y: solutionY, opacity: solutionOpacity }}
+            className="solution-side"
+          >
+            <span className="text-xs uppercase tracking-[0.3em] text-[var(--landing-primary)] font-semibold mb-4 block">
+              La solución
+            </span>
+            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-8 leading-tight">
+              Un inbox inteligente que <span className="text-white/60">trabaja por ti</span>
+            </h2>
+            <SolutionMockup />
+          </motion.div>
         </div>
       </div>
     </section>

@@ -4646,3 +4646,582 @@
 .landing-page.theme-light .tiktok-icon-adaptive {
   color: #1a1a2e;
 }
+
+/* ============================================
+   Problem/Solution Section Mockups
+   ============================================ */
+
+.problem-side,
+.solution-side {
+  will-change: transform, opacity;
+}
+
+/* Problem Mockup Card */
+.problem-mockup-card {
+  position: relative;
+  background: linear-gradient(145deg, rgba(30, 30, 35, 0.95) 0%, rgba(20, 20, 25, 0.98) 100%);
+  border-radius: 24px;
+  padding: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.mockup-phone-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.chaos-phone {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  min-height: 180px;
+}
+
+.phone-header {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0 8px;
+}
+
+.phone-notch {
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.phone-app-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.chaos-phone.instagram .phone-app-bar {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.chaos-phone.tiktok .phone-app-bar {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.chaos-phone.facebook .phone-app-bar {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.notification-badge {
+  margin-left: auto;
+  background: rgba(255, 255, 255, 0.3);
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 10px;
+  animation: pulse-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.phone-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px;
+}
+
+.unread-msg {
+  height: 24px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border-radius: 6px;
+  border-left: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+.unread-msg.faded {
+  opacity: 0.4;
+}
+
+.chaos-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.floating-notification {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.75);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 10px;
+  font-weight: 500;
+  border-radius: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  animation: float-notification 3s ease-in-out infinite;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.floating-notification svg {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.floating-notification.n1 {
+  top: 15%;
+  right: 10%;
+  animation-delay: 0s;
+}
+
+.floating-notification.n2 {
+  top: 45%;
+  left: 5%;
+  animation-delay: 1s;
+}
+
+.floating-notification.n3 {
+  bottom: 20%;
+  right: 15%;
+  animation-delay: 2s;
+}
+
+@keyframes float-notification {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+/* Solution Mockup Card */
+.solution-mockup-card {
+  position: relative;
+  background: linear-gradient(145deg, rgba(30, 35, 45, 0.95) 0%, rgba(20, 25, 35, 0.98) 100%);
+  border-radius: 24px;
+  padding: 20px;
+  border: 1px solid rgba(2, 145, 250, 0.15);
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    0 0 40px -10px rgba(2, 145, 250, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.unified-inbox-preview {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr;
+  gap: 12px;
+  min-height: 220px;
+}
+
+.inbox-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+}
+
+.sidebar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 9px;
+  transition: all 0.2s;
+}
+
+.sidebar-item.active {
+  background: rgba(2, 145, 250, 0.15);
+  color: var(--landing-primary);
+}
+
+.count-badge {
+  background: var(--landing-primary);
+  color: white;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 8px;
+}
+
+.inbox-main {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.inbox-header-bar {
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 8px;
+}
+
+.platform-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.platform-tabs .tab {
+  padding: 4px 8px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.platform-tabs .tab.active {
+  background: rgba(2, 145, 250, 0.2);
+  color: var(--landing-primary);
+}
+
+.conversation-list-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.conv-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border-left: 2px solid transparent;
+}
+
+.conv-item.answered {
+  border-left-color: var(--landing-primary);
+}
+
+.conv-item.ai-draft {
+  border-left-color: var(--landing-primary);
+  background: rgba(2, 145, 250, 0.08);
+}
+
+.conv-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+}
+
+.conv-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.conv-name {
+  width: 60%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.conv-preview {
+  width: 80%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+}
+
+.conv-status {
+  opacity: 0.8;
+}
+
+.inbox-detail {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-header {
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 10px;
+}
+
+.customer-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.customer-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+}
+
+.customer-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.customer-name {
+  width: 70px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+}
+
+.customer-platform {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.ai-response-preview {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(2, 145, 250, 0.08);
+  border-radius: 10px;
+  border: 1px solid rgba(2, 145, 250, 0.15);
+}
+
+.ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: rgba(2, 145, 250, 0.2);
+  color: var(--landing-primary);
+  font-size: 9px;
+  font-weight: 600;
+  border-radius: 12px;
+  width: fit-content;
+}
+
+.response-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+}
+
+.response-lines .line {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+}
+
+.response-lines .line.short {
+  width: 60%;
+}
+
+.send-btn {
+  align-self: flex-end;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--landing-primary);
+  border-radius: 50%;
+  color: white;
+  box-shadow: 0 4px 15px rgba(2, 145, 250, 0.4);
+}
+
+.success-indicators {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: rgba(2, 145, 250, 0.9);
+  color: white;
+  font-size: 9px;
+  font-weight: 500;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(2, 145, 250, 0.3);
+}
+
+.indicator svg {
+  color: white;
+}
+
+.indicator.i1 {
+  animation: slide-in-indicator 0.5s ease-out 0.5s both;
+}
+
+.indicator.i2 {
+  animation: slide-in-indicator 0.5s ease-out 0.8s both;
+}
+
+@keyframes slide-in-indicator {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Light theme adjustments */
+.landing-page.theme-light .problem-mockup-card {
+  background: linear-gradient(145deg, #f8f9fa 0%, #ffffff 100%);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.landing-page.theme-light .chaos-phone {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+.landing-page.theme-light .phone-notch {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.landing-page.theme-light .phone-app-bar {
+  background: rgba(0, 0, 0, 0.04);
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.landing-page.theme-light .chaos-phone.instagram .phone-app-bar {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.landing-page.theme-light .chaos-phone.facebook .phone-app-bar {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.landing-page.theme-light .unread-msg {
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.03) 100%);
+  border-left-color: rgba(0, 0, 0, 0.2);
+}
+
+.landing-page.theme-light .solution-mockup-card {
+  background: linear-gradient(145deg, #f8fafc 0%, #ffffff 100%);
+  border-color: rgba(2, 145, 250, 0.12);
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.08),
+    0 0 40px -10px rgba(2, 145, 250, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.landing-page.theme-light .inbox-sidebar {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.landing-page.theme-light .sidebar-item {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+.landing-page.theme-light .sidebar-item.active {
+  background: rgba(2, 145, 250, 0.1);
+}
+
+.landing-page.theme-light .inbox-main,
+.landing-page.theme-light .inbox-detail {
+  background: rgba(0, 0, 0, 0.01);
+}
+
+.landing-page.theme-light .inbox-header-bar,
+.landing-page.theme-light .detail-header {
+  border-bottom-color: rgba(0, 0, 0, 0.06);
+}
+
+.landing-page.theme-light .platform-tabs .tab {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+.landing-page.theme-light .platform-tabs .tab.active {
+  background: rgba(2, 145, 250, 0.1);
+}
+
+.landing-page.theme-light .conv-item {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.landing-page.theme-light .conv-item.ai-draft {
+  background: rgba(2, 145, 250, 0.05);
+}
+
+.landing-page.theme-light .conv-avatar,
+.landing-page.theme-light .customer-avatar {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.04));
+}
+
+.landing-page.theme-light .conv-name,
+.landing-page.theme-light .customer-name {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.landing-page.theme-light .conv-preview,
+.landing-page.theme-light .response-lines .line {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.landing-page.theme-light .customer-platform {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+.landing-page.theme-light .ai-response-preview {
+  background: rgba(2, 145, 250, 0.05);
+  border-color: rgba(2, 145, 250, 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .mockup-phone-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .chaos-phone:nth-child(3) {
+    grid-column: span 2;
+  }
+  
+  .unified-inbox-preview {
+    grid-template-columns: 60px 1fr;
+    grid-template-rows: auto auto;
+  }
+  
+  .inbox-detail {
+    grid-column: span 2;
+  }
+  
+  .problem-mockup-card,
+  .solution-mockup-card {
+    padding: 16px;
+  }
+}
