@@ -5,6 +5,7 @@ import { registerRoutes } from "./routes";
 import { syncService } from "./services/syncService";
 import { lifecycleScheduler } from "./services/lifecycleScheduler";
 import { sessionMiddleware } from "./sessionStore";
+import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -70,6 +71,10 @@ app.use((req, res, next) => {
 export default async function runApp(
   setup: (app: Express, server: Server) => Promise<void>,
 ) {
+  // Setup Replit Auth BEFORE registering other routes
+  await setupAuth(app);
+  registerAuthRoutes(app);
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

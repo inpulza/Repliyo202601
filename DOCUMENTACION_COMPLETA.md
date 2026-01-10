@@ -8514,14 +8514,14 @@ password: text("password").notNull(),  // ← Bloquea usuarios OAuth
 
 | Tarea | Descripción | Criterio de Éxito | Estado |
 |-------|-------------|-------------------|--------|
-| 4.1.0 | **DECISIÓN:** Definir estrategia de integración - ¿Adaptar tabla `users` existente o usar tabla de Replit Auth por separado? | Decisión documentada | ⬜ |
-| 4.1.1 | Exportar schema de auth desde `shared/models/auth.ts` (si se crea nuevo) | Schema accesible en `shared/schema.ts` | ⬜ |
+| 4.1.0 | **DECISIÓN:** Definir estrategia de integración - ¿Adaptar tabla `users` existente o usar tabla de Replit Auth por separado? | Decisión documentada | ✅ (10-Ene-2026) Adaptar tabla existente |
+| 4.1.1 | Exportar schema de auth desde `shared/models/auth.ts` (si se crea nuevo) | Schema accesible en `shared/schema.ts` | ✅ (10-Ene-2026) Blueprint instalado |
 | 4.1.2 | ~~Crear tabla `sessions`~~ → **YA EXISTE** en `server/sessionStore.ts` - Verificar compatibilidad con Replit Auth | Sesiones funcionan con ambos sistemas | ✅ |
-| 4.1.3a | **CRÍTICO:** Cambiar campo `password` de `notNull()` a nullable en `shared/schema.ts` | Campo permite NULL | ⬜ |
-| 4.1.3b | Agregar campos: `replitId` (varchar, nullable, unique), `profileImageUrl` (text, nullable), `authProvider` (text, default 'local') | Migración ejecutada sin errores | ⬜ |
-| 4.1.4 | Ejecutar `npm run db:push` para aplicar cambios | Base de datos actualizada | ⬜ |
-| 4.1.5 | Verificar que usuarios existentes mantienen acceso (query: `SELECT * FROM users WHERE password IS NOT NULL`) | Usuarios legacy funcionan | ⬜ |
-| 4.1.6 | Actualizar valor `authProvider='local'` para todos los usuarios existentes | Migración de datos | ⬜ |
+| 4.1.3a | **CRÍTICO:** Cambiar campo `password` de `notNull()` a nullable en `shared/schema.ts` | Campo permite NULL | ✅ (10-Ene-2026) |
+| 4.1.3b | Agregar campos: `replitId` (varchar, nullable, unique), `profileImageUrl` (text, nullable), `authProvider` (text, default 'local') | Migración ejecutada sin errores | ✅ (10-Ene-2026) |
+| 4.1.4 | Ejecutar `npm run db:push` para aplicar cambios | Base de datos actualizada | ✅ (10-Ene-2026) Via ALTER TABLE SQL |
+| 4.1.5 | Verificar que usuarios existentes mantienen acceso (query: `SELECT * FROM users WHERE password IS NOT NULL`) | Usuarios legacy funcionan | ✅ (10-Ene-2026) 2 usuarios verificados |
+| 4.1.6 | Actualizar valor `authProvider='local'` para todos los usuarios existentes | Migración de datos | ✅ (10-Ene-2026) 2 usuarios actualizados |
 
 ### Subfase 4.2: Integración del Módulo Replit Auth
 
@@ -8529,12 +8529,12 @@ password: text("password").notNull(),  // ← Bloquea usuarios OAuth
 
 | Tarea | Descripción | Criterio de Éxito | Estado |
 |-------|-------------|-------------------|--------|
-| 4.2.1 | Agregar blueprint `javascript_log_in_with_replit` al proyecto | Archivos de integración creados en `server/replit_integrations/auth/` | ⬜ |
-| 4.2.2 | Configurar `setupAuth(app)` en `server/app.ts` ANTES de `registerRoutes(app)` | Auth inicializado correctamente | ⬜ |
-| 4.2.3 | Registrar rutas con `registerAuthRoutes(app)` - **NOTA:** Esto crea `/api/login` (nuevo), NO conflicta con `/api/auth/login` (existente) | Ambas rutas disponibles | ⬜ |
+| 4.2.1 | Agregar blueprint `javascript_log_in_with_replit` al proyecto | Archivos de integración creados en `server/replit_integrations/auth/` | ✅ (10-Ene-2026) Blueprint adaptado |
+| 4.2.2 | Configurar `setupAuth(app)` en `server/app.ts` ANTES de `registerRoutes(app)` | Auth inicializado correctamente | ✅ (10-Ene-2026) |
+| 4.2.3 | Registrar rutas con `registerAuthRoutes(app)` - **NOTA:** Esto crea `/api/login` (nuevo), NO conflicta con `/api/auth/login` (existente) | Ambas rutas disponibles | ✅ (10-Ene-2026) |
 | 4.2.4 | ~~Verificar SESSION_SECRET~~ → **YA EXISTE** en `sessionStore.ts` | Variable ya configurada | ✅ |
-| 4.2.5 | Adaptar módulo Replit Auth para usar `sessionStore` existente en lugar de crear nuevo | Una sola configuración de sesión | ⬜ |
-| 4.2.6 | Probar flujo de login OAuth en desarrollo | Usuario puede autenticarse con Google | ⬜ |
+| 4.2.5 | Adaptar módulo Replit Auth para usar `sessionStore` existente en lugar de crear nuevo | Una sola configuración de sesión | ✅ (10-Ene-2026) replitAuth.ts usa passport con session existente |
+| 4.2.6 | Probar flujo de login OAuth en desarrollo | Usuario puede autenticarse con Google | ⬜ Pendiente test manual |
 
 ### Subfase 4.3: Compatibilidad con Sistema Existente
 
