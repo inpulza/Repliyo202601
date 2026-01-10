@@ -549,21 +549,36 @@ function FeatureAnalyticsMockup() {
 function FeatureMultiAgentMockup() {
   const [activeAgent, setActiveAgent] = useState(0);
   const [cycle, setCycle] = useState(0);
+  const [visibleAssignments, setVisibleAssignments] = useState<number[]>([]);
   
   const agents = [
-    { name: 'Ana', color: 'bg-pink-500', initials: 'AN', conversations: 12 },
-    { name: 'Luis', color: 'bg-blue-500', initials: 'LU', conversations: 8 },
-    { name: 'Sara', color: 'bg-green-500', initials: 'SA', conversations: 15 },
-    { name: 'Carlos', color: 'bg-orange-500', initials: 'CA', conversations: 6 },
-    { name: 'María', color: 'bg-purple-500', initials: 'MA', conversations: 10 },
+    { name: 'Ana', color: 'bg-pink-500', initials: 'AN', conversations: 12, responseTime: '2m' },
+    { name: 'Luis', color: 'bg-blue-500', initials: 'LU', conversations: 8, responseTime: '3m' },
+    { name: 'Sara', color: 'bg-green-500', initials: 'SA', conversations: 15, responseTime: '1m' },
+    { name: 'Carlos', color: 'bg-orange-500', initials: 'CA', conversations: 6, responseTime: '4m' },
+    { name: 'María', color: 'bg-purple-500', initials: 'MA', conversations: 10, responseTime: '2m' },
+  ];
+
+  const recentAssignments = [
+    { customer: 'Pedro M.', platform: 'instagram', agent: 'Ana', time: 'Ahora' },
+    { customer: 'Laura G.', platform: 'tiktok', agent: 'Luis', time: '1m' },
+    { customer: 'Diego R.', platform: 'facebook', agent: 'Sara', time: '3m' },
   ];
   
   useEffect(() => {
     const timers: NodeJS.Timeout[] = [];
+    setVisibleAssignments([]);
     
     agents.forEach((_, idx) => {
       timers.push(setTimeout(() => setActiveAgent(idx), 300 + idx * 1000));
     });
+
+    recentAssignments.forEach((_, idx) => {
+      timers.push(setTimeout(() => {
+        setVisibleAssignments(prev => [...prev, idx]);
+      }, 500 + idx * 600));
+    });
+
     timers.push(setTimeout(() => setCycle(c => c + 1), 300 + agents.length * 1000 + 500));
     
     return () => timers.forEach(clearTimeout);
@@ -606,13 +621,42 @@ function FeatureMultiAgentMockup() {
         <span className="status-dot" />
         <span className="status-text">{agents[activeAgent].name} respondiendo...</span>
       </motion.div>
+
+      <div className="multiagent-assignments">
+        <div className="assignments-header">
+          <span className="assignments-title">Asignaciones recientes</span>
+        </div>
+        {recentAssignments.map((assignment, idx) => (
+          <motion.div
+            key={idx}
+            className="assignment-item"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ 
+              opacity: visibleAssignments.includes(idx) ? 1 : 0,
+              x: visibleAssignments.includes(idx) ? 0 : -10
+            }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className={`assignment-platform ${assignment.platform}`}>
+              {assignment.platform === 'instagram' && <FaInstagram className="w-2.5 h-2.5 text-white" />}
+              {assignment.platform === 'tiktok' && <FaTiktok className="w-2.5 h-2.5 text-white" />}
+              {assignment.platform === 'facebook' && <FaFacebook className="w-2.5 h-2.5 text-white" />}
+            </div>
+            <span className="assignment-customer">{assignment.customer}</span>
+            <span className="assignment-arrow">→</span>
+            <span className="assignment-agent">{assignment.agent}</span>
+            <span className="assignment-time">{assignment.time}</span>
+          </motion.div>
+        ))}
+      </div>
+
       <div className="multiagent-stats">
         {agents.slice(0, 3).map((agent, idx) => (
           <motion.div 
             key={idx} 
             className="agent-stat"
             animate={{ 
-              opacity: activeAgent === idx ? 1 : 0.5,
+              opacity: activeAgent === idx ? 1 : 0.6,
               scale: activeAgent === idx ? 1.05 : 1
             }}
           >
@@ -621,6 +665,21 @@ function FeatureMultiAgentMockup() {
             <span className="agent-stat-count">{agent.conversations}</span>
           </motion.div>
         ))}
+      </div>
+
+      <div className="multiagent-metrics">
+        <div className="metric-item">
+          <span className="metric-value">51</span>
+          <span className="metric-label">Total hoy</span>
+        </div>
+        <div className="metric-item">
+          <span className="metric-value success">2.3m</span>
+          <span className="metric-label">Tiempo resp.</span>
+        </div>
+        <div className="metric-item">
+          <span className="metric-value">98%</span>
+          <span className="metric-label">Satisfacción</span>
+        </div>
       </div>
     </div>
   );

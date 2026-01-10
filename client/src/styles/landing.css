@@ -3826,6 +3826,177 @@
   background: rgba(0,0,0,0.08);
 }
 
+/* Multi-agent Assignments Section */
+.multiagent-assignments {
+  width: 100%;
+  padding: 8px 0;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  margin-top: 8px;
+}
+
+.assignments-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+
+.assignments-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.assignment-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 6px;
+  margin-bottom: 4px;
+}
+
+.assignment-platform {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.assignment-platform.instagram {
+  background: linear-gradient(45deg, #f09433, #dc2743);
+}
+
+.assignment-platform.tiktok {
+  background: #1a1a2e;
+}
+
+.assignment-platform.facebook {
+  background: #1877F2;
+}
+
+.assignment-platform svg {
+  color: white !important;
+}
+
+.assignment-customer {
+  font-size: 11px;
+  font-weight: 500;
+  color: white;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.assignment-arrow {
+  font-size: 10px;
+  color: rgba(255,255,255,0.3);
+}
+
+.assignment-agent {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(168, 85, 247, 0.9);
+}
+
+.assignment-time {
+  font-size: 9px;
+  color: rgba(255,255,255,0.4);
+  margin-left: auto;
+}
+
+/* Multi-agent Metrics Row */
+.multiagent-metrics {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.metric-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 4px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+}
+
+.metric-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: white;
+}
+
+.metric-value.success {
+  color: #22c55e;
+}
+
+.metric-label {
+  font-size: 9px;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-top: 2px;
+}
+
+/* Light theme for multi-agent new elements */
+.landing-page.theme-light .multiagent-assignments {
+  border-top-color: rgba(0,0,0,0.06);
+}
+
+.landing-page.theme-light .assignments-title {
+  color: rgba(0,0,0,0.4);
+}
+
+.landing-page.theme-light .assignment-item {
+  background: rgba(0,0,0,0.03);
+}
+
+.landing-page.theme-light .assignment-customer {
+  color: var(--landing-text);
+}
+
+.landing-page.theme-light .assignment-arrow {
+  color: rgba(0,0,0,0.3);
+}
+
+.landing-page.theme-light .assignment-agent {
+  color: rgb(168, 85, 247);
+}
+
+.landing-page.theme-light .assignment-time {
+  color: rgba(0,0,0,0.4);
+}
+
+.landing-page.theme-light .multiagent-metrics {
+  border-top-color: rgba(0,0,0,0.06);
+}
+
+.landing-page.theme-light .metric-item {
+  background: rgba(0,0,0,0.03);
+}
+
+.landing-page.theme-light .metric-value {
+  color: var(--landing-text);
+}
+
+.landing-page.theme-light .metric-label {
+  color: rgba(0,0,0,0.5);
+}
+
 /* Testimonial Carousel */
 .testimonial-carousel {
   display: grid;
