@@ -2436,15 +2436,15 @@
 
 /* Floating messages - light theme - override for how-steps dark background */
 .landing-page.theme-light .how-steps-wrapper .floating-msg {
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   backdrop-filter: blur(10px);
 }
 
 .landing-page.theme-light .how-steps-wrapper .floating-msg.outgoing {
-  background: linear-gradient(135deg, rgba(2, 145, 250, 0.3), rgba(139, 92, 246, 0.2));
-  border: 1px solid rgba(2, 145, 250, 0.4);
+  background: rgba(2, 145, 250, 0.15);
+  border: 1px solid rgba(2, 145, 250, 0.3);
 }
 
 .landing-page.theme-light .how-steps-wrapper .floating-msg .msg-name {
@@ -2816,10 +2816,11 @@
   align-items: flex-start;
   gap: 12px;
   padding: 14px 18px;
-  background: rgba(30, 30, 40, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   max-width: 240px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   backdrop-filter: blur(8px);
 }
 
@@ -2829,8 +2830,8 @@
 
 .floating-msg.outgoing {
   align-self: flex-end;
-  background: linear-gradient(135deg, rgba(2, 145, 250, 0.25), rgba(139, 92, 246, 0.2));
-  border: 1px solid rgba(2, 145, 250, 0.3);
+  background: rgba(2, 145, 250, 0.12);
+  border: 1px solid rgba(2, 145, 250, 0.25);
 }
 
 .floating-msg .msg-avatar img {
@@ -2850,12 +2851,12 @@
 .floating-msg .msg-name {
   font-weight: 600;
   font-size: 0.8rem;
-  color: var(--landing-text);
+  color: #1a1a2e;
 }
 
 .floating-msg .msg-text {
   font-size: 0.75rem;
-  color: var(--landing-text-muted);
+  color: #4a4a5a;
   line-height: 1.4;
 }
 
