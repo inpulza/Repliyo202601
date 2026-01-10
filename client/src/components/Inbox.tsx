@@ -178,6 +178,7 @@ export function Inbox() {
     approveMessage, 
     updateMessageDraft, 
     refreshFeed,
+    isLoadingClients,
     isLoadingConversations,
     isLoadingConversationMessages,
   } = useNexus();
@@ -1177,6 +1178,27 @@ export function Inbox() {
     setEditingDraftId(null);
     setEditingDraftText("");
   };
+
+  if (!isLoadingClients && activeClients.length === 0) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-50">
+        <div className="text-center max-w-md px-8">
+          <div className="w-16 h-16 mx-auto mb-6 bg-indigo-100 rounded-full flex items-center justify-center">
+            <InboxIcon className="h-8 w-8 text-indigo-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-3">
+            ¡Bienvenido a Repliyo!
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Tu cuenta ha sido creada exitosamente. Un administrador te asignará acceso a una marca pronto.
+          </p>
+          <p className="text-sm text-gray-500">
+            Si ya deberías tener acceso, contacta a tu administrador.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex bg-background overflow-hidden relative">
