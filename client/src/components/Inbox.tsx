@@ -1544,15 +1544,62 @@ export function Inbox() {
                             <ArrowLeft className="h-5 w-5" />
                         </Button>
                     )}
-                    <Avatar className="h-10 w-10 ring-2 ring-offset-2 ring-gray-50 shrink-0">
+                    {activeConversation.type === 'comment' ? (
+                      (() => {
+                        const thumbnailUrl = activeConversation.socialPost?.thumbnailUrl;
+                        const isVideoUrl = thumbnailUrl?.includes('.mp4') || thumbnailUrl?.includes('.webm');
+                        const isImageThumbnail = thumbnailUrl && !isVideoUrl;
+                        const platformGradients: Record<string, string> = {
+                          instagram: 'from-pink-100 to-purple-100',
+                          facebook: 'from-blue-100 to-blue-50',
+                          linkedin: 'from-sky-100 to-blue-50',
+                          youtube: 'from-red-100 to-red-50',
+                          tiktok: 'from-gray-100 to-gray-50',
+                        };
+                        const gradient = platformGradients[activeConversation.platform || 'instagram'] || 'from-gray-100 to-gray-200';
+                        
+                        return isImageThumbnail ? (
+                          <div className="h-12 w-9 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 shrink-0">
+                            <img 
+                              src={thumbnailUrl} 
+                              alt="Post thumbnail"
+                              className="h-full w-full object-cover"
+                              onError={(e) => {
+                                const parent = (e.target as HTMLImageElement).parentElement!;
+                                (e.target as HTMLImageElement).style.display = 'none';
+                                parent.classList.add('flex', 'items-center', 'justify-center', 'bg-gradient-to-br');
+                                gradient.split(' ').forEach(token => parent.classList.add(token));
+                                parent.innerHTML = '<svg class="h-5 w-5 text-gray-500" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div className={cn(
+                            "h-12 w-9 rounded-lg border border-gray-200 flex items-center justify-center bg-gradient-to-br shrink-0",
+                            gradient
+                          )}>
+                            <Play className="h-5 w-5 text-gray-500 fill-gray-400/50" />
+                          </div>
+                        );
+                      })()
+                    ) : (
+                      <Avatar className="h-10 w-10 ring-2 ring-offset-2 ring-gray-50 shrink-0">
                         <AvatarImage src={activeConversation.customerAvatar || undefined} alt={activeConversation.customerName || 'User'} className="bg-white" />
                         <AvatarFallback className="bg-[#E5E7EB] font-bold text-gray-600">{(activeConversation.customerName || 'U').substring(0,2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
+                      </Avatar>
+                    )}
                     
                     <div className="min-w-0 flex-1">
-                        {/* Row 1: Name */}
-                        <h2 className="font-bold text-gray-900 truncate text-sm md:text-base leading-tight">
-                            {activeConversation.customerName || 'Unknown User'}
+                        {/* Row 1: Name or Post Caption */}
+                        <h2 className="font-bold text-gray-900 truncate text-sm md:text-base leading-tight" title={activeConversation.type === 'comment' ? (activeConversation.socialPost?.caption || 'Post comments') : undefined}>
+                            {activeConversation.type === 'comment' 
+                              ? (activeConversation.socialPost?.caption 
+                                  ? (activeConversation.socialPost.caption.length > 40 
+                                      ? activeConversation.socialPost.caption.substring(0, 40) + '...' 
+                                      : activeConversation.socialPost.caption)
+                                  : 'Post comments')
+                              : (activeConversation.customerName || 'Unknown User')
+                            }
                         </h2>
                         
                         {/* Row 2: Info */}
