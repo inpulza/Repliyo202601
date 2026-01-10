@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useLayoutEffect, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring } from 'framer-motion';
 import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart } from 'lucide-react';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
@@ -14,37 +14,6 @@ import { useGSAP } from '@gsap/react';
 import '../../styles/landing.css';
 
 gsap.registerPlugin(ScrollTrigger);
-
-function useIsVisible(ref: React.RefObject<Element | null>, rootMargin = '100px') {
-  const [isVisible, setIsVisible] = useState(false);
-  
-  useEffect(() => {
-    if (!ref.current) return;
-    
-    const observer = new IntersectionObserver(
-      ([entry]) => setIsVisible(entry.isIntersecting),
-      { rootMargin, threshold: 0 }
-    );
-    
-    observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [ref, rootMargin]);
-  
-  return isVisible;
-}
-
-function LazyImage({ src, alt, className, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) {
-  return (
-    <img 
-      src={src} 
-      alt={alt} 
-      className={className} 
-      loading="lazy"
-      decoding="async"
-      {...props} 
-    />
-  );
-}
 
 function Step1ConnectMockup() {
   const orbitIcons = [
@@ -105,15 +74,11 @@ function Step1ConnectMockup() {
 }
 
 function Step2AIMockup() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const isVisible = useIsVisible(containerRef);
   const [phase, setPhase] = useState(0);
   const [typedText, setTypedText] = useState('');
   const fullResponse = '¡Hola! El precio es $299 con envío gratis. ¿Te gustaría ordenar?';
   
   useEffect(() => {
-    if (!isVisible) return;
-    
     const timers: NodeJS.Timeout[] = [];
     const intervals: NodeJS.Timeout[] = [];
     
@@ -148,17 +113,17 @@ function Step2AIMockup() {
       timers.forEach(clearTimeout);
       intervals.forEach(clearInterval);
     };
-  }, [isVisible]);
+  }, []);
   
   return (
-    <div ref={containerRef} className="step-mockup ai-mockup-v3">
+    <div className="step-mockup ai-mockup-v3">
       <motion.div 
         className="floating-msg incoming"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: phase >= 1 ? 1 : 0, y: phase >= 1 ? 0 : 20 }}
       >
         <div className="msg-avatar">
-          <LazyImage src={avatarMaria} alt="Cliente" />
+          <img src={avatarMaria} alt="Cliente" />
         </div>
         <div className="msg-content">
           <span className="msg-name">María García</span>
@@ -201,13 +166,9 @@ function Step2AIMockup() {
 }
 
 function Step3SendMockup() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const isVisible = useIsVisible(containerRef);
   const [phase, setPhase] = useState(0);
   
   useEffect(() => {
-    if (!isVisible) return;
-    
     const timers: NodeJS.Timeout[] = [];
     
     const runCycle = () => {
@@ -221,10 +182,10 @@ function Step3SendMockup() {
     
     runCycle();
     return () => timers.forEach(clearTimeout);
-  }, [isVisible]);
+  }, []);
   
   return (
-    <div ref={containerRef} className="step-mockup send-mockup-v2">
+    <div className="step-mockup send-mockup-v2">
       <div className="send-timeline">
         <motion.div 
           className={`timeline-step ${phase >= 1 ? 'active' : ''}`}
@@ -290,8 +251,6 @@ function Step3SendMockup() {
 }
 
 function FeatureInboxMockup() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const isVisible = useIsVisible(containerRef);
   const [visibleItems, setVisibleItems] = useState<number[]>([]);
   const [cycle, setCycle] = useState(0);
   
@@ -305,8 +264,6 @@ function FeatureInboxMockup() {
   ];
   
   useEffect(() => {
-    if (!isVisible) return;
-    
     setVisibleItems([]);
     const timers: NodeJS.Timeout[] = [];
     
@@ -321,10 +278,10 @@ function FeatureInboxMockup() {
     }, 5000));
     
     return () => timers.forEach(clearTimeout);
-  }, [cycle, isVisible]);
+  }, [cycle]);
   
   return (
-    <div ref={containerRef} className="feature-inbox-mockup">
+    <div className="feature-inbox-mockup">
       <div className="inbox-header-mini">
         <span className="inbox-count">{messages.length} nuevos</span>
         <div className="inbox-platforms-mini">
@@ -346,7 +303,7 @@ function FeatureInboxMockup() {
             transition={{ duration: 0.4, ease: 'easeOut' }}
           >
             <div className="inbox-avatar-wrap">
-              <LazyImage src={msg.avatar} alt={msg.name} className="inbox-avatar-img" />
+              <img src={msg.avatar} alt={msg.name} className="inbox-avatar-img" />
               <div className={`inbox-platform-badge ${msg.platform}`}>
                 <msg.Icon className="w-2.5 h-2.5 text-white" />
               </div>
@@ -367,14 +324,10 @@ function FeatureInboxMockup() {
 }
 
 function FeatureAIMockup() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const isVisible = useIsVisible(containerRef);
   const [text, setText] = useState('');
   const fullText = '¡Hola! Gracias por escribirnos...';
   
   useEffect(() => {
-    if (!isVisible) return;
-    
     let charIndex = 0;
     const interval = setInterval(() => {
       if (charIndex < fullText.length) {
@@ -388,10 +341,10 @@ function FeatureAIMockup() {
       }
     }, 60);
     return () => clearInterval(interval);
-  }, [isVisible]);
+  }, []);
   
   return (
-    <div ref={containerRef} className="feature-ai-mockup">
+    <div className="feature-ai-mockup">
       <div className="ai-text-box">
         <Sparkles className="w-4 h-4 text-purple-400" />
         <span className="ai-generated-text">
@@ -404,14 +357,10 @@ function FeatureAIMockup() {
 }
 
 function FeatureCRMMockup() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const isVisible = useIsVisible(containerRef);
   const [showDetails, setShowDetails] = useState(false);
   const [cycle, setCycle] = useState(0);
   
   useEffect(() => {
-    if (!isVisible) return;
-    
     const timers: NodeJS.Timeout[] = [];
     setShowDetails(false);
     
@@ -419,10 +368,10 @@ function FeatureCRMMockup() {
     timers.push(setTimeout(() => setCycle(c => c + 1), 4000));
     
     return () => timers.forEach(clearTimeout);
-  }, [cycle, isVisible]);
+  }, [cycle]);
   
   return (
-    <div ref={containerRef} className="feature-crm-mockup">
+    <div className="feature-crm-mockup">
       <motion.div 
         className="crm-mini-card-v2"
         animate={{ scale: showDetails ? 1 : 0.95 }}
@@ -430,7 +379,7 @@ function FeatureCRMMockup() {
       >
         <div className="crm-mini-header">
           <div className="crm-mini-avatar-v2">
-            <LazyImage src={avatarMaria} alt="Cliente" />
+            <img src={avatarMaria} alt="Cliente" />
           </div>
           <div className="crm-mini-info-v2">
             <span className="crm-mini-name-v2">María García</span>
@@ -465,21 +414,17 @@ function FeatureCRMMockup() {
 }
 
 function FeatureReminderMockup() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const isVisible = useIsVisible(containerRef);
   const [phase, setPhase] = useState(0);
   
   useEffect(() => {
-    if (!isVisible) return;
-    
     const interval = setInterval(() => {
       setPhase(p => (p + 1) % 4);
     }, 1200);
     return () => clearInterval(interval);
-  }, [isVisible]);
+  }, []);
   
   return (
-    <div ref={containerRef} className="feature-reminder-mockup">
+    <div className="feature-reminder-mockup">
       <div className="reminder-timeline">
         <div className={`reminder-event ${phase >= 0 ? 'active' : ''}`}>
           <MessageSquare className="w-4 h-4" />
@@ -512,8 +457,6 @@ function FeatureReminderMockup() {
 }
 
 function FeatureCommentsMockup() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const isVisible = useIsVisible(containerRef);
   const [phase, setPhase] = useState(0);
   const [cycle, setCycle] = useState(0);
   
@@ -524,8 +467,6 @@ function FeatureCommentsMockup() {
   ];
   
   useEffect(() => {
-    if (!isVisible) return;
-    
     setPhase(0);
     const timers: NodeJS.Timeout[] = [];
     
@@ -538,10 +479,10 @@ function FeatureCommentsMockup() {
     timers.push(setTimeout(() => setCycle(c => c + 1), 6000));
     
     return () => timers.forEach(clearTimeout);
-  }, [cycle, isVisible]);
+  }, [cycle]);
   
   return (
-    <div ref={containerRef} className="feature-comments-mockup-v2">
+    <div className="feature-comments-mockup-v2">
       <div className="comments-thread-v2">
         {comments.map((c, idx) => (
           <div key={idx} className="comment-pair">
@@ -606,8 +547,6 @@ function FeatureAnalyticsMockup() {
 }
 
 function FeatureMultiAgentMockup() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const isVisible = useIsVisible(containerRef);
   const [activeAgent, setActiveAgent] = useState(0);
   const [cycle, setCycle] = useState(0);
   
@@ -620,8 +559,6 @@ function FeatureMultiAgentMockup() {
   ];
   
   useEffect(() => {
-    if (!isVisible) return;
-    
     const timers: NodeJS.Timeout[] = [];
     
     agents.forEach((_, idx) => {
@@ -630,10 +567,10 @@ function FeatureMultiAgentMockup() {
     timers.push(setTimeout(() => setCycle(c => c + 1), 300 + agents.length * 1000 + 500));
     
     return () => timers.forEach(clearTimeout);
-  }, [cycle, isVisible]);
+  }, [cycle]);
   
   return (
-    <div ref={containerRef} className="feature-multiagent-mockup">
+    <div className="feature-multiagent-mockup">
       <div className="multiagent-header">
         <span className="multiagent-title">Equipo activo</span>
         <span className="multiagent-count">{agents.length} online</span>
@@ -722,7 +659,6 @@ function AnimatedCounter({ target, duration = 2 }: { target: number; duration?: 
 function InboxMockup() {
   const mockupRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const isVisible = useIsVisible(mockupRef, '200px');
   const prefersReducedMotion = useReducedMotion();
   
   const allMessages = [
@@ -781,8 +717,6 @@ function InboxMockup() {
       return;
     }
     
-    if (!isVisible) return;
-    
     setVisibleMessages([]);
     setChatPhase(0);
     setInboxCount(12);
@@ -837,7 +771,7 @@ function InboxMockup() {
       timers.forEach(clearTimeout);
       intervals.forEach(clearInterval);
     };
-  }, [prefersReducedMotion, animationCycle, isVisible]);
+  }, [prefersReducedMotion, animationCycle]);
 
   useEffect(() => {
     if (chatContainerRef.current && chatPhase > 0) {
@@ -915,7 +849,7 @@ function InboxMockup() {
                   {msg.initials ? (
                     <div className="avatar-initials">{msg.initials}</div>
                   ) : (
-                    <LazyImage src={msg.avatarImg} alt={msg.user} className="avatar-img" />
+                    <img src={msg.avatarImg} alt={msg.user} className="avatar-img" />
                   )}
                   <span className={`platform-indicator ${msg.platform}`}>
                     <PlatformIcon platform={msg.platform} />
@@ -936,7 +870,7 @@ function InboxMockup() {
           <div className="mockup-main-v2">
             <div className="chat-header-v2">
               <div className="chat-user-info">
-                <LazyImage src={avatarMaria} alt="María García" className="chat-avatar" />
+                <img src={avatarMaria} alt="María García" className="chat-avatar" />
                 <div className="chat-user-details">
                   <span className="chat-username">María García</span>
                   <span className="chat-platform">
@@ -969,7 +903,7 @@ function InboxMockup() {
                     className={`chat-bubble-v2 ${msg.type}`}
                   >
                     {msg.type === 'incoming' && (
-                      <LazyImage src={avatarMaria} alt="María" className="bubble-avatar" />
+                      <img src={avatarMaria} alt="María" className="bubble-avatar" />
                     )}
                     <div className="bubble-content">
                       {msg.isAI && (
@@ -1030,7 +964,7 @@ function InboxMockup() {
               <span>Cliente</span>
             </div>
             <div className="crm-content">
-              <LazyImage src={avatarMaria} alt="María" className="crm-avatar" />
+              <img src={avatarMaria} alt="María" className="crm-avatar" />
               <div className="crm-name">María García</div>
               <div className="crm-email">maria.garcia@email.com</div>
               <div className="crm-stats-grid">
@@ -1075,7 +1009,7 @@ function InboxMockup() {
               </span>
             </div>
             <div className="bubble-user-row">
-              <LazyImage src={bubble.avatar} alt={bubble.user} className="bubble-avatar" />
+              <img src={bubble.avatar} alt={bubble.user} className="bubble-avatar" />
               <span className="bubble-user-name">{bubble.user}</span>
             </div>
             <div className="bubble-input-area">
@@ -1264,9 +1198,7 @@ function ProblemSolutionSection() {
               trigger: item as Element,
               start: 'top 85%',
               end: 'top 50%',
-              scrub: 1,
-              fastScrollEnd: true,
-              preventOverlaps: true
+              scrub: 1
             }
           }
         );
@@ -1283,9 +1215,7 @@ function ProblemSolutionSection() {
               trigger: item as Element,
               start: 'top 85%',
               end: 'top 50%',
-              scrub: 1,
-              fastScrollEnd: true,
-              preventOverlaps: true
+              scrub: 1
             }
           }
         );
@@ -1428,7 +1358,6 @@ function HowItWorksSection() {
           pin: containerRef.current,
           anticipatePin: 1,
           scrub: 0.8,
-          fastScrollEnd: true,
           onUpdate: (self) => {
             const progress = self.progress;
             const adjustedProgress = progress * (totalSteps * scrollPerStep) / (totalSteps * scrollPerStep + holdAtEnd);
@@ -1627,9 +1556,7 @@ function FeaturesSection() {
               trigger: card as Element,
               start: 'top 90%',
               end: 'top 60%',
-              scrub: 1,
-              fastScrollEnd: true,
-              preventOverlaps: true
+              scrub: 1
             }
           }
         );
@@ -1746,8 +1673,7 @@ function FeaturesSection() {
 }
 
 function TestimonialSection() {
-  const ref = useRef<HTMLElement>(null);
-  const isVisible = useIsVisible(ref);
+  const ref = useRef(null);
   const prefersReducedMotion = useReducedMotion();
   const [activeIndex, setActiveIndex] = useState(0);
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
@@ -1779,12 +1705,12 @@ function TestimonialSection() {
   ];
 
   useEffect(() => {
-    if (prefersReducedMotion || !isVisible) return;
+    if (prefersReducedMotion) return;
     const interval = setInterval(() => {
       setActiveIndex(prev => (prev + 1) % testimonials.length);
     }, 6000);
     return () => clearInterval(interval);
-  }, [prefersReducedMotion, testimonials.length, isVisible]);
+  }, [prefersReducedMotion, testimonials.length]);
 
   return (
     <section id="testimonial" ref={ref} className="py-40 relative overflow-hidden">
@@ -1823,7 +1749,7 @@ function TestimonialSection() {
               </blockquote>
 
               <div className="inline-flex items-center gap-5 p-5 pr-10 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
-                <LazyImage 
+                <img 
                   src={testimonial.image} 
                   alt={testimonial.name}
                   className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border-2 border-white/20"
