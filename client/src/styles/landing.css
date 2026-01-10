@@ -4661,13 +4661,12 @@
   position: relative;
   background: linear-gradient(145deg, rgba(30, 30, 35, 0.95) 0%, rgba(20, 20, 25, 0.98) 100%);
   border-radius: 24px;
-  padding: 32px;
+  padding: 40px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 
     0 25px 50px -12px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   overflow: visible;
-  margin-top: 48px;
 }
 
 .mockup-phone-grid {
@@ -4679,9 +4678,9 @@
 .chaos-phone {
   background: rgba(255, 255, 255, 0.03);
   border-radius: 16px;
-  padding: 8px;
+  padding: 12px;
   border: 1px solid rgba(255, 255, 255, 0.06);
-  min-height: 220px;
+  min-height: 200px;
 }
 
 .phone-header {
@@ -4810,21 +4809,20 @@
   position: relative;
   background: linear-gradient(145deg, rgba(30, 35, 45, 0.95) 0%, rgba(20, 25, 35, 0.98) 100%);
   border-radius: 24px;
-  padding: 24px;
+  padding: 32px;
   border: 1px solid rgba(2, 145, 250, 0.15);
   box-shadow: 
     0 25px 50px -12px rgba(0, 0, 0, 0.5),
     0 0 40px -10px rgba(2, 145, 250, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   overflow: visible;
-  margin-top: 48px;
 }
 
 .unified-inbox-preview {
   display: grid;
-  grid-template-columns: 80px 1fr 1fr;
-  gap: 12px;
-  min-height: 280px;
+  grid-template-columns: 100px 1fr 1fr;
+  gap: 16px;
+  min-height: 320px;
 }
 
 .inbox-sidebar {

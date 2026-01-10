@@ -1439,33 +1439,43 @@ function ProblemSolutionSection() {
   const solutionOpacity = useTransform(scrollYProgress, [0, 0.25, 0.8, 1], [0, 1, 1, 0.5]);
 
   return (
-    <section ref={sectionRef} className="py-32 md:py-48 relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="grid md:grid-cols-2 gap-12 md:gap-20 items-start">
+    <section ref={sectionRef} className="relative overflow-hidden">
+      {/* Problem Section */}
+      <div className="py-24 md:py-32">
+        <div className="max-w-4xl mx-auto px-6">
           <motion.div 
             style={{ y: problemY, opacity: problemOpacity }}
-            className="problem-side"
+            className="problem-side text-center"
           >
             <span className="text-xs uppercase tracking-[0.3em] text-white/40 font-semibold mb-4 block">
               El problema
             </span>
-            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-8 leading-tight">
+            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-12 leading-tight">
               Responder mensajes en 5 apps es <span className="text-white/50">agotador</span>
             </h2>
-            <ProblemMockup />
+            <div className="max-w-3xl mx-auto">
+              <ProblemMockup />
+            </div>
           </motion.div>
+        </div>
+      </div>
 
+      {/* Solution Section */}
+      <div className="py-24 md:py-32">
+        <div className="max-w-5xl mx-auto px-6">
           <motion.div 
             style={{ y: solutionY, opacity: solutionOpacity }}
-            className="solution-side"
+            className="solution-side text-center"
           >
             <span className="text-xs uppercase tracking-[0.3em] text-[var(--landing-primary)] font-semibold mb-4 block">
               La solución
             </span>
-            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-8 leading-tight">
+            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-12 leading-tight">
               Un inbox inteligente que <span className="text-white/60">trabaja por ti</span>
             </h2>
-            <SolutionMockup />
+            <div className="max-w-4xl mx-auto">
+              <SolutionMockup />
+            </div>
           </motion.div>
         </div>
       </div>
