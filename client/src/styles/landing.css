@@ -2824,49 +2824,30 @@
   justify-content: center;
   flex-shrink: 0;
   transition: all 0.3s ease;
+  background: transparent;
+  overflow: hidden;
 }
 
-.timeline-icon.send-icon {
-  background: rgba(168, 85, 247, 0.15);
-  color: var(--landing-primary);
+.timeline-icon.send-icon,
+.timeline-icon.check-icon,
+.timeline-icon.bell-icon,
+.timeline-icon.follow-icon {
+  background: transparent;
 }
 
 .timeline-step.active .timeline-icon.send-icon {
-  background: var(--landing-primary);
-  color: white;
   box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
 }
 
-.timeline-icon.check-icon {
-  background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
-}
-
 .timeline-step.active .timeline-icon.check-icon {
-  background: #22c55e;
-  color: white;
   box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
 }
 
-.timeline-icon.bell-icon {
-  background: rgba(249, 115, 22, 0.15);
-  color: #f97316;
-}
-
 .timeline-step.active .timeline-icon.bell-icon {
-  background: #f97316;
-  color: white;
   box-shadow: 0 0 20px rgba(249, 115, 22, 0.4);
 }
 
-.timeline-icon.follow-icon {
-  background: rgba(59, 130, 246, 0.15);
-  color: #3b82f6;
-}
-
 .timeline-step.active .timeline-icon.follow-icon {
-  background: #3b82f6;
-  color: white;
   box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
 }
 
@@ -4224,12 +4205,11 @@
 
 /* Timeline icons - light theme */
 .landing-page.theme-light .timeline-icon {
-  background: rgba(0, 0, 0, 0.06);
-  color: rgba(0, 0, 0, 0.5);
+  background: transparent;
 }
 
 .landing-page.theme-light .timeline-step.active .timeline-icon {
-  color: white;
+  background: transparent;
 }
 
 /* Multiagent mockup */
