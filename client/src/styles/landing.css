@@ -229,6 +229,31 @@
   background: rgba(0,0,0,0.1);
 }
 
+/* Override for how-steps dark background */
+.landing-page.theme-light .how-steps-wrapper .timeline-title {
+  color: white;
+}
+
+.landing-page.theme-light .how-steps-wrapper .timeline-status {
+  color: rgba(255,255,255,0.6);
+}
+
+.landing-page.theme-light .how-steps-wrapper .timeline-status.success {
+  color: #4ade80;
+}
+
+.landing-page.theme-light .how-steps-wrapper .timeline-status.warning {
+  color: #fb923c;
+}
+
+.landing-page.theme-light .how-steps-wrapper .timeline-connector {
+  background: rgba(255,255,255,0.2);
+}
+
+.landing-page.theme-light .how-steps-wrapper .timeline-connector.active {
+  background: linear-gradient(to bottom, var(--landing-primary), rgba(168, 85, 247, 0.4));
+}
+
 .landing-page.theme-light .connect-center-inbox {
   box-shadow: 0 0 40px rgba(168, 85, 247, 0.25);
 }
@@ -2258,7 +2283,42 @@
   border: none;
 }
 
-/* Floating messages - light theme */
+/* Floating messages - light theme - override for how-steps dark background */
+.landing-page.theme-light .how-steps-wrapper .floating-msg {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.landing-page.theme-light .how-steps-wrapper .floating-msg.outgoing {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(139, 92, 246, 0.2));
+  border: 1px solid rgba(168, 85, 247, 0.4);
+}
+
+.landing-page.theme-light .how-steps-wrapper .floating-msg .msg-name {
+  color: white;
+}
+
+.landing-page.theme-light .how-steps-wrapper .floating-msg .msg-text {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.landing-page.theme-light .how-steps-wrapper .floating-msg .msg-avatar img {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.landing-page.theme-light .how-steps-wrapper .floating-analyzing {
+  background: rgba(168, 85, 247, 0.25);
+  border-color: rgba(168, 85, 247, 0.4);
+  color: white;
+}
+
+.landing-page.theme-light .how-steps-wrapper .ai-draft-badge-v2 {
+  color: #c4b5fd;
+}
+
+/* Original light theme floating messages for other sections */
 .landing-page.theme-light .floating-msg {
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(0, 0, 0, 0.1);
