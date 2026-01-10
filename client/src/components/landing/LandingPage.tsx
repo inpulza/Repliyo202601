@@ -286,7 +286,7 @@ function FeatureInboxMockup() {
         <span className="inbox-count">{messages.length} nuevos</span>
         <div className="inbox-platforms-mini">
           <FaInstagram className="w-3 h-3 text-pink-400" />
-          <FaTiktok className="w-3 h-3 text-white" />
+          <FaTiktok className="w-3 h-3 tiktok-icon-adaptive" />
           <FaFacebook className="w-3 h-3 text-blue-500" />
         </div>
       </div>

@@ -4000,3 +4000,63 @@
 .landing-page.theme-light .inbox-unread-dot {
   background: var(--landing-primary);
 }
+
+/* CRM Mini Card - theme-light contrast fixes */
+.landing-page.theme-light .crm-mini-card-v2 {
+  background: rgba(0,0,0,0.03);
+  border-color: rgba(0,0,0,0.08);
+}
+
+.landing-page.theme-light .crm-mini-name-v2 {
+  color: var(--landing-text);
+}
+
+.landing-page.theme-light .crm-stat-label {
+  color: rgba(0,0,0,0.5);
+}
+
+.landing-page.theme-light .crm-stat-value {
+  color: var(--landing-text);
+}
+
+.landing-page.theme-light .crm-mini-tags-v2 .crm-tag {
+  background: rgba(168, 85, 247, 0.12);
+  color: #7c3aed;
+}
+
+.landing-page.theme-light .crm-mini-tags-v2 .crm-tag.vip {
+  background: rgba(251, 191, 36, 0.15);
+  color: #b45309;
+}
+
+.landing-page.theme-light .crm-mini-tags-v2 .crm-tag.loyal {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+}
+
+/* Comments Mockup - theme-light contrast fixes */
+.landing-page.theme-light .comment-q {
+  background: rgba(0,0,0,0.04);
+  color: var(--landing-text);
+}
+
+.landing-page.theme-light .comment-a {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(236, 72, 153, 0.08));
+  border-color: rgba(168, 85, 247, 0.2);
+  color: var(--landing-text);
+}
+
+/* Feature card mockups - ensure proper backgrounds */
+.landing-page.theme-light .feature-crm-mockup,
+.landing-page.theme-light .feature-comments-mockup-v2 {
+  background: transparent;
+}
+
+/* TikTok icon adaptive color */
+.tiktok-icon-adaptive {
+  color: white;
+}
+
+.landing-page.theme-light .tiktok-icon-adaptive {
+  color: #1a1a2e;
+}
