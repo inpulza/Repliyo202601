@@ -14,7 +14,8 @@ import {
   ExternalLink,
   ArrowRight,
   Bell,
-  BellOff
+  BellOff,
+  Sparkles
 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { Button } from "@/components/ui/button";
@@ -492,24 +493,43 @@ function CRMPanelContent({
             )}
           </div>
 
-          {Object.keys(crmContact.customFields || {}).filter(k => !k.startsWith('_')).length > 0 && (
-            <>
-              <Separator />
-              <div className="space-y-3">
-                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Datos Extraídos</h4>
-                <div className="space-y-2">
-                  {Object.entries(crmContact.customFields || {})
-                    .filter(([key]) => !key.startsWith('_'))
-                    .map(([key, value]) => (
-                    <div key={key} className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500 capitalize">{key.replace(/_/g, ' ')}</span>
-                      <span className="font-medium text-gray-900">{String(value)}</span>
-                    </div>
-                  ))}
+          {(() => {
+            const hiddenFields = ['lastEnrichedAt', 'enrichmentSource', 'lastEnrichmentAt'];
+            const fieldLabels: Record<string, string> = {
+              intent: 'Intención',
+              serviceInterest: 'Servicio de interés',
+              qualifiers: 'Observaciones',
+              budget: 'Presupuesto',
+            };
+            const displayableFields = Object.entries(crmContact.customFields || {})
+              .filter(([key]) => !key.startsWith('_') && !hiddenFields.includes(key));
+            
+            if (displayableFields.length === 0) return null;
+            
+            return (
+              <>
+                <Separator />
+                <div className="space-y-3" data-testid="section-extracted-data">
+                  <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                    <Sparkles className="h-3 w-3 text-amber-500" />
+                    Datos Extraídos
+                  </h4>
+                  <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                    {displayableFields.map(([key, value]) => (
+                      <div key={key} className="flex items-start justify-between gap-2">
+                        <span className="text-xs text-gray-500 shrink-0">
+                          {fieldLabels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </span>
+                        <span className="text-xs text-gray-700 text-right break-words max-w-[60%]">
+                          {String(value)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </>
-          )}
+              </>
+            );
+          })()}
 
           {conversation && (conversation.status === 'solved' || conversation.status === 'closed') && conversation.closingSummary && (
             <>
