@@ -8798,5 +8798,80 @@ password: text("password").notNull(),  // ← Bloquea usuarios OAuth
 
 ---
 
+### Recomendaciones del Agente de Planificación
+
+**1. Estrategia de Rollback:**
+- Antes de modificar `shared/schema.ts`, crear checkpoint de git
+- Si la migración falla, usar rollback de Replit para restaurar DB
+- Mantener un usuario de prueba con email/password para verificar legacy
+
+**2. Decisión Recomendada para 4.1.0:**
+- **RECOMENDADO:** Adaptar tabla `users` existente (NO crear tabla nueva)
+- Razón: Evita duplicación de datos, mantiene FKs existentes (brandId, etc.)
+- El blueprint de Replit Auth puede modificarse para usar nuestra tabla
+
+**3. Decisión Recomendada para 4.4.3:**
+- **RECOMENDADO:** Mantener 4 botones separados (Google, GitHub, Apple, X)
+- Razón: Mejor UX - usuarios ven directamente qué opciones tienen
+- Alternativa: Un solo botón "Login con Replit" es más simple pero menos claro
+
+**4. Decisión Recomendada para 4.6.1:**
+- **RECOMENDADO:** Nuevo usuario OAuth queda sin brandId, requiere asignación por admin
+- Razón: Control de acceso - evita que cualquiera cree cuenta y acceda
+- Implementar página "Solicitar Acceso" o "Esperando Aprobación"
+
+**5. Orden de Testing:**
+- Siempre probar login legacy PRIMERO después de cada cambio
+- Crear usuario de prueba OAuth DESPUÉS de verificar que legacy funciona
+- No desplegar a producción hasta completar 4.7.5 (compatibilidad legacy)
+
+**6. Verificación de Blueprint:**
+- Usar `search_integrations` con query "replit auth" para obtener el ID exacto
+- El blueprint esperado es `blueprint:javascript_log_in_with_replit`
+- Revisar archivos generados antes de modificar
+
+---
+
+### Código de Referencia para Tareas Críticas
+
+**4.1.3a - Cambio de password a nullable:**
+```typescript
+// shared/schema.ts - CAMBIAR:
+password: text("password").notNull(),
+// POR:
+password: text("password"),
+```
+
+**4.1.3b - Campos nuevos:**
+```typescript
+// shared/schema.ts - AGREGAR:
+replitId: varchar("replit_id", { length: 255 }),
+profileImageUrl: text("profile_image_url"),
+authProvider: text("auth_provider").default("local"),
+```
+
+**4.3.1 - Middleware híbrido (esqueleto):**
+```typescript
+// server/auth.ts o server/middleware/requireAuthHybrid.ts
+export function requireAuthHybrid(req: Request, res: Response, next: NextFunction) {
+  // Opción 1: OAuth (Replit Auth)
+  if (req.user?.claims?.sub) {
+    const replitId = req.user.claims.sub;
+    // Buscar usuario por replitId y asignar a req.user
+    return next();
+  }
+  
+  // Opción 2: Legacy (email/password)
+  if (req.session?.userId) {
+    // Buscar usuario por userId (sistema actual)
+    return next();
+  }
+  
+  return res.status(401).json({ message: "Unauthorized" });
+}
+```
+
+---
+
 *Documento creado: Enero 2026*
-*Última actualización: 10 Enero 2026 - Fase 4 revisada con notas de compatibilidad, riesgos y orden de ejecución*
+*Última actualización: 10 Enero 2026 - Fase 4 revisada con notas de compatibilidad, riesgos, orden de ejecución y recomendaciones del agente*
