@@ -3929,10 +3929,20 @@
 
 .landing-page.theme-light .orbit-icon-static.tiktok {
   background: #1a1a2e;
+  color: white;
+}
+
+.landing-page.theme-light .orbit-icon-static.tiktok svg {
+  color: white !important;
 }
 
 .landing-page.theme-light .flying-icon.tiktok {
   background: #1a1a2e;
+  color: white;
+}
+
+.landing-page.theme-light .flying-icon.tiktok svg {
+  color: white !important;
 }
 
 .landing-page.theme-light .inbox-avatar-img {
