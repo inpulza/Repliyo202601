@@ -14,8 +14,7 @@ import {
   ExternalLink,
   ArrowRight,
   Bell,
-  BellOff,
-  Sparkles
+  BellOff
 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { Button } from "@/components/ui/button";
@@ -47,6 +46,7 @@ import { es } from 'date-fns/locale';
 import { api } from '@/lib/api';
 import type { Conversation, CrmContact, CrmContactChannel } from '@shared/schema';
 import { ConversationTimeline } from './ConversationTimeline';
+import { ExtractedDataSection, hasDisplayableFields } from './ExtractedDataSection';
 
 interface CRMContextPanelProps {
   crmContact?: CrmContact;
@@ -493,52 +493,12 @@ function CRMPanelContent({
             )}
           </div>
 
-          {(() => {
-            const hiddenFields = ['lastEnrichedAt', 'enrichmentSource', 'lastEnrichmentAt'];
-            const fieldLabels: Record<string, string> = {
-              intent: 'Intención',
-              serviceInterest: 'Servicio de interés',
-              qualifiers: 'Observaciones',
-              budget: 'Presupuesto',
-            };
-            const fieldOrder = ['intent', 'serviceInterest', 'budget', 'qualifiers'];
-            const displayableFields = Object.entries(crmContact.customFields || {})
-              .filter(([key]) => !key.startsWith('_') && !hiddenFields.includes(key))
-              .sort((a, b) => {
-                const aIndex = fieldOrder.indexOf(a[0]);
-                const bIndex = fieldOrder.indexOf(b[0]);
-                if (aIndex === -1 && bIndex === -1) return 0;
-                if (aIndex === -1) return 1;
-                if (bIndex === -1) return -1;
-                return aIndex - bIndex;
-              });
-            
-            if (displayableFields.length === 0) return null;
-            
-            return (
-              <>
-                <Separator />
-                <div className="space-y-3" data-testid="section-extracted-data">
-                  <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                    <Sparkles className="h-3 w-3 text-amber-500" />
-                    Datos Extraídos
-                  </h4>
-                  <div className="bg-gray-50 rounded-lg p-3 space-y-3">
-                    {displayableFields.map(([key, value]) => (
-                      <div key={key} className="space-y-0.5">
-                        <p className="text-[11px] text-gray-400 uppercase tracking-wide">
-                          {fieldLabels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </p>
-                        <p className="text-xs text-gray-700 break-words">
-                          {String(value)}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            );
-          })()}
+          {hasDisplayableFields(crmContact.customFields) && (
+            <>
+              <Separator />
+              <ExtractedDataSection customFields={crmContact.customFields} />
+            </>
+          )}
 
           {conversation && (conversation.status === 'solved' || conversation.status === 'closed') && conversation.closingSummary && (
             <>
