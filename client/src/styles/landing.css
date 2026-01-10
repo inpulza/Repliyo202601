@@ -4729,13 +4729,14 @@
 
 .notification-badge {
   margin-left: auto;
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(239, 68, 68, 0.9);
   color: white;
   font-size: 12px;
   font-weight: 700;
   padding: 4px 8px;
   border-radius: 12px;
   animation: pulse-badge 2s ease-in-out infinite;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
 }
 
 @keyframes pulse-badge {
