@@ -1740,56 +1740,55 @@ function HowItWorksSection() {
           </div>
         </div>
 
-        {/* Step Number Dial - Outside the card */}
-        <div className="how-step-dial" style={{ perspective: '800px' }}>
-          {steps.map((step, i) => {
-            const offset = i - activeStep;
-            return (
-              <motion.div
-                key={step.number}
-                className="dial-number"
-                initial={false}
-                animate={{
-                  y: offset * 80,
-                  rotateX: offset * -25,
-                  z: offset === 0 ? 0 : -100,
-                  opacity: offset === 0 ? 1 : offset === 1 ? 0.3 : offset === -1 ? 0.15 : 0,
-                  scale: offset === 0 ? 1 : 0.7,
-                  filter: offset === 0 ? 'blur(0px)' : 'blur(2px)'
-                }}
-                transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-              >
-                {step.number}
-              </motion.div>
-            );
-          })}
-        </div>
+        <div className="how-content-wrapper">
+          {/* Step Number Dial - Outside the card */}
+          <div className="how-step-dial" style={{ perspective: '800px' }}>
+            {steps.map((step, i) => {
+              const offset = i - activeStep;
+              return (
+                <motion.div
+                  key={`dial-${step.number}-${activeStep}`}
+                  className="dial-number"
+                  animate={{
+                    y: offset * 70,
+                    rotateX: offset * -20,
+                    opacity: offset === 0 ? 1 : offset === 1 ? 0.35 : offset === -1 ? 0.2 : 0,
+                    scale: offset === 0 ? 1 : 0.75
+                  }}
+                  transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                >
+                  {step.number}
+                </motion.div>
+              );
+            })}
+          </div>
 
-        <div className="how-steps-wrapper" style={{ 
-          backgroundImage: `url(${stepsBgLight})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center 10%'
-        }}>
-          {steps.map((step, i) => (
-            <div 
-              key={step.number} 
-              className={`how-step-panel ${activeStep === i ? 'active' : ''}`}
-            >
-              <div className="how-step-content">
-                <div className="how-step-info">
-                  <h3 className="font-display text-3xl md:text-4xl font-bold text-white mb-4">
-                    {step.title}
-                  </h3>
-                  <p className="text-white text-lg md:text-xl leading-relaxed max-w-md">
-                    {step.description}
-                  </p>
-                </div>
-                <div className="how-step-mockup">
-                  {step.mockup}
+          <div className="how-steps-wrapper" style={{ 
+            backgroundImage: `url(${stepsBgLight})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center 10%'
+          }}>
+            {steps.map((step, i) => (
+              <div 
+                key={step.number} 
+                className={`how-step-panel ${activeStep === i ? 'active' : ''}`}
+              >
+                <div className="how-step-content">
+                  <div className="how-step-info">
+                    <h3 className="font-display text-3xl md:text-4xl font-bold text-white mb-4">
+                      {step.title}
+                    </h3>
+                    <p className="text-white text-lg md:text-xl leading-relaxed max-w-md">
+                      {step.description}
+                    </p>
+                  </div>
+                  <div className="how-step-mockup">
+                    {step.mockup}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </section>
