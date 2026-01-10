@@ -37,10 +37,13 @@ export const socialAccounts = pgTable("social_accounts", {
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: text("email").notNull().unique(),
-  password: text("password").notNull(),
+  password: text("password"),
   name: text("name").notNull(),
   role: text("role").notNull().default('client'),
   brandId: varchar("brand_id").references(() => brands.id, { onDelete: 'cascade' }),
+  replitId: varchar("replit_id").unique(),
+  profileImageUrl: text("profile_image_url"),
+  authProvider: text("auth_provider").notNull().default('local'),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
