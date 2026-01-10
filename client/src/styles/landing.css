@@ -3249,8 +3249,8 @@
 
 .inbox-avatar-wrap {
   position: relative;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
 }
 
@@ -3259,24 +3259,29 @@
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.1);
 }
 
 .inbox-platform-badge {
   position: absolute;
   bottom: -2px;
   right: -2px;
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1.5px solid var(--landing-bg);
+  border: 2px solid var(--landing-bg);
 }
 
 .inbox-platform-badge.instagram { background: linear-gradient(45deg, #f09433, #dc2743); }
 .inbox-platform-badge.tiktok { background: #000; border-color: #00f2ea; }
 .inbox-platform-badge.facebook { background: #1877F2; }
+
+.inbox-platform-badge svg {
+  color: white !important;
+}
 
 .inbox-item-info {
   flex: 1;
@@ -3906,6 +3911,13 @@
   background: #1a1a2e;
 }
 
+/* Ensure all platform icons have white icons */
+.bubble-platform-icon svg,
+.flying-icon svg,
+.platform-indicator svg {
+  color: white !important;
+}
+
 .landing-page.theme-light .connect-icon.tiktok {
   background: #1a1a2e !important;
 }
@@ -3918,9 +3930,26 @@
   background: #1a1a2e;
 }
 
+.landing-page.theme-light .inbox-avatar-img {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.landing-page.theme-light .inbox-platform-badge {
+  border-color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.landing-page.theme-light .inbox-platform-badge.instagram {
+  background: linear-gradient(45deg, #f09433, #dc2743);
+}
+
 .landing-page.theme-light .inbox-platform-badge.tiktok {
   background: #1a1a2e;
   border-color: #00f2ea;
+}
+
+.landing-page.theme-light .inbox-platform-badge.facebook {
+  background: #1877F2;
 }
 
 .landing-page.theme-light .platform-indicator.tiktok {
