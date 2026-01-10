@@ -365,11 +365,11 @@
 }
 
 .landing-page.theme-light .timeline-status.success {
-  color: #15803d;
+  color: #ffffff;
 }
 
 .landing-page.theme-light .timeline-status.warning {
-  color: #c2410c;
+  color: #ffffff;
 }
 
 .landing-page.theme-light .timeline-connector {
@@ -386,11 +386,11 @@
 }
 
 .landing-page.theme-light .how-steps-wrapper .timeline-status.success {
-  color: #4ade80;
+  color: #ffffff;
 }
 
 .landing-page.theme-light .how-steps-wrapper .timeline-status.warning {
-  color: #fb923c;
+  color: #ffffff;
 }
 
 .landing-page.theme-light .how-steps-wrapper .timeline-connector {
@@ -3103,15 +3103,15 @@
 
 .timeline-status {
   font-size: 11px;
-  color: rgba(255,255,255,0.5);
+  color: rgba(255,255,255,0.8);
 }
 
 .timeline-status.success {
-  color: #22c55e;
+  color: #ffffff;
 }
 
 .timeline-status.warning {
-  color: #f97316;
+  color: #ffffff;
 }
 
 .timeline-connector {
