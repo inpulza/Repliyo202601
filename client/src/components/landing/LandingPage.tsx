@@ -2005,10 +2005,10 @@ function MetricSection() {
   const opacity = useTransform(scrollYProgress, [0, 0.3], prefersReducedMotion ? [1, 1] : [0, 1]);
   
   const stats = [
-    { value: "80%", title: "menos tiempo respondiendo", description: "Nuestros usuarios reducen drásticamente el tiempo dedicado a gestionar mensajes.", icon: Clock4 },
-    { value: "2min", title: "tiempo de respuesta promedio", description: "La IA genera borradores instantáneos que solo necesitan un clic para enviar.", icon: ZapIcon },
-    { value: "5x", title: "más leads gestionados", description: "Multiplica tu capacidad de atención sin aumentar tu equipo de soporte.", icon: TrendingUp },
-    { value: "24/7", title: "cobertura total con IA", description: "Los borradores se preparan automáticamente incluso fuera de horario laboral.", icon: Bot },
+    { value: "80%", title: "menos tiempo respondiendo", description: "Nuestros usuarios reducen drásticamente el tiempo dedicado a gestionar mensajes." },
+    { value: "2min", title: "tiempo de respuesta promedio", description: "La IA genera borradores instantáneos que solo necesitan un clic para enviar." },
+    { value: "5x", title: "más leads gestionados", description: "Multiplica tu capacidad de atención sin aumentar tu equipo de soporte." },
+    { value: "24/7", title: "cobertura total con IA", description: "Los borradores se preparan automáticamente incluso fuera de horario laboral." },
   ];
   
   useEffect(() => {
@@ -2069,11 +2069,7 @@ function MetricSection() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="flex flex-col items-center"
           >
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mb-4 shadow-lg shadow-indigo-500/30">
-              <currentStat.icon className="w-6 h-6 text-white" />
-            </div>
             <h2 className="font-display text-3xl md:text-5xl font-bold text-white mb-4">
               {currentStat.title}
             </h2>
