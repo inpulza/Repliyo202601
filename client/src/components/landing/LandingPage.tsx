@@ -1242,25 +1242,33 @@ function ProblemMockup() {
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   
-  const sceneSpring = { damping: 30, stiffness: 120, mass: 0.8 };
-  const sceneRotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [5, -5]), sceneSpring);
-  const sceneRotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-5, 5]), sceneSpring);
+  const sceneSpring = { damping: 28, stiffness: 100, mass: 0.9 };
+  const sceneRotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [6, -6]), sceneSpring);
+  const sceneRotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-6, 6]), sceneSpring);
   
-  const phoneSpring = { damping: 32, stiffness: 110, mass: 0.7 };
-  const phoneX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-10, 10]), phoneSpring);
-  const phoneY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-10, 10]), phoneSpring);
+  const shellSpring = { damping: 40, stiffness: 90, mass: 1.1 };
+  const shellX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-8, 8]), shellSpring);
+  const shellY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-8, 8]), shellSpring);
   
-  const msgSpring = { damping: 26, stiffness: 140, mass: 0.5 };
-  const msgX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-20, 20]), msgSpring);
-  const msgY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-20, 20]), msgSpring);
+  const phoneSpring = { damping: 35, stiffness: 110, mass: 0.9 };
+  const phoneX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-14, 14]), phoneSpring);
+  const phoneY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-14, 14]), phoneSpring);
   
-  const badgeSpring = { damping: 20, stiffness: 180, mass: 0.35 };
-  const badgeX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-32, 32]), badgeSpring);
-  const badgeY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-32, 32]), badgeSpring);
+  const appBarSpring = { damping: 30, stiffness: 130, mass: 0.7 };
+  const appBarX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-18, 18]), appBarSpring);
+  const appBarY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-18, 18]), appBarSpring);
   
-  const notifSpring = { damping: 16, stiffness: 220, mass: 0.25 };
-  const notifX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-45, 45]), notifSpring);
-  const notifY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-45, 45]), notifSpring);
+  const msgSpring = { damping: 24, stiffness: 160, mass: 0.55 };
+  const msgX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-26, 26]), msgSpring);
+  const msgY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-26, 26]), msgSpring);
+  
+  const badgeSpring = { damping: 20, stiffness: 190, mass: 0.45 };
+  const badgeX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-34, 34]), badgeSpring);
+  const badgeY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-34, 34]), badgeSpring);
+  
+  const notifSpring = { damping: 16, stiffness: 230, mass: 0.35 };
+  const notifX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-44, 44]), notifSpring);
+  const notifY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-44, 44]), notifSpring);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (prefersReducedMotion || !containerRef.current) return;
@@ -1280,7 +1288,7 @@ function ProblemMockup() {
   const handleMouseLeave = useCallback(() => {
     mouseX.set(0);
     mouseY.set(0);
-    setTimeout(() => setIsAnimating(false), 400);
+    setTimeout(() => setIsAnimating(false), 500);
   }, [mouseX, mouseY]);
 
   const phones = [
@@ -1313,6 +1321,14 @@ function ProblemMockup() {
           rotateY: prefersReducedMotion ? 0 : sceneRotateY,
         }}
       >
+        <motion.div 
+          className="parallax-shell"
+          style={{
+            x: prefersReducedMotion ? 0 : shellX,
+            y: prefersReducedMotion ? 0 : shellY,
+          }}
+        />
+        
         <div className="mockup-phone-grid">
           {phones.map((phone, idx) => {
             const PhoneIcon = phone.Icon;
@@ -1328,7 +1344,13 @@ function ProblemMockup() {
                 <div className="phone-header">
                   <div className="phone-notch" />
                 </div>
-                <div className="phone-app-bar">
+                <motion.div 
+                  className="phone-app-bar parallax-appbar"
+                  style={{
+                    x: prefersReducedMotion ? 0 : appBarX,
+                    y: prefersReducedMotion ? 0 : appBarY,
+                  }}
+                >
                   <PhoneIcon className="w-4 h-4" />
                   <span>{phone.name}</span>
                   <motion.div 
@@ -1340,7 +1362,7 @@ function ProblemMockup() {
                   >
                     {phone.count}
                   </motion.div>
-                </div>
+                </motion.div>
                 <div className="phone-messages">
                   <motion.div 
                     className="unread-msg parallax-msg"
