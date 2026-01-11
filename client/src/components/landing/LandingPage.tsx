@@ -1182,7 +1182,7 @@ function HeroSection() {
                 >
                   segundos.
                   <motion.span
-                    className="absolute -top-2 -right-6 md:-top-3 md:-right-8 lg:-top-4 lg:-right-10 text-[var(--landing-primary)]"
+                    className="absolute -top-1 left-[calc(100%+0.5rem)] text-[var(--landing-primary)]"
                     initial={{ opacity: 0, scale: 0 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{
@@ -1193,7 +1193,7 @@ function HeroSection() {
                       damping: 15
                     }}
                   >
-                    <CheckCheck className="w-5 h-5 md:w-6 md:h-6 lg:w-8 lg:h-8" strokeWidth={3} />
+                    <CheckCheck className="w-8 h-8 md:w-10 md:h-10 lg:w-12 lg:h-12" strokeWidth={2.5} />
                   </motion.span>
                 </motion.span>
               </span>
