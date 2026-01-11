@@ -1903,8 +1903,9 @@ function SmokeDissolveTextGeneric({ words, colorClass, glowColor }: SmokeTextPro
           exit="exit"
           style={{ 
             position: 'absolute',
-            left: 0,
+            left: '50%',
             top: 0,
+            transform: 'translateX(-50%)',
             whiteSpace: 'nowrap'
           }}
         >
