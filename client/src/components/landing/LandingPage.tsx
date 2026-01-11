@@ -1839,12 +1839,12 @@ function ProblemSolutionSection() {
 
 const SMOKE_WORDS = [
   "agotador",
-  "Ineficiente", 
-  "Costoso",
-  "Tedioso",
+  "ineficiente", 
+  "costoso",
+  "tedioso",
   "insostenible",
-  "Lento",
-  "Poco rentable"
+  "lento",
+  "poco rentable"
 ];
 
 function SmokeDissolveText() {
