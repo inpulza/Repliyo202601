@@ -1169,7 +1169,7 @@ function HeroSection() {
                   Responde en{' '}
                 </motion.span>
                 <motion.span 
-                  className="inline-block"
+                  className="inline-block relative"
                   initial={{ opacity: 0, x: -80, filter: 'blur(20px)' }}
                   animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
                   transition={{ 
@@ -1181,20 +1181,20 @@ function HeroSection() {
                   }}
                 >
                   segundos.
-                </motion.span>
-                <motion.span
-                  className="inline-flex items-center ml-3 text-[var(--landing-primary)]"
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{
-                    delay: 1.1,
-                    duration: 0.25,
-                    type: "spring",
-                    stiffness: 500,
-                    damping: 15
-                  }}
-                >
-                  <CheckCheck className="w-8 h-8 md:w-10 md:h-10 lg:w-12 lg:h-12" strokeWidth={2.5} />
+                  <motion.span
+                    className="absolute -top-2 -right-6 md:-top-3 md:-right-8 lg:-top-4 lg:-right-10 text-[var(--landing-primary)]"
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{
+                      delay: 1.1,
+                      duration: 0.25,
+                      type: "spring",
+                      stiffness: 500,
+                      damping: 15
+                    }}
+                  >
+                    <CheckCheck className="w-5 h-5 md:w-6 md:h-6 lg:w-8 lg:h-8" strokeWidth={3} />
+                  </motion.span>
                 </motion.span>
               </span>
               <motion.span 
