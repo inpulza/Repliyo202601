@@ -4975,7 +4975,7 @@
   position: absolute;
   display: flex;
   align-items: center;
-  gap: 0;
+  gap: 12px;
   animation: float-notification 3s ease-in-out infinite;
 }
 
@@ -5020,15 +5020,11 @@
 }
 
 .pill-avatar-left {
-  margin-left: -20px;
   order: 1;
-  z-index: 1;
 }
 
 .pill-avatar-right {
-  margin-right: -20px;
   order: -1;
-  z-index: 1;
 }
 
 /* Solution pill avatars with cyan border */
@@ -5324,7 +5320,7 @@
 .indicator-wrapper {
   display: flex;
   align-items: center;
-  gap: 0;
+  gap: 12px;
 }
 
 .indicator-wrapper .indicator {
