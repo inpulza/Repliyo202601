@@ -1959,7 +1959,7 @@ function FloatingAvatar({ config }: { config: FloatingAvatarConfig }) {
       }}
     >
       {config.kind === 'icon' ? (
-        <config.icon className="text-white" style={{ width: size * 0.5, height: size * 0.5 }} />
+        <config.icon style={{ width: size * 0.5, height: size * 0.5, color: '#FFFFFF', stroke: '#FFFFFF' }} />
       ) : (
         <img src={config.imageSrc} alt="" className="w-full h-full object-cover" />
       )}
