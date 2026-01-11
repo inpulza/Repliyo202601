@@ -1137,11 +1137,9 @@ function SlotMachineSegundos() {
   const prefersReducedMotion = useReducedMotion();
   const [isSpinning, setIsSpinning] = useState(true);
   
-  const dialItems = ['47s', '23s', '12s', '7s', '5s', '3s', '1s', 'segundos.'];
+  const totalSpins = 8;
   const itemHeight = 1;
-  const totalItems = dialItems.length;
-  const extraSpins = 2;
-  const totalDistance = (totalItems * extraSpins + (totalItems - 1)) * itemHeight;
+  const totalDistance = (totalSpins - 1) * itemHeight;
   
   useEffect(() => {
     if (prefersReducedMotion) {
@@ -1172,46 +1170,32 @@ function SlotMachineSegundos() {
         initial={{ y: 0, filter: 'blur(0px)' }}
         animate={{ 
           y: `-${totalDistance}em`,
-          filter: isSpinning ? ['blur(0px)', 'blur(3px)', 'blur(4px)', 'blur(2px)', 'blur(0px)'] : 'blur(0px)'
+          filter: isSpinning ? ['blur(0px)', 'blur(6px)', 'blur(8px)', 'blur(4px)', 'blur(0px)'] : 'blur(0px)'
         }}
         transition={{
           y: {
-            duration: 1.8,
+            duration: 1.6,
             delay: 0.9,
             ease: [0.12, 0.8, 0.2, 1],
           },
           filter: {
-            duration: 1.8,
+            duration: 1.6,
             delay: 0.9,
-            times: [0, 0.1, 0.4, 0.8, 1],
+            times: [0, 0.15, 0.5, 0.85, 1],
           }
         }}
       >
-        {[...Array(extraSpins)].map((_, spinIdx) => (
-          dialItems.map((item, idx) => (
-            <span
-              key={`spin-${spinIdx}-${idx}`}
-              className="text-white/40 font-bold whitespace-nowrap"
-              style={{ height: '1em', lineHeight: '1em' }}
-            >
-              {item}
-            </span>
-          ))
+        {[...Array(totalSpins)].map((_, idx) => (
+          <span
+            key={`spin-${idx}`}
+            className={`font-bold whitespace-nowrap ${
+              idx === totalSpins - 1 ? 'text-white' : 'text-white/30'
+            }`}
+            style={{ height: '1em', lineHeight: '1em' }}
+          >
+            segundos.
+          </span>
         ))}
-        {dialItems.map((item, idx) => {
-          const isLast = item === 'segundos.';
-          return (
-            <span
-              key={`final-${idx}`}
-              className={`font-bold whitespace-nowrap ${
-                isLast ? 'text-white' : 'text-white/40'
-              }`}
-              style={{ height: '1em', lineHeight: '1em' }}
-            >
-              {item}
-            </span>
-          );
-        })}
       </motion.span>
     </span>
   );
