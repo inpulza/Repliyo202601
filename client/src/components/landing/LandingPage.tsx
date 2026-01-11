@@ -1804,8 +1804,8 @@ function ProblemSolutionSection() {
             <span className="text-sm uppercase tracking-[0.25em] text-white/40 font-semibold mb-4 block">
               El problema
             </span>
-            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-12 leading-tight">
-              Responder mensajes en 5 apps es <SmokeDissolveText />
+            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-16 leading-tight flex flex-wrap justify-center items-baseline gap-x-3">
+              <span>Responder mensajes en 5 apps es</span> <SmokeDissolveText />
             </h2>
             <div className="max-w-3xl mx-auto">
               <ProblemMockup />
@@ -1824,8 +1824,8 @@ function ProblemSolutionSection() {
             <span className="text-sm uppercase tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-4 block">
               La solución
             </span>
-            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-12 leading-tight">
-              Un inbox inteligente que <SolutionAnimatedText />
+            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-16 leading-tight flex flex-wrap justify-center items-baseline gap-x-3">
+              <span>Un inbox inteligente que</span> <SolutionAnimatedText />
             </h2>
             <div className="max-w-4xl mx-auto">
               <SolutionMockup />
