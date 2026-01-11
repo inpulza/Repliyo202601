@@ -1211,7 +1211,7 @@ function MarqueeSection() {
   const items = ['DMs', 'Comentarios', 'Respuestas IA', 'Recordatorios', 'CRM', 'Analytics', 'Multi-plataforma'];
   
   return (
-    <section className="marquee-section relative mt-32">
+    <section className="marquee-section relative mt-48">
       <div className="marquee-inner py-8 border-y border-white/20 section-dark relative">
         <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-4" : "marquee-container"}>
           <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-4" : "marquee-content"}>
