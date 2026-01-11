@@ -1940,17 +1940,17 @@ function FloatingUIElement({ config }: { config: FloatingElementConfig }) {
 
 function TimeSavedCard() {
   return (
-    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl shadow-orange-500/20 border border-orange-200/50" style={{ width: 140 }}>
-      <div className="flex items-center gap-2 mb-2">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
-          <Timer className="w-4 h-4 text-white" />
+    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl shadow-orange-500/20 border border-orange-200/50" style={{ width: 170 }}>
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
+          <Timer className="w-5 h-5 text-white" />
         </div>
-        <span className="text-xs font-semibold text-gray-600">Tiempo</span>
+        <span className="text-sm font-semibold text-gray-600">Tiempo</span>
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-400 line-through">4h</span>
-        <span className="text-lg">→</span>
-        <span className="text-xl font-bold text-orange-500">45min</span>
+        <span className="text-lg text-gray-400 line-through">4h</span>
+        <span className="text-xl text-gray-500">→</span>
+        <span className="text-2xl font-bold text-orange-500">45min</span>
       </div>
     </div>
   );
@@ -2153,10 +2153,10 @@ const STAT_FLOATING_ELEMENTS: { [key: number]: FloatingElementConfig[] } = {
     { component: <SpeedIndicator />, position: { x: '74%', y: '68%' }, delay: 0.12 },
   ],
   1: [
-    { component: <ChatBubbleTyping />, position: { x: '8%', y: '26%' }, delay: 0.05 },
-    { component: <QuickReplyPill />, position: { x: '74%', y: '28%' }, delay: 0.1 },
-    { component: <SendButtonCard />, position: { x: '10%', y: '66%' }, delay: 0.15 },
-    { component: <NotificationCard />, position: { x: '72%', y: '66%' }, delay: 0.12 },
+    { component: <ChatBubbleTyping />, position: { x: '5%', y: '26%' }, delay: 0.05 },
+    { component: <QuickReplyPill />, position: { x: '76%', y: '28%' }, delay: 0.1 },
+    { component: <SendButtonCard />, position: { x: '6%', y: '66%' }, delay: 0.15 },
+    { component: <NotificationCard />, position: { x: '76%', y: '66%' }, delay: 0.12 },
   ],
   2: [
     { component: <AvatarStack />, position: { x: '10%', y: '26%' }, delay: 0.05 },
