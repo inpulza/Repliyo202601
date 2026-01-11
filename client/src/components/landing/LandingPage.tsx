@@ -1174,8 +1174,6 @@ function SlotMachineIA() {
         style={{ 
           height: `${itemHeight}em`,
           width: '3ch',
-          maskImage: 'linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%)',
-          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%)',
         }}
       >
         <motion.span
