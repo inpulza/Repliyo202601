@@ -1182,7 +1182,7 @@ function HeroSection() {
                 >
                   segundos.
                   <motion.span
-                    className="absolute -top-1 left-[calc(100%+0.5rem)] text-[var(--landing-primary)]"
+                    className="absolute -top-1 left-[calc(100%-0.25rem)] text-[var(--landing-primary)]"
                     initial={{ opacity: 0, scale: 0 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{
