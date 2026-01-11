@@ -1236,14 +1236,11 @@ function HeroSection() {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ delay: 1.5, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+            className="flex items-center justify-center"
           >
             <a href="/login" className="btn-primary" data-testid="button-empezar-gratis-hero">
               Empezar gratis <ArrowRight className="w-4 h-4" />
             </a>
-            <button className="btn-secondary" data-testid="button-ver-demo">
-              <Play className="w-4 h-4" /> Ver demo
-            </button>
           </motion.div>
         </motion.div>
         
