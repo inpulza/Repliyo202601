@@ -1134,45 +1134,27 @@ function Header() {
 }
 
 function SlotMachineIA() {
-  const [phase, setPhase] = useState<'spinning' | 'slowing' | 'landed'>('spinning');
-  const [displayText, setDisplayText] = useState('+1');
+  const [isLanded, setIsLanded] = useState(false);
   const prefersReducedMotion = useReducedMotion();
   
-  const notificationNumbers = ['+1', '+3', '+7', '+12', '+23', '+47', '+99', '+156', '+82', '+34', '+61', '+8'];
+  const dialItems = ['+99', '+47', '+23', '+12', '+7', '+3', '+1', 'IA'];
+  const itemCount = dialItems.length;
+  const anglePerItem = 360 / itemCount;
+  const radius = 45;
+  const finalAngle = (itemCount - 1) * anglePerItem;
+  const totalRotation = 360 * 3 + finalAngle;
   
   useEffect(() => {
     if (prefersReducedMotion) {
-      setDisplayText('IA');
-      setPhase('landed');
+      setIsLanded(true);
       return;
     }
     
-    const startDelay = setTimeout(() => {
-      let spinCount = 0;
-      const maxSpins = 16;
-      
-      const spinInterval = setInterval(() => {
-        spinCount++;
-        
-        if (spinCount < maxSpins * 0.7) {
-          const randomIdx = Math.floor(Math.random() * notificationNumbers.length);
-          setDisplayText(notificationNumbers[randomIdx]);
-        } else if (spinCount < maxSpins * 0.9) {
-          setPhase('slowing');
-          const slowSequence = ['+99', '+47', '+12', 'IA'];
-          const idx = Math.floor((spinCount - maxSpins * 0.7) / 1.5) % slowSequence.length;
-          setDisplayText(slowSequence[idx]);
-        } else {
-          clearInterval(spinInterval);
-          setDisplayText('IA');
-          setPhase('landed');
-        }
-      }, 70);
-      
-      return () => clearInterval(spinInterval);
-    }, 900);
+    const landTimer = setTimeout(() => {
+      setIsLanded(true);
+    }, 2200);
     
-    return () => clearTimeout(startDelay);
+    return () => clearTimeout(landTimer);
   }, [prefersReducedMotion]);
   
   if (prefersReducedMotion) {
@@ -1183,69 +1165,78 @@ function SlotMachineIA() {
   
   return (
     <motion.span
-      className="inline-block relative"
+      className="inline-flex items-baseline"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ delay: 0.85, duration: 0.2 }}
+      transition={{ delay: 0.85, duration: 0.15 }}
     >
-      <motion.span
-        className={`inline-block font-bold transition-colors duration-200 ${
-          phase === 'landed' 
-            ? 'text-[var(--landing-primary)]' 
-            : phase === 'slowing' 
-              ? 'text-blue-300' 
-              : 'text-white/40'
-        }`}
-        animate={phase === 'spinning' ? {
-          y: [0, -3, 0, 2, 0],
-        } : phase === 'slowing' ? {
-          y: [0, -2, 0],
-        } : {
-          y: 0,
-          scale: [1, 1.05, 1],
-        }}
-        transition={phase === 'spinning' ? {
-          duration: 0.15,
-          repeat: Infinity,
-          ease: "linear"
-        } : phase === 'slowing' ? {
-          duration: 0.25,
-          repeat: Infinity,
-        } : {
-          duration: 0.3,
-          ease: [0.16, 1, 0.3, 1]
-        }}
-        style={{
-          textShadow: phase === 'landed' 
-            ? '0 0 30px rgba(59, 130, 246, 0.6), 0 0 60px rgba(59, 130, 246, 0.3)' 
-            : phase === 'slowing'
-              ? '0 0 15px rgba(59, 130, 246, 0.3)'
-              : 'none',
-          filter: phase === 'spinning' ? 'blur(0.5px)' : 'blur(0px)',
+      <span 
+        className="relative inline-block overflow-hidden"
+        style={{ 
+          height: '1.1em',
+          width: '2.5ch',
+          perspective: '200px',
+          perspectiveOrigin: 'center center',
         }}
       >
-        {displayText}
-      </motion.span>
-      {phase === 'landed' && (
         <motion.span
-          className="inline-block"
-          initial={{ opacity: 0 }}
-          animate={{ 
-            opacity: 1,
-            textShadow: [
-              '0 0 20px rgba(59, 130, 246, 0)',
-              '0 0 25px rgba(59, 130, 246, 0.5)',
-              '0 0 20px rgba(59, 130, 246, 0.3)',
-            ]
+          className="absolute inset-0 flex items-center justify-center"
+          style={{
+            transformStyle: 'preserve-3d',
+            transformOrigin: 'center center',
           }}
-          transition={{ 
-            opacity: { duration: 0.2 },
-            textShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+          initial={{ rotateX: 0 }}
+          animate={{ rotateX: -totalRotation }}
+          transition={{
+            duration: 1.8,
+            delay: 0.9,
+            ease: [0.16, 1, 0.3, 1],
           }}
         >
-          .
+          {dialItems.map((item, index) => {
+            const itemAngle = index * anglePerItem;
+            const isIA = item === 'IA';
+            
+            return (
+              <span
+                key={item}
+                className={`absolute font-bold ${
+                  isIA 
+                    ? 'text-[var(--landing-primary)]' 
+                    : 'text-white/30'
+                }`}
+                style={{
+                  transform: `rotateX(${itemAngle}deg) translateZ(${radius}px)`,
+                  backfaceVisibility: 'hidden',
+                  textShadow: isIA && isLanded
+                    ? '0 0 30px rgba(59, 130, 246, 0.6), 0 0 60px rgba(59, 130, 246, 0.3)'
+                    : 'none',
+                }}
+              >
+                {item}
+              </span>
+            );
+          })}
         </motion.span>
-      )}
+      </span>
+      <motion.span
+        className="text-[var(--landing-primary)] font-bold"
+        initial={{ opacity: 0 }}
+        animate={{ 
+          opacity: isLanded ? 1 : 0,
+          textShadow: isLanded ? [
+            '0 0 20px rgba(59, 130, 246, 0)',
+            '0 0 25px rgba(59, 130, 246, 0.5)',
+            '0 0 20px rgba(59, 130, 246, 0.3)',
+          ] : '0 0 0px rgba(59, 130, 246, 0)'
+        }}
+        transition={{ 
+          opacity: { duration: 0.2, delay: isLanded ? 0 : 2.7 },
+          textShadow: { duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }
+        }}
+      >
+        .
+      </motion.span>
     </motion.span>
   );
 }
