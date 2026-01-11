@@ -5060,14 +5060,18 @@
   justify-content: center;
 }
 
-.coin {
-  font-size: 36px;
+.coin-icon {
+  width: 36px;
+  height: 36px;
+  color: #ef4444;
   position: absolute;
   animation: coin-fall-break 3s ease-in-out infinite;
 }
 
-.coin-crack {
-  font-size: 28px;
+.coin-crack-icon {
+  width: 28px;
+  height: 28px;
+  color: #ef4444;
   position: absolute;
   opacity: 0;
   animation: coin-crack-appear 3s ease-in-out infinite;
@@ -5080,27 +5084,21 @@
   pointer-events: none;
 }
 
-.puff {
+.puff-icon {
+  width: 14px;
+  height: 14px;
+  color: #ef4444;
   position: absolute;
-  font-size: 16px;
   opacity: 0;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
 }
 
-.puff.p1 {
-  animation: puff-explode-1 3s ease-out infinite;
-}
-.puff.p2 {
-  animation: puff-explode-2 3s ease-out infinite;
-}
-.puff.p3 {
-  animation: puff-explode-3 3s ease-out infinite;
-}
-.puff.p4 {
-  animation: puff-explode-4 3s ease-out infinite;
-}
+.puff-icon.p1 { animation: puff-explode-1 3s ease-out infinite; }
+.puff-icon.p2 { animation: puff-explode-2 3s ease-out infinite; }
+.puff-icon.p3 { animation: puff-explode-3 3s ease-out infinite; }
+.puff-icon.p4 { animation: puff-explode-4 3s ease-out infinite; }
 
 @keyframes coin-fall-break {
   0% {
@@ -5192,16 +5190,18 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
 }
 
-.msg-envelope {
-  font-size: 18px;
+.msg-icon {
+  width: 18px;
+  height: 18px;
+  color: #ef4444;
 }
 
-.msg-envelope.m1 { animation: msg-appear-stay 3s ease-in-out infinite; }
-.msg-envelope.m2 { animation: msg-appear-vanish 3s ease-in-out infinite; }
-.msg-envelope.m3 { animation: msg-appear-stay 3s ease-in-out infinite; }
+.msg-icon.m1 { animation: msg-appear-stay 3s ease-in-out infinite; }
+.msg-icon.m2 { animation: msg-appear-vanish 3s ease-in-out infinite; }
+.msg-icon.m3 { animation: msg-appear-stay 3s ease-in-out infinite; }
 
 .msg-counter {
   position: absolute;
@@ -5212,9 +5212,11 @@
   animation: counter-bounce 3s ease-in-out infinite;
 }
 
-.msg-explode {
+.msg-alert-icon {
   position: absolute;
-  font-size: 24px;
+  width: 24px;
+  height: 24px;
+  color: #ef4444;
   opacity: 0;
   animation: msg-explode-effect 3s ease-out infinite;
 }
@@ -5262,15 +5264,19 @@
   justify-content: center;
 }
 
-.clock-face {
-  font-size: 36px;
+.clock-icon {
+  width: 36px;
+  height: 36px;
+  color: #ef4444;
   position: absolute;
   animation: clock-grow-vanish 3s ease-in-out infinite;
 }
 
-.clock-alert {
+.clock-alert-icon {
+  width: 32px;
+  height: 32px;
+  color: #ef4444;
   position: absolute;
-  font-size: 32px;
   opacity: 0;
   animation: alert-bounce-in 3s ease-out infinite;
 }
@@ -5307,10 +5313,14 @@
 
 .face-stages {
   position: absolute;
-  font-size: 38px;
+  width: 38px;
+  height: 38px;
 }
 
-.face-stage {
+.face-icon {
+  width: 38px;
+  height: 38px;
+  color: #ef4444;
   position: absolute;
   left: 50%;
   top: 50%;
@@ -5318,9 +5328,9 @@
   opacity: 0;
 }
 
-.face-stage.f1 { animation: face-transition-1 3s ease-in-out infinite; }
-.face-stage.f2 { animation: face-transition-2 3s ease-in-out infinite; }
-.face-stage.f3 { animation: face-transition-3 3s ease-in-out infinite; }
+.face-icon.f1 { animation: face-transition-1 3s ease-in-out infinite; }
+.face-icon.f2 { animation: face-transition-2 3s ease-in-out infinite; }
+.face-icon.f3 { animation: face-transition-3 3s ease-in-out infinite; }
 
 .anger-particles {
   position: absolute;
@@ -5328,17 +5338,19 @@
   height: 100%;
 }
 
-.anger-particle {
+.anger-icon {
+  width: 14px;
+  height: 14px;
+  color: #ef4444;
   position: absolute;
-  font-size: 14px;
   opacity: 0;
   top: 50%;
   left: 50%;
 }
 
-.anger-particle.a1 { animation: anger-burst 3s ease-out infinite; animation-delay: 2s; }
-.anger-particle.a2 { animation: anger-burst-2 3s ease-out infinite; animation-delay: 2.1s; }
-.anger-particle.a3 { animation: anger-burst-3 3s ease-out infinite; animation-delay: 2.2s; }
+.anger-icon.a1 { animation: anger-burst 3s ease-out infinite; animation-delay: 2s; }
+.anger-icon.a2 { animation: anger-burst-2 3s ease-out infinite; animation-delay: 2.1s; }
+.anger-icon.a3 { animation: anger-burst-3 3s ease-out infinite; animation-delay: 2.2s; }
 
 @keyframes face-transition-1 {
   0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
@@ -5382,6 +5394,281 @@
   0%, 70% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
   75% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   100% { opacity: 0; transform: translate(-50%, -200%) scale(0.5); }
+}
+
+/* ============ SOLUTION ANIMATION CONTAINERS ============ */
+.animated-solution-container {
+  width: 44px;
+  height: 44px;
+  background: white;
+  border-radius: 50%;
+  border: 2px solid #22d3ee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 0 4px 12px rgba(34, 211, 238, 0.15);
+}
+
+/* Animation: Fast Response - "Respuesta en 2 min" */
+.fast-response-animation {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zap-icon {
+  width: 24px;
+  height: 24px;
+  color: #22d3ee;
+  position: absolute;
+  animation: zap-flash 3s ease-in-out infinite;
+}
+
+.check-appear-icon {
+  width: 24px;
+  height: 24px;
+  color: #10b981;
+  position: absolute;
+  opacity: 0;
+  animation: check-pop-in 3s ease-out infinite;
+}
+
+@keyframes zap-flash {
+  0% { transform: scale(0); opacity: 0; }
+  10% { transform: scale(1.2); opacity: 1; }
+  20% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1); opacity: 1; }
+  60% { transform: scale(1.3); opacity: 1; }
+  70% { transform: scale(0); opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes check-pop-in {
+  0%, 65% { opacity: 0; transform: scale(0); }
+  75% { opacity: 1; transform: scale(1.3); }
+  80% { transform: scale(0.9); }
+  85% { transform: scale(1.1); }
+  90% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0); opacity: 0; }
+}
+
+/* Animation: AI Borradores - "IA genera borradores" */
+.ai-borradores-animation {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-icon {
+  width: 22px;
+  height: 22px;
+  color: #22d3ee;
+  position: absolute;
+  animation: file-appear 3s ease-in-out infinite;
+}
+
+.sparkles-icon {
+  width: 18px;
+  height: 18px;
+  color: #a855f7;
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  opacity: 0;
+  animation: sparkle-glow 3s ease-in-out infinite;
+}
+
+.check-done-icon {
+  width: 20px;
+  height: 20px;
+  color: #10b981;
+  position: absolute;
+  opacity: 0;
+  animation: check-finish 3s ease-out infinite;
+}
+
+@keyframes file-appear {
+  0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+  10% { transform: scale(1.1) rotate(0deg); opacity: 1; }
+  20% { transform: scale(1); opacity: 1; }
+  55% { transform: scale(1); opacity: 1; }
+  65% { transform: scale(0); opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes sparkle-glow {
+  0%, 15% { opacity: 0; transform: scale(0); }
+  25% { opacity: 1; transform: scale(1.2); }
+  35% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.1); opacity: 1; }
+  60% { opacity: 0; transform: scale(0); }
+  100% { opacity: 0; }
+}
+
+@keyframes check-finish {
+  0%, 60% { opacity: 0; transform: scale(0); }
+  70% { opacity: 1; transform: scale(1.3); }
+  80% { transform: scale(0.9); }
+  85% { transform: scale(1.05); }
+  90% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0); opacity: 0; }
+}
+
+/* Animation: Single Inbox - "Un solo inbox" */
+.single-inbox-animation {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inbox-merge {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.merge-icon {
+  width: 16px;
+  height: 16px;
+  color: #22d3ee;
+  opacity: 0;
+}
+
+.merge-icon.m1 { animation: merge-left 3s ease-in-out infinite; }
+.merge-icon.m2 { animation: merge-center 3s ease-in-out infinite; }
+.merge-icon.m3 { animation: merge-right 3s ease-in-out infinite; }
+
+.inbox-center-icon {
+  width: 26px;
+  height: 26px;
+  color: #22d3ee;
+  position: absolute;
+  opacity: 0;
+  animation: inbox-appear 3s ease-out infinite;
+}
+
+.inbox-check-icon {
+  width: 18px;
+  height: 18px;
+  color: #10b981;
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  opacity: 0;
+  animation: inbox-check 3s ease-out infinite;
+}
+
+@keyframes merge-left {
+  0% { opacity: 0; transform: translateX(-15px) scale(0.5); }
+  10% { opacity: 1; transform: translateX(-12px) scale(1); }
+  30% { opacity: 1; transform: translateX(-12px); }
+  50% { opacity: 0; transform: translateX(0) scale(0); }
+  100% { opacity: 0; }
+}
+
+@keyframes merge-center {
+  0% { opacity: 0; transform: scale(0.5); }
+  10% { opacity: 1; transform: scale(1); }
+  30% { opacity: 1; }
+  50% { opacity: 0; transform: scale(0); }
+  100% { opacity: 0; }
+}
+
+@keyframes merge-right {
+  0% { opacity: 0; transform: translateX(15px) scale(0.5); }
+  10% { opacity: 1; transform: translateX(12px) scale(1); }
+  30% { opacity: 1; transform: translateX(12px); }
+  50% { opacity: 0; transform: translateX(0) scale(0); }
+  100% { opacity: 0; }
+}
+
+@keyframes inbox-appear {
+  0%, 45% { opacity: 0; transform: scale(0); }
+  55% { opacity: 1; transform: scale(1.2); }
+  65% { transform: scale(1); opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; transform: scale(0); }
+}
+
+@keyframes inbox-check {
+  0%, 60% { opacity: 0; transform: scale(0); }
+  70% { opacity: 1; transform: scale(1.3); }
+  80% { transform: scale(1); opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; transform: scale(0); }
+}
+
+/* Animation: CRM Integrado - "CRM integrado" */
+.crm-animation {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.users-icon {
+  width: 22px;
+  height: 22px;
+  color: #22d3ee;
+  position: absolute;
+  animation: users-appear 3s ease-in-out infinite;
+}
+
+.database-icon {
+  width: 18px;
+  height: 18px;
+  color: #a855f7;
+  position: absolute;
+  opacity: 0;
+  animation: database-connect 3s ease-in-out infinite;
+}
+
+.crm-check-icon {
+  width: 18px;
+  height: 18px;
+  color: #10b981;
+  position: absolute;
+  opacity: 0;
+  animation: crm-check-pop 3s ease-out infinite;
+}
+
+@keyframes users-appear {
+  0% { transform: scale(0); opacity: 0; }
+  10% { transform: scale(1.1); opacity: 1; }
+  20% { transform: scale(1); opacity: 1; }
+  40% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0); opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes database-connect {
+  0%, 35% { opacity: 0; transform: scale(0) translateY(5px); }
+  45% { opacity: 1; transform: scale(1.2) translateY(0); }
+  55% { transform: scale(1); opacity: 1; }
+  65% { transform: scale(0); opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes crm-check-pop {
+  0%, 60% { opacity: 0; transform: scale(0); }
+  70% { opacity: 1; transform: scale(1.3); }
+  80% { transform: scale(0.9); }
+  85% { transform: scale(1.05); }
+  90% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0); opacity: 0; }
 }
 
 /* Solution Mockup Card */

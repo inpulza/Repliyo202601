@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring, useMotionValue, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle } from 'lucide-react';
+import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle, Mail, AlertTriangle, Frown, Angry, DollarSign, TrendingDown, FileText, Database, CheckCircle, XCircle } from 'lucide-react';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
 import avatarMaria from '@assets/generated_images/maria_customer_avatar_headshot.png';
@@ -54,17 +54,19 @@ import '../../styles/landing.css';
 
 gsap.registerPlugin(ScrollTrigger);
 
+/* ============ PROBLEM ANIMATIONS (Lucide Icons) ============ */
+
 function FallingCoinAnimation({ position }: { position: 'left' | 'right' }) {
   return (
     <div className={`animated-coin-container ${position === 'left' ? 'pill-avatar-left' : 'pill-avatar-right'}`}>
       <div className="coin-animation">
-        <div className="coin">💰</div>
-        <div className="coin-crack">💔</div>
+        <DollarSign className="coin-icon" />
+        <TrendingDown className="coin-crack-icon" />
         <div className="puff-particles">
-          <span className="puff p1">✨</span>
-          <span className="puff p2">💨</span>
-          <span className="puff p3">✨</span>
-          <span className="puff p4">💨</span>
+          <X className="puff-icon p1" />
+          <X className="puff-icon p2" />
+          <X className="puff-icon p3" />
+          <X className="puff-icon p4" />
         </div>
       </div>
     </div>
@@ -76,12 +78,12 @@ function MessagesOverflowAnimation({ position }: { position: 'left' | 'right' })
     <div className={`animated-messages-container ${position === 'left' ? 'pill-avatar-left' : 'pill-avatar-right'}`}>
       <div className="messages-animation">
         <div className="message-stack">
-          <span className="msg-envelope m1">📩</span>
-          <span className="msg-envelope m2">📩</span>
-          <span className="msg-envelope m3">📩</span>
+          <Mail className="msg-icon m1" />
+          <Mail className="msg-icon m2" />
+          <Mail className="msg-icon m3" />
         </div>
         <span className="msg-counter">+99</span>
-        <span className="msg-explode">💥</span>
+        <AlertCircle className="msg-alert-icon" />
       </div>
     </div>
   );
@@ -91,8 +93,8 @@ function ClockWaitingAnimation({ position }: { position: 'left' | 'right' }) {
   return (
     <div className={`animated-clock-container ${position === 'left' ? 'pill-avatar-left' : 'pill-avatar-right'}`}>
       <div className="clock-animation">
-        <span className="clock-face">⏰</span>
-        <span className="clock-alert">⚠️</span>
+        <Clock className="clock-icon" />
+        <AlertTriangle className="clock-alert-icon" />
       </div>
     </div>
   );
@@ -103,15 +105,68 @@ function AngryFaceAnimation({ position }: { position: 'left' | 'right' }) {
     <div className={`animated-angry-container ${position === 'left' ? 'pill-avatar-left' : 'pill-avatar-right'}`}>
       <div className="angry-animation">
         <div className="face-stages">
-          <span className="face-stage f1">😐</span>
-          <span className="face-stage f2">😠</span>
-          <span className="face-stage f3">🤬</span>
+          <Frown className="face-icon f1" />
+          <AlertCircle className="face-icon f2" />
+          <XCircle className="face-icon f3" />
         </div>
         <div className="anger-particles">
-          <span className="anger-particle a1">💢</span>
-          <span className="anger-particle a2">💢</span>
-          <span className="anger-particle a3">💢</span>
+          <X className="anger-icon a1" />
+          <X className="anger-icon a2" />
+          <X className="anger-icon a3" />
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============ SOLUTION ANIMATIONS (Lucide Icons) ============ */
+
+function FastResponseAnimation({ position }: { position: 'left' | 'right' }) {
+  return (
+    <div className={`animated-solution-container ${position === 'left' ? 'pill-avatar-left' : 'pill-avatar-right'}`}>
+      <div className="fast-response-animation">
+        <Zap className="zap-icon" />
+        <CheckCircle className="check-appear-icon" />
+      </div>
+    </div>
+  );
+}
+
+function AIBorradoresAnimation({ position }: { position: 'left' | 'right' }) {
+  return (
+    <div className={`animated-solution-container ${position === 'left' ? 'pill-avatar-left' : 'pill-avatar-right'}`}>
+      <div className="ai-borradores-animation">
+        <FileText className="file-icon" />
+        <Sparkles className="sparkles-icon" />
+        <Check className="check-done-icon" />
+      </div>
+    </div>
+  );
+}
+
+function SingleInboxAnimation({ position }: { position: 'left' | 'right' }) {
+  return (
+    <div className={`animated-solution-container ${position === 'left' ? 'pill-avatar-left' : 'pill-avatar-right'}`}>
+      <div className="single-inbox-animation">
+        <div className="inbox-merge">
+          <Mail className="merge-icon m1" />
+          <Mail className="merge-icon m2" />
+          <Mail className="merge-icon m3" />
+        </div>
+        <Inbox className="inbox-center-icon" />
+        <CheckCircle className="inbox-check-icon" />
+      </div>
+    </div>
+  );
+}
+
+function CRMIntegradoAnimation({ position }: { position: 'left' | 'right' }) {
+  return (
+    <div className={`animated-solution-container ${position === 'left' ? 'pill-avatar-left' : 'pill-avatar-right'}`}>
+      <div className="crm-animation">
+        <Users className="users-icon" />
+        <Database className="database-icon" />
+        <CheckCircle className="crm-check-icon" />
       </div>
     </div>
   );
@@ -1603,10 +1658,10 @@ function SolutionMockup() {
   ];
   
   const indicators = [
-    { icon: Check, text: 'Respuesta en 2 min', className: 'i1', avatar: solutionAvatar1, avatarPosition: 'left' as const },
-    { icon: Zap, text: 'IA genera borradores', className: 'i2', avatar: solutionAvatar2, avatarPosition: 'right' as const },
-    { icon: MessageSquare, text: 'Un solo inbox', className: 'i3', avatar: solutionAvatar3, avatarPosition: 'left' as const },
-    { icon: Users, text: 'CRM integrado', className: 'i4', avatar: solutionAvatar4, avatarPosition: 'right' as const },
+    { icon: Check, text: 'Respuesta en 2 min', className: 'i1', avatarPosition: 'left' as const, animationType: 'fastResponse' as const },
+    { icon: Zap, text: 'IA genera borradores', className: 'i2', avatarPosition: 'right' as const, animationType: 'aiBorradores' as const },
+    { icon: MessageSquare, text: 'Un solo inbox', className: 'i3', avatarPosition: 'left' as const, animationType: 'singleInbox' as const },
+    { icon: Users, text: 'CRM integrado', className: 'i4', avatarPosition: 'right' as const, animationType: 'crmIntegrado' as const },
   ];
   
   const panelVariants = {
@@ -1702,26 +1757,23 @@ function SolutionMockup() {
         <div className="success-indicators">
           {indicators.map((ind) => {
             const IconComponent = ind.icon;
+            const renderSolutionAnimation = (pos: 'left' | 'right') => {
+              switch (ind.animationType) {
+                case 'fastResponse': return <FastResponseAnimation position={pos} />;
+                case 'aiBorradores': return <AIBorradoresAnimation position={pos} />;
+                case 'singleInbox': return <SingleInboxAnimation position={pos} />;
+                case 'crmIntegrado': return <CRMIntegradoAnimation position={pos} />;
+                default: return null;
+              }
+            };
             return (
               <div key={ind.className} className={`indicator-wrapper ${ind.className}`}>
-                {ind.avatarPosition === 'left' && (
-                  <img 
-                    src={ind.avatar} 
-                    alt="" 
-                    className="pill-avatar pill-avatar-left solution"
-                  />
-                )}
+                {ind.avatarPosition === 'left' && renderSolutionAnimation('left')}
                 <div className="indicator">
                   <IconComponent className="w-3 h-3" />
                   <span>{ind.text}</span>
                 </div>
-                {ind.avatarPosition === 'right' && (
-                  <img 
-                    src={ind.avatar} 
-                    alt="" 
-                    className="pill-avatar pill-avatar-right solution"
-                  />
-                )}
+                {ind.avatarPosition === 'right' && renderSolutionAnimation('right')}
               </div>
             );
           })}
@@ -1871,6 +1923,15 @@ function SolutionMockup() {
         <div className="success-indicators">
           {indicators.map((ind, i) => {
             const IconComponent = ind.icon;
+            const renderSolutionAnimation = (pos: 'left' | 'right') => {
+              switch (ind.animationType) {
+                case 'fastResponse': return <FastResponseAnimation position={pos} />;
+                case 'aiBorradores': return <AIBorradoresAnimation position={pos} />;
+                case 'singleInbox': return <SingleInboxAnimation position={pos} />;
+                case 'crmIntegrado': return <CRMIntegradoAnimation position={pos} />;
+                default: return null;
+              }
+            };
             return (
               <motion.div
                 key={ind.className}
@@ -1880,28 +1941,12 @@ function SolutionMockup() {
                 animate={inView ? "visible" : "hidden"}
                 variants={indicatorVariants}
               >
-                {ind.avatarPosition === 'left' && (
-                  <motion.img 
-                    src={ind.avatar} 
-                    alt="" 
-                    className="pill-avatar pill-avatar-left solution"
-                    animate={{ y: [0, -4, 0] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: i * 0.2 }}
-                  />
-                )}
+                {ind.avatarPosition === 'left' && renderSolutionAnimation('left')}
                 <div className="indicator">
                   <IconComponent className="w-3 h-3" />
                   <span>{ind.text}</span>
                 </div>
-                {ind.avatarPosition === 'right' && (
-                  <motion.img 
-                    src={ind.avatar} 
-                    alt="" 
-                    className="pill-avatar pill-avatar-right solution"
-                    animate={{ y: [0, -4, 0] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: i * 0.2 }}
-                  />
-                )}
+                {ind.avatarPosition === 'right' && renderSolutionAnimation('right')}
               </motion.div>
             );
           })}
@@ -2042,7 +2087,7 @@ function ExpandingRipple({ delay }: { delay: number }) {
 }
 
 import { LucideIcon } from 'lucide-react';
-import { Clock4, ThumbsUp, CheckCircle, Zap as ZapIcon, MessageSquare as MsgSquare, Send as SendIcon, Heart as HeartIcon, Inbox as InboxIcon, Users2 as UsersIcon, TrendingUp, BarChart3, Sparkles as SparklesIcon, Bot, Moon, MessageCircle, Clock3, Rocket, Star, Timer } from 'lucide-react';
+import { Clock4, ThumbsUp, Zap as ZapIcon, MessageSquare as MsgSquare, Send as SendIcon, Heart as HeartIcon, Inbox as InboxIcon, Users2 as UsersIcon, TrendingUp, BarChart3, Sparkles as SparklesIcon, Bot, Moon, MessageCircle, Clock3, Rocket, Star, Timer } from 'lucide-react';
 
 type FloatingElementConfig = {
   component: React.ReactNode;
