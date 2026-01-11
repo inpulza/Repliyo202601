@@ -1241,23 +1241,26 @@ function ProblemMockup() {
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   
-  const springConfig = { damping: 25, stiffness: 150, mass: 0.5 };
+  const baseSpringConfig = { damping: 30, stiffness: 120, mass: 0.8 };
+  const phoneSpringConfig = { damping: 25, stiffness: 150, mass: 0.5 };
+  const msgSpringConfig = { damping: 22, stiffness: 180, mass: 0.4 };
+  const badgeSpringConfig = { damping: 18, stiffness: 200, mass: 0.3 };
+  const pillSpringConfig = { damping: 15, stiffness: 220, mass: 0.25 };
   
-  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [8, -8]), springConfig);
-  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-8, 8]), springConfig);
+  const baseRotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [6, -6]), baseSpringConfig);
+  const baseRotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-6, 6]), baseSpringConfig);
   
-  const cardTranslateX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-15, 15]), springConfig);
-  const cardTranslateY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-15, 15]), springConfig);
-  const cardRotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [4, -4]), springConfig);
-  const cardRotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-4, 4]), springConfig);
+  const phoneTranslateX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-12, 12]), phoneSpringConfig);
+  const phoneTranslateY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-12, 12]), phoneSpringConfig);
   
-  const badgeSpringConfig = { damping: 20, stiffness: 200, mass: 0.3 };
-  const badgeTranslateX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-30, 30]), badgeSpringConfig);
-  const badgeTranslateY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-30, 30]), badgeSpringConfig);
+  const msgTranslateX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-20, 20]), msgSpringConfig);
+  const msgTranslateY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-20, 20]), msgSpringConfig);
   
-  const notificationSpringConfig = { damping: 18, stiffness: 180, mass: 0.4 };
-  const notifTranslateX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-40, 40]), notificationSpringConfig);
-  const notifTranslateY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-40, 40]), notificationSpringConfig);
+  const badgeTranslateX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-35, 35]), badgeSpringConfig);
+  const badgeTranslateY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-35, 35]), badgeSpringConfig);
+  
+  const pillTranslateX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-50, 50]), pillSpringConfig);
+  const pillTranslateY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-50, 50]), pillSpringConfig);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (prefersReducedMotion || !containerRef.current) return;
@@ -1279,20 +1282,28 @@ function ProblemMockup() {
   }, [mouseX, mouseY]);
 
   const phones = [
-    { platform: 'instagram', Icon: FaInstagram, name: 'Instagram', count: 23, depth: 1 },
-    { platform: 'tiktok', Icon: FaTiktok, name: 'TikTok', count: 47, depth: 1.2 },
-    { platform: 'facebook', Icon: FaFacebook, name: 'Facebook', count: 12, depth: 0.8 },
-    { platform: 'linkedin', Icon: FaLinkedin, name: 'LinkedIn', count: 8, depth: 1.1 },
-    { platform: 'youtube', Icon: FaYoutube, name: 'YouTube', count: 31, depth: 0.9 },
-    { platform: 'google', Icon: GoogleBusinessIcon, name: 'Google', count: 5, depth: 1.3 },
+    { platform: 'instagram', Icon: FaInstagram, name: 'Instagram', count: 23, msgCount: 3 },
+    { platform: 'tiktok', Icon: FaTiktok, name: 'TikTok', count: 47, msgCount: 3 },
+    { platform: 'facebook', Icon: FaFacebook, name: 'Facebook', count: 12, msgCount: 2 },
+    { platform: 'linkedin', Icon: FaLinkedin, name: 'LinkedIn', count: 8, msgCount: 2 },
+    { platform: 'youtube', Icon: FaYoutube, name: 'YouTube', count: 31, msgCount: 3 },
+    { platform: 'google', Icon: GoogleBusinessIcon, name: 'Google', count: 5, msgCount: 2 },
   ];
 
   const notifications = [
-    { id: 'n1', icon: Bell, text: '+82 mensajes sin leer', depth: 1.5, offsetX: -20, offsetY: -10 },
-    { id: 'n2', icon: Clock, text: 'Lead esperando 4 horas', depth: 1.7, offsetX: 15, offsetY: 5 },
-    { id: 'n3', icon: AlertCircle, text: 'Cliente frustrado', depth: 1.6, offsetX: -10, offsetY: 15 },
-    { id: 'n4', icon: MessageSquare, text: 'Venta perdida', depth: 1.8, offsetX: 20, offsetY: -5 },
+    { id: 'n1', icon: Bell, text: '+82 mensajes sin leer', multiplier: 1.0 },
+    { id: 'n2', icon: Clock, text: 'Lead esperando 4 horas', multiplier: 1.15 },
+    { id: 'n3', icon: AlertCircle, text: 'Cliente frustrado', multiplier: 1.3 },
+    { id: 'n4', icon: MessageSquare, text: 'Venta perdida', multiplier: 1.45 },
   ];
+
+  const LAYER_Z = {
+    base: 0,
+    phones: 60,
+    messages: 120,
+    badges: 180,
+    pills: 260,
+  };
 
   return (
     <motion.div 
@@ -1301,65 +1312,82 @@ function ProblemMockup() {
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       style={{
-        perspective: 1000,
-        transformStyle: 'preserve-3d',
+        perspective: 1200,
+        perspectiveOrigin: '50% 50%',
       }}
     >
       <motion.div 
-        className="parallax-3d-scene"
+        className="parallax-3d-scene parallax-layer-base"
         style={{
-          rotateX: prefersReducedMotion ? 0 : rotateX,
-          rotateY: prefersReducedMotion ? 0 : rotateY,
+          rotateX: prefersReducedMotion ? 0 : baseRotateX,
+          rotateY: prefersReducedMotion ? 0 : baseRotateY,
           transformStyle: 'preserve-3d',
+          transform: `translateZ(${LAYER_Z.base}px)`,
         }}
       >
-        <div className="mockup-phone-grid" style={{ transformStyle: 'preserve-3d' }}>
+        <motion.div 
+          className="mockup-phone-grid parallax-layer-phones"
+          style={{ 
+            transformStyle: 'preserve-3d',
+            x: prefersReducedMotion ? 0 : phoneTranslateX,
+            y: prefersReducedMotion ? 0 : phoneTranslateY,
+          }}
+        >
           {phones.map((phone, idx) => {
             const PhoneIcon = phone.Icon;
-            const depthMultiplier = phone.depth;
             
             return (
-              <motion.div 
+              <div 
                 key={phone.platform}
                 className={`chaos-phone ${phone.platform}`}
                 style={{
-                  x: useTransform(cardTranslateX, v => v * depthMultiplier),
-                  y: useTransform(cardTranslateY, v => v * depthMultiplier),
-                  rotateX: useTransform(cardRotateX, v => v * depthMultiplier),
-                  rotateY: useTransform(cardRotateY, v => v * depthMultiplier),
-                  z: 20 * depthMultiplier,
                   transformStyle: 'preserve-3d',
+                  transform: `translateZ(${LAYER_Z.phones}px)`,
+                  position: 'relative',
+                  zIndex: 10,
                 }}
               >
                 <div className="phone-header">
                   <div className="phone-notch" />
                 </div>
-                <div className="phone-app-bar">
+                <div className="phone-app-bar" style={{ position: 'relative' }}>
                   <PhoneIcon className="w-4 h-4" />
                   <span>{phone.name}</span>
                   <motion.div 
                     className="notification-badge parallax-badge"
                     style={{
-                      x: useTransform(badgeTranslateX, v => v * (depthMultiplier + 0.5)),
-                      y: useTransform(badgeTranslateY, v => v * (depthMultiplier + 0.5)),
-                      z: 40 + (10 * depthMultiplier),
+                      x: prefersReducedMotion ? 0 : badgeTranslateX,
+                      y: prefersReducedMotion ? 0 : badgeTranslateY,
                       transformStyle: 'preserve-3d',
+                      transform: `translateZ(${LAYER_Z.badges - LAYER_Z.phones}px)`,
+                      position: 'relative',
+                      zIndex: 30,
                     }}
                   >
                     {phone.count}
                   </motion.div>
                 </div>
-                <div className="phone-messages">
-                  <div className="unread-msg" />
-                  <div className="unread-msg" />
-                  {idx % 2 === 0 && <div className="unread-msg faded" />}
-                </div>
-              </motion.div>
+                <motion.div 
+                  className="phone-messages"
+                  style={{
+                    x: prefersReducedMotion ? 0 : msgTranslateX,
+                    y: prefersReducedMotion ? 0 : msgTranslateY,
+                    transformStyle: 'preserve-3d',
+                    transform: `translateZ(${LAYER_Z.messages - LAYER_Z.phones}px)`,
+                    position: 'relative',
+                    zIndex: 20,
+                  }}
+                >
+                  {Array.from({ length: phone.msgCount }).map((_, i) => (
+                    <div key={i} className={`unread-msg ${i === phone.msgCount - 1 ? 'faded' : ''}`} />
+                  ))}
+                </motion.div>
+              </div>
             );
           })}
-        </div>
+        </motion.div>
         
-        <div className="chaos-overlay" style={{ transformStyle: 'preserve-3d' }}>
+        <div className="chaos-overlay parallax-layer-pills" style={{ transformStyle: 'preserve-3d' }}>
           {notifications.map((notif) => {
             const NotifIcon = notif.icon;
             return (
@@ -1367,10 +1395,12 @@ function ProblemMockup() {
                 key={notif.id}
                 className={`floating-notification ${notif.id} parallax-notification`}
                 style={{
-                  x: useTransform(notifTranslateX, v => v * notif.depth + notif.offsetX),
-                  y: useTransform(notifTranslateY, v => v * notif.depth + notif.offsetY),
-                  z: 60 + (notif.depth * 20),
+                  x: useTransform(pillTranslateX, v => v * notif.multiplier),
+                  y: useTransform(pillTranslateY, v => v * notif.multiplier),
                   transformStyle: 'preserve-3d',
+                  transform: `translateZ(${LAYER_Z.pills}px)`,
+                  position: 'relative',
+                  zIndex: 40,
                 }}
               >
                 <NotifIcon className="w-3 h-3" />
