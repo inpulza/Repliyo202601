@@ -4884,24 +4884,16 @@
 /* Problem and Solution Tiles */
 .problem-tiles,
 .solution-tiles {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-  max-width: 320px;
-  margin: 0 auto;
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-/* Only use grid on larger screens */
-@media (min-width: 640px) {
-  .problem-tiles,
-  .solution-tiles {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    max-width: 420px;
-  }
-}
-
-.problem-tile {
+.problem-tile,
+.solution-tile {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4915,27 +4907,6 @@
   transition: all 0.3s ease;
 }
 
-.solution-tile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 16px 12px;
-  background: var(--landing-primary);
-  border: 1px solid transparent;
-  border-radius: 16px;
-  text-align: center;
-  transition: all 0.3s ease;
-}
-
-.solution-tile svg {
-  color: white !important;
-}
-
-.solution-tile span {
-  color: white !important;
-}
-
 .problem-tile:hover {
   background: rgba(239, 68, 68, 0.08);
   border-color: rgba(239, 68, 68, 0.2);
@@ -4943,13 +4914,14 @@
 }
 
 .solution-tile:hover {
-  background: var(--landing-primary);
-  opacity: 0.9;
+  background: rgba(6, 182, 212, 0.08);
+  border-color: rgba(6, 182, 212, 0.2);
   transform: translateY(-2px);
 }
 
 /* Light theme adjustments */
-.landing-page.theme-light .problem-tile {
+.landing-page.theme-light .problem-tile,
+.landing-page.theme-light .solution-tile {
   background: rgba(0, 0, 0, 0.02);
   border-color: rgba(0, 0, 0, 0.08);
 }
@@ -4959,30 +4931,18 @@
   border-color: rgba(239, 68, 68, 0.15);
 }
 
-/* Solution tiles keep blue background in light theme too */
-.landing-page.theme-light .solution-tile {
-  background: var(--landing-primary);
-  border-color: transparent;
-}
-
 .landing-page.theme-light .solution-tile:hover {
-  background: var(--landing-primary);
-  opacity: 0.9;
+  background: rgba(6, 182, 212, 0.06);
+  border-color: rgba(6, 182, 212, 0.15);
 }
 
-.landing-page.theme-light .solution-tile svg {
-  color: white !important;
-}
-
-.landing-page.theme-light .solution-tile span {
-  color: white !important;
-}
-
-.landing-page.theme-light .problem-tile span.font-medium {
+.landing-page.theme-light .problem-tile span.font-medium,
+.landing-page.theme-light .solution-tile span.font-medium {
   color: var(--landing-text);
 }
 
-.landing-page.theme-light .problem-tile span.text-white\/50 {
+.landing-page.theme-light .problem-tile span.text-white\/50,
+.landing-page.theme-light .solution-tile span.text-white\/50 {
   color: var(--landing-text-muted);
 }
 
@@ -5894,28 +5854,18 @@
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .mockup-phone-grid {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    gap: 12px;
-    padding-bottom: 12px;
-    -webkit-overflow-scrolling: touch;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  
+  .chaos-phone:nth-child(5),
+  .chaos-phone:nth-child(6) {
+    display: none;
   }
   
   .chaos-phone {
-    flex-shrink: 0;
-    width: 140px;
-    scroll-snap-align: start;
     border-radius: 12px;
     padding: 8px 6px;
-  }
-  
-  /* Show all phones on mobile with horizontal scroll */
-  .chaos-phone:nth-child(3),
-  .chaos-phone:nth-child(4),
-  .chaos-phone:nth-child(5),
-  .chaos-phone:nth-child(6) {
-    display: block !important;
   }
   
   .phone-header {
@@ -6018,26 +5968,13 @@
 
 @media (max-width: 480px) {
   .mockup-phone-grid {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    gap: 8px;
-    padding-bottom: 10px;
-    -webkit-overflow-scrolling: touch;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
   }
   
-  .chaos-phone {
-    flex-shrink: 0;
-    width: 120px;
-    scroll-snap-align: start;
-  }
-  
-  /* Show all phones on mobile with horizontal scroll */
   .chaos-phone:nth-child(3),
-  .chaos-phone:nth-child(4),
-  .chaos-phone:nth-child(5),
-  .chaos-phone:nth-child(6) {
-    display: block !important;
+  .chaos-phone:nth-child(4) {
+    display: none;
   }
   
   .problem-mockup-card,
@@ -6078,17 +6015,14 @@
 
 .mobile-step-item {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  align-items: center;
+  gap: 1.25rem;
 }
 
 .mobile-step-indicator {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  flex-shrink: 0;
 }
 
 .mobile-step-number {
@@ -6107,19 +6041,21 @@
 }
 
 .mobile-step-line {
-  display: none;
+  width: 2px;
+  flex: 1;
+  min-height: 40px;
+  background: linear-gradient(to bottom, var(--landing-primary), rgba(255, 255, 255, 0.1));
+  margin-top: 12px;
+  border-radius: 1px;
 }
 
 .mobile-step-content {
-  text-align: center;
-  padding: 0;
+  flex: 1;
+  padding-top: 6px;
 }
 
 .mobile-step-phone-mockup {
   margin-top: 1rem;
-  width: 100%;
-  display: flex;
-  justify-content: center;
 }
 
 .mobile-phone-frame {
@@ -6131,10 +6067,7 @@
     0 25px 50px -12px rgba(0, 0, 0, 0.5),
     0 0 0 1px rgba(255, 255, 255, 0.05),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  width: 100%;
-  max-width: 280px;
-  margin: 0 auto;
-  transform: none !important;
+  max-width: 300px;
 }
 
 .mobile-phone-notch {
@@ -6170,52 +6103,22 @@
 }
 
 .mobile-phone-screen .step-mockup {
-  transform: scale(0.85) !important;
+  transform: scale(0.85);
   transform-origin: center center;
-  position: relative !important;
-  left: auto !important;
-  right: auto !important;
-  margin: 0 auto !important;
 }
 
 .mobile-phone-screen .connect-mockup-v3 {
-  transform: scale(0.75) !important;
-  position: relative !important;
-  left: auto !important;
-  right: auto !important;
-  margin: 0 auto !important;
+  transform: scale(0.75);
 }
 
 .mobile-phone-screen .ai-mockup-v3 {
-  transform: scale(0.9) !important;
-  width: 100% !important;
-  position: relative !important;
-  left: auto !important;
-  right: auto !important;
-  margin: 0 auto !important;
+  transform: scale(0.9);
+  width: 100%;
 }
 
 .mobile-phone-screen .send-mockup-v2 {
-  transform: scale(0.85) !important;
-  width: 100% !important;
-  position: relative !important;
-  left: auto !important;
-  right: auto !important;
-  margin: 0 auto !important;
-}
-
-.mobile-phone-frame .step-mockup,
-.mobile-phone-frame .connect-mockup,
-.mobile-phone-frame .connect-mockup-v3,
-.mobile-phone-frame .ai-mockup,
-.mobile-phone-frame .ai-mockup-v3,
-.mobile-phone-frame .send-mockup,
-.mobile-phone-frame .send-mockup-v2,
-.mobile-phone-screen > div {
-  position: relative !important;
-  left: auto !important;
-  right: auto !important;
-  margin: 0 auto !important;
+  transform: scale(0.85);
+  width: 100%;
 }
 
 /* Light theme adjustments */
