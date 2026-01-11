@@ -5010,29 +5010,31 @@
 
 /* Pill Avatar Styles */
 .pill-avatar {
-  width: 44px;
-  height: 44px;
+  width: 88px;
+  height: 88px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border: 4px solid white;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
   flex-shrink: 0;
 }
 
 .pill-avatar-left {
-  margin-right: -10px;
+  margin-left: -20px;
+  order: 1;
   z-index: 1;
 }
 
 .pill-avatar-right {
-  margin-left: -10px;
+  margin-right: -20px;
+  order: -1;
   z-index: 1;
 }
 
 /* Solution pill avatars with cyan border */
 .pill-avatar.solution {
   border-color: rgba(2, 145, 250, 0.8);
-  box-shadow: 0 4px 12px rgba(2, 145, 250, 0.3);
+  box-shadow: 0 6px 20px rgba(2, 145, 250, 0.35);
 }
 
 /* Solution Mockup Card */
