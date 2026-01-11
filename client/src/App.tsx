@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { NexusProvider } from "@/context/NexusContext";
+import { LanguageProvider } from "@/context/LanguageContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Inbox } from "@/components/Inbox";
 import { Overview } from "@/pages/Overview";
@@ -163,10 +164,12 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <NexusProvider>
-          <TooltipProvider>
-            <Router />
-            <Toaster />
-          </TooltipProvider>
+          <LanguageProvider>
+            <TooltipProvider>
+              <Router />
+              <Toaster />
+            </TooltipProvider>
+          </LanguageProvider>
         </NexusProvider>
       </AuthProvider>
     </QueryClientProvider>

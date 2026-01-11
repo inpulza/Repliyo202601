@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring, useMotionValue, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Play, Check, CheckCheck, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle } from 'lucide-react';
+import { ArrowRight, Play, Check, CheckCheck, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle, Globe } from 'lucide-react';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
+import { useLanguage } from '../../context/LanguageContext';
 import avatarMaria from '@assets/generated_images/maria_customer_avatar_headshot.png';
 import avatarCarlos from '@assets/generated_images/carlos_customer_avatar_headshot.png';
 import avatarAna from '@assets/generated_images/ana_customer_avatar_headshot.png';
@@ -1100,6 +1101,7 @@ function InboxMockup() {
 function Header() {
   const [scrolled, setScrolled] = useState(false);
   const prefersReducedMotion = useReducedMotion();
+  const { language, setLanguage, t } = useLanguage();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -1122,6 +1124,10 @@ function Header() {
     }
   };
 
+  const toggleLanguage = () => {
+    setLanguage(language === 'es' ? 'en' : 'es');
+  };
+
   return (
     <motion.header 
       initial={prefersReducedMotion ? false : { y: -100, opacity: 0 }}
@@ -1134,13 +1140,22 @@ function Header() {
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         <a href="/" className="font-display font-bold text-2xl text-white" data-testid="link-logo">Repliyo</a>
         <nav className="hidden md:flex items-center gap-8">
-          <a href="#features" onClick={(e) => scrollToSection(e, 'features')} className="nav-link" data-testid="link-nav-producto">Producto</a>
-          <a href="#how" onClick={(e) => scrollToSection(e, 'how')} className="nav-link" data-testid="link-nav-como-funciona">Cómo funciona</a>
-          <a href="#testimonial" onClick={(e) => scrollToSection(e, 'testimonial')} className="nav-link" data-testid="link-nav-testimonios">Testimonios</a>
+          <a href="#features" onClick={(e) => scrollToSection(e, 'features')} className="nav-link" data-testid="link-nav-producto">{t.header.product}</a>
+          <a href="#how" onClick={(e) => scrollToSection(e, 'how')} className="nav-link" data-testid="link-nav-como-funciona">{t.header.howItWorks}</a>
+          <a href="#testimonial" onClick={(e) => scrollToSection(e, 'testimonial')} className="nav-link" data-testid="link-nav-testimonios">{t.header.testimonials}</a>
         </nav>
         <div className="flex items-center gap-3">
+          <button 
+            onClick={toggleLanguage}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm text-white/70 hover:text-white transition-colors rounded-lg hover:bg-white/5"
+            data-testid="button-language-toggle"
+            aria-label={language === 'es' ? 'Switch to English' : 'Cambiar a Español'}
+          >
+            <Globe className="w-4 h-4" />
+            <span className="font-medium">{language === 'es' ? 'EN' : 'ES'}</span>
+          </button>
           <a href="/login" className="btn-primary text-sm py-2.5 px-5" data-testid="button-login-header">
-            Iniciar sesión
+            {t.header.login}
           </a>
         </div>
       </div>
@@ -1151,6 +1166,7 @@ function Header() {
 function HeroSection() {
   const containerRef = useRef(null);
   const prefersReducedMotion = useReducedMotion();
+  const { t } = useLanguage();
   const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end start'] });
   
   const textY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [0, 100]);
@@ -1181,7 +1197,7 @@ function HeroSection() {
                   animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                   transition={{ duration: 0.7, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
                 >
-                  Responde en{' '}
+                  {t.hero.titlePart1}{' '}
                 </motion.span>
                 <motion.span 
                   className="inline-block relative"
@@ -1195,7 +1211,7 @@ function HeroSection() {
                     damping: 28
                   }}
                 >
-                  segundos.
+                  {t.hero.titlePart2}
                   <motion.span
                     className="absolute -top-1 left-[calc(100%-0.25rem)] text-[var(--landing-primary)]"
                     initial={{ opacity: 0, scale: 0 }}
@@ -1218,7 +1234,7 @@ function HeroSection() {
                 animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                 transition={{ duration: 0.6, delay: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
               >
-                Vende más con IA.
+                {t.hero.subtitle}
               </motion.span>
             </motion.h1>
           </div>
@@ -1229,7 +1245,7 @@ function HeroSection() {
             transition={{ delay: 1.2, duration: 0.6 }}
             className="text-xl md:text-2xl lg:text-3xl text-white/50 max-w-3xl mx-auto mb-10 leading-relaxed"
           >
-            Unifica todos tus DMs y comentarios de Instagram, TikTok y Facebook en un inbox inteligente que responde automáticamente.
+            {t.hero.description}
           </motion.p>
 
           <motion.div 
@@ -1239,7 +1255,7 @@ function HeroSection() {
             className="flex items-center justify-center"
           >
             <a href="/login" className="btn-primary" data-testid="button-empezar-gratis-hero">
-              Empezar gratis <ArrowRight className="w-4 h-4" />
+              {t.hero.cta} <ArrowRight className="w-4 h-4" />
             </a>
           </motion.div>
         </motion.div>
@@ -1263,7 +1279,8 @@ function HeroSection() {
 
 function MarqueeSection() {
   const prefersReducedMotion = useReducedMotion();
-  const items = ['DMs', 'Comentarios', 'Respuestas IA', 'Recordatorios', 'CRM', 'Analytics', 'Multi-plataforma'];
+  const { t } = useLanguage();
+  const items = t.marquee.items;
   
   return (
     <section className="marquee-section relative mt-48">
@@ -2487,6 +2504,7 @@ function HowItWorksSection() {
   const checkpointsRef = useRef<(HTMLDivElement | null)[]>([]);
   const prefersReducedMotion = useReducedMotion();
   const [activeStep, setActiveStep] = useState(0);
+  const { t } = useLanguage();
 
   useGSAP(() => {
     if (prefersReducedMotion || !containerRef.current || !sectionRef.current) return;
@@ -2598,26 +2616,7 @@ function HowItWorksSection() {
     return () => ctx.revert();
   }, { scope: sectionRef });
 
-  const steps = [
-    {
-      number: '01',
-      title: 'Conecta tus redes',
-      description: 'Vincula Instagram, TikTok, Facebook, YouTube, LinkedIn y Google My Business en minutos. Todos tus DMs y comentarios aparecerán en un solo lugar.',
-      mockup: <Step1ConnectMockup />
-    },
-    {
-      number: '02',
-      title: 'La IA aprende tu estilo',
-      description: 'Entrena al asistente con ejemplos de tus mejores respuestas. Genera borradores que suenan exactamente como tú, manteniendo tu tono único y personalizado para cada cliente.',
-      mockup: <Step2AIMockup />
-    },
-    {
-      number: '03',
-      title: 'Responde y haz seguimiento',
-      description: 'Revisa, edita si quieres, y envía. Los recordatorios automáticos aseguran que ningún lead se enfríe. Programa follow-ups y nunca pierdas una oportunidad de venta.',
-      mockup: <Step3SendMockup />
-    }
-  ];
+  const stepMockups = [<Step1ConnectMockup />, <Step2AIMockup />, <Step3SendMockup />];
 
   if (prefersReducedMotion) {
     return (
@@ -2625,20 +2624,20 @@ function HowItWorksSection() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-20">
             <span className="text-sm uppercase tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-4 block">
-              Cómo funciona
+              {t.howItWorks.label}
             </span>
             <h2 className="font-display text-4xl md:text-6xl font-bold text-white">
-              De caos a control en <span className="text-white/60">3 pasos</span>
+              {t.howItWorks.title} <span className="text-white/60">{t.howItWorks.titleHighlight}</span>
             </h2>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
-            {steps.map((step) => (
+            {t.howItWorks.steps.map((step, i) => (
               <div key={step.number} className="how-card">
                 <div className="card-inner">
                   <span className="step-number">{step.number}</span>
                   <h3 className="font-display text-2xl font-bold text-white mt-4 mb-3">{step.title}</h3>
                   <p className="text-white/50 text-base leading-relaxed mb-6">{step.description}</p>
-                  <div className="step-mockup-container">{step.mockup}</div>
+                  <div className="step-mockup-container">{stepMockups[i]}</div>
                 </div>
               </div>
             ))}
@@ -2653,10 +2652,10 @@ function HowItWorksSection() {
       <div ref={containerRef} className="how-pinned-container">
         <div className="how-header">
           <span className="text-sm uppercase tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-4 block">
-            Cómo funciona
+            {t.howItWorks.label}
           </span>
           <h2 className="font-display text-4xl md:text-6xl font-bold text-white mb-8">
-            De caos a control en <span className="text-white/60">3 pasos</span>
+            {t.howItWorks.title} <span className="text-white/60">{t.howItWorks.titleHighlight}</span>
           </h2>
         </div>
 
@@ -2665,7 +2664,7 @@ function HowItWorksSection() {
           backgroundSize: 'cover',
           backgroundPosition: 'center 10%'
         }}>
-          {steps.map((step, i) => (
+          {t.howItWorks.steps.map((step, i) => (
             <div 
               key={step.number} 
               className={`how-step-panel ${activeStep === i ? 'active' : ''}`}
@@ -2680,7 +2679,7 @@ function HowItWorksSection() {
                   </p>
                 </div>
                 <div className="how-step-mockup">
-                  {step.mockup}
+                  {stepMockups[i]}
                 </div>
               </div>
             </div>
@@ -2696,7 +2695,7 @@ function HowItWorksSection() {
             />
           </div>
           <div className="how-scroll-checkmarks">
-            {steps.map((_, i) => (
+            {t.howItWorks.steps.map((_, i) => (
               <div
                 key={i}
                 ref={(el) => { checkpointsRef.current[i] = el; }}
@@ -2717,6 +2716,7 @@ function HowItWorksSection() {
 function FeaturesSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
+  const { t } = useLanguage();
 
   useGSAP(() => {
     if (prefersReducedMotion) return;
@@ -2747,57 +2747,27 @@ function FeaturesSection() {
     return () => ctx.revert();
   }, { scope: sectionRef });
 
-  const features = [
-    { 
-      iconImage: featureIconInbox, 
-      title: 'Inbox unificado', 
-      description: 'Todas tus conversaciones de Instagram, TikTok y Facebook en un solo lugar.',
-      size: 'medium',
-      mockup: <FeatureInboxMockup />
-    },
-    { 
-      iconImage: featureIconMultiAgent, 
-      title: 'Multi-agente', 
-      description: 'Varios miembros del equipo colaborando en tiempo real.',
-      size: 'medium',
-      mockup: <FeatureMultiAgentMockup />
-    },
-    { 
-      iconImage: featureIconAI, 
-      title: 'Respuestas IA', 
-      description: 'Borradores que capturan tu tono de voz único.',
-      size: 'small',
-      mockup: <FeatureAIMockup />
-    },
-    { 
-      iconImage: featureIconCRM, 
-      title: 'CRM integrado', 
-      description: 'Perfil completo de cada contacto con historial.',
-      size: 'small',
-      mockup: <FeatureCRMMockup />
-    },
-    { 
-      iconImage: featureIconReminder, 
-      title: 'Recordatorios', 
-      description: 'Seguimiento automático para leads inactivos.',
-      size: 'medium',
-      mockup: <FeatureReminderMockup />
-    },
-    { 
-      iconImage: featureIconComments, 
-      title: 'Comentarios', 
-      description: 'Gestiona comentarios de posts desde el inbox.',
-      size: 'medium',
-      mockup: <FeatureCommentsMockup />
-    },
-    { 
-      iconImage: featureIconAnalytics, 
-      title: 'Analytics', 
-      description: 'Métricas de rendimiento y tiempo de respuesta.',
-      size: 'medium',
-      mockup: <FeatureAnalyticsMockup />
-    },
+  const featureMockups = [
+    <FeatureInboxMockup />,
+    <FeatureMultiAgentMockup />,
+    <FeatureAIMockup />,
+    <FeatureCRMMockup />,
+    <FeatureReminderMockup />,
+    <FeatureCommentsMockup />,
+    <FeatureAnalyticsMockup />,
   ];
+
+  const featureIcons = [
+    featureIconInbox,
+    featureIconMultiAgent,
+    featureIconAI,
+    featureIconCRM,
+    featureIconReminder,
+    featureIconComments,
+    featureIconAnalytics,
+  ];
+
+  const featureSizes = ['medium', 'medium', 'small', 'small', 'medium', 'medium', 'medium'];
 
   return (
     <section id="features" ref={sectionRef} className="py-32 section-dark relative overflow-hidden">
@@ -2813,32 +2783,32 @@ function FeaturesSection() {
           className="text-center mb-20"
         >
           <span className="text-sm uppercase tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-4 block">
-            Características
+            {t.features.label}
           </span>
           <h2 className="font-display text-4xl md:text-6xl font-bold text-white mb-6">
-            Todo lo que necesitas para <span className="text-white/60">escalar</span>
+            {t.features.title} <span className="text-white/60">{t.features.titleHighlight}</span>
           </h2>
           <p className="text-white/50 text-xl max-w-2xl mx-auto">
-            Herramientas diseñadas para equipos que manejan cientos de conversaciones al día.
+            {t.features.description}
           </p>
         </motion.div>
 
         <div className="bento-grid">
-          {features.map((feature, i) => {
+          {t.features.items.map((feature, i) => {
             return (
               <div
                 key={feature.title}
-                className={`feature-card bento-${feature.size}`}
+                className={`feature-card bento-${featureSizes[i]}`}
               >
                 <div className="feature-card-inner">
                   <div className="feature-icon-wrapper overflow-hidden bg-transparent">
-                    <img src={feature.iconImage} alt="" className="w-14 h-14 object-contain" />
+                    <img src={featureIcons[i]} alt="" className="w-14 h-14 object-contain" />
                   </div>
                   <h3 className="font-display text-xl font-bold text-white mt-4 mb-2">{feature.title}</h3>
                   <p className="text-white/50 text-sm leading-relaxed">{feature.description}</p>
-                  {feature.mockup && (
+                  {featureMockups[i] && (
                     <div className="feature-mockup-area">
-                      {feature.mockup}
+                      {featureMockups[i]}
                     </div>
                   )}
                 </div>
@@ -2855,41 +2825,20 @@ function TestimonialSection() {
   const ref = useRef(null);
   const prefersReducedMotion = useReducedMotion();
   const [activeIndex, setActiveIndex] = useState(0);
+  const { t, language } = useLanguage();
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
   const quoteY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [100, -100]);
   const quoteRotate = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [-5, 5]);
 
-  const testimonials = [
-    {
-      quote: "Con Repliyo respondemos los DMs de nuestro TikTok de 40k seguidores en minutos. La IA entiende perfectamente el tono de nuestra marca.",
-      name: "Bettys Sarmiento",
-      role: "CEO, BO Trust Services",
-      image: testimonialBettys,
-      highlight: "respondemos los DMs"
-    },
-    {
-      quote: "Pasamos de responder en 4 horas a responder en 15 minutos. Repliyo cambió completamente cómo gestionamos nuestras redes.",
-      name: "Carlos Mendoza",
-      role: "Director de Marketing, TechStartup",
-      image: avatarCarlos,
-      highlight: "15 minutos"
-    },
-    {
-      quote: "Los recordatorios automáticos nos ayudaron a recuperar leads que habíamos perdido. Ahora cerramos un 30% más de ventas.",
-      name: "Ana Rodríguez",
-      role: "Fundadora, StyleBoutique",
-      image: avatarAna,
-      highlight: "30% más de ventas"
-    }
-  ];
+  const testimonialImages = [testimonialBettys, avatarCarlos, avatarAna];
 
   useEffect(() => {
     if (prefersReducedMotion) return;
     const interval = setInterval(() => {
-      setActiveIndex(prev => (prev + 1) % testimonials.length);
+      setActiveIndex(prev => (prev + 1) % t.testimonials.items.length);
     }, 6000);
     return () => clearInterval(interval);
-  }, [prefersReducedMotion, testimonials.length]);
+  }, [prefersReducedMotion, t.testimonials.items.length]);
 
   return (
     <section id="testimonial" ref={ref} className="py-40 relative overflow-hidden">
@@ -2908,7 +2857,7 @@ function TestimonialSection() {
       
       <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
         <div className="testimonial-carousel">
-          {testimonials.map((testimonial, idx) => (
+          {t.testimonials.items.map((testimonial, idx) => (
             <motion.div
               key={idx}
               className="testimonial-slide"
@@ -2929,7 +2878,7 @@ function TestimonialSection() {
 
               <div className="inline-flex items-center gap-5 p-5 pr-10 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
                 <img 
-                  src={testimonial.image} 
+                  src={testimonialImages[idx]} 
                   alt={testimonial.name}
                   className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border-2 border-white/20"
                 />
@@ -2943,12 +2892,12 @@ function TestimonialSection() {
         </div>
 
         <div className="testimonial-dots mt-10">
-          {testimonials.map((_, idx) => (
+          {t.testimonials.items.map((_, idx) => (
             <button
               key={idx}
               onClick={() => setActiveIndex(idx)}
               className={`testimonial-dot ${activeIndex === idx ? 'active' : ''}`}
-              aria-label={`Ver testimonio ${idx + 1}`}
+              aria-label={`${t.testimonials.viewTestimonial} ${idx + 1}`}
             />
           ))}
         </div>
@@ -2960,6 +2909,7 @@ function TestimonialSection() {
 function CTASection() {
   const ref = useRef(null);
   const prefersReducedMotion = useReducedMotion();
+  const { t } = useLanguage();
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
   const bgY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [100, -50]);
 
@@ -2979,11 +2929,11 @@ function CTASection() {
             transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           >
             <h2 className="font-display font-bold text-5xl md:text-7xl lg:text-8xl tracking-tight leading-[0.9] mb-6">
-              ¿LISTO PARA<br />
-              <span className="text-outline hover:text-white transition-colors duration-500 cursor-default">ESCALAR?</span>
+              {t.cta.titleLine1}<br />
+              <span className="text-outline hover:text-white transition-colors duration-500 cursor-default">{t.cta.titleLine2}</span>
             </h2>
             <p className="text-white/50 text-xl md:text-2xl max-w-lg">
-              Automatiza respuestas. Deleita clientes. Sin tarjeta de crédito.
+              {t.cta.description}
             </p>
           </motion.div>
         </div>
@@ -3000,7 +2950,7 @@ function CTASection() {
             className="btn-cta-circle"
             data-testid="button-empezar-cta"
           >
-            <span className="font-display text-xl">Empezar</span>
+            <span className="font-display text-xl">{t.cta.button}</span>
             <ArrowRight className="w-6 h-6" />
           </motion.a>
         </div>
@@ -3010,17 +2960,12 @@ function CTASection() {
 }
 
 function Footer() {
-  const links = {
-    Producto: ['Características', 'Integraciones', 'Changelog', 'Roadmap'],
-    Recursos: ['Blog', 'Guías', 'API Docs', 'Ayuda'],
-    Empresa: ['Nosotros', 'Careers', 'Contacto', 'Legal'],
-    Legal: ['Privacidad', 'Términos', 'Cookies', 'GDPR']
-  };
+  const { t } = useLanguage();
 
   return (
     <footer className="section-dark border-t border-white/5">
       <div className="grid grid-cols-2 md:grid-cols-4">
-        {Object.entries(links).map(([category, items]) => (
+        {Object.entries(t.footer.categories).map(([category, items]) => (
           <div key={category} className="p-8 md:p-12 border-r border-b border-white/5 last:border-r-0">
             <h4 className="font-mono text-xs text-[var(--landing-primary)] uppercase tracking-[0.2em] mb-6">
               {category}
@@ -3047,10 +2992,10 @@ function Footer() {
           REPLIYO
         </motion.h1>
         <div className="max-w-7xl mx-auto px-6 flex justify-between items-center text-xs text-white/40 font-mono mt-8">
-          <span>© 2026 Repliyo Inc.</span>
+          <span>{t.footer.copyright}</span>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-white transition-colors" data-testid="link-footer-privacy">Privacy</a>
-            <a href="#" className="hover:text-white transition-colors" data-testid="link-footer-terms">Terms</a>
+            <a href="#" className="hover:text-white transition-colors" data-testid="link-footer-privacy">{t.footer.privacy}</a>
+            <a href="#" className="hover:text-white transition-colors" data-testid="link-footer-terms">{t.footer.terms}</a>
           </div>
         </div>
       </div>
