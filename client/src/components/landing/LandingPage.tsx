@@ -1805,7 +1805,7 @@ function ProblemSolutionSection() {
               El problema
             </span>
             <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-12 leading-tight">
-              Responder mensajes en 5 apps es <span className="text-white/50">agotador</span>
+              Responder mensajes en 5 apps es <SmokeDissolveText />
             </h2>
             <div className="max-w-3xl mx-auto">
               <ProblemMockup />
@@ -1834,6 +1834,95 @@ function ProblemSolutionSection() {
         </div>
       </div>
     </section>
+  );
+}
+
+const SMOKE_WORDS = [
+  "agotador",
+  "Ineficiente", 
+  "Costoso",
+  "Tedioso",
+  "insostenible",
+  "Lento",
+  "Poco rentable"
+];
+
+function SmokeDissolveText() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const prefersReducedMotion = useReducedMotion();
+  
+  useEffect(() => {
+    if (prefersReducedMotion) return;
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % SMOKE_WORDS.length);
+    }, 2800);
+    return () => clearInterval(interval);
+  }, [prefersReducedMotion]);
+  
+  const currentWord = SMOKE_WORDS[currentIndex];
+  const letters = currentWord.split('');
+  
+  if (prefersReducedMotion) {
+    return <span className="text-white/50">{currentWord}</span>;
+  }
+  
+  return (
+    <span className="inline-block relative">
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={currentIndex}
+          className="inline-flex text-white/50"
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+        >
+          {letters.map((letter, i) => (
+            <motion.span
+              key={`${currentIndex}-${i}`}
+              className="inline-block"
+              style={{ 
+                willChange: "transform, opacity, filter",
+                textShadow: "0 0 20px rgba(255,255,255,0.3)"
+              }}
+              variants={{
+                hidden: { 
+                  opacity: 0, 
+                  y: 20,
+                  filter: "blur(12px)",
+                  scale: 0.8,
+                },
+                visible: { 
+                  opacity: 1, 
+                  y: 0,
+                  filter: "blur(0px)",
+                  scale: 1,
+                  transition: {
+                    duration: 0.5,
+                    delay: i * 0.04,
+                    ease: [0.25, 0.46, 0.45, 0.94]
+                  }
+                },
+                exit: { 
+                  opacity: 0, 
+                  y: -30,
+                  x: (i % 2 === 0 ? 1 : -1) * (5 + Math.random() * 15),
+                  filter: "blur(16px)",
+                  scale: 1.3,
+                  rotate: (i % 2 === 0 ? 1 : -1) * (5 + i * 2),
+                  transition: {
+                    duration: 0.6,
+                    delay: i * 0.03,
+                    ease: [0.55, 0.085, 0.68, 0.53]
+                  }
+                }
+              }}
+            >
+              {letter === ' ' ? '\u00A0' : letter}
+            </motion.span>
+          ))}
+        </motion.span>
+      </AnimatePresence>
+    </span>
   );
 }
 
