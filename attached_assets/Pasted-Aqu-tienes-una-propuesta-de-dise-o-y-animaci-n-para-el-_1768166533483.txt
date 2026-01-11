@@ -1,0 +1,48 @@
+Aquí tienes una propuesta de diseño y animación para el H1, pensada para ser impactante, inteligente y alineada con la intención de venta, basada en el análisis de la imagen y el texto proporcionados.
+
+Concepto General: "Aceleración Digital hacia el Crecimiento"
+El objetivo es que la animación no sea solo un adorno, sino una narrativa visual que refuerce el mensaje de texto: la transición de la lentitud (manual) a la velocidad y el crecimiento (con IA). La animación debe ser rápida y fluida para evocar la "rapidez" que promete el producto.
+
+Propuesta Detallada de Animación y Diseño
+1. Entrada Secuencial (The Reveal)
+En lugar de que todo el texto aparezca de golpe, utilizaremos una aparición escalonada para guiar la lectura y crear énfasis.
+
+Fase 1: El Problema/Acción (0s - 0.3s)
+
+Texto: "Responde más rápido."
+
+Animación: Aparece primero. Utiliza un efecto de deslizamiento suave hacia arriba (slide-in-up) combinado con un fade-in (aparición gradual). Esto establece la acción base de forma clara y limpia.
+
+Fase 2: El Resultado Deseado (0.3s - 0.5s)
+
+Texto: "Vende más"
+
+Animación: Aparece una fracción de segundo después. Usa el mismo efecto de deslizamiento y fade-in, pero con una curva de aceleración (easing) un poco más pronunciada, dándole una sensación de "impulso" o "salto" hacia el crecimiento.
+
+Fase 3: La Solución Tecnológica (El Clímax) (0.5s - 0.8s)
+
+Texto: "con IA."
+
+Animación: Esta es la parte más importante. Debe sentirse tecnológica y transformadora.
+
+Efecto Principal: Al aparecer, en lugar de solo deslizarse, podría tener un efecto de "escritura de código" (typewriter effect) muy rápido o un sutil "glitch" digital que se estabiliza instantáneamente en el texto final en negrita. Esto comunica que una máquina está procesando y completando la tarea.
+
+Énfasis Visual: Justo en el momento en que se forma "con IA", se podría añadir un destello sutil (flash) o un cambio de color momentáneo (por ejemplo, a un azul eléctrico brillante que luego vuelve al color gris oscuro/negro del texto) para atraer la mirada irresistiblemente a la solución.
+
+2. Interacción Inteligente (Hover State)
+Una vez que la animación de entrada ha terminado y el texto está estático, una micro-interacción al pasar el cursor (hover) mantendrá el diseño vivo y reforzará el mensaje.
+
+Al pasar el cursor sobre cualquier parte del H1:
+
+Conexión Visual: Una línea de subrayado animada y delgada (quizás del color azul de la marca) podría dibujarse rápidamente de izquierda a derecha debajo de todo el título. Esto sugiere un flujo de trabajo continuo y acelerado, conectando visualmente "responder rápido" con "vender más".
+
+Resaltado de Palabras Clave: Alternativamente, y de forma más sutil, las palabras clave de valor ("más rápido", "más", "con IA") podrían tener un ligero efecto de "resplandor" (glow) o un cambio de color suave al azul de la marca, mientras que el resto del texto se mantiene igual. Esto refuerza subconscientemente los beneficios principales.
+
+3. Coherencia y Sincronización
+Para que el diseño sea inteligente, todo debe funcionar en conjunto:
+
+Subtítulo y Botones: El párrafo de subtítulo debe aparecer con un fade-in suave después de que el H1 haya terminado su secuencia principal, para no competir por la atención. Los botones de llamada a la acción ("Empezar gratis", "Ver demo") deben ser los últimos en aparecer, quizás con un pequeño efecto de rebote (pop) para invitar al clic una vez que el mensaje ha sido entregado.
+
+Rendimiento: Es vital que estas animaciones sean fluidas y no ralenticen la carga de la página, ya que la velocidad es parte de la promesa de venta. Se deben utilizar propiedades CSS eficientes (como transform y opacity).
+
+Resultado Esperado: El usuario percibe una entrada dinámica que cuenta una historia: una acción se acelera, lleva a un resultado de crecimiento y todo es potenciado por una tecnología avanzada que se siente rápida y moderna. La interacción posterior refuerza esta conexión cada vez que el usuario muestra interés.
