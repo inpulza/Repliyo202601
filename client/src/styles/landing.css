@@ -4873,7 +4873,8 @@
 }
 
 .unread-msg.faded {
-  opacity: 0.4;
+  opacity: 0.7;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 100%);
 }
 
 .chaos-overlay {
@@ -5316,6 +5317,11 @@
 .landing-page.theme-light .unread-msg {
   background: linear-gradient(90deg, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.03) 100%);
   border-left-color: rgba(0, 0, 0, 0.2);
+}
+
+.landing-page.theme-light .unread-msg.faded {
+  opacity: 0.7;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.06) 0%, rgba(0, 0, 0, 0.02) 100%);
 }
 
 .landing-page.theme-light .solution-mockup-card {
