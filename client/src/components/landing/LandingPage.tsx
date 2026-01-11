@@ -1869,22 +1869,24 @@ function SmokeDissolveText() {
   
   return (
     <span 
-      className="inline-block relative"
+      className="inline-flex relative align-baseline"
       style={{ 
-        minWidth: `${longestWord.length * 0.6}em`,
-        textAlign: 'left'
+        minWidth: `${longestWord.length * 0.55}em`,
+        height: '1.2em',
+        verticalAlign: 'baseline'
       }}
     >
       <AnimatePresence mode="wait">
         <motion.span
           key={currentIndex}
-          className="inline-flex text-red-400/80"
+          className="inline-flex text-red-400/80 items-baseline"
           initial="hidden"
           animate="visible"
           exit="exit"
           style={{ 
             position: 'absolute',
             left: 0,
+            bottom: 0,
             whiteSpace: 'nowrap'
           }}
         >
