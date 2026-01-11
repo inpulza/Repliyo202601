@@ -1160,7 +1160,7 @@ function HeroSection() {
               className="font-display font-bold text-5xl md:text-6xl lg:text-7xl xl:text-8xl leading-[0.95] tracking-tight"
             >
               <motion.span 
-                className="block text-white"
+                className="block text-white whitespace-nowrap"
                 initial={{ opacity: 0, y: 60, filter: 'blur(10px)' }}
                 animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                 transition={{ duration: 0.7, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
