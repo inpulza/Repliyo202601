@@ -4783,10 +4783,9 @@
   overflow: visible;
 }
 
-/* 3D Parallax Effect Styles - Layered Depth System */
+/* 3D Parallax Effect Styles */
 .parallax-3d-container {
-  perspective: 1200px;
-  perspective-origin: 50% 50%;
+  perspective: 1000px;
   transform-style: preserve-3d;
   cursor: default;
 }
@@ -4796,18 +4795,8 @@
   will-change: transform;
 }
 
-/* Layer 0: Base container */
-.parallax-layer-base {
+.parallax-3d-container .mockup-phone-grid {
   transform-style: preserve-3d;
-  position: relative;
-  z-index: 1;
-}
-
-/* Layer 1: Phone cards */
-.parallax-layer-phones {
-  transform-style: preserve-3d;
-  position: relative;
-  z-index: 10;
 }
 
 .parallax-3d-container .chaos-phone {
@@ -4819,49 +4808,28 @@
 
 .parallax-3d-container .chaos-phone:hover {
   box-shadow: 
-    0 25px 50px -15px rgba(0, 0, 0, 0.5),
-    0 0 40px rgba(255, 255, 255, 0.08);
+    0 20px 40px -15px rgba(0, 0, 0, 0.4),
+    0 0 30px rgba(255, 255, 255, 0.05);
 }
 
-/* Layer 2: Message rectangles inside phones */
-.parallax-3d-container .phone-messages {
-  transform-style: preserve-3d;
-  will-change: transform;
-  backface-visibility: hidden;
-  position: relative;
-  z-index: 20;
-}
-
-/* Layer 3: Notification badges */
 .parallax-badge {
   transform-style: preserve-3d;
   will-change: transform;
   box-shadow: 
-    0 6px 16px rgba(239, 68, 68, 0.5),
-    0 10px 30px rgba(0, 0, 0, 0.4);
+    0 4px 12px rgba(239, 68, 68, 0.4),
+    0 8px 20px rgba(0, 0, 0, 0.3);
   position: relative;
-  z-index: 30;
   backface-visibility: hidden;
-}
-
-/* Layer 4: Floating notification pills - topmost */
-.parallax-layer-pills {
-  transform-style: preserve-3d;
-  pointer-events: none;
-  position: relative;
-  z-index: 40;
 }
 
 .parallax-notification {
   transform-style: preserve-3d;
   will-change: transform;
   box-shadow: 
-    0 12px 35px rgba(0, 0, 0, 0.5),
-    0 6px 20px rgba(239, 68, 68, 0.25);
-  backdrop-filter: blur(10px);
+    0 8px 25px rgba(0, 0, 0, 0.4),
+    0 4px 15px rgba(239, 68, 68, 0.2);
+  backdrop-filter: blur(8px);
   backface-visibility: hidden;
-  position: relative;
-  z-index: 40;
 }
 
 .parallax-3d-container .chaos-overlay {
