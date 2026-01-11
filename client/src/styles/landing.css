@@ -4770,6 +4770,223 @@
   will-change: transform, opacity;
 }
 
+/* Problem Mockup 3D Parallax - Stacked Layers */
+.problem-mockup-3d-container {
+  position: relative;
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto;
+  min-height: 380px;
+  perspective: 1000px;
+  perspective-origin: 50% 50%;
+}
+
+.parallax-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  will-change: transform;
+  pointer-events: none;
+}
+
+.parallax-layer > * {
+  pointer-events: auto;
+}
+
+.layer-base {
+  z-index: 1;
+}
+
+.layer-cards {
+  z-index: 2;
+}
+
+.layer-content {
+  z-index: 3;
+}
+
+.layer-badges {
+  z-index: 4;
+}
+
+.layer-floating {
+  z-index: 5;
+}
+
+.problem-mockup-card-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(145deg, rgba(30, 30, 35, 0.95) 0%, rgba(20, 20, 25, 0.98) 100%);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.mockup-phone-grid-3d {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 16px;
+  padding: 40px;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.chaos-phone-shell {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  min-height: 140px;
+}
+
+.chaos-phone-shell.instagram { background: rgba(255, 255, 255, 0.04); }
+.chaos-phone-shell.tiktok { background: rgba(255, 255, 255, 0.04); }
+.chaos-phone-shell.facebook { background: rgba(255, 255, 255, 0.04); }
+.chaos-phone-shell.linkedin { background: rgba(255, 255, 255, 0.04); }
+.chaos-phone-shell.youtube { background: rgba(255, 255, 255, 0.04); }
+.chaos-phone-shell.google { background: rgba(255, 255, 255, 0.04); }
+
+.phone-content-layer {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  padding-top: 30px;
+}
+
+.phone-app-bar-3d {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.phone-messages-3d {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px;
+}
+
+.badge-layer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 42px 24px 0 0;
+}
+
+.notification-badge-3d {
+  background: rgba(239, 68, 68, 0.95);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.5);
+  animation: pulse-badge 2s ease-in-out infinite;
+}
+
+.floating-notifications-3d {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.floating-notification-3d {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(239, 68, 68, 0.95);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
+  white-space: nowrap;
+  pointer-events: auto;
+  transform-style: preserve-3d;
+}
+
+.floating-notification-3d.n1 {
+  top: -15px;
+  right: -30px;
+}
+
+.floating-notification-3d.n2 {
+  bottom: 60%;
+  left: -45px;
+}
+
+.floating-notification-3d.n3 {
+  bottom: 25%;
+  right: -40px;
+}
+
+.floating-notification-3d.n4 {
+  bottom: -10px;
+  left: 20%;
+}
+
+.landing-page.theme-light .problem-mockup-card-bg {
+  background: linear-gradient(145deg, #f8f9fa 0%, #ffffff 100%);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.landing-page.theme-light .chaos-phone-shell {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+.landing-page.theme-light .phone-app-bar-3d {
+  background: rgba(0, 0, 0, 0.05);
+  color: rgba(0, 0, 0, 0.8);
+}
+
+@media (max-width: 768px) {
+  .problem-mockup-3d-container {
+    min-height: 300px;
+  }
+  
+  .mockup-phone-grid-3d {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 10px;
+    padding: 20px;
+  }
+  
+  .floating-notification-3d {
+    font-size: 10px;
+    padding: 6px 10px;
+  }
+  
+  .floating-notification-3d.n1 { top: -10px; right: -15px; }
+  .floating-notification-3d.n2 { left: -20px; }
+  .floating-notification-3d.n3 { right: -15px; }
+  .floating-notification-3d.n4 { left: 10%; }
+}
+
 /* Problem Mockup Card */
 .problem-mockup-card {
   position: relative;
