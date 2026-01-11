@@ -38,15 +38,18 @@ import stepsBgGreen from '@assets/generated_images/green_gradient_grain_backgrou
 import stepsBgVibrant from '@assets/generated_images/vibrant_blue_violet_gradient.png';
 import stepsBgLight from '@assets/generated_images/teal_cyan_bottom_to_top_gradient.png';
 import testimonialBettys from '../../assets/testimonial-bettys.jpg';
-import statHappyWoman from '@assets/generated_images/happy_woman_avatar_icon.png';
-import statCursor from '@assets/generated_images/cursor_click_icon.png';
-import statChatBubble from '@assets/generated_images/chat_bubble_typing_icon.png';
-import statHappyMan from '@assets/generated_images/happy_man_avatar_icon.png';
-import statRobot from '@assets/generated_images/friendly_robot_avatar_icon.png';
-import statMoon from '@assets/generated_images/moon_and_stars_icon.png';
-import statGroup from '@assets/generated_images/group_avatars_team_icon.png';
-import statThumbsUp from '@assets/generated_images/thumbs_up_approval_icon.png';
-import statClock from '@assets/generated_images/fast_clock_speed_icon.png';
+import iconChatBlue from '@assets/generated_images/white_chat_bubble_blue_bg.png';
+import iconDmBlue from '@assets/generated_images/white_dm_bubble_blue_bg.png';
+import iconHeartBlue from '@assets/generated_images/white_heart_blue_bg.png';
+import iconCommentBlue from '@assets/generated_images/white_comment_blue_bg.png';
+import iconClockBlue from '@assets/generated_images/white_clock_blue_bg.png';
+import iconThumbsBlue from '@assets/generated_images/white_thumbs_up_blue_bg.png';
+import iconRobotBlue from '@assets/generated_images/white_robot_blue_bg.png';
+import iconMoonBlue from '@assets/generated_images/white_moon_stars_blue_bg.png';
+import iconGroupBlue from '@assets/generated_images/white_group_people_blue_bg.png';
+import iconCheckGreen from '@assets/generated_images/white_check_green_bg.png';
+import iconLightningOrange from '@assets/generated_images/white_lightning_orange_bg.png';
+import iconChartPurple from '@assets/generated_images/white_chart_purple_bg.png';
 import { ParallaxProvider, useParallax, Parallax } from 'react-scroll-parallax';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -1929,23 +1932,23 @@ interface FloatingAvatarProps {
   size?: number;
 }
 
-function FloatingAvatar({ image, position, delay, size = 56 }: FloatingAvatarProps) {
+function FloatingAvatar({ image, position, delay, size = 72 }: FloatingAvatarProps) {
   return (
     <motion.div
-      className="absolute rounded-full overflow-hidden shadow-lg shadow-black/30 border-2 border-white/20"
+      className="absolute rounded-2xl overflow-hidden"
       style={{ 
         left: position.x, 
         top: position.y,
         width: size,
         height: size,
       }}
-      initial={{ opacity: 0, scale: 0, rotate: -20 }}
+      initial={{ opacity: 0, scale: 0, rotate: -15 }}
       animate={{ opacity: 1, scale: 1, rotate: 0 }}
-      exit={{ opacity: 0, scale: 0, rotate: 20 }}
+      exit={{ opacity: 0, scale: 0, rotate: 15 }}
       transition={{
         type: "spring",
-        stiffness: 260,
-        damping: 20,
+        stiffness: 300,
+        damping: 22,
         delay: delay,
       }}
     >
@@ -1956,28 +1959,28 @@ function FloatingAvatar({ image, position, delay, size = 56 }: FloatingAvatarPro
 
 const STAT_AVATARS: { [key: number]: Array<{ image: string; position: { x: string; y: string }; delay: number; size?: number }> } = {
   0: [
-    { image: statHappyWoman, position: { x: '8%', y: '20%' }, delay: 0.1, size: 64 },
-    { image: statThumbsUp, position: { x: '85%', y: '25%' }, delay: 0.2, size: 52 },
-    { image: statClock, position: { x: '12%', y: '70%' }, delay: 0.3, size: 48 },
-    { image: statHappyMan, position: { x: '88%', y: '65%' }, delay: 0.15, size: 56 },
+    { image: iconClockBlue, position: { x: '5%', y: '18%' }, delay: 0.05, size: 72 },
+    { image: iconThumbsBlue, position: { x: '88%', y: '22%' }, delay: 0.1, size: 64 },
+    { image: iconCheckGreen, position: { x: '8%', y: '68%' }, delay: 0.15, size: 56 },
+    { image: iconLightningOrange, position: { x: '85%', y: '65%' }, delay: 0.12, size: 68 },
   ],
   1: [
-    { image: statChatBubble, position: { x: '6%', y: '30%' }, delay: 0.1, size: 60 },
-    { image: statCursor, position: { x: '90%', y: '22%' }, delay: 0.2, size: 48 },
-    { image: statClock, position: { x: '10%', y: '68%' }, delay: 0.25, size: 52 },
-    { image: statHappyWoman, position: { x: '86%', y: '70%' }, delay: 0.15, size: 56 },
+    { image: iconChatBlue, position: { x: '4%', y: '20%' }, delay: 0.05, size: 72 },
+    { image: iconDmBlue, position: { x: '90%', y: '18%' }, delay: 0.1, size: 64 },
+    { image: iconCommentBlue, position: { x: '6%', y: '70%' }, delay: 0.15, size: 60 },
+    { image: iconHeartBlue, position: { x: '88%', y: '68%' }, delay: 0.12, size: 56 },
   ],
   2: [
-    { image: statGroup, position: { x: '5%', y: '25%' }, delay: 0.1, size: 64 },
-    { image: statHappyMan, position: { x: '88%', y: '20%' }, delay: 0.2, size: 56 },
-    { image: statThumbsUp, position: { x: '8%', y: '72%' }, delay: 0.25, size: 48 },
-    { image: statHappyWoman, position: { x: '90%', y: '68%' }, delay: 0.15, size: 52 },
+    { image: iconGroupBlue, position: { x: '5%', y: '20%' }, delay: 0.05, size: 76 },
+    { image: iconChartPurple, position: { x: '88%', y: '18%' }, delay: 0.1, size: 68 },
+    { image: iconThumbsBlue, position: { x: '7%', y: '70%' }, delay: 0.15, size: 60 },
+    { image: iconLightningOrange, position: { x: '86%', y: '66%' }, delay: 0.12, size: 64 },
   ],
   3: [
-    { image: statRobot, position: { x: '7%', y: '22%' }, delay: 0.1, size: 64 },
-    { image: statMoon, position: { x: '87%', y: '28%' }, delay: 0.2, size: 56 },
-    { image: statChatBubble, position: { x: '10%', y: '70%' }, delay: 0.25, size: 48 },
-    { image: statHappyMan, position: { x: '88%', y: '66%' }, delay: 0.15, size: 52 },
+    { image: iconRobotBlue, position: { x: '5%', y: '18%' }, delay: 0.05, size: 76 },
+    { image: iconMoonBlue, position: { x: '88%', y: '22%' }, delay: 0.1, size: 68 },
+    { image: iconChatBlue, position: { x: '7%', y: '68%' }, delay: 0.15, size: 60 },
+    { image: iconClockBlue, position: { x: '86%', y: '65%' }, delay: 0.12, size: 64 },
   ],
 };
 
