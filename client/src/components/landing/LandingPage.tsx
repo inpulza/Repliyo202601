@@ -733,6 +733,14 @@ function InboxMockup() {
   const mockupRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   
   const allMessages = [
     { id: 1, user: 'María García', avatarImg: avatarMaria, message: '¿Tienen disponible el vestido azul en talla M?', platform: 'instagram', time: 'Ahora', unread: true },
@@ -865,6 +873,60 @@ function InboxMockup() {
   };
 
   const showAiTyping = chatPhase === 1 || chatPhase === 3 || chatPhase === 5;
+
+  if (isMobile) {
+    return (
+      <div ref={mockupRef} className="mobile-inbox-container">
+        <div className="mobile-inbox-phone">
+          <div className="phone-header">
+            <div className="phone-notch" />
+          </div>
+          <div className="phone-app-bar">
+            <Inbox className="w-4 h-4" />
+            <span>Repliyo</span>
+            <motion.div 
+              key={inboxCount}
+              initial={{ scale: 1.3 }}
+              animate={{ scale: 1 }}
+              className="notification-badge"
+            >
+              {inboxCount}
+            </motion.div>
+          </div>
+          <div className="phone-messages-list">
+            {allMessages.slice(0, 4).map((msg) => (
+              <motion.div
+                key={msg.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={visibleMessages.includes(msg.id) ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
+                transition={{ duration: 0.3 }}
+                className={`phone-message-item ${msg.unread ? 'unread' : ''}`}
+              >
+                <div className="phone-msg-avatar-wrap">
+                  <img src={msg.avatarImg} alt={msg.user} className="phone-msg-avatar" />
+                  <span className={`phone-platform-dot ${msg.platform}`}>
+                    <PlatformIcon platform={msg.platform} />
+                  </span>
+                </div>
+                <div className="phone-msg-content">
+                  <div className="phone-msg-header">
+                    <span className="phone-msg-name">{msg.user.split(' ')[0]}</span>
+                    <span className="phone-msg-time">{msg.time}</span>
+                  </div>
+                  <span className="phone-msg-preview">{msg.message.slice(0, 28)}...</span>
+                </div>
+                {msg.unread && <span className="phone-unread-dot" />}
+              </motion.div>
+            ))}
+          </div>
+          <div className="phone-bottom-bar">
+            <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+            <span>IA activa</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div ref={mockupRef} className="mockup-container-v2">
@@ -2280,6 +2342,13 @@ function MetricSection() {
   const currentStat = stats[activeIndex];
   const currentElements = STAT_FLOATING_ELEMENTS[activeIndex] || [];
 
+  const mobileFloatingElements = [
+    { icon: <Clock className="w-4 h-4 text-white" />, bg: 'bg-cyan-500', position: 'top-4 left-4' },
+    { icon: <Zap className="w-4 h-4 text-white" />, bg: 'bg-violet-500', position: 'top-4 right-4' },
+    { icon: <Users2 className="w-4 h-4 text-white" />, bg: 'bg-emerald-500', position: 'bottom-20 left-4' },
+    { icon: <Sparkles className="w-4 h-4 text-white" />, bg: 'bg-rose-500', position: 'bottom-20 right-4' },
+  ];
+
   return (
     <section ref={ref} className="py-32 md:py-48 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,145,250,0.12)_0%,transparent_70%)]" />
@@ -2307,6 +2376,29 @@ function MetricSection() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Mobile floating elements - simpler, static versions */}
+      <div className="absolute inset-0 pointer-events-none md:hidden">
+        {mobileFloatingElements.map((el, idx) => (
+          <motion.div
+            key={idx}
+            className={`absolute ${el.position} ${el.bg} rounded-xl p-2.5 shadow-lg`}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ 
+              opacity: isInView ? 0.9 : 0, 
+              scale: isInView ? 1 : 0.8,
+              y: isInView ? [0, -4, 0] : 0
+            }}
+            transition={{ 
+              opacity: { duration: 0.4, delay: idx * 0.1 },
+              scale: { duration: 0.4, delay: idx * 0.1 },
+              y: { duration: 2, repeat: Infinity, ease: 'easeInOut', delay: idx * 0.3 }
+            }}
+          >
+            {el.icon}
+          </motion.div>
+        ))}
+      </div>
       
       <motion.div 
         style={{ scale, opacity }}
@@ -2515,14 +2607,24 @@ function HowItWorksSection() {
               De caos a control en <span className="text-white/60">3 pasos</span>
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-            {steps.map((step) => (
-              <div key={step.number} className="how-card">
-                <div className="card-inner">
-                  <span className="step-number text-4xl md:text-5xl">{step.number}</span>
-                  <h3 className="font-display text-xl md:text-2xl font-bold text-white mt-3 md:mt-4 mb-2 md:mb-3">{step.title}</h3>
-                  <p className="text-white/50 text-sm md:text-base leading-relaxed mb-4 md:mb-6">{step.description}</p>
-                  <div className="step-mockup-container max-w-full overflow-hidden">{step.mockup}</div>
+          <div className="mobile-how-steps">
+            {steps.map((step, i) => (
+              <div key={step.number} className="mobile-step-item">
+                <div className="mobile-step-indicator">
+                  <div className="mobile-step-number">{step.number}</div>
+                  {i < steps.length - 1 && <div className="mobile-step-line" />}
+                </div>
+                <div className="mobile-step-content">
+                  <h3 className="text-xl font-bold text-white mb-2">{step.title}</h3>
+                  <p className="text-white/60 text-sm mb-4 leading-relaxed">{step.description}</p>
+                  <div className="mobile-step-phone-mockup">
+                    <div className="mobile-phone-frame">
+                      <div className="mobile-phone-notch" />
+                      <div className="mobile-phone-screen">
+                        {step.mockup}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
