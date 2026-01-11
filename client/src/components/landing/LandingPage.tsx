@@ -1914,83 +1914,263 @@ function ExpandingRipple({ delay }: { delay: number }) {
 }
 
 import { LucideIcon } from 'lucide-react';
-import { Clock4, ThumbsUp, CheckCircle, Zap as ZapIcon, MessageSquare as MsgSquare, Send as SendIcon, Heart as HeartIcon, Inbox as InboxIcon, Users2 as UsersIcon, TrendingUp, BarChart3, Sparkles as SparklesIcon, Bot, Moon, MessageCircle, Clock3 } from 'lucide-react';
+import { Clock4, ThumbsUp, CheckCircle, Zap as ZapIcon, MessageSquare as MsgSquare, Send as SendIcon, Heart as HeartIcon, Inbox as InboxIcon, Users2 as UsersIcon, TrendingUp, BarChart3, Sparkles as SparklesIcon, Bot, Moon, MessageCircle, Clock3, Rocket, Star, Timer } from 'lucide-react';
 
-type FloatingAvatarConfig = {
-  kind: 'icon';
-  icon: LucideIcon;
-  bg: string;
-  border: string;
+type FloatingElementConfig = {
+  component: React.ReactNode;
   position: { x: string; y: string };
   delay: number;
-  size?: number;
-} | {
-  kind: 'image';
-  imageSrc: string;
-  border: string;
-  position: { x: string; y: string };
-  delay: number;
-  size?: number;
 };
 
-function FloatingAvatar({ config }: { config: FloatingAvatarConfig }) {
-  const size = config.size || 64;
-  
+function FloatingUIElement({ config }: { config: FloatingElementConfig }) {
   return (
     <motion.div
-      className="absolute rounded-full overflow-hidden flex items-center justify-center"
-      style={{ 
-        left: config.position.x, 
-        top: config.position.y,
-        width: size,
-        height: size,
-        border: `3px solid ${config.border}`,
-        boxShadow: `0 0 24px ${config.border}55`,
-        backgroundColor: config.kind === 'icon' ? config.bg : 'transparent',
-      }}
-      initial={{ opacity: 0, scale: 0 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0 }}
+      className="absolute"
+      style={{ left: config.position.x, top: config.position.y }}
+      initial={{ opacity: 0, scale: 0.5, y: 20 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.5, y: -20 }}
       transition={{
         type: "spring",
-        stiffness: 400,
-        damping: 25,
+        stiffness: 300,
+        damping: 20,
         delay: config.delay,
       }}
     >
-      {config.kind === 'icon' ? (
-        <config.icon style={{ width: size * 0.5, height: size * 0.5, color: '#FFFFFF', stroke: '#FFFFFF' }} />
-      ) : (
-        <img src={config.imageSrc} alt="" className="w-full h-full object-cover" />
-      )}
+      {config.component}
     </motion.div>
   );
 }
 
-const STAT_AVATARS: { [key: number]: FloatingAvatarConfig[] } = {
+function TimeSavedCard() {
+  return (
+    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl shadow-orange-500/20 border border-orange-200/50" style={{ width: 140 }}>
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
+          <Timer className="w-4 h-4 text-white" />
+        </div>
+        <span className="text-xs font-semibold text-gray-600">Tiempo</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-gray-400 line-through">4h</span>
+        <span className="text-lg">→</span>
+        <span className="text-xl font-bold text-orange-500">45min</span>
+      </div>
+    </div>
+  );
+}
+
+function RespondidoBadge() {
+  return (
+    <div className="bg-gradient-to-r from-emerald-400 to-green-500 rounded-full px-4 py-2 shadow-lg shadow-green-500/30 flex items-center gap-2">
+      <CheckCircle className="w-4 h-4 text-white" />
+      <span className="text-white text-sm font-semibold">Respondido</span>
+    </div>
+  );
+}
+
+function AvatarWithStatus({ imageSrc, name, status }: { imageSrc: string; name: string; status: 'online' | 'busy' }) {
+  return (
+    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-3 shadow-2xl shadow-purple-500/20 border border-purple-200/50 flex items-center gap-3" style={{ width: 160 }}>
+      <div className="relative">
+        <img src={imageSrc} alt="" className="w-10 h-10 rounded-full object-cover" />
+        <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${status === 'online' ? 'bg-green-500' : 'bg-yellow-500'}`} />
+      </div>
+      <div>
+        <div className="text-sm font-semibold text-gray-800">{name}</div>
+        <div className="text-xs text-gray-500">{status === 'online' ? 'En línea' : 'Ocupado'}</div>
+      </div>
+    </div>
+  );
+}
+
+function SpeedIndicator() {
+  return (
+    <div className="bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl p-4 shadow-lg shadow-blue-500/30" style={{ width: 100 }}>
+      <Rocket className="w-6 h-6 text-white mb-2" />
+      <div className="text-2xl font-black text-white">10x</div>
+      <div className="text-xs text-white/80">más rápido</div>
+    </div>
+  );
+}
+
+function ChatBubbleTyping() {
+  return (
+    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl shadow-blue-500/20 border border-blue-200/50" style={{ width: 180 }}>
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center">
+          <MsgSquare className="w-4 h-4 text-white" />
+        </div>
+        <span className="text-xs font-semibold text-gray-600">Nuevo mensaje</span>
+      </div>
+      <div className="bg-gray-100 rounded-xl p-2 flex items-center gap-1">
+        <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+        <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+        <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+      </div>
+    </div>
+  );
+}
+
+function QuickReplyPill() {
+  return (
+    <div className="bg-gradient-to-r from-violet-500 to-purple-600 rounded-full px-5 py-3 shadow-lg shadow-purple-500/30 flex items-center gap-2">
+      <ZapIcon className="w-4 h-4 text-yellow-300" />
+      <span className="text-white text-sm font-semibold">Respuesta IA</span>
+    </div>
+  );
+}
+
+function SendButtonCard() {
+  return (
+    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-3 shadow-2xl shadow-green-500/20 border border-green-200/50 flex items-center gap-3" style={{ width: 150 }}>
+      <div className="flex-1 h-8 bg-gray-100 rounded-lg flex items-center px-3">
+        <span className="text-xs text-gray-400">Escribir...</span>
+      </div>
+      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg">
+        <SendIcon className="w-4 h-4 text-white" />
+      </div>
+    </div>
+  );
+}
+
+function NotificationCard() {
+  return (
+    <div className="bg-gradient-to-br from-rose-400 to-pink-500 rounded-2xl p-3 shadow-lg shadow-pink-500/30 flex items-center gap-3" style={{ width: 160 }}>
+      <Bell className="w-5 h-5 text-white" />
+      <div>
+        <div className="text-sm font-semibold text-white">3 nuevos</div>
+        <div className="text-xs text-white/80">mensajes</div>
+      </div>
+    </div>
+  );
+}
+
+function AvatarStack() {
+  return (
+    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl shadow-cyan-500/20 border border-cyan-200/50" style={{ width: 140 }}>
+      <div className="flex -space-x-3 mb-2">
+        <img src={avatarMaria} alt="" className="w-10 h-10 rounded-full border-2 border-white object-cover" />
+        <img src={avatarCarlos} alt="" className="w-10 h-10 rounded-full border-2 border-white object-cover" />
+        <img src={avatarAna} alt="" className="w-10 h-10 rounded-full border-2 border-white object-cover" />
+        <div className="w-10 h-10 rounded-full border-2 border-white bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-xs font-bold">+12</div>
+      </div>
+      <div className="text-xs text-gray-500">Equipo activo</div>
+    </div>
+  );
+}
+
+function GrowthCard() {
+  return (
+    <div className="bg-gradient-to-br from-emerald-400 to-green-500 rounded-2xl p-4 shadow-lg shadow-green-500/30" style={{ width: 120 }}>
+      <TrendingUp className="w-5 h-5 text-white mb-1" />
+      <div className="text-2xl font-black text-white">+247</div>
+      <div className="text-xs text-white/80">leads hoy</div>
+    </div>
+  );
+}
+
+function StarRatingCard() {
+  return (
+    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-3 shadow-2xl shadow-yellow-500/20 border border-yellow-200/50 flex items-center gap-2">
+      <div className="flex gap-0.5">
+        {[1,2,3,4,5].map(i => <Star key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" />)}
+      </div>
+      <span className="text-sm font-bold text-gray-700">4.9</span>
+    </div>
+  );
+}
+
+function LeadCounterCard() {
+  return (
+    <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-4 shadow-lg shadow-purple-500/30" style={{ width: 130 }}>
+      <UsersIcon className="w-5 h-5 text-white mb-1" />
+      <div className="text-2xl font-black text-white">1,847</div>
+      <div className="text-xs text-white/80">contactos</div>
+    </div>
+  );
+}
+
+function AIAutopilotCard() {
+  return (
+    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl shadow-violet-500/20 border border-violet-200/50" style={{ width: 160 }}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Bot className="w-5 h-5 text-violet-500" />
+          <span className="text-sm font-semibold text-gray-700">IA Activa</span>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-12 h-6 rounded-full bg-gradient-to-r from-violet-500 to-purple-600 p-0.5 flex items-center justify-end">
+          <div className="w-5 h-5 rounded-full bg-white shadow" />
+        </div>
+        <span className="text-xs text-green-500 font-medium">ON</span>
+      </div>
+    </div>
+  );
+}
+
+function MoonSunToggle() {
+  return (
+    <div className="bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl p-4 shadow-lg shadow-indigo-500/30 flex items-center gap-3" style={{ width: 120 }}>
+      <Moon className="w-6 h-6 text-yellow-300" />
+      <div>
+        <div className="text-sm font-bold text-white">24/7</div>
+        <div className="text-xs text-white/70">activo</div>
+      </div>
+    </div>
+  );
+}
+
+function AITypingCard() {
+  return (
+    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-3 shadow-2xl shadow-purple-500/20 border border-purple-200/50" style={{ width: 180 }}>
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center">
+          <SparklesIcon className="w-4 h-4 text-white" />
+        </div>
+        <span className="text-xs font-semibold text-gray-600">IA escribiendo...</span>
+      </div>
+      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-full bg-gradient-to-r from-violet-400 to-purple-500 rounded-full animate-pulse" style={{ width: '70%' }} />
+      </div>
+    </div>
+  );
+}
+
+function AutoReplyStatus() {
+  return (
+    <div className="bg-gradient-to-r from-green-400 to-emerald-500 rounded-full px-4 py-2 shadow-lg shadow-green-500/30 flex items-center gap-2">
+      <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+      <span className="text-white text-sm font-semibold">Auto-respuesta</span>
+    </div>
+  );
+}
+
+const STAT_FLOATING_ELEMENTS: { [key: number]: FloatingElementConfig[] } = {
   0: [
-    { kind: 'icon', icon: Clock4, bg: '#F97316', border: '#38BDF8', position: { x: '12%', y: '15%' }, delay: 0.05, size: 64 },
-    { kind: 'image', imageSrc: avatarMaria, border: '#A855F7', position: { x: '82%', y: '12%' }, delay: 0.1, size: 76 },
-    { kind: 'icon', icon: CheckCircle, bg: '#22C55E', border: '#F472B6', position: { x: '15%', y: '72%' }, delay: 0.15, size: 56 },
-    { kind: 'image', imageSrc: avatarCarlos, border: '#06B6D4', position: { x: '78%', y: '70%' }, delay: 0.12, size: 72 },
+    { component: <TimeSavedCard />, position: { x: '5%', y: '12%' }, delay: 0.05 },
+    { component: <AvatarWithStatus imageSrc={avatarMaria} name="María G." status="online" />, position: { x: '78%', y: '8%' }, delay: 0.1 },
+    { component: <RespondidoBadge />, position: { x: '8%', y: '72%' }, delay: 0.15 },
+    { component: <SpeedIndicator />, position: { x: '82%', y: '68%' }, delay: 0.12 },
   ],
   1: [
-    { kind: 'icon', icon: MsgSquare, bg: '#2563EB', border: '#FBBF24', position: { x: '10%', y: '18%' }, delay: 0.05, size: 64 },
-    { kind: 'icon', icon: SendIcon, bg: '#8B5CF6', border: '#34D399', position: { x: '84%', y: '15%' }, delay: 0.1, size: 58 },
-    { kind: 'image', imageSrc: avatarAna, border: '#F43F5E', position: { x: '12%', y: '70%' }, delay: 0.15, size: 74 },
-    { kind: 'icon', icon: HeartIcon, bg: '#EC4899', border: '#22D3EE', position: { x: '82%', y: '72%' }, delay: 0.12, size: 54 },
+    { component: <ChatBubbleTyping />, position: { x: '3%', y: '10%' }, delay: 0.05 },
+    { component: <QuickReplyPill />, position: { x: '80%', y: '12%' }, delay: 0.1 },
+    { component: <SendButtonCard />, position: { x: '5%', y: '70%' }, delay: 0.15 },
+    { component: <NotificationCard />, position: { x: '78%', y: '68%' }, delay: 0.12 },
   ],
   2: [
-    { kind: 'icon', icon: UsersIcon, bg: '#06B6D4', border: '#F97316', position: { x: '12%', y: '15%' }, delay: 0.05, size: 68 },
-    { kind: 'image', imageSrc: avatarDiego, border: '#8B5CF6', position: { x: '82%', y: '12%' }, delay: 0.1, size: 76 },
-    { kind: 'icon', icon: TrendingUp, bg: '#10B981', border: '#E879F9', position: { x: '14%', y: '72%' }, delay: 0.15, size: 56 },
-    { kind: 'image', imageSrc: avatarAna, border: '#FBBF24', position: { x: '80%', y: '70%' }, delay: 0.12, size: 72 },
+    { component: <AvatarStack />, position: { x: '5%', y: '10%' }, delay: 0.05 },
+    { component: <GrowthCard />, position: { x: '82%', y: '8%' }, delay: 0.1 },
+    { component: <LeadCounterCard />, position: { x: '6%', y: '68%' }, delay: 0.15 },
+    { component: <StarRatingCard />, position: { x: '80%', y: '72%' }, delay: 0.12 },
   ],
   3: [
-    { kind: 'icon', icon: Bot, bg: '#A855F7', border: '#4ADE80', position: { x: '12%', y: '15%' }, delay: 0.05, size: 68 },
-    { kind: 'icon', icon: Moon, bg: '#6366F1', border: '#FB923C', position: { x: '82%', y: '18%' }, delay: 0.1, size: 60 },
-    { kind: 'image', imageSrc: avatarMaria, border: '#22D3EE', position: { x: '14%', y: '70%' }, delay: 0.15, size: 74 },
-    { kind: 'icon', icon: Clock3, bg: '#F97316', border: '#818CF8', position: { x: '80%', y: '72%' }, delay: 0.12, size: 56 },
+    { component: <AIAutopilotCard />, position: { x: '4%', y: '10%' }, delay: 0.05 },
+    { component: <MoonSunToggle />, position: { x: '82%', y: '10%' }, delay: 0.1 },
+    { component: <AITypingCard />, position: { x: '3%', y: '68%' }, delay: 0.15 },
+    { component: <AutoReplyStatus />, position: { x: '78%', y: '72%' }, delay: 0.12 },
   ],
 };
 
@@ -2020,7 +2200,7 @@ function MetricSection() {
   }, [prefersReducedMotion, isInView, stats.length]);
   
   const currentStat = stats[activeIndex];
-  const currentAvatars = STAT_AVATARS[activeIndex] || [];
+  const currentElements = STAT_FLOATING_ELEMENTS[activeIndex] || [];
 
   return (
     <section ref={ref} className="py-48 md:py-56 relative overflow-hidden">
@@ -2037,13 +2217,13 @@ function MetricSection() {
       <AnimatePresence mode="wait">
         {!prefersReducedMotion && (
           <motion.div 
-            key={`avatars-${activeIndex}`}
+            key={`elements-${activeIndex}`}
             className="absolute inset-0 pointer-events-none hidden md:block"
           >
-            {currentAvatars.map((avatar, i) => (
-              <FloatingAvatar
+            {currentElements.map((element, i) => (
+              <FloatingUIElement
                 key={`${activeIndex}-${i}`}
-                config={avatar}
+                config={element}
               />
             ))}
           </motion.div>
