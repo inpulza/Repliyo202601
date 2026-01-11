@@ -1160,16 +1160,17 @@ function SlotMachineSegundos() {
     <span
       className="inline-block relative overflow-hidden"
       style={{ 
-        height: '1em',
+        height: '1.2em',
         lineHeight: 'inherit',
         verticalAlign: 'baseline',
+        marginBottom: '-0.2em',
       }}
     >
       <motion.span
         className="flex flex-col"
         initial={{ y: 0, filter: 'blur(0px)' }}
         animate={{ 
-          y: `-${totalDistance}em`,
+          y: `-${totalDistance * 1.2}em`,
           filter: isSpinning ? ['blur(0px)', 'blur(6px)', 'blur(8px)', 'blur(4px)', 'blur(0px)'] : 'blur(0px)'
         }}
         transition={{
@@ -1191,7 +1192,7 @@ function SlotMachineSegundos() {
             className={`font-bold whitespace-nowrap ${
               idx === totalSpins - 1 ? 'text-white' : 'text-white/30'
             }`}
-            style={{ height: '1em', lineHeight: '1em' }}
+            style={{ height: '1.2em', lineHeight: '1.2em' }}
           >
             segundos.
           </span>
