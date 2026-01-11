@@ -1986,10 +1986,10 @@ function AvatarWithStatus({ imageSrc, name, status }: { imageSrc: string; name: 
 
 function SpeedIndicator() {
   return (
-    <div className="bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl p-4 shadow-lg shadow-blue-500/30" style={{ width: 100 }}>
+    <div className="bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl p-4 shadow-lg shadow-blue-500/30" style={{ width: 110 }}>
       <Rocket className="w-6 h-6 text-white mb-2" />
       <div className="text-2xl font-black text-white">10x</div>
-      <div className="text-xs text-white/80">más rápido</div>
+      <div className="text-xs text-white font-medium">más rápido</div>
     </div>
   );
 }
@@ -2023,12 +2023,12 @@ function QuickReplyPill() {
 
 function SendButtonCard() {
   return (
-    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-3 shadow-2xl shadow-green-500/20 border border-green-200/50 flex items-center gap-3" style={{ width: 150 }}>
-      <div className="flex-1 h-8 bg-gray-100 rounded-lg flex items-center px-3">
+    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-3 shadow-2xl shadow-green-500/20 border border-green-200/50 flex items-center gap-3" style={{ width: 170 }}>
+      <div className="flex-1 h-9 bg-gray-100 rounded-xl flex items-center px-3">
         <span className="text-xs text-gray-400">Escribir...</span>
       </div>
-      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg">
-        <SendIcon className="w-4 h-4 text-white" />
+      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg shrink-0">
+        <SendIcon className="w-4 h-4 text-white ml-0.5" />
       </div>
     </div>
   );
@@ -2036,11 +2036,11 @@ function SendButtonCard() {
 
 function NotificationCard() {
   return (
-    <div className="bg-gradient-to-br from-rose-400 to-pink-500 rounded-2xl p-3 shadow-lg shadow-pink-500/30 flex items-center gap-3" style={{ width: 160 }}>
+    <div className="bg-gradient-to-br from-rose-400 to-pink-500 rounded-2xl p-3 shadow-lg shadow-pink-500/30 flex items-center gap-3" style={{ width: 170 }}>
       <Bell className="w-5 h-5 text-white" />
       <div>
         <div className="text-sm font-semibold text-white">3 nuevos</div>
-        <div className="text-xs text-white/80">mensajes</div>
+        <div className="text-xs text-white font-medium">mensajes</div>
       </div>
     </div>
   );
@@ -2062,10 +2062,10 @@ function AvatarStack() {
 
 function GrowthCard() {
   return (
-    <div className="bg-gradient-to-br from-emerald-400 to-green-500 rounded-2xl p-4 shadow-lg shadow-green-500/30" style={{ width: 120 }}>
+    <div className="bg-gradient-to-br from-emerald-400 to-green-500 rounded-2xl p-4 shadow-lg shadow-green-500/30" style={{ width: 130 }}>
       <TrendingUp className="w-5 h-5 text-white mb-1" />
       <div className="text-2xl font-black text-white">+247</div>
-      <div className="text-xs text-white/80">leads hoy</div>
+      <div className="text-xs text-white font-medium">leads hoy</div>
     </div>
   );
 }
@@ -2083,10 +2083,10 @@ function StarRatingCard() {
 
 function LeadCounterCard() {
   return (
-    <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-4 shadow-lg shadow-purple-500/30" style={{ width: 130 }}>
+    <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-4 shadow-lg shadow-purple-500/30" style={{ width: 140 }}>
       <UsersIcon className="w-5 h-5 text-white mb-1" />
       <div className="text-2xl font-black text-white">1,847</div>
-      <div className="text-xs text-white/80">contactos</div>
+      <div className="text-xs text-white font-medium">contactos</div>
     </div>
   );
 }
@@ -2112,11 +2112,11 @@ function AIAutopilotCard() {
 
 function MoonSunToggle() {
   return (
-    <div className="bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl p-4 shadow-lg shadow-indigo-500/30 flex items-center gap-3" style={{ width: 120 }}>
+    <div className="bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl p-4 shadow-lg shadow-indigo-500/30 flex items-center gap-3" style={{ width: 130 }}>
       <Moon className="w-6 h-6 text-yellow-300" />
       <div>
         <div className="text-sm font-bold text-white">24/7</div>
-        <div className="text-xs text-white/70">activo</div>
+        <div className="text-xs text-white font-medium">activo</div>
       </div>
     </div>
   );
@@ -2149,28 +2149,28 @@ function AutoReplyStatus() {
 
 const STAT_FLOATING_ELEMENTS: { [key: number]: FloatingElementConfig[] } = {
   0: [
-    { component: <TimeSavedCard />, position: { x: '5%', y: '12%' }, delay: 0.05 },
-    { component: <AvatarWithStatus imageSrc={avatarMaria} name="María G." status="online" />, position: { x: '78%', y: '8%' }, delay: 0.1 },
-    { component: <RespondidoBadge />, position: { x: '8%', y: '72%' }, delay: 0.15 },
-    { component: <SpeedIndicator />, position: { x: '82%', y: '68%' }, delay: 0.12 },
+    { component: <TimeSavedCard />, position: { x: '10%', y: '12%' }, delay: 0.05 },
+    { component: <AvatarWithStatus imageSrc={avatarMaria} name="María G." status="online" />, position: { x: '72%', y: '8%' }, delay: 0.1 },
+    { component: <RespondidoBadge />, position: { x: '12%', y: '72%' }, delay: 0.15 },
+    { component: <SpeedIndicator />, position: { x: '78%', y: '66%' }, delay: 0.12 },
   ],
   1: [
-    { component: <ChatBubbleTyping />, position: { x: '3%', y: '10%' }, delay: 0.05 },
-    { component: <QuickReplyPill />, position: { x: '80%', y: '12%' }, delay: 0.1 },
-    { component: <SendButtonCard />, position: { x: '5%', y: '70%' }, delay: 0.15 },
-    { component: <NotificationCard />, position: { x: '78%', y: '68%' }, delay: 0.12 },
+    { component: <ChatBubbleTyping />, position: { x: '8%', y: '10%' }, delay: 0.05 },
+    { component: <QuickReplyPill />, position: { x: '74%', y: '12%' }, delay: 0.1 },
+    { component: <SendButtonCard />, position: { x: '10%', y: '68%' }, delay: 0.15 },
+    { component: <NotificationCard />, position: { x: '74%', y: '66%' }, delay: 0.12 },
   ],
   2: [
-    { component: <AvatarStack />, position: { x: '5%', y: '10%' }, delay: 0.05 },
-    { component: <GrowthCard />, position: { x: '82%', y: '8%' }, delay: 0.1 },
-    { component: <LeadCounterCard />, position: { x: '6%', y: '68%' }, delay: 0.15 },
-    { component: <StarRatingCard />, position: { x: '80%', y: '72%' }, delay: 0.12 },
+    { component: <AvatarStack />, position: { x: '10%', y: '10%' }, delay: 0.05 },
+    { component: <GrowthCard />, position: { x: '78%', y: '8%' }, delay: 0.1 },
+    { component: <LeadCounterCard />, position: { x: '12%', y: '66%' }, delay: 0.15 },
+    { component: <StarRatingCard />, position: { x: '76%', y: '70%' }, delay: 0.12 },
   ],
   3: [
-    { component: <AIAutopilotCard />, position: { x: '4%', y: '10%' }, delay: 0.05 },
-    { component: <MoonSunToggle />, position: { x: '82%', y: '10%' }, delay: 0.1 },
-    { component: <AITypingCard />, position: { x: '3%', y: '68%' }, delay: 0.15 },
-    { component: <AutoReplyStatus />, position: { x: '78%', y: '72%' }, delay: 0.12 },
+    { component: <AIAutopilotCard />, position: { x: '10%', y: '10%' }, delay: 0.05 },
+    { component: <MoonSunToggle />, position: { x: '78%', y: '10%' }, delay: 0.1 },
+    { component: <AITypingCard />, position: { x: '8%', y: '66%' }, delay: 0.15 },
+    { component: <AutoReplyStatus />, position: { x: '74%', y: '70%' }, delay: 0.12 },
   ],
 };
 
