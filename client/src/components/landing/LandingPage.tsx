@@ -2153,10 +2153,10 @@ const STAT_FLOATING_ELEMENTS: { [key: number]: FloatingElementConfig[] } = {
     { component: <SpeedIndicator />, position: { x: '74%', y: '68%' }, delay: 0.12 },
   ],
   1: [
-    { component: <ChatBubbleTyping />, position: { x: '5%', y: '26%' }, delay: 0.05 },
-    { component: <QuickReplyPill />, position: { x: '76%', y: '28%' }, delay: 0.1 },
-    { component: <SendButtonCard />, position: { x: '6%', y: '66%' }, delay: 0.15 },
-    { component: <NotificationCard />, position: { x: '76%', y: '66%' }, delay: 0.12 },
+    { component: <ChatBubbleTyping />, position: { x: '3%', y: '26%' }, delay: 0.05 },
+    { component: <QuickReplyPill />, position: { x: '78%', y: '28%' }, delay: 0.1 },
+    { component: <SendButtonCard />, position: { x: '3%', y: '66%' }, delay: 0.15 },
+    { component: <NotificationCard />, position: { x: '80%', y: '66%' }, delay: 0.12 },
   ],
   2: [
     { component: <AvatarStack />, position: { x: '10%', y: '26%' }, delay: 0.05 },
@@ -2216,7 +2216,7 @@ function MetricSection() {
         {!prefersReducedMotion && (
           <motion.div 
             key={`elements-${activeIndex}`}
-            className="absolute inset-0 pointer-events-none hidden md:block"
+            className="absolute inset-0 pointer-events-none hidden md:block z-20"
           >
             {currentElements.map((element, i) => (
               <FloatingUIElement
