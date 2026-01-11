@@ -1493,121 +1493,293 @@ function ProblemMockup() {
 }
 
 function SolutionMockup() {
-  return (
-    <div className="solution-mockup-card">
-      <div className="unified-inbox-preview">
-        <div className="inbox-sidebar">
-          <div className="sidebar-item active">
-            <MessageSquare className="w-4 h-4" />
-            <span>Inbox</span>
-            <div className="count-badge">0</div>
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: '-100px' });
+  const prefersReducedMotion = useReducedMotion();
+  
+  const sidebarItems = [
+    { icon: MessageSquare, label: 'Inbox', count: '0', active: true },
+    { icon: Users, label: 'CRM' },
+    { icon: Bell, label: 'Recordatorios' },
+  ];
+  
+  const conversations = [
+    { status: 'answered', icon: Check },
+    { status: 'answered', icon: Check },
+    { status: 'ai-draft', icon: Sparkles },
+  ];
+  
+  const indicators = [
+    { icon: Check, text: 'Respuesta en 2 min', className: 'i1' },
+    { icon: Zap, text: 'IA genera borradores', className: 'i2' },
+    { icon: MessageSquare, text: 'Un solo inbox', className: 'i3' },
+    { icon: Users, text: 'CRM integrado', className: 'i4' },
+    { icon: Bell, text: 'Recordatorios automáticos', className: 'i5' },
+  ];
+  
+  const panelVariants = {
+    hidden: { opacity: 0, x: -30, rotateY: -10 },
+    visible: (i: number) => ({
+      opacity: 1,
+      x: 0,
+      rotateY: 0,
+      transition: {
+        delay: i * 0.15,
+        duration: 0.6,
+        ease: [0.25, 0.46, 0.45, 0.94]
+      }
+    })
+  };
+  
+  const indicatorVariants = {
+    hidden: { opacity: 0, scale: 0.5, y: 20 },
+    visible: (i: number) => ({
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      transition: {
+        delay: 0.8 + i * 0.12,
+        type: 'spring',
+        stiffness: 300,
+        damping: 20
+      }
+    })
+  };
+  
+  if (prefersReducedMotion) {
+    return (
+      <div className="solution-mockup-card" ref={ref}>
+        <div className="unified-inbox-preview">
+          <div className="inbox-sidebar">
+            {sidebarItems.map((item) => {
+              const IconComponent = item.icon;
+              return (
+                <div key={item.label} className={`sidebar-item ${item.active ? 'active' : ''}`}>
+                  <IconComponent className="w-4 h-4" />
+                  <span>{item.label}</span>
+                  {item.count && <div className="count-badge">{item.count}</div>}
+                </div>
+              );
+            })}
           </div>
-          <div className="sidebar-item">
-            <Users className="w-4 h-4" />
-            <span>CRM</span>
-          </div>
-          <div className="sidebar-item">
-            <Bell className="w-4 h-4" />
-            <span>Recordatorios</span>
-          </div>
-        </div>
-        
-        <div className="inbox-main">
-          <div className="inbox-header-bar">
-            <div className="platform-tabs">
-              <span className="tab active">Todos</span>
-              <span className="tab"><FaInstagram className="w-3 h-3 text-[#E1306C]" /></span>
-              <span className="tab"><FaTiktok className="w-3 h-3 text-white" /></span>
-              <span className="tab"><FaFacebook className="w-3 h-3 text-[#1877F2]" /></span>
-              <span className="tab"><FaYoutube className="w-3 h-3 text-[#FF0000]" /></span>
+          <div className="inbox-main">
+            <div className="inbox-header-bar">
+              <div className="platform-tabs">
+                <span className="tab active">Todos</span>
+                <span className="tab"><FaInstagram className="w-3 h-3 text-[#E1306C]" /></span>
+                <span className="tab"><FaTiktok className="w-3 h-3 text-white" /></span>
+                <span className="tab"><FaFacebook className="w-3 h-3 text-[#1877F2]" /></span>
+                <span className="tab"><FaYoutube className="w-3 h-3 text-[#FF0000]" /></span>
+              </div>
+            </div>
+            <div className="conversation-list-mini">
+              {conversations.map((conv, i) => {
+                const IconComponent = conv.icon;
+                return (
+                  <div key={i} className={`conv-item ${conv.status}`}>
+                    <div className="conv-avatar" />
+                    <div className="conv-content">
+                      <div className="conv-name" />
+                      <div className="conv-preview" />
+                    </div>
+                    <div className="conv-status">
+                      <IconComponent className="w-3 h-3 text-[var(--landing-primary)]" />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
-          
-          <div className="conversation-list-mini">
-            <div className="conv-item answered">
-              <div className="conv-avatar" />
-              <div className="conv-content">
-                <div className="conv-name" />
-                <div className="conv-preview" />
-              </div>
-              <div className="conv-status">
-                <Check className="w-3 h-3 text-[var(--landing-primary)]" />
-              </div>
-            </div>
-            <div className="conv-item answered">
-              <div className="conv-avatar" />
-              <div className="conv-content">
-                <div className="conv-name" />
-                <div className="conv-preview" />
-              </div>
-              <div className="conv-status">
-                <Check className="w-3 h-3 text-[var(--landing-primary)]" />
-              </div>
-            </div>
-            <div className="conv-item ai-draft">
-              <div className="conv-avatar" />
-              <div className="conv-content">
-                <div className="conv-name" />
-                <div className="conv-preview" />
-              </div>
-              <div className="conv-status">
-                <Sparkles className="w-3 h-3 text-[var(--landing-primary)]" />
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="inbox-detail">
-          <div className="detail-header">
-            <div className="customer-info">
-              <div className="customer-avatar" />
-              <div className="customer-meta">
-                <div className="customer-name" />
-                <div className="customer-platform">
-                  <Instagram className="w-3 h-3" />
+          <div className="inbox-detail">
+            <div className="detail-header">
+              <div className="customer-info">
+                <div className="customer-avatar" />
+                <div className="customer-meta">
+                  <div className="customer-name" />
+                  <div className="customer-platform"><Instagram className="w-3 h-3" /></div>
                 </div>
               </div>
             </div>
-          </div>
-          <div className="ai-response-preview">
-            <div className="ai-badge">
-              <Sparkles className="w-3 h-3" />
-              <span>IA</span>
+            <div className="ai-response-preview">
+              <div className="ai-badge"><Sparkles className="w-3 h-3" /><span>IA</span></div>
+              <div className="response-lines"><div className="line" /><div className="line short" /></div>
+              <button className="send-btn"><Send className="w-3 h-3" /></button>
             </div>
-            <div className="response-lines">
-              <div className="line" />
-              <div className="line short" />
-            </div>
-            <button className="send-btn">
-              <Send className="w-3 h-3" />
-            </button>
           </div>
         </div>
-      </div>
-      
-      <div className="success-indicators">
-        <div className="indicator i1">
-          <Check className="w-3 h-3" />
-          <span>Respuesta en 2 min</span>
-        </div>
-        <div className="indicator i2">
-          <Zap className="w-3 h-3" />
-          <span>IA genera borradores</span>
-        </div>
-        <div className="indicator i3">
-          <MessageSquare className="w-3 h-3" />
-          <span>Un solo inbox</span>
-        </div>
-        <div className="indicator i4">
-          <Users className="w-3 h-3" />
-          <span>CRM integrado</span>
-        </div>
-        <div className="indicator i5">
-          <Bell className="w-3 h-3" />
-          <span>Recordatorios automáticos</span>
+        <div className="success-indicators">
+          {indicators.map((ind) => {
+            const IconComponent = ind.icon;
+            return (
+              <div key={ind.className} className={`indicator ${ind.className}`}>
+                <IconComponent className="w-3 h-3" />
+                <span>{ind.text}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
-    </div>
+    );
+  }
+  
+  return (
+    <Tilt3D maxTilt={6}>
+      <div className="solution-mockup-card" ref={ref}>
+        <div className="unified-inbox-preview">
+          <motion.div
+            className="inbox-sidebar"
+            custom={0}
+            initial="hidden"
+            animate={inView ? "visible" : "hidden"}
+            variants={panelVariants}
+          >
+            {sidebarItems.map((item, i) => {
+              const IconComponent = item.icon;
+              return (
+                <motion.div
+                  key={item.label}
+                  className={`sidebar-item ${item.active ? 'active' : ''}`}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={inView ? { opacity: 1, x: 0 } : {}}
+                  transition={{ delay: 0.3 + i * 0.1, duration: 0.4 }}
+                >
+                  <IconComponent className="w-4 h-4" />
+                  <span>{item.label}</span>
+                  {item.count && <div className="count-badge">{item.count}</div>}
+                </motion.div>
+              );
+            })}
+          </motion.div>
+          
+          <motion.div
+            className="inbox-main"
+            custom={1}
+            initial="hidden"
+            animate={inView ? "visible" : "hidden"}
+            variants={panelVariants}
+          >
+            <motion.div
+              className="inbox-header-bar"
+              initial={{ opacity: 0, y: -10 }}
+              animate={inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: 0.4, duration: 0.4 }}
+            >
+              <div className="platform-tabs">
+                <span className="tab active">Todos</span>
+                <span className="tab"><FaInstagram className="w-3 h-3 text-[#E1306C]" /></span>
+                <span className="tab"><FaTiktok className="w-3 h-3 text-white" /></span>
+                <span className="tab"><FaFacebook className="w-3 h-3 text-[#1877F2]" /></span>
+                <span className="tab"><FaYoutube className="w-3 h-3 text-[#FF0000]" /></span>
+              </div>
+            </motion.div>
+            
+            <div className="conversation-list-mini">
+              {conversations.map((conv, i) => {
+                const IconComponent = conv.icon;
+                return (
+                  <motion.div
+                    key={i}
+                    className={`conv-item ${conv.status}`}
+                    initial={{ opacity: 0, x: 30 }}
+                    animate={inView ? { opacity: 1, x: 0 } : {}}
+                    transition={{ delay: 0.5 + i * 0.12, duration: 0.4 }}
+                  >
+                    <div className="conv-avatar" />
+                    <div className="conv-content">
+                      <div className="conv-name" />
+                      <div className="conv-preview" />
+                    </div>
+                    <div className="conv-status">
+                      <IconComponent className="w-3 h-3 text-[var(--landing-primary)]" />
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
+          
+          <motion.div
+            className="inbox-detail"
+            custom={2}
+            initial="hidden"
+            animate={inView ? "visible" : "hidden"}
+            variants={panelVariants}
+          >
+            <div className="detail-header">
+              <div className="customer-info">
+                <motion.div
+                  className="customer-avatar"
+                  initial={{ scale: 0 }}
+                  animate={inView ? { scale: 1 } : {}}
+                  transition={{ delay: 0.6, type: 'spring', stiffness: 400 }}
+                />
+                <div className="customer-meta">
+                  <motion.div
+                    className="customer-name"
+                    initial={{ opacity: 0, scaleX: 0 }}
+                    animate={inView ? { opacity: 1, scaleX: 1 } : {}}
+                    transition={{ delay: 0.7, duration: 0.3 }}
+                    style={{ transformOrigin: 'left' }}
+                  />
+                  <div className="customer-platform"><Instagram className="w-3 h-3" /></div>
+                </div>
+              </div>
+            </div>
+            <motion.div
+              className="ai-response-preview"
+              initial={{ opacity: 0, y: 20 }}
+              animate={inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: 0.75, duration: 0.4 }}
+            >
+              <div className="ai-badge"><Sparkles className="w-3 h-3" /><span>IA</span></div>
+              <div className="response-lines">
+                <motion.div
+                  className="line"
+                  initial={{ scaleX: 0 }}
+                  animate={inView ? { scaleX: 1 } : {}}
+                  transition={{ delay: 0.85, duration: 0.4 }}
+                  style={{ transformOrigin: 'left' }}
+                />
+                <motion.div
+                  className="line short"
+                  initial={{ scaleX: 0 }}
+                  animate={inView ? { scaleX: 1 } : {}}
+                  transition={{ delay: 0.95, duration: 0.3 }}
+                  style={{ transformOrigin: 'left' }}
+                />
+              </div>
+              <motion.button
+                className="send-btn"
+                initial={{ scale: 0 }}
+                animate={inView ? { scale: 1 } : {}}
+                transition={{ delay: 1.05, type: 'spring', stiffness: 400 }}
+              >
+                <Send className="w-3 h-3" />
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        </div>
+        
+        <div className="success-indicators">
+          {indicators.map((ind, i) => {
+            const IconComponent = ind.icon;
+            return (
+              <motion.div
+                key={ind.className}
+                className={`indicator ${ind.className}`}
+                custom={i}
+                initial="hidden"
+                animate={inView ? "visible" : "hidden"}
+                variants={indicatorVariants}
+              >
+                <IconComponent className="w-3 h-3" />
+                <span>{ind.text}</span>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+    </Tilt3D>
   );
 }
 
