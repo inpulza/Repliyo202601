@@ -2776,21 +2776,21 @@ function TestimonialSection() {
   }, [prefersReducedMotion, testimonials.length]);
 
   return (
-    <section id="testimonial" ref={ref} className="py-40 relative overflow-hidden">
+    <section id="testimonial" ref={ref} className="py-16 md:py-32 relative overflow-hidden">
       <motion.div 
         style={{ y: quoteY, rotate: quoteRotate }} 
-        className="absolute top-10 left-10 text-[25rem] font-display font-black text-white/[0.02] select-none leading-none"
+        className="absolute top-4 left-4 md:top-10 md:left-10 text-[8rem] md:text-[15rem] lg:text-[25rem] font-display font-black text-white/[0.02] select-none leading-none"
       >
         "
       </motion.div>
       <motion.div 
         style={{ y: useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [-100, 100]) }} 
-        className="absolute bottom-10 right-10 text-[25rem] font-display font-black text-white/[0.02] select-none leading-none rotate-180"
+        className="absolute bottom-4 right-4 md:bottom-10 md:right-10 text-[8rem] md:text-[15rem] lg:text-[25rem] font-display font-black text-white/[0.02] select-none leading-none rotate-180"
       >
         "
       </motion.div>
       
-      <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
+      <div className="max-w-4xl mx-auto px-4 md:px-6 text-center relative z-10">
         <div className="testimonial-carousel">
           {testimonials.map((testimonial, idx) => (
             <motion.div
@@ -2805,28 +2805,28 @@ function TestimonialSection() {
               }}
               transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
             >
-              <blockquote className="font-display text-2xl md:text-4xl lg:text-5xl font-medium text-white leading-relaxed mb-12">
+              <blockquote className="font-display text-lg sm:text-xl md:text-3xl lg:text-4xl font-medium text-white leading-relaxed mb-6 md:mb-12">
                 "{testimonial.quote.split(testimonial.highlight)[0]}
                 <span className="text-white/60">{testimonial.highlight}</span>
                 {testimonial.quote.split(testimonial.highlight)[1]}"
               </blockquote>
 
-              <div className="inline-flex items-center gap-5 p-5 pr-10 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
+              <div className="inline-flex items-center gap-3 md:gap-5 p-3 pr-5 md:p-5 md:pr-10 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
                 <img 
                   src={testimonial.image} 
                   alt={testimonial.name}
-                  className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border-2 border-white/20"
+                  className="w-12 h-12 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-full object-cover border-2 border-white/20"
                 />
                 <div className="text-left">
-                  <div className="font-semibold text-white text-xl md:text-2xl">{testimonial.name}</div>
-                  <div className="text-base md:text-lg text-white/60">{testimonial.role}</div>
+                  <div className="font-semibold text-white text-sm md:text-xl lg:text-2xl">{testimonial.name}</div>
+                  <div className="text-xs md:text-base lg:text-lg text-white/60">{testimonial.role}</div>
                 </div>
               </div>
             </motion.div>
           ))}
         </div>
 
-        <div className="testimonial-dots mt-10">
+        <div className="testimonial-dots mt-6 md:mt-10">
           {testimonials.map((_, idx) => (
             <button
               key={idx}
@@ -2848,31 +2848,31 @@ function CTASection() {
   const bgY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [100, -50]);
 
   return (
-    <section ref={ref} className="relative border-t border-white/5 overflow-hidden">
+    <section ref={ref} className="relative border-t border-white/5 overflow-hidden py-16 md:py-32">
       <motion.div 
         style={{ y: bgY }}
-        className="absolute inset-0 bg-gradient-to-br from-[var(--landing-primary)]/10 via-transparent to-[var(--landing-accent)]/5"
+        className="absolute inset-0 bg-gradient-to-br from-[var(--landing-primary)]/10 via-transparent to-[var(--landing-accent)]/5 hidden md:block"
       />
       
       <div className="grid lg:grid-cols-12 relative z-10">
-        <div className="lg:col-span-7 p-12 md:p-20 lg:p-24">
+        <div className="lg:col-span-7 px-6 py-8 md:p-16 lg:p-24">
           <motion.div
             initial={{ opacity: 0, y: 60 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           >
-            <h2 className="font-display font-bold text-5xl md:text-7xl lg:text-8xl tracking-tight leading-[0.9] mb-6">
+            <h2 className="font-display font-bold text-3xl md:text-5xl lg:text-7xl tracking-tight leading-[0.9] mb-4 md:mb-6">
               ¿LISTO PARA<br />
               <span className="text-outline hover:text-white transition-colors duration-500 cursor-default">ESCALAR?</span>
             </h2>
-            <p className="text-white/50 text-xl md:text-2xl max-w-lg">
+            <p className="text-white/50 text-sm md:text-lg lg:text-xl max-w-lg">
               Automatiza respuestas. Deleita clientes. Sin tarjeta de crédito.
             </p>
           </motion.div>
         </div>
 
-        <div className="lg:col-span-5 p-12 md:p-20 lg:p-24 flex items-center justify-center border-t lg:border-t-0 lg:border-l border-white/5">
+        <div className="lg:col-span-5 px-6 py-8 md:p-16 lg:p-24 flex items-center justify-center border-t lg:border-t-0 lg:border-l border-white/5">
           <motion.a
             href="/login"
             initial={{ opacity: 0, scale: 0.8 }}
@@ -2881,11 +2881,11 @@ function CTASection() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             transition={{ duration: 0.6, type: 'spring' }}
-            className="btn-cta-circle"
+            className="btn-cta-circle w-full sm:w-auto flex items-center justify-center gap-2 py-4 px-8 min-h-[44px]"
             data-testid="button-empezar-cta"
           >
-            <span className="font-display text-xl">Empezar</span>
-            <ArrowRight className="w-6 h-6" />
+            <span className="font-display text-lg md:text-xl">Empezar</span>
+            <ArrowRight className="w-5 h-5 md:w-6 md:h-6" />
           </motion.a>
         </div>
       </div>
@@ -2903,16 +2903,16 @@ function Footer() {
 
   return (
     <footer className="section-dark border-t border-white/5">
-      <div className="grid grid-cols-2 md:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
         {Object.entries(links).map(([category, items]) => (
-          <div key={category} className="p-8 md:p-12 border-r border-b border-white/5 last:border-r-0">
-            <h4 className="font-mono text-xs text-[var(--landing-primary)] uppercase tracking-[0.2em] mb-6">
+          <div key={category} className="p-6 md:p-8 lg:p-12 border-b sm:border-r border-white/5 sm:last:border-r-0 md:last:border-r-0">
+            <h4 className="font-mono text-xs text-[var(--landing-primary)] uppercase tracking-[0.2em] mb-4 md:mb-6">
               {category}
             </h4>
-            <ul className="space-y-4">
+            <ul className="space-y-1 md:space-y-3">
               {items.map((item) => (
                 <li key={item}>
-                  <a href="#" className="text-white/50 hover:text-white hover:translate-x-2 transition-all duration-300 text-sm inline-block" data-testid={`link-footer-${item.toLowerCase().replace(/\s+/g, '-')}`}>
+                  <a href="#" className="text-white/50 hover:text-white hover:translate-x-2 transition-all duration-300 text-sm inline-flex items-center min-h-[44px] py-2" data-testid={`link-footer-${item.toLowerCase().replace(/\s+/g, '-')}`}>
                     {item}
                   </a>
                 </li>
@@ -2921,20 +2921,20 @@ function Footer() {
           </div>
         ))}
       </div>
-      <div className="relative w-full overflow-hidden border-t border-white/5 py-16">
+      <div className="relative w-full overflow-hidden border-t border-white/5 py-8 md:py-16">
         <motion.h1 
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="font-display font-black text-[18vw] leading-[0.75] text-center select-none tracking-tight text-outline"
+          className="font-display font-black text-[15vw] md:text-[18vw] leading-[0.75] text-center select-none tracking-tight text-outline"
         >
           REPLIYO
         </motion.h1>
-        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center text-xs text-white/40 font-mono mt-8">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-white/40 font-mono mt-6 md:mt-8">
           <span>© 2026 Repliyo Inc.</span>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-white transition-colors" data-testid="link-footer-privacy">Privacy</a>
-            <a href="#" className="hover:text-white transition-colors" data-testid="link-footer-terms">Terms</a>
+            <a href="#" className="hover:text-white transition-colors min-h-[44px] flex items-center py-2" data-testid="link-footer-privacy">Privacy</a>
+            <a href="#" className="hover:text-white transition-colors min-h-[44px] flex items-center py-2" data-testid="link-footer-terms">Terms</a>
           </div>
         </div>
       </div>
