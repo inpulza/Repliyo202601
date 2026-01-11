@@ -1969,28 +1969,28 @@ function FloatingAvatar({ config }: { config: FloatingAvatarConfig }) {
 
 const STAT_AVATARS: { [key: number]: FloatingAvatarConfig[] } = {
   0: [
-    { kind: 'icon', icon: Clock4, bg: '#F97316', border: '#FB923C', position: { x: '5%', y: '18%' }, delay: 0.05, size: 68 },
-    { kind: 'image', imageSrc: avatarMaria, border: '#10B981', position: { x: '88%', y: '20%' }, delay: 0.1, size: 64 },
-    { kind: 'icon', icon: CheckCircle, bg: '#22C55E', border: '#4ADE80', position: { x: '8%', y: '68%' }, delay: 0.15, size: 56 },
-    { kind: 'icon', icon: ZapIcon, bg: '#EAB308', border: '#FACC15', position: { x: '85%', y: '65%' }, delay: 0.12, size: 60 },
+    { kind: 'icon', icon: Clock4, bg: '#F97316', border: '#FB923C', position: { x: '12%', y: '15%' }, delay: 0.05, size: 64 },
+    { kind: 'image', imageSrc: avatarMaria, border: '#10B981', position: { x: '82%', y: '12%' }, delay: 0.1, size: 76 },
+    { kind: 'icon', icon: CheckCircle, bg: '#22C55E', border: '#4ADE80', position: { x: '15%', y: '72%' }, delay: 0.15, size: 56 },
+    { kind: 'image', imageSrc: avatarCarlos, border: '#EAB308', position: { x: '78%', y: '70%' }, delay: 0.12, size: 72 },
   ],
   1: [
-    { kind: 'icon', icon: MsgSquare, bg: '#2563EB', border: '#3B82F6', position: { x: '4%', y: '20%' }, delay: 0.05, size: 68 },
-    { kind: 'icon', icon: SendIcon, bg: '#8B5CF6', border: '#A78BFA', position: { x: '90%', y: '18%' }, delay: 0.1, size: 60 },
-    { kind: 'image', imageSrc: avatarCarlos, border: '#0EA5E9', position: { x: '6%', y: '68%' }, delay: 0.15, size: 58 },
-    { kind: 'icon', icon: HeartIcon, bg: '#EC4899', border: '#F472B6', position: { x: '88%', y: '68%' }, delay: 0.12, size: 54 },
+    { kind: 'icon', icon: MsgSquare, bg: '#2563EB', border: '#3B82F6', position: { x: '10%', y: '18%' }, delay: 0.05, size: 64 },
+    { kind: 'icon', icon: SendIcon, bg: '#8B5CF6', border: '#A78BFA', position: { x: '84%', y: '15%' }, delay: 0.1, size: 58 },
+    { kind: 'image', imageSrc: avatarAna, border: '#0EA5E9', position: { x: '12%', y: '70%' }, delay: 0.15, size: 74 },
+    { kind: 'icon', icon: HeartIcon, bg: '#EC4899', border: '#F472B6', position: { x: '82%', y: '72%' }, delay: 0.12, size: 54 },
   ],
   2: [
-    { kind: 'icon', icon: UsersIcon, bg: '#06B6D4', border: '#22D3EE', position: { x: '5%', y: '18%' }, delay: 0.05, size: 72 },
-    { kind: 'icon', icon: TrendingUp, bg: '#F43F5E', border: '#FB7185', position: { x: '88%', y: '18%' }, delay: 0.1, size: 64 },
-    { kind: 'image', imageSrc: avatarAna, border: '#10B981', position: { x: '7%', y: '70%' }, delay: 0.15, size: 58 },
-    { kind: 'icon', icon: SparklesIcon, bg: '#A855F7', border: '#C084FC', position: { x: '86%', y: '66%' }, delay: 0.12, size: 60 },
+    { kind: 'icon', icon: UsersIcon, bg: '#06B6D4', border: '#22D3EE', position: { x: '12%', y: '15%' }, delay: 0.05, size: 68 },
+    { kind: 'image', imageSrc: avatarDiego, border: '#F43F5E', position: { x: '82%', y: '12%' }, delay: 0.1, size: 76 },
+    { kind: 'icon', icon: TrendingUp, bg: '#10B981', border: '#34D399', position: { x: '14%', y: '72%' }, delay: 0.15, size: 56 },
+    { kind: 'image', imageSrc: avatarAna, border: '#A855F7', position: { x: '80%', y: '70%' }, delay: 0.12, size: 72 },
   ],
   3: [
-    { kind: 'icon', icon: Bot, bg: '#A855F7', border: '#C084FC', position: { x: '5%', y: '18%' }, delay: 0.05, size: 72 },
-    { kind: 'icon', icon: Moon, bg: '#6366F1', border: '#818CF8', position: { x: '88%', y: '20%' }, delay: 0.1, size: 64 },
-    { kind: 'image', imageSrc: avatarDiego, border: '#2563EB', position: { x: '7%', y: '68%' }, delay: 0.15, size: 58 },
-    { kind: 'icon', icon: Clock3, bg: '#F97316', border: '#FB923C', position: { x: '86%', y: '65%' }, delay: 0.12, size: 60 },
+    { kind: 'icon', icon: Bot, bg: '#A855F7', border: '#C084FC', position: { x: '12%', y: '15%' }, delay: 0.05, size: 68 },
+    { kind: 'icon', icon: Moon, bg: '#6366F1', border: '#818CF8', position: { x: '82%', y: '18%' }, delay: 0.1, size: 60 },
+    { kind: 'image', imageSrc: avatarMaria, border: '#2563EB', position: { x: '14%', y: '70%' }, delay: 0.15, size: 74 },
+    { kind: 'icon', icon: Clock3, bg: '#F97316', border: '#FB923C', position: { x: '80%', y: '72%' }, delay: 0.12, size: 56 },
   ],
 };
 
@@ -2005,10 +2005,10 @@ function MetricSection() {
   const opacity = useTransform(scrollYProgress, [0, 0.3], prefersReducedMotion ? [1, 1] : [0, 1]);
   
   const stats = [
-    { value: "80%", title: "menos tiempo respondiendo", description: "Nuestros usuarios reducen drásticamente el tiempo dedicado a gestionar mensajes." },
-    { value: "2min", title: "tiempo de respuesta promedio", description: "La IA genera borradores instantáneos que solo necesitan un clic para enviar." },
-    { value: "5x", title: "más leads gestionados", description: "Multiplica tu capacidad de atención sin aumentar tu equipo de soporte." },
-    { value: "24/7", title: "cobertura total con IA", description: "Los borradores se preparan automáticamente incluso fuera de horario laboral." },
+    { value: "80%", title: "menos tiempo respondiendo", description: "Nuestros usuarios reducen drásticamente el tiempo dedicado a gestionar mensajes.", icon: Clock4 },
+    { value: "2min", title: "tiempo de respuesta promedio", description: "La IA genera borradores instantáneos que solo necesitan un clic para enviar.", icon: ZapIcon },
+    { value: "5x", title: "más leads gestionados", description: "Multiplica tu capacidad de atención sin aumentar tu equipo de soporte.", icon: TrendingUp },
+    { value: "24/7", title: "cobertura total con IA", description: "Los borradores se preparan automáticamente incluso fuera de horario laboral.", icon: Bot },
   ];
   
   useEffect(() => {
@@ -2069,7 +2069,11 @@ function MetricSection() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
+            className="flex flex-col items-center"
           >
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mb-4 shadow-lg shadow-indigo-500/30">
+              <currentStat.icon className="w-6 h-6 text-white" />
+            </div>
             <h2 className="font-display text-3xl md:text-5xl font-bold text-white mb-4">
               {currentStat.title}
             </h2>
@@ -2080,15 +2084,15 @@ function MetricSection() {
         </AnimatePresence>
       </motion.div>
       
-      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex justify-center gap-3 z-20">
+      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex justify-center gap-2 z-20">
         {stats.map((_, i) => (
           <button
             key={i}
             onClick={() => setActiveIndex(i)}
-            className={`w-3 h-3 rounded-full transition-all duration-300 ${
+            className={`h-2.5 rounded-full transition-all duration-300 ${
               activeIndex === i 
-                ? 'bg-white scale-125' 
-                : 'bg-gray-500 hover:bg-gray-400'
+                ? 'bg-white w-6' 
+                : 'bg-white/40 hover:bg-white/60 w-2.5'
             }`}
             aria-label={`Ver estadística ${i + 1}`}
           />
