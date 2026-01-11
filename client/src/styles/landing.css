@@ -5033,6 +5033,147 @@
   box-shadow: 0 6px 20px rgba(2, 145, 250, 0.35);
 }
 
+/* Animated Coin Container - "Venta Perdida" */
+.animated-coin-container {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: white;
+  border: 4px solid #ef4444;
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.coin-animation {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.coin {
+  font-size: 36px;
+  position: absolute;
+  animation: coin-fall-break 3s ease-in-out infinite;
+}
+
+.coin-crack {
+  font-size: 28px;
+  position: absolute;
+  opacity: 0;
+  animation: coin-crack-appear 3s ease-in-out infinite;
+}
+
+.puff-particles {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.puff {
+  position: absolute;
+  font-size: 16px;
+  opacity: 0;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.puff.p1 {
+  animation: puff-explode-1 3s ease-out infinite;
+}
+.puff.p2 {
+  animation: puff-explode-2 3s ease-out infinite;
+}
+.puff.p3 {
+  animation: puff-explode-3 3s ease-out infinite;
+}
+.puff.p4 {
+  animation: puff-explode-4 3s ease-out infinite;
+}
+
+@keyframes coin-fall-break {
+  0% {
+    transform: translateY(-30px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  40% {
+    transform: translateY(0px) rotate(180deg);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(5px) rotate(200deg) scale(0.9);
+    opacity: 1;
+  }
+  55% {
+    transform: translateY(0px) rotate(180deg) scale(0);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes coin-crack-appear {
+  0%, 50% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  75% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes puff-explode-1 {
+  0%, 52% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+  55% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  75% { opacity: 0; transform: translate(-120%, -120%) scale(0.5); }
+  100% { opacity: 0; }
+}
+
+@keyframes puff-explode-2 {
+  0%, 52% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+  55% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  75% { opacity: 0; transform: translate(20%, -120%) scale(0.5); }
+  100% { opacity: 0; }
+}
+
+@keyframes puff-explode-3 {
+  0%, 52% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+  55% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  75% { opacity: 0; transform: translate(-120%, 20%) scale(0.5); }
+  100% { opacity: 0; }
+}
+
+@keyframes puff-explode-4 {
+  0%, 52% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+  55% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  75% { opacity: 0; transform: translate(20%, 20%) scale(0.5); }
+  100% { opacity: 0; }
+}
+
 /* Solution Mockup Card */
 .solution-mockup-card {
   position: relative;

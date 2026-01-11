@@ -54,6 +54,23 @@ import '../../styles/landing.css';
 
 gsap.registerPlugin(ScrollTrigger);
 
+function FallingCoinAnimation({ position }: { position: 'left' | 'right' }) {
+  return (
+    <div className={`animated-coin-container ${position === 'left' ? 'pill-avatar-left' : 'pill-avatar-right'}`}>
+      <div className="coin-animation">
+        <div className="coin">💰</div>
+        <div className="coin-crack">💔</div>
+        <div className="puff-particles">
+          <span className="puff p1">✨</span>
+          <span className="puff p2">💨</span>
+          <span className="puff p3">✨</span>
+          <span className="puff p4">💨</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Step1ConnectMockup() {
   const orbitIcons = [
     { Icon: FaInstagram, platform: 'instagram' },
@@ -1349,10 +1366,10 @@ function ProblemMockup() {
   ];
   
   const notifications = [
-    { icon: Bell, text: '+82 mensajes sin leer', className: 'n1', avatar: problemAvatar1, avatarPosition: 'left' as const },
-    { icon: Clock, text: 'Lead esperando 4 horas', className: 'n2', avatar: problemAvatar2, avatarPosition: 'right' as const },
-    { icon: AlertCircle, text: 'Cliente frustrado', className: 'n3', avatar: problemAvatar3, avatarPosition: 'left' as const },
-    { icon: MessageSquare, text: 'Venta perdida', className: 'n4', avatar: problemAvatar4, avatarPosition: 'right' as const },
+    { icon: Bell, text: '+82 mensajes sin leer', className: 'n1', avatar: problemAvatar1, avatarPosition: 'left' as const, isAnimated: false },
+    { icon: Clock, text: 'Lead esperando 4 horas', className: 'n2', avatar: problemAvatar2, avatarPosition: 'right' as const, isAnimated: false },
+    { icon: AlertCircle, text: 'Cliente frustrado', className: 'n3', avatar: problemAvatar3, avatarPosition: 'left' as const, isAnimated: false },
+    { icon: MessageSquare, text: 'Venta perdida', className: 'n4', avatar: null, avatarPosition: 'right' as const, isAnimated: true },
   ];
 
   const cardVariants = {
@@ -1423,23 +1440,29 @@ function ProblemMockup() {
             const IconComponent = notif.icon;
             return (
               <div key={notif.className} className={`floating-notification-wrapper ${notif.className}`}>
-                {notif.avatarPosition === 'left' && (
+                {notif.avatarPosition === 'left' && !notif.isAnimated && notif.avatar && (
                   <img 
                     src={notif.avatar} 
                     alt="" 
                     className="pill-avatar pill-avatar-left"
                   />
                 )}
+                {notif.avatarPosition === 'left' && notif.isAnimated && (
+                  <FallingCoinAnimation position="left" />
+                )}
                 <div className="floating-notification">
                   <IconComponent className="w-3 h-3" />
                   <span>{notif.text}</span>
                 </div>
-                {notif.avatarPosition === 'right' && (
+                {notif.avatarPosition === 'right' && !notif.isAnimated && notif.avatar && (
                   <img 
                     src={notif.avatar} 
                     alt="" 
                     className="pill-avatar pill-avatar-right"
                   />
+                )}
+                {notif.avatarPosition === 'right' && notif.isAnimated && (
+                  <FallingCoinAnimation position="right" />
                 )}
               </div>
             );
@@ -1501,7 +1524,7 @@ function ProblemMockup() {
                 animate={inView ? "visible" : "hidden"}
                 variants={notificationVariants}
               >
-                {notif.avatarPosition === 'left' && (
+                {notif.avatarPosition === 'left' && !notif.isAnimated && notif.avatar && (
                   <motion.img 
                     src={notif.avatar} 
                     alt="" 
@@ -1510,11 +1533,14 @@ function ProblemMockup() {
                     transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: i * 0.2 }}
                   />
                 )}
+                {notif.avatarPosition === 'left' && notif.isAnimated && (
+                  <FallingCoinAnimation position="left" />
+                )}
                 <div className="floating-notification">
                   <IconComponent className="w-3 h-3" />
                   <span>{notif.text}</span>
                 </div>
-                {notif.avatarPosition === 'right' && (
+                {notif.avatarPosition === 'right' && !notif.isAnimated && notif.avatar && (
                   <motion.img 
                     src={notif.avatar} 
                     alt="" 
@@ -1522,6 +1548,9 @@ function ProblemMockup() {
                     animate={{ y: [0, -4, 0] }}
                     transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: i * 0.2 }}
                   />
+                )}
+                {notif.avatarPosition === 'right' && notif.isAnimated && (
+                  <FallingCoinAnimation position="right" />
                 )}
               </motion.div>
             );
