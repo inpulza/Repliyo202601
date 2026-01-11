@@ -1133,6 +1133,124 @@ function Header() {
   );
 }
 
+function SlotMachineIA() {
+  const [phase, setPhase] = useState<'spinning' | 'slowing' | 'landed'>('spinning');
+  const [displayText, setDisplayText] = useState('??');
+  const prefersReducedMotion = useReducedMotion();
+  
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*!?';
+  const spinChars = ['AI', 'ML', 'GP', 'NL', 'LM', 'DL', 'NN', 'IA'];
+  
+  useEffect(() => {
+    if (prefersReducedMotion) {
+      setDisplayText('IA');
+      setPhase('landed');
+      return;
+    }
+    
+    const startDelay = setTimeout(() => {
+      let spinCount = 0;
+      const maxSpins = 12;
+      
+      const spinInterval = setInterval(() => {
+        spinCount++;
+        
+        if (spinCount < maxSpins * 0.6) {
+          const randomIdx = Math.floor(Math.random() * spinChars.length);
+          setDisplayText(spinChars[randomIdx]);
+        } else if (spinCount < maxSpins * 0.85) {
+          setPhase('slowing');
+          const slowChars = ['AI', 'ML', 'IA', 'AI', 'IA'];
+          const idx = Math.floor((spinCount - maxSpins * 0.6) / 2) % slowChars.length;
+          setDisplayText(slowChars[idx]);
+        } else {
+          clearInterval(spinInterval);
+          setDisplayText('IA');
+          setPhase('landed');
+        }
+      }, 80);
+      
+      return () => clearInterval(spinInterval);
+    }, 900);
+    
+    return () => clearTimeout(startDelay);
+  }, [prefersReducedMotion]);
+  
+  if (prefersReducedMotion) {
+    return (
+      <span className="text-[var(--landing-primary)] font-bold">IA.</span>
+    );
+  }
+  
+  return (
+    <motion.span
+      className="inline-block relative"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.85, duration: 0.2 }}
+    >
+      <motion.span
+        className={`inline-block font-bold transition-colors duration-200 ${
+          phase === 'landed' 
+            ? 'text-[var(--landing-primary)]' 
+            : phase === 'slowing' 
+              ? 'text-blue-300' 
+              : 'text-white/40'
+        }`}
+        animate={phase === 'spinning' ? {
+          y: [0, -3, 0, 2, 0],
+        } : phase === 'slowing' ? {
+          y: [0, -2, 0],
+        } : {
+          y: 0,
+          scale: [1, 1.05, 1],
+        }}
+        transition={phase === 'spinning' ? {
+          duration: 0.15,
+          repeat: Infinity,
+          ease: "linear"
+        } : phase === 'slowing' ? {
+          duration: 0.25,
+          repeat: Infinity,
+        } : {
+          duration: 0.3,
+          ease: [0.16, 1, 0.3, 1]
+        }}
+        style={{
+          textShadow: phase === 'landed' 
+            ? '0 0 30px rgba(59, 130, 246, 0.6), 0 0 60px rgba(59, 130, 246, 0.3)' 
+            : phase === 'slowing'
+              ? '0 0 15px rgba(59, 130, 246, 0.3)'
+              : 'none',
+          filter: phase === 'spinning' ? 'blur(0.5px)' : 'blur(0px)',
+        }}
+      >
+        {displayText}
+      </motion.span>
+      {phase === 'landed' && (
+        <motion.span
+          className="inline-block"
+          initial={{ opacity: 0 }}
+          animate={{ 
+            opacity: 1,
+            textShadow: [
+              '0 0 20px rgba(59, 130, 246, 0)',
+              '0 0 25px rgba(59, 130, 246, 0.5)',
+              '0 0 20px rgba(59, 130, 246, 0.3)',
+            ]
+          }}
+          transition={{ 
+            opacity: { duration: 0.2 },
+            textShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+          }}
+        >
+          .
+        </motion.span>
+      )}
+    </motion.span>
+  );
+}
+
 function HeroSection() {
   const containerRef = useRef(null);
   const prefersReducedMotion = useReducedMotion();
@@ -1179,50 +1297,9 @@ function HeroSection() {
                   animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                   transition={{ duration: 0.6, delay: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
                 >
-                  Vende más{' '}
+                  Vende más con{' '}
                 </motion.span>
-                <motion.span 
-                  className="text-white relative inline-block"
-                  initial={{ opacity: 0, scale: 0.8, filter: 'blur(12px)' }}
-                  animate={{ 
-                    opacity: 1, 
-                    scale: 1, 
-                    filter: 'blur(0px)',
-                  }}
-                  transition={{ 
-                    duration: 0.5, 
-                    delay: 0.9,
-                    ease: [0.16, 1, 0.3, 1]
-                  }}
-                >
-                  <motion.span
-                    className="relative z-10"
-                    animate={{ 
-                      textShadow: [
-                        '0 0 20px rgba(59, 130, 246, 0)',
-                        '0 0 30px rgba(59, 130, 246, 0.6)',
-                        '0 0 20px rgba(59, 130, 246, 0.3)',
-                        '0 0 25px rgba(59, 130, 246, 0.5)',
-                        '0 0 20px rgba(59, 130, 246, 0.3)',
-                      ]
-                    }}
-                    transition={{
-                      duration: 3,
-                      delay: 1.4,
-                      repeat: Infinity,
-                      ease: "easeInOut"
-                    }}
-                  >
-                    con IA.
-                  </motion.span>
-                  <motion.span
-                    className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-blue-400/10 to-transparent rounded-lg -z-10"
-                    initial={{ opacity: 0, scaleX: 0 }}
-                    animate={{ opacity: 1, scaleX: 1 }}
-                    transition={{ duration: 0.4, delay: 1.1, ease: "easeOut" }}
-                    style={{ transformOrigin: 'left', padding: '0 0.2em', margin: '-0.1em -0.2em' }}
-                  />
-                </motion.span>
+                <SlotMachineIA />
               </motion.span>
             </motion.h1>
           </div>
