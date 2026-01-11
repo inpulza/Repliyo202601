@@ -1133,77 +1133,6 @@ function Header() {
   );
 }
 
-function SlotMachineSegundos() {
-  const prefersReducedMotion = useReducedMotion();
-  const [isSpinning, setIsSpinning] = useState(true);
-  
-  const totalSpins = 8;
-  
-  useEffect(() => {
-    if (prefersReducedMotion) {
-      setIsSpinning(false);
-      return;
-    }
-    const timer = setTimeout(() => setIsSpinning(false), 2700);
-    return () => clearTimeout(timer);
-  }, [prefersReducedMotion]);
-  
-  if (prefersReducedMotion) {
-    return (
-      <span className="text-white font-bold">segundos.</span>
-    );
-  }
-  
-  const itemHeightPx = 90;
-  const totalDistancePx = (totalSpins - 1) * itemHeightPx;
-  
-  return (
-    <span
-      className="inline-block relative overflow-hidden align-bottom"
-      style={{ 
-        height: `${itemHeightPx}px`,
-        lineHeight: `${itemHeightPx}px`,
-      }}
-    >
-      <motion.span
-        className="block"
-        initial={{ y: 0, filter: 'blur(0px)' }}
-        animate={{ 
-          y: `-${totalDistancePx}px`,
-          filter: isSpinning ? ['blur(0px)', 'blur(6px)', 'blur(8px)', 'blur(4px)', 'blur(0px)'] : 'blur(0px)'
-        }}
-        transition={{
-          y: {
-            duration: 1.6,
-            delay: 0.9,
-            ease: [0.12, 0.8, 0.2, 1],
-          },
-          filter: {
-            duration: 1.6,
-            delay: 0.9,
-            times: [0, 0.15, 0.5, 0.85, 1],
-          }
-        }}
-      >
-        {[...Array(totalSpins)].map((_, idx) => (
-          <span
-            key={`spin-${idx}`}
-            className={`block font-bold whitespace-nowrap ${
-              idx === totalSpins - 1 ? 'text-white' : 'text-white/30'
-            }`}
-            style={{ 
-              height: `${itemHeightPx}px`, 
-              lineHeight: `${itemHeightPx}px`,
-            }}
-          >
-            segundos.
-          </span>
-        ))}
-      </motion.span>
-    </span>
-  );
-}
-
 function HeroSection() {
   const containerRef = useRef(null);
   const prefersReducedMotion = useReducedMotion();
@@ -1236,7 +1165,7 @@ function HeroSection() {
                 animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                 transition={{ duration: 0.7, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
               >
-                Responde en <SlotMachineSegundos />
+                Responde en segundos.
               </motion.span>
               <motion.span 
                 className="block text-white/60"
