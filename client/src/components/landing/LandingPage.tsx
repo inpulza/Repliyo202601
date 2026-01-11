@@ -1133,11 +1133,11 @@ function Header() {
   );
 }
 
-function SlotMachineIA() {
+function SlotMachineSegundos() {
   const prefersReducedMotion = useReducedMotion();
   const [isSpinning, setIsSpinning] = useState(true);
   
-  const dialItems = ['+99', '+47', '+23', '+12', '+7', '+3', '+1', 'IA.'];
+  const dialItems = ['47s', '23s', '12s', '7s', '5s', '3s', '1s', 'segundos.'];
   const itemHeight = 1;
   const totalItems = dialItems.length;
   const extraSpins = 2;
@@ -1154,7 +1154,7 @@ function SlotMachineIA() {
   
   if (prefersReducedMotion) {
     return (
-      <span className="text-[var(--landing-primary)] font-bold">IA.</span>
+      <span className="text-white font-bold">segundos.</span>
     );
   }
   
@@ -1199,12 +1199,12 @@ function SlotMachineIA() {
           ))
         ))}
         {dialItems.map((item, idx) => {
-          const isLast = item === 'IA.';
+          const isLast = item === 'segundos.';
           return (
             <span
               key={`final-${idx}`}
               className={`font-bold whitespace-nowrap ${
-                isLast ? 'text-[var(--landing-primary)]' : 'text-white/40'
+                isLast ? 'text-white' : 'text-white/40'
               }`}
               style={{ height: '1em', lineHeight: '1em' }}
             >
@@ -1249,23 +1249,15 @@ function HeroSection() {
                 animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                 transition={{ duration: 0.7, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
               >
-                Responde en segundos.
+                Responde en <SlotMachineSegundos />
               </motion.span>
               <motion.span 
-                className="block"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.1, delay: 0.5 }}
+                className="block text-white/60"
+                initial={{ opacity: 0, y: 40, filter: 'blur(8px)' }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                transition={{ duration: 0.6, delay: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
               >
-                <motion.span 
-                  className="text-white/60"
-                  initial={{ opacity: 0, y: 40, filter: 'blur(8px)' }}
-                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                  transition={{ duration: 0.6, delay: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-                >
-                  Vende más con{' '}
-                </motion.span>
-                <SlotMachineIA />
+                Vende más con IA.
               </motion.span>
             </motion.h1>
           </div>
