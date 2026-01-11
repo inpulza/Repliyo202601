@@ -1135,12 +1135,22 @@ function Header() {
 
 function SlotMachineIA() {
   const prefersReducedMotion = useReducedMotion();
+  const [isSpinning, setIsSpinning] = useState(true);
   
   const dialItems = ['+99', '+47', '+23', '+12', '+7', '+3', '+1', 'IA.'];
-  const itemHeight = 1.15;
+  const itemHeight = 1;
   const totalItems = dialItems.length;
   const extraSpins = 2;
   const totalDistance = (totalItems * extraSpins + (totalItems - 1)) * itemHeight;
+  
+  useEffect(() => {
+    if (prefersReducedMotion) {
+      setIsSpinning(false);
+      return;
+    }
+    const timer = setTimeout(() => setIsSpinning(false), 2700);
+    return () => clearTimeout(timer);
+  }, [prefersReducedMotion]);
   
   if (prefersReducedMotion) {
     return (
@@ -1149,24 +1159,32 @@ function SlotMachineIA() {
   }
   
   return (
-    <motion.span
-      className="inline-block relative overflow-hidden align-baseline"
+    <span
+      className="inline-block relative overflow-hidden"
       style={{ 
-        height: `${itemHeight}em`,
+        height: '1em',
+        lineHeight: 'inherit',
         verticalAlign: 'baseline',
       }}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ delay: 0.85, duration: 0.15 }}
     >
       <motion.span
         className="flex flex-col"
-        initial={{ y: 0 }}
-        animate={{ y: `-${totalDistance}em` }}
+        initial={{ y: 0, filter: 'blur(0px)' }}
+        animate={{ 
+          y: `-${totalDistance}em`,
+          filter: isSpinning ? ['blur(0px)', 'blur(3px)', 'blur(4px)', 'blur(2px)', 'blur(0px)'] : 'blur(0px)'
+        }}
         transition={{
-          duration: 1.8,
-          delay: 0.9,
-          ease: [0.12, 0.8, 0.2, 1],
+          y: {
+            duration: 1.8,
+            delay: 0.9,
+            ease: [0.12, 0.8, 0.2, 1],
+          },
+          filter: {
+            duration: 1.8,
+            delay: 0.9,
+            times: [0, 0.1, 0.4, 0.8, 1],
+          }
         }}
       >
         {[...Array(extraSpins)].map((_, spinIdx) => (
@@ -1174,7 +1192,7 @@ function SlotMachineIA() {
             <span
               key={`spin-${spinIdx}-${idx}`}
               className="text-white/40 font-bold whitespace-nowrap"
-              style={{ height: `${itemHeight}em`, lineHeight: `${itemHeight}em` }}
+              style={{ height: '1em', lineHeight: '1em' }}
             >
               {item}
             </span>
@@ -1188,17 +1206,14 @@ function SlotMachineIA() {
               className={`font-bold whitespace-nowrap ${
                 isLast ? 'text-[var(--landing-primary)]' : 'text-white/40'
               }`}
-              style={{ 
-                height: `${itemHeight}em`, 
-                lineHeight: `${itemHeight}em`,
-              }}
+              style={{ height: '1em', lineHeight: '1em' }}
             >
               {item}
             </span>
           );
         })}
       </motion.span>
-    </motion.span>
+    </span>
   );
 }
 
