@@ -1687,16 +1687,24 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  opacity: 0.85;
+  opacity: 1;
   margin-bottom: 8px;
   background: rgba(255,255,255,0.25);
   padding: 3px 8px;
   border-radius: 6px;
-  color: white;
+  color: white !important;
+}
+
+.ai-badge-v2 svg {
+  color: white !important;
 }
 
 .chat-bubble-v2.outgoing .bubble-time {
-  color: rgba(255,255,255,0.8);
+  color: rgba(255,255,255,0.85) !important;
+}
+
+.chat-bubble-v2.outgoing .bubble-content .bubble-time {
+  color: rgba(255,255,255,0.85) !important;
 }
 
 .ai-typing-v2 {
