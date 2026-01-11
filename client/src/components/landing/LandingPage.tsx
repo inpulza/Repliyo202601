@@ -1936,6 +1936,20 @@ function ProblemSolutionSection() {
   const problemOpacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0.5]);
   const solutionOpacity = useTransform(scrollYProgress, [0, 0.25, 0.8, 1], [0, 1, 1, 0.5]);
 
+  const problems = [
+    { icon: Clock, title: 'Tiempo perdido', desc: 'Saltando entre 5 apps' },
+    { icon: MessageSquare, title: 'Mensajes olvidados', desc: 'Clientes sin respuesta' },
+    { icon: Users, title: 'Clientes frustrados', desc: 'Esperando horas' },
+    { icon: X, title: 'Ventas perdidas', desc: 'Por respuestas tardías' },
+  ];
+
+  const solutions = [
+    { icon: Inbox, title: '1 inbox unificado', desc: 'Todo en un solo lugar' },
+    { icon: Sparkles, title: 'Respuestas con IA', desc: 'Borradores automáticos' },
+    { icon: Bell, title: '24/7 disponible', desc: 'Nunca pierdas un mensaje' },
+    { icon: Zap, title: 'Más ventas', desc: 'Respuestas al instante' },
+  ];
+
   return (
     <section ref={sectionRef} className="relative overflow-hidden problem-solution-section">
       {/* Problem Section */}
@@ -1948,9 +1962,28 @@ function ProblemSolutionSection() {
             <span className="text-xs md:text-sm uppercase tracking-[0.2em] md:tracking-[0.25em] text-white/40 font-semibold mb-3 md:mb-4 block">
               El problema
             </span>
-            <h2 className="font-display text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-6 md:mb-12 leading-tight">
+            <h2 className="font-display text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-6 md:mb-8 leading-tight">
               Responder mensajes en 5 apps es <span className="text-white/50">agotador</span>
             </h2>
+            
+            {/* Problem Tiles */}
+            <div className="problem-tiles grid grid-cols-2 gap-3 mb-8 max-w-md mx-auto">
+              {problems.map((p, idx) => (
+                <motion.div 
+                  key={p.title} 
+                  className="problem-tile"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1, duration: 0.4 }}
+                  viewport={{ once: true }}
+                >
+                  <p.icon className="w-5 h-5 text-red-400" />
+                  <span className="font-medium text-white text-sm">{p.title}</span>
+                  <span className="text-white/50 text-xs">{p.desc}</span>
+                </motion.div>
+              ))}
+            </div>
+            
             <div className="max-w-3xl mx-auto problem-mockup-wrapper">
               <ProblemMockup />
             </div>
@@ -1968,11 +2001,29 @@ function ProblemSolutionSection() {
             <span className="text-xs md:text-sm uppercase tracking-[0.2em] md:tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-3 md:mb-4 block">
               La solución
             </span>
-            <h2 className="font-display text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-6 md:mb-12 leading-tight">
+            <h2 className="font-display text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-6 md:mb-8 leading-tight">
               Un inbox inteligente que <span className="text-white/60">trabaja por ti</span>
             </h2>
             <div className="max-w-4xl mx-auto solution-mockup-wrapper">
               <SolutionMockup />
+            </div>
+            
+            {/* Solution Tiles */}
+            <div className="solution-tiles grid grid-cols-2 gap-3 mt-8 max-w-md mx-auto">
+              {solutions.map((s, idx) => (
+                <motion.div 
+                  key={s.title} 
+                  className="solution-tile"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1, duration: 0.4 }}
+                  viewport={{ once: true }}
+                >
+                  <s.icon className="w-5 h-5 text-cyan-400" />
+                  <span className="font-medium text-white text-sm">{s.title}</span>
+                  <span className="text-white/50 text-xs">{s.desc}</span>
+                </motion.div>
+              ))}
             </div>
           </motion.div>
         </div>
