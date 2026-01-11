@@ -209,6 +209,27 @@
   color: var(--landing-text) !important;
 }
 
+/* Preserve white text on colored/gradient backgrounds in floating UI elements */
+.landing-page.theme-light [class*="bg-cyan-"] .text-white,
+.landing-page.theme-light [class*="bg-emerald-"] .text-white,
+.landing-page.theme-light [class*="bg-violet-"] .text-white,
+.landing-page.theme-light [class*="bg-indigo-"] .text-white,
+.landing-page.theme-light [class*="bg-rose-"] .text-white,
+.landing-page.theme-light [class*="bg-blue-"] .text-white,
+.landing-page.theme-light [class*="bg-green-"] .text-white,
+.landing-page.theme-light [class*="bg-purple-"] .text-white,
+.landing-page.theme-light [class*="bg-pink-"] .text-white,
+.landing-page.theme-light [class*="bg-gradient-"] .text-white,
+.landing-page.theme-light [class*="from-cyan-"] .text-white,
+.landing-page.theme-light [class*="from-emerald-"] .text-white,
+.landing-page.theme-light [class*="from-violet-"] .text-white,
+.landing-page.theme-light [class*="from-indigo-"] .text-white,
+.landing-page.theme-light [class*="from-rose-"] .text-white,
+.landing-page.theme-light [class*="from-green-"] .text-white,
+.landing-page.theme-light [class*="from-orange-"] .text-white {
+  color: white !important;
+}
+
 .landing-page.theme-light .text-white\/20,
 .landing-page.theme-light .text-white\/30 {
   color: var(--landing-text-subtle) !important;
