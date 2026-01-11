@@ -1138,8 +1138,8 @@ function SlotMachineSegundos() {
   const [isSpinning, setIsSpinning] = useState(true);
   
   const totalSpins = 8;
-  const itemHeight = 1;
-  const totalDistance = (totalSpins - 1) * itemHeight;
+  const itemHeight = 1.15;
+  const totalDistance = (totalSpins - 1);
   
   useEffect(() => {
     if (prefersReducedMotion) {
@@ -1155,8 +1155,6 @@ function SlotMachineSegundos() {
       <span className="text-white font-bold">segundos.</span>
     );
   }
-  
-  const itemHeight = 1.15;
   
   return (
     <span
