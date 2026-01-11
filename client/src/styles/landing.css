@@ -5190,49 +5190,59 @@
 .message-stack {
   position: absolute;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
 }
 
 .msg-envelope {
-  font-size: 20px;
-  animation: messages-pile 2.5s ease-in-out infinite;
+  font-size: 18px;
 }
 
-.msg-envelope.m1 { animation-delay: 0s; }
-.msg-envelope.m2 { animation-delay: 0.15s; }
-.msg-envelope.m3 { animation-delay: 0.3s; }
+.msg-envelope.m1 { animation: msg-appear-stay 3s ease-in-out infinite; }
+.msg-envelope.m2 { animation: msg-appear-vanish 3s ease-in-out infinite; }
+.msg-envelope.m3 { animation: msg-appear-stay 3s ease-in-out infinite; }
 
 .msg-counter {
   position: absolute;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 800;
   color: #ef4444;
-  animation: counter-pulse 2.5s ease-in-out infinite;
+  opacity: 0;
+  animation: counter-bounce 3s ease-in-out infinite;
 }
 
 .msg-explode {
   position: absolute;
   font-size: 24px;
   opacity: 0;
-  animation: msg-explode-effect 2.5s ease-out infinite;
+  animation: msg-explode-effect 3s ease-out infinite;
 }
 
-@keyframes messages-pile {
-  0% { transform: translateY(-25px) scale(0.5); opacity: 0; }
-  20% { transform: translateY(0) scale(1); opacity: 1; }
-  70% { transform: translateY(0) scale(1); opacity: 1; }
-  85% { transform: translateY(5px) scale(1.1); opacity: 1; }
-  100% { transform: translateY(0) scale(0); opacity: 0; }
+@keyframes msg-appear-stay {
+  0% { transform: scale(0); opacity: 0; }
+  15% { transform: scale(1.2); opacity: 1; }
+  25% { transform: scale(1); opacity: 1; }
+  85% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0); opacity: 0; }
 }
 
-@keyframes counter-pulse {
-  0%, 20% { opacity: 0; transform: scale(0); }
-  30% { opacity: 1; transform: scale(1.3); }
-  40% { transform: scale(1); }
-  70% { opacity: 1; transform: scale(1); }
-  85% { transform: scale(1.5); opacity: 1; }
+@keyframes msg-appear-vanish {
+  0% { transform: scale(0); opacity: 0; }
+  15% { transform: scale(1.2); opacity: 1; }
+  25% { transform: scale(1); opacity: 1; }
+  40% { transform: scale(1.3); opacity: 1; }
+  50% { transform: scale(0); opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes counter-bounce {
+  0%, 45% { opacity: 0; transform: scale(0); }
+  50% { opacity: 1; transform: scale(1.4); }
+  60% { transform: scale(0.9); }
+  65% { transform: scale(1.1); }
+  70% { transform: scale(1); }
+  85% { opacity: 1; transform: scale(1); }
   100% { opacity: 0; transform: scale(0); }
 }
 
@@ -5255,60 +5265,34 @@
 .clock-face {
   font-size: 36px;
   position: absolute;
-  animation: clock-tick 3s linear infinite;
-}
-
-.clock-hands {
-  position: absolute;
-  font-size: 20px;
-  animation: hands-spin 3s linear infinite;
+  animation: clock-grow-vanish 3s ease-in-out infinite;
 }
 
 .clock-alert {
   position: absolute;
-  font-size: 18px;
+  font-size: 32px;
   opacity: 0;
-  animation: alert-appear 3s ease-in-out infinite;
+  animation: alert-bounce-in 3s ease-out infinite;
 }
 
-.sand-fall {
-  position: absolute;
-  font-size: 10px;
-  opacity: 0;
-}
-
-.sand-fall.s1 { animation: sand-drop 3s ease-in infinite; animation-delay: 0.5s; }
-.sand-fall.s2 { animation: sand-drop 3s ease-in infinite; animation-delay: 1s; }
-.sand-fall.s3 { animation: sand-drop 3s ease-in infinite; animation-delay: 1.5s; }
-
-@keyframes clock-tick {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  70% { transform: scale(1) rotate(-5deg); }
-  80% { transform: rotate(5deg); }
-  90% { transform: rotate(-3deg); }
-}
-
-@keyframes hands-spin {
-  0% { transform: rotate(0deg); opacity: 1; }
-  80% { transform: rotate(720deg); opacity: 1; }
-  90% { transform: rotate(720deg); opacity: 0; }
+@keyframes clock-grow-vanish {
+  0% { transform: scale(0); opacity: 0; }
+  10% { transform: scale(1.1); opacity: 1; }
+  20% { transform: scale(1); opacity: 1; }
+  45% { transform: scale(1); opacity: 1; }
+  55% { transform: scale(1.3); opacity: 1; }
+  65% { transform: scale(0); opacity: 0; }
   100% { opacity: 0; }
 }
 
-@keyframes alert-appear {
-  0%, 75% { opacity: 0; transform: scale(0) translateY(10px); }
-  85% { opacity: 1; transform: scale(1.2) translateY(-5px); }
-  95% { opacity: 1; transform: scale(1) translateY(0); }
-  100% { opacity: 0; transform: scale(0.8); }
-}
-
-@keyframes sand-drop {
-  0% { opacity: 0; transform: translateY(-15px); }
-  10% { opacity: 1; }
-  50% { opacity: 1; transform: translateY(15px); }
-  60% { opacity: 0; }
-  100% { opacity: 0; }
+@keyframes alert-bounce-in {
+  0%, 60% { opacity: 0; transform: scale(0); }
+  70% { opacity: 1; transform: scale(1.4); }
+  75% { transform: scale(0.85); }
+  80% { transform: scale(1.15); }
+  85% { transform: scale(0.95); }
+  90% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0); opacity: 0; }
 }
 
 /* Animation: Angry Face - "Cliente frustrado" */
