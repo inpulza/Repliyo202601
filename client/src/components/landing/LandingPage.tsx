@@ -1134,27 +1134,13 @@ function Header() {
 }
 
 function SlotMachineIA() {
-  const [isLanded, setIsLanded] = useState(false);
   const prefersReducedMotion = useReducedMotion();
   
-  const dialItems = ['+99', '+47', '+23', '+12', '+7', '+3', '+1', 'IA'];
+  const dialItems = ['+99', '+47', '+23', '+12', '+7', '+3', '+1', 'IA.'];
   const itemHeight = 1.15;
   const totalItems = dialItems.length;
   const extraSpins = 2;
   const totalDistance = (totalItems * extraSpins + (totalItems - 1)) * itemHeight;
-  
-  useEffect(() => {
-    if (prefersReducedMotion) {
-      setIsLanded(true);
-      return;
-    }
-    
-    const landTimer = setTimeout(() => {
-      setIsLanded(true);
-    }, 2700);
-    
-    return () => clearTimeout(landTimer);
-  }, [prefersReducedMotion]);
   
   if (prefersReducedMotion) {
     return (
@@ -1164,79 +1150,53 @@ function SlotMachineIA() {
   
   return (
     <motion.span
-      className="inline-flex items-baseline"
+      className="inline-block relative overflow-hidden align-baseline"
+      style={{ 
+        height: `${itemHeight}em`,
+        verticalAlign: 'baseline',
+      }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: 0.85, duration: 0.15 }}
     >
-      <span 
-        className="relative inline-block overflow-hidden"
-        style={{ 
-          height: `${itemHeight}em`,
-          width: '3ch',
-        }}
-      >
-        <motion.span
-          className="absolute left-0 right-0 flex flex-col items-center"
-          style={{ top: 0 }}
-          initial={{ y: 0 }}
-          animate={{ y: `-${totalDistance}em` }}
-          transition={{
-            duration: 1.8,
-            delay: 0.9,
-            ease: [0.12, 0.8, 0.2, 1],
-          }}
-        >
-          {[...Array(extraSpins)].map((_, spinIdx) => (
-            dialItems.map((item, idx) => (
-              <span
-                key={`spin-${spinIdx}-${idx}`}
-                className="text-white/40 font-bold flex items-center justify-center"
-                style={{ height: `${itemHeight}em`, lineHeight: `${itemHeight}em` }}
-              >
-                {item}
-              </span>
-            ))
-          ))}
-          {dialItems.map((item, idx) => {
-            const isIA = item === 'IA';
-            return (
-              <span
-                key={`final-${idx}`}
-                className={`font-bold flex items-center justify-center ${
-                  isIA ? 'text-[var(--landing-primary)]' : 'text-white/40'
-                }`}
-                style={{ 
-                  height: `${itemHeight}em`, 
-                  lineHeight: `${itemHeight}em`,
-                  textShadow: isIA && isLanded
-                    ? '0 0 30px rgba(59, 130, 246, 0.6), 0 0 60px rgba(59, 130, 246, 0.3)'
-                    : 'none',
-                }}
-              >
-                {item}
-              </span>
-            );
-          })}
-        </motion.span>
-      </span>
       <motion.span
-        className="text-[var(--landing-primary)] font-bold"
-        initial={{ opacity: 0 }}
-        animate={{ 
-          opacity: isLanded ? 1 : 0,
-          textShadow: isLanded ? [
-            '0 0 20px rgba(59, 130, 246, 0)',
-            '0 0 25px rgba(59, 130, 246, 0.5)',
-            '0 0 20px rgba(59, 130, 246, 0.3)',
-          ] : '0 0 0px rgba(59, 130, 246, 0)'
-        }}
-        transition={{ 
-          opacity: { duration: 0.2, delay: isLanded ? 0 : 2.7 },
-          textShadow: { duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }
+        className="flex flex-col"
+        initial={{ y: 0 }}
+        animate={{ y: `-${totalDistance}em` }}
+        transition={{
+          duration: 1.8,
+          delay: 0.9,
+          ease: [0.12, 0.8, 0.2, 1],
         }}
       >
-        .
+        {[...Array(extraSpins)].map((_, spinIdx) => (
+          dialItems.map((item, idx) => (
+            <span
+              key={`spin-${spinIdx}-${idx}`}
+              className="text-white/40 font-bold whitespace-nowrap"
+              style={{ height: `${itemHeight}em`, lineHeight: `${itemHeight}em` }}
+            >
+              {item}
+            </span>
+          ))
+        ))}
+        {dialItems.map((item, idx) => {
+          const isLast = item === 'IA.';
+          return (
+            <span
+              key={`final-${idx}`}
+              className={`font-bold whitespace-nowrap ${
+                isLast ? 'text-[var(--landing-primary)]' : 'text-white/40'
+              }`}
+              style={{ 
+                height: `${itemHeight}em`, 
+                lineHeight: `${itemHeight}em`,
+              }}
+            >
+              {item}
+            </span>
+          );
+        })}
       </motion.span>
     </motion.span>
   );
