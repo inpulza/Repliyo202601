@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState, useLayoutEffect, useCallback } from 'react';
-import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring, useMotionValue } from 'framer-motion';
+import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
+import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring } from 'framer-motion';
 import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle } from 'lucide-react';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
@@ -1235,183 +1235,121 @@ function MarqueeSection() {
 }
 
 function ProblemMockup() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const prefersReducedMotion = useReducedMotion();
-  const [isAnimating, setIsAnimating] = useState(false);
-  
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  
-  const sceneSpring = { damping: 28, stiffness: 100, mass: 0.9 };
-  const sceneRotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [6, -6]), sceneSpring);
-  const sceneRotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-6, 6]), sceneSpring);
-  
-  const shellSpring = { damping: 40, stiffness: 90, mass: 1.1 };
-  const shellX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-8, 8]), shellSpring);
-  const shellY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-8, 8]), shellSpring);
-  
-  const phoneSpring = { damping: 35, stiffness: 110, mass: 0.9 };
-  const phoneX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-14, 14]), phoneSpring);
-  const phoneY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-14, 14]), phoneSpring);
-  
-  const appBarSpring = { damping: 30, stiffness: 130, mass: 0.7 };
-  const appBarX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-18, 18]), appBarSpring);
-  const appBarY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-18, 18]), appBarSpring);
-  
-  const msgSpring = { damping: 24, stiffness: 160, mass: 0.55 };
-  const msgX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-26, 26]), msgSpring);
-  const msgY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-26, 26]), msgSpring);
-  
-  const badgeSpring = { damping: 20, stiffness: 190, mass: 0.45 };
-  const badgeX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-34, 34]), badgeSpring);
-  const badgeY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-34, 34]), badgeSpring);
-  
-  const notifSpring = { damping: 16, stiffness: 230, mass: 0.35 };
-  const notifX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-44, 44]), notifSpring);
-  const notifY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-44, 44]), notifSpring);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (prefersReducedMotion || !containerRef.current) return;
-    
-    const rect = containerRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    
-    const normalizedX = (e.clientX - centerX) / (rect.width / 2);
-    const normalizedY = (e.clientY - centerY) / (rect.height / 2);
-    
-    mouseX.set(Math.max(-0.5, Math.min(0.5, normalizedX * 0.5)));
-    mouseY.set(Math.max(-0.5, Math.min(0.5, normalizedY * 0.5)));
-    setIsAnimating(true);
-  }, [prefersReducedMotion, mouseX, mouseY]);
-
-  const handleMouseLeave = useCallback(() => {
-    mouseX.set(0);
-    mouseY.set(0);
-    setTimeout(() => setIsAnimating(false), 500);
-  }, [mouseX, mouseY]);
-
-  const phones = [
-    { platform: 'instagram', Icon: FaInstagram, name: 'Instagram', count: 23 },
-    { platform: 'tiktok', Icon: FaTiktok, name: 'TikTok', count: 47 },
-    { platform: 'facebook', Icon: FaFacebook, name: 'Facebook', count: 12 },
-    { platform: 'linkedin', Icon: FaLinkedin, name: 'LinkedIn', count: 8 },
-    { platform: 'youtube', Icon: FaYoutube, name: 'YouTube', count: 31 },
-    { platform: 'google', Icon: GoogleBusinessIcon, name: 'Google', count: 5 },
-  ];
-
-  const notifications = [
-    { id: 'n1', icon: Bell, text: '+82 mensajes sin leer' },
-    { id: 'n2', icon: Clock, text: 'Lead esperando 4 horas' },
-    { id: 'n3', icon: AlertCircle, text: 'Cliente frustrado' },
-    { id: 'n4', icon: MessageSquare, text: 'Venta perdida' },
-  ];
-
   return (
-    <div 
-      ref={containerRef}
-      className={`problem-mockup-card parallax-3d-container ${isAnimating ? 'is-animating' : ''}`}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-    >
-      <motion.div 
-        className="parallax-3d-scene"
-        style={{
-          rotateX: prefersReducedMotion ? 0 : sceneRotateX,
-          rotateY: prefersReducedMotion ? 0 : sceneRotateY,
-        }}
-      >
-        <motion.div 
-          className="parallax-shell"
-          style={{
-            x: prefersReducedMotion ? 0 : shellX,
-            y: prefersReducedMotion ? 0 : shellY,
-          }}
-        />
-        
-        <div className="mockup-phone-grid">
-          {phones.map((phone, idx) => {
-            const PhoneIcon = phone.Icon;
-            return (
-              <motion.div 
-                key={phone.platform}
-                className={`chaos-phone ${phone.platform} parallax-phone`}
-                style={{
-                  x: prefersReducedMotion ? 0 : phoneX,
-                  y: prefersReducedMotion ? 0 : phoneY,
-                }}
-              >
-                <div className="phone-header">
-                  <div className="phone-notch" />
-                </div>
-                <motion.div 
-                  className="phone-app-bar parallax-appbar"
-                  style={{
-                    x: prefersReducedMotion ? 0 : appBarX,
-                    y: prefersReducedMotion ? 0 : appBarY,
-                  }}
-                >
-                  <PhoneIcon className="w-4 h-4" />
-                  <span>{phone.name}</span>
-                  <motion.div 
-                    className="notification-badge parallax-badge"
-                    style={{
-                      x: prefersReducedMotion ? 0 : badgeX,
-                      y: prefersReducedMotion ? 0 : badgeY,
-                    }}
-                  >
-                    {phone.count}
-                  </motion.div>
-                </motion.div>
-                <div className="phone-messages">
-                  <motion.div 
-                    className="unread-msg parallax-msg"
-                    style={{
-                      x: prefersReducedMotion ? 0 : msgX,
-                      y: prefersReducedMotion ? 0 : msgY,
-                    }}
-                  />
-                  <motion.div 
-                    className="unread-msg parallax-msg"
-                    style={{
-                      x: prefersReducedMotion ? 0 : msgX,
-                      y: prefersReducedMotion ? 0 : msgY,
-                    }}
-                  />
-                  {idx % 2 === 0 && (
-                    <motion.div 
-                      className="unread-msg faded parallax-msg"
-                      style={{
-                        x: prefersReducedMotion ? 0 : msgX,
-                        y: prefersReducedMotion ? 0 : msgY,
-                      }}
-                    />
-                  )}
-                </div>
-              </motion.div>
-            );
-          })}
+    <div className="problem-mockup-card">
+      <div className="mockup-phone-grid">
+        <div className="chaos-phone instagram">
+          <div className="phone-header">
+            <div className="phone-notch" />
+          </div>
+          <div className="phone-app-bar">
+            <FaInstagram className="w-4 h-4" />
+            <span>Instagram</span>
+            <div className="notification-badge">23</div>
+          </div>
+          <div className="phone-messages">
+            <div className="unread-msg" />
+            <div className="unread-msg" />
+            <div className="unread-msg faded" />
+          </div>
         </div>
         
-        <div className="chaos-overlay">
-          {notifications.map((notif) => {
-            const NotifIcon = notif.icon;
-            return (
-              <motion.div 
-                key={notif.id}
-                className={`floating-notification ${notif.id} parallax-notification`}
-                style={{
-                  x: prefersReducedMotion ? 0 : notifX,
-                  y: prefersReducedMotion ? 0 : notifY,
-                }}
-              >
-                <NotifIcon className="w-3 h-3" />
-                <span>{notif.text}</span>
-              </motion.div>
-            );
-          })}
+        <div className="chaos-phone tiktok">
+          <div className="phone-header">
+            <div className="phone-notch" />
+          </div>
+          <div className="phone-app-bar">
+            <FaTiktok className="w-4 h-4" />
+            <span>TikTok</span>
+            <div className="notification-badge">47</div>
+          </div>
+          <div className="phone-messages">
+            <div className="unread-msg" />
+            <div className="unread-msg" />
+            <div className="unread-msg faded" />
+          </div>
         </div>
-      </motion.div>
+        
+        <div className="chaos-phone facebook">
+          <div className="phone-header">
+            <div className="phone-notch" />
+          </div>
+          <div className="phone-app-bar">
+            <FaFacebook className="w-4 h-4" />
+            <span>Facebook</span>
+            <div className="notification-badge">12</div>
+          </div>
+          <div className="phone-messages">
+            <div className="unread-msg" />
+            <div className="unread-msg faded" />
+          </div>
+        </div>
+
+        <div className="chaos-phone linkedin">
+          <div className="phone-header">
+            <div className="phone-notch" />
+          </div>
+          <div className="phone-app-bar">
+            <FaLinkedin className="w-4 h-4" />
+            <span>LinkedIn</span>
+            <div className="notification-badge">8</div>
+          </div>
+          <div className="phone-messages">
+            <div className="unread-msg" />
+            <div className="unread-msg faded" />
+          </div>
+        </div>
+
+        <div className="chaos-phone youtube">
+          <div className="phone-header">
+            <div className="phone-notch" />
+          </div>
+          <div className="phone-app-bar">
+            <FaYoutube className="w-4 h-4" />
+            <span>YouTube</span>
+            <div className="notification-badge">31</div>
+          </div>
+          <div className="phone-messages">
+            <div className="unread-msg" />
+            <div className="unread-msg" />
+            <div className="unread-msg faded" />
+          </div>
+        </div>
+
+        <div className="chaos-phone google">
+          <div className="phone-header">
+            <div className="phone-notch" />
+          </div>
+          <div className="phone-app-bar">
+            <GoogleBusinessIcon className="w-4 h-4" />
+            <span>Google</span>
+            <div className="notification-badge">5</div>
+          </div>
+          <div className="phone-messages">
+            <div className="unread-msg" />
+            <div className="unread-msg faded" />
+          </div>
+        </div>
+      </div>
+      
+      <div className="chaos-overlay">
+        <div className="floating-notification n1">
+          <Bell className="w-3 h-3" />
+          <span>+82 mensajes sin leer</span>
+        </div>
+        <div className="floating-notification n2">
+          <Clock className="w-3 h-3" />
+          <span>Lead esperando 4 horas</span>
+        </div>
+        <div className="floating-notification n3">
+          <AlertCircle className="w-3 h-3" />
+          <span>Cliente frustrado</span>
+        </div>
+        <div className="floating-notification n4">
+          <MessageSquare className="w-3 h-3" />
+          <span>Venta perdida</span>
+        </div>
+      </div>
     </div>
   );
 }
