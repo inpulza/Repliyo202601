@@ -1170,20 +1170,31 @@ function HeroSection() {
                 </motion.span>
                 <motion.span 
                   className="inline-block"
-                  initial={{ opacity: 0, x: -80, filter: 'blur(20px)' }}
-                  animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                  initial={{ opacity: 0, x: -80, filter: 'blur(20px)', color: '#ffffff' }}
+                  animate={{ 
+                    opacity: 1, 
+                    x: 0, 
+                    filter: 'blur(0px)',
+                    color: ['#ffffff', '#3b82f6', '#ffffff']
+                  }}
                   transition={{ 
                     duration: 0.35,
                     delay: 0.7,
                     type: "spring",
                     stiffness: 400,
-                    damping: 28
+                    damping: 28,
+                    color: {
+                      delay: 1.0,
+                      duration: 0.6,
+                      times: [0, 0.4, 1]
+                    }
                   }}
                 >
                   segundos.
                 </motion.span>
                 <motion.span
-                  className="inline-flex items-center ml-3 text-[var(--landing-primary)]"
+                  className="inline-flex items-start ml-2 text-[var(--landing-primary)]"
+                  style={{ marginTop: '-0.15em' }}
                   initial={{ opacity: 0, scale: 0 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{
