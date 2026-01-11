@@ -1138,11 +1138,10 @@ function SlotMachineIA() {
   const prefersReducedMotion = useReducedMotion();
   
   const dialItems = ['+99', '+47', '+23', '+12', '+7', '+3', '+1', 'IA'];
-  const itemCount = dialItems.length;
-  const anglePerItem = 360 / itemCount;
-  const radius = 45;
-  const finalAngle = (itemCount - 1) * anglePerItem;
-  const totalRotation = 360 * 3 + finalAngle;
+  const itemHeight = 1.15;
+  const totalItems = dialItems.length;
+  const extraSpins = 2;
+  const totalDistance = (totalItems * extraSpins + (totalItems - 1)) * itemHeight;
   
   useEffect(() => {
     if (prefersReducedMotion) {
@@ -1152,7 +1151,7 @@ function SlotMachineIA() {
     
     const landTimer = setTimeout(() => {
       setIsLanded(true);
-    }, 2200);
+    }, 2700);
     
     return () => clearTimeout(landTimer);
   }, [prefersReducedMotion]);
@@ -1173,41 +1172,45 @@ function SlotMachineIA() {
       <span 
         className="relative inline-block overflow-hidden"
         style={{ 
-          height: '1.1em',
-          width: '2.5ch',
-          perspective: '200px',
-          perspectiveOrigin: 'center center',
+          height: `${itemHeight}em`,
+          width: '3ch',
+          maskImage: 'linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%)',
         }}
       >
         <motion.span
-          className="absolute inset-0 flex items-center justify-center"
-          style={{
-            transformStyle: 'preserve-3d',
-            transformOrigin: 'center center',
-          }}
-          initial={{ rotateX: 0 }}
-          animate={{ rotateX: -totalRotation }}
+          className="absolute left-0 right-0 flex flex-col items-center"
+          style={{ top: 0 }}
+          initial={{ y: 0 }}
+          animate={{ y: `-${totalDistance}em` }}
           transition={{
             duration: 1.8,
             delay: 0.9,
-            ease: [0.16, 1, 0.3, 1],
+            ease: [0.12, 0.8, 0.2, 1],
           }}
         >
-          {dialItems.map((item, index) => {
-            const itemAngle = index * anglePerItem;
+          {[...Array(extraSpins)].map((_, spinIdx) => (
+            dialItems.map((item, idx) => (
+              <span
+                key={`spin-${spinIdx}-${idx}`}
+                className="text-white/40 font-bold flex items-center justify-center"
+                style={{ height: `${itemHeight}em`, lineHeight: `${itemHeight}em` }}
+              >
+                {item}
+              </span>
+            ))
+          ))}
+          {dialItems.map((item, idx) => {
             const isIA = item === 'IA';
-            
             return (
               <span
-                key={item}
-                className={`absolute font-bold ${
-                  isIA 
-                    ? 'text-[var(--landing-primary)]' 
-                    : 'text-white/30'
+                key={`final-${idx}`}
+                className={`font-bold flex items-center justify-center ${
+                  isIA ? 'text-[var(--landing-primary)]' : 'text-white/40'
                 }`}
-                style={{
-                  transform: `rotateX(${itemAngle}deg) translateZ(${radius}px)`,
-                  backfaceVisibility: 'hidden',
+                style={{ 
+                  height: `${itemHeight}em`, 
+                  lineHeight: `${itemHeight}em`,
                   textShadow: isIA && isLanded
                     ? '0 0 30px rgba(59, 130, 246, 0.6), 0 0 60px rgba(59, 130, 246, 0.3)'
                     : 'none',
