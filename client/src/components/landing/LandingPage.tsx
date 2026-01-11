@@ -1234,121 +1234,200 @@ function MarqueeSection() {
   );
 }
 
-function ProblemMockup() {
+function AnimatedBadge({ target, delay, inView }: { target: number; delay: number; inView: boolean }) {
+  const [count, setCount] = useState(0);
+  const hasAnimated = useRef(false);
+  
+  useEffect(() => {
+    if (inView && !hasAnimated.current) {
+      hasAnimated.current = true;
+      const startDelay = delay * 1000;
+      const duration = 800 + Math.random() * 400;
+      const steps = target;
+      const stepDuration = duration / steps;
+      
+      const timeout = setTimeout(() => {
+        let current = 0;
+        const interval = setInterval(() => {
+          current++;
+          setCount(current);
+          if (current >= target) {
+            clearInterval(interval);
+          }
+        }, stepDuration);
+      }, startDelay);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [inView, target, delay]);
+  
   return (
-    <div className="problem-mockup-card">
+    <motion.div 
+      className="notification-badge"
+      animate={count > 0 ? { scale: [1, 1.15, 1] } : {}}
+      transition={{ duration: 0.15 }}
+      key={count}
+    >
+      {count}
+    </motion.div>
+  );
+}
+
+function ProblemMockup() {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, amount: 0.3 });
+  const prefersReducedMotion = useReducedMotion();
+  
+  const phones = [
+    { platform: 'instagram', icon: FaInstagram, color: '#E1306C', name: 'Instagram', count: 23, messages: 3 },
+    { platform: 'tiktok', icon: FaTiktok, color: '#000000', name: 'TikTok', count: 47, messages: 3 },
+    { platform: 'facebook', icon: FaFacebook, color: '#1877F2', name: 'Facebook', count: 12, messages: 2 },
+    { platform: 'linkedin', icon: FaLinkedin, color: '#0A66C2', name: 'LinkedIn', count: 8, messages: 2 },
+    { platform: 'youtube', icon: FaYoutube, color: '#FF0000', name: 'YouTube', count: 31, messages: 3 },
+    { platform: 'google', icon: GoogleBusinessIcon, color: '#4285F4', name: 'Google', count: 5, messages: 2 },
+  ];
+  
+  const notifications = [
+    { icon: Bell, text: '+82 mensajes sin leer', className: 'n1' },
+    { icon: Clock, text: 'Lead esperando 4 horas', className: 'n2' },
+    { icon: AlertCircle, text: 'Cliente frustrado', className: 'n3' },
+    { icon: MessageSquare, text: 'Venta perdida', className: 'n4' },
+  ];
+
+  const cardVariants = {
+    hidden: (i: number) => ({
+      opacity: 0,
+      y: 60,
+      x: (i % 3 - 1) * 30,
+      scale: 0.8,
+      rotateY: (i % 2 === 0 ? -15 : 15),
+    }),
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      x: 0,
+      scale: 1,
+      rotateY: 0,
+      transition: {
+        delay: i * 0.1,
+        duration: 0.6,
+        ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number],
+      },
+    }),
+  };
+
+  const notificationVariants = {
+    hidden: { opacity: 0, scale: 0.5, y: 20 },
+    visible: (i: number) => ({
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      transition: {
+        delay: 0.8 + i * 0.2,
+        duration: 0.4,
+        type: 'spring' as const,
+        stiffness: 300,
+        damping: 20,
+      },
+    }),
+  };
+
+  if (prefersReducedMotion) {
+    return (
+      <div className="problem-mockup-card" ref={ref}>
+        <div className="mockup-phone-grid">
+          {phones.map((phone) => {
+            const IconComponent = phone.icon;
+            return (
+              <div key={phone.platform} className={`chaos-phone ${phone.platform}`}>
+                <div className="phone-header">
+                  <div className="phone-notch" />
+                </div>
+                <div className="phone-app-bar">
+                  <IconComponent className="w-4 h-4" style={{ color: phone.color }} />
+                  <span>{phone.name}</span>
+                  <div className="notification-badge">{phone.count}</div>
+                </div>
+                <div className="phone-messages">
+                  {Array.from({ length: phone.messages }).map((_, j) => (
+                    <div key={j} className={`unread-msg ${j === phone.messages - 1 ? 'faded' : ''}`} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="chaos-overlay">
+          {notifications.map((notif) => {
+            const IconComponent = notif.icon;
+            return (
+              <div key={notif.className} className={`floating-notification ${notif.className}`}>
+                <IconComponent className="w-3 h-3" />
+                <span>{notif.text}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="problem-mockup-card" ref={ref}>
       <div className="mockup-phone-grid">
-        <div className="chaos-phone instagram">
-          <div className="phone-header">
-            <div className="phone-notch" />
-          </div>
-          <div className="phone-app-bar">
-            <FaInstagram className="w-4 h-4" style={{ color: '#E1306C' }} />
-            <span>Instagram</span>
-            <div className="notification-badge">23</div>
-          </div>
-          <div className="phone-messages">
-            <div className="unread-msg" />
-            <div className="unread-msg" />
-            <div className="unread-msg faded" />
-          </div>
-        </div>
-        
-        <div className="chaos-phone tiktok">
-          <div className="phone-header">
-            <div className="phone-notch" />
-          </div>
-          <div className="phone-app-bar">
-            <FaTiktok className="w-4 h-4" style={{ color: '#000000' }} />
-            <span>TikTok</span>
-            <div className="notification-badge">47</div>
-          </div>
-          <div className="phone-messages">
-            <div className="unread-msg" />
-            <div className="unread-msg" />
-            <div className="unread-msg faded" />
-          </div>
-        </div>
-        
-        <div className="chaos-phone facebook">
-          <div className="phone-header">
-            <div className="phone-notch" />
-          </div>
-          <div className="phone-app-bar">
-            <FaFacebook className="w-4 h-4" style={{ color: '#1877F2' }} />
-            <span>Facebook</span>
-            <div className="notification-badge">12</div>
-          </div>
-          <div className="phone-messages">
-            <div className="unread-msg" />
-            <div className="unread-msg faded" />
-          </div>
-        </div>
-
-        <div className="chaos-phone linkedin">
-          <div className="phone-header">
-            <div className="phone-notch" />
-          </div>
-          <div className="phone-app-bar">
-            <FaLinkedin className="w-4 h-4" style={{ color: '#0A66C2' }} />
-            <span>LinkedIn</span>
-            <div className="notification-badge">8</div>
-          </div>
-          <div className="phone-messages">
-            <div className="unread-msg" />
-            <div className="unread-msg faded" />
-          </div>
-        </div>
-
-        <div className="chaos-phone youtube">
-          <div className="phone-header">
-            <div className="phone-notch" />
-          </div>
-          <div className="phone-app-bar">
-            <FaYoutube className="w-4 h-4" style={{ color: '#FF0000' }} />
-            <span>YouTube</span>
-            <div className="notification-badge">31</div>
-          </div>
-          <div className="phone-messages">
-            <div className="unread-msg" />
-            <div className="unread-msg" />
-            <div className="unread-msg faded" />
-          </div>
-        </div>
-
-        <div className="chaos-phone google">
-          <div className="phone-header">
-            <div className="phone-notch" />
-          </div>
-          <div className="phone-app-bar">
-            <GoogleBusinessIcon className="w-4 h-4" style={{ color: '#4285F4' }} />
-            <span>Google</span>
-            <div className="notification-badge">5</div>
-          </div>
-          <div className="phone-messages">
-            <div className="unread-msg" />
-            <div className="unread-msg faded" />
-          </div>
-        </div>
+        {phones.map((phone, i) => {
+          const IconComponent = phone.icon;
+          return (
+            <motion.div
+              key={phone.platform}
+              className={`chaos-phone ${phone.platform}`}
+              custom={i}
+              initial="hidden"
+              animate={inView ? "visible" : "hidden"}
+              variants={cardVariants}
+            >
+              <div className="phone-header">
+                <div className="phone-notch" />
+              </div>
+              <div className="phone-app-bar">
+                <IconComponent className="w-4 h-4" style={{ color: phone.color }} />
+                <span>{phone.name}</span>
+                <AnimatedBadge target={phone.count} delay={0.3 + i * 0.15} inView={inView} />
+              </div>
+              <div className="phone-messages">
+                {Array.from({ length: phone.messages }).map((_, j) => (
+                  <motion.div
+                    key={j}
+                    className={`unread-msg ${j === phone.messages - 1 ? 'faded' : ''}`}
+                    initial={{ opacity: 0, scaleX: 0 }}
+                    animate={inView ? { opacity: j === phone.messages - 1 ? 0.7 : 1, scaleX: 1 } : {}}
+                    transition={{ delay: 0.5 + i * 0.1 + j * 0.1, duration: 0.3 }}
+                    style={{ transformOrigin: 'left' }}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
       
       <div className="chaos-overlay">
-        <div className="floating-notification n1">
-          <Bell className="w-3 h-3" />
-          <span>+82 mensajes sin leer</span>
-        </div>
-        <div className="floating-notification n2">
-          <Clock className="w-3 h-3" />
-          <span>Lead esperando 4 horas</span>
-        </div>
-        <div className="floating-notification n3">
-          <AlertCircle className="w-3 h-3" />
-          <span>Cliente frustrado</span>
-        </div>
-        <div className="floating-notification n4">
-          <MessageSquare className="w-3 h-3" />
-          <span>Venta perdida</span>
-        </div>
+        {notifications.map((notif, i) => {
+          const IconComponent = notif.icon;
+          return (
+            <motion.div
+              key={notif.className}
+              className={`floating-notification ${notif.className}`}
+              custom={i}
+              initial="hidden"
+              animate={inView ? "visible" : "hidden"}
+              variants={notificationVariants}
+            >
+              <IconComponent className="w-3 h-3" />
+              <span>{notif.text}</span>
+            </motion.div>
+          );
+        })}
       </div>
     </div>
   );
