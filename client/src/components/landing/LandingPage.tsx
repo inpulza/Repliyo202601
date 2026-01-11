@@ -1431,7 +1431,7 @@ function ProblemMockup() {
           {phones.map((phone) => (
             <div 
               key={phone.platform} 
-              className="badge-layer"
+              className="grid-cell-anchor"
               style={{ gridRow: phone.gridPos.row, gridColumn: phone.gridPos.col }}
             >
               <div className="notification-badge-3d">{phone.badge}</div>
