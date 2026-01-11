@@ -1805,7 +1805,7 @@ function ProblemSolutionSection() {
             style={{ y: problemY, opacity: problemOpacity }}
             className="problem-side text-center"
           >
-            <span className="text-xs uppercase tracking-[0.3em] text-white/40 font-semibold mb-4 block">
+            <span className="text-sm uppercase tracking-[0.25em] text-white/40 font-semibold mb-4 block">
               El problema
             </span>
             <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-12 leading-tight">
@@ -1825,7 +1825,7 @@ function ProblemSolutionSection() {
             style={{ y: solutionY, opacity: solutionOpacity }}
             className="solution-side text-center"
           >
-            <span className="text-xs uppercase tracking-[0.3em] text-[var(--landing-primary)] font-semibold mb-4 block">
+            <span className="text-sm uppercase tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-4 block">
               La solución
             </span>
             <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-12 leading-tight">
@@ -2021,7 +2021,7 @@ function HowItWorksSection() {
       <section id="how" className="py-32 relative">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-20">
-            <span className="text-xs uppercase tracking-[0.3em] text-[var(--landing-primary)] font-semibold mb-4 block">
+            <span className="text-sm uppercase tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-4 block">
               Cómo funciona
             </span>
             <h2 className="font-display text-4xl md:text-6xl font-bold text-white">
@@ -2049,7 +2049,7 @@ function HowItWorksSection() {
     <section id="how" ref={sectionRef} className="how-pinned-section relative">
       <div ref={containerRef} className="how-pinned-container">
         <div className="how-header">
-          <span className="text-xs uppercase tracking-[0.3em] text-[var(--landing-primary)] font-semibold mb-4 block">
+          <span className="text-sm uppercase tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-4 block">
             Cómo funciona
           </span>
           <h2 className="font-display text-4xl md:text-6xl font-bold text-white mb-8">
@@ -2218,7 +2218,7 @@ function FeaturesSection() {
           transition={{ duration: 0.8 }}
           className="text-center mb-20"
         >
-          <span className="text-xs uppercase tracking-[0.3em] text-[var(--landing-primary)] font-semibold mb-4 block">
+          <span className="text-sm uppercase tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-4 block">
             Características
           </span>
           <h2 className="font-display text-4xl md:text-6xl font-bold text-white mb-6">
