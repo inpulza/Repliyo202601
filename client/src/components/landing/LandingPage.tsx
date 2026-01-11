@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring, useMotionValue, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle, Mail, AlertTriangle, Frown, Angry, DollarSign, TrendingDown, FileText, Database, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle } from 'lucide-react';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
 import avatarMaria from '@assets/generated_images/maria_customer_avatar_headshot.png';
@@ -38,14 +38,6 @@ import stepsBgGreen from '@assets/generated_images/green_gradient_grain_backgrou
 import stepsBgVibrant from '@assets/generated_images/vibrant_blue_violet_gradient.png';
 import stepsBgLight from '@assets/generated_images/teal_cyan_bottom_to_top_gradient.png';
 import testimonialBettys from '../../assets/testimonial-bettys.jpg';
-import problemAvatar1 from '@assets/generated_images/overwhelmed_business_owner_with_notifications.png';
-import problemAvatar2 from '@assets/generated_images/frustrated_customer_waiting_impatiently.png';
-import problemAvatar3 from '@assets/generated_images/angry_frustrated_customer_portrait.png';
-import problemAvatar4 from '@assets/generated_images/disappointed_sales_professional_lost_deal.png';
-import solutionAvatar1 from '@assets/generated_images/happy_customer_fast_response_received.png';
-import solutionAvatar2 from '@assets/generated_images/relaxed_ai_support_agent_confident.png';
-import solutionAvatar3 from '@assets/generated_images/organized_professional_unified_inbox.png';
-import solutionAvatar4 from '@assets/generated_images/satisfied_business_owner_crm_success.png';
 import { ParallaxProvider, useParallax, Parallax } from 'react-scroll-parallax';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -53,124 +45,6 @@ import { useGSAP } from '@gsap/react';
 import '../../styles/landing.css';
 
 gsap.registerPlugin(ScrollTrigger);
-
-/* ============ PROBLEM ANIMATIONS (Lucide Icons) ============ */
-
-function FallingCoinAnimation({ position }: { position: 'left' | 'right' }) {
-  return (
-    <div className={`animated-coin-container ${position === 'left' ? 'pill-avatar-left' : 'pill-avatar-right'}`}>
-      <div className="coin-animation">
-        <DollarSign className="coin-icon" />
-        <TrendingDown className="coin-crack-icon" />
-        <div className="puff-particles">
-          <X className="puff-icon p1" />
-          <X className="puff-icon p2" />
-          <X className="puff-icon p3" />
-          <X className="puff-icon p4" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MessagesOverflowAnimation({ position }: { position: 'left' | 'right' }) {
-  return (
-    <div className={`animated-messages-container ${position === 'left' ? 'pill-avatar-left' : 'pill-avatar-right'}`}>
-      <div className="messages-animation">
-        <div className="message-stack">
-          <Mail className="msg-icon m1" />
-          <Mail className="msg-icon m2" />
-          <Mail className="msg-icon m3" />
-        </div>
-        <span className="msg-counter">+99</span>
-        <AlertCircle className="msg-alert-icon" />
-      </div>
-    </div>
-  );
-}
-
-function ClockWaitingAnimation({ position }: { position: 'left' | 'right' }) {
-  return (
-    <div className={`animated-clock-container ${position === 'left' ? 'pill-avatar-left' : 'pill-avatar-right'}`}>
-      <div className="clock-animation">
-        <Clock className="clock-icon" />
-        <AlertTriangle className="clock-alert-icon" />
-      </div>
-    </div>
-  );
-}
-
-function AngryFaceAnimation({ position }: { position: 'left' | 'right' }) {
-  return (
-    <div className={`animated-angry-container ${position === 'left' ? 'pill-avatar-left' : 'pill-avatar-right'}`}>
-      <div className="angry-animation">
-        <div className="face-stages">
-          <Frown className="face-icon f1" />
-          <AlertCircle className="face-icon f2" />
-          <XCircle className="face-icon f3" />
-        </div>
-        <div className="anger-particles">
-          <X className="anger-icon a1" />
-          <X className="anger-icon a2" />
-          <X className="anger-icon a3" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ============ SOLUTION ANIMATIONS (Lucide Icons) ============ */
-
-function FastResponseAnimation({ position }: { position: 'left' | 'right' }) {
-  return (
-    <div className={`animated-solution-container ${position === 'left' ? 'pill-avatar-left' : 'pill-avatar-right'}`}>
-      <div className="fast-response-animation">
-        <Zap className="zap-icon" />
-        <CheckCircle className="check-appear-icon" />
-      </div>
-    </div>
-  );
-}
-
-function AIBorradoresAnimation({ position }: { position: 'left' | 'right' }) {
-  return (
-    <div className={`animated-solution-container ${position === 'left' ? 'pill-avatar-left' : 'pill-avatar-right'}`}>
-      <div className="ai-borradores-animation">
-        <FileText className="file-icon" />
-        <Sparkles className="sparkles-icon" />
-        <Check className="check-done-icon" />
-      </div>
-    </div>
-  );
-}
-
-function SingleInboxAnimation({ position }: { position: 'left' | 'right' }) {
-  return (
-    <div className={`animated-solution-container ${position === 'left' ? 'pill-avatar-left' : 'pill-avatar-right'}`}>
-      <div className="single-inbox-animation">
-        <div className="inbox-merge">
-          <Mail className="merge-icon m1" />
-          <Mail className="merge-icon m2" />
-          <Mail className="merge-icon m3" />
-        </div>
-        <Inbox className="inbox-center-icon" />
-        <CheckCircle className="inbox-check-icon" />
-      </div>
-    </div>
-  );
-}
-
-function CRMIntegradoAnimation({ position }: { position: 'left' | 'right' }) {
-  return (
-    <div className={`animated-solution-container ${position === 'left' ? 'pill-avatar-left' : 'pill-avatar-right'}`}>
-      <div className="crm-animation">
-        <Users className="users-icon" />
-        <Database className="database-icon" />
-        <CheckCircle className="crm-check-icon" />
-      </div>
-    </div>
-  );
-}
 
 function Step1ConnectMockup() {
   const orbitIcons = [
@@ -1337,7 +1211,8 @@ function MarqueeSection() {
   const items = ['DMs', 'Comentarios', 'Respuestas IA', 'Recordatorios', 'CRM', 'Analytics', 'Multi-plataforma'];
   
   return (
-    <section className="marquee-section relative z-10 mt-24 md:mt-32">
+    <section className="marquee-section relative z-30">
+      <div className="marquee-overlap-shadow" />
       <div className="marquee-inner py-8 border-y border-white/20 section-dark relative">
         <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-4" : "marquee-container"}>
           <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-4" : "marquee-content"}>
@@ -1467,10 +1342,10 @@ function ProblemMockup() {
   ];
   
   const notifications = [
-    { icon: Bell, text: '+82 mensajes sin leer', className: 'n1', avatar: null, avatarPosition: 'left' as const, animationType: 'messages' as const },
-    { icon: Clock, text: 'Lead esperando 4 horas', className: 'n2', avatar: null, avatarPosition: 'right' as const, animationType: 'clock' as const },
-    { icon: AlertCircle, text: 'Cliente frustrado', className: 'n3', avatar: null, avatarPosition: 'left' as const, animationType: 'angry' as const },
-    { icon: MessageSquare, text: 'Venta perdida', className: 'n4', avatar: null, avatarPosition: 'right' as const, animationType: 'coin' as const },
+    { icon: Bell, text: '+82 mensajes sin leer', className: 'n1' },
+    { icon: Clock, text: 'Lead esperando 4 horas', className: 'n2' },
+    { icon: AlertCircle, text: 'Cliente frustrado', className: 'n3' },
+    { icon: MessageSquare, text: 'Venta perdida', className: 'n4' },
   ];
 
   const cardVariants = {
@@ -1539,23 +1414,10 @@ function ProblemMockup() {
         <div className="chaos-overlay">
           {notifications.map((notif) => {
             const IconComponent = notif.icon;
-            const renderAnimation = (pos: 'left' | 'right') => {
-              switch (notif.animationType) {
-                case 'messages': return <MessagesOverflowAnimation position={pos} />;
-                case 'clock': return <ClockWaitingAnimation position={pos} />;
-                case 'angry': return <AngryFaceAnimation position={pos} />;
-                case 'coin': return <FallingCoinAnimation position={pos} />;
-                default: return null;
-              }
-            };
             return (
-              <div key={notif.className} className={`floating-notification-wrapper ${notif.className}`}>
-                {notif.avatarPosition === 'left' && renderAnimation('left')}
-                <div className="floating-notification">
-                  <IconComponent className="w-3 h-3" />
-                  <span>{notif.text}</span>
-                </div>
-                {notif.avatarPosition === 'right' && renderAnimation('right')}
+              <div key={notif.className} className={`floating-notification ${notif.className}`}>
+                <IconComponent className="w-3 h-3" />
+                <span>{notif.text}</span>
               </div>
             );
           })}
@@ -1607,30 +1469,17 @@ function ProblemMockup() {
         <div className="chaos-overlay">
           {notifications.map((notif, i) => {
             const IconComponent = notif.icon;
-            const renderAnimation = (pos: 'left' | 'right') => {
-              switch (notif.animationType) {
-                case 'messages': return <MessagesOverflowAnimation position={pos} />;
-                case 'clock': return <ClockWaitingAnimation position={pos} />;
-                case 'angry': return <AngryFaceAnimation position={pos} />;
-                case 'coin': return <FallingCoinAnimation position={pos} />;
-                default: return null;
-              }
-            };
             return (
               <motion.div
                 key={notif.className}
-                className={`floating-notification-wrapper ${notif.className}`}
+                className={`floating-notification ${notif.className}`}
                 custom={i}
                 initial="hidden"
                 animate={inView ? "visible" : "hidden"}
                 variants={notificationVariants}
               >
-                {notif.avatarPosition === 'left' && renderAnimation('left')}
-                <div className="floating-notification">
-                  <IconComponent className="w-3 h-3" />
-                  <span>{notif.text}</span>
-                </div>
-                {notif.avatarPosition === 'right' && renderAnimation('right')}
+                <IconComponent className="w-3 h-3" />
+                <span>{notif.text}</span>
               </motion.div>
             );
           })}
@@ -1658,10 +1507,11 @@ function SolutionMockup() {
   ];
   
   const indicators = [
-    { icon: Check, text: 'Respuesta en 2 min', className: 'i1', avatarPosition: 'left' as const, animationType: 'fastResponse' as const },
-    { icon: Zap, text: 'IA genera borradores', className: 'i2', avatarPosition: 'right' as const, animationType: 'aiBorradores' as const },
-    { icon: MessageSquare, text: 'Un solo inbox', className: 'i3', avatarPosition: 'left' as const, animationType: 'singleInbox' as const },
-    { icon: Users, text: 'CRM integrado', className: 'i4', avatarPosition: 'right' as const, animationType: 'crmIntegrado' as const },
+    { icon: Check, text: 'Respuesta en 2 min', className: 'i1' },
+    { icon: Zap, text: 'IA genera borradores', className: 'i2' },
+    { icon: MessageSquare, text: 'Un solo inbox', className: 'i3' },
+    { icon: Users, text: 'CRM integrado', className: 'i4' },
+    { icon: Bell, text: 'Recordatorios automáticos', className: 'i5' },
   ];
   
   const panelVariants = {
@@ -1757,23 +1607,10 @@ function SolutionMockup() {
         <div className="success-indicators">
           {indicators.map((ind) => {
             const IconComponent = ind.icon;
-            const renderSolutionAnimation = (pos: 'left' | 'right') => {
-              switch (ind.animationType) {
-                case 'fastResponse': return <FastResponseAnimation position={pos} />;
-                case 'aiBorradores': return <AIBorradoresAnimation position={pos} />;
-                case 'singleInbox': return <SingleInboxAnimation position={pos} />;
-                case 'crmIntegrado': return <CRMIntegradoAnimation position={pos} />;
-                default: return null;
-              }
-            };
             return (
-              <div key={ind.className} className={`indicator-wrapper ${ind.className}`}>
-                {ind.avatarPosition === 'left' && renderSolutionAnimation('left')}
-                <div className="indicator">
-                  <IconComponent className="w-3 h-3" />
-                  <span>{ind.text}</span>
-                </div>
-                {ind.avatarPosition === 'right' && renderSolutionAnimation('right')}
+              <div key={ind.className} className={`indicator ${ind.className}`}>
+                <IconComponent className="w-3 h-3" />
+                <span>{ind.text}</span>
               </div>
             );
           })}
@@ -1923,30 +1760,17 @@ function SolutionMockup() {
         <div className="success-indicators">
           {indicators.map((ind, i) => {
             const IconComponent = ind.icon;
-            const renderSolutionAnimation = (pos: 'left' | 'right') => {
-              switch (ind.animationType) {
-                case 'fastResponse': return <FastResponseAnimation position={pos} />;
-                case 'aiBorradores': return <AIBorradoresAnimation position={pos} />;
-                case 'singleInbox': return <SingleInboxAnimation position={pos} />;
-                case 'crmIntegrado': return <CRMIntegradoAnimation position={pos} />;
-                default: return null;
-              }
-            };
             return (
               <motion.div
                 key={ind.className}
-                className={`indicator-wrapper ${ind.className}`}
+                className={`indicator ${ind.className}`}
                 custom={i}
                 initial="hidden"
                 animate={inView ? "visible" : "hidden"}
                 variants={indicatorVariants}
               >
-                {ind.avatarPosition === 'left' && renderSolutionAnimation('left')}
-                <div className="indicator">
-                  <IconComponent className="w-3 h-3" />
-                  <span>{ind.text}</span>
-                </div>
-                {ind.avatarPosition === 'right' && renderSolutionAnimation('right')}
+                <IconComponent className="w-3 h-3" />
+                <span>{ind.text}</span>
               </motion.div>
             );
           })}
@@ -2087,7 +1911,7 @@ function ExpandingRipple({ delay }: { delay: number }) {
 }
 
 import { LucideIcon } from 'lucide-react';
-import { Clock4, ThumbsUp, Zap as ZapIcon, MessageSquare as MsgSquare, Send as SendIcon, Heart as HeartIcon, Inbox as InboxIcon, Users2 as UsersIcon, TrendingUp, BarChart3, Sparkles as SparklesIcon, Bot, Moon, MessageCircle, Clock3, Rocket, Star, Timer } from 'lucide-react';
+import { Clock4, ThumbsUp, CheckCircle, Zap as ZapIcon, MessageSquare as MsgSquare, Send as SendIcon, Heart as HeartIcon, Inbox as InboxIcon, Users2 as UsersIcon, TrendingUp, BarChart3, Sparkles as SparklesIcon, Bot, Moon, MessageCircle, Clock3, Rocket, Star, Timer } from 'lucide-react';
 
 type FloatingElementConfig = {
   component: React.ReactNode;
@@ -2117,17 +1941,17 @@ function FloatingUIElement({ config }: { config: FloatingElementConfig }) {
 
 function TimeSavedCard() {
   return (
-    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-5 shadow-2xl shadow-orange-500/20 border border-orange-200/50" style={{ width: 200 }}>
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-11 h-11 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
-          <Timer className="w-6 h-6 text-white" />
+    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl shadow-orange-500/20 border border-orange-200/50" style={{ width: 140 }}>
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
+          <Timer className="w-4 h-4 text-white" />
         </div>
-        <span className="text-base font-semibold text-gray-600">Tiempo</span>
+        <span className="text-xs font-semibold text-gray-600">Tiempo</span>
       </div>
-      <div className="flex items-center gap-3">
-        <span className="text-xl text-gray-400 line-through">4h</span>
-        <span className="text-2xl text-gray-500">→</span>
-        <span className="text-3xl font-bold text-orange-500">45min</span>
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-gray-400 line-through">4h</span>
+        <span className="text-lg">→</span>
+        <span className="text-xl font-bold text-orange-500">45min</span>
       </div>
     </div>
   );
@@ -2135,23 +1959,23 @@ function TimeSavedCard() {
 
 function RespondidoBadge() {
   return (
-    <div className="bg-gradient-to-r from-emerald-400 to-green-500 rounded-full px-6 py-3 shadow-lg shadow-green-500/30 flex items-center gap-3">
-      <CheckCircle className="w-5 h-5 text-white" />
-      <span className="text-white text-base font-semibold">Respondido</span>
+    <div className="bg-gradient-to-r from-emerald-400 to-green-500 rounded-full px-4 py-2 shadow-lg shadow-green-500/30 flex items-center gap-2">
+      <CheckCircle className="w-4 h-4 text-white" />
+      <span className="text-white text-sm font-semibold">Respondido</span>
     </div>
   );
 }
 
 function AvatarWithStatus({ imageSrc, name, status }: { imageSrc: string; name: string; status: 'online' | 'busy' }) {
   return (
-    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl shadow-purple-500/20 border border-purple-200/50 flex items-center gap-4" style={{ width: 200 }}>
+    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-3 shadow-2xl shadow-purple-500/20 border border-purple-200/50 flex items-center gap-3" style={{ width: 160 }}>
       <div className="relative">
-        <img src={imageSrc} alt="" className="w-12 h-12 rounded-full object-cover" />
-        <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-white ${status === 'online' ? 'bg-green-500' : 'bg-yellow-500'}`} />
+        <img src={imageSrc} alt="" className="w-10 h-10 rounded-full object-cover" />
+        <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${status === 'online' ? 'bg-green-500' : 'bg-yellow-500'}`} />
       </div>
       <div>
-        <div className="text-base font-semibold text-gray-800">{name}</div>
-        <div className="text-sm text-gray-500">{status === 'online' ? 'En línea' : 'Ocupado'}</div>
+        <div className="text-sm font-semibold text-gray-800">{name}</div>
+        <div className="text-xs text-gray-500">{status === 'online' ? 'En línea' : 'Ocupado'}</div>
       </div>
     </div>
   );
@@ -2159,29 +1983,27 @@ function AvatarWithStatus({ imageSrc, name, status }: { imageSrc: string; name: 
 
 function SpeedIndicator() {
   return (
-    <div className="bg-cyan-500 rounded-2xl p-4 shadow-lg shadow-cyan-500/30 flex items-center gap-4" style={{ width: 180 }}>
-      <Rocket className="w-7 h-7 text-white shrink-0" />
-      <div>
-        <div className="text-2xl font-black text-white leading-tight">10x</div>
-        <div className="text-sm text-white font-medium">más rápido</div>
-      </div>
+    <div className="bg-cyan-500 rounded-2xl p-4 shadow-lg shadow-cyan-500/30" style={{ width: 110 }}>
+      <Rocket className="w-6 h-6 text-white mb-2" />
+      <div className="text-2xl font-black text-white">10x</div>
+      <div className="text-xs text-white font-medium">más rápido</div>
     </div>
   );
 }
 
 function ChatBubbleTyping() {
   return (
-    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-5 shadow-2xl shadow-blue-500/20 border border-blue-200/50" style={{ width: 210 }}>
-      <div className="flex items-center gap-3 mb-3">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center">
-          <MsgSquare className="w-5 h-5 text-white" />
+    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl shadow-blue-500/20 border border-blue-200/50" style={{ width: 180 }}>
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center">
+          <MsgSquare className="w-4 h-4 text-white" />
         </div>
-        <span className="text-sm font-semibold text-gray-600">Nuevo mensaje</span>
+        <span className="text-xs font-semibold text-gray-600">Nuevo mensaje</span>
       </div>
-      <div className="bg-gray-100 rounded-xl p-3 flex items-center gap-2">
-        <div className="w-3 h-3 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-        <div className="w-3 h-3 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-        <div className="w-3 h-3 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+      <div className="bg-gray-100 rounded-xl p-2 flex items-center gap-1">
+        <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+        <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+        <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '300ms' }} />
       </div>
     </div>
   );
@@ -2189,21 +2011,21 @@ function ChatBubbleTyping() {
 
 function QuickReplyPill() {
   return (
-    <div className="bg-gradient-to-r from-violet-500 to-purple-600 rounded-full px-6 py-4 shadow-lg shadow-purple-500/30 flex items-center gap-3">
-      <ZapIcon className="w-5 h-5 text-yellow-300" />
-      <span className="text-white text-base font-semibold">Respuesta IA</span>
+    <div className="bg-gradient-to-r from-violet-500 to-purple-600 rounded-full px-5 py-3 shadow-lg shadow-purple-500/30 flex items-center gap-2">
+      <ZapIcon className="w-4 h-4 text-yellow-300" />
+      <span className="text-white text-sm font-semibold">Respuesta IA</span>
     </div>
   );
 }
 
 function SendButtonCard() {
   return (
-    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl shadow-green-500/20 border border-green-200/50 flex items-center gap-3" style={{ width: 200 }}>
-      <div className="flex-1 h-11 bg-gray-100 rounded-xl flex items-center px-4">
-        <span className="text-sm text-gray-400">Escribir...</span>
+    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-3 shadow-2xl shadow-green-500/20 border border-green-200/50 flex items-center gap-3" style={{ width: 170 }}>
+      <div className="flex-1 h-9 bg-gray-100 rounded-xl flex items-center px-3">
+        <span className="text-xs text-gray-400">Escribir...</span>
       </div>
-      <div className="w-11 h-11 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg shrink-0">
-        <SendIcon className="w-5 h-5 text-white ml-0.5" />
+      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg shrink-0">
+        <SendIcon className="w-4 h-4 text-white ml-0.5" />
       </div>
     </div>
   );
@@ -2211,11 +2033,11 @@ function SendButtonCard() {
 
 function NotificationCard() {
   return (
-    <div className="bg-rose-500 rounded-2xl p-4 shadow-lg shadow-rose-500/30 flex items-center gap-4" style={{ width: 200 }}>
-      <Bell className="w-7 h-7 text-white" />
+    <div className="bg-rose-500 rounded-2xl p-3 shadow-lg shadow-rose-500/30 flex items-center gap-3" style={{ width: 170 }}>
+      <Bell className="w-5 h-5 text-white" />
       <div>
-        <div className="text-base font-semibold text-white">3 nuevos</div>
-        <div className="text-sm text-white font-medium">mensajes</div>
+        <div className="text-sm font-semibold text-white">3 nuevos</div>
+        <div className="text-xs text-white font-medium">mensajes</div>
       </div>
     </div>
   );
@@ -2223,63 +2045,63 @@ function NotificationCard() {
 
 function AvatarStack() {
   return (
-    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-5 shadow-2xl shadow-cyan-500/20 border border-cyan-200/50" style={{ width: 190 }}>
-      <div className="flex -space-x-3 mb-3">
-        <img src={avatarMaria} alt="" className="w-12 h-12 rounded-full border-2 border-white object-cover shrink-0" />
-        <img src={avatarCarlos} alt="" className="w-12 h-12 rounded-full border-2 border-white object-cover shrink-0" />
-        <img src={avatarAna} alt="" className="w-12 h-12 rounded-full border-2 border-white object-cover shrink-0" />
-        <div className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-full border-2 border-white bg-blue-500 flex items-center justify-center text-white text-sm font-bold shrink-0">+12</div>
+    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl shadow-cyan-500/20 border border-cyan-200/50" style={{ width: 150 }}>
+      <div className="flex -space-x-3 mb-2">
+        <img src={avatarMaria} alt="" className="w-10 h-10 rounded-full border-2 border-white object-cover shrink-0" />
+        <img src={avatarCarlos} alt="" className="w-10 h-10 rounded-full border-2 border-white object-cover shrink-0" />
+        <img src={avatarAna} alt="" className="w-10 h-10 rounded-full border-2 border-white object-cover shrink-0" />
+        <div className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-full border-2 border-white bg-blue-500 flex items-center justify-center text-white text-xs font-bold shrink-0">+12</div>
       </div>
-      <div className="text-sm text-gray-500">Equipo activo</div>
+      <div className="text-xs text-gray-500">Equipo activo</div>
     </div>
   );
 }
 
 function GrowthCard() {
   return (
-    <div className="bg-emerald-500 rounded-2xl p-5 shadow-lg shadow-emerald-500/30" style={{ width: 160 }}>
-      <TrendingUp className="w-7 h-7 text-white mb-2" />
-      <div className="text-3xl font-black text-white">+247</div>
-      <div className="text-sm text-white font-medium">leads hoy</div>
+    <div className="bg-emerald-500 rounded-2xl p-4 shadow-lg shadow-emerald-500/30" style={{ width: 130 }}>
+      <TrendingUp className="w-5 h-5 text-white mb-1" />
+      <div className="text-2xl font-black text-white">+247</div>
+      <div className="text-xs text-white font-medium">leads hoy</div>
     </div>
   );
 }
 
 function StarRatingCard() {
   return (
-    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl shadow-yellow-500/20 border border-yellow-200/50 flex items-center gap-3">
-      <div className="flex gap-1">
-        {[1,2,3,4,5].map(i => <Star key={i} className="w-5 h-5 text-yellow-400 fill-yellow-400" />)}
+    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-3 shadow-2xl shadow-yellow-500/20 border border-yellow-200/50 flex items-center gap-2">
+      <div className="flex gap-0.5">
+        {[1,2,3,4,5].map(i => <Star key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" />)}
       </div>
-      <span className="text-lg font-bold text-gray-700">4.9</span>
+      <span className="text-sm font-bold text-gray-700">4.9</span>
     </div>
   );
 }
 
 function LeadCounterCard() {
   return (
-    <div className="bg-violet-600 rounded-2xl p-5 shadow-lg shadow-violet-500/30" style={{ width: 170 }}>
-      <UsersIcon className="w-7 h-7 text-white mb-2" />
-      <div className="text-3xl font-black text-white">1,847</div>
-      <div className="text-sm text-white font-medium">contactos</div>
+    <div className="bg-violet-600 rounded-2xl p-4 shadow-lg shadow-violet-500/30" style={{ width: 140 }}>
+      <UsersIcon className="w-5 h-5 text-white mb-1" />
+      <div className="text-2xl font-black text-white">1,847</div>
+      <div className="text-xs text-white font-medium">contactos</div>
     </div>
   );
 }
 
 function AIAutopilotCard() {
   return (
-    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-5 shadow-2xl shadow-violet-500/20 border border-violet-200/50" style={{ width: 190 }}>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <Bot className="w-7 h-7 text-violet-500" />
-          <span className="text-base font-semibold text-gray-700">IA Activa</span>
+    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl shadow-violet-500/20 border border-violet-200/50" style={{ width: 160 }}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Bot className="w-5 h-5 text-violet-500" />
+          <span className="text-sm font-semibold text-gray-700">IA Activa</span>
         </div>
       </div>
-      <div className="flex items-center gap-3">
-        <div className="w-14 h-7 rounded-full bg-gradient-to-r from-violet-500 to-purple-600 p-0.5 flex items-center justify-end">
-          <div className="w-6 h-6 rounded-full bg-white shadow" />
+      <div className="flex items-center gap-2">
+        <div className="w-12 h-6 rounded-full bg-gradient-to-r from-violet-500 to-purple-600 p-0.5 flex items-center justify-end">
+          <div className="w-5 h-5 rounded-full bg-white shadow" />
         </div>
-        <span className="text-sm text-green-500 font-semibold">ON</span>
+        <span className="text-xs text-green-500 font-medium">ON</span>
       </div>
     </div>
   );
@@ -2287,11 +2109,11 @@ function AIAutopilotCard() {
 
 function MoonSunToggle() {
   return (
-    <div className="bg-indigo-600 rounded-2xl p-5 shadow-lg shadow-indigo-500/30 flex items-center gap-4" style={{ width: 160 }}>
-      <Moon className="w-8 h-8 text-yellow-300" />
+    <div className="bg-indigo-600 rounded-2xl p-4 shadow-lg shadow-indigo-500/30 flex items-center gap-3" style={{ width: 130 }}>
+      <Moon className="w-6 h-6 text-yellow-300" />
       <div>
-        <div className="text-lg font-bold text-white">24/7</div>
-        <div className="text-sm text-white font-medium">activo</div>
+        <div className="text-sm font-bold text-white">24/7</div>
+        <div className="text-xs text-white font-medium">activo</div>
       </div>
     </div>
   );
@@ -2299,14 +2121,14 @@ function MoonSunToggle() {
 
 function AITypingCard() {
   return (
-    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-5 shadow-2xl shadow-purple-500/20 border border-purple-200/50" style={{ width: 210 }}>
-      <div className="flex items-center gap-3 mb-3">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center">
-          <SparklesIcon className="w-5 h-5 text-white" />
+    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-3 shadow-2xl shadow-purple-500/20 border border-purple-200/50" style={{ width: 180 }}>
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center">
+          <SparklesIcon className="w-4 h-4 text-white" />
         </div>
-        <span className="text-sm font-semibold text-gray-600">IA escribiendo...</span>
+        <span className="text-xs font-semibold text-gray-600">IA escribiendo...</span>
       </div>
-      <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
         <div className="h-full bg-gradient-to-r from-violet-400 to-purple-500 rounded-full animate-pulse" style={{ width: '70%' }} />
       </div>
     </div>
@@ -2315,37 +2137,37 @@ function AITypingCard() {
 
 function AutoReplyStatus() {
   return (
-    <div className="bg-gradient-to-r from-green-400 to-emerald-500 rounded-full px-6 py-3 shadow-lg shadow-green-500/30 flex items-center gap-3">
-      <div className="w-3 h-3 rounded-full bg-white animate-pulse" />
-      <span className="text-white text-base font-semibold">Auto-respuesta</span>
+    <div className="bg-gradient-to-r from-green-400 to-emerald-500 rounded-full px-4 py-2 shadow-lg shadow-green-500/30 flex items-center gap-2">
+      <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+      <span className="text-white text-sm font-semibold">Auto-respuesta</span>
     </div>
   );
 }
 
 const STAT_FLOATING_ELEMENTS: { [key: number]: FloatingElementConfig[] } = {
   0: [
-    { component: <TimeSavedCard />, position: { x: '5%', y: '28%' }, delay: 0.05 },
-    { component: <AvatarWithStatus imageSrc={avatarMaria} name="María G." status="online" />, position: { x: '78%', y: '25%' }, delay: 0.1 },
-    { component: <RespondidoBadge />, position: { x: '6%', y: '68%' }, delay: 0.15 },
-    { component: <SpeedIndicator />, position: { x: '80%', y: '68%' }, delay: 0.12 },
+    { component: <TimeSavedCard />, position: { x: '10%', y: '12%' }, delay: 0.05 },
+    { component: <AvatarWithStatus imageSrc={avatarMaria} name="María G." status="online" />, position: { x: '72%', y: '8%' }, delay: 0.1 },
+    { component: <RespondidoBadge />, position: { x: '12%', y: '72%' }, delay: 0.15 },
+    { component: <SpeedIndicator />, position: { x: '78%', y: '66%' }, delay: 0.12 },
   ],
   1: [
-    { component: <ChatBubbleTyping />, position: { x: '4%', y: '26%' }, delay: 0.05 },
-    { component: <QuickReplyPill />, position: { x: '80%', y: '28%' }, delay: 0.1 },
-    { component: <SendButtonCard />, position: { x: '4%', y: '66%' }, delay: 0.15 },
-    { component: <NotificationCard />, position: { x: '78%', y: '66%' }, delay: 0.12 },
+    { component: <ChatBubbleTyping />, position: { x: '8%', y: '10%' }, delay: 0.05 },
+    { component: <QuickReplyPill />, position: { x: '74%', y: '12%' }, delay: 0.1 },
+    { component: <SendButtonCard />, position: { x: '10%', y: '68%' }, delay: 0.15 },
+    { component: <NotificationCard />, position: { x: '74%', y: '66%' }, delay: 0.12 },
   ],
   2: [
-    { component: <AvatarStack />, position: { x: '5%', y: '26%' }, delay: 0.05 },
-    { component: <GrowthCard />, position: { x: '82%', y: '25%' }, delay: 0.1 },
-    { component: <LeadCounterCard />, position: { x: '6%', y: '66%' }, delay: 0.15 },
-    { component: <StarRatingCard />, position: { x: '80%', y: '68%' }, delay: 0.12 },
+    { component: <AvatarStack />, position: { x: '10%', y: '10%' }, delay: 0.05 },
+    { component: <GrowthCard />, position: { x: '78%', y: '8%' }, delay: 0.1 },
+    { component: <LeadCounterCard />, position: { x: '12%', y: '66%' }, delay: 0.15 },
+    { component: <StarRatingCard />, position: { x: '76%', y: '70%' }, delay: 0.12 },
   ],
   3: [
-    { component: <AIAutopilotCard />, position: { x: '5%', y: '26%' }, delay: 0.05 },
-    { component: <MoonSunToggle />, position: { x: '82%', y: '26%' }, delay: 0.1 },
-    { component: <AITypingCard />, position: { x: '4%', y: '66%' }, delay: 0.15 },
-    { component: <AutoReplyStatus />, position: { x: '78%', y: '68%' }, delay: 0.12 },
+    { component: <AIAutopilotCard />, position: { x: '10%', y: '10%' }, delay: 0.05 },
+    { component: <MoonSunToggle />, position: { x: '78%', y: '10%' }, delay: 0.1 },
+    { component: <AITypingCard />, position: { x: '8%', y: '66%' }, delay: 0.15 },
+    { component: <AutoReplyStatus />, position: { x: '74%', y: '70%' }, delay: 0.12 },
   ],
 };
 
@@ -2393,7 +2215,7 @@ function MetricSection() {
         {!prefersReducedMotion && (
           <motion.div 
             key={`elements-${activeIndex}`}
-            className="absolute inset-0 pointer-events-none hidden md:block z-20"
+            className="absolute inset-0 pointer-events-none hidden md:block"
           >
             {currentElements.map((element, i) => (
               <FloatingUIElement
