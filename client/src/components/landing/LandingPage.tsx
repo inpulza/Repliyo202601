@@ -1148,7 +1148,7 @@ function HeroSection() {
 
   return (
     <section ref={containerRef} className="hero-section relative min-h-[140vh] md:min-h-[150vh] overflow-visible">
-      <div className="sticky top-0 min-h-screen flex flex-col items-center justify-start pt-28 overflow-visible">
+      <div className="sticky top-0 min-h-screen flex flex-col items-center justify-start pt-40 overflow-visible">
         <div className="absolute inset-0 bg-radial-gradient" />
         <div className="absolute inset-0 bg-grid-pattern opacity-30" />
         
