@@ -1135,11 +1135,10 @@ function Header() {
 
 function SlotMachineIA() {
   const [phase, setPhase] = useState<'spinning' | 'slowing' | 'landed'>('spinning');
-  const [displayText, setDisplayText] = useState('??');
+  const [displayText, setDisplayText] = useState('+1');
   const prefersReducedMotion = useReducedMotion();
   
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*!?';
-  const spinChars = ['AI', 'ML', 'GP', 'NL', 'LM', 'DL', 'NN', 'IA'];
+  const notificationNumbers = ['+1', '+3', '+7', '+12', '+23', '+47', '+99', '+156', '+82', '+34', '+61', '+8'];
   
   useEffect(() => {
     if (prefersReducedMotion) {
@@ -1150,25 +1149,25 @@ function SlotMachineIA() {
     
     const startDelay = setTimeout(() => {
       let spinCount = 0;
-      const maxSpins = 12;
+      const maxSpins = 16;
       
       const spinInterval = setInterval(() => {
         spinCount++;
         
-        if (spinCount < maxSpins * 0.6) {
-          const randomIdx = Math.floor(Math.random() * spinChars.length);
-          setDisplayText(spinChars[randomIdx]);
-        } else if (spinCount < maxSpins * 0.85) {
+        if (spinCount < maxSpins * 0.7) {
+          const randomIdx = Math.floor(Math.random() * notificationNumbers.length);
+          setDisplayText(notificationNumbers[randomIdx]);
+        } else if (spinCount < maxSpins * 0.9) {
           setPhase('slowing');
-          const slowChars = ['AI', 'ML', 'IA', 'AI', 'IA'];
-          const idx = Math.floor((spinCount - maxSpins * 0.6) / 2) % slowChars.length;
-          setDisplayText(slowChars[idx]);
+          const slowSequence = ['+99', '+47', '+12', 'IA'];
+          const idx = Math.floor((spinCount - maxSpins * 0.7) / 1.5) % slowSequence.length;
+          setDisplayText(slowSequence[idx]);
         } else {
           clearInterval(spinInterval);
           setDisplayText('IA');
           setPhase('landed');
         }
-      }, 80);
+      }, 70);
       
       return () => clearInterval(spinInterval);
     }, 900);
