@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring, useMotionValue, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle } from 'lucide-react';
+import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle, Menu } from 'lucide-react';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
 import avatarMaria from '@assets/generated_images/maria_customer_avatar_headshot.png';
@@ -1099,6 +1099,7 @@ function InboxMockup() {
 
 function Header() {
   const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
@@ -1107,29 +1108,109 @@ function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileMenuOpen]);
+
+  const navLinks = [
+    { href: '#features', label: 'Producto' },
+    { href: '#how', label: 'Cómo funciona' },
+    { href: '#testimonial', label: 'Testimonios' },
+  ];
+
   return (
-    <motion.header 
-      initial={prefersReducedMotion ? false : { y: -100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.6, ease: 'easeOut' }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? 'header-scrolled backdrop-blur-xl' : ''
-      }`}
-    >
-      <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-        <a href="/" className="font-display font-bold text-2xl text-white" data-testid="link-logo">Repliyo</a>
-        <nav className="hidden md:flex items-center gap-8">
-          <a href="#features" className="nav-link" data-testid="link-nav-producto">Producto</a>
-          <a href="#how" className="nav-link" data-testid="link-nav-como-funciona">Cómo funciona</a>
-          <a href="#testimonial" className="nav-link" data-testid="link-nav-testimonios">Testimonios</a>
-        </nav>
-        <div className="flex items-center gap-3">
-          <a href="/login" className="btn-primary text-sm py-2.5 px-5" data-testid="button-login-header">
-            Iniciar sesión
-          </a>
+    <>
+      <motion.header 
+        initial={prefersReducedMotion ? false : { y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.6, ease: 'easeOut' }}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          scrolled ? 'header-scrolled backdrop-blur-xl' : ''
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
+          <a href="/" className="font-display font-bold text-xl md:text-2xl text-white" data-testid="link-logo">Repliyo</a>
+          <nav className="hidden md:flex items-center gap-8">
+            {navLinks.map(link => (
+              <a key={link.href} href={link.href} className="nav-link" data-testid={`link-nav-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                {link.label}
+              </a>
+            ))}
+          </nav>
+          <div className="flex items-center gap-3">
+            <a href="/login" className="btn-primary text-sm py-2 px-4 md:py-2.5 md:px-5 hidden sm:inline-flex" data-testid="button-login-header">
+              Iniciar sesión
+            </a>
+            <button 
+              onClick={() => setMobileMenuOpen(true)}
+              className="md:hidden w-10 h-10 flex items-center justify-center text-white"
+              aria-label="Abrir menú"
+              data-testid="button-mobile-menu"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+          </div>
         </div>
-      </div>
-    </motion.header>
+      </motion.header>
+
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[100] md:hidden"
+          >
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="absolute right-0 top-0 h-full w-[280px] bg-[#0a0a0a] border-l border-white/10 p-6 flex flex-col"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <span className="font-display font-bold text-xl text-white">Menú</span>
+                <button 
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-10 h-10 flex items-center justify-center text-white/70 hover:text-white"
+                  aria-label="Cerrar menú"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <nav className="flex flex-col gap-2">
+                {navLinks.map(link => (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-lg text-white/80 hover:text-white py-3 px-4 rounded-xl hover:bg-white/5 transition-colors"
+                  >
+                    {link.label}
+                  </a>
+                ))}
+              </nav>
+              <div className="mt-auto pt-6 border-t border-white/10">
+                <a 
+                  href="/login" 
+                  className="btn-primary w-full justify-center py-3"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Iniciar sesión
+                </a>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
@@ -1144,19 +1225,19 @@ function HeroSection() {
   const opacity = useTransform(scrollYProgress, [0, 0.4], [1, 0]);
 
   return (
-    <section ref={containerRef} className="hero-section relative min-h-[140vh] md:min-h-[150vh] overflow-visible">
-      <div className="sticky top-0 min-h-screen flex flex-col items-center justify-start pt-40 overflow-visible">
+    <section ref={containerRef} className="hero-section relative min-h-[120vh] md:min-h-[150vh] overflow-visible">
+      <div className="sticky top-0 min-h-screen flex flex-col items-center justify-start pt-24 md:pt-40 overflow-visible">
         <div className="absolute inset-0 bg-radial-gradient" />
-        <div className="absolute inset-0 bg-grid-pattern opacity-30" />
+        <div className="absolute inset-0 bg-grid-pattern opacity-30 hidden md:block" />
         
-        <Parallax speed={-10} className="absolute inset-0 pointer-events-none">
+        <Parallax speed={-10} className="absolute inset-0 pointer-events-none hidden md:block">
           <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-blue-500/5 blur-3xl" />
           <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] rounded-full bg-orange-500/5 blur-3xl" />
         </Parallax>
         
-        <motion.div style={{ y: textY, opacity }} className="relative z-10 max-w-5xl mx-auto px-6 text-center mb-20">
+        <motion.div style={{ y: textY, opacity }} className="relative z-10 max-w-5xl mx-auto px-4 md:px-6 text-center mb-10 md:mb-20">
           <motion.h1 
-            className="font-display font-bold text-5xl md:text-6xl lg:text-7xl xl:text-8xl leading-[0.95] tracking-tight mb-8"
+            className="font-display font-bold text-[2.5rem] sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl leading-[1] md:leading-[0.95] tracking-tight mb-6 md:mb-8"
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
@@ -1169,7 +1250,7 @@ function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.6 }}
-            className="text-lg md:text-xl lg:text-2xl text-white/50 max-w-2xl mx-auto mb-8 leading-relaxed"
+            className="text-base md:text-xl lg:text-2xl text-white/50 max-w-2xl mx-auto mb-6 md:mb-8 leading-relaxed"
           >
             Unifica todos tus DMs y comentarios de Instagram, TikTok y Facebook en un inbox inteligente que responde automáticamente.
           </motion.p>
@@ -1178,12 +1259,12 @@ function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.6 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+            className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4"
           >
-            <a href="/login" className="btn-primary" data-testid="button-empezar-gratis-hero">
+            <a href="/login" className="btn-primary w-full sm:w-auto justify-center" data-testid="button-empezar-gratis-hero">
               Empezar gratis <ArrowRight className="w-4 h-4" />
             </a>
-            <button className="btn-secondary" data-testid="button-ver-demo">
+            <button className="btn-secondary w-full sm:w-auto justify-center" data-testid="button-ver-demo">
               <Play className="w-4 h-4" /> Ver demo
             </button>
           </motion.div>
@@ -1212,16 +1293,16 @@ function MarqueeSection() {
   
   return (
     <section className="marquee-section relative z-30">
-      <div className="marquee-overlap-shadow" />
-      <div className="marquee-inner py-8 border-y border-white/20 section-dark relative">
-        <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-4" : "marquee-container"}>
-          <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-4" : "marquee-content"}>
+      <div className="marquee-overlap-shadow hidden md:block" />
+      <div className="marquee-inner py-4 md:py-8 border-y border-white/20 section-dark relative">
+        <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-3 md:gap-4 px-4" : "marquee-container"}>
+          <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-3 md:gap-4" : "marquee-content"}>
             {(prefersReducedMotion ? items : [...items, ...items]).map((item, i) => (
-              <span key={i} className="inline-flex items-center gap-4 px-8">
-                <span className="font-display text-2xl md:text-3xl font-medium hover:text-white/80 transition-colors cursor-default text-white">
+              <span key={i} className="inline-flex items-center gap-2 md:gap-4 px-4 md:px-8">
+                <span className="font-display text-xl md:text-2xl lg:text-3xl font-medium hover:text-white/80 transition-colors cursor-default text-white">
                   {item}
                 </span>
-                <span className="w-2 h-2 rounded-full bg-[var(--landing-primary)]" />
+                <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-[var(--landing-primary)]" />
               </span>
             ))}
           </div>
@@ -1794,21 +1875,21 @@ function ProblemSolutionSection() {
   const solutionOpacity = useTransform(scrollYProgress, [0, 0.25, 0.8, 1], [0, 1, 1, 0.5]);
 
   return (
-    <section ref={sectionRef} className="relative overflow-hidden">
+    <section ref={sectionRef} className="relative overflow-hidden problem-solution-section">
       {/* Problem Section */}
-      <div className="py-24 md:py-32">
-        <div className="max-w-4xl mx-auto px-6">
+      <div className="py-12 md:py-20 lg:py-32">
+        <div className="max-w-4xl mx-auto px-4 md:px-6">
           <motion.div 
             style={{ y: problemY, opacity: problemOpacity }}
             className="problem-side text-center"
           >
-            <span className="text-sm uppercase tracking-[0.25em] text-white/40 font-semibold mb-4 block">
+            <span className="text-xs md:text-sm uppercase tracking-[0.2em] md:tracking-[0.25em] text-white/40 font-semibold mb-3 md:mb-4 block">
               El problema
             </span>
-            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-12 leading-tight">
+            <h2 className="font-display text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-6 md:mb-12 leading-tight">
               Responder mensajes en 5 apps es <span className="text-white/50">agotador</span>
             </h2>
-            <div className="max-w-3xl mx-auto">
+            <div className="max-w-3xl mx-auto problem-mockup-wrapper">
               <ProblemMockup />
             </div>
           </motion.div>
@@ -1816,19 +1897,19 @@ function ProblemSolutionSection() {
       </div>
 
       {/* Solution Section */}
-      <div className="py-24 md:py-32">
-        <div className="max-w-5xl mx-auto px-6">
+      <div className="py-12 md:py-20 lg:py-32">
+        <div className="max-w-5xl mx-auto px-4 md:px-6">
           <motion.div 
             style={{ y: solutionY, opacity: solutionOpacity }}
             className="solution-side text-center"
           >
-            <span className="text-sm uppercase tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-4 block">
+            <span className="text-xs md:text-sm uppercase tracking-[0.2em] md:tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-3 md:mb-4 block">
               La solución
             </span>
-            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-12 leading-tight">
+            <h2 className="font-display text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-6 md:mb-12 leading-tight">
               Un inbox inteligente que <span className="text-white/60">trabaja por ti</span>
             </h2>
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-4xl mx-auto solution-mockup-wrapper">
               <SolutionMockup />
             </div>
           </motion.div>
@@ -2200,11 +2281,11 @@ function MetricSection() {
   const currentElements = STAT_FLOATING_ELEMENTS[activeIndex] || [];
 
   return (
-    <section ref={ref} className="py-48 md:py-56 relative overflow-hidden">
+    <section ref={ref} className="py-32 md:py-48 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,145,250,0.12)_0%,transparent_70%)]" />
       
       {!prefersReducedMotion && isInView && (
-        <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 pointer-events-none hidden md:block">
           <ExpandingRipple delay={0} />
           <ExpandingRipple delay={1.6} />
           <ExpandingRipple delay={3.2} />
@@ -2229,9 +2310,9 @@ function MetricSection() {
       
       <motion.div 
         style={{ scale, opacity }}
-        className="relative z-10 max-w-5xl mx-auto px-6 text-center"
+        className="relative z-10 max-w-5xl mx-auto px-4 md:px-6 text-center"
       >
-        <div className="font-display font-black text-[20vw] md:text-[16vw] leading-none text-white mb-6 h-[1.1em] flex items-center justify-center overflow-hidden">
+        <div className="font-display font-black text-[12vw] md:text-[16vw] leading-none text-white mb-4 md:mb-6 h-[1.1em] flex items-center justify-center overflow-hidden">
           {prefersReducedMotion ? (
             <span>{currentStat.value}</span>
           ) : (
@@ -2247,17 +2328,17 @@ function MetricSection() {
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
           >
-            <h2 className="font-display text-3xl md:text-5xl font-bold text-white mb-4">
+            <h2 className="font-display text-2xl md:text-5xl font-bold text-white mb-3 md:mb-4">
               {currentStat.title}
             </h2>
-            <p className="text-white/50 text-xl max-w-xl mx-auto">
+            <p className="text-white/50 text-base md:text-xl max-w-xl mx-auto px-4 md:px-0">
               {currentStat.description}
             </p>
           </motion.div>
         </AnimatePresence>
       </motion.div>
       
-      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex justify-center gap-2 z-20">
+      <div className="absolute bottom-8 md:bottom-12 left-1/2 -translate-x-1/2 flex justify-center gap-2 z-20">
         {stats.map((_, i) => (
           <button
             key={i}
@@ -2282,9 +2363,17 @@ function HowItWorksSection() {
   const checkpointsRef = useRef<(HTMLDivElement | null)[]>([]);
   const prefersReducedMotion = useReducedMotion();
   const [activeStep, setActiveStep] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useGSAP(() => {
-    if (prefersReducedMotion || !containerRef.current || !sectionRef.current) return;
+    if (prefersReducedMotion || isMobile || !containerRef.current || !sectionRef.current) return;
     
     const ctx = gsap.context(() => {
       const stepPanels = gsap.utils.toArray('.how-step-panel') as HTMLElement[];
@@ -2391,7 +2480,7 @@ function HowItWorksSection() {
     }, sectionRef);
     
     return () => ctx.revert();
-  }, { scope: sectionRef });
+  }, { scope: sectionRef, dependencies: [isMobile] });
 
   const steps = [
     {
@@ -2414,26 +2503,26 @@ function HowItWorksSection() {
     }
   ];
 
-  if (prefersReducedMotion) {
+  if (prefersReducedMotion || isMobile) {
     return (
-      <section id="how" className="py-32 relative">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-20">
-            <span className="text-sm uppercase tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-4 block">
+      <section id="how" className="py-20 md:py-32 relative">
+        <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <div className="text-center mb-12 md:mb-20">
+            <span className="text-xs md:text-sm uppercase tracking-[0.2em] md:tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-3 md:mb-4 block">
               Cómo funciona
             </span>
-            <h2 className="font-display text-4xl md:text-6xl font-bold text-white">
+            <h2 className="font-display text-3xl md:text-6xl font-bold text-white">
               De caos a control en <span className="text-white/60">3 pasos</span>
             </h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
             {steps.map((step) => (
               <div key={step.number} className="how-card">
                 <div className="card-inner">
-                  <span className="step-number">{step.number}</span>
-                  <h3 className="font-display text-2xl font-bold text-white mt-4 mb-3">{step.title}</h3>
-                  <p className="text-white/50 text-base leading-relaxed mb-6">{step.description}</p>
-                  <div className="step-mockup-container">{step.mockup}</div>
+                  <span className="step-number text-4xl md:text-5xl">{step.number}</span>
+                  <h3 className="font-display text-xl md:text-2xl font-bold text-white mt-3 md:mt-4 mb-2 md:mb-3">{step.title}</h3>
+                  <p className="text-white/50 text-sm md:text-base leading-relaxed mb-4 md:mb-6">{step.description}</p>
+                  <div className="step-mockup-container max-w-full overflow-hidden">{step.mockup}</div>
                 </div>
               </div>
             ))}
@@ -2595,25 +2684,25 @@ function FeaturesSection() {
   ];
 
   return (
-    <section id="features" ref={sectionRef} className="py-32 section-dark relative overflow-hidden">
+    <section id="features" ref={sectionRef} className="py-20 md:py-32 section-dark relative overflow-hidden">
       <Parallax speed={-3} className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-blue-500/5 blur-3xl" />
       </Parallax>
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="text-center mb-20"
+          className="text-center mb-12 md:mb-20"
         >
-          <span className="text-sm uppercase tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-4 block">
+          <span className="text-xs md:text-sm uppercase tracking-[0.2em] md:tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-3 md:mb-4 block">
             Características
           </span>
-          <h2 className="font-display text-4xl md:text-6xl font-bold text-white mb-6">
+          <h2 className="font-display text-3xl md:text-4xl lg:text-6xl font-bold text-white mb-4 md:mb-6">
             Todo lo que necesitas para <span className="text-white/60">escalar</span>
           </h2>
-          <p className="text-white/50 text-xl max-w-2xl mx-auto">
+          <p className="text-white/50 text-base md:text-xl max-w-2xl mx-auto px-2 md:px-0">
             Herramientas diseñadas para equipos que manejan cientos de conversaciones al día.
           </p>
         </motion.div>
@@ -2627,10 +2716,10 @@ function FeaturesSection() {
               >
                 <div className="feature-card-inner">
                   <div className="feature-icon-wrapper overflow-hidden bg-transparent">
-                    <img src={feature.iconImage} alt="" className="w-14 h-14 object-contain" />
+                    <img src={feature.iconImage} alt="" className="w-10 h-10 md:w-14 md:h-14 object-contain" />
                   </div>
-                  <h3 className="font-display text-xl font-bold text-white mt-4 mb-2">{feature.title}</h3>
-                  <p className="text-white/50 text-sm leading-relaxed">{feature.description}</p>
+                  <h3 className="font-display text-lg md:text-xl font-bold text-white mt-3 md:mt-4 mb-1.5 md:mb-2">{feature.title}</h3>
+                  <p className="text-white/50 text-xs md:text-sm leading-relaxed">{feature.description}</p>
                   {feature.mockup && (
                     <div className="feature-mockup-area">
                       {feature.mockup}

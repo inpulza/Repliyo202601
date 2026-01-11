@@ -662,7 +662,13 @@
 .marquee-section {
   position: relative;
   z-index: 30;
-  margin-top: -80px;
+  margin-top: 0;
+}
+
+@media (min-width: 768px) {
+  .marquee-section {
+    margin-top: -80px;
+  }
 }
 
 .marquee-overlap-shadow {
@@ -3367,6 +3373,14 @@
   box-shadow: 0 20px 40px -15px rgba(0,0,0,0.4);
 }
 
+@media (hover: none), (max-width: 768px) {
+  .feature-card:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: var(--landing-border);
+  }
+}
+
 .feature-card-inner {
   padding: 28px;
   height: 100%;
@@ -3488,6 +3502,7 @@
 @media (max-width: 768px) {
   .bento-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
   
   .bento-large,
@@ -3495,6 +3510,64 @@
   .bento-small {
     grid-column: span 1;
     grid-row: span 1;
+  }
+  
+  .feature-card {
+    border-radius: 16px;
+  }
+  
+  .feature-card-inner {
+    padding: 20px;
+  }
+  
+  .feature-icon-wrapper {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .feature-mockup-area {
+    margin-top: 16px;
+    min-height: 100px;
+    max-height: 200px;
+    overflow: hidden;
+  }
+  
+  .feature-inbox-mockup {
+    min-height: auto;
+    max-height: 180px;
+    overflow: hidden;
+  }
+  
+  .inbox-list-v2 {
+    max-height: 140px;
+    overflow: hidden;
+  }
+  
+  .inbox-item-v2 {
+    padding: 6px 10px;
+  }
+  
+  .inbox-avatar-wrap {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .inbox-item-name-v2 {
+    font-size: 12px;
+  }
+  
+  .inbox-item-preview-v2 {
+    font-size: 11px;
+  }
+  
+  .feature-crm-mockup,
+  .feature-ai-mockup,
+  .feature-reminder-mockup,
+  .feature-comments-mockup-v2,
+  .feature-analytics-mockup,
+  .feature-multi-agent-mockup {
+    max-height: 180px;
+    overflow: hidden;
   }
   
   .mockup-content {
@@ -4923,6 +4996,13 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .chaos-overlay {
+    display: block;
+  }
 }
 
 .floating-notification {
@@ -5254,6 +5334,13 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .success-indicators {
+    display: block;
+  }
 }
 
 .success-indicators .indicator {
@@ -5437,24 +5524,150 @@
 @media (max-width: 768px) {
   .mockup-phone-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
   }
   
-  .chaos-phone:nth-child(3) {
-    grid-column: span 2;
+  .chaos-phone:nth-child(5),
+  .chaos-phone:nth-child(6) {
+    display: none;
+  }
+  
+  .chaos-phone {
+    border-radius: 12px;
+    padding: 8px 6px;
+  }
+  
+  .phone-header {
+    height: 12px;
+  }
+  
+  .phone-notch {
+    width: 30px;
+    height: 4px;
+  }
+  
+  .phone-app-bar {
+    padding: 6px;
+    gap: 4px;
+    font-size: 10px;
+  }
+  
+  .phone-app-bar svg {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .notification-badge {
+    width: 18px;
+    height: 18px;
+    font-size: 9px;
+  }
+  
+  .phone-messages {
+    gap: 4px;
+  }
+  
+  .unread-msg {
+    height: 6px;
+    border-radius: 2px;
   }
   
   .unified-inbox-preview {
-    grid-template-columns: 60px 1fr;
-    grid-template-rows: auto auto;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 12px;
+    min-height: auto;
+  }
+  
+  .inbox-sidebar {
+    flex-direction: row;
+    gap: 8px;
+    padding: 8px;
+    justify-content: center;
+  }
+  
+  .sidebar-item {
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+  
+  .sidebar-item svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .inbox-main {
+    padding: 12px;
   }
   
   .inbox-detail {
-    grid-column: span 2;
+    padding: 12px;
   }
   
   .problem-mockup-card,
   .solution-mockup-card {
     padding: 16px;
+    border-radius: 16px;
+  }
+  
+  .conv-item {
+    padding: 8px;
+    gap: 8px;
+  }
+  
+  .conv-avatar {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .detail-header {
+    padding: 8px;
+  }
+  
+  .ai-response-preview {
+    padding: 10px;
+    gap: 8px;
+  }
+  
+  .ai-badge {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .mockup-phone-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  
+  .chaos-phone:nth-child(3),
+  .chaos-phone:nth-child(4) {
+    display: none;
+  }
+  
+  .problem-mockup-card,
+  .solution-mockup-card {
+    padding: 12px;
+    border-radius: 12px;
+  }
+  
+  .unified-inbox-preview {
+    gap: 8px;
+  }
+  
+  .inbox-sidebar {
+    padding: 6px;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  
+  .sidebar-item span {
+    display: none;
+  }
+  
+  .sidebar-item {
+    padding: 8px;
   }
 }
 
