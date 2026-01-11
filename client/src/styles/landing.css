@@ -661,8 +661,8 @@
 
 .marquee-section {
   position: relative;
-  z-index: 30;
-  margin-top: 0;
+  z-index: 5;
+  background: var(--landing-bg);
 }
 
 .marquee-overlap-shadow {
