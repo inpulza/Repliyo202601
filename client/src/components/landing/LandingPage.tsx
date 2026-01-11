@@ -1283,11 +1283,11 @@ function ProblemMockup() {
   }, [prefersReducedMotion, mouseXSpring, mouseYSpring]);
   
   const layers = [
-    { name: 'base', z: 0, move: 4, rotate: 3 },
-    { name: 'cards', z: 45, move: 12, rotate: 6 },
-    { name: 'content', z: 80, move: 22, rotate: 4 },
-    { name: 'badges', z: 130, move: 38, rotate: 5 },
-    { name: 'floating', z: 220, move: 60, rotate: 10 },
+    { name: 'base', z: 0, move: 3, rotate: 2 },
+    { name: 'cards', z: 35, move: 8, rotate: 4 },
+    { name: 'content', z: 60, move: 15, rotate: 0 },
+    { name: 'badges', z: 100, move: 28, rotate: 0 },
+    { name: 'floating', z: 150, move: 45, rotate: 6 },
   ];
   
   const getLayerStyles = (layer: typeof layers[0]) => {
