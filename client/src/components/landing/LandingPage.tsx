@@ -2147,28 +2147,28 @@ function AutoReplyStatus() {
 
 const STAT_FLOATING_ELEMENTS: { [key: number]: FloatingElementConfig[] } = {
   0: [
-    { component: <TimeSavedCard />, position: { x: '10%', y: '28%' }, delay: 0.05 },
-    { component: <AvatarWithStatus imageSrc={avatarMaria} name="María G." status="online" />, position: { x: '72%', y: '25%' }, delay: 0.1 },
-    { component: <RespondidoBadge />, position: { x: '12%', y: '68%' }, delay: 0.15 },
-    { component: <SpeedIndicator />, position: { x: '74%', y: '68%' }, delay: 0.12 },
+    { component: <TimeSavedCard />, position: { x: '2%', y: '28%' }, delay: 0.05 },
+    { component: <AvatarWithStatus imageSrc={avatarMaria} name="María G." status="online" />, position: { x: '82%', y: '25%' }, delay: 0.1 },
+    { component: <RespondidoBadge />, position: { x: '4%', y: '68%' }, delay: 0.15 },
+    { component: <SpeedIndicator />, position: { x: '84%', y: '68%' }, delay: 0.12 },
   ],
   1: [
-    { component: <ChatBubbleTyping />, position: { x: '3%', y: '26%' }, delay: 0.05 },
-    { component: <QuickReplyPill />, position: { x: '78%', y: '28%' }, delay: 0.1 },
-    { component: <SendButtonCard />, position: { x: '3%', y: '66%' }, delay: 0.15 },
-    { component: <NotificationCard />, position: { x: '80%', y: '66%' }, delay: 0.12 },
+    { component: <ChatBubbleTyping />, position: { x: '1%', y: '26%' }, delay: 0.05 },
+    { component: <QuickReplyPill />, position: { x: '85%', y: '28%' }, delay: 0.1 },
+    { component: <SendButtonCard />, position: { x: '1%', y: '66%' }, delay: 0.15 },
+    { component: <NotificationCard />, position: { x: '83%', y: '66%' }, delay: 0.12 },
   ],
   2: [
-    { component: <AvatarStack />, position: { x: '10%', y: '26%' }, delay: 0.05 },
-    { component: <GrowthCard />, position: { x: '76%', y: '25%' }, delay: 0.1 },
-    { component: <LeadCounterCard />, position: { x: '12%', y: '66%' }, delay: 0.15 },
-    { component: <StarRatingCard />, position: { x: '74%', y: '68%' }, delay: 0.12 },
+    { component: <AvatarStack />, position: { x: '2%', y: '26%' }, delay: 0.05 },
+    { component: <GrowthCard />, position: { x: '86%', y: '25%' }, delay: 0.1 },
+    { component: <LeadCounterCard />, position: { x: '3%', y: '66%' }, delay: 0.15 },
+    { component: <StarRatingCard />, position: { x: '84%', y: '68%' }, delay: 0.12 },
   ],
   3: [
-    { component: <AIAutopilotCard />, position: { x: '10%', y: '26%' }, delay: 0.05 },
-    { component: <MoonSunToggle />, position: { x: '76%', y: '26%' }, delay: 0.1 },
-    { component: <AITypingCard />, position: { x: '8%', y: '66%' }, delay: 0.15 },
-    { component: <AutoReplyStatus />, position: { x: '72%', y: '68%' }, delay: 0.12 },
+    { component: <AIAutopilotCard />, position: { x: '2%', y: '26%' }, delay: 0.05 },
+    { component: <MoonSunToggle />, position: { x: '86%', y: '26%' }, delay: 0.1 },
+    { component: <AITypingCard />, position: { x: '1%', y: '66%' }, delay: 0.15 },
+    { component: <AutoReplyStatus />, position: { x: '82%', y: '68%' }, delay: 0.12 },
   ],
 };
 
