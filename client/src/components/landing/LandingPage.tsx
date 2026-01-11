@@ -1259,7 +1259,7 @@ function ProblemMockup() {
             <div className="phone-notch" />
           </div>
           <div className="phone-app-bar">
-            <FaTiktok className="w-4 h-4" style={{ color: '#FFFFFF' }} />
+            <FaTiktok className="w-4 h-4" style={{ color: '#000000' }} />
             <span>TikTok</span>
             <div className="notification-badge">47</div>
           </div>
