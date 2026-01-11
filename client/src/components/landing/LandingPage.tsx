@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring, useMotionValue, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle, Menu } from 'lucide-react';
+import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle } from 'lucide-react';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
 import avatarMaria from '@assets/generated_images/maria_customer_avatar_headshot.png';
@@ -733,14 +733,6 @@ function InboxMockup() {
   const mockupRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
-  const [isMobile, setIsMobile] = useState(false);
-  
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
   
   const allMessages = [
     { id: 1, user: 'María García', avatarImg: avatarMaria, message: '¿Tienen disponible el vestido azul en talla M?', platform: 'instagram', time: 'Ahora', unread: true },
@@ -873,60 +865,6 @@ function InboxMockup() {
   };
 
   const showAiTyping = chatPhase === 1 || chatPhase === 3 || chatPhase === 5;
-
-  if (isMobile) {
-    return (
-      <div ref={mockupRef} className="mobile-inbox-container">
-        <div className="mobile-inbox-phone">
-          <div className="phone-header">
-            <div className="phone-notch" />
-          </div>
-          <div className="phone-app-bar">
-            <Inbox className="w-4 h-4" />
-            <span>Repliyo</span>
-            <motion.div 
-              key={inboxCount}
-              initial={{ scale: 1.3 }}
-              animate={{ scale: 1 }}
-              className="notification-badge"
-            >
-              {inboxCount}
-            </motion.div>
-          </div>
-          <div className="phone-messages-list">
-            {allMessages.slice(0, 4).map((msg) => (
-              <motion.div
-                key={msg.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={visibleMessages.includes(msg.id) ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-                className={`phone-message-item ${msg.unread ? 'unread' : ''}`}
-              >
-                <div className="phone-msg-avatar-wrap">
-                  <img src={msg.avatarImg} alt={msg.user} className="phone-msg-avatar" />
-                  <span className={`phone-platform-dot ${msg.platform}`}>
-                    <PlatformIcon platform={msg.platform} />
-                  </span>
-                </div>
-                <div className="phone-msg-content">
-                  <div className="phone-msg-header">
-                    <span className="phone-msg-name">{msg.user.split(' ')[0]}</span>
-                    <span className="phone-msg-time">{msg.time}</span>
-                  </div>
-                  <span className="phone-msg-preview">{msg.message.slice(0, 28)}...</span>
-                </div>
-                {msg.unread && <span className="phone-unread-dot" />}
-              </motion.div>
-            ))}
-          </div>
-          <div className="phone-bottom-bar">
-            <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-            <span>IA activa</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div ref={mockupRef} className="mockup-container-v2">
@@ -1161,7 +1099,6 @@ function InboxMockup() {
 
 function Header() {
   const [scrolled, setScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
@@ -1170,109 +1107,29 @@ function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  useEffect(() => {
-    if (mobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [mobileMenuOpen]);
-
-  const navLinks = [
-    { href: '#features', label: 'Producto' },
-    { href: '#how', label: 'Cómo funciona' },
-    { href: '#testimonial', label: 'Testimonios' },
-  ];
-
   return (
-    <>
-      <motion.header 
-        initial={prefersReducedMotion ? false : { y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.6, ease: 'easeOut' }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? 'header-scrolled backdrop-blur-xl' : ''
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
-          <a href="/" className="font-display font-bold text-xl md:text-2xl text-white" data-testid="link-logo">Repliyo</a>
-          <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map(link => (
-              <a key={link.href} href={link.href} className="nav-link" data-testid={`link-nav-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
-                {link.label}
-              </a>
-            ))}
-          </nav>
-          <div className="flex items-center gap-3">
-            <a href="/login" className="btn-primary text-sm py-2 px-4 md:py-2.5 md:px-5 hidden sm:inline-flex" data-testid="button-login-header">
-              Iniciar sesión
-            </a>
-            <button 
-              onClick={() => setMobileMenuOpen(true)}
-              className="md:hidden w-10 h-10 flex items-center justify-center text-white"
-              aria-label="Abrir menú"
-              data-testid="button-mobile-menu"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
-          </div>
+    <motion.header 
+      initial={prefersReducedMotion ? false : { y: -100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.6, ease: 'easeOut' }}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled ? 'header-scrolled backdrop-blur-xl' : ''
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+        <a href="/" className="font-display font-bold text-2xl text-white" data-testid="link-logo">Repliyo</a>
+        <nav className="hidden md:flex items-center gap-8">
+          <a href="#features" className="nav-link" data-testid="link-nav-producto">Producto</a>
+          <a href="#how" className="nav-link" data-testid="link-nav-como-funciona">Cómo funciona</a>
+          <a href="#testimonial" className="nav-link" data-testid="link-nav-testimonios">Testimonios</a>
+        </nav>
+        <div className="flex items-center gap-3">
+          <a href="/login" className="btn-primary text-sm py-2.5 px-5" data-testid="button-login-header">
+            Iniciar sesión
+          </a>
         </div>
-      </motion.header>
-
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[100] md:hidden"
-          >
-            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="absolute right-0 top-0 h-full w-[280px] bg-[#0a0a0a] border-l border-white/10 p-6 flex flex-col"
-            >
-              <div className="flex items-center justify-between mb-8">
-                <span className="font-display font-bold text-xl text-white">Menú</span>
-                <button 
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="w-10 h-10 flex items-center justify-center text-white/70 hover:text-white"
-                  aria-label="Cerrar menú"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              <nav className="flex flex-col gap-2">
-                {navLinks.map(link => (
-                  <a
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="text-lg text-white/80 hover:text-white py-3 px-4 rounded-xl hover:bg-white/5 transition-colors"
-                  >
-                    {link.label}
-                  </a>
-                ))}
-              </nav>
-              <div className="mt-auto pt-6 border-t border-white/10">
-                <a 
-                  href="/login" 
-                  className="btn-primary w-full justify-center py-3"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Iniciar sesión
-                </a>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+      </div>
+    </motion.header>
   );
 }
 
@@ -1287,19 +1144,19 @@ function HeroSection() {
   const opacity = useTransform(scrollYProgress, [0, 0.4], [1, 0]);
 
   return (
-    <section ref={containerRef} className="hero-section relative min-h-[120vh] md:min-h-[150vh] overflow-visible">
-      <div className="sticky top-0 min-h-screen flex flex-col items-center justify-start pt-24 md:pt-40 overflow-visible">
+    <section ref={containerRef} className="hero-section relative min-h-[140vh] md:min-h-[150vh] overflow-visible">
+      <div className="sticky top-0 min-h-screen flex flex-col items-center justify-start pt-40 overflow-visible">
         <div className="absolute inset-0 bg-radial-gradient" />
-        <div className="absolute inset-0 bg-grid-pattern opacity-30 hidden md:block" />
+        <div className="absolute inset-0 bg-grid-pattern opacity-30" />
         
-        <Parallax speed={-10} className="absolute inset-0 pointer-events-none hidden md:block">
+        <Parallax speed={-10} className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-blue-500/5 blur-3xl" />
           <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] rounded-full bg-orange-500/5 blur-3xl" />
         </Parallax>
         
-        <motion.div style={{ y: textY, opacity }} className="relative z-10 max-w-5xl mx-auto px-4 md:px-6 text-center mb-10 md:mb-20">
+        <motion.div style={{ y: textY, opacity }} className="relative z-10 max-w-5xl mx-auto px-6 text-center mb-20">
           <motion.h1 
-            className="font-display font-bold text-[2.5rem] sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl leading-[1] md:leading-[0.95] tracking-tight mb-6 md:mb-8"
+            className="font-display font-bold text-5xl md:text-6xl lg:text-7xl xl:text-8xl leading-[0.95] tracking-tight mb-8"
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
@@ -1312,7 +1169,7 @@ function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.6 }}
-            className="text-base md:text-xl lg:text-2xl text-white/50 max-w-2xl mx-auto mb-6 md:mb-8 leading-relaxed"
+            className="text-lg md:text-xl lg:text-2xl text-white/50 max-w-2xl mx-auto mb-8 leading-relaxed"
           >
             Unifica todos tus DMs y comentarios de Instagram, TikTok y Facebook en un inbox inteligente que responde automáticamente.
           </motion.p>
@@ -1321,12 +1178,12 @@ function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.6 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4"
+            className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <a href="/login" className="btn-primary w-full sm:w-auto justify-center" data-testid="button-empezar-gratis-hero">
+            <a href="/login" className="btn-primary" data-testid="button-empezar-gratis-hero">
               Empezar gratis <ArrowRight className="w-4 h-4" />
             </a>
-            <button className="btn-secondary w-full sm:w-auto justify-center" data-testid="button-ver-demo">
+            <button className="btn-secondary" data-testid="button-ver-demo">
               <Play className="w-4 h-4" /> Ver demo
             </button>
           </motion.div>
@@ -1355,16 +1212,16 @@ function MarqueeSection() {
   
   return (
     <section className="marquee-section relative z-30">
-      <div className="marquee-overlap-shadow hidden md:block" />
-      <div className="marquee-inner py-4 md:py-8 border-y border-white/20 section-dark relative">
-        <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-3 md:gap-4 px-4" : "marquee-container"}>
-          <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-3 md:gap-4" : "marquee-content"}>
+      <div className="marquee-overlap-shadow" />
+      <div className="marquee-inner py-8 border-y border-white/20 section-dark relative">
+        <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-4" : "marquee-container"}>
+          <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-4" : "marquee-content"}>
             {(prefersReducedMotion ? items : [...items, ...items]).map((item, i) => (
-              <span key={i} className="inline-flex items-center gap-2 md:gap-4 px-4 md:px-8">
-                <span className="font-display text-xl md:text-2xl lg:text-3xl font-medium hover:text-white/80 transition-colors cursor-default text-white">
+              <span key={i} className="inline-flex items-center gap-4 px-8">
+                <span className="font-display text-2xl md:text-3xl font-medium hover:text-white/80 transition-colors cursor-default text-white">
                   {item}
                 </span>
-                <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-[var(--landing-primary)]" />
+                <span className="w-2 h-2 rounded-full bg-[var(--landing-primary)]" />
               </span>
             ))}
           </div>
@@ -1936,55 +1793,22 @@ function ProblemSolutionSection() {
   const problemOpacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0.5]);
   const solutionOpacity = useTransform(scrollYProgress, [0, 0.25, 0.8, 1], [0, 1, 1, 0.5]);
 
-  const problems = [
-    { icon: Clock, title: 'Tiempo perdido', desc: 'Saltando entre 5 apps' },
-    { icon: MessageSquare, title: 'Mensajes olvidados', desc: 'Clientes sin respuesta' },
-    { icon: Users, title: 'Clientes frustrados', desc: 'Esperando horas' },
-    { icon: X, title: 'Ventas perdidas', desc: 'Por respuestas tardías' },
-  ];
-
-  const solutions = [
-    { icon: Inbox, title: '1 inbox unificado', desc: 'Todo en un solo lugar' },
-    { icon: Sparkles, title: 'Respuestas con IA', desc: 'Borradores automáticos' },
-    { icon: Bell, title: '24/7 disponible', desc: 'Nunca pierdas un mensaje' },
-    { icon: Zap, title: 'Más ventas', desc: 'Respuestas al instante' },
-  ];
-
   return (
-    <section ref={sectionRef} className="relative overflow-hidden problem-solution-section">
+    <section ref={sectionRef} className="relative overflow-hidden">
       {/* Problem Section */}
-      <div className="py-12 md:py-20 lg:py-32">
-        <div className="max-w-4xl mx-auto px-4 md:px-6">
+      <div className="py-24 md:py-32">
+        <div className="max-w-4xl mx-auto px-6">
           <motion.div 
             style={{ y: problemY, opacity: problemOpacity }}
             className="problem-side text-center"
           >
-            <span className="text-xs md:text-sm uppercase tracking-[0.2em] md:tracking-[0.25em] text-white/40 font-semibold mb-3 md:mb-4 block">
+            <span className="text-sm uppercase tracking-[0.25em] text-white/40 font-semibold mb-4 block">
               El problema
             </span>
-            <h2 className="font-display text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-6 md:mb-8 leading-tight">
+            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-12 leading-tight">
               Responder mensajes en 5 apps es <span className="text-white/50">agotador</span>
             </h2>
-            
-            {/* Problem Tiles */}
-            <div className="problem-tiles grid grid-cols-2 gap-3 mb-8 max-w-md mx-auto">
-              {problems.map((p, idx) => (
-                <motion.div 
-                  key={p.title} 
-                  className="problem-tile"
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.1, duration: 0.4 }}
-                  viewport={{ once: true }}
-                >
-                  <p.icon className="w-5 h-5 text-red-400" />
-                  <span className="font-medium text-white text-sm">{p.title}</span>
-                  <span className="text-white/50 text-xs">{p.desc}</span>
-                </motion.div>
-              ))}
-            </div>
-            
-            <div className="max-w-3xl mx-auto problem-mockup-wrapper">
+            <div className="max-w-3xl mx-auto">
               <ProblemMockup />
             </div>
           </motion.div>
@@ -1992,38 +1816,20 @@ function ProblemSolutionSection() {
       </div>
 
       {/* Solution Section */}
-      <div className="py-12 md:py-20 lg:py-32">
-        <div className="max-w-5xl mx-auto px-4 md:px-6">
+      <div className="py-24 md:py-32">
+        <div className="max-w-5xl mx-auto px-6">
           <motion.div 
             style={{ y: solutionY, opacity: solutionOpacity }}
             className="solution-side text-center"
           >
-            <span className="text-xs md:text-sm uppercase tracking-[0.2em] md:tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-3 md:mb-4 block">
+            <span className="text-sm uppercase tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-4 block">
               La solución
             </span>
-            <h2 className="font-display text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-6 md:mb-8 leading-tight">
+            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-12 leading-tight">
               Un inbox inteligente que <span className="text-white/60">trabaja por ti</span>
             </h2>
-            <div className="max-w-4xl mx-auto solution-mockup-wrapper">
+            <div className="max-w-4xl mx-auto">
               <SolutionMockup />
-            </div>
-            
-            {/* Solution Tiles */}
-            <div className="solution-tiles grid grid-cols-2 gap-3 mt-8 max-w-md mx-auto">
-              {solutions.map((s, idx) => (
-                <motion.div 
-                  key={s.title} 
-                  className="solution-tile"
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.1, duration: 0.4 }}
-                  viewport={{ once: true }}
-                >
-                  <s.icon className="w-5 h-5 text-cyan-400" />
-                  <span className="font-medium text-white text-sm">{s.title}</span>
-                  <span className="text-white/50 text-xs">{s.desc}</span>
-                </motion.div>
-              ))}
             </div>
           </motion.div>
         </div>
@@ -2393,19 +2199,12 @@ function MetricSection() {
   const currentStat = stats[activeIndex];
   const currentElements = STAT_FLOATING_ELEMENTS[activeIndex] || [];
 
-  const mobileFloatingElements = [
-    { icon: <Clock className="w-4 h-4 text-white" />, bg: 'bg-cyan-500', position: 'top-4 left-4' },
-    { icon: <Zap className="w-4 h-4 text-white" />, bg: 'bg-violet-500', position: 'top-4 right-4' },
-    { icon: <Users2 className="w-4 h-4 text-white" />, bg: 'bg-emerald-500', position: 'bottom-20 left-4' },
-    { icon: <Sparkles className="w-4 h-4 text-white" />, bg: 'bg-rose-500', position: 'bottom-20 right-4' },
-  ];
-
   return (
-    <section ref={ref} className="py-32 md:py-48 relative overflow-hidden">
+    <section ref={ref} className="py-48 md:py-56 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,145,250,0.12)_0%,transparent_70%)]" />
       
       {!prefersReducedMotion && isInView && (
-        <div className="absolute inset-0 pointer-events-none hidden md:block">
+        <div className="absolute inset-0 pointer-events-none">
           <ExpandingRipple delay={0} />
           <ExpandingRipple delay={1.6} />
           <ExpandingRipple delay={3.2} />
@@ -2427,35 +2226,12 @@ function MetricSection() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Mobile floating elements - simpler, static versions */}
-      <div className="absolute inset-0 pointer-events-none md:hidden">
-        {mobileFloatingElements.map((el, idx) => (
-          <motion.div
-            key={idx}
-            className={`absolute ${el.position} ${el.bg} rounded-xl p-2.5 shadow-lg`}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ 
-              opacity: isInView ? 0.9 : 0, 
-              scale: isInView ? 1 : 0.8,
-              y: isInView ? [0, -4, 0] : 0
-            }}
-            transition={{ 
-              opacity: { duration: 0.4, delay: idx * 0.1 },
-              scale: { duration: 0.4, delay: idx * 0.1 },
-              y: { duration: 2, repeat: Infinity, ease: 'easeInOut', delay: idx * 0.3 }
-            }}
-          >
-            {el.icon}
-          </motion.div>
-        ))}
-      </div>
       
       <motion.div 
         style={{ scale, opacity }}
-        className="relative z-10 max-w-5xl mx-auto px-4 md:px-6 text-center"
+        className="relative z-10 max-w-5xl mx-auto px-6 text-center"
       >
-        <div className="font-display font-black text-[12vw] md:text-[16vw] leading-none text-white mb-4 md:mb-6 h-[1.1em] flex items-center justify-center overflow-hidden">
+        <div className="font-display font-black text-[20vw] md:text-[16vw] leading-none text-white mb-6 h-[1.1em] flex items-center justify-center overflow-hidden">
           {prefersReducedMotion ? (
             <span>{currentStat.value}</span>
           ) : (
@@ -2471,17 +2247,17 @@ function MetricSection() {
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
           >
-            <h2 className="font-display text-2xl md:text-5xl font-bold text-white mb-3 md:mb-4">
+            <h2 className="font-display text-3xl md:text-5xl font-bold text-white mb-4">
               {currentStat.title}
             </h2>
-            <p className="text-white/50 text-base md:text-xl max-w-xl mx-auto px-4 md:px-0">
+            <p className="text-white/50 text-xl max-w-xl mx-auto">
               {currentStat.description}
             </p>
           </motion.div>
         </AnimatePresence>
       </motion.div>
       
-      <div className="absolute bottom-8 md:bottom-12 left-1/2 -translate-x-1/2 flex justify-center gap-2 z-20">
+      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex justify-center gap-2 z-20">
         {stats.map((_, i) => (
           <button
             key={i}
@@ -2506,17 +2282,9 @@ function HowItWorksSection() {
   const checkpointsRef = useRef<(HTMLDivElement | null)[]>([]);
   const prefersReducedMotion = useReducedMotion();
   const [activeStep, setActiveStep] = useState(0);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   useGSAP(() => {
-    if (prefersReducedMotion || isMobile || !containerRef.current || !sectionRef.current) return;
+    if (prefersReducedMotion || !containerRef.current || !sectionRef.current) return;
     
     const ctx = gsap.context(() => {
       const stepPanels = gsap.utils.toArray('.how-step-panel') as HTMLElement[];
@@ -2623,7 +2391,7 @@ function HowItWorksSection() {
     }, sectionRef);
     
     return () => ctx.revert();
-  }, { scope: sectionRef, dependencies: [isMobile] });
+  }, { scope: sectionRef });
 
   const steps = [
     {
@@ -2646,36 +2414,26 @@ function HowItWorksSection() {
     }
   ];
 
-  if (prefersReducedMotion || isMobile) {
+  if (prefersReducedMotion) {
     return (
-      <section id="how" className="py-20 md:py-32 relative">
-        <div className="max-w-7xl mx-auto px-4 md:px-6">
-          <div className="text-center mb-12 md:mb-20">
-            <span className="text-xs md:text-sm uppercase tracking-[0.2em] md:tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-3 md:mb-4 block">
+      <section id="how" className="py-32 relative">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-20">
+            <span className="text-sm uppercase tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-4 block">
               Cómo funciona
             </span>
-            <h2 className="font-display text-3xl md:text-6xl font-bold text-white">
+            <h2 className="font-display text-4xl md:text-6xl font-bold text-white">
               De caos a control en <span className="text-white/60">3 pasos</span>
             </h2>
           </div>
-          <div className="mobile-how-steps">
-            {steps.map((step, i) => (
-              <div key={step.number} className="mobile-step-item">
-                <div className="mobile-step-indicator">
-                  <div className="mobile-step-number">{step.number}</div>
-                  {i < steps.length - 1 && <div className="mobile-step-line" />}
-                </div>
-                <div className="mobile-step-content">
-                  <h3 className="text-xl font-bold text-white mb-2">{step.title}</h3>
-                  <p className="text-white/60 text-sm mb-4 leading-relaxed">{step.description}</p>
-                  <div className="mobile-step-phone-mockup">
-                    <div className="mobile-phone-frame">
-                      <div className="mobile-phone-notch" />
-                      <div className="mobile-phone-screen">
-                        {step.mockup}
-                      </div>
-                    </div>
-                  </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {steps.map((step) => (
+              <div key={step.number} className="how-card">
+                <div className="card-inner">
+                  <span className="step-number">{step.number}</span>
+                  <h3 className="font-display text-2xl font-bold text-white mt-4 mb-3">{step.title}</h3>
+                  <p className="text-white/50 text-base leading-relaxed mb-6">{step.description}</p>
+                  <div className="step-mockup-container">{step.mockup}</div>
                 </div>
               </div>
             ))}
@@ -2837,25 +2595,25 @@ function FeaturesSection() {
   ];
 
   return (
-    <section id="features" ref={sectionRef} className="py-20 md:py-32 section-dark relative overflow-hidden">
+    <section id="features" ref={sectionRef} className="py-32 section-dark relative overflow-hidden">
       <Parallax speed={-3} className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-blue-500/5 blur-3xl" />
       </Parallax>
-      <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10">
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="text-center mb-12 md:mb-20"
+          className="text-center mb-20"
         >
-          <span className="text-xs md:text-sm uppercase tracking-[0.2em] md:tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-3 md:mb-4 block">
+          <span className="text-sm uppercase tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-4 block">
             Características
           </span>
-          <h2 className="font-display text-3xl md:text-4xl lg:text-6xl font-bold text-white mb-4 md:mb-6">
+          <h2 className="font-display text-4xl md:text-6xl font-bold text-white mb-6">
             Todo lo que necesitas para <span className="text-white/60">escalar</span>
           </h2>
-          <p className="text-white/50 text-base md:text-xl max-w-2xl mx-auto px-2 md:px-0">
+          <p className="text-white/50 text-xl max-w-2xl mx-auto">
             Herramientas diseñadas para equipos que manejan cientos de conversaciones al día.
           </p>
         </motion.div>
@@ -2869,10 +2627,10 @@ function FeaturesSection() {
               >
                 <div className="feature-card-inner">
                   <div className="feature-icon-wrapper overflow-hidden bg-transparent">
-                    <img src={feature.iconImage} alt="" className="w-10 h-10 md:w-14 md:h-14 object-contain" />
+                    <img src={feature.iconImage} alt="" className="w-14 h-14 object-contain" />
                   </div>
-                  <h3 className="font-display text-lg md:text-xl font-bold text-white mt-3 md:mt-4 mb-1.5 md:mb-2">{feature.title}</h3>
-                  <p className="text-white/50 text-xs md:text-sm leading-relaxed">{feature.description}</p>
+                  <h3 className="font-display text-xl font-bold text-white mt-4 mb-2">{feature.title}</h3>
+                  <p className="text-white/50 text-sm leading-relaxed">{feature.description}</p>
                   {feature.mockup && (
                     <div className="feature-mockup-area">
                       {feature.mockup}
@@ -2929,21 +2687,21 @@ function TestimonialSection() {
   }, [prefersReducedMotion, testimonials.length]);
 
   return (
-    <section id="testimonial" ref={ref} className="py-16 md:py-32 relative overflow-hidden">
+    <section id="testimonial" ref={ref} className="py-40 relative overflow-hidden">
       <motion.div 
         style={{ y: quoteY, rotate: quoteRotate }} 
-        className="absolute top-4 left-4 md:top-10 md:left-10 text-[8rem] md:text-[15rem] lg:text-[25rem] font-display font-black text-white/[0.02] select-none leading-none"
+        className="absolute top-10 left-10 text-[25rem] font-display font-black text-white/[0.02] select-none leading-none"
       >
         "
       </motion.div>
       <motion.div 
         style={{ y: useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [-100, 100]) }} 
-        className="absolute bottom-4 right-4 md:bottom-10 md:right-10 text-[8rem] md:text-[15rem] lg:text-[25rem] font-display font-black text-white/[0.02] select-none leading-none rotate-180"
+        className="absolute bottom-10 right-10 text-[25rem] font-display font-black text-white/[0.02] select-none leading-none rotate-180"
       >
         "
       </motion.div>
       
-      <div className="max-w-4xl mx-auto px-4 md:px-6 text-center relative z-10">
+      <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
         <div className="testimonial-carousel">
           {testimonials.map((testimonial, idx) => (
             <motion.div
@@ -2958,28 +2716,28 @@ function TestimonialSection() {
               }}
               transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
             >
-              <blockquote className="font-display text-lg sm:text-xl md:text-3xl lg:text-4xl font-medium text-white leading-relaxed mb-6 md:mb-12">
+              <blockquote className="font-display text-2xl md:text-4xl lg:text-5xl font-medium text-white leading-relaxed mb-12">
                 "{testimonial.quote.split(testimonial.highlight)[0]}
                 <span className="text-white/60">{testimonial.highlight}</span>
                 {testimonial.quote.split(testimonial.highlight)[1]}"
               </blockquote>
 
-              <div className="inline-flex items-center gap-3 md:gap-5 p-3 pr-5 md:p-5 md:pr-10 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
+              <div className="inline-flex items-center gap-5 p-5 pr-10 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
                 <img 
                   src={testimonial.image} 
                   alt={testimonial.name}
-                  className="w-12 h-12 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-full object-cover border-2 border-white/20"
+                  className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border-2 border-white/20"
                 />
                 <div className="text-left">
-                  <div className="font-semibold text-white text-sm md:text-xl lg:text-2xl">{testimonial.name}</div>
-                  <div className="text-xs md:text-base lg:text-lg text-white/60">{testimonial.role}</div>
+                  <div className="font-semibold text-white text-xl md:text-2xl">{testimonial.name}</div>
+                  <div className="text-base md:text-lg text-white/60">{testimonial.role}</div>
                 </div>
               </div>
             </motion.div>
           ))}
         </div>
 
-        <div className="testimonial-dots mt-6 md:mt-10">
+        <div className="testimonial-dots mt-10">
           {testimonials.map((_, idx) => (
             <button
               key={idx}
@@ -3001,31 +2759,31 @@ function CTASection() {
   const bgY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [100, -50]);
 
   return (
-    <section ref={ref} className="relative border-t border-white/5 overflow-hidden py-16 md:py-32">
+    <section ref={ref} className="relative border-t border-white/5 overflow-hidden">
       <motion.div 
         style={{ y: bgY }}
-        className="absolute inset-0 bg-gradient-to-br from-[var(--landing-primary)]/10 via-transparent to-[var(--landing-accent)]/5 hidden md:block"
+        className="absolute inset-0 bg-gradient-to-br from-[var(--landing-primary)]/10 via-transparent to-[var(--landing-accent)]/5"
       />
       
       <div className="grid lg:grid-cols-12 relative z-10">
-        <div className="lg:col-span-7 px-6 py-8 md:p-16 lg:p-24">
+        <div className="lg:col-span-7 p-12 md:p-20 lg:p-24">
           <motion.div
             initial={{ opacity: 0, y: 60 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           >
-            <h2 className="font-display font-bold text-3xl md:text-5xl lg:text-7xl tracking-tight leading-[0.9] mb-4 md:mb-6">
+            <h2 className="font-display font-bold text-5xl md:text-7xl lg:text-8xl tracking-tight leading-[0.9] mb-6">
               ¿LISTO PARA<br />
               <span className="text-outline hover:text-white transition-colors duration-500 cursor-default">ESCALAR?</span>
             </h2>
-            <p className="text-white/50 text-sm md:text-lg lg:text-xl max-w-lg">
+            <p className="text-white/50 text-xl md:text-2xl max-w-lg">
               Automatiza respuestas. Deleita clientes. Sin tarjeta de crédito.
             </p>
           </motion.div>
         </div>
 
-        <div className="lg:col-span-5 px-6 py-8 md:p-16 lg:p-24 flex items-center justify-center border-t lg:border-t-0 lg:border-l border-white/5">
+        <div className="lg:col-span-5 p-12 md:p-20 lg:p-24 flex items-center justify-center border-t lg:border-t-0 lg:border-l border-white/5">
           <motion.a
             href="/login"
             initial={{ opacity: 0, scale: 0.8 }}
@@ -3034,11 +2792,11 @@ function CTASection() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             transition={{ duration: 0.6, type: 'spring' }}
-            className="btn-cta-circle w-full sm:w-auto flex items-center justify-center gap-2 py-4 px-8 min-h-[44px]"
+            className="btn-cta-circle"
             data-testid="button-empezar-cta"
           >
-            <span className="font-display text-lg md:text-xl">Empezar</span>
-            <ArrowRight className="w-5 h-5 md:w-6 md:h-6" />
+            <span className="font-display text-xl">Empezar</span>
+            <ArrowRight className="w-6 h-6" />
           </motion.a>
         </div>
       </div>
@@ -3056,16 +2814,16 @@ function Footer() {
 
   return (
     <footer className="section-dark border-t border-white/5">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+      <div className="grid grid-cols-2 md:grid-cols-4">
         {Object.entries(links).map(([category, items]) => (
-          <div key={category} className="p-6 md:p-8 lg:p-12 border-b sm:border-r border-white/5 sm:last:border-r-0 md:last:border-r-0">
-            <h4 className="font-mono text-xs text-[var(--landing-primary)] uppercase tracking-[0.2em] mb-4 md:mb-6">
+          <div key={category} className="p-8 md:p-12 border-r border-b border-white/5 last:border-r-0">
+            <h4 className="font-mono text-xs text-[var(--landing-primary)] uppercase tracking-[0.2em] mb-6">
               {category}
             </h4>
-            <ul className="space-y-1 md:space-y-3">
+            <ul className="space-y-4">
               {items.map((item) => (
                 <li key={item}>
-                  <a href="#" className="text-white/50 hover:text-white hover:translate-x-2 transition-all duration-300 text-sm inline-flex items-center min-h-[44px] py-2" data-testid={`link-footer-${item.toLowerCase().replace(/\s+/g, '-')}`}>
+                  <a href="#" className="text-white/50 hover:text-white hover:translate-x-2 transition-all duration-300 text-sm inline-block" data-testid={`link-footer-${item.toLowerCase().replace(/\s+/g, '-')}`}>
                     {item}
                   </a>
                 </li>
@@ -3074,20 +2832,20 @@ function Footer() {
           </div>
         ))}
       </div>
-      <div className="relative w-full overflow-hidden border-t border-white/5 py-8 md:py-16">
+      <div className="relative w-full overflow-hidden border-t border-white/5 py-16">
         <motion.h1 
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="font-display font-black text-[15vw] md:text-[18vw] leading-[0.75] text-center select-none tracking-tight text-outline"
+          className="font-display font-black text-[18vw] leading-[0.75] text-center select-none tracking-tight text-outline"
         >
           REPLIYO
         </motion.h1>
-        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-white/40 font-mono mt-6 md:mt-8">
+        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center text-xs text-white/40 font-mono mt-8">
           <span>© 2026 Repliyo Inc.</span>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-white transition-colors min-h-[44px] flex items-center py-2" data-testid="link-footer-privacy">Privacy</a>
-            <a href="#" className="hover:text-white transition-colors min-h-[44px] flex items-center py-2" data-testid="link-footer-terms">Terms</a>
+            <a href="#" className="hover:text-white transition-colors" data-testid="link-footer-privacy">Privacy</a>
+            <a href="#" className="hover:text-white transition-colors" data-testid="link-footer-terms">Terms</a>
           </div>
         </div>
       </div>
