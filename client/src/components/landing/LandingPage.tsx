@@ -1969,28 +1969,28 @@ function FloatingAvatar({ config }: { config: FloatingAvatarConfig }) {
 
 const STAT_AVATARS: { [key: number]: FloatingAvatarConfig[] } = {
   0: [
-    { kind: 'icon', icon: Clock4, bg: '#F97316', border: '#FB923C', position: { x: '12%', y: '15%' }, delay: 0.05, size: 64 },
-    { kind: 'image', imageSrc: avatarMaria, border: '#10B981', position: { x: '82%', y: '12%' }, delay: 0.1, size: 76 },
-    { kind: 'icon', icon: CheckCircle, bg: '#22C55E', border: '#4ADE80', position: { x: '15%', y: '72%' }, delay: 0.15, size: 56 },
-    { kind: 'image', imageSrc: avatarCarlos, border: '#EAB308', position: { x: '78%', y: '70%' }, delay: 0.12, size: 72 },
+    { kind: 'icon', icon: Clock4, bg: '#F97316', border: '#38BDF8', position: { x: '12%', y: '15%' }, delay: 0.05, size: 64 },
+    { kind: 'image', imageSrc: avatarMaria, border: '#A855F7', position: { x: '82%', y: '12%' }, delay: 0.1, size: 76 },
+    { kind: 'icon', icon: CheckCircle, bg: '#22C55E', border: '#F472B6', position: { x: '15%', y: '72%' }, delay: 0.15, size: 56 },
+    { kind: 'image', imageSrc: avatarCarlos, border: '#06B6D4', position: { x: '78%', y: '70%' }, delay: 0.12, size: 72 },
   ],
   1: [
-    { kind: 'icon', icon: MsgSquare, bg: '#2563EB', border: '#3B82F6', position: { x: '10%', y: '18%' }, delay: 0.05, size: 64 },
-    { kind: 'icon', icon: SendIcon, bg: '#8B5CF6', border: '#A78BFA', position: { x: '84%', y: '15%' }, delay: 0.1, size: 58 },
-    { kind: 'image', imageSrc: avatarAna, border: '#0EA5E9', position: { x: '12%', y: '70%' }, delay: 0.15, size: 74 },
-    { kind: 'icon', icon: HeartIcon, bg: '#EC4899', border: '#F472B6', position: { x: '82%', y: '72%' }, delay: 0.12, size: 54 },
+    { kind: 'icon', icon: MsgSquare, bg: '#2563EB', border: '#FBBF24', position: { x: '10%', y: '18%' }, delay: 0.05, size: 64 },
+    { kind: 'icon', icon: SendIcon, bg: '#8B5CF6', border: '#34D399', position: { x: '84%', y: '15%' }, delay: 0.1, size: 58 },
+    { kind: 'image', imageSrc: avatarAna, border: '#F43F5E', position: { x: '12%', y: '70%' }, delay: 0.15, size: 74 },
+    { kind: 'icon', icon: HeartIcon, bg: '#EC4899', border: '#22D3EE', position: { x: '82%', y: '72%' }, delay: 0.12, size: 54 },
   ],
   2: [
-    { kind: 'icon', icon: UsersIcon, bg: '#06B6D4', border: '#22D3EE', position: { x: '12%', y: '15%' }, delay: 0.05, size: 68 },
-    { kind: 'image', imageSrc: avatarDiego, border: '#F43F5E', position: { x: '82%', y: '12%' }, delay: 0.1, size: 76 },
-    { kind: 'icon', icon: TrendingUp, bg: '#10B981', border: '#34D399', position: { x: '14%', y: '72%' }, delay: 0.15, size: 56 },
-    { kind: 'image', imageSrc: avatarAna, border: '#A855F7', position: { x: '80%', y: '70%' }, delay: 0.12, size: 72 },
+    { kind: 'icon', icon: UsersIcon, bg: '#06B6D4', border: '#F97316', position: { x: '12%', y: '15%' }, delay: 0.05, size: 68 },
+    { kind: 'image', imageSrc: avatarDiego, border: '#8B5CF6', position: { x: '82%', y: '12%' }, delay: 0.1, size: 76 },
+    { kind: 'icon', icon: TrendingUp, bg: '#10B981', border: '#E879F9', position: { x: '14%', y: '72%' }, delay: 0.15, size: 56 },
+    { kind: 'image', imageSrc: avatarAna, border: '#FBBF24', position: { x: '80%', y: '70%' }, delay: 0.12, size: 72 },
   ],
   3: [
-    { kind: 'icon', icon: Bot, bg: '#A855F7', border: '#C084FC', position: { x: '12%', y: '15%' }, delay: 0.05, size: 68 },
-    { kind: 'icon', icon: Moon, bg: '#6366F1', border: '#818CF8', position: { x: '82%', y: '18%' }, delay: 0.1, size: 60 },
-    { kind: 'image', imageSrc: avatarMaria, border: '#2563EB', position: { x: '14%', y: '70%' }, delay: 0.15, size: 74 },
-    { kind: 'icon', icon: Clock3, bg: '#F97316', border: '#FB923C', position: { x: '80%', y: '72%' }, delay: 0.12, size: 56 },
+    { kind: 'icon', icon: Bot, bg: '#A855F7', border: '#4ADE80', position: { x: '12%', y: '15%' }, delay: 0.05, size: 68 },
+    { kind: 'icon', icon: Moon, bg: '#6366F1', border: '#FB923C', position: { x: '82%', y: '18%' }, delay: 0.1, size: 60 },
+    { kind: 'image', imageSrc: avatarMaria, border: '#22D3EE', position: { x: '14%', y: '70%' }, delay: 0.15, size: 74 },
+    { kind: 'icon', icon: Clock3, bg: '#F97316', border: '#818CF8', position: { x: '80%', y: '72%' }, delay: 0.12, size: 56 },
   ],
 };
 
