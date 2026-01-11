@@ -1138,8 +1138,6 @@ function SlotMachineSegundos() {
   const [isSpinning, setIsSpinning] = useState(true);
   
   const totalSpins = 8;
-  const itemHeight = 1.15;
-  const totalDistance = (totalSpins - 1) * itemHeight;
   
   useEffect(() => {
     if (prefersReducedMotion) {
@@ -1156,19 +1154,22 @@ function SlotMachineSegundos() {
     );
   }
   
+  const itemHeightPx = 90;
+  const totalDistancePx = (totalSpins - 1) * itemHeightPx;
+  
   return (
     <span
-      className="inline-flex items-center justify-center relative overflow-hidden"
+      className="inline-block relative overflow-hidden align-bottom"
       style={{ 
-        height: `${itemHeight}em`,
-        verticalAlign: 'middle',
+        height: `${itemHeightPx}px`,
+        lineHeight: `${itemHeightPx}px`,
       }}
     >
       <motion.span
-        className="flex flex-col"
+        className="block"
         initial={{ y: 0, filter: 'blur(0px)' }}
         animate={{ 
-          y: `-${totalDistance}em`,
+          y: `-${totalDistancePx}px`,
           filter: isSpinning ? ['blur(0px)', 'blur(6px)', 'blur(8px)', 'blur(4px)', 'blur(0px)'] : 'blur(0px)'
         }}
         transition={{
@@ -1187,10 +1188,13 @@ function SlotMachineSegundos() {
         {[...Array(totalSpins)].map((_, idx) => (
           <span
             key={`spin-${idx}`}
-            className={`font-bold whitespace-nowrap flex items-center justify-center ${
+            className={`block font-bold whitespace-nowrap ${
               idx === totalSpins - 1 ? 'text-white' : 'text-white/30'
             }`}
-            style={{ height: `${itemHeight}em`, lineHeight: `${itemHeight}em` }}
+            style={{ 
+              height: `${itemHeightPx}px`, 
+              lineHeight: `${itemHeightPx}px`,
+            }}
           >
             segundos.
           </span>
