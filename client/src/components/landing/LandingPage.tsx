@@ -38,18 +38,18 @@ import stepsBgGreen from '@assets/generated_images/green_gradient_grain_backgrou
 import stepsBgVibrant from '@assets/generated_images/vibrant_blue_violet_gradient.png';
 import stepsBgLight from '@assets/generated_images/teal_cyan_bottom_to_top_gradient.png';
 import testimonialBettys from '../../assets/testimonial-bettys.jpg';
-import iconChatBlue from '@assets/generated_images/white_chat_bubble_blue_bg.png';
-import iconDmBlue from '@assets/generated_images/white_dm_bubble_blue_bg.png';
-import iconHeartBlue from '@assets/generated_images/white_heart_blue_bg.png';
-import iconCommentBlue from '@assets/generated_images/white_comment_blue_bg.png';
-import iconClockBlue from '@assets/generated_images/white_clock_blue_bg.png';
-import iconThumbsBlue from '@assets/generated_images/white_thumbs_up_blue_bg.png';
-import iconRobotBlue from '@assets/generated_images/white_robot_blue_bg.png';
-import iconMoonBlue from '@assets/generated_images/white_moon_stars_blue_bg.png';
-import iconGroupBlue from '@assets/generated_images/white_group_people_blue_bg.png';
-import iconCheckGreen from '@assets/generated_images/white_check_green_bg.png';
-import iconLightningOrange from '@assets/generated_images/white_lightning_orange_bg.png';
-import iconChartPurple from '@assets/generated_images/white_chart_purple_bg.png';
+import vChatBlue from '@assets/generated_images/chat_bubble_electric_blue.png';
+import vHeartPink from '@assets/generated_images/heart_hot_pink_bg.png';
+import vClockOrange from '@assets/generated_images/clock_bright_orange_bg.png';
+import vThumbsGreen from '@assets/generated_images/thumbs_up_emerald_green.png';
+import vRobotPurple from '@assets/generated_images/robot_vivid_purple_bg.png';
+import vMoonIndigo from '@assets/generated_images/moon_stars_indigo_bg.png';
+import vGroupCyan from '@assets/generated_images/group_people_cyan_bg.png';
+import vLightningYellow from '@assets/generated_images/lightning_yellow_bg.png';
+import vCheckLime from '@assets/generated_images/check_lime_green_bg.png';
+import vChartRose from '@assets/generated_images/chart_rose_red_bg.png';
+import vCommentSky from '@assets/generated_images/comment_sky_blue_bg.png';
+import vMessageViolet from '@assets/generated_images/message_violet_bg.png';
 import { ParallaxProvider, useParallax, Parallax } from 'react-scroll-parallax';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -1930,25 +1930,28 @@ interface FloatingAvatarProps {
   position: { x: string; y: string };
   delay: number;
   size?: number;
+  borderColor: string;
 }
 
-function FloatingAvatar({ image, position, delay, size = 72 }: FloatingAvatarProps) {
+function FloatingAvatar({ image, position, delay, size = 72, borderColor }: FloatingAvatarProps) {
   return (
     <motion.div
-      className="absolute rounded-2xl overflow-hidden"
+      className="absolute rounded-full overflow-hidden"
       style={{ 
         left: position.x, 
         top: position.y,
         width: size,
         height: size,
+        border: `4px solid ${borderColor}`,
+        boxShadow: `0 0 20px ${borderColor}66`,
       }}
-      initial={{ opacity: 0, scale: 0, rotate: -15 }}
-      animate={{ opacity: 1, scale: 1, rotate: 0 }}
-      exit={{ opacity: 0, scale: 0, rotate: 15 }}
+      initial={{ opacity: 0, scale: 0 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0 }}
       transition={{
         type: "spring",
-        stiffness: 300,
-        damping: 22,
+        stiffness: 400,
+        damping: 25,
         delay: delay,
       }}
     >
@@ -1957,30 +1960,30 @@ function FloatingAvatar({ image, position, delay, size = 72 }: FloatingAvatarPro
   );
 }
 
-const STAT_AVATARS: { [key: number]: Array<{ image: string; position: { x: string; y: string }; delay: number; size?: number }> } = {
+const STAT_AVATARS: { [key: number]: Array<{ image: string; position: { x: string; y: string }; delay: number; size?: number; borderColor: string }> } = {
   0: [
-    { image: iconClockBlue, position: { x: '5%', y: '18%' }, delay: 0.05, size: 72 },
-    { image: iconThumbsBlue, position: { x: '88%', y: '22%' }, delay: 0.1, size: 64 },
-    { image: iconCheckGreen, position: { x: '8%', y: '68%' }, delay: 0.15, size: 56 },
-    { image: iconLightningOrange, position: { x: '85%', y: '65%' }, delay: 0.12, size: 68 },
+    { image: vClockOrange, position: { x: '5%', y: '18%' }, delay: 0.05, size: 72, borderColor: '#F97316' },
+    { image: vThumbsGreen, position: { x: '88%', y: '22%' }, delay: 0.1, size: 64, borderColor: '#10B981' },
+    { image: vCheckLime, position: { x: '8%', y: '68%' }, delay: 0.15, size: 56, borderColor: '#84CC16' },
+    { image: vLightningYellow, position: { x: '85%', y: '65%' }, delay: 0.12, size: 68, borderColor: '#EAB308' },
   ],
   1: [
-    { image: iconChatBlue, position: { x: '4%', y: '20%' }, delay: 0.05, size: 72 },
-    { image: iconDmBlue, position: { x: '90%', y: '18%' }, delay: 0.1, size: 64 },
-    { image: iconCommentBlue, position: { x: '6%', y: '70%' }, delay: 0.15, size: 60 },
-    { image: iconHeartBlue, position: { x: '88%', y: '68%' }, delay: 0.12, size: 56 },
+    { image: vChatBlue, position: { x: '4%', y: '20%' }, delay: 0.05, size: 72, borderColor: '#2563EB' },
+    { image: vMessageViolet, position: { x: '90%', y: '18%' }, delay: 0.1, size: 64, borderColor: '#8B5CF6' },
+    { image: vCommentSky, position: { x: '6%', y: '70%' }, delay: 0.15, size: 60, borderColor: '#0EA5E9' },
+    { image: vHeartPink, position: { x: '88%', y: '68%' }, delay: 0.12, size: 56, borderColor: '#EC4899' },
   ],
   2: [
-    { image: iconGroupBlue, position: { x: '5%', y: '20%' }, delay: 0.05, size: 76 },
-    { image: iconChartPurple, position: { x: '88%', y: '18%' }, delay: 0.1, size: 68 },
-    { image: iconThumbsBlue, position: { x: '7%', y: '70%' }, delay: 0.15, size: 60 },
-    { image: iconLightningOrange, position: { x: '86%', y: '66%' }, delay: 0.12, size: 64 },
+    { image: vGroupCyan, position: { x: '5%', y: '20%' }, delay: 0.05, size: 76, borderColor: '#06B6D4' },
+    { image: vChartRose, position: { x: '88%', y: '18%' }, delay: 0.1, size: 68, borderColor: '#F43F5E' },
+    { image: vThumbsGreen, position: { x: '7%', y: '70%' }, delay: 0.15, size: 60, borderColor: '#10B981' },
+    { image: vLightningYellow, position: { x: '86%', y: '66%' }, delay: 0.12, size: 64, borderColor: '#EAB308' },
   ],
   3: [
-    { image: iconRobotBlue, position: { x: '5%', y: '18%' }, delay: 0.05, size: 76 },
-    { image: iconMoonBlue, position: { x: '88%', y: '22%' }, delay: 0.1, size: 68 },
-    { image: iconChatBlue, position: { x: '7%', y: '68%' }, delay: 0.15, size: 60 },
-    { image: iconClockBlue, position: { x: '86%', y: '65%' }, delay: 0.12, size: 64 },
+    { image: vRobotPurple, position: { x: '5%', y: '18%' }, delay: 0.05, size: 76, borderColor: '#A855F7' },
+    { image: vMoonIndigo, position: { x: '88%', y: '22%' }, delay: 0.1, size: 68, borderColor: '#6366F1' },
+    { image: vChatBlue, position: { x: '7%', y: '68%' }, delay: 0.15, size: 60, borderColor: '#2563EB' },
+    { image: vClockOrange, position: { x: '86%', y: '65%' }, delay: 0.12, size: 64, borderColor: '#F97316' },
   ],
 };
 
@@ -2037,6 +2040,7 @@ function MetricSection() {
                 position={avatar.position}
                 delay={avatar.delay}
                 size={avatar.size}
+                borderColor={avatar.borderColor}
               />
             ))}
           </motion.div>
@@ -2071,22 +2075,22 @@ function MetricSection() {
             </p>
           </motion.div>
         </AnimatePresence>
-        
-        <div className="flex justify-center gap-3 mt-10">
-          {stats.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setActiveIndex(i)}
-              className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                activeIndex === i 
-                  ? 'bg-white scale-125' 
-                  : 'bg-white/30 hover:bg-white/50'
-              }`}
-              aria-label={`Ver estadística ${i + 1}`}
-            />
-          ))}
-        </div>
       </motion.div>
+      
+      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex justify-center gap-3 z-20">
+        {stats.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setActiveIndex(i)}
+            className={`w-3 h-3 rounded-full transition-all duration-300 ${
+              activeIndex === i 
+                ? 'bg-white scale-125' 
+                : 'bg-gray-500 hover:bg-gray-400'
+            }`}
+            aria-label={`Ver estadística ${i + 1}`}
+          />
+        ))}
+      </div>
     </section>
   );
 }
