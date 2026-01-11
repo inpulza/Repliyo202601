@@ -1107,6 +1107,21 @@ function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
+    e.preventDefault();
+    const element = document.getElementById(sectionId);
+    if (element) {
+      const headerOffset = 100;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = window.scrollY + elementPosition - headerOffset;
+      
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   return (
     <motion.header 
       initial={prefersReducedMotion ? false : { y: -100, opacity: 0 }}
@@ -1119,9 +1134,9 @@ function Header() {
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         <a href="/" className="font-display font-bold text-2xl text-white" data-testid="link-logo">Repliyo</a>
         <nav className="hidden md:flex items-center gap-8">
-          <a href="#features" className="nav-link" data-testid="link-nav-producto">Producto</a>
-          <a href="#how" className="nav-link" data-testid="link-nav-como-funciona">Cómo funciona</a>
-          <a href="#testimonial" className="nav-link" data-testid="link-nav-testimonios">Testimonios</a>
+          <a href="#features" onClick={(e) => scrollToSection(e, 'features')} className="nav-link" data-testid="link-nav-producto">Producto</a>
+          <a href="#how" onClick={(e) => scrollToSection(e, 'how')} className="nav-link" data-testid="link-nav-como-funciona">Cómo funciona</a>
+          <a href="#testimonial" onClick={(e) => scrollToSection(e, 'testimonial')} className="nav-link" data-testid="link-nav-testimonios">Testimonios</a>
         </nav>
         <div className="flex items-center gap-3">
           <a href="/login" className="btn-primary text-sm py-2.5 px-5" data-testid="button-login-header">
