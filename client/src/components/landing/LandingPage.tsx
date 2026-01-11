@@ -1124,11 +1124,8 @@ function Header() {
           <a href="#testimonial" className="nav-link" data-testid="link-nav-testimonios">Testimonios</a>
         </nav>
         <div className="flex items-center gap-3">
-          <a href="/login" className="nav-link hidden sm:block" data-testid="link-login">
+          <a href="/login" className="btn-primary text-sm py-2.5 px-5" data-testid="button-login-header">
             Iniciar sesión
-          </a>
-          <a href="/login" className="btn-primary text-sm py-2.5 px-5" data-testid="button-probar-gratis-header">
-            Probar gratis
           </a>
         </div>
       </div>
