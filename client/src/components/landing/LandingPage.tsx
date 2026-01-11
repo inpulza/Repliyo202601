@@ -1869,24 +1869,27 @@ function SmokeDissolveText() {
   
   return (
     <span 
-      className="inline-flex relative align-baseline"
-      style={{ 
-        minWidth: `${longestWord.length * 0.55}em`,
-        height: '1.2em',
-        verticalAlign: 'baseline'
-      }}
+      className="inline-block relative"
+      style={{ verticalAlign: 'baseline' }}
     >
+      <span 
+        className="invisible"
+        aria-hidden="true"
+      >
+        {longestWord}
+      </span>
+      
       <AnimatePresence mode="wait">
         <motion.span
           key={currentIndex}
-          className="inline-flex text-red-400/80 items-baseline"
+          className="inline-flex text-red-400/80"
           initial="hidden"
           animate="visible"
           exit="exit"
           style={{ 
             position: 'absolute',
             left: 0,
-            bottom: 0,
+            top: 0,
             whiteSpace: 'nowrap'
           }}
         >
