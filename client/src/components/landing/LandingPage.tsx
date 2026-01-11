@@ -1986,7 +1986,7 @@ function AvatarWithStatus({ imageSrc, name, status }: { imageSrc: string; name: 
 
 function SpeedIndicator() {
   return (
-    <div className="bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl p-4 shadow-lg shadow-blue-500/30" style={{ width: 110 }}>
+    <div className="bg-cyan-500 rounded-2xl p-4 shadow-lg shadow-cyan-500/30" style={{ width: 110 }}>
       <Rocket className="w-6 h-6 text-white mb-2" />
       <div className="text-2xl font-black text-white">10x</div>
       <div className="text-xs text-white font-medium">más rápido</div>
@@ -2036,7 +2036,7 @@ function SendButtonCard() {
 
 function NotificationCard() {
   return (
-    <div className="bg-gradient-to-br from-rose-400 to-pink-500 rounded-2xl p-3 shadow-lg shadow-pink-500/30 flex items-center gap-3" style={{ width: 170 }}>
+    <div className="bg-rose-500 rounded-2xl p-3 shadow-lg shadow-rose-500/30 flex items-center gap-3" style={{ width: 170 }}>
       <Bell className="w-5 h-5 text-white" />
       <div>
         <div className="text-sm font-semibold text-white">3 nuevos</div>
@@ -2048,12 +2048,12 @@ function NotificationCard() {
 
 function AvatarStack() {
   return (
-    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl shadow-cyan-500/20 border border-cyan-200/50" style={{ width: 140 }}>
+    <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl shadow-cyan-500/20 border border-cyan-200/50" style={{ width: 150 }}>
       <div className="flex -space-x-3 mb-2">
-        <img src={avatarMaria} alt="" className="w-10 h-10 rounded-full border-2 border-white object-cover" />
-        <img src={avatarCarlos} alt="" className="w-10 h-10 rounded-full border-2 border-white object-cover" />
-        <img src={avatarAna} alt="" className="w-10 h-10 rounded-full border-2 border-white object-cover" />
-        <div className="w-10 h-10 rounded-full border-2 border-white bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-xs font-bold">+12</div>
+        <img src={avatarMaria} alt="" className="w-10 h-10 rounded-full border-2 border-white object-cover shrink-0" />
+        <img src={avatarCarlos} alt="" className="w-10 h-10 rounded-full border-2 border-white object-cover shrink-0" />
+        <img src={avatarAna} alt="" className="w-10 h-10 rounded-full border-2 border-white object-cover shrink-0" />
+        <div className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-full border-2 border-white bg-blue-500 flex items-center justify-center text-white text-xs font-bold shrink-0">+12</div>
       </div>
       <div className="text-xs text-gray-500">Equipo activo</div>
     </div>
@@ -2062,7 +2062,7 @@ function AvatarStack() {
 
 function GrowthCard() {
   return (
-    <div className="bg-gradient-to-br from-emerald-400 to-green-500 rounded-2xl p-4 shadow-lg shadow-green-500/30" style={{ width: 130 }}>
+    <div className="bg-emerald-500 rounded-2xl p-4 shadow-lg shadow-emerald-500/30" style={{ width: 130 }}>
       <TrendingUp className="w-5 h-5 text-white mb-1" />
       <div className="text-2xl font-black text-white">+247</div>
       <div className="text-xs text-white font-medium">leads hoy</div>
@@ -2083,7 +2083,7 @@ function StarRatingCard() {
 
 function LeadCounterCard() {
   return (
-    <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-4 shadow-lg shadow-purple-500/30" style={{ width: 140 }}>
+    <div className="bg-violet-600 rounded-2xl p-4 shadow-lg shadow-violet-500/30" style={{ width: 140 }}>
       <UsersIcon className="w-5 h-5 text-white mb-1" />
       <div className="text-2xl font-black text-white">1,847</div>
       <div className="text-xs text-white font-medium">contactos</div>
@@ -2112,7 +2112,7 @@ function AIAutopilotCard() {
 
 function MoonSunToggle() {
   return (
-    <div className="bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl p-4 shadow-lg shadow-indigo-500/30 flex items-center gap-3" style={{ width: 130 }}>
+    <div className="bg-indigo-600 rounded-2xl p-4 shadow-lg shadow-indigo-500/30 flex items-center gap-3" style={{ width: 130 }}>
       <Moon className="w-6 h-6 text-yellow-300" />
       <div>
         <div className="text-sm font-bold text-white">24/7</div>
