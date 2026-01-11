@@ -1243,7 +1243,7 @@ function ProblemMockup() {
             <div className="phone-notch" />
           </div>
           <div className="phone-app-bar">
-            <FaInstagram className="w-4 h-4 text-[#E1306C]" />
+            <FaInstagram className="w-4 h-4" style={{ color: '#E1306C' }} />
             <span>Instagram</span>
             <div className="notification-badge">23</div>
           </div>
@@ -1259,7 +1259,7 @@ function ProblemMockup() {
             <div className="phone-notch" />
           </div>
           <div className="phone-app-bar">
-            <FaTiktok className="w-4 h-4 text-white" />
+            <FaTiktok className="w-4 h-4" style={{ color: '#FFFFFF' }} />
             <span>TikTok</span>
             <div className="notification-badge">47</div>
           </div>
@@ -1275,7 +1275,7 @@ function ProblemMockup() {
             <div className="phone-notch" />
           </div>
           <div className="phone-app-bar">
-            <FaFacebook className="w-4 h-4 text-[#1877F2]" />
+            <FaFacebook className="w-4 h-4" style={{ color: '#1877F2' }} />
             <span>Facebook</span>
             <div className="notification-badge">12</div>
           </div>
@@ -1290,7 +1290,7 @@ function ProblemMockup() {
             <div className="phone-notch" />
           </div>
           <div className="phone-app-bar">
-            <FaLinkedin className="w-4 h-4 text-[#0A66C2]" />
+            <FaLinkedin className="w-4 h-4" style={{ color: '#0A66C2' }} />
             <span>LinkedIn</span>
             <div className="notification-badge">8</div>
           </div>
@@ -1305,7 +1305,7 @@ function ProblemMockup() {
             <div className="phone-notch" />
           </div>
           <div className="phone-app-bar">
-            <FaYoutube className="w-4 h-4 text-[#FF0000]" />
+            <FaYoutube className="w-4 h-4" style={{ color: '#FF0000' }} />
             <span>YouTube</span>
             <div className="notification-badge">31</div>
           </div>
@@ -1321,7 +1321,7 @@ function ProblemMockup() {
             <div className="phone-notch" />
           </div>
           <div className="phone-app-bar">
-            <GoogleBusinessIcon className="w-4 h-4 text-[#4285F4]" />
+            <GoogleBusinessIcon className="w-4 h-4" style={{ color: '#4285F4' }} />
             <span>Google</span>
             <div className="notification-badge">5</div>
           </div>

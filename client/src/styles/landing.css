@@ -4827,6 +4827,7 @@
 .phone-app-bar svg {
   width: 20px;
   height: 20px;
+  flex-shrink: 0;
 }
 
 .chaos-phone.instagram .phone-app-bar {
