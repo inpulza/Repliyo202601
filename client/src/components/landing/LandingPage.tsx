@@ -1804,8 +1804,11 @@ function ProblemSolutionSection() {
             <span className="text-sm uppercase tracking-[0.25em] text-white/40 font-semibold mb-4 block">
               El problema
             </span>
-            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-16 leading-tight">
-              Responder mensajes en 5 apps es <SmokeDissolveText />
+            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-16 leading-tight flex flex-col items-center gap-y-2">
+              <span>Responder mensajes en 5 apps es</span>
+              <span className="w-full flex justify-center">
+                <SmokeDissolveText />
+              </span>
             </h2>
             <div className="max-w-3xl mx-auto">
               <ProblemMockup />
@@ -1968,7 +1971,8 @@ function SmokeDissolveText() {
     <SmokeDissolveTextGeneric 
       words={PROBLEM_WORDS} 
       colorClass="text-red-400/80" 
-      glowColor="rgba(248,113,113,0.4)" 
+      glowColor="rgba(248,113,113,0.4)"
+      centered={true}
     />
   );
 }
