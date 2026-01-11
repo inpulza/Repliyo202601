@@ -1155,29 +1155,91 @@ function HeroSection() {
         </Parallax>
         
         <motion.div style={{ y: textY, opacity }} className="relative z-10 max-w-5xl mx-auto px-6 text-center mb-20">
-          <motion.h1 
-            className="font-display font-bold text-5xl md:text-6xl lg:text-7xl xl:text-8xl leading-[0.95] tracking-tight mb-8"
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-          >
-            <span className="block text-white">Responde más rápido.</span>
-            <span className="block"><span className="text-white/60">Vende más</span> <span className="text-white">con IA.</span></span>
-          </motion.h1>
+          <div className="overflow-hidden mb-8">
+            <motion.h1 
+              className="font-display font-bold text-5xl md:text-6xl lg:text-7xl xl:text-8xl leading-[0.95] tracking-tight"
+            >
+              <motion.span 
+                className="block text-white"
+                initial={{ opacity: 0, y: 60, filter: 'blur(10px)' }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                transition={{ duration: 0.7, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+              >
+                Responde en segundos.
+              </motion.span>
+              <motion.span 
+                className="block"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.1, delay: 0.5 }}
+              >
+                <motion.span 
+                  className="text-white/60"
+                  initial={{ opacity: 0, y: 40, filter: 'blur(8px)' }}
+                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                  transition={{ duration: 0.6, delay: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+                >
+                  Vende más{' '}
+                </motion.span>
+                <motion.span 
+                  className="text-white relative inline-block"
+                  initial={{ opacity: 0, scale: 0.8, filter: 'blur(12px)' }}
+                  animate={{ 
+                    opacity: 1, 
+                    scale: 1, 
+                    filter: 'blur(0px)',
+                  }}
+                  transition={{ 
+                    duration: 0.5, 
+                    delay: 0.9,
+                    ease: [0.16, 1, 0.3, 1]
+                  }}
+                >
+                  <motion.span
+                    className="relative z-10"
+                    animate={{ 
+                      textShadow: [
+                        '0 0 20px rgba(59, 130, 246, 0)',
+                        '0 0 30px rgba(59, 130, 246, 0.6)',
+                        '0 0 20px rgba(59, 130, 246, 0.3)',
+                        '0 0 25px rgba(59, 130, 246, 0.5)',
+                        '0 0 20px rgba(59, 130, 246, 0.3)',
+                      ]
+                    }}
+                    transition={{
+                      duration: 3,
+                      delay: 1.4,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  >
+                    con IA.
+                  </motion.span>
+                  <motion.span
+                    className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-blue-400/10 to-transparent rounded-lg -z-10"
+                    initial={{ opacity: 0, scaleX: 0 }}
+                    animate={{ opacity: 1, scaleX: 1 }}
+                    transition={{ duration: 0.4, delay: 1.1, ease: "easeOut" }}
+                    style={{ transformOrigin: 'left', padding: '0 0.2em', margin: '-0.1em -0.2em' }}
+                  />
+                </motion.span>
+              </motion.span>
+            </motion.h1>
+          </div>
 
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-            className="text-lg md:text-xl lg:text-2xl text-white/50 max-w-2xl mx-auto mb-8 leading-relaxed"
+            transition={{ delay: 1.2, duration: 0.6 }}
+            className="text-xl md:text-2xl lg:text-3xl text-white/50 max-w-3xl mx-auto mb-10 leading-relaxed"
           >
             Unifica todos tus DMs y comentarios de Instagram, TikTok y Facebook en un inbox inteligente que responde automáticamente.
           </motion.p>
 
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.6 }}
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: 1.5, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
             <a href="/login" className="btn-primary" data-testid="button-empezar-gratis-hero">
