@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
-import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring } from 'framer-motion';
+import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring, useMotionValue } from 'framer-motion';
 import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle } from 'lucide-react';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
@@ -1234,6 +1234,63 @@ function MarqueeSection() {
   );
 }
 
+function Tilt3D({ children, maxTilt = 8 }: { children: React.ReactNode; maxTilt?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = useReducedMotion();
+  
+  const rotateX = useMotionValue(0);
+  const rotateY = useMotionValue(0);
+  const brightness = useMotionValue(1);
+  
+  const springConfig = { damping: 20, stiffness: 150 };
+  const springRotateX = useSpring(rotateX, springConfig);
+  const springRotateY = useSpring(rotateY, springConfig);
+  const springBrightness = useSpring(brightness, springConfig);
+  
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (prefersReducedMotion || !ref.current) return;
+    
+    const rect = ref.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    const percentX = (e.clientX - centerX) / (rect.width / 2);
+    const percentY = (e.clientY - centerY) / (rect.height / 2);
+    
+    rotateX.set(percentY * -maxTilt);
+    rotateY.set(percentX * maxTilt);
+    brightness.set(1 + Math.abs(percentX * percentY) * 0.1);
+  };
+  
+  const handleMouseLeave = () => {
+    rotateX.set(0);
+    rotateY.set(0);
+    brightness.set(1);
+  };
+  
+  if (prefersReducedMotion) {
+    return <div>{children}</div>;
+  }
+  
+  return (
+    <motion.div
+      ref={ref}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        rotateX: springRotateX,
+        rotateY: springRotateY,
+        filter: useTransform(springBrightness, (v) => `brightness(${v})`),
+        transformStyle: 'preserve-3d',
+        transformPerspective: 1000,
+      }}
+      className="tilt-3d-wrapper"
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 function AnimatedBadge({ target, delay, inView }: { target: number; delay: number; inView: boolean }) {
   const [count, setCount] = useState(0);
   const hasAnimated = useRef(false);
@@ -1373,63 +1430,65 @@ function ProblemMockup() {
   }
 
   return (
-    <div className="problem-mockup-card" ref={ref}>
-      <div className="mockup-phone-grid">
-        {phones.map((phone, i) => {
-          const IconComponent = phone.icon;
-          return (
-            <motion.div
-              key={phone.platform}
-              className={`chaos-phone ${phone.platform}`}
-              custom={i}
-              initial="hidden"
-              animate={inView ? "visible" : "hidden"}
-              variants={cardVariants}
-            >
-              <div className="phone-header">
-                <div className="phone-notch" />
-              </div>
-              <div className="phone-app-bar">
-                <IconComponent className="w-4 h-4" style={{ color: phone.color }} />
-                <span>{phone.name}</span>
-                <AnimatedBadge target={phone.count} delay={0.3 + i * 0.15} inView={inView} />
-              </div>
-              <div className="phone-messages">
-                {Array.from({ length: phone.messages }).map((_, j) => (
-                  <motion.div
-                    key={j}
-                    className={`unread-msg ${j === phone.messages - 1 ? 'faded' : ''}`}
-                    initial={{ opacity: 0, scaleX: 0 }}
-                    animate={inView ? { opacity: j === phone.messages - 1 ? 0.7 : 1, scaleX: 1 } : {}}
-                    transition={{ delay: 0.5 + i * 0.1 + j * 0.1, duration: 0.3 }}
-                    style={{ transformOrigin: 'left' }}
-                  />
-                ))}
-              </div>
-            </motion.div>
-          );
-        })}
+    <Tilt3D maxTilt={6}>
+      <div className="problem-mockup-card" ref={ref}>
+        <div className="mockup-phone-grid">
+          {phones.map((phone, i) => {
+            const IconComponent = phone.icon;
+            return (
+              <motion.div
+                key={phone.platform}
+                className={`chaos-phone ${phone.platform}`}
+                custom={i}
+                initial="hidden"
+                animate={inView ? "visible" : "hidden"}
+                variants={cardVariants}
+              >
+                <div className="phone-header">
+                  <div className="phone-notch" />
+                </div>
+                <div className="phone-app-bar">
+                  <IconComponent className="w-4 h-4" style={{ color: phone.color }} />
+                  <span>{phone.name}</span>
+                  <AnimatedBadge target={phone.count} delay={0.3 + i * 0.15} inView={inView} />
+                </div>
+                <div className="phone-messages">
+                  {Array.from({ length: phone.messages }).map((_, j) => (
+                    <motion.div
+                      key={j}
+                      className={`unread-msg ${j === phone.messages - 1 ? 'faded' : ''}`}
+                      initial={{ opacity: 0, scaleX: 0 }}
+                      animate={inView ? { opacity: j === phone.messages - 1 ? 0.7 : 1, scaleX: 1 } : {}}
+                      transition={{ delay: 0.5 + i * 0.1 + j * 0.1, duration: 0.3 }}
+                      style={{ transformOrigin: 'left' }}
+                    />
+                  ))}
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+        
+        <div className="chaos-overlay">
+          {notifications.map((notif, i) => {
+            const IconComponent = notif.icon;
+            return (
+              <motion.div
+                key={notif.className}
+                className={`floating-notification ${notif.className}`}
+                custom={i}
+                initial="hidden"
+                animate={inView ? "visible" : "hidden"}
+                variants={notificationVariants}
+              >
+                <IconComponent className="w-3 h-3" />
+                <span>{notif.text}</span>
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
-      
-      <div className="chaos-overlay">
-        {notifications.map((notif, i) => {
-          const IconComponent = notif.icon;
-          return (
-            <motion.div
-              key={notif.className}
-              className={`floating-notification ${notif.className}`}
-              custom={i}
-              initial="hidden"
-              animate={inView ? "visible" : "hidden"}
-              variants={notificationVariants}
-            >
-              <IconComponent className="w-3 h-3" />
-              <span>{notif.text}</span>
-            </motion.div>
-          );
-        })}
-      </div>
-    </div>
+    </Tilt3D>
   );
 }
 

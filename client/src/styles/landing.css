@@ -4770,6 +4770,13 @@
   will-change: transform, opacity;
 }
 
+/* 3D Tilt Wrapper */
+.tilt-3d-wrapper {
+  will-change: transform;
+  cursor: pointer;
+  transform-style: preserve-3d;
+}
+
 /* Problem Mockup Card */
 .problem-mockup-card {
   position: relative;
