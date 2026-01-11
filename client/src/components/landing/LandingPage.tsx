@@ -71,6 +71,52 @@ function FallingCoinAnimation({ position }: { position: 'left' | 'right' }) {
   );
 }
 
+function MessagesOverflowAnimation({ position }: { position: 'left' | 'right' }) {
+  return (
+    <div className={`animated-messages-container ${position === 'left' ? 'pill-avatar-left' : 'pill-avatar-right'}`}>
+      <div className="messages-animation">
+        <div className="message-stack">
+          <span className="msg-envelope m1">📩</span>
+          <span className="msg-envelope m2">📩</span>
+          <span className="msg-envelope m3">📩</span>
+        </div>
+        <span className="msg-counter">+99</span>
+        <span className="msg-explode">💥</span>
+      </div>
+    </div>
+  );
+}
+
+function ClockWaitingAnimation({ position }: { position: 'left' | 'right' }) {
+  return (
+    <div className={`animated-clock-container ${position === 'left' ? 'pill-avatar-left' : 'pill-avatar-right'}`}>
+      <div className="clock-animation">
+        <span className="clock-face">⏰</span>
+        <span className="clock-alert">⚠️</span>
+      </div>
+    </div>
+  );
+}
+
+function AngryFaceAnimation({ position }: { position: 'left' | 'right' }) {
+  return (
+    <div className={`animated-angry-container ${position === 'left' ? 'pill-avatar-left' : 'pill-avatar-right'}`}>
+      <div className="angry-animation">
+        <div className="face-stages">
+          <span className="face-stage f1">😐</span>
+          <span className="face-stage f2">😠</span>
+          <span className="face-stage f3">🤬</span>
+        </div>
+        <div className="anger-particles">
+          <span className="anger-particle a1">💢</span>
+          <span className="anger-particle a2">💢</span>
+          <span className="anger-particle a3">💢</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Step1ConnectMockup() {
   const orbitIcons = [
     { Icon: FaInstagram, platform: 'instagram' },
@@ -1366,10 +1412,10 @@ function ProblemMockup() {
   ];
   
   const notifications = [
-    { icon: Bell, text: '+82 mensajes sin leer', className: 'n1', avatar: problemAvatar1, avatarPosition: 'left' as const, isAnimated: false },
-    { icon: Clock, text: 'Lead esperando 4 horas', className: 'n2', avatar: problemAvatar2, avatarPosition: 'right' as const, isAnimated: false },
-    { icon: AlertCircle, text: 'Cliente frustrado', className: 'n3', avatar: problemAvatar3, avatarPosition: 'left' as const, isAnimated: false },
-    { icon: MessageSquare, text: 'Venta perdida', className: 'n4', avatar: null, avatarPosition: 'right' as const, isAnimated: true },
+    { icon: Bell, text: '+82 mensajes sin leer', className: 'n1', avatar: null, avatarPosition: 'left' as const, animationType: 'messages' as const },
+    { icon: Clock, text: 'Lead esperando 4 horas', className: 'n2', avatar: null, avatarPosition: 'right' as const, animationType: 'clock' as const },
+    { icon: AlertCircle, text: 'Cliente frustrado', className: 'n3', avatar: null, avatarPosition: 'left' as const, animationType: 'angry' as const },
+    { icon: MessageSquare, text: 'Venta perdida', className: 'n4', avatar: null, avatarPosition: 'right' as const, animationType: 'coin' as const },
   ];
 
   const cardVariants = {
@@ -1438,32 +1484,23 @@ function ProblemMockup() {
         <div className="chaos-overlay">
           {notifications.map((notif) => {
             const IconComponent = notif.icon;
+            const renderAnimation = (pos: 'left' | 'right') => {
+              switch (notif.animationType) {
+                case 'messages': return <MessagesOverflowAnimation position={pos} />;
+                case 'clock': return <ClockWaitingAnimation position={pos} />;
+                case 'angry': return <AngryFaceAnimation position={pos} />;
+                case 'coin': return <FallingCoinAnimation position={pos} />;
+                default: return null;
+              }
+            };
             return (
               <div key={notif.className} className={`floating-notification-wrapper ${notif.className}`}>
-                {notif.avatarPosition === 'left' && !notif.isAnimated && notif.avatar && (
-                  <img 
-                    src={notif.avatar} 
-                    alt="" 
-                    className="pill-avatar pill-avatar-left"
-                  />
-                )}
-                {notif.avatarPosition === 'left' && notif.isAnimated && (
-                  <FallingCoinAnimation position="left" />
-                )}
+                {notif.avatarPosition === 'left' && renderAnimation('left')}
                 <div className="floating-notification">
                   <IconComponent className="w-3 h-3" />
                   <span>{notif.text}</span>
                 </div>
-                {notif.avatarPosition === 'right' && !notif.isAnimated && notif.avatar && (
-                  <img 
-                    src={notif.avatar} 
-                    alt="" 
-                    className="pill-avatar pill-avatar-right"
-                  />
-                )}
-                {notif.avatarPosition === 'right' && notif.isAnimated && (
-                  <FallingCoinAnimation position="right" />
-                )}
+                {notif.avatarPosition === 'right' && renderAnimation('right')}
               </div>
             );
           })}
@@ -1515,6 +1552,15 @@ function ProblemMockup() {
         <div className="chaos-overlay">
           {notifications.map((notif, i) => {
             const IconComponent = notif.icon;
+            const renderAnimation = (pos: 'left' | 'right') => {
+              switch (notif.animationType) {
+                case 'messages': return <MessagesOverflowAnimation position={pos} />;
+                case 'clock': return <ClockWaitingAnimation position={pos} />;
+                case 'angry': return <AngryFaceAnimation position={pos} />;
+                case 'coin': return <FallingCoinAnimation position={pos} />;
+                default: return null;
+              }
+            };
             return (
               <motion.div
                 key={notif.className}
@@ -1524,34 +1570,12 @@ function ProblemMockup() {
                 animate={inView ? "visible" : "hidden"}
                 variants={notificationVariants}
               >
-                {notif.avatarPosition === 'left' && !notif.isAnimated && notif.avatar && (
-                  <motion.img 
-                    src={notif.avatar} 
-                    alt="" 
-                    className="pill-avatar pill-avatar-left"
-                    animate={{ y: [0, -4, 0] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: i * 0.2 }}
-                  />
-                )}
-                {notif.avatarPosition === 'left' && notif.isAnimated && (
-                  <FallingCoinAnimation position="left" />
-                )}
+                {notif.avatarPosition === 'left' && renderAnimation('left')}
                 <div className="floating-notification">
                   <IconComponent className="w-3 h-3" />
                   <span>{notif.text}</span>
                 </div>
-                {notif.avatarPosition === 'right' && !notif.isAnimated && notif.avatar && (
-                  <motion.img 
-                    src={notif.avatar} 
-                    alt="" 
-                    className="pill-avatar pill-avatar-right"
-                    animate={{ y: [0, -4, 0] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: i * 0.2 }}
-                  />
-                )}
-                {notif.avatarPosition === 'right' && notif.isAnimated && (
-                  <FallingCoinAnimation position="right" />
-                )}
+                {notif.avatarPosition === 'right' && renderAnimation('right')}
               </motion.div>
             );
           })}
