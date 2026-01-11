@@ -1154,8 +1154,8 @@ function HeroSection() {
           <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] rounded-full bg-orange-500/5 blur-3xl" />
         </Parallax>
         
-        <motion.div style={{ y: textY, opacity }} className="relative z-10 max-w-5xl mx-auto px-6 text-center mb-20">
-          <div className="overflow-hidden mb-8">
+        <motion.div style={{ y: textY, opacity }} className="relative z-10 max-w-6xl mx-auto px-6 text-center mb-20">
+          <div className="overflow-visible mb-8">
             <motion.h1 
               className="font-display font-bold text-5xl md:text-6xl lg:text-7xl xl:text-8xl leading-[0.95] tracking-tight"
             >
