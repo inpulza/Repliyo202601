@@ -38,6 +38,14 @@ import stepsBgGreen from '@assets/generated_images/green_gradient_grain_backgrou
 import stepsBgVibrant from '@assets/generated_images/vibrant_blue_violet_gradient.png';
 import stepsBgLight from '@assets/generated_images/teal_cyan_bottom_to_top_gradient.png';
 import testimonialBettys from '../../assets/testimonial-bettys.jpg';
+import problemAvatar1 from '@assets/generated_images/overwhelmed_business_owner_with_notifications.png';
+import problemAvatar2 from '@assets/generated_images/frustrated_customer_waiting_impatiently.png';
+import problemAvatar3 from '@assets/generated_images/angry_frustrated_customer_portrait.png';
+import problemAvatar4 from '@assets/generated_images/disappointed_sales_professional_lost_deal.png';
+import solutionAvatar1 from '@assets/generated_images/happy_customer_fast_response_received.png';
+import solutionAvatar2 from '@assets/generated_images/relaxed_ai_support_agent_confident.png';
+import solutionAvatar3 from '@assets/generated_images/organized_professional_unified_inbox.png';
+import solutionAvatar4 from '@assets/generated_images/satisfied_business_owner_crm_success.png';
 import { ParallaxProvider, useParallax, Parallax } from 'react-scroll-parallax';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -1341,10 +1349,10 @@ function ProblemMockup() {
   ];
   
   const notifications = [
-    { icon: Bell, text: '+82 mensajes sin leer', className: 'n1' },
-    { icon: Clock, text: 'Lead esperando 4 horas', className: 'n2' },
-    { icon: AlertCircle, text: 'Cliente frustrado', className: 'n3' },
-    { icon: MessageSquare, text: 'Venta perdida', className: 'n4' },
+    { icon: Bell, text: '+82 mensajes sin leer', className: 'n1', avatar: problemAvatar1, avatarPosition: 'left' as const },
+    { icon: Clock, text: 'Lead esperando 4 horas', className: 'n2', avatar: problemAvatar2, avatarPosition: 'right' as const },
+    { icon: AlertCircle, text: 'Cliente frustrado', className: 'n3', avatar: problemAvatar3, avatarPosition: 'left' as const },
+    { icon: MessageSquare, text: 'Venta perdida', className: 'n4', avatar: problemAvatar4, avatarPosition: 'right' as const },
   ];
 
   const cardVariants = {
@@ -1414,9 +1422,25 @@ function ProblemMockup() {
           {notifications.map((notif) => {
             const IconComponent = notif.icon;
             return (
-              <div key={notif.className} className={`floating-notification ${notif.className}`}>
-                <IconComponent className="w-3 h-3" />
-                <span>{notif.text}</span>
+              <div key={notif.className} className={`floating-notification-wrapper ${notif.className}`}>
+                {notif.avatarPosition === 'left' && (
+                  <img 
+                    src={notif.avatar} 
+                    alt="" 
+                    className="pill-avatar pill-avatar-left"
+                  />
+                )}
+                <div className="floating-notification">
+                  <IconComponent className="w-3 h-3" />
+                  <span>{notif.text}</span>
+                </div>
+                {notif.avatarPosition === 'right' && (
+                  <img 
+                    src={notif.avatar} 
+                    alt="" 
+                    className="pill-avatar pill-avatar-right"
+                  />
+                )}
               </div>
             );
           })}
@@ -1471,14 +1495,34 @@ function ProblemMockup() {
             return (
               <motion.div
                 key={notif.className}
-                className={`floating-notification ${notif.className}`}
+                className={`floating-notification-wrapper ${notif.className}`}
                 custom={i}
                 initial="hidden"
                 animate={inView ? "visible" : "hidden"}
                 variants={notificationVariants}
               >
-                <IconComponent className="w-3 h-3" />
-                <span>{notif.text}</span>
+                {notif.avatarPosition === 'left' && (
+                  <motion.img 
+                    src={notif.avatar} 
+                    alt="" 
+                    className="pill-avatar pill-avatar-left"
+                    animate={{ y: [0, -4, 0] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: i * 0.2 }}
+                  />
+                )}
+                <div className="floating-notification">
+                  <IconComponent className="w-3 h-3" />
+                  <span>{notif.text}</span>
+                </div>
+                {notif.avatarPosition === 'right' && (
+                  <motion.img 
+                    src={notif.avatar} 
+                    alt="" 
+                    className="pill-avatar pill-avatar-right"
+                    animate={{ y: [0, -4, 0] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: i * 0.2 }}
+                  />
+                )}
               </motion.div>
             );
           })}
@@ -1506,11 +1550,10 @@ function SolutionMockup() {
   ];
   
   const indicators = [
-    { icon: Check, text: 'Respuesta en 2 min', className: 'i1' },
-    { icon: Zap, text: 'IA genera borradores', className: 'i2' },
-    { icon: MessageSquare, text: 'Un solo inbox', className: 'i3' },
-    { icon: Users, text: 'CRM integrado', className: 'i4' },
-    { icon: Bell, text: 'Recordatorios automáticos', className: 'i5' },
+    { icon: Check, text: 'Respuesta en 2 min', className: 'i1', avatar: solutionAvatar1, avatarPosition: 'left' as const },
+    { icon: Zap, text: 'IA genera borradores', className: 'i2', avatar: solutionAvatar2, avatarPosition: 'right' as const },
+    { icon: MessageSquare, text: 'Un solo inbox', className: 'i3', avatar: solutionAvatar3, avatarPosition: 'left' as const },
+    { icon: Users, text: 'CRM integrado', className: 'i4', avatar: solutionAvatar4, avatarPosition: 'right' as const },
   ];
   
   const panelVariants = {
@@ -1607,9 +1650,25 @@ function SolutionMockup() {
           {indicators.map((ind) => {
             const IconComponent = ind.icon;
             return (
-              <div key={ind.className} className={`indicator ${ind.className}`}>
-                <IconComponent className="w-3 h-3" />
-                <span>{ind.text}</span>
+              <div key={ind.className} className={`indicator-wrapper ${ind.className}`}>
+                {ind.avatarPosition === 'left' && (
+                  <img 
+                    src={ind.avatar} 
+                    alt="" 
+                    className="pill-avatar pill-avatar-left solution"
+                  />
+                )}
+                <div className="indicator">
+                  <IconComponent className="w-3 h-3" />
+                  <span>{ind.text}</span>
+                </div>
+                {ind.avatarPosition === 'right' && (
+                  <img 
+                    src={ind.avatar} 
+                    alt="" 
+                    className="pill-avatar pill-avatar-right solution"
+                  />
+                )}
               </div>
             );
           })}
@@ -1762,14 +1821,34 @@ function SolutionMockup() {
             return (
               <motion.div
                 key={ind.className}
-                className={`indicator ${ind.className}`}
+                className={`indicator-wrapper ${ind.className}`}
                 custom={i}
                 initial="hidden"
                 animate={inView ? "visible" : "hidden"}
                 variants={indicatorVariants}
               >
-                <IconComponent className="w-3 h-3" />
-                <span>{ind.text}</span>
+                {ind.avatarPosition === 'left' && (
+                  <motion.img 
+                    src={ind.avatar} 
+                    alt="" 
+                    className="pill-avatar pill-avatar-left solution"
+                    animate={{ y: [0, -4, 0] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: i * 0.2 }}
+                  />
+                )}
+                <div className="indicator">
+                  <IconComponent className="w-3 h-3" />
+                  <span>{ind.text}</span>
+                </div>
+                {ind.avatarPosition === 'right' && (
+                  <motion.img 
+                    src={ind.avatar} 
+                    alt="" 
+                    className="pill-avatar pill-avatar-right solution"
+                    animate={{ y: [0, -4, 0] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: i * 0.2 }}
+                  />
+                )}
               </motion.div>
             );
           })}
