@@ -5353,21 +5353,25 @@
 .indicator-wrapper.i1 {
   top: -12%;
   right: -10%;
+  animation: slide-in-indicator 0.5s ease-out 0.3s both, float-notification 3s ease-in-out 0.8s infinite;
 }
 
 .indicator-wrapper.i2 {
   top: 15%;
   left: -18%;
+  animation: slide-in-indicator 0.5s ease-out 0.5s both, float-notification 3s ease-in-out 1.0s infinite;
 }
 
 .indicator-wrapper.i3 {
   top: 45%;
   right: -15%;
+  animation: slide-in-indicator 0.5s ease-out 0.7s both, float-notification 3s ease-in-out 1.2s infinite;
 }
 
 .indicator-wrapper.i4 {
   bottom: 25%;
   left: -12%;
+  animation: slide-in-indicator 0.5s ease-out 0.9s both, float-notification 3s ease-in-out 1.4s infinite;
 }
 
 @keyframes slide-in-indicator {
