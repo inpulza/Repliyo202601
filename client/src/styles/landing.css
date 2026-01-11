@@ -4783,58 +4783,81 @@
   overflow: visible;
 }
 
-/* 3D Parallax Effect Styles */
+/* 3D Parallax Effect Styles - Strict Layer Hierarchy */
 .parallax-3d-container {
-  perspective: 1000px;
-  transform-style: preserve-3d;
+  perspective: 800px;
+  perspective-origin: center center;
   cursor: default;
+  isolation: isolate;
 }
 
 .parallax-3d-scene {
   transform-style: preserve-3d;
   will-change: transform;
+  position: relative;
 }
 
 .parallax-3d-container .mockup-phone-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 16px;
   transform-style: preserve-3d;
 }
 
-.parallax-3d-container .chaos-phone {
+.parallax-phone {
+  transform: translateZ(0px);
   transform-style: preserve-3d;
-  will-change: transform;
-  transition: box-shadow 0.3s ease;
   backface-visibility: hidden;
+  will-change: transform;
 }
 
-.parallax-3d-container .chaos-phone:hover {
-  box-shadow: 
-    0 20px 40px -15px rgba(0, 0, 0, 0.4),
-    0 0 30px rgba(255, 255, 255, 0.05);
+.parallax-phone .phone-messages {
+  transform-style: preserve-3d;
+}
+
+.parallax-msg {
+  transform: translateZ(30px);
+  backface-visibility: hidden;
+  will-change: transform;
+  position: relative;
 }
 
 .parallax-badge {
-  transform-style: preserve-3d;
+  transform: translateZ(60px);
+  backface-visibility: hidden;
   will-change: transform;
+  position: relative;
   box-shadow: 
     0 4px 12px rgba(239, 68, 68, 0.4),
     0 8px 20px rgba(0, 0, 0, 0.3);
-  position: relative;
-  backface-visibility: hidden;
-}
-
-.parallax-notification {
-  transform-style: preserve-3d;
-  will-change: transform;
-  box-shadow: 
-    0 8px 25px rgba(0, 0, 0, 0.4),
-    0 4px 15px rgba(239, 68, 68, 0.2);
-  backdrop-filter: blur(8px);
-  backface-visibility: hidden;
 }
 
 .parallax-3d-container .chaos-overlay {
   transform-style: preserve-3d;
   pointer-events: none;
+}
+
+.parallax-notification {
+  transform: translateZ(100px);
+  backface-visibility: hidden;
+  will-change: transform;
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.4),
+    0 4px 15px rgba(239, 68, 68, 0.2);
+}
+
+.parallax-3d-container.is-animating .parallax-phone {
+  box-shadow: none !important;
+  transition: none !important;
+}
+
+.parallax-3d-container.is-animating .parallax-badge {
+  box-shadow: 0 3px 10px rgba(239, 68, 68, 0.35);
+}
+
+.parallax-3d-container.is-animating .parallax-notification {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.35);
 }
 
 .mockup-phone-grid {

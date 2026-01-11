@@ -1237,27 +1237,30 @@ function MarqueeSection() {
 function ProblemMockup() {
   const containerRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
+  const [isAnimating, setIsAnimating] = useState(false);
   
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   
-  const springConfig = { damping: 25, stiffness: 150, mass: 0.5 };
+  const sceneSpring = { damping: 30, stiffness: 120, mass: 0.8 };
+  const sceneRotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [5, -5]), sceneSpring);
+  const sceneRotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-5, 5]), sceneSpring);
   
-  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [8, -8]), springConfig);
-  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-8, 8]), springConfig);
+  const phoneSpring = { damping: 32, stiffness: 110, mass: 0.7 };
+  const phoneX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-10, 10]), phoneSpring);
+  const phoneY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-10, 10]), phoneSpring);
   
-  const cardTranslateX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-15, 15]), springConfig);
-  const cardTranslateY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-15, 15]), springConfig);
-  const cardRotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [4, -4]), springConfig);
-  const cardRotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-4, 4]), springConfig);
+  const msgSpring = { damping: 26, stiffness: 140, mass: 0.5 };
+  const msgX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-20, 20]), msgSpring);
+  const msgY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-20, 20]), msgSpring);
   
-  const badgeSpringConfig = { damping: 20, stiffness: 200, mass: 0.3 };
-  const badgeTranslateX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-30, 30]), badgeSpringConfig);
-  const badgeTranslateY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-30, 30]), badgeSpringConfig);
+  const badgeSpring = { damping: 20, stiffness: 180, mass: 0.35 };
+  const badgeX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-32, 32]), badgeSpring);
+  const badgeY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-32, 32]), badgeSpring);
   
-  const notificationSpringConfig = { damping: 18, stiffness: 180, mass: 0.4 };
-  const notifTranslateX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-40, 40]), notificationSpringConfig);
-  const notifTranslateY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-40, 40]), notificationSpringConfig);
+  const notifSpring = { damping: 16, stiffness: 220, mass: 0.25 };
+  const notifX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-45, 45]), notifSpring);
+  const notifY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-45, 45]), notifSpring);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (prefersReducedMotion || !containerRef.current) return;
@@ -1271,64 +1274,55 @@ function ProblemMockup() {
     
     mouseX.set(Math.max(-0.5, Math.min(0.5, normalizedX * 0.5)));
     mouseY.set(Math.max(-0.5, Math.min(0.5, normalizedY * 0.5)));
+    setIsAnimating(true);
   }, [prefersReducedMotion, mouseX, mouseY]);
 
   const handleMouseLeave = useCallback(() => {
     mouseX.set(0);
     mouseY.set(0);
+    setTimeout(() => setIsAnimating(false), 400);
   }, [mouseX, mouseY]);
 
   const phones = [
-    { platform: 'instagram', Icon: FaInstagram, name: 'Instagram', count: 23, depth: 1 },
-    { platform: 'tiktok', Icon: FaTiktok, name: 'TikTok', count: 47, depth: 1.2 },
-    { platform: 'facebook', Icon: FaFacebook, name: 'Facebook', count: 12, depth: 0.8 },
-    { platform: 'linkedin', Icon: FaLinkedin, name: 'LinkedIn', count: 8, depth: 1.1 },
-    { platform: 'youtube', Icon: FaYoutube, name: 'YouTube', count: 31, depth: 0.9 },
-    { platform: 'google', Icon: GoogleBusinessIcon, name: 'Google', count: 5, depth: 1.3 },
+    { platform: 'instagram', Icon: FaInstagram, name: 'Instagram', count: 23 },
+    { platform: 'tiktok', Icon: FaTiktok, name: 'TikTok', count: 47 },
+    { platform: 'facebook', Icon: FaFacebook, name: 'Facebook', count: 12 },
+    { platform: 'linkedin', Icon: FaLinkedin, name: 'LinkedIn', count: 8 },
+    { platform: 'youtube', Icon: FaYoutube, name: 'YouTube', count: 31 },
+    { platform: 'google', Icon: GoogleBusinessIcon, name: 'Google', count: 5 },
   ];
 
   const notifications = [
-    { id: 'n1', icon: Bell, text: '+82 mensajes sin leer', depth: 1.5, offsetX: -20, offsetY: -10 },
-    { id: 'n2', icon: Clock, text: 'Lead esperando 4 horas', depth: 1.7, offsetX: 15, offsetY: 5 },
-    { id: 'n3', icon: AlertCircle, text: 'Cliente frustrado', depth: 1.6, offsetX: -10, offsetY: 15 },
-    { id: 'n4', icon: MessageSquare, text: 'Venta perdida', depth: 1.8, offsetX: 20, offsetY: -5 },
+    { id: 'n1', icon: Bell, text: '+82 mensajes sin leer' },
+    { id: 'n2', icon: Clock, text: 'Lead esperando 4 horas' },
+    { id: 'n3', icon: AlertCircle, text: 'Cliente frustrado' },
+    { id: 'n4', icon: MessageSquare, text: 'Venta perdida' },
   ];
 
   return (
-    <motion.div 
+    <div 
       ref={containerRef}
-      className="problem-mockup-card parallax-3d-container"
+      className={`problem-mockup-card parallax-3d-container ${isAnimating ? 'is-animating' : ''}`}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      style={{
-        perspective: 1000,
-        transformStyle: 'preserve-3d',
-      }}
     >
       <motion.div 
         className="parallax-3d-scene"
         style={{
-          rotateX: prefersReducedMotion ? 0 : rotateX,
-          rotateY: prefersReducedMotion ? 0 : rotateY,
-          transformStyle: 'preserve-3d',
+          rotateX: prefersReducedMotion ? 0 : sceneRotateX,
+          rotateY: prefersReducedMotion ? 0 : sceneRotateY,
         }}
       >
-        <div className="mockup-phone-grid" style={{ transformStyle: 'preserve-3d' }}>
+        <div className="mockup-phone-grid">
           {phones.map((phone, idx) => {
             const PhoneIcon = phone.Icon;
-            const depthMultiplier = phone.depth;
-            
             return (
               <motion.div 
                 key={phone.platform}
-                className={`chaos-phone ${phone.platform}`}
+                className={`chaos-phone ${phone.platform} parallax-phone`}
                 style={{
-                  x: useTransform(cardTranslateX, v => v * depthMultiplier),
-                  y: useTransform(cardTranslateY, v => v * depthMultiplier),
-                  rotateX: useTransform(cardRotateX, v => v * depthMultiplier),
-                  rotateY: useTransform(cardRotateY, v => v * depthMultiplier),
-                  z: 20 * depthMultiplier,
-                  transformStyle: 'preserve-3d',
+                  x: prefersReducedMotion ? 0 : phoneX,
+                  y: prefersReducedMotion ? 0 : phoneY,
                 }}
               >
                 <div className="phone-header">
@@ -1340,26 +1334,44 @@ function ProblemMockup() {
                   <motion.div 
                     className="notification-badge parallax-badge"
                     style={{
-                      x: useTransform(badgeTranslateX, v => v * (depthMultiplier + 0.5)),
-                      y: useTransform(badgeTranslateY, v => v * (depthMultiplier + 0.5)),
-                      z: 40 + (10 * depthMultiplier),
-                      transformStyle: 'preserve-3d',
+                      x: prefersReducedMotion ? 0 : badgeX,
+                      y: prefersReducedMotion ? 0 : badgeY,
                     }}
                   >
                     {phone.count}
                   </motion.div>
                 </div>
                 <div className="phone-messages">
-                  <div className="unread-msg" />
-                  <div className="unread-msg" />
-                  {idx % 2 === 0 && <div className="unread-msg faded" />}
+                  <motion.div 
+                    className="unread-msg parallax-msg"
+                    style={{
+                      x: prefersReducedMotion ? 0 : msgX,
+                      y: prefersReducedMotion ? 0 : msgY,
+                    }}
+                  />
+                  <motion.div 
+                    className="unread-msg parallax-msg"
+                    style={{
+                      x: prefersReducedMotion ? 0 : msgX,
+                      y: prefersReducedMotion ? 0 : msgY,
+                    }}
+                  />
+                  {idx % 2 === 0 && (
+                    <motion.div 
+                      className="unread-msg faded parallax-msg"
+                      style={{
+                        x: prefersReducedMotion ? 0 : msgX,
+                        y: prefersReducedMotion ? 0 : msgY,
+                      }}
+                    />
+                  )}
                 </div>
               </motion.div>
             );
           })}
         </div>
         
-        <div className="chaos-overlay" style={{ transformStyle: 'preserve-3d' }}>
+        <div className="chaos-overlay">
           {notifications.map((notif) => {
             const NotifIcon = notif.icon;
             return (
@@ -1367,10 +1379,8 @@ function ProblemMockup() {
                 key={notif.id}
                 className={`floating-notification ${notif.id} parallax-notification`}
                 style={{
-                  x: useTransform(notifTranslateX, v => v * notif.depth + notif.offsetX),
-                  y: useTransform(notifTranslateY, v => v * notif.depth + notif.offsetY),
-                  z: 60 + (notif.depth * 20),
-                  transformStyle: 'preserve-3d',
+                  x: prefersReducedMotion ? 0 : notifX,
+                  y: prefersReducedMotion ? 0 : notifY,
                 }}
               >
                 <NotifIcon className="w-3 h-3" />
@@ -1380,7 +1390,7 @@ function ProblemMockup() {
           })}
         </div>
       </motion.div>
-    </motion.div>
+    </div>
   );
 }
 
