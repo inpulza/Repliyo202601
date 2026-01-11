@@ -1861,20 +1861,32 @@ function SmokeDissolveText() {
   
   const currentWord = SMOKE_WORDS[currentIndex];
   const letters = currentWord.split('');
+  const longestWord = SMOKE_WORDS.reduce((a, b) => a.length > b.length ? a : b);
   
   if (prefersReducedMotion) {
-    return <span className="text-white/50">{currentWord}</span>;
+    return <span className="text-red-400/80">{currentWord}</span>;
   }
   
   return (
-    <span className="inline-block relative">
+    <span 
+      className="inline-block relative"
+      style={{ 
+        minWidth: `${longestWord.length * 0.6}em`,
+        textAlign: 'left'
+      }}
+    >
       <AnimatePresence mode="wait">
         <motion.span
           key={currentIndex}
-          className="inline-flex text-white/50"
+          className="inline-flex text-red-400/80"
           initial="hidden"
           animate="visible"
           exit="exit"
+          style={{ 
+            position: 'absolute',
+            left: 0,
+            whiteSpace: 'nowrap'
+          }}
         >
           {letters.map((letter, i) => (
             <motion.span
@@ -1882,7 +1894,7 @@ function SmokeDissolveText() {
               className="inline-block"
               style={{ 
                 willChange: "transform, opacity, filter",
-                textShadow: "0 0 20px rgba(255,255,255,0.3)"
+                textShadow: "0 0 20px rgba(248,113,113,0.4)"
               }}
               variants={{
                 hidden: { 
