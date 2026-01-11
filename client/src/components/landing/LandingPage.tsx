@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
-import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring, useMotionValue } from 'framer-motion';
+import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring, useMotionValue, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle } from 'lucide-react';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
@@ -1526,7 +1526,7 @@ function SolutionMockup() {
       transition: {
         delay: i * 0.15,
         duration: 0.6,
-        ease: [0.25, 0.46, 0.45, 0.94]
+        ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number]
       }
     })
   };
@@ -1539,7 +1539,7 @@ function SolutionMockup() {
       y: 0,
       transition: {
         delay: 0.8 + i * 0.12,
-        type: 'spring',
+        type: 'spring' as const,
         stiffness: 300,
         damping: 20
       }
@@ -1841,14 +1841,84 @@ function ProblemSolutionSection() {
   );
 }
 
+const ENTRY_DIRECTIONS = [
+  { x: -100, y: 0 },
+  { x: 0, y: 100 },
+  { x: 100, y: 0 },
+  { x: -100, y: 0 },
+  { x: 0, y: -100 },
+];
+
+function AnimatedDigit({ char, index }: { char: string; index: number }) {
+  const direction = ENTRY_DIRECTIONS[index % ENTRY_DIRECTIONS.length];
+
+  return (
+    <motion.span
+      initial={{ opacity: 0, x: direction.x, y: direction.y, scale: 0.5 }}
+      animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+      exit={{ opacity: 0, x: -direction.x, y: -direction.y, scale: 0.5 }}
+      transition={{
+        type: "spring",
+        stiffness: 100,
+        damping: 15,
+        mass: 0.8,
+        delay: index * 0.08,
+      }}
+      className="inline-block"
+      style={{ willChange: "transform, opacity" }}
+    >
+      {char}
+    </motion.span>
+  );
+}
+
+function AnimatedStatValue({ value, statKey }: { value: string; statKey: number }) {
+  const chars = value.split('');
+  
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={statKey}
+        className="inline-flex items-baseline justify-center"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+      >
+        {chars.map((char, i) => (
+          <AnimatedDigit key={`${statKey}-${i}-${char}`} char={char} index={i} />
+        ))}
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 function MetricSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: '-100px' });
   const prefersReducedMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
+  const [activeIndex, setActiveIndex] = useState(0);
   
   const scale = useTransform(scrollYProgress, [0, 0.5], prefersReducedMotion ? [1, 1] : [0.8, 1]);
   const opacity = useTransform(scrollYProgress, [0, 0.3], prefersReducedMotion ? [1, 1] : [0, 1]);
+  
+  const stats = [
+    { value: "80%", title: "menos tiempo respondiendo", description: "Nuestros usuarios reducen drásticamente el tiempo dedicado a gestionar mensajes." },
+    { value: "2min", title: "tiempo de respuesta promedio", description: "La IA genera borradores instantáneos que solo necesitan un clic para enviar." },
+    { value: "5x", title: "más leads gestionados", description: "Multiplica tu capacidad de atención sin aumentar tu equipo de soporte." },
+    { value: "24/7", title: "cobertura total con IA", description: "Los borradores se preparan automáticamente incluso fuera de horario laboral." },
+  ];
+  
+  useEffect(() => {
+    if (prefersReducedMotion || !isInView) return;
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % stats.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [prefersReducedMotion, isInView, stats.length]);
+  
+  const currentStat = stats[activeIndex];
 
   return (
     <section ref={ref} className="py-48 md:py-56 relative overflow-visible">
@@ -1863,15 +1933,45 @@ function MetricSection() {
         style={{ scale, opacity }}
         className="relative z-10 max-w-5xl mx-auto px-6 text-center"
       >
-        <div className="font-display font-black text-[25vw] md:text-[18vw] leading-none text-white mb-4">
-          <AnimatedCounter target={80} />%
+        <div className="font-display font-black text-[20vw] md:text-[16vw] leading-none text-white mb-6 h-[1.1em] flex items-center justify-center overflow-hidden">
+          {prefersReducedMotion ? (
+            <span>{currentStat.value}</span>
+          ) : (
+            <AnimatedStatValue value={currentStat.value} statKey={activeIndex} />
+          )}
         </div>
-        <h2 className="font-display text-3xl md:text-5xl font-bold text-white mb-4">
-          menos tiempo respondiendo
-        </h2>
-        <p className="text-white/50 text-xl max-w-xl mx-auto">
-          Nuestros usuarios reducen drásticamente el tiempo dedicado a gestionar mensajes de redes sociales.
-        </p>
+        
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeIndex}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          >
+            <h2 className="font-display text-3xl md:text-5xl font-bold text-white mb-4">
+              {currentStat.title}
+            </h2>
+            <p className="text-white/50 text-xl max-w-xl mx-auto">
+              {currentStat.description}
+            </p>
+          </motion.div>
+        </AnimatePresence>
+        
+        <div className="flex justify-center gap-3 mt-10">
+          {stats.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setActiveIndex(i)}
+              className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                activeIndex === i 
+                  ? 'bg-[var(--landing-primary)] scale-125' 
+                  : 'bg-white/20 hover:bg-white/40'
+              }`}
+              aria-label={`Ver estadística ${i + 1}`}
+            />
+          ))}
+        </div>
       </motion.div>
     </section>
   );
