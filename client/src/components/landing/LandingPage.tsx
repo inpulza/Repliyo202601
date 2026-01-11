@@ -1825,7 +1825,7 @@ function ProblemSolutionSection() {
               La solución
             </span>
             <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-12 leading-tight">
-              Un inbox inteligente que <span className="text-white/60">trabaja por ti</span>
+              Un inbox inteligente que <SolutionAnimatedText />
             </h2>
             <div className="max-w-4xl mx-auto">
               <SolutionMockup />
@@ -1837,7 +1837,7 @@ function ProblemSolutionSection() {
   );
 }
 
-const SMOKE_WORDS = [
+const PROBLEM_WORDS = [
   "agotador",
   "ineficiente", 
   "costoso",
@@ -1847,24 +1847,39 @@ const SMOKE_WORDS = [
   "poco rentable"
 ];
 
-function SmokeDissolveText() {
+const SOLUTION_WORDS = [
+  "vende por ti",
+  "responde al instante",
+  "te ahorra tiempo",
+  "cierra ventas solo",
+  "nunca descansa",
+  "convierte leads"
+];
+
+type SmokeTextProps = {
+  words: string[];
+  colorClass: string;
+  glowColor: string;
+};
+
+function SmokeDissolveTextGeneric({ words, colorClass, glowColor }: SmokeTextProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const prefersReducedMotion = useReducedMotion();
   
   useEffect(() => {
     if (prefersReducedMotion) return;
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % SMOKE_WORDS.length);
+      setCurrentIndex((prev) => (prev + 1) % words.length);
     }, 2800);
     return () => clearInterval(interval);
-  }, [prefersReducedMotion]);
+  }, [prefersReducedMotion, words.length]);
   
-  const currentWord = SMOKE_WORDS[currentIndex];
+  const currentWord = words[currentIndex];
   const letters = currentWord.split('');
-  const longestWord = SMOKE_WORDS.reduce((a, b) => a.length > b.length ? a : b);
+  const longestWord = words.reduce((a, b) => a.length > b.length ? a : b);
   
   if (prefersReducedMotion) {
-    return <span className="text-red-400/80">{currentWord}</span>;
+    return <span className={colorClass}>{currentWord}</span>;
   }
   
   return (
@@ -1882,7 +1897,7 @@ function SmokeDissolveText() {
       <AnimatePresence mode="wait">
         <motion.span
           key={currentIndex}
-          className="inline-flex text-red-400/80"
+          className={`inline-flex ${colorClass}`}
           initial="hidden"
           animate="visible"
           exit="exit"
@@ -1899,7 +1914,7 @@ function SmokeDissolveText() {
               className="inline-block"
               style={{ 
                 willChange: "transform, opacity, filter",
-                textShadow: "0 0 20px rgba(248,113,113,0.4)"
+                textShadow: `0 0 20px ${glowColor}`
               }}
               variants={{
                 hidden: { 
@@ -1940,6 +1955,26 @@ function SmokeDissolveText() {
         </motion.span>
       </AnimatePresence>
     </span>
+  );
+}
+
+function SmokeDissolveText() {
+  return (
+    <SmokeDissolveTextGeneric 
+      words={PROBLEM_WORDS} 
+      colorClass="text-red-400/80" 
+      glowColor="rgba(248,113,113,0.4)" 
+    />
+  );
+}
+
+function SolutionAnimatedText() {
+  return (
+    <SmokeDissolveTextGeneric 
+      words={SOLUTION_WORDS} 
+      colorClass="text-blue-400" 
+      glowColor="rgba(96,165,250,0.5)" 
+    />
   );
 }
 
