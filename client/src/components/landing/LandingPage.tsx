@@ -1205,7 +1205,7 @@ function Header() {
             ))}
           </nav>
           <div className="flex items-center gap-3">
-            <a href="/login" className="btn-primary text-sm py-2 px-4 md:py-2.5 md:px-5 hidden sm:inline-flex" data-testid="button-login-header">
+            <a href="/login" className="btn-primary text-sm py-2.5 px-5 hidden md:inline-flex" data-testid="button-login-header">
               Iniciar sesión
             </a>
             <button 
@@ -1265,7 +1265,7 @@ function Header() {
                   className="btn-primary w-full justify-center py-3"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Iniciar sesión
+                  Probar gratis
                 </a>
               </div>
             </motion.div>
@@ -1634,7 +1634,16 @@ function ProblemMockup() {
 
 function SolutionMockup() {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: '-100px' });
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  const inView = useInView(ref, { once: true, margin: isMobile ? '-20px' : '-100px' });
   const prefersReducedMotion = useReducedMotion();
   
   const sidebarItems = [
