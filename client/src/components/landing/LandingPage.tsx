@@ -1859,10 +1859,10 @@ function AnimatedDigit({ char, index }: { char: string; index: number }) {
       exit={{ opacity: 0, x: -direction.x, y: -direction.y, scale: 0.5 }}
       transition={{
         type: "spring",
-        stiffness: 100,
-        damping: 15,
-        mass: 0.8,
-        delay: index * 0.08,
+        stiffness: 180,
+        damping: 18,
+        mass: 0.6,
+        delay: index * 0.05,
       }}
       className="inline-block"
       style={{ willChange: "transform, opacity" }}
@@ -1893,6 +1893,26 @@ function AnimatedStatValue({ value, statKey }: { value: string; statKey: number 
   );
 }
 
+function ExpandingRipple({ delay }: { delay: number }) {
+  return (
+    <motion.div
+      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-blue-500/20"
+      initial={{ width: 100, height: 100, opacity: 0.6 }}
+      animate={{ 
+        width: [100, 900], 
+        height: [100, 900], 
+        opacity: [0.4, 0] 
+      }}
+      transition={{
+        duration: 4,
+        delay: delay,
+        repeat: Infinity,
+        ease: "easeOut"
+      }}
+    />
+  );
+}
+
 function MetricSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: '-100px' });
@@ -1914,20 +1934,23 @@ function MetricSection() {
     if (prefersReducedMotion || !isInView) return;
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % stats.length);
-    }, 5000);
+    }, 3000);
     return () => clearInterval(interval);
   }, [prefersReducedMotion, isInView, stats.length]);
   
   const currentStat = stats[activeIndex];
 
   return (
-    <section ref={ref} className="py-48 md:py-56 relative overflow-visible">
+    <section ref={ref} className="py-48 md:py-56 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,145,250,0.08)_0%,transparent_70%)]" />
       
-      <Parallax speed={-5} className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] md:w-[800px] md:h-[800px] rounded-full border border-blue-500/10" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] h-[450px] md:w-[600px] md:h-[600px] rounded-full border border-blue-500/5" />
-      </Parallax>
+      {!prefersReducedMotion && isInView && (
+        <div className="absolute inset-0 pointer-events-none">
+          <ExpandingRipple delay={0} />
+          <ExpandingRipple delay={1.3} />
+          <ExpandingRipple delay={2.6} />
+        </div>
+      )}
       
       <motion.div 
         style={{ scale, opacity }}
@@ -1947,7 +1970,7 @@ function MetricSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
           >
             <h2 className="font-display text-3xl md:text-5xl font-bold text-white mb-4">
               {currentStat.title}
@@ -1965,8 +1988,8 @@ function MetricSection() {
               onClick={() => setActiveIndex(i)}
               className={`w-3 h-3 rounded-full transition-all duration-300 ${
                 activeIndex === i 
-                  ? 'bg-[var(--landing-primary)] scale-125' 
-                  : 'bg-white/20 hover:bg-white/40'
+                  ? 'bg-white scale-125' 
+                  : 'bg-white/30 hover:bg-white/50'
               }`}
               aria-label={`Ver estadística ${i + 1}`}
             />
