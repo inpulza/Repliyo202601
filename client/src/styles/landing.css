@@ -662,18 +662,11 @@
 .marquee-section {
   position: relative;
   z-index: 30;
-  margin-top: -80px;
+  margin-top: 0;
 }
 
 .marquee-overlap-shadow {
-  position: absolute;
-  top: -100px;
-  left: 0;
-  right: 0;
-  height: 120px;
-  background: linear-gradient(to bottom, transparent 0%, var(--landing-bg) 100%);
-  pointer-events: none;
-  z-index: 1;
+  display: none;
 }
 
 .marquee-inner {
