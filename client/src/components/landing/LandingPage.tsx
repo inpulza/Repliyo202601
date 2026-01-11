@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
-import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring } from 'framer-motion';
+import React, { useEffect, useRef, useState, useLayoutEffect, useCallback } from 'react';
+import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring, useMotionValue } from 'framer-motion';
 import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle } from 'lucide-react';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
@@ -1235,122 +1235,152 @@ function MarqueeSection() {
 }
 
 function ProblemMockup() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = useReducedMotion();
+  
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  
+  const springConfig = { damping: 25, stiffness: 150, mass: 0.5 };
+  
+  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [8, -8]), springConfig);
+  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-8, 8]), springConfig);
+  
+  const cardTranslateX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-15, 15]), springConfig);
+  const cardTranslateY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-15, 15]), springConfig);
+  const cardRotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [4, -4]), springConfig);
+  const cardRotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-4, 4]), springConfig);
+  
+  const badgeSpringConfig = { damping: 20, stiffness: 200, mass: 0.3 };
+  const badgeTranslateX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-30, 30]), badgeSpringConfig);
+  const badgeTranslateY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-30, 30]), badgeSpringConfig);
+  
+  const notificationSpringConfig = { damping: 18, stiffness: 180, mass: 0.4 };
+  const notifTranslateX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-40, 40]), notificationSpringConfig);
+  const notifTranslateY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-40, 40]), notificationSpringConfig);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (prefersReducedMotion || !containerRef.current) return;
+    
+    const rect = containerRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    const normalizedX = (e.clientX - centerX) / (rect.width / 2);
+    const normalizedY = (e.clientY - centerY) / (rect.height / 2);
+    
+    mouseX.set(Math.max(-0.5, Math.min(0.5, normalizedX * 0.5)));
+    mouseY.set(Math.max(-0.5, Math.min(0.5, normalizedY * 0.5)));
+  }, [prefersReducedMotion, mouseX, mouseY]);
+
+  const handleMouseLeave = useCallback(() => {
+    mouseX.set(0);
+    mouseY.set(0);
+  }, [mouseX, mouseY]);
+
+  const phones = [
+    { platform: 'instagram', Icon: FaInstagram, name: 'Instagram', count: 23, depth: 1 },
+    { platform: 'tiktok', Icon: FaTiktok, name: 'TikTok', count: 47, depth: 1.2 },
+    { platform: 'facebook', Icon: FaFacebook, name: 'Facebook', count: 12, depth: 0.8 },
+    { platform: 'linkedin', Icon: FaLinkedin, name: 'LinkedIn', count: 8, depth: 1.1 },
+    { platform: 'youtube', Icon: FaYoutube, name: 'YouTube', count: 31, depth: 0.9 },
+    { platform: 'google', Icon: GoogleBusinessIcon, name: 'Google', count: 5, depth: 1.3 },
+  ];
+
+  const notifications = [
+    { id: 'n1', icon: Bell, text: '+82 mensajes sin leer', depth: 1.5, offsetX: -20, offsetY: -10 },
+    { id: 'n2', icon: Clock, text: 'Lead esperando 4 horas', depth: 1.7, offsetX: 15, offsetY: 5 },
+    { id: 'n3', icon: AlertCircle, text: 'Cliente frustrado', depth: 1.6, offsetX: -10, offsetY: 15 },
+    { id: 'n4', icon: MessageSquare, text: 'Venta perdida', depth: 1.8, offsetX: 20, offsetY: -5 },
+  ];
+
   return (
-    <div className="problem-mockup-card">
-      <div className="mockup-phone-grid">
-        <div className="chaos-phone instagram">
-          <div className="phone-header">
-            <div className="phone-notch" />
-          </div>
-          <div className="phone-app-bar">
-            <FaInstagram className="w-4 h-4" />
-            <span>Instagram</span>
-            <div className="notification-badge">23</div>
-          </div>
-          <div className="phone-messages">
-            <div className="unread-msg" />
-            <div className="unread-msg" />
-            <div className="unread-msg faded" />
-          </div>
+    <motion.div 
+      ref={containerRef}
+      className="problem-mockup-card parallax-3d-container"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        perspective: 1000,
+        transformStyle: 'preserve-3d',
+      }}
+    >
+      <motion.div 
+        className="parallax-3d-scene"
+        style={{
+          rotateX: prefersReducedMotion ? 0 : rotateX,
+          rotateY: prefersReducedMotion ? 0 : rotateY,
+          transformStyle: 'preserve-3d',
+        }}
+      >
+        <div className="mockup-phone-grid" style={{ transformStyle: 'preserve-3d' }}>
+          {phones.map((phone, idx) => {
+            const PhoneIcon = phone.Icon;
+            const depthMultiplier = phone.depth;
+            
+            return (
+              <motion.div 
+                key={phone.platform}
+                className={`chaos-phone ${phone.platform}`}
+                style={{
+                  x: useTransform(cardTranslateX, v => v * depthMultiplier),
+                  y: useTransform(cardTranslateY, v => v * depthMultiplier),
+                  rotateX: useTransform(cardRotateX, v => v * depthMultiplier),
+                  rotateY: useTransform(cardRotateY, v => v * depthMultiplier),
+                  z: 20 * depthMultiplier,
+                  transformStyle: 'preserve-3d',
+                }}
+              >
+                <div className="phone-header">
+                  <div className="phone-notch" />
+                </div>
+                <div className="phone-app-bar">
+                  <PhoneIcon className="w-4 h-4" />
+                  <span>{phone.name}</span>
+                  <motion.div 
+                    className="notification-badge parallax-badge"
+                    style={{
+                      x: useTransform(badgeTranslateX, v => v * (depthMultiplier + 0.5)),
+                      y: useTransform(badgeTranslateY, v => v * (depthMultiplier + 0.5)),
+                      z: 40 + (10 * depthMultiplier),
+                      transformStyle: 'preserve-3d',
+                    }}
+                  >
+                    {phone.count}
+                  </motion.div>
+                </div>
+                <div className="phone-messages">
+                  <div className="unread-msg" />
+                  <div className="unread-msg" />
+                  {idx % 2 === 0 && <div className="unread-msg faded" />}
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
         
-        <div className="chaos-phone tiktok">
-          <div className="phone-header">
-            <div className="phone-notch" />
-          </div>
-          <div className="phone-app-bar">
-            <FaTiktok className="w-4 h-4" />
-            <span>TikTok</span>
-            <div className="notification-badge">47</div>
-          </div>
-          <div className="phone-messages">
-            <div className="unread-msg" />
-            <div className="unread-msg" />
-            <div className="unread-msg faded" />
-          </div>
+        <div className="chaos-overlay" style={{ transformStyle: 'preserve-3d' }}>
+          {notifications.map((notif) => {
+            const NotifIcon = notif.icon;
+            return (
+              <motion.div 
+                key={notif.id}
+                className={`floating-notification ${notif.id} parallax-notification`}
+                style={{
+                  x: useTransform(notifTranslateX, v => v * notif.depth + notif.offsetX),
+                  y: useTransform(notifTranslateY, v => v * notif.depth + notif.offsetY),
+                  z: 60 + (notif.depth * 20),
+                  transformStyle: 'preserve-3d',
+                }}
+              >
+                <NotifIcon className="w-3 h-3" />
+                <span>{notif.text}</span>
+              </motion.div>
+            );
+          })}
         </div>
-        
-        <div className="chaos-phone facebook">
-          <div className="phone-header">
-            <div className="phone-notch" />
-          </div>
-          <div className="phone-app-bar">
-            <FaFacebook className="w-4 h-4" />
-            <span>Facebook</span>
-            <div className="notification-badge">12</div>
-          </div>
-          <div className="phone-messages">
-            <div className="unread-msg" />
-            <div className="unread-msg faded" />
-          </div>
-        </div>
-
-        <div className="chaos-phone linkedin">
-          <div className="phone-header">
-            <div className="phone-notch" />
-          </div>
-          <div className="phone-app-bar">
-            <FaLinkedin className="w-4 h-4" />
-            <span>LinkedIn</span>
-            <div className="notification-badge">8</div>
-          </div>
-          <div className="phone-messages">
-            <div className="unread-msg" />
-            <div className="unread-msg faded" />
-          </div>
-        </div>
-
-        <div className="chaos-phone youtube">
-          <div className="phone-header">
-            <div className="phone-notch" />
-          </div>
-          <div className="phone-app-bar">
-            <FaYoutube className="w-4 h-4" />
-            <span>YouTube</span>
-            <div className="notification-badge">31</div>
-          </div>
-          <div className="phone-messages">
-            <div className="unread-msg" />
-            <div className="unread-msg" />
-            <div className="unread-msg faded" />
-          </div>
-        </div>
-
-        <div className="chaos-phone google">
-          <div className="phone-header">
-            <div className="phone-notch" />
-          </div>
-          <div className="phone-app-bar">
-            <GoogleBusinessIcon className="w-4 h-4" />
-            <span>Google</span>
-            <div className="notification-badge">5</div>
-          </div>
-          <div className="phone-messages">
-            <div className="unread-msg" />
-            <div className="unread-msg faded" />
-          </div>
-        </div>
-      </div>
-      
-      <div className="chaos-overlay">
-        <div className="floating-notification n1">
-          <Bell className="w-3 h-3" />
-          <span>+82 mensajes sin leer</span>
-        </div>
-        <div className="floating-notification n2">
-          <Clock className="w-3 h-3" />
-          <span>Lead esperando 4 horas</span>
-        </div>
-        <div className="floating-notification n3">
-          <AlertCircle className="w-3 h-3" />
-          <span>Cliente frustrado</span>
-        </div>
-        <div className="floating-notification n4">
-          <MessageSquare className="w-3 h-3" />
-          <span>Venta perdida</span>
-        </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
