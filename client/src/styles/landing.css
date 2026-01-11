@@ -1689,9 +1689,14 @@
   letter-spacing: 0.5px;
   opacity: 0.85;
   margin-bottom: 8px;
-  background: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.25);
   padding: 3px 8px;
   border-radius: 6px;
+  color: white;
+}
+
+.chat-bubble-v2.outgoing .bubble-time {
+  color: rgba(255,255,255,0.8);
 }
 
 .ai-typing-v2 {
