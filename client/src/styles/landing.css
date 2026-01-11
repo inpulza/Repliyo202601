@@ -4986,25 +4986,25 @@
 
 .floating-notification-wrapper.n1 {
   top: 5%;
-  right: -18%;
+  right: -32%;
   animation-delay: 0s;
 }
 
 .floating-notification-wrapper.n2 {
   top: 20%;
-  left: -22%;
+  left: -38%;
   animation-delay: 0.8s;
 }
 
 .floating-notification-wrapper.n3 {
   bottom: 25%;
-  right: -20%;
+  right: -35%;
   animation-delay: 1.6s;
 }
 
 .floating-notification-wrapper.n4 {
   bottom: -8%;
-  left: -16%;
+  left: -30%;
   animation-delay: 2.4s;
 }
 
