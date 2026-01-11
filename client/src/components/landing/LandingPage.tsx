@@ -38,18 +38,6 @@ import stepsBgGreen from '@assets/generated_images/green_gradient_grain_backgrou
 import stepsBgVibrant from '@assets/generated_images/vibrant_blue_violet_gradient.png';
 import stepsBgLight from '@assets/generated_images/teal_cyan_bottom_to_top_gradient.png';
 import testimonialBettys from '../../assets/testimonial-bettys.jpg';
-import vChatBlue from '@assets/generated_images/chat_bubble_electric_blue.png';
-import vHeartPink from '@assets/generated_images/heart_hot_pink_bg.png';
-import vClockOrange from '@assets/generated_images/clock_bright_orange_bg.png';
-import vThumbsGreen from '@assets/generated_images/thumbs_up_emerald_green.png';
-import vRobotPurple from '@assets/generated_images/robot_vivid_purple_bg.png';
-import vMoonIndigo from '@assets/generated_images/moon_stars_indigo_bg.png';
-import vGroupCyan from '@assets/generated_images/group_people_cyan_bg.png';
-import vLightningYellow from '@assets/generated_images/lightning_yellow_bg.png';
-import vCheckLime from '@assets/generated_images/check_lime_green_bg.png';
-import vChartRose from '@assets/generated_images/chart_rose_red_bg.png';
-import vCommentSky from '@assets/generated_images/comment_sky_blue_bg.png';
-import vMessageViolet from '@assets/generated_images/message_violet_bg.png';
 import { ParallaxProvider, useParallax, Parallax } from 'react-scroll-parallax';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -1925,25 +1913,40 @@ function ExpandingRipple({ delay }: { delay: number }) {
   );
 }
 
-interface FloatingAvatarProps {
-  image: string;
+import { LucideIcon } from 'lucide-react';
+import { Clock4, ThumbsUp, CheckCircle, Zap as ZapIcon, MessageSquare as MsgSquare, Send as SendIcon, Heart as HeartIcon, Inbox as InboxIcon, Users2 as UsersIcon, TrendingUp, BarChart3, Sparkles as SparklesIcon, Bot, Moon, MessageCircle, Clock3 } from 'lucide-react';
+
+type FloatingAvatarConfig = {
+  kind: 'icon';
+  icon: LucideIcon;
+  bg: string;
+  border: string;
   position: { x: string; y: string };
   delay: number;
   size?: number;
-  borderColor: string;
-}
+} | {
+  kind: 'image';
+  imageSrc: string;
+  border: string;
+  position: { x: string; y: string };
+  delay: number;
+  size?: number;
+};
 
-function FloatingAvatar({ image, position, delay, size = 72, borderColor }: FloatingAvatarProps) {
+function FloatingAvatar({ config }: { config: FloatingAvatarConfig }) {
+  const size = config.size || 64;
+  
   return (
     <motion.div
-      className="absolute rounded-full overflow-hidden"
+      className="absolute rounded-full overflow-hidden flex items-center justify-center"
       style={{ 
-        left: position.x, 
-        top: position.y,
+        left: config.position.x, 
+        top: config.position.y,
         width: size,
         height: size,
-        border: `4px solid ${borderColor}`,
-        boxShadow: `0 0 20px ${borderColor}66`,
+        border: `3px solid ${config.border}`,
+        boxShadow: `0 0 24px ${config.border}55`,
+        backgroundColor: config.kind === 'icon' ? config.bg : 'transparent',
       }}
       initial={{ opacity: 0, scale: 0 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -1952,38 +1955,42 @@ function FloatingAvatar({ image, position, delay, size = 72, borderColor }: Floa
         type: "spring",
         stiffness: 400,
         damping: 25,
-        delay: delay,
+        delay: config.delay,
       }}
     >
-      <img src={image} alt="" className="w-full h-full object-cover" />
+      {config.kind === 'icon' ? (
+        <config.icon className="text-white" style={{ width: size * 0.5, height: size * 0.5 }} />
+      ) : (
+        <img src={config.imageSrc} alt="" className="w-full h-full object-cover" />
+      )}
     </motion.div>
   );
 }
 
-const STAT_AVATARS: { [key: number]: Array<{ image: string; position: { x: string; y: string }; delay: number; size?: number; borderColor: string }> } = {
+const STAT_AVATARS: { [key: number]: FloatingAvatarConfig[] } = {
   0: [
-    { image: vClockOrange, position: { x: '5%', y: '18%' }, delay: 0.05, size: 72, borderColor: '#F97316' },
-    { image: vThumbsGreen, position: { x: '88%', y: '22%' }, delay: 0.1, size: 64, borderColor: '#10B981' },
-    { image: vCheckLime, position: { x: '8%', y: '68%' }, delay: 0.15, size: 56, borderColor: '#84CC16' },
-    { image: vLightningYellow, position: { x: '85%', y: '65%' }, delay: 0.12, size: 68, borderColor: '#EAB308' },
+    { kind: 'icon', icon: Clock4, bg: '#F97316', border: '#FB923C', position: { x: '5%', y: '18%' }, delay: 0.05, size: 68 },
+    { kind: 'image', imageSrc: avatarMaria, border: '#10B981', position: { x: '88%', y: '20%' }, delay: 0.1, size: 64 },
+    { kind: 'icon', icon: CheckCircle, bg: '#22C55E', border: '#4ADE80', position: { x: '8%', y: '68%' }, delay: 0.15, size: 56 },
+    { kind: 'icon', icon: ZapIcon, bg: '#EAB308', border: '#FACC15', position: { x: '85%', y: '65%' }, delay: 0.12, size: 60 },
   ],
   1: [
-    { image: vChatBlue, position: { x: '4%', y: '20%' }, delay: 0.05, size: 72, borderColor: '#2563EB' },
-    { image: vMessageViolet, position: { x: '90%', y: '18%' }, delay: 0.1, size: 64, borderColor: '#8B5CF6' },
-    { image: vCommentSky, position: { x: '6%', y: '70%' }, delay: 0.15, size: 60, borderColor: '#0EA5E9' },
-    { image: vHeartPink, position: { x: '88%', y: '68%' }, delay: 0.12, size: 56, borderColor: '#EC4899' },
+    { kind: 'icon', icon: MsgSquare, bg: '#2563EB', border: '#3B82F6', position: { x: '4%', y: '20%' }, delay: 0.05, size: 68 },
+    { kind: 'icon', icon: SendIcon, bg: '#8B5CF6', border: '#A78BFA', position: { x: '90%', y: '18%' }, delay: 0.1, size: 60 },
+    { kind: 'image', imageSrc: avatarCarlos, border: '#0EA5E9', position: { x: '6%', y: '68%' }, delay: 0.15, size: 58 },
+    { kind: 'icon', icon: HeartIcon, bg: '#EC4899', border: '#F472B6', position: { x: '88%', y: '68%' }, delay: 0.12, size: 54 },
   ],
   2: [
-    { image: vGroupCyan, position: { x: '5%', y: '20%' }, delay: 0.05, size: 76, borderColor: '#06B6D4' },
-    { image: vChartRose, position: { x: '88%', y: '18%' }, delay: 0.1, size: 68, borderColor: '#F43F5E' },
-    { image: vThumbsGreen, position: { x: '7%', y: '70%' }, delay: 0.15, size: 60, borderColor: '#10B981' },
-    { image: vLightningYellow, position: { x: '86%', y: '66%' }, delay: 0.12, size: 64, borderColor: '#EAB308' },
+    { kind: 'icon', icon: UsersIcon, bg: '#06B6D4', border: '#22D3EE', position: { x: '5%', y: '18%' }, delay: 0.05, size: 72 },
+    { kind: 'icon', icon: TrendingUp, bg: '#F43F5E', border: '#FB7185', position: { x: '88%', y: '18%' }, delay: 0.1, size: 64 },
+    { kind: 'image', imageSrc: avatarAna, border: '#10B981', position: { x: '7%', y: '70%' }, delay: 0.15, size: 58 },
+    { kind: 'icon', icon: SparklesIcon, bg: '#A855F7', border: '#C084FC', position: { x: '86%', y: '66%' }, delay: 0.12, size: 60 },
   ],
   3: [
-    { image: vRobotPurple, position: { x: '5%', y: '18%' }, delay: 0.05, size: 76, borderColor: '#A855F7' },
-    { image: vMoonIndigo, position: { x: '88%', y: '22%' }, delay: 0.1, size: 68, borderColor: '#6366F1' },
-    { image: vChatBlue, position: { x: '7%', y: '68%' }, delay: 0.15, size: 60, borderColor: '#2563EB' },
-    { image: vClockOrange, position: { x: '86%', y: '65%' }, delay: 0.12, size: 64, borderColor: '#F97316' },
+    { kind: 'icon', icon: Bot, bg: '#A855F7', border: '#C084FC', position: { x: '5%', y: '18%' }, delay: 0.05, size: 72 },
+    { kind: 'icon', icon: Moon, bg: '#6366F1', border: '#818CF8', position: { x: '88%', y: '20%' }, delay: 0.1, size: 64 },
+    { kind: 'image', imageSrc: avatarDiego, border: '#2563EB', position: { x: '7%', y: '68%' }, delay: 0.15, size: 58 },
+    { kind: 'icon', icon: Clock3, bg: '#F97316', border: '#FB923C', position: { x: '86%', y: '65%' }, delay: 0.12, size: 60 },
   ],
 };
 
@@ -2036,11 +2043,7 @@ function MetricSection() {
             {currentAvatars.map((avatar, i) => (
               <FloatingAvatar
                 key={`${activeIndex}-${i}`}
-                image={avatar.image}
-                position={avatar.position}
-                delay={avatar.delay}
-                size={avatar.size}
-                borderColor={avatar.borderColor}
+                config={avatar}
               />
             ))}
           </motion.div>
