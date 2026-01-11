@@ -6,6 +6,8 @@ import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
 import avatarMaria from '@assets/generated_images/maria_customer_avatar_headshot.png';
 import avatarCarlos from '@assets/generated_images/carlos_customer_avatar_headshot.png';
 import avatarAna from '@assets/generated_images/ana_customer_avatar_headshot.png';
+import avatarDiego from '@assets/generated_images/hispanic_man_gym_selfie.png';
+import avatarLaura from '@assets/generated_images/latina_woman_with_dog.png';
 import agentAna from '@assets/generated_images/ana_agent_headshot_portrait.png';
 import agentLuis from '@assets/generated_images/luis_agent_headshot_portrait.png';
 import agentSara from '@assets/generated_images/sara_agent_headshot_portrait.png';
@@ -287,8 +289,8 @@ function FeatureInboxMockup() {
     { platform: 'instagram', name: 'María G.', avatar: avatarMaria, preview: '¿Tienen talla M?', Icon: FaInstagram, time: 'Ahora' },
     { platform: 'tiktok', name: 'Carlos R.', avatar: avatarCarlos, preview: 'Vi tu video!', Icon: FaTiktok, time: '2m' },
     { platform: 'facebook', name: 'Ana L.', avatar: avatarAna, preview: 'Quiero reservar', Icon: FaFacebook, time: '5m' },
-    { platform: 'instagram', name: 'Pedro S.', avatar: avatarCarlos, preview: '¿Hacen envíos?', Icon: FaInstagram, time: '8m' },
-    { platform: 'tiktok', name: 'Laura M.', avatar: avatarMaria, preview: '¡Me encanta!', Icon: FaTiktok, time: '12m' },
+    { platform: 'instagram', name: 'Diego R.', avatar: avatarDiego, preview: '¿Hacen envíos?', Icon: FaInstagram, time: '8m' },
+    { platform: 'tiktok', name: 'Laura M.', avatar: avatarLaura, preview: '¡Me encanta!', Icon: FaTiktok, time: '12m' },
     { platform: 'facebook', name: 'Diego R.', avatar: avatarAna, preview: '¿Precio?', Icon: FaFacebook, time: '15m' },
   ];
   
@@ -736,15 +738,15 @@ function InboxMockup() {
     { id: 1, user: 'María García', avatarImg: avatarMaria, message: '¿Tienen disponible el vestido azul en talla M?', platform: 'instagram', time: 'Ahora', unread: true },
     { id: 2, user: 'Carlos Rodríguez', avatarImg: avatarCarlos, message: 'Quiero reservar una mesa para el sábado', platform: 'tiktok', time: '2m', unread: true },
     { id: 3, user: 'Ana López', avatarImg: avatarAna, message: '¿Hacen envíos internacionales a Madrid?', platform: 'facebook', time: '5m', unread: true },
-    { id: 4, user: 'Pedro Sánchez', avatarImg: avatarCarlos, initials: 'PS', message: '¿Cuánto tarda el envío a Barcelona?', platform: 'instagram', time: '8m', unread: true },
-    { id: 5, user: 'Laura Martín', avatarImg: avatarAna, initials: 'LM', message: 'Me encantó el producto, gracias!', platform: 'tiktok', time: '12m', unread: false },
+    { id: 4, user: 'Diego Ramírez', avatarImg: avatarDiego, message: '¿Cuánto tarda el envío a Barcelona?', platform: 'instagram', time: '8m', unread: true },
+    { id: 5, user: 'Laura Martín', avatarImg: avatarLaura, message: 'Me encantó el producto, gracias!', platform: 'tiktok', time: '12m', unread: false },
   ];
 
   const floatingBubbles = [
     { id: 1, user: 'María García', avatar: avatarMaria, platform: 'instagram', position: 'pos-top-left', message: '¿Tienen disponible el vestido azul en talla M?' },
     { id: 2, user: 'Carlos Rodríguez', avatar: avatarCarlos, platform: 'tiktok', position: 'pos-top-right', message: 'Quiero reservar una mesa para el sábado' },
     { id: 3, user: 'Ana López', avatar: avatarAna, platform: 'facebook', position: 'pos-bottom-left', message: '¿Hacen envíos internacionales a Madrid?' },
-    { id: 4, user: 'Pedro Sánchez', avatar: avatarCarlos, platform: 'instagram', position: 'pos-bottom-right', message: '¿Cuánto tarda el envío a Barcelona?' },
+    { id: 4, user: 'Diego Ramírez', avatar: avatarDiego, platform: 'instagram', position: 'pos-bottom-right', message: '¿Cuánto tarda el envío a Barcelona?' },
   ];
 
   const [visibleMessages, setVisibleMessages] = useState<number[]>([]);
@@ -917,11 +919,7 @@ function InboxMockup() {
                 onClick={() => setSelectedMsg(msg.id)}
               >
                 <div className="avatar-container">
-                  {msg.initials ? (
-                    <div className="avatar-initials">{msg.initials}</div>
-                  ) : (
-                    <img src={msg.avatarImg} alt={msg.user} className="avatar-img" />
-                  )}
+                  <img src={msg.avatarImg} alt={msg.user} className="avatar-img" />
                   <span className={`platform-indicator ${msg.platform}`}>
                     <PlatformIcon platform={msg.platform} />
                   </span>
