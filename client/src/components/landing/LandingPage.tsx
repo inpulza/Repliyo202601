@@ -108,7 +108,8 @@ function Step1ConnectMockup() {
 function Step2AIMockup() {
   const [phase, setPhase] = useState(0);
   const [typedText, setTypedText] = useState('');
-  const fullResponse = '¡Hola! El precio es $299 con envío gratis. ¿Te gustaría ordenar?';
+  const { t } = useLanguage();
+  const fullResponse = t.mockups.step2.aiResponse;
   
   useEffect(() => {
     const timers: NodeJS.Timeout[] = [];
@@ -123,9 +124,10 @@ function Step2AIMockup() {
       timers.push(setTimeout(() => {
         setPhase(3);
         let charIndex = 0;
+        const response = fullResponse;
         const typeInterval = setInterval(() => {
-          if (charIndex < fullResponse.length) {
-            setTypedText(fullResponse.slice(0, charIndex + 1));
+          if (charIndex < response.length) {
+            setTypedText(response.slice(0, charIndex + 1));
             charIndex++;
           } else {
             clearInterval(typeInterval);
@@ -145,7 +147,7 @@ function Step2AIMockup() {
       timers.forEach(clearTimeout);
       intervals.forEach(clearInterval);
     };
-  }, []);
+  }, [fullResponse]);
   
   return (
     <div className="step-mockup ai-mockup-v3">
@@ -158,8 +160,8 @@ function Step2AIMockup() {
           <img src={avatarMaria} alt="Cliente" />
         </div>
         <div className="msg-content">
-          <span className="msg-name">María García</span>
-          <span className="msg-text">¿Cuánto cuesta el producto?</span>
+          <span className="msg-name">{t.mockups.step2.customerName}</span>
+          <span className="msg-text">{t.mockups.step2.customerQuestion}</span>
         </div>
       </motion.div>
       
@@ -171,7 +173,7 @@ function Step2AIMockup() {
           exit={{ opacity: 0 }}
         >
           <Sparkles className="w-5 h-5 text-blue-400" />
-          <span>IA generando respuesta...</span>
+          <span>{t.mockups.step2.aiGenerating}</span>
           <div className="analyzing-dots"><span /><span /><span /></div>
         </motion.div>
       )}
@@ -184,7 +186,7 @@ function Step2AIMockup() {
         >
           <div className="msg-content">
             <div className="ai-draft-badge-v2">
-              <Sparkles className="w-3 h-3" /> Borrador IA
+              <Sparkles className="w-3 h-3" /> {t.mockups.step2.aiDraft}
             </div>
             <span className="msg-text">
               {typedText}
@@ -199,6 +201,7 @@ function Step2AIMockup() {
 
 function Step3SendMockup() {
   const [phase, setPhase] = useState(0);
+  const { t } = useLanguage();
   
   useEffect(() => {
     const timers: NodeJS.Timeout[] = [];
@@ -228,8 +231,8 @@ function Step3SendMockup() {
             <img src={timelineSendIcon} alt="" className="w-full h-full object-cover" />
           </div>
           <div className="timeline-content">
-            <span className="timeline-title">Enviar respuesta</span>
-            {phase >= 1 && <span className="timeline-status">Listo para enviar</span>}
+            <span className="timeline-title">{t.mockups.step3.sendResponse}</span>
+            {phase >= 1 && <span className="timeline-status">{t.mockups.step3.readyToSend}</span>}
           </div>
         </motion.div>
         
@@ -243,8 +246,8 @@ function Step3SendMockup() {
             <img src={timelineCheckIcon} alt="" className="w-full h-full object-cover" />
           </div>
           <div className="timeline-content">
-            <span className="timeline-title">Mensaje enviado</span>
-            {phase >= 2 && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="timeline-status success">Entregado ✓</motion.span>}
+            <span className="timeline-title">{t.mockups.step3.messageSent}</span>
+            {phase >= 2 && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="timeline-status success">{t.mockups.step3.delivered}</motion.span>}
           </div>
         </motion.div>
         
@@ -258,8 +261,8 @@ function Step3SendMockup() {
             <img src={timelineBellIcon} alt="" className="w-full h-full object-cover" />
           </div>
           <div className="timeline-content">
-            <span className="timeline-title">Recordatorio</span>
-            {phase >= 3 && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="timeline-status warning">Programado 24h</motion.span>}
+            <span className="timeline-title">{t.mockups.step3.reminder}</span>
+            {phase >= 3 && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="timeline-status warning">{t.mockups.step3.scheduled24h}</motion.span>}
           </div>
         </motion.div>
         
@@ -273,8 +276,8 @@ function Step3SendMockup() {
             <img src={timelineChatIcon} alt="" className="w-full h-full object-cover" />
           </div>
           <div className="timeline-content">
-            <span className="timeline-title">Follow-up</span>
-            {phase >= 4 && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="timeline-status">Auto-enviado</motion.span>}
+            <span className="timeline-title">{t.mockups.step3.followUp}</span>
+            {phase >= 4 && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="timeline-status">{t.mockups.step3.autoSent}</motion.span>}
           </div>
         </motion.div>
       </div>
@@ -285,15 +288,24 @@ function Step3SendMockup() {
 function FeatureInboxMockup() {
   const [visibleItems, setVisibleItems] = useState<number[]>([]);
   const [cycle, setCycle] = useState(0);
+  const { t } = useLanguage();
   
-  const messages = [
-    { platform: 'instagram', name: 'María G.', avatar: avatarMaria, preview: '¿Tienen talla M?', Icon: FaInstagram, time: 'Ahora' },
-    { platform: 'tiktok', name: 'Carlos R.', avatar: avatarCarlos, preview: 'Vi tu video!', Icon: FaTiktok, time: '2m' },
-    { platform: 'facebook', name: 'Ana L.', avatar: avatarAna, preview: 'Quiero reservar', Icon: FaFacebook, time: '5m' },
-    { platform: 'instagram', name: 'Diego R.', avatar: avatarDiego, preview: '¿Hacen envíos?', Icon: FaInstagram, time: '8m' },
-    { platform: 'tiktok', name: 'Laura M.', avatar: avatarLaura, preview: '¡Me encanta!', Icon: FaTiktok, time: '12m' },
-    { platform: 'facebook', name: 'Diego R.', avatar: avatarAna, preview: '¿Precio?', Icon: FaFacebook, time: '15m' },
+  const avatars = [avatarMaria, avatarCarlos, avatarAna, avatarDiego, avatarLaura, avatarAna];
+  const platforms: Array<{ platform: string; Icon: React.ComponentType<{ className?: string }> }> = [
+    { platform: 'instagram', Icon: FaInstagram },
+    { platform: 'tiktok', Icon: FaTiktok },
+    { platform: 'facebook', Icon: FaFacebook },
+    { platform: 'instagram', Icon: FaInstagram },
+    { platform: 'tiktok', Icon: FaTiktok },
+    { platform: 'facebook', Icon: FaFacebook },
   ];
+  
+  const messages = t.mockups.inbox.messages.map((msg, idx) => ({
+    ...msg,
+    platform: platforms[idx].platform,
+    Icon: platforms[idx].Icon,
+    avatar: avatars[idx],
+  }));
   
   useEffect(() => {
     setVisibleItems([]);
@@ -315,7 +327,7 @@ function FeatureInboxMockup() {
   return (
     <div className="feature-inbox-mockup">
       <div className="inbox-header-mini">
-        <span className="inbox-count">{messages.length} nuevos</span>
+        <span className="inbox-count">{messages.length} {t.mockups.inbox.newCount}</span>
         <div className="inbox-platforms-mini">
           <FaInstagram className="w-3 h-3 text-pink-400" />
           <FaTiktok className="w-3 h-3 tiktok-icon-adaptive" />
@@ -357,13 +369,15 @@ function FeatureInboxMockup() {
 
 function FeatureAIMockup() {
   const [text, setText] = useState('');
-  const fullText = '¡Hola! Gracias por escribirnos...';
+  const { t } = useLanguage();
+  const fullText = t.mockups.ai.typingText;
   
   useEffect(() => {
     let charIndex = 0;
+    const textToType = fullText;
     const interval = setInterval(() => {
-      if (charIndex < fullText.length) {
-        setText(fullText.slice(0, charIndex + 1));
+      if (charIndex < textToType.length) {
+        setText(textToType.slice(0, charIndex + 1));
         charIndex++;
       } else {
         setTimeout(() => {
@@ -373,7 +387,7 @@ function FeatureAIMockup() {
       }
     }, 60);
     return () => clearInterval(interval);
-  }, []);
+  }, [fullText]);
   
   return (
     <div className="feature-ai-mockup">
@@ -391,6 +405,7 @@ function FeatureAIMockup() {
 function FeatureCRMMockup() {
   const [showDetails, setShowDetails] = useState(false);
   const [cycle, setCycle] = useState(0);
+  const { t } = useLanguage();
   
   useEffect(() => {
     const timers: NodeJS.Timeout[] = [];
@@ -414,7 +429,7 @@ function FeatureCRMMockup() {
             <img src={avatarMaria} alt="Cliente" />
           </div>
           <div className="crm-mini-info-v2">
-            <span className="crm-mini-name-v2">María García</span>
+            <span className="crm-mini-name-v2">{t.mockups.step2.customerName}</span>
             <div className="crm-mini-channels">
               <FaInstagram className="w-3 h-3 text-pink-400" />
               <FaFacebook className="w-3 h-3 text-blue-500" />
@@ -428,16 +443,16 @@ function FeatureCRMMockup() {
           transition={{ duration: 0.3 }}
         >
           <div className="crm-mini-stat">
-            <span className="crm-stat-label">Compras</span>
+            <span className="crm-stat-label">{t.mockups.crmMini.purchases}</span>
             <span className="crm-stat-value">$1.2k</span>
           </div>
           <div className="crm-mini-stat">
-            <span className="crm-stat-label">Mensajes</span>
+            <span className="crm-stat-label">{t.mockups.crmMini.messages}</span>
             <span className="crm-stat-value">24</span>
           </div>
           <div className="crm-mini-tags-v2">
-            <span className="crm-tag vip">VIP</span>
-            <span className="crm-tag loyal">Leal</span>
+            <span className="crm-tag vip">{t.mockups.crmMini.vip}</span>
+            <span className="crm-tag loyal">{t.mockups.crmMini.loyal}</span>
           </div>
         </motion.div>
       </motion.div>
@@ -447,6 +462,7 @@ function FeatureCRMMockup() {
 
 function FeatureReminderMockup() {
   const [phase, setPhase] = useState(0);
+  const { t } = useLanguage();
   
   useEffect(() => {
     const interval = setInterval(() => {
@@ -460,12 +476,12 @@ function FeatureReminderMockup() {
       <div className="reminder-timeline">
         <div className={`reminder-event ${phase >= 0 ? 'active' : ''}`}>
           <MessageSquare className="w-4 h-4" />
-          <span>Mensaje enviado</span>
+          <span>{t.mockups.reminderTimeline.messageSent}</span>
         </div>
         <div className={`reminder-line ${phase >= 1 ? 'active' : ''}`} />
         <div className={`reminder-event pause ${phase >= 1 ? 'active' : ''}`}>
           <Clock className="w-4 h-4" />
-          <span>24h sin respuesta</span>
+          <span>{t.mockups.reminderTimeline.noResponse24h}</span>
         </div>
         <div className={`reminder-line ${phase >= 2 ? 'active' : ''}`} />
         <motion.div 
@@ -473,7 +489,7 @@ function FeatureReminderMockup() {
           animate={phase === 2 ? { scale: [1, 1.1, 1] } : {}}
         >
           <Bell className="w-4 h-4" />
-          <span>Recordatorio</span>
+          <span>{t.mockups.reminderTimeline.reminder}</span>
         </motion.div>
         <div className={`reminder-line ${phase >= 3 ? 'active' : ''}`} />
         <motion.div 
@@ -481,7 +497,7 @@ function FeatureReminderMockup() {
           animate={phase === 3 ? { scale: [1, 1.1, 1] } : {}}
         >
           <Send className="w-4 h-4" />
-          <span>Follow-up auto</span>
+          <span>{t.mockups.reminderTimeline.autoFollowUp}</span>
         </motion.div>
       </div>
     </div>
@@ -491,12 +507,9 @@ function FeatureReminderMockup() {
 function FeatureCommentsMockup() {
   const [phase, setPhase] = useState(0);
   const [cycle, setCycle] = useState(0);
+  const { t } = useLanguage();
   
-  const comments = [
-    { question: '¿Precio?', answer: '$299 + envío gratis' },
-    { question: '¿Colores?', answer: 'Negro, blanco y azul' },
-    { question: '¿Tallas?', answer: 'S, M, L y XL' },
-  ];
+  const comments = t.mockups.comments;
   
   useEffect(() => {
     setPhase(0);
@@ -582,6 +595,7 @@ function FeatureMultiAgentMockup() {
   const [activeAgent, setActiveAgent] = useState(0);
   const [cycle, setCycle] = useState(0);
   const [visibleAssignments, setVisibleAssignments] = useState<number[]>([]);
+  const { t } = useLanguage();
   
   const agents = [
     { name: 'Ana', color: 'bg-pink-500', initials: 'AN', avatar: agentAna, conversations: 12, responseTime: '2m' },
@@ -591,10 +605,11 @@ function FeatureMultiAgentMockup() {
     { name: 'María', color: 'bg-blue-500', initials: 'MA', avatar: agentMaria, conversations: 10, responseTime: '2m' },
   ];
 
-  const recentAssignments = [
-    { customer: 'Pedro M.', platform: 'instagram', agent: 'Ana', time: 'Ahora' },
-    { customer: 'Laura G.', platform: 'tiktok', agent: 'Luis', time: '1m' },
-  ];
+  const assignmentPlatforms = ['instagram', 'tiktok'];
+  const recentAssignments = t.mockups.multiAgent.assignments.map((a, idx) => ({
+    ...a,
+    platform: assignmentPlatforms[idx] || 'instagram',
+  }));
   
   useEffect(() => {
     const timers: NodeJS.Timeout[] = [];
@@ -618,8 +633,8 @@ function FeatureMultiAgentMockup() {
   return (
     <div className="feature-multiagent-mockup">
       <div className="multiagent-header">
-        <span className="multiagent-title">Equipo activo</span>
-        <span className="multiagent-count">{agents.length} online</span>
+        <span className="multiagent-title">{t.mockups.multiAgent.activeTeam}</span>
+        <span className="multiagent-count">{agents.length} {t.mockups.multiAgent.online}</span>
       </div>
       <div className="multiagent-avatars">
         {agents.map((agent, idx) => (
@@ -650,12 +665,12 @@ function FeatureMultiAgentMockup() {
         transition={{ duration: 0.3 }}
       >
         <span className="status-dot" />
-        <span className="status-text">{agents[activeAgent].name} respondiendo...</span>
+        <span className="status-text">{agents[activeAgent].name} {t.mockups.multiAgent.responding}</span>
       </motion.div>
 
       <div className="multiagent-assignments">
         <div className="assignments-header">
-          <span className="assignments-title">Asignaciones recientes</span>
+          <span className="assignments-title">{t.mockups.multiAgent.recentAssignments}</span>
         </div>
         {recentAssignments.map((assignment, idx) => (
           <motion.div
