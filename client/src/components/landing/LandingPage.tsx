@@ -1824,8 +1824,11 @@ function ProblemSolutionSection() {
             <span className="text-sm uppercase tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-4 block">
               La solución
             </span>
-            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-16 leading-tight flex flex-wrap justify-center items-baseline gap-x-3">
-              <span>Un inbox inteligente que</span> <SolutionAnimatedText />
+            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-16 leading-tight flex flex-col items-center gap-y-2">
+              <span>Un inbox inteligente que</span>
+              <span className="w-full flex justify-center">
+                <SolutionAnimatedText />
+              </span>
             </h2>
             <div className="max-w-4xl mx-auto">
               <SolutionMockup />
@@ -1860,9 +1863,10 @@ type SmokeTextProps = {
   words: string[];
   colorClass: string;
   glowColor: string;
+  centered?: boolean;
 };
 
-function SmokeDissolveTextGeneric({ words, colorClass, glowColor }: SmokeTextProps) {
+function SmokeDissolveTextGeneric({ words, colorClass, glowColor, centered = false }: SmokeTextProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const prefersReducedMotion = useReducedMotion();
   
@@ -1903,9 +1907,9 @@ function SmokeDissolveTextGeneric({ words, colorClass, glowColor }: SmokeTextPro
           exit="exit"
           style={{ 
             position: 'absolute',
-            left: '50%',
+            left: centered ? '50%' : 0,
             top: 0,
-            transform: 'translateX(-50%)',
+            transform: centered ? 'translateX(-50%)' : 'none',
             whiteSpace: 'nowrap'
           }}
         >
@@ -1974,7 +1978,8 @@ function SolutionAnimatedText() {
     <SmokeDissolveTextGeneric 
       words={SOLUTION_WORDS} 
       colorClass="text-blue-400" 
-      glowColor="rgba(96,165,250,0.5)" 
+      glowColor="rgba(96,165,250,0.5)"
+      centered={true}
     />
   );
 }
