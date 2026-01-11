@@ -2276,15 +2276,6 @@ function HowItWorksSection() {
           <h2 className="font-display text-4xl md:text-6xl font-bold text-white mb-8">
             De caos a control en <span className="text-white/60">3 pasos</span>
           </h2>
-          
-          <div className="how-progress-dots">
-            {steps.map((_, i) => (
-              <div 
-                key={i} 
-                className={`how-progress-dot ${activeStep >= i ? 'active' : ''}`}
-              />
-            ))}
-          </div>
         </div>
 
         <div className="how-steps-wrapper" style={{ 
