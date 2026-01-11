@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring, useMotionValue, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Play, Check, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle } from 'lucide-react';
+import { ArrowRight, Play, Check, CheckCheck, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle } from 'lucide-react';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
 import avatarMaria from '@assets/generated_images/maria_customer_avatar_headshot.png';
@@ -1181,6 +1181,20 @@ function HeroSection() {
                   }}
                 >
                   segundos.
+                </motion.span>
+                <motion.span
+                  className="inline-flex items-center ml-3 text-[var(--landing-primary)]"
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{
+                    delay: 1.1,
+                    duration: 0.25,
+                    type: "spring",
+                    stiffness: 500,
+                    damping: 15
+                  }}
+                >
+                  <CheckCheck className="w-8 h-8 md:w-10 md:h-10 lg:w-12 lg:h-12" strokeWidth={2.5} />
                 </motion.span>
               </span>
               <motion.span 
