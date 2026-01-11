@@ -5056,15 +5056,12 @@
   padding: 12px;
   background: rgba(255, 255, 255, 0.03);
   border-radius: 12px;
-  border-left: 3px solid transparent;
 }
 
 .conv-item.answered {
-  border-left-color: var(--landing-primary);
 }
 
 .conv-item.ai-draft {
-  border-left-color: var(--landing-primary);
   background: rgba(2, 145, 250, 0.08);
 }
 
