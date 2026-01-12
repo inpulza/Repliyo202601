@@ -436,6 +436,39 @@
   background: linear-gradient(to bottom, var(--landing-primary), rgba(2, 145, 250, 0.4));
 }
 
+/* Mobile How It Works carousel - force white text on liquid background */
+@media (max-width: 768px) {
+  .landing-page.theme-light section#how .timeline-title,
+  .landing-page.theme-light section#how .send-mockup-v2 .timeline-title {
+    color: white !important;
+  }
+  
+  .landing-page.theme-light section#how .timeline-status,
+  .landing-page.theme-light section#how .send-mockup-v2 .timeline-status {
+    color: rgba(255,255,255,0.8) !important;
+  }
+  
+  .landing-page.theme-light section#how .timeline-connector,
+  .landing-page.theme-light section#how .send-mockup-v2 .timeline-connector {
+    background: rgba(255,255,255,0.2) !important;
+  }
+  
+  .landing-page.theme-light section#how .timeline-connector.active,
+  .landing-page.theme-light section#how .send-mockup-v2 .timeline-connector.active {
+    background: linear-gradient(to bottom, var(--landing-primary), rgba(2, 145, 250, 0.4)) !important;
+  }
+  
+  /* Ensure section title stays white */
+  .landing-page.theme-light section#how h2,
+  .landing-page.theme-light section#how h3 {
+    color: white !important;
+  }
+  
+  .landing-page.theme-light section#how h2 span {
+    color: rgba(255,255,255,0.6) !important;
+  }
+}
+
 .landing-page.theme-light .connect-center-inbox {
   box-shadow: 0 0 40px rgba(2, 145, 250, 0.25);
 }
