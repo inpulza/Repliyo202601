@@ -7195,9 +7195,17 @@
   
   /* Fixed height for Problem section to prevent animation jumps */
   #problem-solution > div:first-child {
-    min-height: 900px !important;
-    height: 900px !important;
-    max-height: 900px !important;
+    min-height: 800px !important;
+    height: 800px !important;
+    max-height: 800px !important;
+    overflow: hidden !important;
+  }
+  
+  /* Fixed height for Solution section to prevent animation jumps */
+  #problem-solution > div:nth-child(2) {
+    min-height: 800px !important;
+    height: 800px !important;
+    max-height: 800px !important;
     overflow: hidden !important;
   }
   
