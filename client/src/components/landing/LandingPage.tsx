@@ -3593,14 +3593,13 @@ function HowItWorksMobile() {
 
       <div className="relative rounded-2xl overflow-hidden mx-auto max-w-sm min-h-[320px]">
         <LiquidBackground 
-          colorStart="#c8c8c8"
-          colorMid="#e8e8e8"
+          colorStart="#0d9488"
+          colorMid="#d4d4d4"
           colorEnd="#fafafa"
           speed={0.025}
           scale={0.75}
           className="rounded-2xl"
         />
-        <div className="absolute inset-0 bg-black/10" />
         
         <AnimatePresence mode="wait">
           <motion.div
@@ -3832,8 +3831,8 @@ function HowItWorksSection() {
 
         <div className="how-steps-wrapper relative">
           <LiquidBackground 
-            colorStart="#c8c8c8"
-            colorMid="#e8e8e8"
+            colorStart="#0d9488"
+            colorMid="#d4d4d4"
             colorEnd="#fafafa"
             speed={0.025}
             scale={0.75}
