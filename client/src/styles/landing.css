@@ -7644,33 +7644,54 @@
     text-align: center;
   }
 
-  /* Compact AI Replies + CRM cards on mobile */
-  .mobile-feature-card .feature-ai-mockup,
-  .mobile-feature-card .feature-crm-mockup {
-    padding: 8px !important;
-    gap: 6px !important;
+  /* Compact ALL mobile feature cards */
+  .mobile-feature-card .feature-card-inner {
+    padding: 16px !important;
+  }
+
+  .mobile-feature-card h3 {
+    margin-top: 8px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .mobile-feature-card p {
+    margin-bottom: 0 !important;
+  }
+
+  .mobile-feature-card .feature-mockup-area {
+    margin-top: 12px !important;
+    min-height: auto !important;
+  }
+
+  /* AI Replies mockup - more compact */
+  .mobile-feature-card .feature-ai-mockup {
+    margin-top: 0 !important;
+    padding: 0 !important;
   }
 
   .mobile-feature-card .feature-ai-mockup .ai-text-box {
-    padding: 10px 12px !important;
+    padding: 10px 14px !important;
   }
 
+  /* CRM mockup - more compact */
   .mobile-feature-card .feature-crm-mockup {
-    min-height: 140px !important;
+    margin-top: 0 !important;
+    padding: 0 !important;
+    min-height: auto !important;
   }
 
   .mobile-feature-card .crm-header {
-    padding: 6px 10px !important;
-    margin-bottom: 6px !important;
+    padding: 8px 12px !important;
+    margin-bottom: 8px !important;
   }
 
   .mobile-feature-card .crm-stats {
-    gap: 6px !important;
-    padding: 6px !important;
+    gap: 8px !important;
+    padding: 8px !important;
   }
 
   .mobile-feature-card .crm-stat-item {
-    padding: 6px 8px !important;
+    padding: 8px 10px !important;
   }
 
   /* Hide desktop bento-grid on mobile */
