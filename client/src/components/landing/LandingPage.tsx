@@ -3563,8 +3563,8 @@ function HowItWorksMobile() {
         <span className="text-xs uppercase tracking-[0.2em] text-[var(--landing-primary)] font-semibold mb-3 block">
           {t.howItWorks.label}
         </span>
-        <h2 className="font-display text-2xl font-bold text-white leading-tight">
-          {t.howItWorks.title} <span className="text-white/60">{t.howItWorks.titleHighlight}</span>
+        <h2 className="font-display text-2xl font-bold text-[var(--landing-text)] leading-tight">
+          {t.howItWorks.title} <span className="text-[var(--landing-text-muted)]">{t.howItWorks.titleHighlight}</span>
         </h2>
       </div>
 
@@ -3576,7 +3576,7 @@ function HowItWorksMobile() {
             className={`w-10 h-10 rounded-full font-display font-bold text-sm transition-all duration-300 ${
               activeStep === i
                 ? 'bg-[var(--landing-primary)] text-white scale-110 shadow-lg shadow-[var(--landing-primary)]/30'
-                : 'bg-white/10 text-white/50 hover:bg-white/20'
+                : 'bg-black/10 text-[var(--landing-text-muted)] hover:bg-black/20'
             }`}
           >
             {step.number}
@@ -3640,7 +3640,7 @@ function HowItWorksMobile() {
             className={`h-2 rounded-full transition-all duration-300 ${
               activeStep === i 
                 ? 'bg-[var(--landing-primary)] w-6' 
-                : 'bg-white/30 w-2'
+                : 'bg-black/20 w-2'
             }`}
             aria-label={`Step ${i + 1}`}
           />
