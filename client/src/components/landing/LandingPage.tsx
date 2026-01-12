@@ -1296,8 +1296,9 @@ function HeroSection() {
             transition={{ delay: 1.5, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             className="flex items-center justify-center"
           >
-            <a href="/login" className="btn-primary" data-testid="button-empezar-gratis-hero">
-              {t.hero.cta} <ArrowRight className="w-4 h-4" />
+            <a href="/login" className="btn-glow-animated" data-testid="button-empezar-gratis-hero">
+              <span className="btn-glow-text">{t.hero.cta}</span>
+              <ArrowRight className="w-4 h-4 btn-glow-icon" />
             </a>
           </motion.div>
         </motion.div>

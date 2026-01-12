@@ -711,6 +711,141 @@
   box-shadow: 0 0 30px -5px var(--landing-primary);
 }
 
+/* ============================================
+   BTN GLOW ANIMATED - Rotating border glow + Fill hover
+   ============================================ */
+.btn-glow-animated {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 32px;
+  font-weight: 600;
+  font-size: 16px;
+  color: white;
+  background: var(--landing-primary);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  overflow: visible;
+  z-index: 1;
+  text-decoration: none;
+  isolation: isolate;
+}
+
+/* Rotating glow border */
+.btn-glow-animated::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 14px;
+  padding: 2px;
+  background: conic-gradient(
+    from var(--glow-angle, 0deg),
+    transparent 0%,
+    rgba(255, 255, 255, 0.8) 10%,
+    var(--landing-primary) 20%,
+    transparent 30%
+  );
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: rotateGlow 3s linear infinite;
+  z-index: -1;
+  opacity: 0.7;
+}
+
+/* Glow blur effect */
+.btn-glow-animated::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 16px;
+  background: conic-gradient(
+    from var(--glow-angle, 0deg),
+    transparent 0%,
+    rgba(2, 145, 250, 0.6) 10%,
+    rgba(2, 145, 250, 0.3) 20%,
+    transparent 30%
+  );
+  filter: blur(12px);
+  animation: rotateGlow 3s linear infinite;
+  z-index: -2;
+  opacity: 0.5;
+}
+
+@property --glow-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes rotateGlow {
+  from {
+    --glow-angle: 0deg;
+  }
+  to {
+    --glow-angle: 360deg;
+  }
+}
+
+/* Fill overlay for hover effect */
+.btn-glow-animated .btn-glow-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: linear-gradient(90deg, var(--landing-primary-dark) 0%, var(--landing-primary) 100%);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: -1;
+}
+
+/* Text and icon */
+.btn-glow-text,
+.btn-glow-icon {
+  position: relative;
+  z-index: 2;
+  transition: transform 0.3s ease;
+}
+
+/* Hover state - fill effect using pseudo-element trick */
+.btn-glow-animated {
+  background: linear-gradient(90deg, var(--landing-primary) 0%, var(--landing-primary) 100%);
+  background-size: 200% 100%;
+  background-position: 100% 0;
+  transition: background-position 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease;
+}
+
+.btn-glow-animated:hover {
+  background: linear-gradient(90deg, #0180e0 0%, var(--landing-primary) 50%, var(--landing-primary-dark) 100%);
+  background-size: 200% 100%;
+  background-position: 0% 0;
+}
+
+.btn-glow-animated:hover::before {
+  opacity: 1;
+  animation: rotateGlow 1.5s linear infinite;
+}
+
+.btn-glow-animated:hover::after {
+  opacity: 0.8;
+  filter: blur(16px);
+}
+
+.btn-glow-animated:hover .btn-glow-icon {
+  transform: translateX(4px);
+}
+
+.btn-glow-animated:active {
+  transform: scale(0.98);
+}
+
 .btn-secondary {
   background: transparent;
   color: var(--landing-text);
