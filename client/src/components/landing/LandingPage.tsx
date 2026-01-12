@@ -125,55 +125,16 @@ function Step1ConnectMockup() {
 }
 
 function Step2AIMockup() {
-  const [phase, setPhase] = useState(0);
-  const [typedText, setTypedText] = useState('');
   const { t } = useLanguage();
   const fullResponse = t.mockups.step2.aiResponse;
-  
-  useEffect(() => {
-    const timers: NodeJS.Timeout[] = [];
-    const intervals: NodeJS.Timeout[] = [];
-    
-    const runCycle = () => {
-      setPhase(0);
-      setTypedText('');
-      
-      timers.push(setTimeout(() => setPhase(1), 500));
-      timers.push(setTimeout(() => setPhase(2), 2000));
-      timers.push(setTimeout(() => {
-        setPhase(3);
-        let charIndex = 0;
-        const response = fullResponse;
-        const typeInterval = setInterval(() => {
-          if (charIndex < response.length) {
-            setTypedText(response.slice(0, charIndex + 1));
-            charIndex++;
-          } else {
-            clearInterval(typeInterval);
-          }
-        }, 25);
-        intervals.push(typeInterval);
-      }, 2500));
-      
-      timers.push(setTimeout(() => {
-        runCycle();
-      }, 7000));
-    };
-    
-    runCycle();
-    
-    return () => {
-      timers.forEach(clearTimeout);
-      intervals.forEach(clearInterval);
-    };
-  }, [fullResponse]);
   
   return (
     <div className="step-mockup ai-mockup-v3">
       <motion.div 
         className="floating-msg incoming"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: phase >= 1 ? 1 : 0, y: phase >= 1 ? 0 : 20 }}
+        initial={{ opacity: 0, x: -30 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
       >
         <div className="msg-avatar">
           <img src={avatarMaria} alt={t.mockups.inbox.crm.client} />
@@ -184,121 +145,55 @@ function Step2AIMockup() {
         </div>
       </motion.div>
       
-      {phase === 2 && (
-        <motion.div 
-          className="floating-analyzing"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <Sparkles className="w-5 h-5 text-blue-400" />
-          <span>{t.mockups.step2.aiGenerating}</span>
-          <div className="analyzing-dots"><span /><span /><span /></div>
-        </motion.div>
-      )}
-      
-      {phase >= 3 && (
-        <motion.div 
-          className="floating-msg outgoing"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div className="msg-content">
-            <div className="ai-draft-badge-v2">
-              <Sparkles className="w-3 h-3" /> {t.mockups.step2.aiDraft}
-            </div>
-            <span className="msg-text">
-              {typedText}
-              {typedText.length < fullResponse.length && <span className="typing-cursor" />}
-            </span>
+      <motion.div 
+        className="floating-msg outgoing"
+        initial={{ opacity: 0, x: 30 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.4, delay: 0.15, ease: [0.25, 0.46, 0.45, 0.94] }}
+      >
+        <div className="msg-content">
+          <div className="ai-draft-badge-v2">
+            <Sparkles className="w-3 h-3" /> {t.mockups.step2.aiDraft}
           </div>
-        </motion.div>
-      )}
+          <span className="msg-text">{fullResponse}</span>
+        </div>
+      </motion.div>
     </div>
   );
 }
 
 function Step3SendMockup() {
-  const [phase, setPhase] = useState(0);
   const { t } = useLanguage();
   
-  useEffect(() => {
-    const timers: NodeJS.Timeout[] = [];
-    
-    const runCycle = () => {
-      setPhase(0);
-      timers.push(setTimeout(() => setPhase(1), 500));
-      timers.push(setTimeout(() => setPhase(2), 1500));
-      timers.push(setTimeout(() => setPhase(3), 2500));
-      timers.push(setTimeout(() => setPhase(4), 3500));
-      timers.push(setTimeout(() => runCycle(), 6000));
-    };
-    
-    runCycle();
-    return () => timers.forEach(clearTimeout);
-  }, []);
+  const steps = [
+    { icon: Send, iconClass: 'send-icon-v2', title: t.mockups.step3.sendResponse, status: t.mockups.step3.readyToSend, statusClass: '' },
+    { icon: CheckCircle, iconClass: 'check-icon-v2', title: t.mockups.step3.messageSent, status: t.mockups.step3.delivered, statusClass: 'success' },
+    { icon: Bell, iconClass: 'bell-icon-v2', title: t.mockups.step3.reminder, status: t.mockups.step3.scheduled24h, statusClass: 'warning' },
+    { icon: MessageCircle, iconClass: 'follow-icon-v2', title: t.mockups.step3.followUp, status: t.mockups.step3.autoSent, statusClass: '' },
+  ];
   
   return (
     <div className="step-mockup send-mockup-v2">
       <div className="send-timeline">
-        <motion.div 
-          className={`timeline-step ${phase >= 1 ? 'active' : ''}`}
-          animate={{ scale: phase === 1 ? [1, 1.1, 1] : 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          <div className="timeline-icon-v2 send-icon-v2">
-            <Send className="w-5 h-5" />
-          </div>
-          <div className="timeline-content">
-            <span className="timeline-title">{t.mockups.step3.sendResponse}</span>
-            {phase >= 1 && <span className="timeline-status">{t.mockups.step3.readyToSend}</span>}
-          </div>
-        </motion.div>
-        
-        <div className={`timeline-connector ${phase >= 2 ? 'active' : ''}`} />
-        
-        <motion.div 
-          className={`timeline-step ${phase >= 2 ? 'active' : ''}`}
-          animate={{ scale: phase === 2 ? [1, 1.1, 1] : 1 }}
-        >
-          <div className="timeline-icon-v2 check-icon-v2">
-            <CheckCircle className="w-5 h-5" />
-          </div>
-          <div className="timeline-content">
-            <span className="timeline-title">{t.mockups.step3.messageSent}</span>
-            {phase >= 2 && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="timeline-status success">{t.mockups.step3.delivered}</motion.span>}
-          </div>
-        </motion.div>
-        
-        <div className={`timeline-connector ${phase >= 3 ? 'active' : ''}`} />
-        
-        <motion.div 
-          className={`timeline-step ${phase >= 3 ? 'active' : ''}`}
-          animate={{ scale: phase === 3 ? [1, 1.1, 1] : 1 }}
-        >
-          <div className="timeline-icon-v2 bell-icon-v2">
-            <Bell className="w-5 h-5" />
-          </div>
-          <div className="timeline-content">
-            <span className="timeline-title">{t.mockups.step3.reminder}</span>
-            {phase >= 3 && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="timeline-status warning">{t.mockups.step3.scheduled24h}</motion.span>}
-          </div>
-        </motion.div>
-        
-        <div className={`timeline-connector ${phase >= 4 ? 'active' : ''}`} />
-        
-        <motion.div 
-          className={`timeline-step ${phase >= 4 ? 'active' : ''}`}
-          animate={{ scale: phase === 4 ? [1, 1.1, 1] : 1 }}
-        >
-          <div className="timeline-icon-v2 follow-icon-v2">
-            <MessageCircle className="w-5 h-5" />
-          </div>
-          <div className="timeline-content">
-            <span className="timeline-title">{t.mockups.step3.followUp}</span>
-            {phase >= 4 && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="timeline-status">{t.mockups.step3.autoSent}</motion.span>}
-          </div>
-        </motion.div>
+        {steps.map((step, idx) => (
+          <React.Fragment key={idx}>
+            {idx > 0 && <div className="timeline-connector active" />}
+            <motion.div 
+              className="timeline-step active"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3, delay: idx * 0.08 }}
+            >
+              <div className={`timeline-icon-v2 ${step.iconClass}`}>
+                <step.icon className="w-5 h-5" />
+              </div>
+              <div className="timeline-content">
+                <span className="timeline-title">{step.title}</span>
+                <span className={`timeline-status ${step.statusClass}`}>{step.status}</span>
+              </div>
+            </motion.div>
+          </React.Fragment>
+        ))}
       </div>
     </div>
   );
