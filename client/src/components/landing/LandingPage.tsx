@@ -23,15 +23,8 @@ import icon3dInbox from '@assets/generated_images/modern_flat_inbox_icon.png';
 import icon3dSparkles from '@assets/generated_images/modern_flat_sparkles_icon.png';
 import icon3dBell from '@assets/generated_images/modern_flat_bell_icon.png';
 import icon3dUsers from '@assets/generated_images/modern_flat_users_group_icon.png';
-import featureIconInbox from '@assets/generated_images/modern_flat_unified_inbox_icon.png';
 import flagES from '@assets/flags/es.png';
 import flagGB from '@assets/flags/gb.png';
-import featureIconMultiAgent from '@assets/generated_images/modern_flat_multi-agent_team_icon.png';
-import featureIconAI from '@assets/generated_images/modern_flat_ai_sparkles_icon.png';
-import featureIconCRM from '@assets/generated_images/modern_flat_crm_contact_icon.png';
-import featureIconReminder from '@assets/generated_images/modern_flat_reminder_bell_icon.png';
-import featureIconComments from '@assets/generated_images/modern_flat_comments_icon.png';
-import featureIconAnalytics from '@assets/generated_images/modern_flat_analytics_chart_icon.png';
 import timelineSendIcon from '@assets/generated_images/square_purple_send_icon.png';
 import timelineCheckIcon from '@assets/generated_images/square_green_check_icon.png';
 import timelineBellIcon from '@assets/generated_images/square_orange_bell_icon.png';
@@ -3138,7 +3131,7 @@ function ExpandingRipple({ delay }: { delay: number }) {
 }
 
 import { LucideIcon } from 'lucide-react';
-import { Clock4, ThumbsUp, CheckCircle, Zap as ZapIcon, MessageSquare as MsgSquare, Send as SendIcon, Heart as HeartIcon, Inbox as InboxIcon, Users2 as UsersIcon, TrendingUp, BarChart3, Sparkles as SparklesIcon, Bot, Moon, MessageCircle, Clock3, Rocket, Star, Timer } from 'lucide-react';
+import { Clock4, ThumbsUp, CheckCircle, Zap as ZapIcon, MessageSquare as MsgSquare, Send as SendIcon, Heart as HeartIcon, Inbox as InboxIcon, Users2 as UsersIcon, TrendingUp, BarChart3, Sparkles as SparklesIcon, Bot, Moon, MessageCircle, Clock3, Rocket, Star, Timer, UserCircle, BellRing, MessageSquareText, BarChart2 as BarChartIcon } from 'lucide-react';
 
 type FloatingElementConfig = {
   component: React.ReactNode;
@@ -3896,6 +3889,15 @@ function FeaturesSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
   const { t } = useLanguage();
+  const [mobileSlide, setMobileSlide] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useGSAP(() => {
     if (prefersReducedMotion) return;
@@ -3936,17 +3938,43 @@ function FeaturesSection() {
     <FeatureAnalyticsMockup />,
   ];
 
-  const featureIcons = [
-    featureIconInbox,
-    featureIconMultiAgent,
-    featureIconAI,
-    featureIconCRM,
-    featureIconReminder,
-    featureIconComments,
-    featureIconAnalytics,
+  const FeatureIcons = [
+    InboxIcon,
+    UsersIcon,
+    SparklesIcon,
+    UserCircle,
+    BellRing,
+    MessageSquareText,
+    BarChartIcon,
   ];
 
   const featureSizes = ['medium', 'medium', 'small', 'small', 'medium', 'medium', 'medium'];
+
+  const mobileSlides = [
+    [0, 1],
+    [2, 3],
+    [4, 5, 6],
+  ];
+
+  const renderFeatureCard = (feature: typeof t.features.items[0], i: number, forMobile = false) => (
+    <div
+      key={feature.title}
+      className={`feature-card ${forMobile ? 'mobile-feature-card' : `bento-${featureSizes[i]}`}`}
+    >
+      <div className="feature-card-inner">
+        <div className="feature-icon-wrapper overflow-hidden bg-transparent flex items-center justify-center">
+          {React.createElement(FeatureIcons[i], { className: "w-8 h-8 text-[var(--landing-primary)]" })}
+        </div>
+        <h3 className="font-display text-xl font-bold text-white mt-4 mb-2">{feature.title}</h3>
+        <p className="text-white/50 text-sm leading-relaxed">{feature.description}</p>
+        {featureMockups[i] && (
+          <div className="feature-mockup-area">
+            {featureMockups[i]}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <section id="features" ref={sectionRef} className="py-32 section-dark relative overflow-hidden">
@@ -3972,29 +4000,43 @@ function FeaturesSection() {
           </p>
         </motion.div>
 
-        <div className="bento-grid">
-          {t.features.items.map((feature, i) => {
-            return (
-              <div
-                key={feature.title}
-                className={`feature-card bento-${featureSizes[i]}`}
-              >
-                <div className="feature-card-inner">
-                  <div className="feature-icon-wrapper overflow-hidden bg-transparent">
-                    <img src={featureIcons[i]} alt="" className="w-14 h-14 object-contain" />
+        {isMobile ? (
+          <div className="features-mobile-carousel">
+            <div className="features-carousel-container">
+              {mobileSlides.map((slideIndices, slideIdx) => (
+                <motion.div
+                  key={slideIdx}
+                  className="features-carousel-slide"
+                  initial={false}
+                  animate={{
+                    opacity: mobileSlide === slideIdx ? 1 : 0,
+                    x: `${(slideIdx - mobileSlide) * 100}%`,
+                  }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                  style={{ position: slideIdx === 0 ? 'relative' : 'absolute', top: 0, left: 0, width: '100%' }}
+                >
+                  <div className="features-slide-cards">
+                    {slideIndices.map((i) => renderFeatureCard(t.features.items[i], i, true))}
                   </div>
-                  <h3 className="font-display text-xl font-bold text-white mt-4 mb-2">{feature.title}</h3>
-                  <p className="text-white/50 text-sm leading-relaxed">{feature.description}</p>
-                  {featureMockups[i] && (
-                    <div className="feature-mockup-area">
-                      {featureMockups[i]}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                </motion.div>
+              ))}
+            </div>
+            <div className="features-carousel-dots">
+              {mobileSlides.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setMobileSlide(idx)}
+                  className={`features-carousel-dot ${mobileSlide === idx ? 'active' : ''}`}
+                  aria-label={`Slide ${idx + 1}`}
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="bento-grid">
+            {t.features.items.map((feature, i) => renderFeatureCard(feature, i))}
+          </div>
+        )}
       </div>
     </section>
   );
