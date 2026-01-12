@@ -1135,12 +1135,26 @@ function MobileInboxMockup() {
   const [visibleChat, setVisibleChat] = useState(0);
   const [visibleInbox, setVisibleInbox] = useState<number[]>([]);
   const [crmVisible, setCrmVisible] = useState(false);
+  
+  // Floating bubbles state
+  const [visibleBubbles, setVisibleBubbles] = useState<number[]>([]);
+  const [bubbleTypingTexts, setBubbleTypingTexts] = useState<{[key: number]: string}>({});
+  
+  const mobileBubbles = [
+    { id: 1, platform: 'instagram', user: 'Laura M.', avatar: avatarAna, message: t.mockups.inbox.allMessages[0].message.substring(0, 25) + '...', position: 'left' },
+    { id: 2, platform: 'tiktok', user: 'Pablo R.', avatar: avatarCarlos, message: t.mockups.inbox.allMessages[1].message.substring(0, 22) + '...', position: 'right' },
+  ];
 
   useEffect(() => {
     if (prefersReducedMotion) {
       setVisibleInbox([1, 2, 3, 4]);
       setVisibleChat(4);
       setCrmVisible(true);
+      setVisibleBubbles([1, 2]);
+      setBubbleTypingTexts({
+        1: mobileBubbles[0].message,
+        2: mobileBubbles[1].message
+      });
       return;
     }
     
@@ -1148,6 +1162,8 @@ function MobileInboxMockup() {
     setVisibleChat(0);
     setCrmVisible(false);
     setActiveSlide(0);
+    setVisibleBubbles([]);
+    setBubbleTypingTexts({});
     
     const timers: NodeJS.Timeout[] = [];
     
@@ -1156,6 +1172,31 @@ function MobileInboxMockup() {
         setVisibleInbox(prev => [...prev, idx + 1]);
       }, 400 + idx * 500));
     });
+    
+    // Start floating bubbles animation after inbox loads
+    timers.push(setTimeout(() => {
+      setVisibleBubbles([1]);
+      let charIdx = 0;
+      const bubble1Msg = mobileBubbles[0].message;
+      const typeInterval = setInterval(() => {
+        charIdx++;
+        setBubbleTypingTexts(prev => ({ ...prev, 1: bubble1Msg.slice(0, charIdx) }));
+        if (charIdx >= bubble1Msg.length) clearInterval(typeInterval);
+      }, 40);
+      timers.push(typeInterval as unknown as NodeJS.Timeout);
+    }, 2000));
+    
+    timers.push(setTimeout(() => {
+      setVisibleBubbles(prev => [...prev, 2]);
+      let charIdx = 0;
+      const bubble2Msg = mobileBubbles[1].message;
+      const typeInterval = setInterval(() => {
+        charIdx++;
+        setBubbleTypingTexts(prev => ({ ...prev, 2: bubble2Msg.slice(0, charIdx) }));
+        if (charIdx >= bubble2Msg.length) clearInterval(typeInterval);
+      }, 45);
+      timers.push(typeInterval as unknown as NodeJS.Timeout);
+    }, 2800));
     
     timers.push(setTimeout(() => {
       setActiveSlide(1);
@@ -1329,6 +1370,40 @@ function MobileInboxMockup() {
         <span className={activeSlide === 0 ? 'active' : ''}>{t.mockups.inbox.nav.inbox}</span>
         <span className={activeSlide === 1 ? 'active' : ''}>AI Chat</span>
         <span className={activeSlide === 2 ? 'active' : ''}>{t.mockups.inbox.nav.crm}</span>
+      </div>
+      
+      {/* Floating Bubbles */}
+      <div className="mobile-floating-bubbles">
+        {mobileBubbles.map((bubble) => (
+          <div
+            key={bubble.id}
+            className={`mobile-floating-bubble ${bubble.platform} ${bubble.position} ${visibleBubbles.includes(bubble.id) ? 'visible' : ''}`}
+          >
+            <div className="mobile-bubble-header">
+              <div className={`mobile-bubble-icon ${bubble.platform}`}>
+                {bubble.platform === 'instagram' && <FaInstagram className="w-3 h-3 text-white" />}
+                {bubble.platform === 'tiktok' && <FaTiktok className="w-3 h-3 text-white" />}
+                {bubble.platform === 'facebook' && <FaFacebook className="w-3 h-3 text-white" />}
+              </div>
+              <span className="mobile-bubble-platform">
+                {bubble.platform === 'instagram' ? 'Instagram' : bubble.platform === 'tiktok' ? 'TikTok' : 'Messenger'}
+              </span>
+            </div>
+            <div className="mobile-bubble-user">
+              <img src={bubble.avatar} alt={bubble.user} className="mobile-bubble-avatar" />
+              <span className="mobile-bubble-name">{bubble.user}</span>
+            </div>
+            <div className="mobile-bubble-input">
+              <span className="mobile-bubble-text">
+                {bubbleTypingTexts[bubble.id] || ''}
+              </span>
+              {visibleBubbles.includes(bubble.id) && (bubbleTypingTexts[bubble.id]?.length || 0) < bubble.message.length && (
+                <span className="mobile-bubble-cursor" />
+              )}
+              <Send className="w-3.5 h-3.5 mobile-bubble-send" />
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
