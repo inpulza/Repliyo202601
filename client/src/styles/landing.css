@@ -2589,6 +2589,7 @@
   gap: 60px;
   max-width: 1400px;
   margin: 0 auto;
+  align-items: start;
   padding: 0 40px;
   position: relative;
 }
@@ -2625,12 +2626,12 @@
 /* Right side: Sticky visual */
 .how-dual-track-right {
   position: relative;
+  align-self: start;
 }
 
 .how-dual-track-sticky {
   position: sticky;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 15vh;
   height: auto;
 }
 
