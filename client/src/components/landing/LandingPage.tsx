@@ -3553,8 +3553,8 @@ function MetricSection() {
             onClick={() => setActiveIndex(i)}
             className={`h-2.5 rounded-full transition-all duration-300 ${
               activeIndex === i 
-                ? 'bg-white w-6' 
-                : 'bg-white/40 hover:bg-white/60 w-2.5'
+                ? 'bg-[var(--landing-primary)] w-6' 
+                : 'bg-[var(--landing-primary)]/40 hover:bg-[var(--landing-primary)]/60 w-2.5'
             }`}
             aria-label={`${t.metrics.viewStatistic} ${i + 1}`}
           />
