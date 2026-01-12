@@ -6300,7 +6300,8 @@
   width: 300%;
   transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   background: transparent;
-  overflow: visible;
+  overflow: hidden;
+  border-radius: 36px;
 }
 
 .mobile-slide {
@@ -6316,8 +6317,6 @@
   box-sizing: border-box;
   background: #f8f9fa;
   border-radius: 36px;
-  border: 3px solid #000000;
-  margin: 0 6px;
 }
 
 .mobile-slide-header {
