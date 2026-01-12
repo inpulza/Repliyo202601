@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring, useMotionValue, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Play, Check, CheckCheck, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle, Globe } from 'lucide-react';
+import { ArrowRight, Play, Check, CheckCheck, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle, Globe, Search } from 'lucide-react';
 import { GlowButton } from './GlowButton';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
@@ -1133,13 +1133,14 @@ function MobileInboxMockup() {
     { id: 6, user: 'Laura Martín', avatarImg: avatarLaura, message: '¿Tienen catálogo en PDF?', platform: 'facebook', time: '20m' },
   ];
   
-  const threadComments = [
-    { id: 1, user: 'brydon2020', time: '07:18 PM', type: 'comment', text: 'será que me pueda Aser un ejemplo yo gane 15mil cash soy casada...' },
-    { id: 2, user: 'vzla.la.ksa', time: '07:55 PM', type: 'comment', text: 'Si vivimos juntos tenemos una hija en común pero no estamos casados...' },
-    { id: 3, user: 'Repliyo AI', time: '', type: 'ai-reply', text: '¡Hola! Gracias por tu pregunta. Para tu caso específico te recomiendo...' },
-    { id: 4, user: 'maria_lopez', time: '08:12 PM', type: 'comment', text: '¿Y si tengo dos trabajos diferentes, cómo lo declaro?' },
+  const crmContacts = [
+    { id: 1, name: 'Vanessa Vanessa', platform: 'facebook', status: 'lead', messages: 5, time: '4 horas' },
+    { id: 2, name: 'franciscoantonio', platform: 'instagram', status: 'lead', messages: 8, time: '9 horas' },
+    { id: 3, name: 'Ávila Yüsmaira', platform: 'facebook', status: 'lead', messages: 1, time: '13 horas' },
+    { id: 4, name: 'Yenifer Yeimelis', platform: 'facebook', status: 'lead', messages: 5, time: '16 horas' },
+    { id: 5, name: 'Javier Rivera', platform: 'facebook', status: 'lead', messages: 2, time: '17 horas' },
   ];
-  const [visibleThreadComments, setVisibleThreadComments] = useState<number[]>([]);
+  const [visibleCrmContacts, setVisibleCrmContacts] = useState<number[]>([]);
   
   const chatMessages = t.mockups.inbox.conversation.slice(0, 4);
   const [visibleChat, setVisibleChat] = useState(0);
@@ -1183,7 +1184,7 @@ function MobileInboxMockup() {
       });
       setShowAiResponse(true);
       setAiResponseText(aiResponseMessage);
-      setVisibleThreadComments([1, 2, 3, 4]);
+      setVisibleCrmContacts([1, 2, 3, 4, 5]);
       return;
     }
     
@@ -1196,7 +1197,7 @@ function MobileInboxMockup() {
     setBubbleTypingTexts({});
     setShowAiResponse(false);
     setAiResponseText('');
-    setVisibleThreadComments([]);
+    setVisibleCrmContacts([]);
     
     const timers: NodeJS.Timeout[] = [];
     
@@ -1328,16 +1329,16 @@ function MobileInboxMockup() {
       setCrmVisible(true);
     }, 9500));
     
-    // Thread comments animation
+    // CRM Contacts list animation
     timers.push(setTimeout(() => {
       setActiveSlide(3);
-      setVisibleThreadComments([1]);
+      setVisibleCrmContacts([1]);
     }, 12000));
     
-    threadComments.slice(1).forEach((_, idx) => {
+    crmContacts.slice(1).forEach((_, idx) => {
       timers.push(setTimeout(() => {
-        setVisibleThreadComments(prev => [...prev, idx + 2]);
-      }, 12500 + idx * 700));
+        setVisibleCrmContacts(prev => [...prev, idx + 2]);
+      }, 12400 + idx * 350));
     });
     
     timers.push(setTimeout(() => {
@@ -1514,7 +1515,7 @@ function MobileInboxMockup() {
           </motion.div>
           
           <motion.div 
-            className="mobile-screen screen-thread"
+            className="mobile-screen screen-contacts"
             initial={false}
             animate={{ 
               opacity: activeSlide === 3 ? 1 : 0,
@@ -1522,38 +1523,45 @@ function MobileInboxMockup() {
             }}
             transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
           >
-            <div className="mobile-slide-header thread-header">
-              <MessageCircle className="w-5 h-5" />
-              <span>Thread · 74 mensajes</span>
+            <div className="mobile-contacts-header">
+              <span className="mobile-contacts-title">Contactos</span>
             </div>
-            <div className="mobile-thread-content">
-              {threadComments.map((comment) => (
+            <div className="mobile-contacts-tabs">
+              <span className="mobile-tab active">Contactos (100)</span>
+              <span className="mobile-tab">Pendientes</span>
+              <span className="mobile-tab">Dup.</span>
+            </div>
+            <div className="mobile-contacts-search">
+              <Search className="w-3.5 h-3.5" />
+              <span>Buscar...</span>
+            </div>
+            <div className="mobile-contacts-list">
+              {crmContacts.map((contact) => (
                 <motion.div
-                  key={comment.id}
-                  initial={{ opacity: 0, y: 20 }}
+                  key={contact.id}
+                  initial={{ opacity: 0, x: -15 }}
                   animate={{ 
-                    opacity: visibleThreadComments.includes(comment.id) ? 1 : 0,
-                    y: visibleThreadComments.includes(comment.id) ? 0 : 20
+                    opacity: visibleCrmContacts.includes(contact.id) ? 1 : 0,
+                    x: visibleCrmContacts.includes(contact.id) ? 0 : -15
                   }}
-                  transition={{ duration: 0.3 }}
-                  className={`mobile-thread-comment ${comment.type}`}
+                  transition={{ duration: 0.25 }}
+                  className="mobile-contact-row"
                 >
-                  <div className="thread-comment-header">
-                    <span className="thread-user">{comment.user}</span>
-                    {comment.time && <span className="thread-time">{comment.time}</span>}
-                    {comment.type === 'ai-reply' && (
-                      <span className="thread-ai-badge">
-                        <Sparkles className="w-3 h-3" />
-                      </span>
-                    )}
+                  <div className="mobile-contact-initial">
+                    {contact.name.charAt(0).toUpperCase()}
                   </div>
-                  <p className="thread-text">{comment.text}</p>
-                  {comment.type === 'comment' && (
-                    <div className="thread-actions">
-                      <span>Reply</span>
-                      <span>Generar Borrador</span>
+                  <div className="mobile-contact-info">
+                    <div className="mobile-contact-name">{contact.name}</div>
+                    <div className="mobile-contact-meta">
+                      <span className="mobile-contact-badge">{contact.status}</span>
+                      <span className="mobile-contact-msgs">{contact.messages} msgs</span>
+                      <span className="mobile-contact-time">hace {contact.time}</span>
                     </div>
-                  )}
+                  </div>
+                  <div className={`mobile-contact-platform ${contact.platform}`}>
+                    {contact.platform === 'facebook' && <FaFacebook className="w-3 h-3 text-white" />}
+                    {contact.platform === 'instagram' && <FaInstagram className="w-3 h-3 text-white" />}
+                  </div>
                 </motion.div>
               ))}
             </div>
@@ -1575,7 +1583,7 @@ function MobileInboxMockup() {
         <span className={activeSlide === 0 ? 'active' : ''}>{t.mockups.inbox.nav.inbox}</span>
         <span className={activeSlide === 1 ? 'active' : ''}>AI Chat</span>
         <span className={activeSlide === 2 ? 'active' : ''}>{t.mockups.inbox.nav.crm}</span>
-        <span className={activeSlide === 3 ? 'active' : ''}>Thread</span>
+        <span className={activeSlide === 3 ? 'active' : ''}>Contactos</span>
       </div>
       
       {/* Floating Bubbles - Row 1 */}
