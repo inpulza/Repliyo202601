@@ -710,6 +710,55 @@
   z-index: 10;
 }
 
+/* Hero Floating Social Icons */
+.hero-floating-icons-left,
+.hero-floating-icons-right {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  flex-direction: column;
+  gap: 12px;
+  z-index: 5;
+}
+
+.hero-floating-icons-left {
+  right: calc(100% + 24px);
+}
+
+.hero-floating-icons-right {
+  left: calc(100% + 24px);
+}
+
+.hero-floating-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1);
+  animation: hero-float 3s ease-in-out infinite;
+}
+
+.hero-floating-icon:nth-child(2) {
+  animation-delay: 0.5s;
+}
+
+.hero-floating-icon:nth-child(3) {
+  animation-delay: 1s;
+}
+
+@keyframes hero-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+/* Light theme adjustments for floating icons */
+.landing-page.theme-light .hero-floating-icon {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
 .marquee-section {
   position: relative;
   z-index: 1;
