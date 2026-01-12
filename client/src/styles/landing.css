@@ -6299,9 +6299,9 @@
   display: flex;
   width: 300%;
   transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: 32px;
-  background: #f8f9fa;
+  background: transparent;
   overflow: hidden;
+  border-radius: 28px;
 }
 
 .mobile-slide {
@@ -6316,6 +6316,7 @@
   overflow: hidden;
   box-sizing: border-box;
   background: #f8f9fa;
+  border-radius: 28px;
 }
 
 .mobile-slide-header {
@@ -6385,19 +6386,31 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid rgba(15, 15, 20, 0.95);
+  border: 2px solid white;
 }
 
 .mobile-platform-dot.instagram {
   background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
 }
 
+.mobile-platform-dot.instagram svg {
+  color: white !important;
+}
+
 .mobile-platform-dot.tiktok {
-  background: #000;
+  background: #000000;
+}
+
+.mobile-platform-dot.tiktok svg {
+  color: #25f4ee !important;
 }
 
 .mobile-platform-dot.facebook {
   background: #1877f2;
+}
+
+.mobile-platform-dot.facebook svg {
+  color: white !important;
 }
 
 .mobile-msg-content {
@@ -6689,10 +6702,13 @@
 .mobile-floating-bubbles {
   display: flex;
   justify-content: center;
-  gap: 12px;
-  margin-top: 20px;
+  gap: 10px;
+  margin-top: 12px;
   padding: 0 16px;
-  position: relative;
+}
+
+.mobile-floating-bubbles:first-of-type {
+  margin-top: 16px;
 }
 
 .mobile-floating-bubble {
@@ -6812,4 +6828,57 @@
   color: var(--landing-primary);
   flex-shrink: 0;
   opacity: 0.7;
+}
+
+.mobile-bubble-icon.youtube {
+  background: #FF0000;
+}
+
+/* AI Response Bubble */
+.mobile-ai-response-bubble {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 16px;
+  padding: 12px 16px;
+  margin: 12px 16px 0;
+  box-shadow: 
+    0 4px 20px rgba(102, 126, 234, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.mobile-ai-response-bubble.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.mobile-ai-response-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.mobile-ai-response-header svg {
+  color: white !important;
+}
+
+.mobile-ai-response-header span {
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+}
+
+.mobile-ai-response-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.mobile-ai-response-text {
+  font-size: 13px;
+  color: white;
+  line-height: 1.4;
+  min-height: 18px;
 }

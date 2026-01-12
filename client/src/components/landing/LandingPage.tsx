@@ -1139,10 +1139,17 @@ function MobileInboxMockup() {
   // Floating bubbles state
   const [visibleBubbles, setVisibleBubbles] = useState<number[]>([]);
   const [bubbleTypingTexts, setBubbleTypingTexts] = useState<{[key: number]: string}>({});
+  const [showAiResponse, setShowAiResponse] = useState(false);
+  const [aiResponseText, setAiResponseText] = useState('');
+  
+  const conversationText = t.mockups.inbox.conversation[1]?.text;
+  const aiResponseMessage = conversationText ? conversationText.substring(0, 40) + '...' : '¡Hola! Sí, tenemos el vestido azul...';
   
   const mobileBubbles = [
-    { id: 1, platform: 'instagram', user: 'Laura M.', avatar: avatarAna, message: t.mockups.inbox.allMessages[0].message.substring(0, 25) + '...', position: 'left' },
-    { id: 2, platform: 'tiktok', user: 'Pablo R.', avatar: avatarCarlos, message: t.mockups.inbox.allMessages[1].message.substring(0, 22) + '...', position: 'right' },
+    { id: 1, platform: 'instagram', user: 'Laura M.', avatar: avatarAna, message: t.mockups.inbox.allMessages[0].message.substring(0, 25) + '...', position: 'left', isAi: false },
+    { id: 2, platform: 'tiktok', user: 'Pablo R.', avatar: avatarCarlos, message: t.mockups.inbox.allMessages[1].message.substring(0, 22) + '...', position: 'right', isAi: false },
+    { id: 3, platform: 'youtube', user: 'Miguel S.', avatar: avatarDiego, message: '¿Hacen envíos a toda España?', position: 'left', isAi: false },
+    { id: 4, platform: 'facebook', user: 'Carmen L.', avatar: avatarLaura, message: '¿Cuál es el horario de atención?', position: 'right', isAi: false },
   ];
 
   useEffect(() => {
@@ -1150,11 +1157,15 @@ function MobileInboxMockup() {
       setVisibleInbox([1, 2, 3, 4]);
       setVisibleChat(4);
       setCrmVisible(true);
-      setVisibleBubbles([1, 2]);
+      setVisibleBubbles([1, 2, 3, 4]);
       setBubbleTypingTexts({
         1: mobileBubbles[0].message,
-        2: mobileBubbles[1].message
+        2: mobileBubbles[1].message,
+        3: mobileBubbles[2].message,
+        4: mobileBubbles[3].message
       });
+      setShowAiResponse(true);
+      setAiResponseText(aiResponseMessage);
       return;
     }
     
@@ -1164,6 +1175,8 @@ function MobileInboxMockup() {
     setActiveSlide(0);
     setVisibleBubbles([]);
     setBubbleTypingTexts({});
+    setShowAiResponse(false);
+    setAiResponseText('');
     
     const timers: NodeJS.Timeout[] = [];
     
@@ -1173,7 +1186,7 @@ function MobileInboxMockup() {
       }, 400 + idx * 500));
     });
     
-    // Start floating bubbles animation after inbox loads
+    // Bubble 1: Instagram
     timers.push(setTimeout(() => {
       setVisibleBubbles([1]);
       let charIdx = 0;
@@ -1184,8 +1197,9 @@ function MobileInboxMockup() {
         if (charIdx >= bubble1Msg.length) clearInterval(typeInterval);
       }, 40);
       timers.push(typeInterval as unknown as NodeJS.Timeout);
-    }, 2000));
+    }, 1800));
     
+    // Bubble 2: TikTok
     timers.push(setTimeout(() => {
       setVisibleBubbles(prev => [...prev, 2]);
       let charIdx = 0;
@@ -1196,7 +1210,7 @@ function MobileInboxMockup() {
         if (charIdx >= bubble2Msg.length) clearInterval(typeInterval);
       }, 45);
       timers.push(typeInterval as unknown as NodeJS.Timeout);
-    }, 2800));
+    }, 2600));
     
     timers.push(setTimeout(() => {
       setActiveSlide(1);
@@ -1211,14 +1225,52 @@ function MobileInboxMockup() {
       }
     });
     
+    // Bubble 3: YouTube
+    timers.push(setTimeout(() => {
+      setVisibleBubbles(prev => [...prev, 3]);
+      let charIdx = 0;
+      const bubble3Msg = mobileBubbles[2].message;
+      const typeInterval = setInterval(() => {
+        charIdx++;
+        setBubbleTypingTexts(prev => ({ ...prev, 3: bubble3Msg.slice(0, charIdx) }));
+        if (charIdx >= bubble3Msg.length) clearInterval(typeInterval);
+      }, 35);
+      timers.push(typeInterval as unknown as NodeJS.Timeout);
+    }, 5000));
+    
+    // Bubble 4: Facebook
+    timers.push(setTimeout(() => {
+      setVisibleBubbles(prev => [...prev, 4]);
+      let charIdx = 0;
+      const bubble4Msg = mobileBubbles[3].message;
+      const typeInterval = setInterval(() => {
+        charIdx++;
+        setBubbleTypingTexts(prev => ({ ...prev, 4: bubble4Msg.slice(0, charIdx) }));
+        if (charIdx >= bubble4Msg.length) clearInterval(typeInterval);
+      }, 38);
+      timers.push(typeInterval as unknown as NodeJS.Timeout);
+    }, 5800));
+    
+    // AI Response animation
+    timers.push(setTimeout(() => {
+      setShowAiResponse(true);
+      let charIdx = 0;
+      const typeInterval = setInterval(() => {
+        charIdx++;
+        setAiResponseText(aiResponseMessage.slice(0, charIdx));
+        if (charIdx >= aiResponseMessage.length) clearInterval(typeInterval);
+      }, 30);
+      timers.push(typeInterval as unknown as NodeJS.Timeout);
+    }, 6500));
+    
     timers.push(setTimeout(() => {
       setActiveSlide(2);
       setCrmVisible(true);
-    }, 7500));
+    }, 8500));
     
     timers.push(setTimeout(() => {
       setAnimationCycle(c => c + 1);
-    }, 11000));
+    }, 13000));
     
     return () => timers.forEach(clearTimeout);
   }, [prefersReducedMotion, animationCycle]);
@@ -1372,9 +1424,9 @@ function MobileInboxMockup() {
         <span className={activeSlide === 2 ? 'active' : ''}>{t.mockups.inbox.nav.crm}</span>
       </div>
       
-      {/* Floating Bubbles */}
+      {/* Floating Bubbles - Row 1 */}
       <div className="mobile-floating-bubbles">
-        {mobileBubbles.map((bubble) => (
+        {mobileBubbles.slice(0, 2).map((bubble) => (
           <div
             key={bubble.id}
             className={`mobile-floating-bubble ${bubble.platform} ${bubble.position} ${visibleBubbles.includes(bubble.id) ? 'visible' : ''}`}
@@ -1382,11 +1434,12 @@ function MobileInboxMockup() {
             <div className="mobile-bubble-header">
               <div className={`mobile-bubble-icon ${bubble.platform}`}>
                 {bubble.platform === 'instagram' && <FaInstagram className="w-3 h-3 text-white" />}
-                {bubble.platform === 'tiktok' && <FaTiktok className="w-3 h-3 text-white" />}
+                {bubble.platform === 'tiktok' && <FaTiktok className="w-3 h-3" style={{ color: '#25f4ee' }} />}
                 {bubble.platform === 'facebook' && <FaFacebook className="w-3 h-3 text-white" />}
+                {bubble.platform === 'youtube' && <FaYoutube className="w-3 h-3 text-white" />}
               </div>
               <span className="mobile-bubble-platform">
-                {bubble.platform === 'instagram' ? 'Instagram' : bubble.platform === 'tiktok' ? 'TikTok' : 'Messenger'}
+                {bubble.platform === 'instagram' ? 'Instagram' : bubble.platform === 'tiktok' ? 'TikTok' : bubble.platform === 'youtube' ? 'YouTube' : 'Messenger'}
               </span>
             </div>
             <div className="mobile-bubble-user">
@@ -1404,6 +1457,57 @@ function MobileInboxMockup() {
             </div>
           </div>
         ))}
+      </div>
+      
+      {/* Floating Bubbles - Row 2 */}
+      <div className="mobile-floating-bubbles">
+        {mobileBubbles.slice(2, 4).map((bubble) => (
+          <div
+            key={bubble.id}
+            className={`mobile-floating-bubble ${bubble.platform} ${bubble.position} ${visibleBubbles.includes(bubble.id) ? 'visible' : ''}`}
+          >
+            <div className="mobile-bubble-header">
+              <div className={`mobile-bubble-icon ${bubble.platform}`}>
+                {bubble.platform === 'instagram' && <FaInstagram className="w-3 h-3 text-white" />}
+                {bubble.platform === 'tiktok' && <FaTiktok className="w-3 h-3" style={{ color: '#25f4ee' }} />}
+                {bubble.platform === 'facebook' && <FaFacebook className="w-3 h-3 text-white" />}
+                {bubble.platform === 'youtube' && <FaYoutube className="w-3 h-3 text-white" />}
+              </div>
+              <span className="mobile-bubble-platform">
+                {bubble.platform === 'instagram' ? 'Instagram' : bubble.platform === 'tiktok' ? 'TikTok' : bubble.platform === 'youtube' ? 'YouTube' : 'Messenger'}
+              </span>
+            </div>
+            <div className="mobile-bubble-user">
+              <img src={bubble.avatar} alt={bubble.user} className="mobile-bubble-avatar" />
+              <span className="mobile-bubble-name">{bubble.user}</span>
+            </div>
+            <div className="mobile-bubble-input">
+              <span className="mobile-bubble-text">
+                {bubbleTypingTexts[bubble.id] || ''}
+              </span>
+              {visibleBubbles.includes(bubble.id) && (bubbleTypingTexts[bubble.id]?.length || 0) < bubble.message.length && (
+                <span className="mobile-bubble-cursor" />
+              )}
+              <Send className="w-3.5 h-3.5 mobile-bubble-send" />
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      {/* AI Response Bubble */}
+      <div className={`mobile-ai-response-bubble ${showAiResponse ? 'visible' : ''}`}>
+        <div className="mobile-ai-response-header">
+          <Sparkles className="w-4 h-4 text-blue-500" />
+          <span>Repliyo AI</span>
+        </div>
+        <div className="mobile-ai-response-content">
+          <span className="mobile-ai-response-text">
+            {aiResponseText}
+          </span>
+          {showAiResponse && aiResponseText.length < aiResponseMessage.length && (
+            <span className="mobile-bubble-cursor" />
+          )}
+        </div>
       </div>
     </div>
   );
