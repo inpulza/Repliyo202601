@@ -3690,7 +3690,7 @@ function HowItWorksSection() {
     return false;
   });
   const { t } = useLanguage();
-  const [activeStep, setActiveStep] = useState(0);
+  const [activeStep, setActiveStep] = useState(-1);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 1024);
@@ -3699,33 +3699,30 @@ function HowItWorksSection() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // GSAP ScrollTrigger for pinning the right visual
+  // GSAP ScrollTrigger for pinning and per-step sync
   useGSAP(() => {
     if (isMobile || prefersReducedMotion || !sectionRef.current || !stickyRef.current) return;
 
     const ctx = gsap.context(() => {
-      // Pin the right visual while scrolling through the section
+      // Pin the right visual - end earlier so step 3 doesn't scroll to the very top
       ScrollTrigger.create({
         trigger: sectionRef.current,
         start: 'top 15%',
-        end: 'bottom bottom',
+        end: 'bottom-=40% center',
         pin: stickyRef.current,
         pinSpacing: false,
       });
 
-      // Track scroll progress to update active step
-      ScrollTrigger.create({
-        trigger: sectionRef.current,
-        start: 'top top',
-        end: 'bottom bottom',
-        onUpdate: (self) => {
-          const progress = self.progress;
-          const stepValue = progress * 3;
-          const newStep = Math.min(Math.floor(stepValue), 2);
-          if (newStep >= 0) {
-            setActiveStep(newStep);
-          }
-        },
+      // Create a ScrollTrigger for each step to sync mockup with text
+      const steps = gsap.utils.toArray('.how-dual-track-step') as Element[];
+      steps.forEach((step, index) => {
+        ScrollTrigger.create({
+          trigger: step,
+          start: 'top 60%',
+          end: 'bottom 40%',
+          onEnter: () => setActiveStep(index),
+          onEnterBack: () => setActiveStep(index),
+        });
       });
     }, sectionRef);
 
@@ -3808,16 +3805,18 @@ function HowItWorksSection() {
           <div ref={stickyRef} className="how-dual-track-sticky">
             <div className="how-dual-track-mockup-wrapper">
               <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeStep}
-                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: -20 }}
-                  transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-                  className="how-dual-track-mockup"
-                >
-                  {stepMockups[activeStep]}
-                </motion.div>
+                {activeStep >= 0 && (
+                  <motion.div
+                    key={activeStep}
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -20 }}
+                    transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+                    className="how-dual-track-mockup"
+                  >
+                    {stepMockups[activeStep]}
+                  </motion.div>
+                )}
               </AnimatePresence>
             </div>
           </div>
