@@ -1129,7 +1129,17 @@ function MobileInboxMockup() {
     { id: 2, user: inboxMessages[1].user, avatarImg: avatarCarlos, message: inboxMessages[1].message, platform: 'tiktok', time: inboxMessages[1].time },
     { id: 3, user: inboxMessages[2].user, avatarImg: avatarAna, message: inboxMessages[2].message, platform: 'facebook', time: inboxMessages[2].time },
     { id: 4, user: inboxMessages[3].user, avatarImg: avatarDiego, message: inboxMessages[3].message, platform: 'instagram', time: inboxMessages[3].time },
+    { id: 5, user: 'Pedro Sánchez', avatarImg: avatarCarlos, message: '¿Hacen envíos a Canarias?', platform: 'tiktok', time: '15m' },
+    { id: 6, user: 'Laura Martín', avatarImg: avatarLaura, message: '¿Tienen catálogo en PDF?', platform: 'facebook', time: '20m' },
   ];
+  
+  const threadComments = [
+    { id: 1, user: 'brydon2020', time: '07:18 PM', type: 'comment', text: 'será que me pueda Aser un ejemplo yo gane 15mil cash soy casada...' },
+    { id: 2, user: 'vzla.la.ksa', time: '07:55 PM', type: 'comment', text: 'Si vivimos juntos tenemos una hija en común pero no estamos casados...' },
+    { id: 3, user: 'Repliyo AI', time: '', type: 'ai-reply', text: '¡Hola! Gracias por tu pregunta. Para tu caso específico te recomiendo...' },
+    { id: 4, user: 'maria_lopez', time: '08:12 PM', type: 'comment', text: '¿Y si tengo dos trabajos diferentes, cómo lo declaro?' },
+  ];
+  const [visibleThreadComments, setVisibleThreadComments] = useState<number[]>([]);
   
   const chatMessages = t.mockups.inbox.conversation.slice(0, 4);
   const [visibleChat, setVisibleChat] = useState(0);
@@ -1154,7 +1164,7 @@ function MobileInboxMockup() {
 
   useEffect(() => {
     if (prefersReducedMotion) {
-      setVisibleInbox([1, 2, 3, 4]);
+      setVisibleInbox([1, 2, 3, 4, 5, 6]);
       setVisibleChat(4);
       setCrmVisible(true);
       setVisibleBubbles([1, 2, 3, 4]);
@@ -1166,6 +1176,7 @@ function MobileInboxMockup() {
       });
       setShowAiResponse(true);
       setAiResponseText(aiResponseMessage);
+      setVisibleThreadComments([1, 2, 3, 4]);
       return;
     }
     
@@ -1177,6 +1188,7 @@ function MobileInboxMockup() {
     setBubbleTypingTexts({});
     setShowAiResponse(false);
     setAiResponseText('');
+    setVisibleThreadComments([]);
     
     const timers: NodeJS.Timeout[] = [];
     
@@ -1268,9 +1280,21 @@ function MobileInboxMockup() {
       setCrmVisible(true);
     }, 8500));
     
+    // Thread comments animation
+    timers.push(setTimeout(() => {
+      setActiveSlide(3);
+      setVisibleThreadComments([1]);
+    }, 11000));
+    
+    threadComments.slice(1).forEach((_, idx) => {
+      timers.push(setTimeout(() => {
+        setVisibleThreadComments(prev => [...prev, idx + 2]);
+      }, 11500 + idx * 800));
+    });
+    
     timers.push(setTimeout(() => {
       setAnimationCycle(c => c + 1);
-    }, 13000));
+    }, 16000));
     
     return () => timers.forEach(clearTimeout);
   }, [prefersReducedMotion, animationCycle]);
@@ -1429,10 +1453,56 @@ function MobileInboxMockup() {
               </div>
             </div>
           </motion.div>
+          
+          <motion.div 
+            className="mobile-screen screen-thread"
+            initial={false}
+            animate={{ 
+              opacity: activeSlide === 3 ? 1 : 0,
+              scale: activeSlide === 3 ? 1 : 0.95
+            }}
+            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+          >
+            <div className="mobile-slide-header thread-header">
+              <MessageCircle className="w-5 h-5" />
+              <span>Thread · 74 mensajes</span>
+            </div>
+            <div className="mobile-thread-content">
+              {threadComments.map((comment) => (
+                <motion.div
+                  key={comment.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ 
+                    opacity: visibleThreadComments.includes(comment.id) ? 1 : 0,
+                    y: visibleThreadComments.includes(comment.id) ? 0 : 20
+                  }}
+                  transition={{ duration: 0.3 }}
+                  className={`mobile-thread-comment ${comment.type}`}
+                >
+                  <div className="thread-comment-header">
+                    <span className="thread-user">{comment.user}</span>
+                    {comment.time && <span className="thread-time">{comment.time}</span>}
+                    {comment.type === 'ai-reply' && (
+                      <span className="thread-ai-badge">
+                        <Sparkles className="w-3 h-3" />
+                      </span>
+                    )}
+                  </div>
+                  <p className="thread-text">{comment.text}</p>
+                  {comment.type === 'comment' && (
+                    <div className="thread-actions">
+                      <span>Reply</span>
+                      <span>Generar Borrador</span>
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
         </div>
         
         <div className="mobile-carousel-dots">
-          {[0, 1, 2].map((idx) => (
+          {[0, 1, 2, 3].map((idx) => (
             <button
               key={idx}
               className={`mobile-dot ${activeSlide === idx ? 'active' : ''}`}
@@ -1446,6 +1516,7 @@ function MobileInboxMockup() {
         <span className={activeSlide === 0 ? 'active' : ''}>{t.mockups.inbox.nav.inbox}</span>
         <span className={activeSlide === 1 ? 'active' : ''}>AI Chat</span>
         <span className={activeSlide === 2 ? 'active' : ''}>{t.mockups.inbox.nav.crm}</span>
+        <span className={activeSlide === 3 ? 'active' : ''}>Thread</span>
       </div>
       
       {/* Floating Bubbles - Row 1 */}
