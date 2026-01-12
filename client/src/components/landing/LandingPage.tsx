@@ -3593,9 +3593,11 @@ function HowItWorksMobile() {
 
       <div className="relative rounded-2xl overflow-hidden mx-auto max-w-sm min-h-[320px]">
         <LiquidBackground 
-          colorStart="#1a1a2e"
-          colorMid="#2dd4bf"
-          colorEnd="#0891b2"
+          colorStart="#3a3a4a"
+          colorMid="#d0d0d0"
+          colorEnd="#f0f0f0"
+          speed={0.025}
+          scale={0.5}
           className="rounded-2xl"
         />
         <div className="absolute inset-0 bg-black/10" />
@@ -3830,9 +3832,11 @@ function HowItWorksSection() {
 
         <div className="how-steps-wrapper relative">
           <LiquidBackground 
-            colorStart="#1a1a2e"
-            colorMid="#2dd4bf"
-            colorEnd="#0891b2"
+            colorStart="#3a3a4a"
+            colorMid="#d0d0d0"
+            colorEnd="#f0f0f0"
+            speed={0.025}
+            scale={0.5}
           />
           {t.howItWorks.steps.map((step, i) => (
             <div 

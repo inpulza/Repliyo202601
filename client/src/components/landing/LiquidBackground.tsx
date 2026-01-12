@@ -4,6 +4,8 @@ import * as THREE from 'three';
 
 const fragmentShader = `
 uniform float uTime;
+uniform float uSpeed;
+uniform float uScale;
 uniform vec3 uColorA;
 uniform vec3 uColorB;
 uniform vec3 uColorC;
@@ -41,7 +43,7 @@ float fbm(vec2 p) {
   float value = 0.0;
   float amplitude = 0.5;
   float frequency = 1.0;
-  for(int i = 0; i < 5; i++) {
+  for(int i = 0; i < 4; i++) {
     value += amplitude * snoise(p * frequency);
     amplitude *= 0.5;
     frequency *= 2.0;
@@ -50,28 +52,28 @@ float fbm(vec2 p) {
 }
 
 void main() {
-  vec2 uv = vUv;
+  vec2 uv = vUv * uScale;
   
-  float time = uTime * 0.15;
+  float time = uTime * uSpeed;
   
   vec2 q = vec2(0.0);
-  q.x = fbm(uv + vec2(1.0, 0.0) + 0.8 * time);
-  q.y = fbm(uv + vec2(0.0, 1.0) + 0.6 * time);
+  q.x = fbm(uv + vec2(1.0, 0.0) + 0.5 * time);
+  q.y = fbm(uv + vec2(0.0, 1.0) + 0.4 * time);
   
   vec2 r = vec2(0.0);
-  r.x = fbm(uv + 4.0 * q + vec2(1.7, 9.2) + 0.15 * time);
-  r.y = fbm(uv + 4.0 * q + vec2(8.3, 2.8) + 0.126 * time);
+  r.x = fbm(uv + 2.0 * q + vec2(1.7, 9.2) + 0.1 * time);
+  r.y = fbm(uv + 2.0 * q + vec2(8.3, 2.8) + 0.08 * time);
   
-  float f = fbm(uv + 4.0 * r);
+  float f = fbm(uv + 2.0 * r);
   
   float pattern = (f * f * f + 0.6 * f * f + 0.5 * f);
   pattern = clamp(pattern, 0.0, 1.0);
   
-  vec3 color = mix(uColorA, uColorB, clamp(length(q), 0.0, 1.0));
-  color = mix(color, uColorC, clamp(length(r.x), 0.0, 1.0));
-  color = mix(color, uColorA, clamp(pattern * pattern, 0.0, 1.0));
+  vec3 color = mix(uColorA, uColorB, clamp(length(q) * 0.8, 0.0, 1.0));
+  color = mix(color, uColorC, clamp(length(r.x) * 0.7, 0.0, 1.0));
+  color = mix(color, uColorA, clamp(pattern * pattern * 0.6, 0.0, 1.0));
   
-  float grain = (fract(sin(dot(uv * 1000.0, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * 0.08;
+  float grain = (fract(sin(dot(vUv * 800.0 + uTime * 0.5, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * 0.06;
   color += grain;
   
   gl_FragColor = vec4(color, 1.0);
@@ -90,19 +92,23 @@ interface GradientMeshProps {
   colorA: string;
   colorB: string;
   colorC: string;
+  speed: number;
+  scale: number;
 }
 
-function GradientMesh({ colorA, colorB, colorC }: GradientMeshProps) {
+function GradientMesh({ colorA, colorB, colorC, speed, scale }: GradientMeshProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   
   const uniforms = useMemo(
     () => ({
       uTime: { value: 0 },
+      uSpeed: { value: speed },
+      uScale: { value: scale },
       uColorA: { value: new THREE.Color(colorA) },
       uColorB: { value: new THREE.Color(colorB) },
       uColorC: { value: new THREE.Color(colorC) },
     }),
-    [colorA, colorB, colorC]
+    [colorA, colorB, colorC, speed, scale]
   );
 
   useFrame((state) => {
@@ -129,13 +135,17 @@ interface LiquidBackgroundProps {
   colorStart?: string;
   colorMid?: string;
   colorEnd?: string;
+  speed?: number;
+  scale?: number;
 }
 
 export function LiquidBackground({ 
   className = '', 
-  colorStart = '#1a1a2e',
-  colorMid = '#2dd4bf',
-  colorEnd = '#0891b2'
+  colorStart = '#2a2a3a',
+  colorMid = '#e5e5e5',
+  colorEnd = '#f5f5f5',
+  speed = 0.03,
+  scale = 0.6
 }: LiquidBackgroundProps) {
   return (
     <div className={`absolute inset-0 ${className}`}>
@@ -144,7 +154,13 @@ export function LiquidBackground({
         gl={{ antialias: true, alpha: true }}
         style={{ background: 'transparent' }}
       >
-        <GradientMesh colorA={colorStart} colorB={colorMid} colorC={colorEnd} />
+        <GradientMesh 
+          colorA={colorStart} 
+          colorB={colorMid} 
+          colorC={colorEnd} 
+          speed={speed}
+          scale={scale}
+        />
       </Canvas>
     </div>
   );
