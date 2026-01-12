@@ -2549,6 +2549,238 @@ function SolutionMockup() {
   );
 }
 
+function SolutionMockupMobile() {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, amount: 0.3 });
+  const prefersReducedMotion = useReducedMotion();
+  const { t } = useLanguage();
+  
+  const platforms = [
+    { icon: FaInstagram, color: '#E1306C', name: 'IG' },
+    { icon: FaTiktok, color: '#000000', name: 'TT' },
+    { icon: FaFacebook, color: '#1877F2', name: 'FB' },
+    { icon: FaYoutube, color: '#FF0000', name: 'YT' },
+  ];
+  
+  const benefits = [
+    { icon: Check, text: t.problemSolution.indicators.responseTime, color: 'from-emerald-500 to-green-500' },
+    { icon: Sparkles, text: t.problemSolution.indicators.aiDrafts, color: 'from-violet-500 to-purple-500' },
+    { icon: MessageSquare, text: t.problemSolution.indicators.singleInbox, color: 'from-blue-500 to-cyan-500' },
+    { icon: Users, text: t.problemSolution.indicators.integratedCrm, color: 'from-orange-500 to-amber-500' },
+  ];
+
+  if (prefersReducedMotion) {
+    return (
+      <div className="solution-mockup-mobile" ref={ref}>
+        <div className="solution-mobile-tabs">
+          <div className="solution-mobile-tab active">{t.problemSolution.tabs.all}</div>
+          {platforms.map((platform) => {
+            const IconComponent = platform.icon;
+            return (
+              <div 
+                key={platform.name} 
+                className="solution-mobile-tab"
+                style={{ background: platform.color === '#000000' ? 'linear-gradient(135deg, #25f4ee, #fe2c55)' : platform.color }}
+              >
+                <IconComponent className="w-3.5 h-3.5 text-white" />
+              </div>
+            );
+          })}
+        </div>
+        <div className="solution-mobile-inbox">
+          <div className="solution-mobile-conv">
+            <div className="solution-mobile-avatar" />
+            <div className="solution-mobile-conv-content">
+              <div className="solution-mobile-conv-name" />
+              <div className="solution-mobile-conv-preview" />
+            </div>
+            <div className="solution-mobile-conv-status answered">
+              <Check className="w-3 h-3" />
+            </div>
+          </div>
+          <div className="solution-mobile-conv ai-draft">
+            <div className="solution-mobile-avatar" />
+            <div className="solution-mobile-conv-content">
+              <div className="solution-mobile-conv-name" />
+              <div className="solution-mobile-conv-preview" />
+            </div>
+            <div className="solution-mobile-conv-status ai">
+              <Sparkles className="w-3 h-3" />
+            </div>
+          </div>
+        </div>
+        <div className="solution-mobile-ai-response">
+          <div className="solution-mobile-ai-badge">
+            <Sparkles className="w-3 h-3" />
+            <span>IA</span>
+          </div>
+          <div className="solution-mobile-ai-lines">
+            <div className="solution-mobile-ai-line" />
+            <div className="solution-mobile-ai-line short" />
+          </div>
+          <button className="solution-mobile-send-btn" data-testid="button-send-ai-draft-mobile">
+            <Send className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        <div className="solution-mobile-benefits">
+          {benefits.map((benefit, i) => {
+            const IconComponent = benefit.icon;
+            return (
+              <div key={i} className={`solution-mobile-benefit bg-gradient-to-r ${benefit.color}`}>
+                <IconComponent className="w-3.5 h-3.5 text-white" />
+                <span>{benefit.text}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="solution-mockup-mobile" ref={ref}>
+      <motion.div 
+        className="solution-mobile-tabs"
+        initial={{ opacity: 0, y: 20 }}
+        animate={inView ? { opacity: 1, y: 0 } : {}}
+        transition={{ duration: 0.5 }}
+      >
+        <motion.div 
+          className="solution-mobile-tab active"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={inView ? { opacity: 1, scale: 1 } : {}}
+          transition={{ delay: 0.1 }}
+        >
+          {t.problemSolution.tabs.all}
+        </motion.div>
+        {platforms.map((platform, i) => {
+          const IconComponent = platform.icon;
+          return (
+            <motion.div 
+              key={platform.name} 
+              className="solution-mobile-tab"
+              style={{ background: platform.color === '#000000' ? 'linear-gradient(135deg, #25f4ee, #fe2c55)' : platform.color }}
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={inView ? { opacity: 1, scale: 1 } : {}}
+              transition={{ delay: 0.15 + i * 0.08, type: 'spring', stiffness: 400 }}
+            >
+              <IconComponent className="w-3.5 h-3.5 text-white" />
+            </motion.div>
+          );
+        })}
+      </motion.div>
+
+      <motion.div 
+        className="solution-mobile-inbox"
+        initial={{ opacity: 0, y: 20 }}
+        animate={inView ? { opacity: 1, y: 0 } : {}}
+        transition={{ delay: 0.3, duration: 0.5 }}
+      >
+        <motion.div 
+          className="solution-mobile-conv"
+          initial={{ opacity: 0, x: -20 }}
+          animate={inView ? { opacity: 1, x: 0 } : {}}
+          transition={{ delay: 0.4 }}
+        >
+          <div className="solution-mobile-avatar" />
+          <div className="solution-mobile-conv-content">
+            <div className="solution-mobile-conv-name" />
+            <div className="solution-mobile-conv-preview" />
+          </div>
+          <motion.div 
+            className="solution-mobile-conv-status answered"
+            initial={{ scale: 0 }}
+            animate={inView ? { scale: 1 } : {}}
+            transition={{ delay: 0.5, type: 'spring', stiffness: 400 }}
+          >
+            <Check className="w-3 h-3" />
+          </motion.div>
+        </motion.div>
+        <motion.div 
+          className="solution-mobile-conv ai-draft"
+          initial={{ opacity: 0, x: -20 }}
+          animate={inView ? { opacity: 1, x: 0 } : {}}
+          transition={{ delay: 0.5 }}
+        >
+          <div className="solution-mobile-avatar" />
+          <div className="solution-mobile-conv-content">
+            <div className="solution-mobile-conv-name" />
+            <div className="solution-mobile-conv-preview" />
+          </div>
+          <motion.div 
+            className="solution-mobile-conv-status ai"
+            initial={{ scale: 0 }}
+            animate={inView ? { scale: 1 } : {}}
+            transition={{ delay: 0.6, type: 'spring', stiffness: 400 }}
+          >
+            <Sparkles className="w-3 h-3" />
+          </motion.div>
+        </motion.div>
+      </motion.div>
+
+      <motion.div 
+        className="solution-mobile-ai-response"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={inView ? { opacity: 1, scale: 1 } : {}}
+        transition={{ delay: 0.5, duration: 0.4 }}
+      >
+        <motion.div 
+          className="solution-mobile-ai-badge"
+          initial={{ opacity: 0, x: -10 }}
+          animate={inView ? { opacity: 1, x: 0 } : {}}
+          transition={{ delay: 0.6 }}
+        >
+          <Sparkles className="w-3 h-3" />
+          <span>IA</span>
+        </motion.div>
+        <div className="solution-mobile-ai-lines">
+          <motion.div 
+            className="solution-mobile-ai-line"
+            initial={{ scaleX: 0 }}
+            animate={inView ? { scaleX: 1 } : {}}
+            transition={{ delay: 0.65, duration: 0.4 }}
+            style={{ transformOrigin: 'left' }}
+          />
+          <motion.div 
+            className="solution-mobile-ai-line short"
+            initial={{ scaleX: 0 }}
+            animate={inView ? { scaleX: 1 } : {}}
+            transition={{ delay: 0.75, duration: 0.3 }}
+            style={{ transformOrigin: 'left' }}
+          />
+        </div>
+        <motion.button 
+          className="solution-mobile-send-btn"
+          data-testid="button-send-ai-draft-mobile"
+          initial={{ scale: 0 }}
+          animate={inView ? { scale: 1 } : {}}
+          transition={{ delay: 0.8, type: 'spring', stiffness: 400 }}
+        >
+          <Send className="w-3.5 h-3.5" />
+        </motion.button>
+      </motion.div>
+
+      <div className="solution-mobile-benefits">
+        {benefits.map((benefit, i) => {
+          const IconComponent = benefit.icon;
+          return (
+            <motion.div
+              key={i}
+              className={`solution-mobile-benefit bg-gradient-to-r ${benefit.color}`}
+              initial={{ opacity: 0, y: 20, scale: 0.9 }}
+              animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
+              transition={{ delay: 0.7 + i * 0.1, type: 'spring', stiffness: 300 }}
+            >
+              <IconComponent className="w-3.5 h-3.5 text-white" />
+              <span>{benefit.text}</span>
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function ProblemSolutionSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
@@ -2609,8 +2841,13 @@ function ProblemSolutionSection() {
                 <SolutionAnimatedText />
               </span>
             </h2>
-            <div className="max-w-4xl mx-auto">
+            {/* Desktop mockup - hidden on mobile */}
+            <div className="max-w-4xl mx-auto hidden md:block">
               <SolutionMockup />
+            </div>
+            {/* Mobile mockup - visible only on mobile */}
+            <div className="md:hidden">
+              <SolutionMockupMobile />
             </div>
           </motion.div>
         </div>
