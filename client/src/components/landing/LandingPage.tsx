@@ -1160,54 +1160,45 @@ function Header() {
           <a href="#how" onClick={(e) => scrollToSection(e, 'how')} className="nav-link" data-testid="link-nav-como-funciona">{t.header.howItWorks}</a>
           <a href="#testimonial" onClick={(e) => scrollToSection(e, 'testimonial')} className="nav-link" data-testid="link-nav-testimonios">{t.header.testimonials}</a>
         </nav>
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={toggleLanguage}
-            className="language-toggle-btn group"
-            data-testid="button-language-toggle"
-            aria-label={language === 'es' ? 'Switch to English' : 'Cambiar a Español'}
+        <div className="flex items-center gap-4">
+          <div 
+            className="lang-pill-container"
+            role="radiogroup"
+            aria-label="Select language"
           >
-            <div className="language-toggle-track">
-              <div className="language-flag-container">
-                <span className={`language-flag ${language === 'es' ? 'active' : ''}`}>
-                  🇪🇸
-                </span>
-                <span className={`language-flag ${language === 'en' ? 'active' : ''}`}>
-                  🇬🇧
-                </span>
-              </div>
-              <motion.div 
-                className="language-toggle-thumb"
-                layout
-                transition={{
-                  type: "spring",
-                  stiffness: 500,
-                  damping: 30
-                }}
-                style={{
-                  left: language === 'es' ? '2px' : 'calc(100% - 26px)'
-                }}
-              >
-                <motion.span 
-                  key={language}
-                  initial={{ scale: 0.5, opacity: 0, rotate: -180 }}
-                  animate={{ scale: 1, opacity: 1, rotate: 0 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                  className="text-sm"
-                >
-                  {language === 'es' ? '🇪🇸' : '🇬🇧'}
-                </motion.span>
-              </motion.div>
-            </div>
-            <motion.span 
-              key={language}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="language-label"
+            <motion.div 
+              className="lang-pill-slider"
+              initial={false}
+              animate={{ 
+                x: language === 'es' ? 0 : '100%'
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 400,
+                damping: 30
+              }}
+            />
+            <button
+              onClick={() => setLanguage('es')}
+              className={`lang-pill-option ${language === 'es' ? 'active' : ''}`}
+              data-testid="button-language-es"
+              aria-checked={language === 'es'}
+              role="radio"
             >
-              {language === 'es' ? 'ES' : 'EN'}
-            </motion.span>
-          </button>
+              <span className="lang-flag">🇪🇸</span>
+              <span className="lang-code">ES</span>
+            </button>
+            <button
+              onClick={() => setLanguage('en')}
+              className={`lang-pill-option ${language === 'en' ? 'active' : ''}`}
+              data-testid="button-language-en"
+              aria-checked={language === 'en'}
+              role="radio"
+            >
+              <span className="lang-flag">🇬🇧</span>
+              <span className="lang-code">EN</span>
+            </button>
+          </div>
           <a href="/login" className="btn-primary text-sm py-2.5 px-5" data-testid="button-login-header">
             {t.header.login}
           </a>
