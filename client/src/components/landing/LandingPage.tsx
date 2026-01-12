@@ -3457,7 +3457,7 @@ function MetricSection() {
   const mobileElements = getMobileStatElements(t, activeIndex);
 
   return (
-    <section id="metrics" ref={ref} className="pt-48 pb-72 md:py-56 relative overflow-hidden">
+    <section id="metrics" ref={ref} className="pt-72 pb-[28rem] md:py-56 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,145,250,0.12)_0%,transparent_70%)]" />
       
       {!prefersReducedMotion && isInView && (
@@ -3490,7 +3490,7 @@ function MetricSection() {
         {!prefersReducedMotion && isInView && (
           <motion.div
             key={`mobile-elements-${activeIndex}`}
-            className="absolute inset-x-0 top-12 flex justify-center md:hidden pointer-events-none z-30"
+            className="absolute inset-x-0 top-4 flex justify-center md:hidden pointer-events-none z-40"
             initial={{ opacity: 0, y: -20, scale: 0.8 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.8 }}
@@ -3505,7 +3505,7 @@ function MetricSection() {
         {!prefersReducedMotion && isInView && (
           <motion.div
             key={`mobile-bottom-${activeIndex}`}
-            className="absolute inset-x-0 bottom-6 flex justify-center md:hidden pointer-events-none z-30"
+            className="absolute inset-x-0 bottom-4 flex justify-center md:hidden pointer-events-none z-40"
             initial={{ opacity: 0, y: 20, scale: 0.8 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.8 }}
@@ -3546,7 +3546,7 @@ function MetricSection() {
         </AnimatePresence>
       </motion.div>
       
-      <div className="absolute bottom-20 md:bottom-12 left-1/2 -translate-x-1/2 flex justify-center gap-2 z-20">
+      <div className="absolute bottom-28 md:bottom-12 left-1/2 -translate-x-1/2 flex justify-center gap-2 z-20">
         {stats.map((_, i) => (
           <button
             key={i}
