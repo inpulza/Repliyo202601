@@ -5884,9 +5884,9 @@
 @media (max-width: 768px) {
   /* Hero Section Mobile Layout - Fixed height to prevent animation jumps */
   .hero-section {
-    min-height: 1200px !important;
-    height: 1200px !important;
-    max-height: 1200px !important;
+    min-height: 1500px !important;
+    height: 1500px !important;
+    max-height: 1500px !important;
     overflow: hidden !important;
     padding-bottom: 0;
   }
