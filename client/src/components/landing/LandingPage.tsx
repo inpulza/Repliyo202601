@@ -2422,7 +2422,7 @@ function ProblemSolutionSection() {
   const solutionOpacity = useTransform(scrollYProgress, [0, 0.25, 0.8, 1], [0, 1, 1, 0.5]);
 
   return (
-    <section ref={sectionRef} className="relative overflow-hidden">
+    <section id="problem-solution" ref={sectionRef} className="relative overflow-hidden">
       {/* Problem Section */}
       <div className="py-24 md:py-32">
         <div className="max-w-4xl mx-auto px-6">
@@ -2961,7 +2961,7 @@ function MetricSection() {
   const currentElements = floatingElements[activeIndex] || [];
 
   return (
-    <section ref={ref} className="py-48 md:py-56 relative overflow-hidden">
+    <section id="metrics" ref={ref} className="py-48 md:py-56 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,145,250,0.12)_0%,transparent_70%)]" />
       
       {!prefersReducedMotion && isInView && (
@@ -3046,7 +3046,9 @@ function HowItWorksSection() {
   const { t } = useLanguage();
 
   useGSAP(() => {
-    if (prefersReducedMotion || !containerRef.current || !sectionRef.current) return;
+    // Disable GSAP pinning on mobile - let CSS handle the layout
+    const isMobile = window.innerWidth <= 768;
+    if (prefersReducedMotion || isMobile || !containerRef.current || !sectionRef.current) return;
     
     const ctx = gsap.context(() => {
       const stepPanels = gsap.utils.toArray('.how-step-panel') as HTMLElement[];
@@ -3453,7 +3455,7 @@ function CTASection() {
   const bgY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [100, -50]);
 
   return (
-    <section ref={ref} className="relative border-t border-white/5 overflow-hidden">
+    <section id="cta" ref={ref} className="relative border-t border-white/5 overflow-hidden">
       <motion.div 
         style={{ y: bgY }}
         className="absolute inset-0 bg-gradient-to-br from-[var(--landing-primary)]/10 via-transparent to-[var(--landing-accent)]/5"

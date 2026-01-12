@@ -7039,3 +7039,567 @@
   line-height: 1.4;
   min-height: 18px;
 }
+
+/* ========================================
+   MOBILE-ONLY STYLES - REMAINING SECTIONS
+   Problem/Solution, Metrics, HowItWorks, Features, Testimonials
+   ======================================== */
+
+@media (max-width: 768px) {
+  /* ========================================
+     PROBLEM/SOLUTION SECTION - MOBILE
+     All selectors scoped to #problem-solution
+     ======================================== */
+  #problem-solution .problem-side,
+  #problem-solution .solution-side {
+    padding: 0 8px;
+  }
+  
+  #problem-solution .problem-side h2,
+  #problem-solution .solution-side h2 {
+    font-size: 1.75rem !important;
+    line-height: 1.2 !important;
+    margin-bottom: 24px !important;
+  }
+  
+  #problem-solution .problem-mockup-card,
+  #problem-solution .solution-mockup-card {
+    padding: 12px !important;
+    border-radius: 16px !important;
+    max-width: 100% !important;
+  }
+  
+  #problem-solution .inbox-sidebar-mini {
+    display: none !important;
+  }
+  
+  #problem-solution .inbox-main-mini {
+    width: 100% !important;
+    border-radius: 12px !important;
+  }
+  
+  #problem-solution .inbox-header-mini {
+    padding: 10px 12px !important;
+    gap: 8px !important;
+  }
+  
+  #problem-solution .inbox-header-mini h4 {
+    font-size: 14px !important;
+  }
+  
+  #problem-solution .inbox-platforms-mini {
+    display: none !important;
+  }
+  
+  #problem-solution .inbox-header-mini .badge-count {
+    font-size: 10px !important;
+    padding: 2px 6px !important;
+  }
+  
+  #problem-solution .filter-chip {
+    padding: 4px 8px !important;
+    font-size: 10px !important;
+  }
+  
+  #problem-solution .filter-chip svg {
+    width: 12px !important;
+    height: 12px !important;
+  }
+  
+  #problem-solution .conv-item {
+    padding: 8px 10px !important;
+    gap: 8px !important;
+  }
+  
+  #problem-solution .conv-avatar {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  
+  #problem-solution .inbox-platform-badge {
+    width: 14px !important;
+    height: 14px !important;
+    bottom: -2px !important;
+    right: -2px !important;
+  }
+  
+  #problem-solution .inbox-platform-badge svg {
+    width: 8px !important;
+    height: 8px !important;
+  }
+  
+  #problem-solution .conv-name {
+    font-size: 11px !important;
+    height: 8px !important;
+    width: 60px !important;
+  }
+  
+  #problem-solution .conv-preview {
+    font-size: 10px !important;
+    height: 6px !important;
+    width: 80% !important;
+  }
+  
+  #problem-solution .conv-meta .unread-badge {
+    width: 16px !important;
+    height: 16px !important;
+    font-size: 9px !important;
+  }
+  
+  #problem-solution .conv-meta .time {
+    font-size: 9px !important;
+  }
+  
+  /* Solution Mockup Mobile */
+  #problem-solution .solution-unified-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  
+  #problem-solution .solution-inbox-panel,
+  #problem-solution .solution-chat-panel,
+  #problem-solution .solution-crm-panel {
+    padding: 12px !important;
+    border-radius: 12px !important;
+  }
+  
+  #problem-solution .solution-inbox-panel h4,
+  #problem-solution .solution-chat-panel .chat-header h4,
+  #problem-solution .solution-crm-panel h4 {
+    font-size: 12px !important;
+  }
+  
+  #problem-solution .chat-header {
+    padding: 8px 10px !important;
+    gap: 8px !important;
+  }
+  
+  #problem-solution .customer-avatar {
+    width: 28px !important;
+    height: 28px !important;
+  }
+  
+  #problem-solution .customer-name,
+  #problem-solution .customer-platform {
+    font-size: 10px !important;
+  }
+  
+  #problem-solution .chat-body {
+    padding: 10px !important;
+    gap: 8px !important;
+  }
+  
+  #problem-solution .chat-bubble {
+    padding: 8px 10px !important;
+    font-size: 11px !important;
+    max-width: 90% !important;
+  }
+  
+  #problem-solution .ai-response-preview {
+    padding: 10px !important;
+    margin-top: 8px !important;
+  }
+  
+  #problem-solution .ai-response-preview .ai-label {
+    font-size: 10px !important;
+    margin-bottom: 6px !important;
+  }
+  
+  #problem-solution .response-lines .line {
+    height: 6px !important;
+  }
+  
+  #problem-solution .ai-response-preview button {
+    padding: 6px 12px !important;
+    font-size: 10px !important;
+  }
+  
+  #problem-solution .crm-avatar {
+    width: 40px !important;
+    height: 40px !important;
+  }
+  
+  #problem-solution .crm-name-line,
+  #problem-solution .crm-email-line {
+    height: 8px !important;
+  }
+  
+  #problem-solution .crm-mini-channels svg {
+    width: 12px !important;
+    height: 12px !important;
+  }
+  
+  #problem-solution .crm-stats-grid {
+    gap: 8px !important;
+    margin: 12px 0 !important;
+  }
+  
+  #problem-solution .crm-stat-item {
+    padding: 8px !important;
+  }
+  
+  #problem-solution .stat-number {
+    font-size: 14px !important;
+  }
+  
+  #problem-solution .stat-text {
+    font-size: 9px !important;
+  }
+  
+  #problem-solution .crm-tags {
+    gap: 6px !important;
+  }
+  
+  #problem-solution .crm-tag {
+    padding: 3px 8px !important;
+    font-size: 9px !important;
+  }
+  
+  /* ========================================
+     METRICS SECTION - MOBILE
+     ======================================== */
+  #metrics {
+    padding-top: 80px !important;
+    padding-bottom: 80px !important;
+  }
+  
+  #metrics .font-display.font-black {
+    font-size: 22vw !important;
+  }
+  
+  #metrics h2 {
+    font-size: 1.5rem !important;
+    padding: 0 16px;
+  }
+  
+  #metrics p {
+    font-size: 0.95rem !important;
+    padding: 0 20px;
+  }
+  
+  #metrics .absolute.bottom-12 {
+    bottom: 24px !important;
+  }
+  
+  #metrics button {
+    width: 10px !important;
+    height: 10px !important;
+  }
+  
+  #metrics button.w-6 {
+    width: 20px !important;
+  }
+  
+  /* ========================================
+     HOW IT WORKS SECTION - MOBILE
+     Disable GSAP pinning, stack cards vertically
+     All selectors scoped to #how
+     ======================================== */
+  #how.how-pinned-section {
+    height: auto !important;
+  }
+  
+  #how .how-pinned-container {
+    position: relative !important;
+    height: auto !important;
+    min-height: auto !important;
+    padding: 60px 16px !important;
+  }
+  
+  #how .how-header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  
+  #how .how-header h2 {
+    font-size: 1.75rem !important;
+    line-height: 1.2 !important;
+  }
+  
+  #how .how-steps-wrapper {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 24px !important;
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    background-size: cover !important;
+    border-radius: 20px !important;
+    padding: 20px !important;
+  }
+  
+  #how .how-step-panel {
+    position: relative !important;
+    opacity: 1 !important;
+    transform: none !important;
+    width: 100% !important;
+    display: block !important;
+  }
+  
+  #how .how-step-content {
+    flex-direction: column !important;
+    gap: 16px !important;
+    padding: 0 !important;
+  }
+  
+  #how .how-step-info {
+    text-align: center;
+  }
+  
+  #how .how-step-info h3 {
+    font-size: 1.25rem !important;
+    margin-bottom: 8px !important;
+  }
+  
+  #how .how-step-info p {
+    font-size: 0.9rem !important;
+    max-width: 100% !important;
+  }
+  
+  #how .how-step-mockup {
+    width: 100% !important;
+    max-width: 280px !important;
+    margin: 0 auto !important;
+  }
+  
+  #how .how-scroll-progress {
+    display: none !important;
+  }
+  
+  /* How-it-works card styling for mobile */
+  #how .how-card {
+    padding: 20px !important;
+    border-radius: 16px !important;
+  }
+  
+  #how .how-card .step-number {
+    font-size: 2rem !important;
+  }
+  
+  #how .how-card h3 {
+    font-size: 1.25rem !important;
+    margin-top: 12px !important;
+    margin-bottom: 8px !important;
+  }
+  
+  #how .how-card p {
+    font-size: 0.9rem !important;
+    margin-bottom: 16px !important;
+  }
+  
+  #how .step-mockup-container {
+    max-width: 240px !important;
+    margin: 0 auto !important;
+  }
+  
+  /* ========================================
+     FEATURES SECTION - MOBILE
+     Single column, adjusted typography
+     ======================================== */
+  #features {
+    padding-top: 60px !important;
+    padding-bottom: 60px !important;
+  }
+  
+  #features .text-center.mb-20 {
+    margin-bottom: 32px !important;
+  }
+  
+  #features h2 {
+    font-size: 1.75rem !important;
+    line-height: 1.2 !important;
+  }
+  
+  #features > div > p {
+    font-size: 0.95rem !important;
+    padding: 0 8px !important;
+  }
+  
+  #features .bento-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+  
+  #features .feature-card {
+    width: 100% !important;
+    min-height: auto !important;
+  }
+  
+  #features .feature-card-inner {
+    padding: 20px !important;
+  }
+  
+  #features .feature-icon-wrapper {
+    width: 48px !important;
+    height: 48px !important;
+  }
+  
+  #features .feature-icon-wrapper img {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  
+  #features .feature-card h3 {
+    font-size: 1.1rem !important;
+    margin-top: 12px !important;
+    margin-bottom: 8px !important;
+  }
+  
+  #features .feature-card p {
+    font-size: 0.85rem !important;
+    line-height: 1.5 !important;
+  }
+  
+  #features .feature-mockup-area {
+    margin-top: 16px !important;
+    max-height: 200px !important;
+    overflow: hidden !important;
+    border-radius: 8px !important;
+  }
+  
+  /* ========================================
+     TESTIMONIALS SECTION - MOBILE
+     Adjusted quote size and author pill
+     ======================================== */
+  #testimonial {
+    padding-top: 60px !important;
+    padding-bottom: 60px !important;
+  }
+  
+  /* Hide giant quote marks on mobile */
+  #testimonial > div:first-child,
+  #testimonial > div:nth-child(2) {
+    display: none !important;
+  }
+  
+  #testimonial .testimonial-carousel {
+    position: relative;
+    min-height: 350px;
+  }
+  
+  #testimonial .testimonial-slide blockquote {
+    font-size: 1.25rem !important;
+    line-height: 1.4 !important;
+    margin-bottom: 24px !important;
+    padding: 0 8px !important;
+  }
+  
+  /* Author pill on mobile */
+  #testimonial .testimonial-slide > div:last-child {
+    flex-direction: row !important;
+    padding: 12px 16px 12px 12px !important;
+    gap: 12px !important;
+  }
+  
+  #testimonial .testimonial-slide img {
+    width: 56px !important;
+    height: 56px !important;
+  }
+  
+  #testimonial .testimonial-slide .text-left > div:first-child {
+    font-size: 1rem !important;
+  }
+  
+  #testimonial .testimonial-slide .text-left > div:last-child {
+    font-size: 0.85rem !important;
+  }
+  
+  #testimonial .testimonial-dots {
+    margin-top: 24px !important;
+  }
+  
+  #testimonial .testimonial-dot {
+    width: 10px !important;
+    height: 10px !important;
+  }
+  
+  #testimonial .testimonial-dot.active {
+    width: 24px !important;
+  }
+  
+  /* ========================================
+     CTA SECTION - MOBILE
+     ======================================== */
+  #cta > .grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  #cta > .grid > div:first-child {
+    padding: 40px 20px !important;
+  }
+  
+  #cta h2 {
+    font-size: 2.5rem !important;
+    line-height: 0.95 !important;
+    margin-bottom: 16px !important;
+  }
+  
+  #cta p {
+    font-size: 1rem !important;
+  }
+  
+  #cta > .grid > div:last-child {
+    padding: 40px 20px !important;
+    border-left: none !important;
+  }
+  
+  #cta .btn-cta-circle {
+    width: 140px !important;
+    height: 140px !important;
+  }
+  
+  #cta .btn-cta-circle span {
+    font-size: 1rem !important;
+  }
+  
+  #cta .btn-cta-circle svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
+  
+  /* ========================================
+     FOOTER - MOBILE
+     ======================================== */
+  .landing-page > footer > .grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  
+  .landing-page > footer > .grid > div {
+    padding: 20px 16px !important;
+  }
+  
+  .landing-page > footer h4 {
+    font-size: 10px !important;
+    margin-bottom: 12px !important;
+  }
+  
+  .landing-page > footer ul {
+    gap: 8px !important;
+  }
+  
+  .landing-page > footer a {
+    font-size: 12px !important;
+  }
+  
+  /* Footer logo section - only the REPLIYO brandmark */
+  .landing-page > footer > div:last-child {
+    padding: 32px 16px !important;
+  }
+  
+  .landing-page > footer > div:last-child > h1 {
+    font-size: 16vw !important;
+  }
+  
+  .landing-page > footer > div:last-child > div:last-child {
+    flex-direction: column !important;
+    gap: 12px !important;
+    text-align: center !important;
+    align-items: center !important;
+  }
+  
+  .landing-page > footer > div:last-child > div:last-child > div {
+    justify-content: center !important;
+  }
+}
