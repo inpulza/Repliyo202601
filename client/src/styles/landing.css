@@ -7565,8 +7565,9 @@
   
   #features .feature-mockup-area {
     margin-top: 16px !important;
-    max-height: 200px !important;
-    overflow: hidden !important;
+    min-height: 220px !important;
+    max-height: none !important;
+    overflow: visible !important;
     border-radius: 8px !important;
   }
   
