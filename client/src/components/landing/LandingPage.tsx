@@ -1143,6 +1143,7 @@ function MobileInboxMockup() {
   
   const chatMessages = t.mockups.inbox.conversation.slice(0, 4);
   const [visibleChat, setVisibleChat] = useState(0);
+  const [chatTypingTexts, setChatTypingTexts] = useState<{[key: number]: string}>({});
   const [visibleInbox, setVisibleInbox] = useState<number[]>([]);
   const [crmVisible, setCrmVisible] = useState(false);
   
@@ -1166,6 +1167,12 @@ function MobileInboxMockup() {
     if (prefersReducedMotion) {
       setVisibleInbox([1, 2, 3, 4, 5, 6]);
       setVisibleChat(4);
+      setChatTypingTexts({
+        0: chatMessages[0]?.text || '',
+        1: chatMessages[1]?.text || '',
+        2: chatMessages[2]?.text || '',
+        3: chatMessages[3]?.text || ''
+      });
       setCrmVisible(true);
       setVisibleBubbles([1, 2, 3, 4]);
       setBubbleTypingTexts({
@@ -1182,6 +1189,7 @@ function MobileInboxMockup() {
     
     setVisibleInbox([]);
     setVisibleChat(0);
+    setChatTypingTexts({});
     setCrmVisible(false);
     setActiveSlide(0);
     setVisibleBubbles([]);
@@ -1227,15 +1235,55 @@ function MobileInboxMockup() {
     timers.push(setTimeout(() => {
       setActiveSlide(1);
       setVisibleChat(1);
+      // Start typing animation for first message
+      let charIdx = 0;
+      const msg1 = chatMessages[0]?.text || '';
+      const typeInterval = setInterval(() => {
+        charIdx++;
+        setChatTypingTexts(prev => ({ ...prev, 0: msg1.slice(0, charIdx) }));
+        if (charIdx >= msg1.length) clearInterval(typeInterval);
+      }, 25);
+      timers.push(typeInterval as unknown as NodeJS.Timeout);
     }, 3500));
     
-    chatMessages.forEach((_, idx) => {
-      if (idx > 0) {
-        timers.push(setTimeout(() => {
-          setVisibleChat(idx + 1);
-        }, 4000 + idx * 700));
-      }
-    });
+    // Message 2 (AI response) with typing
+    timers.push(setTimeout(() => {
+      setVisibleChat(2);
+      let charIdx = 0;
+      const msg2 = chatMessages[1]?.text || '';
+      const typeInterval = setInterval(() => {
+        charIdx++;
+        setChatTypingTexts(prev => ({ ...prev, 1: msg2.slice(0, charIdx) }));
+        if (charIdx >= msg2.length) clearInterval(typeInterval);
+      }, 20);
+      timers.push(typeInterval as unknown as NodeJS.Timeout);
+    }, 4500));
+    
+    // Message 3 (María types again)
+    timers.push(setTimeout(() => {
+      setVisibleChat(3);
+      let charIdx = 0;
+      const msg3 = chatMessages[2]?.text || '';
+      const typeInterval = setInterval(() => {
+        charIdx++;
+        setChatTypingTexts(prev => ({ ...prev, 2: msg3.slice(0, charIdx) }));
+        if (charIdx >= msg3.length) clearInterval(typeInterval);
+      }, 30);
+      timers.push(typeInterval as unknown as NodeJS.Timeout);
+    }, 5800));
+    
+    // Message 4 (AI responds again)
+    timers.push(setTimeout(() => {
+      setVisibleChat(4);
+      let charIdx = 0;
+      const msg4 = chatMessages[3]?.text || '';
+      const typeInterval = setInterval(() => {
+        charIdx++;
+        setChatTypingTexts(prev => ({ ...prev, 3: msg4.slice(0, charIdx) }));
+        if (charIdx >= msg4.length) clearInterval(typeInterval);
+      }, 22);
+      timers.push(typeInterval as unknown as NodeJS.Timeout);
+    }, 7000));
     
     // Bubble 3: YouTube
     timers.push(setTimeout(() => {
@@ -1278,23 +1326,23 @@ function MobileInboxMockup() {
     timers.push(setTimeout(() => {
       setActiveSlide(2);
       setCrmVisible(true);
-    }, 8500));
+    }, 9500));
     
     // Thread comments animation
     timers.push(setTimeout(() => {
       setActiveSlide(3);
       setVisibleThreadComments([1]);
-    }, 11000));
+    }, 12000));
     
     threadComments.slice(1).forEach((_, idx) => {
       timers.push(setTimeout(() => {
         setVisibleThreadComments(prev => [...prev, idx + 2]);
-      }, 11500 + idx * 800));
+      }, 12500 + idx * 700));
     });
     
     timers.push(setTimeout(() => {
       setAnimationCycle(c => c + 1);
-    }, 16000));
+    }, 17000));
     
     return () => timers.forEach(clearTimeout);
   }, [prefersReducedMotion, animationCycle]);
@@ -1398,9 +1446,15 @@ function MobileInboxMockup() {
             </div>
             <div className="mobile-chat-messages">
               {chatMessages.map((msg, idx) => (
-                <div
+                <motion.div
                   key={`chat-${idx}`}
                   className={`mobile-chat-bubble ${msg.type}`}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ 
+                    opacity: visibleChat > idx ? 1 : 0,
+                    y: visibleChat > idx ? 0 : 10
+                  }}
+                  transition={{ duration: 0.2 }}
                 >
                   {msg.type === 'outgoing' && (
                     <div className="mobile-ai-badge">
@@ -1408,8 +1462,13 @@ function MobileInboxMockup() {
                       AI
                     </div>
                   )}
-                  <span>{msg.text}</span>
-                </div>
+                  <span>
+                    {chatTypingTexts[idx] || (activeSlide !== 1 ? msg.text : '')}
+                    {visibleChat > idx && (chatTypingTexts[idx]?.length || 0) < msg.text.length && activeSlide === 1 && (
+                      <span className="mobile-typing-cursor" />
+                    )}
+                  </span>
+                </motion.div>
               ))}
             </div>
           </motion.div>
