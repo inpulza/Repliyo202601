@@ -157,7 +157,7 @@ function Step2AIMockup() {
         animate={{ opacity: phase >= 1 ? 1 : 0, y: phase >= 1 ? 0 : 20 }}
       >
         <div className="msg-avatar">
-          <img src={avatarMaria} alt="Cliente" />
+          <img src={avatarMaria} alt={t.mockups.inbox.crm.client} />
         </div>
         <div className="msg-content">
           <span className="msg-name">{t.mockups.step2.customerName}</span>
@@ -426,7 +426,7 @@ function FeatureCRMMockup() {
       >
         <div className="crm-mini-header">
           <div className="crm-mini-avatar-v2">
-            <img src={avatarMaria} alt="Cliente" />
+            <img src={avatarMaria} alt={t.mockups.inbox.crm.client} />
           </div>
           <div className="crm-mini-info-v2">
             <span className="crm-mini-name-v2">{t.mockups.step2.customerName}</span>
@@ -989,7 +989,7 @@ function InboxMockup() {
                     className={`chat-bubble-v2 ${msg.type}`}
                   >
                     {msg.type === 'incoming' && (
-                      <img src={avatarMaria} alt="María" className="bubble-avatar" />
+                      <img src={avatarMaria} alt={t.mockups.step2.customerName} className="bubble-avatar" />
                     )}
                     <div className="bubble-content">
                       {msg.isAI && (
