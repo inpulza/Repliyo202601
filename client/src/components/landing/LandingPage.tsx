@@ -1831,11 +1831,68 @@ function HeroSection() {
                     animate={{ opacity: 1, scale: 1, x: 0 }}
                     transition={{ delay: 1.4, duration: 0.4, type: 'spring' }}
                   >
-                    <Globe className="w-5 h-5 lg:w-6 lg:h-6" style={{ color: '#4285F4' }} />
+                    <GoogleBusinessIcon className="w-5 h-5 lg:w-6 lg:h-6" style={{ color: '#4285F4' }} />
                   </motion.span>
                 </span>
               </motion.span>
             </motion.h1>
+            
+            {/* Mobile floating social icons - below H1 */}
+            <motion.div 
+              className="hero-floating-icons-mobile flex md:hidden justify-center mt-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8, duration: 0.5 }}
+            >
+              <motion.span 
+                className="hero-floating-icon-mobile"
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 1.0, duration: 0.4, type: 'spring' }}
+              >
+                <FaInstagram className="w-4 h-4" style={{ color: '#E1306C' }} />
+              </motion.span>
+              <motion.span 
+                className="hero-floating-icon-mobile"
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 1.1, duration: 0.4, type: 'spring' }}
+              >
+                <FaTiktok className="w-4 h-4" style={{ color: '#000000' }} />
+              </motion.span>
+              <motion.span 
+                className="hero-floating-icon-mobile"
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 1.2, duration: 0.4, type: 'spring' }}
+              >
+                <FaFacebook className="w-4 h-4" style={{ color: '#1877F2' }} />
+              </motion.span>
+              <motion.span 
+                className="hero-floating-icon-mobile"
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 1.3, duration: 0.4, type: 'spring' }}
+              >
+                <FaYoutube className="w-4 h-4" style={{ color: '#FF0000' }} />
+              </motion.span>
+              <motion.span 
+                className="hero-floating-icon-mobile"
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 1.4, duration: 0.4, type: 'spring' }}
+              >
+                <FaLinkedin className="w-4 h-4" style={{ color: '#0A66C2' }} />
+              </motion.span>
+              <motion.span 
+                className="hero-floating-icon-mobile"
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 1.5, duration: 0.4, type: 'spring' }}
+              >
+                <GoogleBusinessIcon className="w-4 h-4" style={{ color: '#4285F4' }} />
+              </motion.span>
+            </motion.div>
           </div>
 
           <motion.p 
