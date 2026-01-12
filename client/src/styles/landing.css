@@ -6674,7 +6674,7 @@
 }
 
 .mobile-slide-labels span {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.5);
   font-size: 13px;
   font-weight: 500;
   transition: color 0.3s;
@@ -6682,6 +6682,7 @@
 
 .mobile-slide-labels span.active {
   color: white;
+  font-weight: 600;
 }
 
 /* Mobile Floating Bubbles */
