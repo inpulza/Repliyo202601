@@ -2115,6 +2115,148 @@ function ProblemMockup() {
   );
 }
 
+function ProblemMockupMobile() {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, amount: 0.3 });
+  const prefersReducedMotion = useReducedMotion();
+  const { t } = useLanguage();
+  
+  const platforms = [
+    { icon: FaInstagram, color: '#E1306C', name: 'IG', count: 23 },
+    { icon: FaTiktok, color: '#000000', name: 'TT', count: 47 },
+    { icon: FaFacebook, color: '#1877F2', name: 'FB', count: 12 },
+    { icon: FaLinkedin, color: '#0A66C2', name: 'LI', count: 8 },
+    { icon: FaYoutube, color: '#FF0000', name: 'YT', count: 31 },
+    { icon: GoogleBusinessIcon, color: '#4285F4', name: 'GB', count: 5 },
+  ];
+  
+  const totalMessages = platforms.reduce((sum, p) => sum + p.count, 0);
+  
+  const alerts = [
+    { icon: Bell, text: t.problemSolution.notifications.unreadMessages, color: 'from-red-500 to-orange-500' },
+    { icon: Clock, text: t.problemSolution.notifications.leadWaiting, color: 'from-amber-500 to-yellow-500' },
+    { icon: AlertCircle, text: t.problemSolution.notifications.frustratedClient, color: 'from-rose-500 to-pink-500' },
+    { icon: MessageSquare, text: t.problemSolution.notifications.lostSale, color: 'from-purple-500 to-indigo-500' },
+  ];
+
+  if (prefersReducedMotion) {
+    return (
+      <div className="problem-mockup-mobile" ref={ref}>
+        <div className="problem-mobile-platforms">
+          {platforms.map((platform) => {
+            const IconComponent = platform.icon;
+            return (
+              <div key={platform.name} className="problem-mobile-platform-item">
+                <div 
+                  className="problem-mobile-platform-icon"
+                  style={{ background: platform.color === '#000000' ? 'linear-gradient(135deg, #25f4ee, #fe2c55)' : platform.color }}
+                >
+                  <IconComponent className="w-5 h-5 text-white" />
+                </div>
+                <span className="problem-mobile-platform-badge">{platform.count}</span>
+              </div>
+            );
+          })}
+        </div>
+        <div className="problem-mobile-counter">
+          <span className="problem-mobile-counter-number">+{totalMessages}</span>
+          <span className="problem-mobile-counter-label">{t.problemSolution.notifications.unreadMessagesLabel}</span>
+        </div>
+        <div className="problem-mobile-alerts">
+          {alerts.map((alert, i) => {
+            const IconComponent = alert.icon;
+            return (
+              <div key={i} className={`problem-mobile-alert bg-gradient-to-r ${alert.color}`}>
+                <IconComponent className="w-4 h-4 text-white" />
+                <span>{alert.text}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="problem-mockup-mobile" ref={ref}>
+      {/* Platform Icons Row */}
+      <motion.div 
+        className="problem-mobile-platforms"
+        initial={{ opacity: 0, y: 20 }}
+        animate={inView ? { opacity: 1, y: 0 } : {}}
+        transition={{ duration: 0.5 }}
+      >
+        {platforms.map((platform, i) => {
+          const IconComponent = platform.icon;
+          return (
+            <motion.div
+              key={platform.name}
+              className="problem-mobile-platform-item"
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={inView ? { opacity: 1, scale: 1 } : {}}
+              transition={{ delay: 0.1 + i * 0.08, duration: 0.4, type: 'spring' }}
+            >
+              <div 
+                className="problem-mobile-platform-icon"
+                style={{ background: platform.color === '#000000' ? 'linear-gradient(135deg, #25f4ee, #fe2c55)' : platform.color }}
+              >
+                <IconComponent className="w-5 h-5 text-white" />
+              </div>
+              <motion.span 
+                className="problem-mobile-platform-badge"
+                initial={{ scale: 0 }}
+                animate={inView ? { scale: 1 } : {}}
+                transition={{ delay: 0.4 + i * 0.1, type: 'spring', stiffness: 400 }}
+              >
+                {platform.count}
+              </motion.span>
+            </motion.div>
+          );
+        })}
+      </motion.div>
+
+      {/* Central Counter */}
+      <motion.div 
+        className="problem-mobile-counter"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={inView ? { opacity: 1, scale: 1 } : {}}
+        transition={{ delay: 0.3, duration: 0.6, type: 'spring' }}
+      >
+        <motion.span 
+          className="problem-mobile-counter-number"
+          initial={{ opacity: 0 }}
+          animate={inView ? { opacity: 1 } : {}}
+          transition={{ delay: 0.5, duration: 0.5 }}
+        >
+          +{totalMessages}
+        </motion.span>
+        <span className="problem-mobile-counter-label">
+          {t.problemSolution.notifications.unreadMessagesLabel}
+        </span>
+      </motion.div>
+
+      {/* Alert Pills Stack */}
+      <div className="problem-mobile-alerts">
+        {alerts.map((alert, i) => {
+          const IconComponent = alert.icon;
+          return (
+            <motion.div
+              key={i}
+              className={`problem-mobile-alert bg-gradient-to-r ${alert.color}`}
+              initial={{ opacity: 0, x: i % 2 === 0 ? -30 : 30 }}
+              animate={inView ? { opacity: 1, x: 0 } : {}}
+              transition={{ delay: 0.6 + i * 0.12, duration: 0.4, type: 'spring' }}
+            >
+              <IconComponent className="w-4 h-4 text-white" />
+              <span>{alert.text}</span>
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function SolutionMockup() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: '-100px' });
@@ -2439,8 +2581,13 @@ function ProblemSolutionSection() {
                 <SmokeDissolveText />
               </span>
             </h2>
-            <div className="max-w-3xl mx-auto">
+            {/* Desktop mockup - hidden on mobile */}
+            <div className="max-w-3xl mx-auto hidden md:block">
               <ProblemMockup />
+            </div>
+            {/* Mobile mockup - visible only on mobile */}
+            <div className="md:hidden">
+              <ProblemMockupMobile />
             </div>
           </motion.div>
         </div>

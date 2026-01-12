@@ -28,6 +28,7 @@ export const en = {
     solutionWords: ['sells for you', 'responds instantly', 'saves you time', 'closes sales alone', 'never rests', 'converts leads'],
     notifications: {
       unreadMessages: '+82 unread messages',
+      unreadMessagesLabel: 'unread messages',
       leadWaiting: 'Lead waiting 4 hours',
       frustratedClient: 'Frustrated customer',
       lostSale: 'Lost sale',
