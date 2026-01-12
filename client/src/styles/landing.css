@@ -7825,36 +7825,60 @@
     border-radius: 50%;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   #problem-solution .solution-mobile-conv-content {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 3px;
     min-width: 0;
   }
 
-  #problem-solution .solution-mobile-conv-name {
-    width: 55%;
-    height: 10px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 5px;
+  #problem-solution .solution-mobile-conv-name-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  #problem-solution .solution-mobile-conv-preview {
-    width: 75%;
-    height: 7px;
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 4px;
+  #problem-solution .solution-mobile-conv-preview-text {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #problem-solution .solution-mobile-conv-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  #problem-solution .solution-mobile-conv-time {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  #problem-solution .solution-mobile-conv-time.highlight {
+    color: var(--landing-primary);
+    font-weight: 600;
   }
 
   #problem-solution .solution-mobile-conv-status {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     flex-shrink: 0;
   }
@@ -7872,40 +7896,51 @@
   #problem-solution .solution-mobile-ai-response {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 16px;
+    gap: 10px;
+    padding: 14px;
     background: rgba(2, 145, 250, 0.08);
     border-radius: 14px;
     border: 1px solid rgba(2, 145, 250, 0.15);
   }
 
+  #problem-solution .solution-mobile-ai-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
   #problem-solution .solution-mobile-ai-badge {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
+    gap: 5px;
+    padding: 5px 10px;
     background: rgba(2, 145, 250, 0.2);
     color: var(--landing-primary);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
-    border-radius: 12px;
-    width: fit-content;
+    border-radius: 10px;
   }
 
-  #problem-solution .solution-mobile-ai-lines {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+  #problem-solution .solution-mobile-ai-status {
+    font-size: 11px;
+    color: var(--landing-primary);
+    font-weight: 500;
+    animation: pulse 1.5s ease-in-out infinite;
   }
 
-  #problem-solution .solution-mobile-ai-line {
-    height: 10px;
-    background: rgba(255, 255, 255, 0.12);
-    border-radius: 5px;
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
   }
 
-  #problem-solution .solution-mobile-ai-line.short {
-    width: 55%;
+  #problem-solution .solution-mobile-ai-text {
+    font-size: 13px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.9);
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    border-left: 3px solid var(--landing-primary);
   }
 
   #problem-solution .solution-mobile-send-btn {
@@ -7913,11 +7948,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    gap: 8px;
+    padding: 10px 18px;
     background: var(--landing-primary);
-    border-radius: 50%;
+    border-radius: 20px;
     color: white;
+    font-size: 12px;
+    font-weight: 600;
     box-shadow: 0 4px 15px rgba(2, 145, 250, 0.4);
     border: none;
     cursor: pointer;

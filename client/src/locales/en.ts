@@ -48,6 +48,17 @@ export const en = {
     tabs: {
       all: 'All',
     },
+    mockupMobile: {
+      conv1Name: 'Maria Garcia',
+      conv1Preview: 'Do you have the dress in size M?',
+      conv1Time: '2 min',
+      conv2Name: 'Carlos Lopez', 
+      conv2Preview: 'How much is shipping?',
+      conv2Time: 'now',
+      aiDraftText: 'Hi Carlos! Shipping is free on orders over $50. Can I help with anything else?',
+      aiGenerating: 'AI generating...',
+      clickToSend: 'Click to send',
+    },
   },
   metrics: {
     responseTime: 'Response time',

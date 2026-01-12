@@ -2591,37 +2591,50 @@ function SolutionMockupMobile() {
         </div>
         <div className="solution-mobile-inbox">
           <div className="solution-mobile-conv">
-            <div className="solution-mobile-avatar" />
-            <div className="solution-mobile-conv-content">
-              <div className="solution-mobile-conv-name" />
-              <div className="solution-mobile-conv-preview" />
+            <div className="solution-mobile-avatar">
+              <FaInstagram className="w-2.5 h-2.5" style={{ color: '#E1306C' }} />
             </div>
-            <div className="solution-mobile-conv-status answered">
-              <Check className="w-3 h-3" />
+            <div className="solution-mobile-conv-content">
+              <div className="solution-mobile-conv-name-text">{t.problemSolution.mockupMobile.conv1Name}</div>
+              <div className="solution-mobile-conv-preview-text">{t.problemSolution.mockupMobile.conv1Preview}</div>
+            </div>
+            <div className="solution-mobile-conv-meta">
+              <span className="solution-mobile-conv-time">{t.problemSolution.mockupMobile.conv1Time}</span>
+              <div className="solution-mobile-conv-status answered">
+                <Check className="w-3 h-3" />
+              </div>
             </div>
           </div>
           <div className="solution-mobile-conv ai-draft">
-            <div className="solution-mobile-avatar" />
-            <div className="solution-mobile-conv-content">
-              <div className="solution-mobile-conv-name" />
-              <div className="solution-mobile-conv-preview" />
+            <div className="solution-mobile-avatar">
+              <FaTiktok className="w-2.5 h-2.5" style={{ color: '#000' }} />
             </div>
-            <div className="solution-mobile-conv-status ai">
-              <Sparkles className="w-3 h-3" />
+            <div className="solution-mobile-conv-content">
+              <div className="solution-mobile-conv-name-text">{t.problemSolution.mockupMobile.conv2Name}</div>
+              <div className="solution-mobile-conv-preview-text">{t.problemSolution.mockupMobile.conv2Preview}</div>
+            </div>
+            <div className="solution-mobile-conv-meta">
+              <span className="solution-mobile-conv-time highlight">{t.problemSolution.mockupMobile.conv2Time}</span>
+              <div className="solution-mobile-conv-status ai">
+                <Sparkles className="w-3 h-3" />
+              </div>
             </div>
           </div>
         </div>
         <div className="solution-mobile-ai-response">
-          <div className="solution-mobile-ai-badge">
-            <Sparkles className="w-3 h-3" />
-            <span>IA</span>
+          <div className="solution-mobile-ai-header">
+            <div className="solution-mobile-ai-badge">
+              <Sparkles className="w-3 h-3" />
+              <span>IA</span>
+            </div>
+            <span className="solution-mobile-ai-status">{t.problemSolution.mockupMobile.aiGenerating}</span>
           </div>
-          <div className="solution-mobile-ai-lines">
-            <div className="solution-mobile-ai-line" />
-            <div className="solution-mobile-ai-line short" />
+          <div className="solution-mobile-ai-text">
+            {t.problemSolution.mockupMobile.aiDraftText}
           </div>
           <button className="solution-mobile-send-btn" data-testid="button-send-ai-draft-mobile">
             <Send className="w-3.5 h-3.5" />
+            <span>{t.problemSolution.mockupMobile.clickToSend}</span>
           </button>
         </div>
         <div className="solution-mobile-benefits">
@@ -2686,19 +2699,38 @@ function SolutionMockupMobile() {
           animate={inView ? { opacity: 1, x: 0 } : {}}
           transition={{ delay: 0.4 }}
         >
-          <div className="solution-mobile-avatar" />
-          <div className="solution-mobile-conv-content">
-            <div className="solution-mobile-conv-name" />
-            <div className="solution-mobile-conv-preview" />
+          <div className="solution-mobile-avatar">
+            <FaInstagram className="w-2.5 h-2.5" style={{ color: '#E1306C' }} />
           </div>
-          <motion.div 
-            className="solution-mobile-conv-status answered"
-            initial={{ scale: 0 }}
-            animate={inView ? { scale: 1 } : {}}
-            transition={{ delay: 0.5, type: 'spring', stiffness: 400 }}
-          >
-            <Check className="w-3 h-3" />
-          </motion.div>
+          <div className="solution-mobile-conv-content">
+            <motion.div 
+              className="solution-mobile-conv-name-text"
+              initial={{ opacity: 0 }}
+              animate={inView ? { opacity: 1 } : {}}
+              transition={{ delay: 0.45 }}
+            >
+              {t.problemSolution.mockupMobile.conv1Name}
+            </motion.div>
+            <motion.div 
+              className="solution-mobile-conv-preview-text"
+              initial={{ opacity: 0 }}
+              animate={inView ? { opacity: 1 } : {}}
+              transition={{ delay: 0.5 }}
+            >
+              {t.problemSolution.mockupMobile.conv1Preview}
+            </motion.div>
+          </div>
+          <div className="solution-mobile-conv-meta">
+            <span className="solution-mobile-conv-time">{t.problemSolution.mockupMobile.conv1Time}</span>
+            <motion.div 
+              className="solution-mobile-conv-status answered"
+              initial={{ scale: 0 }}
+              animate={inView ? { scale: 1 } : {}}
+              transition={{ delay: 0.5, type: 'spring', stiffness: 400 }}
+            >
+              <Check className="w-3 h-3" />
+            </motion.div>
+          </div>
         </motion.div>
         <motion.div 
           className="solution-mobile-conv ai-draft"
@@ -2706,19 +2738,38 @@ function SolutionMockupMobile() {
           animate={inView ? { opacity: 1, x: 0 } : {}}
           transition={{ delay: 0.5 }}
         >
-          <div className="solution-mobile-avatar" />
-          <div className="solution-mobile-conv-content">
-            <div className="solution-mobile-conv-name" />
-            <div className="solution-mobile-conv-preview" />
+          <div className="solution-mobile-avatar">
+            <FaTiktok className="w-2.5 h-2.5" style={{ color: '#000' }} />
           </div>
-          <motion.div 
-            className="solution-mobile-conv-status ai"
-            initial={{ scale: 0 }}
-            animate={inView ? { scale: 1 } : {}}
-            transition={{ delay: 0.6, type: 'spring', stiffness: 400 }}
-          >
-            <Sparkles className="w-3 h-3" />
-          </motion.div>
+          <div className="solution-mobile-conv-content">
+            <motion.div 
+              className="solution-mobile-conv-name-text"
+              initial={{ opacity: 0 }}
+              animate={inView ? { opacity: 1 } : {}}
+              transition={{ delay: 0.55 }}
+            >
+              {t.problemSolution.mockupMobile.conv2Name}
+            </motion.div>
+            <motion.div 
+              className="solution-mobile-conv-preview-text"
+              initial={{ opacity: 0 }}
+              animate={inView ? { opacity: 1 } : {}}
+              transition={{ delay: 0.6 }}
+            >
+              {t.problemSolution.mockupMobile.conv2Preview}
+            </motion.div>
+          </div>
+          <div className="solution-mobile-conv-meta">
+            <span className="solution-mobile-conv-time highlight">{t.problemSolution.mockupMobile.conv2Time}</span>
+            <motion.div 
+              className="solution-mobile-conv-status ai"
+              initial={{ scale: 0 }}
+              animate={inView ? { scale: 1 } : {}}
+              transition={{ delay: 0.6, type: 'spring', stiffness: 400 }}
+            >
+              <Sparkles className="w-3 h-3" />
+            </motion.div>
+          </div>
         </motion.div>
       </motion.div>
 
@@ -2728,31 +2779,33 @@ function SolutionMockupMobile() {
         animate={inView ? { opacity: 1, scale: 1 } : {}}
         transition={{ delay: 0.5, duration: 0.4 }}
       >
-        <motion.div 
-          className="solution-mobile-ai-badge"
-          initial={{ opacity: 0, x: -10 }}
-          animate={inView ? { opacity: 1, x: 0 } : {}}
-          transition={{ delay: 0.6 }}
-        >
-          <Sparkles className="w-3 h-3" />
-          <span>IA</span>
-        </motion.div>
-        <div className="solution-mobile-ai-lines">
+        <div className="solution-mobile-ai-header">
           <motion.div 
-            className="solution-mobile-ai-line"
-            initial={{ scaleX: 0 }}
-            animate={inView ? { scaleX: 1 } : {}}
-            transition={{ delay: 0.65, duration: 0.4 }}
-            style={{ transformOrigin: 'left' }}
-          />
-          <motion.div 
-            className="solution-mobile-ai-line short"
-            initial={{ scaleX: 0 }}
-            animate={inView ? { scaleX: 1 } : {}}
-            transition={{ delay: 0.75, duration: 0.3 }}
-            style={{ transformOrigin: 'left' }}
-          />
+            className="solution-mobile-ai-badge"
+            initial={{ opacity: 0, x: -10 }}
+            animate={inView ? { opacity: 1, x: 0 } : {}}
+            transition={{ delay: 0.6 }}
+          >
+            <Sparkles className="w-3 h-3" />
+            <span>IA</span>
+          </motion.div>
+          <motion.span 
+            className="solution-mobile-ai-status"
+            initial={{ opacity: 0 }}
+            animate={inView ? { opacity: 1 } : {}}
+            transition={{ delay: 0.65 }}
+          >
+            {t.problemSolution.mockupMobile.aiGenerating}
+          </motion.span>
         </div>
+        <motion.div 
+          className="solution-mobile-ai-text"
+          initial={{ opacity: 0, y: 10 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ delay: 0.7, duration: 0.4 }}
+        >
+          {t.problemSolution.mockupMobile.aiDraftText}
+        </motion.div>
         <motion.button 
           className="solution-mobile-send-btn"
           data-testid="button-send-ai-draft-mobile"
@@ -2761,6 +2814,7 @@ function SolutionMockupMobile() {
           transition={{ delay: 0.8, type: 'spring', stiffness: 400 }}
         >
           <Send className="w-3.5 h-3.5" />
+          <span>{t.problemSolution.mockupMobile.clickToSend}</span>
         </motion.button>
       </motion.div>
 
