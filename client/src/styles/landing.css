@@ -2890,12 +2890,16 @@
   width: 70px;
   height: 70px;
   border-radius: 18px;
-  background: var(--landing-gradient-primary);
+  background: white;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 5;
-  box-shadow: 0 0 50px rgba(2, 145, 250, 0.5);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.connect-center-inbox-v3 svg {
+  color: #0891b2 !important;
 }
 
 .radar-ring-css {
@@ -2948,28 +2952,28 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  background: white;
   z-index: 15;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-.orbit-icon-static.instagram { 
-  background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); 
+.orbit-icon-static.instagram svg { 
+  color: #E4405F !important;
 }
-.orbit-icon-static.tiktok { 
-  background: #000; 
-  border: 2px solid #00f2ea;
+.orbit-icon-static.tiktok svg { 
+  color: #000000 !important;
 }
-.orbit-icon-static.facebook { 
-  background: #1877F2; 
+.orbit-icon-static.facebook svg { 
+  color: #1877F2 !important;
 }
-.orbit-icon-static.youtube { 
-  background: #FF0000; 
+.orbit-icon-static.youtube svg { 
+  color: #FF0000 !important;
 }
-.orbit-icon-static.linkedin { 
-  background: #0A66C2; 
+.orbit-icon-static.linkedin svg { 
+  color: #0A66C2 !important;
 }
-.orbit-icon-static.google { 
-  background: #4285F4; 
+.orbit-icon-static.google svg { 
+  color: #4285F4 !important;
 }
 
 /* Step 1 V2 - Flying Icons to Inbox (legacy) */
@@ -4704,21 +4708,19 @@
   background: #1a1a2e;
 }
 
-/* Ensure all platform icons have white icons - ALL contexts */
+/* Ensure all platform icons have white icons - ALL contexts (except orbit-icon-static which uses colored icons) */
 .bubble-platform-icon svg,
 .flying-icon svg,
 .platform-indicator svg,
-.orbit-icon-static svg,
 .connect-icon svg,
 .inbox-platform-badge svg {
   color: white !important;
 }
 
-/* Light theme: force white icons on colored backgrounds */
+/* Light theme: force white icons on colored backgrounds (except orbit-icon-static) */
 .landing-page.theme-light .bubble-platform-icon svg,
 .landing-page.theme-light .flying-icon svg,
 .landing-page.theme-light .platform-indicator svg,
-.landing-page.theme-light .orbit-icon-static svg,
 .landing-page.theme-light .connect-icon svg,
 .landing-page.theme-light .inbox-platform-badge svg {
   color: white !important;
@@ -4726,15 +4728,6 @@
 
 .landing-page.theme-light .connect-icon.tiktok {
   background: #1a1a2e !important;
-}
-
-.landing-page.theme-light .orbit-icon-static.tiktok {
-  background: #1a1a2e;
-  color: white;
-}
-
-.landing-page.theme-light .orbit-icon-static.tiktok svg {
-  color: white !important;
 }
 
 .landing-page.theme-light .flying-icon.tiktok {
