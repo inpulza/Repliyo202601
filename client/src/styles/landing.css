@@ -467,6 +467,20 @@
   .landing-page.theme-light section#how h2 span {
     color: rgba(255,255,255,0.6) !important;
   }
+  
+  /* Mobile How It Works - AI message same style as desktop (white bg, gray text) */
+  .landing-page.theme-light section#how .floating-msg.outgoing {
+    background: white !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  .landing-page.theme-light section#how .floating-msg.outgoing .msg-text {
+    color: #4a4a5a !important;
+  }
+  
+  .landing-page.theme-light section#how .floating-msg.outgoing .ai-draft-badge-v2 {
+    color: var(--landing-primary) !important;
+  }
 }
 
 .landing-page.theme-light .connect-center-inbox {
