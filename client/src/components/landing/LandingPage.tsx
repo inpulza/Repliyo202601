@@ -1186,7 +1186,7 @@ function Header() {
                 className="lang-ios-thumb"
                 initial={false}
                 animate={{ 
-                  x: language === 'es' ? 0 : 32
+                  x: language === 'es' ? -2 : 34
                 }}
                 transition={{
                   type: "spring",
