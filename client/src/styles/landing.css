@@ -739,13 +739,14 @@
   margin-left: 0;
 }
 
-.hero-floating-icon:nth-child(1) { z-index: 6; }
-.hero-floating-icon:nth-child(2) { z-index: 5; }
-.hero-floating-icon:nth-child(3) { z-index: 4; }
+.hero-floating-icon:nth-child(1) { z-index: 6; animation: hero-wave-float 3s ease-in-out infinite; animation-delay: 0s; }
+.hero-floating-icon:nth-child(2) { z-index: 5; animation: hero-wave-float 3s ease-in-out infinite; animation-delay: 0.2s; }
+.hero-floating-icon:nth-child(3) { z-index: 4; animation: hero-wave-float 3s ease-in-out infinite; animation-delay: 0.4s; }
 
 .hero-floating-icon:hover {
   transform: translateY(-4px) scale(1.1);
   z-index: 10;
+  animation-play-state: paused;
 }
 
 /* Light theme adjustments for floating icons */
