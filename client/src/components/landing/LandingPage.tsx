@@ -231,8 +231,8 @@ function Step3SendMockup() {
           animate={{ scale: phase === 1 ? [1, 1.1, 1] : 1 }}
           transition={{ duration: 0.3 }}
         >
-          <div className="timeline-icon send-icon overflow-hidden p-0">
-            <img src={timelineSendIcon} alt="" className="w-full h-full object-cover" />
+          <div className="timeline-icon-v2 send-icon-v2">
+            <Send className="w-5 h-5" />
           </div>
           <div className="timeline-content">
             <span className="timeline-title">{t.mockups.step3.sendResponse}</span>
@@ -246,8 +246,8 @@ function Step3SendMockup() {
           className={`timeline-step ${phase >= 2 ? 'active' : ''}`}
           animate={{ scale: phase === 2 ? [1, 1.1, 1] : 1 }}
         >
-          <div className="timeline-icon check-icon overflow-hidden p-0">
-            <img src={timelineCheckIcon} alt="" className="w-full h-full object-cover" />
+          <div className="timeline-icon-v2 check-icon-v2">
+            <CheckCircle className="w-5 h-5" />
           </div>
           <div className="timeline-content">
             <span className="timeline-title">{t.mockups.step3.messageSent}</span>
@@ -261,8 +261,8 @@ function Step3SendMockup() {
           className={`timeline-step ${phase >= 3 ? 'active' : ''}`}
           animate={{ scale: phase === 3 ? [1, 1.1, 1] : 1 }}
         >
-          <div className="timeline-icon bell-icon overflow-hidden p-0">
-            <img src={timelineBellIcon} alt="" className="w-full h-full object-cover" />
+          <div className="timeline-icon-v2 bell-icon-v2">
+            <Bell className="w-5 h-5" />
           </div>
           <div className="timeline-content">
             <span className="timeline-title">{t.mockups.step3.reminder}</span>
@@ -276,8 +276,8 @@ function Step3SendMockup() {
           className={`timeline-step ${phase >= 4 ? 'active' : ''}`}
           animate={{ scale: phase === 4 ? [1, 1.1, 1] : 1 }}
         >
-          <div className="timeline-icon follow-icon overflow-hidden p-0">
-            <img src={timelineChatIcon} alt="" className="w-full h-full object-cover" />
+          <div className="timeline-icon-v2 follow-icon-v2">
+            <MessageCircle className="w-5 h-5" />
           </div>
           <div className="timeline-content">
             <span className="timeline-title">{t.mockups.step3.followUp}</span>

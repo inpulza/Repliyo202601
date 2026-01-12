@@ -3333,6 +3333,52 @@
   box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
 }
 
+/* Timeline icons V2 - white background with colored icons */
+.timeline-icon-v2 {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.timeline-icon-v2.send-icon-v2 svg {
+  color: #8b5cf6 !important;
+}
+
+.timeline-icon-v2.check-icon-v2 svg {
+  color: #22c55e !important;
+}
+
+.timeline-icon-v2.bell-icon-v2 svg {
+  color: #f97316 !important;
+}
+
+.timeline-icon-v2.follow-icon-v2 svg {
+  color: #3b82f6 !important;
+}
+
+.timeline-step.active .timeline-icon-v2.send-icon-v2 {
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.4), 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.timeline-step.active .timeline-icon-v2.check-icon-v2 {
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.4), 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.timeline-step.active .timeline-icon-v2.bell-icon-v2 {
+  box-shadow: 0 0 20px rgba(249, 115, 22, 0.4), 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.timeline-step.active .timeline-icon-v2.follow-icon-v2 {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.4), 0 2px 8px rgba(0,0,0,0.1);
+}
+
 .timeline-content {
   display: flex;
   flex-direction: column;
