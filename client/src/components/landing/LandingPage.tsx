@@ -3501,20 +3501,6 @@ function MetricSection() {
         )}
       </AnimatePresence>
       
-      <AnimatePresence mode="wait">
-        {!prefersReducedMotion && isInView && (
-          <motion.div
-            key={`mobile-bottom-${activeIndex}`}
-            className="absolute inset-x-0 bottom-4 flex justify-center md:hidden pointer-events-none z-40"
-            initial={{ opacity: 0, y: 20, scale: 0.8 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.8 }}
-            transition={{ duration: 0.4, delay: 0.1, ease: [0.4, 0, 0.2, 1] }}
-          >
-            {mobileElements.bottom}
-          </motion.div>
-        )}
-      </AnimatePresence>
       
       <motion.div 
         style={{ scale, opacity }}
@@ -3539,27 +3525,27 @@ function MetricSection() {
             <h2 className="font-display text-3xl md:text-5xl font-bold text-white mb-4">
               {currentStat.title}
             </h2>
-            <p className="text-white/50 text-xl max-w-xl mx-auto">
+            <p className="text-white/50 text-xl max-w-xl mx-auto mb-12">
               {currentStat.description}
             </p>
           </motion.div>
         </AnimatePresence>
+        
+        <div className="flex justify-center gap-2 mt-8">
+          {stats.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setActiveIndex(i)}
+              className={`h-2.5 rounded-full transition-all duration-300 ${
+                activeIndex === i 
+                  ? 'bg-[var(--landing-primary)] w-6' 
+                  : 'bg-[var(--landing-primary)]/40 hover:bg-[var(--landing-primary)]/60 w-2.5'
+              }`}
+              aria-label={`${t.metrics.viewStatistic} ${i + 1}`}
+            />
+          ))}
+        </div>
       </motion.div>
-      
-      <div className="absolute bottom-36 md:bottom-12 left-1/2 -translate-x-1/2 flex justify-center gap-2 z-20">
-        {stats.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setActiveIndex(i)}
-            className={`h-2.5 rounded-full transition-all duration-300 ${
-              activeIndex === i 
-                ? 'bg-[var(--landing-primary)] w-6' 
-                : 'bg-[var(--landing-primary)]/40 hover:bg-[var(--landing-primary)]/60 w-2.5'
-            }`}
-            aria-label={`${t.metrics.viewStatistic} ${i + 1}`}
-          />
-        ))}
-      </div>
     </section>
   );
 }
