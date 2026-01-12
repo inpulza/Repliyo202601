@@ -458,14 +458,18 @@
     background: linear-gradient(to bottom, var(--landing-primary), rgba(2, 145, 250, 0.4)) !important;
   }
   
-  /* Ensure section title stays white */
-  .landing-page.theme-light section#how h2,
-  .landing-page.theme-light section#how h3 {
-    color: white !important;
+  /* Section header uses theme colors (black with gray highlight) */
+  .landing-page.theme-light section#how > .text-center h2 {
+    color: var(--landing-text) !important;
   }
   
-  .landing-page.theme-light section#how h2 span {
-    color: rgba(255,255,255,0.6) !important;
+  .landing-page.theme-light section#how > .text-center h2 span {
+    color: var(--landing-text-muted) !important;
+  }
+  
+  /* Step titles inside the liquid background stay white */
+  .landing-page.theme-light section#how .relative.rounded-2xl h3 {
+    color: white !important;
   }
   
   /* Mobile How It Works - AI message same style as desktop (white bg, gray text) */
