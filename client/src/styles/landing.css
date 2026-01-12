@@ -2586,11 +2586,11 @@
 .how-dual-track-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 60px;
-  max-width: 1400px;
+  gap: 80px;
+  max-width: 1200px;
   margin: 0 auto;
   align-items: start;
-  padding: 0 40px;
+  padding: 0 60px;
   position: relative;
 }
 
@@ -2650,8 +2650,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transform: scale(1.4);
-  transform-origin: center;
 }
 
 /* Responsive adjustments for dual-track */
@@ -3158,24 +3156,26 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 280px;
+  min-height: 350px;
 }
 
 .connect-center-inbox-v3 {
   position: relative;
-  width: 70px;
-  height: 70px;
-  border-radius: 18px;
+  width: 90px;
+  height: 90px;
+  border-radius: 22px;
   background: white;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 5;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
 }
 
 .connect-center-inbox-v3 svg {
   color: #0891b2 !important;
+  width: 40px !important;
+  height: 40px !important;
 }
 
 .radar-ring-css {
@@ -3222,15 +3222,20 @@
 
 .orbit-icon-static {
   position: absolute;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: white;
   z-index: 15;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+}
+
+.orbit-icon-static svg {
+  width: 26px !important;
+  height: 26px !important;
 }
 
 .orbit-icon-static.instagram svg { 
@@ -3342,12 +3347,12 @@
 .floating-msg {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 14px 18px;
+  gap: 14px;
+  padding: 18px 22px;
   background: rgba(255, 255, 255, 0.95);
-  border-radius: 20px;
+  border-radius: 22px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  max-width: 240px;
+  max-width: 320px;
   border: 1px solid rgba(0, 0, 0, 0.08);
   backdrop-filter: blur(8px);
 }
@@ -3363,8 +3368,8 @@
 }
 
 .floating-msg .msg-avatar img {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   object-fit: cover;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -3378,14 +3383,14 @@
 
 .floating-msg .msg-name {
   font-weight: 600;
-  font-size: 0.8rem;
+  font-size: 1rem;
   color: #1a1a2e;
 }
 
 .floating-msg .msg-text {
-  font-size: 0.75rem;
+  font-size: 0.95rem;
   color: #4a4a5a;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .floating-analyzing {
@@ -3550,21 +3555,21 @@
 .send-mockup-v2 {
   width: 100%;
   height: 100%;
-  padding: 20px;
+  padding: 30px;
 }
 
 .send-timeline {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 4px;
   height: 100%;
 }
 
 .timeline-step {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 10px 0;
+  gap: 18px;
+  padding: 14px 0;
   opacity: 0.4;
   transition: all 0.3s ease;
 }
@@ -3611,16 +3616,21 @@
 
 /* Timeline icons V2 - white background with colored icons */
 .timeline-icon-v2 {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   transition: all 0.3s ease;
   background: white;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+}
+
+.timeline-icon-v2 svg {
+  width: 24px !important;
+  height: 24px !important;
 }
 
 .timeline-icon-v2.send-icon-v2 svg {
@@ -3658,11 +3668,11 @@
 .timeline-content {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .timeline-title {
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
   color: white;
 }

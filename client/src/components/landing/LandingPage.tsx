@@ -76,7 +76,7 @@ function Step1ConnectMockup() {
     { Icon: GoogleBusinessIcon, platform: 'google' },
   ];
   
-  const radius = 110;
+  const radius = 140;
   
   return (
     <div className="step-mockup connect-mockup-v3">
