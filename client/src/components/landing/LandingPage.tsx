@@ -1302,8 +1302,16 @@ function MobileInboxMockup() {
       <div className="mobile-phone-frame">
         <div className="mobile-phone-notch" />
         
-        <div className="mobile-slides-container" style={{ transform: `translateX(-${activeSlide * 33.333}%)` }}>
-          <div className="mobile-slide slide-inbox">
+        <div className="mobile-screens-container">
+          <motion.div 
+            className="mobile-screen screen-inbox"
+            initial={false}
+            animate={{ 
+              opacity: activeSlide === 0 ? 1 : 0,
+              scale: activeSlide === 0 ? 1 : 0.95
+            }}
+            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+          >
             <div className="mobile-slide-header">
               <Inbox className="w-5 h-5" />
               <span>{t.mockups.inbox.nav.inbox}</span>
@@ -1343,9 +1351,17 @@ function MobileInboxMockup() {
                 </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
           
-          <div className="mobile-slide slide-chat">
+          <motion.div 
+            className="mobile-screen screen-chat"
+            initial={false}
+            animate={{ 
+              opacity: activeSlide === 1 ? 1 : 0,
+              scale: activeSlide === 1 ? 1 : 0.95
+            }}
+            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+          >
             <div className="mobile-slide-header">
               <img src={avatarMaria} alt={inboxMessages[0].user} className="mobile-chat-avatar" />
               <div className="mobile-chat-info">
@@ -1372,9 +1388,17 @@ function MobileInboxMockup() {
                 </div>
               ))}
             </div>
-          </div>
+          </motion.div>
           
-          <div className="mobile-slide slide-crm">
+          <motion.div 
+            className="mobile-screen screen-crm"
+            initial={false}
+            animate={{ 
+              opacity: activeSlide === 2 ? 1 : 0,
+              scale: activeSlide === 2 ? 1 : 0.95
+            }}
+            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+          >
             <div className="mobile-slide-header">
               <Users className="w-5 h-5" />
               <span>{t.mockups.inbox.crm.client}</span>
@@ -1404,7 +1428,7 @@ function MobileInboxMockup() {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
         
         <div className="mobile-carousel-dots">
