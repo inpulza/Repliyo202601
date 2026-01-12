@@ -3810,10 +3810,11 @@ function HowItWorksSection() {
 
     const ctx = gsap.context(() => {
       // Pin the right visual while scrolling through the section
+      // End earlier so step 3 doesn't reach the top - unpin when 50vh from bottom
       ScrollTrigger.create({
         trigger: sectionRef.current,
         start: 'top 15%',
-        end: 'bottom bottom',
+        end: 'bottom-=50% center',
         pin: stickyRef.current,
         pinSpacing: false,
       });
@@ -3822,7 +3823,7 @@ function HowItWorksSection() {
       ScrollTrigger.create({
         trigger: sectionRef.current,
         start: 'top top',
-        end: 'bottom bottom',
+        end: 'bottom-=50% center',
         onUpdate: (self) => {
           const progress = self.progress;
           const stepValue = progress * 3;
@@ -3911,28 +3912,19 @@ function HowItWorksSection() {
         {/* Right side: Sticky visual - pinned by GSAP */}
         <div className="how-dual-track-right">
           <div ref={stickyRef} className="how-dual-track-sticky">
-            <div className="how-dual-track-visual">
-              <LiquidBackground 
-                colorStart="#06b6d4"
-                colorMid="#14b8a6"
-                colorEnd="#ffffff"
-                speed={0.08}
-                scale={0.75}
-              />
-              <div className="how-dual-track-mockup-wrapper">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={activeStep}
-                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: -20 }}
-                    transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-                    className="how-dual-track-mockup"
-                  >
-                    {stepMockups[activeStep]}
-                  </motion.div>
-                </AnimatePresence>
-              </div>
+            <div className="how-dual-track-mockup-wrapper">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeStep}
+                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -20 }}
+                  transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  className="how-dual-track-mockup"
+                >
+                  {stepMockups[activeStep]}
+                </motion.div>
+              </AnimatePresence>
             </div>
           </div>
         </div>
