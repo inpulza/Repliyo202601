@@ -1266,10 +1266,13 @@ function MobileInboxMockup() {
             <div className="mobile-chat-messages">
               {chatMessages.map((msg, idx) => (
                 <motion.div
-                  key={idx}
-                  initial={prefersReducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: idx * 0.1 }}
+                  key={`chat-${idx}-${activeSlide}`}
+                  initial={false}
+                  animate={{ 
+                    opacity: activeSlide >= 1 ? 1 : 0, 
+                    y: activeSlide >= 1 ? 0 : 15 
+                  }}
+                  transition={{ duration: 0.4, delay: activeSlide === 1 ? idx * 0.12 : 0 }}
                   className={`mobile-chat-bubble ${msg.type}`}
                 >
                   {msg.type === 'outgoing' && (
@@ -1281,19 +1284,6 @@ function MobileInboxMockup() {
                   <span>{msg.text}</span>
                 </motion.div>
               ))}
-              {activeSlide === 1 && visibleChat < chatMessages.length && (
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="mobile-ai-typing"
-                >
-                  <Sparkles className="w-4 h-4 text-blue-500" />
-                  <span>{t.mockups.inbox.chat.aiGenerating}</span>
-                  <div className="mobile-typing-dots">
-                    <span /><span /><span />
-                  </div>
-                </motion.div>
-              )}
             </div>
           </div>
           
@@ -1304,8 +1294,12 @@ function MobileInboxMockup() {
             </div>
             <div className="mobile-crm-content">
               <motion.div 
-                initial={prefersReducedMotion ? { opacity: 1, scale: 1 } : { scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
+                key={`crm-profile-${activeSlide}`}
+                initial={false}
+                animate={{ 
+                  scale: activeSlide === 2 ? 1 : 0.95, 
+                  opacity: activeSlide === 2 ? 1 : 0 
+                }}
                 transition={{ duration: 0.4 }}
                 className="mobile-crm-profile"
               >
@@ -1318,8 +1312,12 @@ function MobileInboxMockup() {
                 </div>
               </motion.div>
               <motion.div 
-                initial={prefersReducedMotion ? { opacity: 1, y: 0 } : { y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
+                key={`crm-stats-${activeSlide}`}
+                initial={false}
+                animate={{ 
+                  y: activeSlide === 2 ? 0 : 20, 
+                  opacity: activeSlide === 2 ? 1 : 0 
+                }}
                 transition={{ delay: 0.15, duration: 0.4 }}
                 className="mobile-crm-stats"
               >
