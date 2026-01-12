@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring, useMotionValue, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Play, Check, CheckCheck, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle, Globe, Search } from 'lucide-react';
+import { ArrowRight, Play, Check, CheckCheck, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle, Globe, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { GlowButton } from './GlowButton';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
@@ -3951,10 +3951,16 @@ function FeaturesSection() {
   const featureSizes = ['medium', 'medium', 'small', 'small', 'medium', 'medium', 'medium'];
 
   const mobileSlides = [
-    [0, 1],
+    [0],
+    [1],
     [2, 3],
-    [4, 5, 6],
+    [4],
+    [5],
+    [6],
   ];
+
+  const nextSlide = () => setMobileSlide((prev) => (prev + 1) % mobileSlides.length);
+  const prevSlide = () => setMobileSlide((prev) => (prev - 1 + mobileSlides.length) % mobileSlides.length);
 
   const renderFeatureCard = (feature: typeof t.features.items[0], i: number, forMobile = false) => (
     <div
@@ -4021,15 +4027,22 @@ function FeaturesSection() {
                 </motion.div>
               ))}
             </div>
-            <div className="features-carousel-dots">
-              {mobileSlides.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setMobileSlide(idx)}
-                  className={`features-carousel-dot ${mobileSlide === idx ? 'active' : ''}`}
-                  aria-label={`Slide ${idx + 1}`}
-                />
-              ))}
+            <div className="features-carousel-nav">
+              <button
+                onClick={prevSlide}
+                className="features-nav-arrow"
+                aria-label="Previous slide"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <span className="features-nav-counter">{mobileSlide + 1} / {mobileSlides.length}</span>
+              <button
+                onClick={nextSlide}
+                className="features-nav-arrow"
+                aria-label="Next slide"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
             </div>
           </div>
         ) : (
