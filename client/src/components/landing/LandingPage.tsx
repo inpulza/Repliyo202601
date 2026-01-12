@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring, useMotionValue, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Play, Check, CheckCheck, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle, Globe } from 'lucide-react';
+import { GlowButton } from './GlowButton';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
 import { useLanguage } from '../../context/LanguageContext';
@@ -1196,7 +1197,11 @@ function Header() {
               />
             </div>
           </button>
-          <a href="/login" className="btn-primary text-sm py-2.5 px-5" data-testid="button-login-header">
+          <a 
+            href="/login" 
+            className="text-sm font-medium text-[var(--landing-primary)] hover:text-[var(--landing-primary-dark)] transition-colors"
+            data-testid="button-login-header"
+          >
             {t.header.login}
           </a>
         </div>
@@ -1296,12 +1301,9 @@ function HeroSection() {
             transition={{ delay: 1.5, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             className="flex items-center justify-center"
           >
-            <a href="/login" className="btn-glow-animated" data-testid="button-empezar-gratis-hero">
-              <span className="btn-glow-content">
-                <span>{t.hero.cta}</span>
-                <ArrowRight className="w-5 h-5" />
-              </span>
-            </a>
+            <GlowButton href="/login">
+              {t.hero.cta}
+            </GlowButton>
           </motion.div>
         </motion.div>
         
