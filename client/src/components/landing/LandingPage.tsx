@@ -3457,7 +3457,7 @@ function MetricSection() {
   const mobileElements = getMobileStatElements(t, activeIndex);
 
   return (
-    <section id="metrics" ref={ref} className="pt-72 pb-[32rem] md:py-56 relative overflow-hidden">
+    <section id="metrics" ref={ref} className="py-40 md:py-64 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,145,250,0.12)_0%,transparent_70%)]" />
       
       {!prefersReducedMotion && isInView && (
