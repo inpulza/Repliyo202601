@@ -5882,17 +5882,27 @@
    ======================================== */
 
 @media (max-width: 768px) {
-  /* Hero Section Mobile Layout */
+  /* Hero Section Mobile Layout - Fixed height to prevent animation jumps */
   .hero-section {
-    min-height: auto !important;
-    padding-bottom: 60px;
+    min-height: 850px !important;
+    height: 850px !important;
+    max-height: 850px !important;
+    overflow: hidden !important;
+    padding-bottom: 0;
   }
   
   .hero-sticky-container {
     position: relative !important;
-    min-height: auto !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    max-height: 100% !important;
     padding-top: 100px !important;
     padding-bottom: 40px;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
   }
   
   /* Hero Text Content Mobile */
@@ -5900,6 +5910,7 @@
     padding-left: 16px !important;
     padding-right: 16px !important;
     margin-bottom: 32px !important;
+    flex-shrink: 0 !important;
   }
   
   /* Title sizing for mobile - maintain readability */
