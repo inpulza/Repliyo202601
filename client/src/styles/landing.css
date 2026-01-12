@@ -715,6 +715,7 @@
    BTN GLOW ANIMATED - Rotating border glow + Gradient slide hover
    ============================================ */
 .btn-glow-animated {
+  --glow-size: 2px;
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -723,67 +724,57 @@
   font-weight: 600;
   font-size: 16px;
   color: white;
-  background: linear-gradient(90deg, white 50%, var(--landing-primary) 50%);
-  background-size: 200% 100%;
-  background-position: 100% 0;
+  background: transparent;
   border: none;
   border-radius: 12px;
   cursor: pointer;
   overflow: hidden;
   text-decoration: none;
-  isolation: isolate;
-  transition: background-position 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s ease, transform 0.2s ease;
+  transition: color 0.4s ease, transform 0.2s ease;
 }
 
-.btn-glow-animated:hover {
-  background-position: 0% 0;
-  color: var(--landing-primary);
-}
-
-/* Rotating glow ring - uses transform for cross-browser support */
-.btn-glow-ring {
+/* Rotating conic gradient - much larger than button */
+.btn-glow-animated::before {
+  content: '';
   position: absolute;
-  inset: -50%;
+  top: 50%;
+  left: 50%;
+  width: 200%;
+  height: 400%;
   background: conic-gradient(
     from 0deg,
     transparent 0%,
-    transparent 70%,
-    rgba(255, 255, 255, 0.9) 75%,
-    var(--landing-primary-light, #4db5ff) 80%,
-    transparent 85%,
+    transparent 60%,
+    rgba(255, 255, 255, 0.95) 70%,
+    var(--landing-primary-light, #4db5ff) 75%,
+    rgba(2, 145, 250, 0.6) 80%,
+    transparent 90%,
     transparent 100%
   );
-  animation: spinRing 2.5s linear infinite;
-  z-index: -2;
-  pointer-events: none;
+  transform: translate(-50%, -50%) rotate(0deg);
+  animation: spinBorder 3s linear infinite;
+  z-index: 0;
 }
 
-/* Blur glow effect */
-.btn-glow-ring-blur {
+/* Inner mask - covers center, leaving only border visible */
+.btn-glow-animated::after {
+  content: '';
   position: absolute;
-  inset: -60%;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0%,
-    transparent 70%,
-    rgba(2, 145, 250, 0.5) 75%,
-    rgba(100, 200, 255, 0.3) 80%,
-    transparent 85%,
-    transparent 100%
-  );
-  filter: blur(20px);
-  animation: spinRing 2.5s linear infinite;
-  z-index: -3;
-  opacity: 0.6;
-  pointer-events: none;
+  inset: var(--glow-size);
+  background: linear-gradient(90deg, white 50%, var(--landing-primary) 50%);
+  background-size: 200% 100%;
+  background-position: 100% 0;
+  border-radius: calc(12px - var(--glow-size));
+  z-index: 1;
+  transition: background-position 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@keyframes spinRing {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+@keyframes spinBorder {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
-/* Content layer */
+/* Content layer - above everything */
 .btn-glow-content {
   position: relative;
   display: inline-flex;
@@ -797,13 +788,16 @@
 }
 
 /* Hover states */
-.btn-glow-animated:hover .btn-glow-ring {
-  animation: spinRing 1.2s linear infinite;
+.btn-glow-animated:hover {
+  color: var(--landing-primary);
 }
 
-.btn-glow-animated:hover .btn-glow-ring-blur {
-  opacity: 1;
-  filter: blur(24px);
+.btn-glow-animated:hover::before {
+  animation: spinBorder 1.5s linear infinite;
+}
+
+.btn-glow-animated:hover::after {
+  background-position: 0% 0;
 }
 
 .btn-glow-animated:hover .btn-glow-content svg {
@@ -814,21 +808,7 @@
   transform: scale(0.98);
 }
 
-/* Border outline for definition */
-.btn-glow-animated::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  pointer-events: none;
-  z-index: 1;
-  transition: border-color 0.4s ease;
-}
-
-.btn-glow-animated:hover::after {
-  border-color: rgba(2, 145, 250, 0.3);
-}
+/* Outer glow blur effect - separate element would be needed for this */
 
 .btn-secondary {
   background: transparent;

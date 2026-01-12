@@ -1297,8 +1297,6 @@ function HeroSection() {
             className="flex items-center justify-center"
           >
             <a href="/login" className="btn-glow-animated" data-testid="button-empezar-gratis-hero">
-              <span className="btn-glow-ring"></span>
-              <span className="btn-glow-ring-blur"></span>
               <span className="btn-glow-content">
                 <span>{t.hero.cta}</span>
                 <ArrowRight className="w-5 h-5" />
