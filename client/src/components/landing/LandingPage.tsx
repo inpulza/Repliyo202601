@@ -3593,9 +3593,9 @@ function HowItWorksMobile() {
 
       <div className="relative rounded-2xl overflow-hidden mx-auto max-w-sm min-h-[320px]">
         <LiquidBackground 
-          colorStart="#0d9488"
-          colorMid="#d4d4d4"
-          colorEnd="#fafafa"
+          colorStart="#14b8a6"
+          colorMid="#5eead4"
+          colorEnd="#f0fdfa"
           speed={0.08}
           scale={0.75}
           className="rounded-2xl"
@@ -3831,9 +3831,9 @@ function HowItWorksSection() {
 
         <div className="how-steps-wrapper relative">
           <LiquidBackground 
-            colorStart="#0d9488"
-            colorMid="#d4d4d4"
-            colorEnd="#fafafa"
+            colorStart="#14b8a6"
+            colorMid="#5eead4"
+            colorEnd="#f0fdfa"
             speed={0.08}
             scale={0.75}
           />

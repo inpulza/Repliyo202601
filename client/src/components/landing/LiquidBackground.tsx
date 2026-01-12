@@ -69,9 +69,9 @@ void main() {
   float pattern = (f * f * f + 0.6 * f * f + 0.5 * f);
   pattern = clamp(pattern, 0.0, 1.0);
   
-  vec3 color = mix(uColorA, uColorB, clamp(length(q) * 0.8, 0.0, 1.0));
-  color = mix(color, uColorC, clamp(length(r.x) * 0.7, 0.0, 1.0));
-  color = mix(color, uColorA, clamp(pattern * pattern * 0.6, 0.0, 1.0));
+  vec3 color = mix(uColorA, uColorB, clamp(length(q) * 0.5, 0.0, 1.0));
+  color = mix(color, uColorC, clamp(length(r.x) * 0.4, 0.0, 1.0));
+  color = mix(color, uColorA, clamp(pattern * pattern * 0.3, 0.0, 1.0));
   
   float grain = (fract(sin(dot(vUv * 800.0 + uTime * 0.5, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * 0.06;
   color += grain;
