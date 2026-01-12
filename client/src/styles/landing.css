@@ -7656,6 +7656,18 @@
     overflow: hidden;
   }
 
+  /* CRM mockup - expand to fill more width */
+  .mobile-feature-card .feature-crm-mockup {
+    width: 100%;
+    max-width: 100%;
+    margin-top: 16px;
+  }
+
+  .mobile-feature-card .crm-mini-card-v2 {
+    width: 100%;
+    max-width: 100%;
+  }
+
   .features-carousel-nav {
     display: flex;
     justify-content: center;
