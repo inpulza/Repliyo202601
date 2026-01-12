@@ -3742,7 +3742,9 @@ function HowItWorksSection() {
         end: 'bottom bottom',
         onUpdate: (self) => {
           const progress = self.progress;
-          const stepValue = progress * 3;
+          // Accelerate step transitions - change earlier in scroll
+          const adjustedProgress = Math.min(progress * 1.3, 1);
+          const stepValue = adjustedProgress * 3;
           const newStep = Math.min(Math.floor(stepValue), 2);
           if (newStep >= 0) {
             setActiveStep(newStep);
