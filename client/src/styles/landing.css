@@ -5747,3 +5747,475 @@
 .landing-page [style*="font-size: 14px"] {
   font-family: var(--font-small) !important;
 }
+
+/* ========================================
+   MOBILE-ONLY STYLES - HERO SECTION
+   These styles ONLY affect mobile (<= 768px)
+   Desktop styles remain completely untouched
+   ======================================== */
+
+@media (max-width: 768px) {
+  /* Hero Section Mobile Layout */
+  .hero-section {
+    min-height: auto !important;
+    padding-bottom: 60px;
+  }
+  
+  .hero-sticky-container {
+    position: relative !important;
+    min-height: auto !important;
+    padding-top: 100px !important;
+    padding-bottom: 40px;
+  }
+  
+  /* Hero Text Content Mobile */
+  .hero-text-content {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    margin-bottom: 32px !important;
+  }
+  
+  /* Title sizing for mobile - maintain readability */
+  .hero-title {
+    font-size: 2.25rem !important; /* 36px */
+    line-height: 1.1 !important;
+  }
+  
+  .hero-title span.block {
+    white-space: normal !important;
+  }
+  
+  /* Description mobile */
+  .hero-description {
+    font-size: 1rem !important; /* 16px */
+    line-height: 1.5 !important;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  
+  /* CTA Button mobile */
+  .hero-section .btn-glow-animated {
+    padding: 14px 24px !important;
+    font-size: 15px !important;
+  }
+  
+  /* CheckCheck icon size on mobile */
+  .hero-title svg {
+    width: 24px !important;
+    height: 24px !important;
+  }
+  
+  /* OVERRIDE LEGACY RULES: Keep CRM panel visible on mobile */
+  .mockup-crm-panel {
+    display: block !important;
+  }
+  
+  /* ========================================
+     INBOX MOCKUP V2 - MOBILE TRANSFORMATION
+     Transform to iPhone-style mockup keeping ALL info
+     ======================================== */
+  
+  .mockup-container-v2 {
+    padding: 0 12px;
+  }
+  
+  .mockup-window-v2 {
+    border-radius: 28px;
+    max-width: 360px;
+    margin: 0 auto;
+    overflow: hidden;
+  }
+  
+  /* Mobile Header - simplified but keep dots */
+  .mockup-header-v2 {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .mockup-header-v2 .mockup-dots {
+    order: 0;
+  }
+  
+  /* Show nav on mobile as compact tabs */
+  .mockup-nav {
+    display: flex !important;
+    order: 1;
+    margin-left: 0 !important;
+    gap: 4px;
+  }
+  
+  .mockup-nav .nav-item {
+    padding: 6px 10px;
+    font-size: 11px;
+    gap: 4px;
+  }
+  
+  .mockup-nav .nav-item svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .mockup-nav .nav-badge {
+    font-size: 9px;
+    padding: 2px 4px;
+  }
+  
+  /* Filters - horizontal scroll on mobile */
+  .mockup-filters {
+    padding: 8px 12px;
+    gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .mockup-filters::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .filter-chip {
+    padding: 5px 10px;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+  
+  /* Content area mobile - show sidebar as horizontal scroll + chat */
+  .mockup-content-v2 {
+    flex-direction: column;
+    height: auto;
+  }
+  
+  /* Sidebar becomes horizontal message strip */
+  .mockup-sidebar-v2 {
+    display: flex !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-right: none;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding: 8px 0;
+    gap: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .mockup-sidebar-v2::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Message preview cards - compact for horizontal */
+  .mockup-sidebar-v2 .message-preview-v2 {
+    flex-direction: column;
+    padding: 8px 12px;
+    min-width: 100px;
+    max-width: 120px;
+    flex-shrink: 0;
+    border-left: none;
+    border-bottom: 3px solid transparent;
+    border-radius: 12px;
+    margin: 0 4px;
+    background: rgba(255,255,255,0.02);
+  }
+  
+  .mockup-sidebar-v2 .message-preview-v2.selected {
+    border-bottom-color: var(--landing-primary);
+    background: rgba(2, 145, 250, 0.1);
+  }
+  
+  .mockup-sidebar-v2 .avatar-container {
+    margin-bottom: 6px;
+  }
+  
+  .mockup-sidebar-v2 .avatar-img {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .mockup-sidebar-v2 .platform-indicator {
+    width: 16px;
+    height: 16px;
+    bottom: -1px;
+    right: -1px;
+  }
+  
+  .mockup-sidebar-v2 .platform-indicator svg {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .mockup-sidebar-v2 .message-info-v2 {
+    text-align: center;
+    width: 100%;
+  }
+  
+  .mockup-sidebar-v2 .message-info-v2 .message-header {
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .mockup-sidebar-v2 .message-info-v2 .username {
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90px;
+  }
+  
+  .mockup-sidebar-v2 .message-info-v2 .time {
+    font-size: 9px;
+  }
+  
+  .mockup-sidebar-v2 .message-info-v2 .preview {
+    display: none;
+  }
+  
+  .mockup-sidebar-v2 .unread-dot {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 6px;
+    height: 6px;
+  }
+  
+  /* Main chat area mobile */
+  .mockup-main-v2 {
+    width: 100%;
+  }
+  
+  .chat-header-v2 {
+    padding: 10px 14px;
+  }
+  
+  .chat-avatar {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .chat-username {
+    font-size: 13px;
+  }
+  
+  .chat-platform {
+    font-size: 11px;
+  }
+  
+  .action-btn {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .action-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  /* Chat messages mobile */
+  .chat-messages-v2 {
+    padding: 12px;
+    gap: 10px;
+    max-height: 260px;
+    min-height: 180px;
+  }
+  
+  .chat-bubble-v2 {
+    max-width: 90%;
+    gap: 8px;
+  }
+  
+  .chat-bubble-v2 .bubble-avatar {
+    width: 26px;
+    height: 26px;
+  }
+  
+  .bubble-content {
+    padding: 10px 12px;
+    font-size: 13px;
+    border-radius: 14px;
+  }
+  
+  .bubble-time {
+    font-size: 9px;
+    margin-top: 4px;
+  }
+  
+  .ai-badge-v2 {
+    font-size: 9px;
+    padding: 2px 6px;
+    margin-bottom: 6px;
+  }
+  
+  .ai-badge-v2 svg {
+    width: 10px;
+    height: 10px;
+  }
+  
+  /* AI typing indicator mobile */
+  .ai-typing-v2 {
+    padding: 10px 14px;
+    font-size: 12px;
+    gap: 8px;
+  }
+  
+  .ai-typing-v2 svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .typing-indicator span {
+    width: 5px;
+    height: 5px;
+  }
+  
+  /* Chat actions bar mobile */
+  .chat-actions-bar {
+    padding: 8px 12px;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  
+  .chat-action-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+    gap: 4px;
+  }
+  
+  .chat-action-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+  
+  /* Auto reply indicator mobile */
+  .auto-reply-indicator {
+    padding: 10px 14px;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+  }
+  
+  .auto-reply-badge {
+    font-size: 12px;
+    gap: 6px;
+  }
+  
+  .auto-reply-badge svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .auto-reply-status {
+    font-size: 11px;
+  }
+  
+  /* CRM Panel - show as collapsible bottom section on mobile */
+  .mockup-crm-panel {
+    display: block !important;
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    padding: 12px 16px;
+  }
+  
+  .crm-header {
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+  }
+  
+  .crm-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+  }
+  
+  .mockup-crm-panel .crm-avatar {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+  
+  .mockup-crm-panel .crm-name {
+    margin-bottom: 2px;
+    font-size: 13px;
+  }
+  
+  .mockup-crm-panel .crm-email {
+    margin-bottom: 0;
+    font-size: 10px;
+  }
+  
+  .crm-stats-grid {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 0;
+  }
+  
+  .crm-stat-item {
+    padding: 6px 10px;
+    flex: 1;
+  }
+  
+  .stat-number {
+    font-size: 14px;
+  }
+  
+  .stat-text {
+    font-size: 9px;
+  }
+  
+  .crm-tags {
+    display: flex;
+    gap: 4px;
+    justify-content: flex-start;
+    margin-bottom: 0;
+    margin-top: 8px;
+  }
+  
+  .crm-tag {
+    padding: 2px 6px;
+    font-size: 9px;
+  }
+  
+  /* Hide notes section on mobile to save space but keep essential CRM info */
+  .mockup-crm-panel .crm-notes {
+    display: none;
+  }
+  
+  /* Glow effect mobile - smaller */
+  .mockup-glow-v2 {
+    width: 120%;
+    height: 140%;
+    filter: blur(30px);
+  }
+  
+  /* Floating bubbles - already hidden at 1200px, ensure hidden */
+  .floating-bubbles-container {
+    display: none !important;
+  }
+}
+
+/* ========================================
+   TABLET ADJUSTMENTS (769px - 1024px)
+   Intermediate sizing - OVERRIDE legacy rules
+   ======================================== */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .hero-title {
+    font-size: 3rem !important;
+  }
+  
+  .mockup-sidebar-v2 {
+    width: 220px;
+    min-width: 220px;
+  }
+  
+  .mockup-sidebar-v2 .message-info-v2 .preview {
+    max-width: 140px;
+  }
+  
+  /* OVERRIDE LEGACY: Keep CRM panel visible on tablet */
+  .mockup-crm-panel {
+    display: block !important;
+    width: 180px;
+  }
+}

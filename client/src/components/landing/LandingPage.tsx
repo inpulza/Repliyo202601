@@ -1223,7 +1223,7 @@ function HeroSection() {
 
   return (
     <section ref={containerRef} className="hero-section relative min-h-[140vh] md:min-h-[150vh] overflow-visible">
-      <div className="sticky top-0 min-h-screen flex flex-col items-center justify-start pt-40 overflow-visible">
+      <div className="hero-sticky-container sticky top-0 min-h-screen flex flex-col items-center justify-start pt-40 overflow-visible">
         <div className="absolute inset-0 bg-radial-gradient" />
         <div className="absolute inset-0 bg-grid-pattern opacity-30" />
         
@@ -1232,10 +1232,10 @@ function HeroSection() {
           <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] rounded-full bg-orange-500/5 blur-3xl" />
         </Parallax>
         
-        <motion.div style={{ y: textY, opacity }} className="relative z-10 max-w-6xl mx-auto px-6 text-center mb-20">
+        <motion.div style={{ y: textY, opacity }} className="hero-text-content relative z-10 max-w-6xl mx-auto px-6 text-center mb-20">
           <div className="overflow-visible mb-8">
             <motion.h1 
-              className="font-display font-bold text-5xl md:text-6xl lg:text-7xl xl:text-8xl leading-[0.95] tracking-tight"
+              className="hero-title font-display font-bold text-5xl md:text-6xl lg:text-7xl xl:text-8xl leading-[0.95] tracking-tight"
             >
               <span className="block text-white whitespace-nowrap">
                 <motion.span 
@@ -1290,7 +1290,7 @@ function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.2, duration: 0.6 }}
-            className="text-xl md:text-2xl lg:text-3xl text-white/50 max-w-3xl mx-auto mb-10 leading-relaxed"
+            className="hero-description text-xl md:text-2xl lg:text-3xl text-white/50 max-w-3xl mx-auto mb-10 leading-relaxed"
           >
             {t.hero.description}
           </motion.p>
