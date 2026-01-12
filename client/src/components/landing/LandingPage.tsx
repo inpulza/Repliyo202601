@@ -1134,16 +1134,19 @@ function MobileInboxMockup() {
   const chatMessages = t.mockups.inbox.conversation.slice(0, 4);
   const [visibleChat, setVisibleChat] = useState(0);
   const [visibleInbox, setVisibleInbox] = useState<number[]>([]);
+  const [crmVisible, setCrmVisible] = useState(false);
 
   useEffect(() => {
     if (prefersReducedMotion) {
       setVisibleInbox([1, 2, 3, 4]);
       setVisibleChat(4);
+      setCrmVisible(true);
       return;
     }
     
     setVisibleInbox([]);
     setVisibleChat(0);
+    setCrmVisible(false);
     setActiveSlide(0);
     
     const timers: NodeJS.Timeout[] = [];
@@ -1154,22 +1157,40 @@ function MobileInboxMockup() {
       }, 400 + idx * 500));
     });
     
-    timers.push(setTimeout(() => setActiveSlide(1), 3500));
+    timers.push(setTimeout(() => {
+      setActiveSlide(1);
+      setVisibleChat(1);
+    }, 3500));
     
     chatMessages.forEach((_, idx) => {
-      timers.push(setTimeout(() => {
-        setVisibleChat(idx + 1);
-      }, 4000 + idx * 800));
+      if (idx > 0) {
+        timers.push(setTimeout(() => {
+          setVisibleChat(idx + 1);
+        }, 4000 + idx * 700));
+      }
     });
     
-    timers.push(setTimeout(() => setActiveSlide(2), 8000));
+    timers.push(setTimeout(() => {
+      setActiveSlide(2);
+      setCrmVisible(true);
+    }, 7500));
     
     timers.push(setTimeout(() => {
       setAnimationCycle(c => c + 1);
-    }, 12000));
+    }, 11000));
     
     return () => timers.forEach(clearTimeout);
   }, [prefersReducedMotion, animationCycle]);
+
+  const handleDotClick = (idx: number) => {
+    setActiveSlide(idx);
+    if (idx === 1 && visibleChat === 0) {
+      setVisibleChat(chatMessages.length);
+    }
+    if (idx === 2 && !crmVisible) {
+      setCrmVisible(true);
+    }
+  };
 
   const PlatformIcon = ({ platform }: { platform: string }) => {
     switch(platform) {
@@ -1196,17 +1217,18 @@ function MobileInboxMockup() {
                 animate={{ scale: 1 }}
                 className="mobile-badge"
               >
-                {visibleInbox.length}
+                {visibleInbox.length || 4}
               </motion.span>
             </div>
             <div className="mobile-messages-list">
-              {messages.map((msg) => (
+              {messages.map((msg, idx) => (
                 <motion.div
                   key={msg.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={visibleInbox.includes(msg.id) ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
+                  initial={prefersReducedMotion ? false : { opacity: 0, x: -20 }}
+                  animate={{ opacity: visibleInbox.includes(msg.id) || activeSlide !== 0 ? 1 : 0.3, x: 0 }}
                   transition={{ duration: 0.3, type: 'spring' }}
                   className="mobile-message-item"
+                  style={{ opacity: visibleInbox.includes(msg.id) || activeSlide !== 0 ? 1 : 0 }}
                 >
                   <div className="mobile-msg-avatar">
                     <img src={msg.avatarImg} alt={msg.user} />
@@ -1239,12 +1261,20 @@ function MobileInboxMockup() {
               </div>
             </div>
             <div className="mobile-chat-messages">
-              {chatMessages.slice(0, visibleChat).map((msg, idx) => (
+              {chatMessages.map((msg, idx) => (
                 <motion.div
                   key={idx}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
+                  animate={{ 
+                    opacity: idx < visibleChat || activeSlide === 1 ? 1 : 0, 
+                    y: idx < visibleChat || activeSlide === 1 ? 0 : 10 
+                  }}
+                  transition={{ duration: 0.3, delay: activeSlide === 1 && idx >= visibleChat ? idx * 0.15 : 0 }}
                   className={`mobile-chat-bubble ${msg.type}`}
+                  style={{ 
+                    opacity: idx < visibleChat ? 1 : 0,
+                    display: idx < visibleChat || (activeSlide === 1 && idx < 4) ? 'block' : 'none'
+                  }}
                 >
                   {msg.type === 'outgoing' && (
                     <div className="mobile-ai-badge">
@@ -1278,8 +1308,9 @@ function MobileInboxMockup() {
             </div>
             <div className="mobile-crm-content">
               <motion.div 
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={activeSlide === 2 ? { scale: 1, opacity: 1 } : {}}
+                initial={prefersReducedMotion ? false : { scale: 0.95, opacity: 0 }}
+                animate={{ scale: crmVisible || activeSlide === 2 ? 1 : 0.95, opacity: crmVisible || activeSlide === 2 ? 1 : 0 }}
+                transition={{ duration: 0.4 }}
                 className="mobile-crm-profile"
               >
                 <img src={avatarMaria} alt={inboxMessages[0].user} className="mobile-crm-avatar" />
@@ -1291,9 +1322,9 @@ function MobileInboxMockup() {
                 </div>
               </motion.div>
               <motion.div 
-                initial={{ y: 20, opacity: 0 }}
-                animate={activeSlide === 2 ? { y: 0, opacity: 1 } : {}}
-                transition={{ delay: 0.2 }}
+                initial={prefersReducedMotion ? false : { y: 20, opacity: 0 }}
+                animate={{ y: crmVisible || activeSlide === 2 ? 0 : 20, opacity: crmVisible || activeSlide === 2 ? 1 : 0 }}
+                transition={{ delay: 0.15, duration: 0.4 }}
                 className="mobile-crm-stats"
               >
                 <div className="mobile-crm-stat">
@@ -1318,7 +1349,7 @@ function MobileInboxMockup() {
             <button
               key={idx}
               className={`mobile-dot ${activeSlide === idx ? 'active' : ''}`}
-              onClick={() => setActiveSlide(idx)}
+              onClick={() => handleDotClick(idx)}
             />
           ))}
         </div>
