@@ -7635,6 +7635,27 @@
     min-height: 120px;
   }
 
+  /* AI text box - fixed width to prevent expansion during typing */
+  .mobile-feature-card .ai-text-box {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .mobile-feature-card .ai-generated-text {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  .mobile-feature-card .feature-ai-mockup {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
   .features-carousel-nav {
     display: flex;
     justify-content: center;
