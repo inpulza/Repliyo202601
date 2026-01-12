@@ -3600,13 +3600,18 @@
 }
 
 .feature-mockup-area {
-  flex: 1;
   margin-top: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 120px;
   overflow: hidden;
+}
+
+@media (min-width: 769px) {
+  .feature-mockup-area {
+    flex: 1;
+    min-height: 120px;
+  }
 }
 
 .feature-mini-mockup {
@@ -3872,11 +3877,16 @@
 
 .feature-ai-mockup {
   margin-top: 16px;
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 80px; /* Reserve space for typing animation */
+}
+
+@media (min-width: 769px) {
+  .feature-ai-mockup {
+    flex: 1;
+    min-height: 80px;
+  }
 }
 
 .ai-text-box {
@@ -3899,11 +3909,16 @@
 
 .feature-crm-mockup {
   margin-top: 16px;
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 140px; /* Reserve space for animated details */
+}
+
+@media (min-width: 769px) {
+  .feature-crm-mockup {
+    flex: 1;
+    min-height: 140px;
+  }
 }
 
 .crm-mini-card-v2 {
@@ -7644,72 +7659,27 @@
     text-align: center;
   }
 
-  /* Compact ALL mobile feature cards - high specificity */
-  .landing-page .mobile-feature-card .feature-card-inner {
-    padding: 14px !important;
+  /* Compact mobile feature cards - clean version */
+  .mobile-feature-card .feature-card-inner {
+    padding: 14px;
   }
 
-  .landing-page .mobile-feature-card h3 {
-    margin-top: 6px !important;
-    margin-bottom: 2px !important;
-    font-size: 1rem !important;
+  .mobile-feature-card h3 {
+    margin-top: 8px;
+    margin-bottom: 4px;
   }
 
-  .landing-page .mobile-feature-card p {
-    margin-bottom: 0 !important;
-    font-size: 0.8rem !important;
+  .mobile-feature-card .feature-mockup-area {
+    margin-top: 10px;
   }
 
-  .landing-page .mobile-feature-card .feature-mockup-area {
-    margin-top: 8px !important;
-    min-height: 0 !important;
-    flex: 0 !important;
+  .mobile-feature-card .feature-ai-mockup,
+  .mobile-feature-card .feature-crm-mockup {
+    margin-top: 0;
   }
 
-  /* AI Replies mockup - VERY compact */
-  .landing-page.theme-light .mobile-feature-card .feature-ai-mockup {
-    margin-top: 0 !important;
-    padding: 8px !important;
-    min-height: 0 !important;
-    flex: 0 !important;
-  }
-
-  .landing-page.theme-light .mobile-feature-card .feature-ai-mockup .ai-text-box {
-    padding: 8px 12px !important;
-  }
-
-  /* CRM mockup - VERY compact */
-  .landing-page.theme-light .mobile-feature-card .feature-crm-mockup {
-    margin-top: 0 !important;
-    padding: 0 !important;
-    min-height: 0 !important;
-    flex: 0 !important;
-  }
-
-  .landing-page .mobile-feature-card .crm-mini-card-v2 {
-    padding: 10px !important;
-  }
-
-  .landing-page .mobile-feature-card .crm-header {
-    padding: 6px 8px !important;
-    margin-bottom: 6px !important;
-  }
-
-  .landing-page .mobile-feature-card .crm-stats {
-    gap: 6px !important;
-    padding: 6px !important;
-  }
-
-  .landing-page .mobile-feature-card .crm-stat-item {
-    padding: 4px 6px !important;
-  }
-
-  .landing-page .mobile-feature-card .crm-stat-value {
-    font-size: 0.85rem !important;
-  }
-
-  .landing-page .mobile-feature-card .crm-stat-label {
-    font-size: 0.65rem !important;
+  .mobile-feature-card .crm-mini-card-v2 {
+    padding: 10px;
   }
 
   /* Hide desktop bento-grid on mobile */
