@@ -1838,8 +1838,8 @@ function MarqueeSection() {
   const items = t.marquee.items;
   
   return (
-    <section className="marquee-section relative mt-48">
-      <div className="marquee-inner py-8 border-y border-white/20 section-dark relative">
+    <section className="marquee-section relative mt-16 md:mt-24 mb-8 md:mb-12">
+      <div className="marquee-inner py-6 md:py-8 border-y border-white/20 section-dark relative">
         <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-4" : "marquee-container"}>
           <div className={prefersReducedMotion ? "flex flex-wrap justify-center gap-4" : "marquee-content"}>
             {(prefersReducedMotion ? items : [...items, ...items]).map((item, i) => (
@@ -2879,7 +2879,7 @@ function ProblemSolutionSection() {
   return (
     <section id="problem-solution" ref={sectionRef} className="relative overflow-hidden">
       {/* Problem Section */}
-      <div className="py-24 md:py-32">
+      <div className="py-16 md:py-24">
         <div className="max-w-4xl mx-auto px-6">
           <motion.div 
             style={{ y: problemY, opacity: problemOpacity }}
@@ -2907,7 +2907,7 @@ function ProblemSolutionSection() {
       </div>
 
       {/* Solution Section */}
-      <div className="py-24 md:py-32">
+      <div className="py-16 md:py-24">
         <div className="max-w-5xl mx-auto px-6">
           <motion.div 
             style={{ y: solutionY, opacity: solutionOpacity }}
@@ -3565,7 +3565,7 @@ function HowItWorksMobile() {
   }, [steps.length]);
 
   return (
-    <section id="how" className="py-16 px-4 relative overflow-hidden">
+    <section id="how" className="py-12 md:py-16 px-4 relative overflow-hidden mt-8 md:mt-12">
       <div className="text-center mb-8">
         <span className="text-xs uppercase tracking-[0.2em] text-[var(--landing-primary)] font-semibold mb-3 block">
           {t.howItWorks.label}
