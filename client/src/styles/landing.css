@@ -2572,8 +2572,8 @@
    ============================================ */
 .how-dual-track-section {
   position: relative;
-  min-height: 250vh;
   padding-bottom: 100px;
+  /* No min-height or overflow:hidden - let content determine height for sticky to work */
 }
 
 .how-dual-track-header {
@@ -2603,7 +2603,7 @@
 }
 
 .how-dual-track-step {
-  min-height: 80vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -2627,12 +2627,13 @@
 .how-dual-track-right {
   position: relative;
   align-self: start;
+  height: fit-content;
 }
 
 .how-dual-track-sticky {
   position: sticky;
   top: 15vh;
-  height: auto;
+  height: fit-content;
 }
 
 .how-dual-track-visual {
