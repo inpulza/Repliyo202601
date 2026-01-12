@@ -3876,6 +3876,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 80px; /* Reserve space for typing animation */
 }
 
 .ai-text-box {
@@ -3902,7 +3903,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 130px;
+  min-height: 140px; /* Reserve space for animated details */
 }
 
 .crm-mini-card-v2 {
@@ -5140,9 +5141,30 @@
    Problem/Solution Section Mockups
    ============================================ */
 
+/* Layout Shift Prevention - Reserve space for animated content */
 .problem-side,
 .solution-side {
   will-change: transform, opacity;
+}
+
+/* Desktop mockup containers - reserve minimum heights to prevent layout shifts */
+.problem-mockup-card {
+  min-height: 420px; /* Reserve space for all animated elements */
+}
+
+.solution-mockup-card {
+  min-height: 380px; /* Reserve space for all animated elements */
+}
+
+/* Mobile mockup containers - reserve minimum heights */
+@media (max-width: 767px) {
+  .problem-mockup-mobile {
+    min-height: 340px;
+  }
+  
+  .solution-mockup-mobile {
+    min-height: 400px;
+  }
 }
 
 /* 3D Tilt Wrapper */
