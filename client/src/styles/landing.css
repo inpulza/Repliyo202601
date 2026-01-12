@@ -8200,17 +8200,6 @@
     gap: 4px;
   }
 
-  #problem-solution .speed-icon {
-    width: 56px;
-    height: 56px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, rgba(2, 145, 250, 0.15), rgba(2, 145, 250, 0.05));
-    border-radius: 50%;
-    color: var(--landing-primary);
-  }
-
   #problem-solution .speed-value {
     font-size: 32px;
     font-weight: 800;

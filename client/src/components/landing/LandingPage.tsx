@@ -2743,7 +2743,7 @@ function SolutionMockupMobile() {
     >
       <div className="solution-mobile-speed">
         <div className="solution-mobile-speed-metric">
-          <div className="speed-icon"><Clock className="w-8 h-8" /></div>
+          <Clock className="w-5 h-5 text-[var(--landing-primary)]" />
           <div className="speed-value">2m</div>
           <div className="speed-label">{t.problemSolution.indicators.responseTime}</div>
         </div>
