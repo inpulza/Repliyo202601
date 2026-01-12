@@ -81,10 +81,10 @@ function Step1ConnectMockup() {
   return (
     <motion.div 
       className="step-mockup connect-mockup-v3"
-      initial={{ opacity: 0, scale: 0.9 }}
+      initial={{ opacity: 0, scale: 0.95 }}
       whileInView={{ opacity: 1, scale: 1 }}
-      viewport={{ once: true, amount: 0.5 }}
-      transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+      viewport={{ once: false, amount: 0.3 }}
+      transition={{ duration: 0.2 }}
     >
       <div className="connect-center-inbox-v3">
         <Inbox className="w-8 h-8 text-white" />
@@ -139,15 +139,15 @@ function Step2AIMockup() {
       className="step-mockup ai-mockup-v3"
       initial={{ opacity: 0 }}
       whileInView={{ opacity: 1 }}
-      viewport={{ once: true, amount: 0.5 }}
-      transition={{ duration: 0.3 }}
+      viewport={{ once: false, amount: 0.3 }}
+      transition={{ duration: 0.2 }}
     >
       <motion.div 
         className="floating-msg incoming"
-        initial={{ opacity: 0, x: -30 }}
+        initial={{ opacity: 0, x: -20 }}
         whileInView={{ opacity: 1, x: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+        viewport={{ once: false }}
+        transition={{ duration: 0.2 }}
       >
         <div className="msg-avatar">
           <img src={avatarMaria} alt={t.mockups.inbox.crm.client} />
@@ -160,10 +160,10 @@ function Step2AIMockup() {
       
       <motion.div 
         className="floating-msg outgoing"
-        initial={{ opacity: 0, x: 30 }}
+        initial={{ opacity: 0, x: 20 }}
         whileInView={{ opacity: 1, x: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.4, delay: 0.15, ease: [0.25, 0.46, 0.45, 0.94] }}
+        viewport={{ once: false }}
+        transition={{ duration: 0.2, delay: 0.05 }}
       >
         <div className="msg-content">
           <div className="ai-draft-badge-v2">
@@ -191,18 +191,18 @@ function Step3SendMockup() {
       className="step-mockup send-mockup-v2"
       initial={{ opacity: 0 }}
       whileInView={{ opacity: 1 }}
-      viewport={{ once: true, amount: 0.5 }}
-      transition={{ duration: 0.3 }}
+      viewport={{ once: false, amount: 0.3 }}
+      transition={{ duration: 0.2 }}
     >
       <div className="send-timeline">
         {steps.map((step, idx) => (
           <motion.div 
             key={idx} 
             className="timeline-item-wrapper"
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 15 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.3, delay: idx * 0.08 }}
+            viewport={{ once: false }}
+            transition={{ duration: 0.15, delay: idx * 0.03 }}
           >
             {idx > 0 && <div className="timeline-connector active" />}
             <div className="timeline-step active">
