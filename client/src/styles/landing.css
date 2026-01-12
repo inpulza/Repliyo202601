@@ -7804,14 +7804,14 @@
     align-items: center;
     gap: 10px;
     padding: 10px 12px;
-    background: linear-gradient(150deg, rgba(15, 23, 42, 0.95) 0%, rgba(10, 16, 30, 0.98) 100%);
+    background: rgba(248, 250, 252, 0.95);
     border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.08);
   }
 
   #problem-solution .solution-mobile-conv.ai-draft {
-    background: linear-gradient(150deg, rgba(2, 50, 100, 0.95) 0%, rgba(5, 30, 70, 0.98) 100%);
-    border: 1px solid rgba(2, 145, 250, 0.35);
+    background: rgba(240, 248, 255, 0.95);
+    border: 1px solid rgba(2, 145, 250, 0.2);
   }
 
   #problem-solution .solution-mobile-avatar {
@@ -7819,7 +7819,7 @@
     width: 40px;
     height: 40px;
     border-radius: 12px;
-    background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+    background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
     flex-shrink: 0;
     display: flex;
     align-items: center;
@@ -7827,13 +7827,13 @@
     overflow: visible;
     font-size: 14px;
     font-weight: 700;
-    color: white;
+    color: #475569;
   }
 
   #problem-solution .solution-mobile-avatar-initials {
     font-size: 16px;
     font-weight: 700;
-    color: white;
+    color: #475569;
     text-transform: uppercase;
     z-index: 1;
   }
@@ -7863,7 +7863,7 @@
   #problem-solution .solution-mobile-conv-name-text {
     font-size: 14px;
     font-weight: 700;
-    color: white;
+    color: #1e293b;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -7872,7 +7872,7 @@
 
   #problem-solution .solution-mobile-conv-preview-text {
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.5);
+    color: #64748b;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -7943,9 +7943,9 @@
     flex-direction: column;
     gap: 12px;
     padding: 14px;
-    background: linear-gradient(150deg, rgba(2, 50, 100, 0.98) 0%, rgba(5, 30, 70, 0.99) 100%);
+    background: rgba(240, 248, 255, 0.95);
     border-radius: 16px;
-    border: 1px solid rgba(2, 145, 250, 0.4);
+    border: 1px solid rgba(2, 145, 250, 0.2);
   }
 
   #problem-solution .solution-mobile-ai-header {
@@ -7968,7 +7968,7 @@
 
   #problem-solution .solution-mobile-ai-status {
     font-size: 10px;
-    color: rgba(255, 255, 255, 0.6);
+    color: #64748b;
     font-weight: 500;
     letter-spacing: 0.03em;
   }
@@ -7992,9 +7992,9 @@
   #problem-solution .solution-mobile-ai-text {
     font-size: 13px;
     line-height: 1.6;
-    color: white;
+    color: #334155;
     padding: 12px 14px;
-    background: rgba(0, 20, 50, 0.6);
+    background: rgba(255, 255, 255, 0.8);
     border-radius: 12px;
     text-align: left;
   }
@@ -8049,8 +8049,8 @@
     gap: 8px;
     padding: 10px 12px;
     border-radius: 10px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(248, 250, 252, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.08);
   }
 
   #problem-solution .solution-mobile-benefit svg {
@@ -8064,13 +8064,8 @@
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.01em;
-    color: white;
+    color: #334155;
     line-height: 1.3;
-  }
-
-  #problem-solution .solution-mobile-benefit svg {
-    flex-shrink: 0;
-    color: white;
   }
 
   /* Light theme for Solution Mobile */
@@ -8112,29 +8107,4 @@
     background: rgba(0, 0, 0, 0.06);
   }
 
-  .landing-page.theme-light #problem-solution .solution-mobile-ai-response {
-    background: linear-gradient(150deg, rgba(2, 50, 100, 0.95) 0%, rgba(5, 30, 70, 0.98) 100%);
-  }
-
-  .landing-page.theme-light #problem-solution .solution-mobile-ai-text {
-    background: rgba(0, 20, 50, 0.5);
-    color: white;
-  }
-
-  .landing-page.theme-light #problem-solution .solution-mobile-conv {
-    background: linear-gradient(150deg, rgba(15, 23, 42, 0.95) 0%, rgba(10, 16, 30, 0.98) 100%);
-  }
-
-  .landing-page.theme-light #problem-solution .solution-mobile-conv.ai-draft {
-    background: linear-gradient(150deg, rgba(2, 50, 100, 0.95) 0%, rgba(5, 30, 70, 0.98) 100%);
-  }
-
-  .landing-page.theme-light #problem-solution .solution-mobile-conv-name-text,
-  .landing-page.theme-light #problem-solution .solution-mobile-conv-preview-text {
-    color: white;
-  }
-
-  .landing-page.theme-light #problem-solution .solution-mobile-benefit span {
-    color: white;
-  }
 }
