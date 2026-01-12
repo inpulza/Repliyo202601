@@ -7806,12 +7806,12 @@
     padding: 10px 12px;
     background: rgba(248, 250, 252, 0.95);
     border-radius: 14px;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border: none;
   }
 
   #problem-solution .solution-mobile-conv.ai-draft {
     background: rgba(240, 248, 255, 0.95);
-    border: 1px solid rgba(2, 145, 250, 0.2);
+    border: none;
   }
 
   #problem-solution .solution-mobile-avatar {
@@ -7945,7 +7945,7 @@
     padding: 14px;
     background: rgba(240, 248, 255, 0.95);
     border-radius: 16px;
-    border: 1px solid rgba(2, 145, 250, 0.2);
+    border: none;
   }
 
   #problem-solution .solution-mobile-ai-header {
@@ -8050,7 +8050,14 @@
     padding: 10px 12px;
     border-radius: 10px;
     background: rgba(248, 250, 252, 0.95);
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border: none;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  #problem-solution .solution-mobile-benefit.active {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(2, 145, 250, 0.2);
+    background: rgba(240, 248, 255, 1);
   }
 
   #problem-solution .solution-mobile-benefit svg {
@@ -8066,6 +8073,200 @@
     letter-spacing: 0.01em;
     color: #334155;
     line-height: 1.3;
+  }
+
+  /* Screen container for animations */
+  #problem-solution .solution-mobile-screens-container {
+    position: relative;
+    min-height: 200px;
+    overflow: hidden;
+  }
+
+  #problem-solution .solution-mobile-screen {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  #problem-solution .solution-mobile-screen-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px;
+    background: rgba(2, 145, 250, 0.1);
+    border-radius: 10px;
+    color: var(--landing-primary);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  /* CRM Screen Styles */
+  #problem-solution .solution-mobile-crm {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: rgba(248, 250, 252, 0.95);
+    border-radius: 14px;
+  }
+
+  #problem-solution .solution-mobile-crm-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  #problem-solution .solution-mobile-crm-info {
+    flex: 1;
+  }
+
+  #problem-solution .solution-mobile-crm-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  #problem-solution .solution-mobile-crm-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 10px;
+  }
+
+  #problem-solution .crm-stat-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+  }
+
+  #problem-solution .crm-stat-label {
+    font-size: 10px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  #problem-solution .solution-mobile-crm-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  #problem-solution .crm-tag {
+    padding: 4px 10px;
+    background: rgba(100, 116, 139, 0.1);
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #64748b;
+  }
+
+  #problem-solution .crm-tag.vip {
+    background: rgba(234, 179, 8, 0.15);
+    color: #a16207;
+  }
+
+  /* Speed Screen Styles */
+  #problem-solution .solution-mobile-speed {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    background: rgba(248, 250, 252, 0.95);
+    border-radius: 14px;
+  }
+
+  #problem-solution .solution-mobile-speed-metric {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  #problem-solution .speed-icon {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(2, 145, 250, 0.15), rgba(2, 145, 250, 0.05));
+    border-radius: 50%;
+    color: var(--landing-primary);
+  }
+
+  #problem-solution .speed-value {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--landing-primary);
+    line-height: 1;
+  }
+
+  #problem-solution .speed-label {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  #problem-solution .solution-mobile-speed-comparison {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  #problem-solution .speed-compare-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+  }
+
+  #problem-solution .speed-compare-label {
+    width: 40px;
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  #problem-solution .speed-compare-bar {
+    height: 8px;
+    border-radius: 4px;
+    flex: 1;
+  }
+
+  #problem-solution .speed-compare-bar.old {
+    background: linear-gradient(90deg, #ef4444, #f87171);
+  }
+
+  #problem-solution .speed-compare-bar.new {
+    background: linear-gradient(90deg, #22c55e, #4ade80);
+  }
+
+  #problem-solution .speed-compare-value {
+    width: 50px;
+    text-align: right;
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  #problem-solution .speed-compare-value.highlight {
+    color: #22c55e;
+    font-weight: 700;
+  }
+
+  #problem-solution .solution-mobile-speed-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    border-radius: 20px;
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
   }
 
   /* Light theme for Solution Mobile */

@@ -2554,6 +2554,7 @@ function SolutionMockupMobile() {
   const inView = useInView(ref, { once: true, amount: 0.3 });
   const prefersReducedMotion = useReducedMotion();
   const { t } = useLanguage();
+  const [activeScreen, setActiveScreen] = useState(0);
   
   const platforms = [
     { icon: FaInstagram, color: '#E1306C', name: 'IG' },
@@ -2563,11 +2564,210 @@ function SolutionMockupMobile() {
   ];
   
   const benefits = [
-    { icon: Check, text: t.problemSolution.indicators.responseTime },
-    { icon: Sparkles, text: t.problemSolution.indicators.aiDrafts },
-    { icon: MessageSquare, text: t.problemSolution.indicators.singleInbox },
-    { icon: Users, text: t.problemSolution.indicators.integratedCrm },
+    { icon: MessageSquare, text: t.problemSolution.indicators.singleInbox, key: 'inbox' },
+    { icon: Sparkles, text: t.problemSolution.indicators.aiDrafts, key: 'ai' },
+    { icon: Users, text: t.problemSolution.indicators.integratedCrm, key: 'crm' },
+    { icon: Check, text: t.problemSolution.indicators.responseTime, key: 'speed' },
   ];
+
+  useEffect(() => {
+    if (prefersReducedMotion || !inView) return;
+    const interval = setInterval(() => {
+      setActiveScreen((prev) => (prev + 1) % 4);
+    }, 2800);
+    return () => clearInterval(interval);
+  }, [prefersReducedMotion, inView]);
+
+  const screenVariants = {
+    enter: { opacity: 0, x: 30, scale: 0.95 },
+    center: { opacity: 1, x: 0, scale: 1 },
+    exit: { opacity: 0, x: -30, scale: 0.95 }
+  };
+
+  const ScreenInbox = () => (
+    <motion.div 
+      className="solution-mobile-screen"
+      key="inbox"
+      variants={screenVariants}
+      initial="enter"
+      animate="center"
+      exit="exit"
+      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+    >
+      <div className="solution-mobile-inbox">
+        <div className="solution-mobile-conv">
+          <div className="solution-mobile-avatar">
+            <span className="solution-mobile-avatar-initials">M</span>
+            <FaInstagram className="w-2.5 h-2.5" style={{ color: '#E1306C' }} />
+          </div>
+          <div className="solution-mobile-conv-content">
+            <div className="solution-mobile-conv-name-text">{t.problemSolution.mockupMobile.conv1Name}</div>
+            <div className="solution-mobile-conv-preview-text">{t.problemSolution.mockupMobile.conv1Preview}</div>
+          </div>
+          <div className="solution-mobile-conv-meta">
+            <span className="solution-mobile-conv-time">{t.problemSolution.mockupMobile.conv1Time}</span>
+            <div className="solution-mobile-conv-status answered"><Check className="w-3 h-3" /></div>
+          </div>
+        </div>
+        <div className="solution-mobile-conv">
+          <div className="solution-mobile-avatar">
+            <span className="solution-mobile-avatar-initials">C</span>
+            <FaTiktok className="w-2.5 h-2.5" style={{ color: '#000' }} />
+          </div>
+          <div className="solution-mobile-conv-content">
+            <div className="solution-mobile-conv-name-text">{t.problemSolution.mockupMobile.conv2Name}</div>
+            <div className="solution-mobile-conv-preview-text">{t.problemSolution.mockupMobile.conv2Preview}</div>
+          </div>
+          <div className="solution-mobile-conv-meta">
+            <span className="solution-mobile-conv-time">{t.problemSolution.mockupMobile.conv2Time}</span>
+            <div className="solution-mobile-conv-status"><MessageSquare className="w-3 h-3" /></div>
+          </div>
+        </div>
+        <div className="solution-mobile-conv">
+          <div className="solution-mobile-avatar">
+            <span className="solution-mobile-avatar-initials">A</span>
+            <FaFacebook className="w-2.5 h-2.5" style={{ color: '#1877F2' }} />
+          </div>
+          <div className="solution-mobile-conv-content">
+            <div className="solution-mobile-conv-name-text">Ana Ruiz</div>
+            <div className="solution-mobile-conv-preview-text">¿Tienen talla XL disponible?</div>
+          </div>
+          <div className="solution-mobile-conv-meta">
+            <span className="solution-mobile-conv-time">5m</span>
+            <div className="solution-mobile-conv-status"><MessageSquare className="w-3 h-3" /></div>
+          </div>
+        </div>
+      </div>
+      <div className="solution-mobile-screen-label">
+        <MessageSquare className="w-4 h-4" />
+        <span>{t.problemSolution.indicators.singleInbox}</span>
+      </div>
+    </motion.div>
+  );
+
+  const ScreenAI = () => (
+    <motion.div 
+      className="solution-mobile-screen"
+      key="ai"
+      variants={screenVariants}
+      initial="enter"
+      animate="center"
+      exit="exit"
+      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+    >
+      <div className="solution-mobile-inbox">
+        <div className="solution-mobile-conv ai-draft">
+          <div className="solution-mobile-avatar">
+            <span className="solution-mobile-avatar-initials">C</span>
+            <FaTiktok className="w-2.5 h-2.5" style={{ color: '#000' }} />
+          </div>
+          <div className="solution-mobile-conv-content">
+            <div className="solution-mobile-conv-name-text">{t.problemSolution.mockupMobile.conv2Name}</div>
+            <div className="solution-mobile-conv-preview-text">{t.problemSolution.mockupMobile.conv2Preview}</div>
+          </div>
+          <div className="solution-mobile-conv-meta">
+            <span className="solution-mobile-conv-time highlight">{t.problemSolution.mockupMobile.conv2Time}</span>
+            <div className="solution-mobile-conv-status ai"><Sparkles className="w-3 h-3" /></div>
+          </div>
+        </div>
+      </div>
+      <div className="solution-mobile-ai-response">
+        <div className="solution-mobile-ai-header">
+          <div className="solution-mobile-ai-badge"><Sparkles className="w-3 h-3" /><span>IA</span></div>
+          <span className="solution-mobile-ai-status">{t.problemSolution.mockupMobile.aiGenerating}</span>
+        </div>
+        <div className="solution-mobile-ai-text">{t.problemSolution.mockupMobile.aiDraftText}</div>
+        <button className="solution-mobile-send-btn" data-testid="button-send-ai-draft-mobile">
+          <Send className="w-3.5 h-3.5" /><span>{t.problemSolution.mockupMobile.clickToSend}</span>
+        </button>
+      </div>
+    </motion.div>
+  );
+
+  const ScreenCRM = () => (
+    <motion.div 
+      className="solution-mobile-screen"
+      key="crm"
+      variants={screenVariants}
+      initial="enter"
+      animate="center"
+      exit="exit"
+      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+    >
+      <div className="solution-mobile-crm">
+        <div className="solution-mobile-crm-header">
+          <div className="solution-mobile-avatar" style={{ width: 48, height: 48 }}>
+            <span className="solution-mobile-avatar-initials" style={{ fontSize: 18 }}>M</span>
+          </div>
+          <div className="solution-mobile-crm-info">
+            <div className="solution-mobile-conv-name-text" style={{ fontSize: 16 }}>{t.problemSolution.mockupMobile.conv1Name}</div>
+            <div className="solution-mobile-conv-preview-text">maria.garcia@email.com</div>
+          </div>
+        </div>
+        <div className="solution-mobile-crm-stats">
+          <div className="solution-mobile-crm-stat">
+            <span className="crm-stat-value">8</span>
+            <span className="crm-stat-label">Chats</span>
+          </div>
+          <div className="solution-mobile-crm-stat">
+            <span className="crm-stat-value">$1.2k</span>
+            <span className="crm-stat-label">Value</span>
+          </div>
+          <div className="solution-mobile-crm-stat">
+            <span className="crm-stat-value">VIP</span>
+            <span className="crm-stat-label">Status</span>
+          </div>
+        </div>
+        <div className="solution-mobile-crm-tags">
+          <span className="crm-tag vip">VIP</span>
+          <span className="crm-tag">Recurring</span>
+          <span className="crm-tag">Instagram</span>
+        </div>
+      </div>
+      <div className="solution-mobile-screen-label">
+        <Users className="w-4 h-4" />
+        <span>{t.problemSolution.indicators.integratedCrm}</span>
+      </div>
+    </motion.div>
+  );
+
+  const ScreenSpeed = () => (
+    <motion.div 
+      className="solution-mobile-screen"
+      key="speed"
+      variants={screenVariants}
+      initial="enter"
+      animate="center"
+      exit="exit"
+      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+    >
+      <div className="solution-mobile-speed">
+        <div className="solution-mobile-speed-metric">
+          <div className="speed-icon"><Clock className="w-8 h-8" /></div>
+          <div className="speed-value">2m</div>
+          <div className="speed-label">{t.problemSolution.indicators.responseTime}</div>
+        </div>
+        <div className="solution-mobile-speed-comparison">
+          <div className="speed-compare-item">
+            <span className="speed-compare-label">Before</span>
+            <div className="speed-compare-bar old" style={{ width: '100%' }}></div>
+            <span className="speed-compare-value">4h avg</span>
+          </div>
+          <div className="speed-compare-item">
+            <span className="speed-compare-label">Now</span>
+            <div className="speed-compare-bar new" style={{ width: '15%' }}></div>
+            <span className="speed-compare-value highlight">2m avg</span>
+          </div>
+        </div>
+        <div className="solution-mobile-speed-badge">
+          <Zap className="w-4 h-4" />
+          <span>120x Faster</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+
+  const screens = [ScreenInbox, ScreenAI, ScreenCRM, ScreenSpeed];
 
   if (prefersReducedMotion) {
     return (
@@ -2577,75 +2777,20 @@ function SolutionMockupMobile() {
           {platforms.map((platform) => {
             const IconComponent = platform.icon;
             return (
-              <div 
-                key={platform.name} 
-                className="solution-mobile-tab"
-              >
-                <IconComponent 
-                  className={`w-3.5 h-3.5 ${platform.name === 'TT' ? 'tiktok-icon' : ''}`}
-                  style={platform.name !== 'TT' ? { color: platform.color } : undefined}
-                />
+              <div key={platform.name} className="solution-mobile-tab">
+                <IconComponent className={`w-3.5 h-3.5 ${platform.name === 'TT' ? 'tiktok-icon' : ''}`}
+                  style={platform.name !== 'TT' ? { color: platform.color } : undefined} />
               </div>
             );
           })}
         </div>
-        <div className="solution-mobile-inbox">
-          <div className="solution-mobile-conv">
-            <div className="solution-mobile-avatar">
-              <span className="solution-mobile-avatar-initials">M</span>
-              <FaInstagram className="w-2.5 h-2.5" style={{ color: '#E1306C' }} />
-            </div>
-            <div className="solution-mobile-conv-content">
-              <div className="solution-mobile-conv-name-text">{t.problemSolution.mockupMobile.conv1Name}</div>
-              <div className="solution-mobile-conv-preview-text">{t.problemSolution.mockupMobile.conv1Preview}</div>
-            </div>
-            <div className="solution-mobile-conv-meta">
-              <span className="solution-mobile-conv-time">{t.problemSolution.mockupMobile.conv1Time}</span>
-              <div className="solution-mobile-conv-status answered">
-                <Check className="w-3 h-3" />
-              </div>
-            </div>
-          </div>
-          <div className="solution-mobile-conv ai-draft">
-            <div className="solution-mobile-avatar">
-              <span className="solution-mobile-avatar-initials">C</span>
-              <FaTiktok className="w-2.5 h-2.5" style={{ color: '#000' }} />
-            </div>
-            <div className="solution-mobile-conv-content">
-              <div className="solution-mobile-conv-name-text">{t.problemSolution.mockupMobile.conv2Name}</div>
-              <div className="solution-mobile-conv-preview-text">{t.problemSolution.mockupMobile.conv2Preview}</div>
-            </div>
-            <div className="solution-mobile-conv-meta">
-              <span className="solution-mobile-conv-time highlight">{t.problemSolution.mockupMobile.conv2Time}</span>
-              <div className="solution-mobile-conv-status ai">
-                <Sparkles className="w-3 h-3" />
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="solution-mobile-ai-response">
-          <div className="solution-mobile-ai-header">
-            <div className="solution-mobile-ai-badge">
-              <Sparkles className="w-3 h-3" />
-              <span>IA</span>
-            </div>
-            <span className="solution-mobile-ai-status">{t.problemSolution.mockupMobile.aiGenerating}</span>
-          </div>
-          <div className="solution-mobile-ai-text">
-            {t.problemSolution.mockupMobile.aiDraftText}
-          </div>
-          <button className="solution-mobile-send-btn" data-testid="button-send-ai-draft-mobile">
-            <Send className="w-3.5 h-3.5" />
-            <span>{t.problemSolution.mockupMobile.clickToSend}</span>
-          </button>
-        </div>
+        <ScreenInbox />
         <div className="solution-mobile-benefits">
           {benefits.map((benefit, i) => {
             const IconComponent = benefit.icon;
             return (
-              <div key={i} className="solution-mobile-benefit">
-                <IconComponent className="w-3.5 h-3.5" />
-                <span>{benefit.text}</span>
+              <div key={i} className={`solution-mobile-benefit ${i === 0 ? 'active' : ''}`}>
+                <IconComponent className="w-3.5 h-3.5" /><span>{benefit.text}</span>
               </div>
             );
           })}
@@ -2653,6 +2798,8 @@ function SolutionMockupMobile() {
       </div>
     );
   }
+
+  const ActiveScreen = screens[activeScreen];
 
   return (
     <div className="solution-mockup-mobile" ref={ref}>
@@ -2662,175 +2809,46 @@ function SolutionMockupMobile() {
         animate={inView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.5 }}
       >
-        <motion.div 
-          className="solution-mobile-tab active"
+        <motion.div className="solution-mobile-tab active"
           initial={{ opacity: 0, scale: 0.8 }}
           animate={inView ? { opacity: 1, scale: 1 } : {}}
           transition={{ delay: 0.1 }}
-        >
-          {t.problemSolution.tabs.all}
-        </motion.div>
+        >{t.problemSolution.tabs.all}</motion.div>
         {platforms.map((platform, i) => {
           const IconComponent = platform.icon;
           return (
-            <motion.div 
-              key={platform.name} 
-              className="solution-mobile-tab"
+            <motion.div key={platform.name} className="solution-mobile-tab"
               initial={{ opacity: 0, scale: 0.5 }}
               animate={inView ? { opacity: 1, scale: 1 } : {}}
               transition={{ delay: 0.15 + i * 0.08, type: 'spring', stiffness: 400 }}
             >
-              <IconComponent 
-                className={`w-3.5 h-3.5 ${platform.name === 'TT' ? 'tiktok-icon' : ''}`}
-                style={platform.name !== 'TT' ? { color: platform.color } : undefined}
-              />
+              <IconComponent className={`w-3.5 h-3.5 ${platform.name === 'TT' ? 'tiktok-icon' : ''}`}
+                style={platform.name !== 'TT' ? { color: platform.color } : undefined} />
             </motion.div>
           );
         })}
       </motion.div>
 
-      <motion.div 
-        className="solution-mobile-inbox"
-        initial={{ opacity: 0, y: 20 }}
-        animate={inView ? { opacity: 1, y: 0 } : {}}
-        transition={{ delay: 0.3, duration: 0.5 }}
-      >
-        <motion.div 
-          className="solution-mobile-conv"
-          initial={{ opacity: 0, x: -20 }}
-          animate={inView ? { opacity: 1, x: 0 } : {}}
-          transition={{ delay: 0.4 }}
-        >
-          <div className="solution-mobile-avatar">
-            <span className="solution-mobile-avatar-initials">M</span>
-            <FaInstagram className="w-2.5 h-2.5" style={{ color: '#E1306C' }} />
-          </div>
-          <div className="solution-mobile-conv-content">
-            <motion.div 
-              className="solution-mobile-conv-name-text"
-              initial={{ opacity: 0 }}
-              animate={inView ? { opacity: 1 } : {}}
-              transition={{ delay: 0.45 }}
-            >
-              {t.problemSolution.mockupMobile.conv1Name}
-            </motion.div>
-            <motion.div 
-              className="solution-mobile-conv-preview-text"
-              initial={{ opacity: 0 }}
-              animate={inView ? { opacity: 1 } : {}}
-              transition={{ delay: 0.5 }}
-            >
-              {t.problemSolution.mockupMobile.conv1Preview}
-            </motion.div>
-          </div>
-          <div className="solution-mobile-conv-meta">
-            <span className="solution-mobile-conv-time">{t.problemSolution.mockupMobile.conv1Time}</span>
-            <motion.div 
-              className="solution-mobile-conv-status answered"
-              initial={{ scale: 0 }}
-              animate={inView ? { scale: 1 } : {}}
-              transition={{ delay: 0.5, type: 'spring', stiffness: 400 }}
-            >
-              <Check className="w-3 h-3" />
-            </motion.div>
-          </div>
-        </motion.div>
-        <motion.div 
-          className="solution-mobile-conv ai-draft"
-          initial={{ opacity: 0, x: -20 }}
-          animate={inView ? { opacity: 1, x: 0 } : {}}
-          transition={{ delay: 0.5 }}
-        >
-          <div className="solution-mobile-avatar">
-            <span className="solution-mobile-avatar-initials">C</span>
-            <FaTiktok className="w-2.5 h-2.5" style={{ color: '#000' }} />
-          </div>
-          <div className="solution-mobile-conv-content">
-            <motion.div 
-              className="solution-mobile-conv-name-text"
-              initial={{ opacity: 0 }}
-              animate={inView ? { opacity: 1 } : {}}
-              transition={{ delay: 0.55 }}
-            >
-              {t.problemSolution.mockupMobile.conv2Name}
-            </motion.div>
-            <motion.div 
-              className="solution-mobile-conv-preview-text"
-              initial={{ opacity: 0 }}
-              animate={inView ? { opacity: 1 } : {}}
-              transition={{ delay: 0.6 }}
-            >
-              {t.problemSolution.mockupMobile.conv2Preview}
-            </motion.div>
-          </div>
-          <div className="solution-mobile-conv-meta">
-            <span className="solution-mobile-conv-time highlight">{t.problemSolution.mockupMobile.conv2Time}</span>
-            <motion.div 
-              className="solution-mobile-conv-status ai"
-              initial={{ scale: 0 }}
-              animate={inView ? { scale: 1 } : {}}
-              transition={{ delay: 0.6, type: 'spring', stiffness: 400 }}
-            >
-              <Sparkles className="w-3 h-3" />
-            </motion.div>
-          </div>
-        </motion.div>
-      </motion.div>
-
-      <motion.div 
-        className="solution-mobile-ai-response"
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={inView ? { opacity: 1, scale: 1 } : {}}
-        transition={{ delay: 0.5, duration: 0.4 }}
-      >
-        <div className="solution-mobile-ai-header">
-          <motion.div 
-            className="solution-mobile-ai-badge"
-            initial={{ opacity: 0, x: -10 }}
-            animate={inView ? { opacity: 1, x: 0 } : {}}
-            transition={{ delay: 0.6 }}
-          >
-            <Sparkles className="w-3 h-3" />
-            <span>IA</span>
-          </motion.div>
-          <motion.span 
-            className="solution-mobile-ai-status"
-            initial={{ opacity: 0 }}
-            animate={inView ? { opacity: 1 } : {}}
-            transition={{ delay: 0.65 }}
-          >
-            {t.problemSolution.mockupMobile.aiGenerating}
-          </motion.span>
-        </div>
-        <motion.div 
-          className="solution-mobile-ai-text"
-          initial={{ opacity: 0, y: 10 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.7, duration: 0.4 }}
-        >
-          {t.problemSolution.mockupMobile.aiDraftText}
-        </motion.div>
-        <motion.button 
-          className="solution-mobile-send-btn"
-          data-testid="button-send-ai-draft-mobile"
-          initial={{ scale: 0 }}
-          animate={inView ? { scale: 1 } : {}}
-          transition={{ delay: 0.8, type: 'spring', stiffness: 400 }}
-        >
-          <Send className="w-3.5 h-3.5" />
-          <span>{t.problemSolution.mockupMobile.clickToSend}</span>
-        </motion.button>
-      </motion.div>
+      <div className="solution-mobile-screens-container">
+        <AnimatePresence mode="wait">
+          <ActiveScreen />
+        </AnimatePresence>
+      </div>
 
       <div className="solution-mobile-benefits">
         {benefits.map((benefit, i) => {
           const IconComponent = benefit.icon;
+          const isActive = i === activeScreen;
           return (
             <motion.div
-              key={i}
-              className="solution-mobile-benefit"
+              key={benefit.key}
+              className={`solution-mobile-benefit ${isActive ? 'active' : ''}`}
               initial={{ opacity: 0, y: 20, scale: 0.9 }}
-              animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
+              animate={inView ? { 
+                opacity: 1, 
+                y: 0, 
+                scale: isActive ? 1.05 : 1,
+              } : {}}
               transition={{ delay: 0.7 + i * 0.1, type: 'spring', stiffness: 300 }}
             >
               <IconComponent className="w-3.5 h-3.5" />
