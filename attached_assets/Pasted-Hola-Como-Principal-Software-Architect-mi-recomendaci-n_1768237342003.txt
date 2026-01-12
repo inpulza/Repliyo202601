@@ -1,0 +1,50 @@
+Hola. Como Principal Software Architect, mi recomendación es rotunda.
+
+Para este caso de uso específico (un fondo animado en una sección web "hero"), la respuesta es CÓDIGO (Shaders).
+
+Olvídate de generar un video con IA (prompt). Te explico por qué desde una perspectiva de arquitectura y rendimiento:
+
+⛔ Por qué NO usar video (VEO3, Runway, etc.)
+Peso y Rendimiento: Un video en alta calidad que se vea nítido en una pantalla 4K pesará megabytes. Esto ralentiza la carga inicial de tu landing page, afectando el SEO y la conversión.
+
+Escalado y Calidad: El video tiene una resolución fija. En un monitor grande se verá pixelado o borroso. En un móvil, estarás desperdiciando ancho de banda.
+
+El problema del "Loop": Es muy difícil crear un video de este tipo de patrones líquidos que se repita en bucle (loop) perfectamente sin que se note un "salto" al reiniciar.
+
+Falta de Control: Si mañana quieres cambiar el tono del cyan un 10% más claro, tienes que volver a generar el video. Con código, es cambiar una variable CSS.
+
+✅ La Solución: WebGL Shaders (Código)
+Lo que buscas técnicamente se llama "Animated Gradient Noise" o "Liquid Domain Warping".
+
+Esos patrones grises que muestras no son más que representaciones visuales de "ruido matemático" (como Perlin Noise o Simplex Noise).
+
+Con código (específicamente WebGL Fragment Shaders), podemos generar ese ruido en tiempo real usando la tarjeta gráfica (GPU) del usuario.
+
+Ventajas Arquitectónicas:
+
+Peso Pluma: El código pesa unos pocos kilobytes (KB).
+
+Resolución Infinita: Se ve matemáticamente perfecto en un iPhone o en una pantalla 8K.
+
+Loop Infinito Natural: El algoritmo matemático nunca se repite igual, por lo que el "flujo" es constante y orgánico.
+
+Control Total: Puedes conectar la velocidad, los colores y la intensidad de la "ola" a variables de tu código React o incluso al movimiento del mouse.
+
+⚙️ Procedimiento de Implementación (Arquitectura React)
+Para tu stack React, la herramienta estándar de la industria para esto es react-three-fiber (R3F). Es una capa sobre Three.js que hace que trabajar con WebGL sea "reactivo".
+
+Aquí tienes el planteamiento arquitectónico:
+
+1. <analisis_de_dominio> & Infraestructura UI
+Componente: LiquidBackground.tsx.
+
+Responsabilidad: Este componente vive puramente en la capa de Infraestructura/UI. No tiene lógica de negocio. Su único trabajo es renderizar un canvas WebGL detrás de tu contenido.
+
+Inputs (Props): Recibirá los colores primarios y secundarios (tus tonos cyan/teal) y quizás un factor de velocidad.
+
+2. Implementación (Boilerplate en React + R3F)
+No necesitas escribir la matemática compleja desde cero. Usaremos una estructura estándar.
+
+Primero, instala las dependencias necesarias: npm install three @types/three @react-three/fiber @react-three/drei
+
+Este es el esqueleto del componente. El secreto está en el fragmentShader:

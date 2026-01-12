@@ -1,0 +1,90 @@
+// src/infrastructure/ui/components/LiquidBackground.tsx
+import { Canvas, useFrame } from '@react-three/fiber';
+import { useRef, useMemo } from 'react';
+import * as THREE from 'three';
+
+// --- AQUÍ ESTÁ LA MAGIA: EL SHADER GLSL ---
+// Este es un shader de ejemplo simplificado. Para el efecto "líquido" real,
+// se suele usar una implementación de "Simplex Noise 3D".
+const fragmentShader = `
+uniform float uTime;
+uniform vec3 uColorA;
+uniform vec3 uColorB;
+varying vec2 vUv;
+
+// Función simple de pseudo-ruido (en producción usaríamos una librería de ruido GLSL)
+float noise(vec2 st) {
+    return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+}
+
+void main() {
+    // Creamos movimiento desplazando las coordenadas UV con el tiempo
+    vec2 movingUV = vUv + vec2(uTime * 0.1, uTime * 0.05);
+
+    // Generamos un patrón de ruido basado en esas coordenadas en movimiento
+    // Las imágenes grises que enviaste son básicamente esto: un mapa de ruido.
+    float noiseValue = noise(movingUV * 5.0); // El 5.0 controla la escala del patrón
+
+    // Interpolamos (mezclamos) entre tus dos colores de marca basados en el ruido
+    // Si el ruido es 0, usa ColorA; si es 1, usa ColorB.
+    vec3 finalColor = mix(uColorA, uColorB, noiseValue);
+
+    gl_FragColor = vec4(finalColor, 1.0);
+}
+`;
+
+const vertexShader = `
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`;
+
+const GradientMesh = ({ colorA, colorB }: { colorA: string; colorB: string }) => {
+  const meshRef = useRef<THREE.Mesh>(null);
+  
+  // Convertimos colores hex/css a vectores RGB que entiende el shader
+  const uniforms = useMemo(
+    () => ({
+      uTime: { value: 0 },
+      uColorA: { value: new THREE.Color(colorA) },
+      uColorB: { value: new THREE.Color(colorB) },
+    }),
+    [colorA, colorB]
+  );
+
+  // Actualizamos el tiempo en cada frame para que se anime
+  useFrame((state) => {
+    if (meshRef.current) {
+      (meshRef.current.material as THREE.ShaderMaterial).uniforms.uTime.value = state.clock.getElapsedTime();
+    }
+  });
+
+  return (
+    <mesh ref={meshRef} scale={[10, 10, 1]}> {/* Escala grande para cubrir el fondo */}
+      <planeGeometry args={[2, 2]} />
+      <shaderMaterial
+        fragmentShader={fragmentShader}
+        vertexShader={vertexShader}
+        uniforms={uniforms}
+      />
+    </mesh>
+  );
+};
+
+interface Props {
+    className?: string;
+    colorStart?: string; // Ej: "#00C9FF" (Cyan)
+    colorEnd?: string;   // Ej: "#92FE9D" (Teal)
+}
+
+export const LiquidBackground = ({ className, colorStart = "#00b4db", colorEnd = "#0083b0" }: Props) => {
+  return (
+    <div className={`absolute inset-0 -z-10 ${className}`}>
+      <Canvas camera={{ position: [0, 0, 1] }}>
+        <GradientMesh colorA={colorStart} colorB={colorEnd} />
+      </Canvas>
+    </div>
+  );
+};

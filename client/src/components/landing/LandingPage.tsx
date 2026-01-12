@@ -47,6 +47,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
 import '../../styles/landing.css';
+import { LiquidBackground } from './LiquidBackground';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -3590,15 +3591,14 @@ function HowItWorksMobile() {
         ))}
       </div>
 
-      <div 
-        className="relative rounded-2xl overflow-hidden mx-auto max-w-sm"
-        style={{ 
-          backgroundImage: `url(${stepsBgLight})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center'
-        }}
-      >
-        <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px]" />
+      <div className="relative rounded-2xl overflow-hidden mx-auto max-w-sm min-h-[320px]">
+        <LiquidBackground 
+          colorStart="#1a1a2e"
+          colorMid="#2dd4bf"
+          colorEnd="#0891b2"
+          className="rounded-2xl"
+        />
+        <div className="absolute inset-0 bg-black/10" />
         
         <AnimatePresence mode="wait">
           <motion.div
@@ -3828,11 +3828,12 @@ function HowItWorksSection() {
           </h2>
         </div>
 
-        <div className="how-steps-wrapper" style={{ 
-          backgroundImage: `url(${stepsBgLight})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center 10%'
-        }}>
+        <div className="how-steps-wrapper relative">
+          <LiquidBackground 
+            colorStart="#1a1a2e"
+            colorMid="#2dd4bf"
+            colorEnd="#0891b2"
+          />
           {t.howItWorks.steps.map((step, i) => (
             <div 
               key={step.number} 
