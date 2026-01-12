@@ -3591,7 +3591,7 @@ function HowItWorksMobile() {
         ))}
       </div>
 
-      <div className="relative rounded-2xl overflow-hidden mx-auto max-w-sm min-h-[320px]">
+      <div className="relative rounded-2xl overflow-hidden mx-auto max-w-sm min-h-[380px]">
         <LiquidBackground 
           colorStart="#06b6d4"
           colorMid="#14b8a6"
@@ -3601,28 +3601,34 @@ function HowItWorksMobile() {
           className="rounded-2xl"
         />
         
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeStep}
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -50 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="relative z-10 p-6"
-          >
-            <h3 className="font-display text-xl font-bold text-white text-center mb-4">
-              {steps[activeStep].title}
-            </h3>
-            
-            <div className="flex justify-center">
-              <div className="w-56 h-auto">
-                {stepMockups[activeStep]}
+        {/* All slides rendered simultaneously - only opacity changes to prevent layout shifts */}
+        <div className="relative z-10 min-h-[340px]">
+          {steps.map((step, i) => (
+            <motion.div
+              key={i}
+              initial={false}
+              animate={{ 
+                opacity: activeStep === i ? 1 : 0,
+                pointerEvents: activeStep === i ? 'auto' : 'none'
+              }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="absolute inset-0 p-6"
+              style={{ position: i === 0 ? 'relative' : 'absolute' }}
+            >
+              <h3 className="font-display text-xl font-bold text-white text-center mb-4">
+                {step.title}
+              </h3>
+              
+              <div className="flex justify-center">
+                <div className="w-56 h-auto min-h-[240px]">
+                  {stepMockups[i]}
+                </div>
               </div>
-            </div>
-          </motion.div>
-        </AnimatePresence>
+            </motion.div>
+          ))}
+        </div>
 
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 z-20">
           <motion.div
             className="h-full bg-[var(--landing-primary)]"
             initial={{ width: "0%" }}
