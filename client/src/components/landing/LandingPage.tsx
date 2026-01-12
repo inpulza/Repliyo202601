@@ -23,6 +23,8 @@ import icon3dSparkles from '@assets/generated_images/modern_flat_sparkles_icon.p
 import icon3dBell from '@assets/generated_images/modern_flat_bell_icon.png';
 import icon3dUsers from '@assets/generated_images/modern_flat_users_group_icon.png';
 import featureIconInbox from '@assets/generated_images/modern_flat_unified_inbox_icon.png';
+import flagES from '@assets/flags/es.png';
+import flagGB from '@assets/flags/gb.png';
 import featureIconMultiAgent from '@assets/generated_images/modern_flat_multi-agent_team_icon.png';
 import featureIconAI from '@assets/generated_images/modern_flat_ai_sparkles_icon.png';
 import featureIconCRM from '@assets/generated_images/modern_flat_crm_contact_icon.png';
@@ -1161,44 +1163,39 @@ function Header() {
           <a href="#testimonial" onClick={(e) => scrollToSection(e, 'testimonial')} className="nav-link" data-testid="link-nav-testimonios">{t.header.testimonials}</a>
         </nav>
         <div className="flex items-center gap-4">
-          <div 
-            className="lang-pill-container"
-            role="radiogroup"
-            aria-label="Select language"
+          <button
+            onClick={toggleLanguage}
+            className="lang-ios-toggle"
+            data-testid="button-language-toggle"
+            aria-label={language === 'es' ? 'Switch to English' : 'Cambiar a Español'}
           >
-            <motion.div 
-              className="lang-pill-slider"
-              initial={false}
-              animate={{ 
-                x: language === 'es' ? 0 : '100%'
-              }}
-              transition={{
-                type: "spring",
-                stiffness: 400,
-                damping: 30
-              }}
-            />
-            <button
-              onClick={() => setLanguage('es')}
-              className={`lang-pill-option ${language === 'es' ? 'active' : ''}`}
-              data-testid="button-language-es"
-              aria-checked={language === 'es'}
-              role="radio"
-            >
-              <span className="lang-flag">🇪🇸</span>
-              <span className="lang-code">ES</span>
-            </button>
-            <button
-              onClick={() => setLanguage('en')}
-              className={`lang-pill-option ${language === 'en' ? 'active' : ''}`}
-              data-testid="button-language-en"
-              aria-checked={language === 'en'}
-              role="radio"
-            >
-              <span className="lang-flag">🇬🇧</span>
-              <span className="lang-code">EN</span>
-            </button>
-          </div>
+            <div className="lang-ios-track">
+              <div className="lang-ios-flags">
+                <img 
+                  src={flagES} 
+                  alt="Español" 
+                  className={`lang-ios-flag flag-es ${language === 'es' ? 'visible' : ''}`}
+                />
+                <img 
+                  src={flagGB} 
+                  alt="English" 
+                  className={`lang-ios-flag flag-gb ${language === 'en' ? 'visible' : ''}`}
+                />
+              </div>
+              <motion.div 
+                className="lang-ios-thumb"
+                initial={false}
+                animate={{ 
+                  x: language === 'es' ? 0 : 32
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 500,
+                  damping: 35
+                }}
+              />
+            </div>
+          </button>
           <a href="/login" className="btn-primary text-sm py-2.5 px-5" data-testid="button-login-header">
             {t.header.login}
           </a>
