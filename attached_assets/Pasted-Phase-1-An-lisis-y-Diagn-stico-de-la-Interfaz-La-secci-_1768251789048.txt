@@ -1,0 +1,174 @@
+Phase 1: Análisis y Diagnóstico de la Interfaz
+La sección se compone de un contenedor de alta prioridad con un diseño 50/50 Split.
+
+
+
+
+
+
+Contenedor Maestro: Un section con altura extendida (ej. 300vh) para actuar como "pista" de scroll.
+
+
+
+
+
+
+Lado Izquierdo (Scrollable Track): Bloques de texto semánticos que entran y salen del viewport conforme el usuario hace scroll.
+
+
+
+
+
+
+Lado Derecho (Pinned/Sticky Canvas): Una tarjeta azul fija (sticky top-0) que contiene el elemento visual central. Los iconos sociales deben ejecutar un Transform de Órbita basado en el progreso del scroll.
+
+
+
+
+
+Phase 2: Plan de Acción (Estrategia Técnica)
+Para lograr esto en Next.js 15+ y Tailwind CSS, seguiremos este plan:
+
+
+Implementar useScroll de Framer Motion para rastrear el progreso exacto (0 a 1) de la sección.
+
+
+
+
+
+
+Configurar un Sticky Container de lado a lado que mantenga la tarjeta azul en pantalla mientras los 3 pasos de texto se desplazan.
+
+
+
+
+
+Mapear el Scroll a Transformaciones: Los iconos a la derecha no solo cambian de posición, sino que rotan o se escalan según el paso activo.
+
+
+
+
+
+Phase 3: Implementación de Código (Next.js + Tailwind + Framer Motion)
+Dile a tu desarrollador que este es el componente base:
+
+TypeScript
+
+import { useRef } from 'react';
+import { motion, useScroll, useTransform } from 'framer-motion';
+
+const steps = [
+  { title: "Connect your networks", description: "Link Instagram, TikTok, Facebook..." },
+  { title: "Centralize DMs", description: "All your messages in one place..." },
+  { title: "Scale Growth", description: "Turn conversations into sales..." }
+];
+
+export const ProcessPinning = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"]
+  });
+
+  // Transformación para la rotación de los iconos a la derecha
+  const iconRotation = useTransform(scrollYProgress, [0, 1], [0, 360]);
+
+  return (
+    <section ref={containerRef} className="relative h-[300vh] bg-white">
+      <div className="sticky top-0 flex h-screen w-full items-center overflow-hidden px-10">
+        <div className="grid grid-cols-2 gap-20 w-full max-w-7xl mx-auto">
+          
+          {/* Lado Izquierdo: Texto que hace scroll */}
+          <div className="relative h-[150px]">
+            {steps.map((step, i) => {
+              const opacity = useTransform(
+                scrollYProgress, 
+                [i / 3, (i + 0.5) / 3, (i + 1) / 3], 
+                [0, 1, 0]
+              );
+              return (
+                <motion.div key={i} style={{ opacity }} className="absolute inset-0">
+                  <h2 className="text-5xl font-bold mb-4">{step.title}</h2>
+                  <p className="text-gray-500 text-xl">{step.description}</p>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {/* Lado Derecho: Tarjeta Azul con Transform */}
+          <div className="flex items-center justify-center">
+            <motion.div 
+              className="w-full aspect-video bg-blue-600 rounded-[40px] p-12 relative overflow-hidden"
+              initial={{ scale: 0.9, opacity: 0 }}
+              whileInView={{ scale: 1, opacity: 1 }}
+            >
+              {/* Elementos Visuales con Transform dinámico */}
+              <motion.div style={{ rotate: iconRotation }} className="w-full h-full relative">
+                {/* Aquí van los iconos rodeando al logo central */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-4 rounded-2xl">
+                  {/* Logo Inbox Central */}
+                </div>
+              </motion.div>
+            </motion.div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+  );
+};
+
+
+
+
+
+
+Phase 4: Abstracción al Sistema de Diseño
+Para asegurar la consistencia del 2026, he generado los tokens de interacción:
+
+
+
+
+
+JSON
+
+{
+  "interaction": {
+    "type": "dual-track-scroll",
+    "pinning": "sticky-center",
+    "timing": "ease-in-out-cubic",
+    "thresholds": [0, 0.33, 0.66, 1.0]
+  },
+  "visuals": {
+    "card_radius": "40px",
+    "background_gradient": "mesh-blue-vortex",
+    "blur": "24px"
+  }
+}
+
+
+
+
+
+
+Instrucciones para tu Desarrollador:
+Usa scrollYProgress: No intentes calcular el scroll manualmente. Framer Motion nos da el valor normalizado de 0 a 1 que es perfecto para las transiciones de la tarjeta azul.
+
+
+
+
+
+
+Z-Indexing: Asegúrate de que el contenedor sticky tenga un z-index controlado para evitar que se solape con el footer o header.
+
+
+
+
+
+
+Mobile Handling: En móviles, este diseño debe cambiar a un carousel simple o los bloques de texto deben ser más cortos para evitar "scroll fatigue".
+
+
+
+
+¿Deseas que prepare una herramienta de análisis de rendimiento para asegurar que esta animación no afecte la velocidad de carga?

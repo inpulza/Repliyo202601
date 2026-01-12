@@ -44,6 +44,28 @@ import { LiquidBackground } from './LiquidBackground';
 
 gsap.registerPlugin(ScrollTrigger);
 
+// Safe useScroll hook that handles hydration issues
+function useSafeScroll(options: { target?: React.RefObject<HTMLElement | null>; offset?: string[] } = {}) {
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  
+  // Always call useScroll to maintain consistent hook order
+  const scrollResult = useScroll({
+    target: isMounted && options.target?.current ? options.target : undefined,
+    offset: options.offset as any
+  });
+  
+  // Return a static scrollYProgress if not mounted yet
+  const fallbackProgress = useMotionValue(0);
+  
+  return {
+    scrollYProgress: isMounted && options.target?.current ? scrollResult.scrollYProgress : fallbackProgress
+  };
+}
+
 function Step1ConnectMockup() {
   const orbitIcons = [
     { Icon: FaInstagram, platform: 'instagram' },
@@ -1707,10 +1729,10 @@ function Header() {
 }
 
 function HeroSection() {
-  const containerRef = useRef(null);
+  const containerRef = useRef<HTMLElement>(null);
   const prefersReducedMotion = useReducedMotion();
   const { t } = useLanguage();
-  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end start'] });
+  const { scrollYProgress } = useSafeScroll({ target: containerRef, offset: ['start start', 'end start'] });
   
   const textY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [0, 100]);
   const mockupY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [0, -20]);
@@ -2971,7 +2993,7 @@ function ProblemSolutionSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
   const { t } = useLanguage();
-  const { scrollYProgress } = useScroll({ 
+  const { scrollYProgress } = useSafeScroll({ 
     target: sectionRef, 
     offset: ['start end', 'end start'] 
   });
@@ -3537,10 +3559,10 @@ function getMobileStatElements(t: ReturnType<typeof useLanguage>['t'], activeInd
 }
 
 function MetricSection() {
-  const ref = useRef(null);
+  const ref = useRef<HTMLElement>(null);
   const isInView = useInView(ref, { once: true, margin: '-100px' });
   const prefersReducedMotion = useReducedMotion();
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
+  const { scrollYProgress } = useSafeScroll({ target: ref, offset: ['start end', 'end start'] });
   const [activeIndex, setActiveIndex] = useState(0);
   const { t } = useLanguage();
   
@@ -3764,11 +3786,7 @@ function HowItWorksMobile() {
 
 function HowItWorksSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const progressFillRef = useRef<HTMLDivElement>(null);
-  const checkpointsRef = useRef<(HTMLDivElement | null)[]>([]);
   const prefersReducedMotion = useReducedMotion();
-  const [activeStep, setActiveStep] = useState(0);
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window !== 'undefined') {
       return window.innerWidth <= 768;
@@ -3776,6 +3794,7 @@ function HowItWorksSection() {
     return false;
   });
   const { t } = useLanguage();
+  const [activeStep, setActiveStep] = useState(0);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 768);
@@ -3783,115 +3802,36 @@ function HowItWorksSection() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  useGSAP(() => {
-    if (prefersReducedMotion || isMobile || !containerRef.current || !sectionRef.current) return;
+  // Scroll tracking using native IntersectionObserver for step tracking
+  useEffect(() => {
+    if (isMobile || prefersReducedMotion) return;
     
-    const ctx = gsap.context(() => {
-      const stepPanels = gsap.utils.toArray('.how-step-panel') as HTMLElement[];
-      const totalSteps = stepPanels.length;
-      const scrollPerStep = window.innerHeight * 1.8;
-      const holdAtEnd = window.innerHeight * 1.2;
-      const totalScrollDistance = totalSteps * scrollPerStep + holdAtEnd;
+    const handleScroll = () => {
+      if (!sectionRef.current) return;
       
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top top',
-          end: () => `+=${totalScrollDistance}`,
-          pin: containerRef.current,
-          anticipatePin: 1,
-          scrub: 0.8,
-          onUpdate: (self) => {
-            const progress = self.progress;
-            const effectiveScrollRatio = (totalSteps * scrollPerStep) / totalScrollDistance;
-            const effectiveProgress = Math.min(progress / effectiveScrollRatio, 1);
-            const stepIndex = Math.min(Math.floor(effectiveProgress * totalSteps), totalSteps - 1);
-            setActiveStep(stepIndex);
-            
-            if (progressFillRef.current) {
-              gsap.set(progressFillRef.current, { width: `${effectiveProgress * 100}%` });
-            }
-            
-            checkpointsRef.current.forEach((checkpoint, i) => {
-              if (!checkpoint) return;
-              const stepThreshold = (i + 1) / totalSteps;
-              const isCompleted = effectiveProgress >= stepThreshold - 0.01;
-              if (isCompleted) {
-                checkpoint.classList.add('completed');
-              } else {
-                checkpoint.classList.remove('completed');
-              }
-            });
-          }
-        }
-      });
-
-      stepPanels.forEach((step, index) => {
-        gsap.set(step, { 
-          autoAlpha: index === 0 ? 1 : 0, 
-          x: index === 0 ? 0 : 100,
-          scale: index === 0 ? 1 : 0.92,
-          zIndex: index === 0 ? 10 : 1
-        });
-      });
-
-      const enterDuration = 0.5;
-      const holdDuration = 0.8;
-      const exitDuration = 0.4;
-      let currentTime = 0;
-
-      stepPanels.forEach((step, index) => {
-        if (index === 0) {
-          tl.to({}, { duration: holdDuration }, currentTime);
-          currentTime += holdDuration;
-          
-          tl.to(step, {
-            autoAlpha: 0,
-            x: -100,
-            scale: 0.88,
-            zIndex: 1,
-            duration: exitDuration,
-            ease: 'power1.inOut'
-          }, currentTime);
-          currentTime += exitDuration;
-        } else {
-          tl.fromTo(step, 
-            { autoAlpha: 0, x: 100, scale: 0.92, zIndex: 1 },
-            { 
-              autoAlpha: 1, 
-              x: 0, 
-              scale: 1, 
-              zIndex: 10,
-              duration: enterDuration,
-              ease: 'power2.out'
-            }, 
-            currentTime
-          );
-          currentTime += enterDuration;
-          
-          tl.to({}, { duration: holdDuration }, currentTime);
-          currentTime += holdDuration;
-          
-          if (index < totalSteps - 1) {
-            tl.to(step, {
-              autoAlpha: 0,
-              x: -100,
-              scale: 0.88,
-              zIndex: 1,
-              duration: exitDuration,
-              ease: 'power1.inOut'
-            }, currentTime);
-            currentTime += exitDuration;
-          } else {
-            tl.to({}, { duration: holdDuration }, currentTime);
-            currentTime += holdDuration;
-          }
-        }
-      });
-    }, sectionRef);
+      const section = sectionRef.current;
+      const rect = section.getBoundingClientRect();
+      const sectionHeight = section.offsetHeight;
+      const viewportHeight = window.innerHeight;
+      
+      // Calculate scroll progress through section
+      const scrolledIntoSection = -rect.top;
+      const totalScrollableHeight = sectionHeight - viewportHeight;
+      const progress = Math.max(0, Math.min(1, scrolledIntoSection / totalScrollableHeight));
+      
+      // Map progress to step index
+      const stepValue = progress * 3;
+      const newStep = Math.min(Math.floor(stepValue), 2);
+      if (newStep >= 0 && newStep !== activeStep) {
+        setActiveStep(newStep);
+      }
+    };
     
-    return () => ctx.revert();
-  }, { scope: sectionRef, dependencies: [isMobile] });
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Initial check
+    
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isMobile, prefersReducedMotion, activeStep]);
 
   const stepMockups = [<Step1ConnectMockup />, <Step2AIMockup />, <Step3SendMockup />];
 
@@ -3929,67 +3869,67 @@ function HowItWorksSection() {
   }
 
   return (
-    <section id="how" ref={sectionRef} className="how-pinned-section relative">
-      <div ref={containerRef} className="how-pinned-container">
-        <div className="how-header">
-          <span className="text-sm uppercase tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-4 block">
-            {t.howItWorks.label}
-          </span>
-          <h2 className="font-display text-4xl md:text-6xl font-bold text-white mb-8">
-            {t.howItWorks.title} <span className="text-white/60">{t.howItWorks.titleHighlight}</span>
-          </h2>
-        </div>
+    <section id="how" ref={sectionRef} className="how-dual-track-section relative">
+      {/* Header */}
+      <div className="how-dual-track-header">
+        <span className="text-sm uppercase tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-4 block">
+          {t.howItWorks.label}
+        </span>
+        <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-white">
+          {t.howItWorks.title} <span className="text-white/60">{t.howItWorks.titleHighlight}</span>
+        </h2>
+      </div>
 
-        <div className="how-steps-wrapper relative">
-          <LiquidBackground 
-            colorStart="#06b6d4"
-            colorMid="#14b8a6"
-            colorEnd="#ffffff"
-            speed={0.08}
-            scale={0.75}
-          />
+      {/* Dual-track container */}
+      <div className="how-dual-track-container">
+        {/* Left side: Scrollable text blocks */}
+        <div className="how-dual-track-left">
           {t.howItWorks.steps.map((step, i) => (
-            <div 
+            <motion.div 
               key={step.number} 
-              className={`how-step-panel ${activeStep === i ? 'active' : ''}`}
+              className="how-dual-track-step"
+              initial={{ opacity: 0.3 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: false, amount: 0.6 }}
+              transition={{ duration: 0.4 }}
             >
-              <div className="how-step-content">
-                <div className="how-step-info">
-                  <h3 className="font-display text-3xl md:text-4xl font-bold text-white mb-4">
-                    {step.title}
-                  </h3>
-                  <p className="text-white text-lg md:text-xl leading-relaxed max-w-md">
-                    {step.description}
-                  </p>
-                </div>
-                <div className="how-step-mockup">
-                  {stepMockups[i]}
-                </div>
-              </div>
-            </div>
+              <span className="how-dual-track-number">{step.number}</span>
+              <h3 className="font-display text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-4">
+                {step.title}
+              </h3>
+              <p className="text-white/60 text-base md:text-lg lg:text-xl leading-relaxed">
+                {step.description}
+              </p>
+            </motion.div>
           ))}
         </div>
 
-        <div className="how-scroll-progress">
-          <div className="how-scroll-progress-bar">
-            <div 
-              ref={progressFillRef}
-              className="how-scroll-progress-fill"
-              style={{ width: '0%' }}
-            />
-          </div>
-          <div className="how-scroll-checkmarks">
-            {t.howItWorks.steps.map((_, i) => (
-              <div
-                key={i}
-                ref={(el) => { checkpointsRef.current[i] = el; }}
-                className="how-scroll-checkpoint"
-              >
-                <div className="checkpoint-check">
-                  <Check className="w-3 h-3" />
-                </div>
+        {/* Right side: Sticky visual */}
+        <div className="how-dual-track-right">
+          <div className="how-dual-track-sticky">
+            <div className="how-dual-track-visual">
+              <LiquidBackground 
+                colorStart="#06b6d4"
+                colorMid="#14b8a6"
+                colorEnd="#ffffff"
+                speed={0.08}
+                scale={0.75}
+              />
+              <div className="how-dual-track-mockup-wrapper">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeStep}
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -20 }}
+                    transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+                    className="how-dual-track-mockup"
+                  >
+                    {stepMockups[activeStep]}
+                  </motion.div>
+                </AnimatePresence>
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </div>
@@ -4169,11 +4109,11 @@ function FeaturesSection() {
 }
 
 function TestimonialSection() {
-  const ref = useRef(null);
+  const ref = useRef<HTMLElement>(null);
   const prefersReducedMotion = useReducedMotion();
   const [activeIndex, setActiveIndex] = useState(0);
   const { t, language } = useLanguage();
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
+  const { scrollYProgress } = useSafeScroll({ target: ref, offset: ['start end', 'end start'] });
   const quoteY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [100, -100]);
   const quoteRotate = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [-5, 5]);
 
@@ -4254,10 +4194,10 @@ function TestimonialSection() {
 }
 
 function CTASection() {
-  const ref = useRef(null);
+  const ref = useRef<HTMLElement>(null);
   const prefersReducedMotion = useReducedMotion();
   const { t } = useLanguage();
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
+  const { scrollYProgress } = useSafeScroll({ target: ref, offset: ['start end', 'end start'] });
   const bgY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [100, -50]);
 
   return (
