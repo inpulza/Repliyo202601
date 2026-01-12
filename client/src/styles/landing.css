@@ -7229,9 +7229,9 @@
   
   /* Fixed height for Features section to prevent animation jumps */
   #features {
-    min-height: 1000px !important;
-    height: 1000px !important;
-    max-height: 1000px !important;
+    min-height: 1100px !important;
+    height: 1100px !important;
+    max-height: 1100px !important;
     overflow: hidden !important;
   }
   
