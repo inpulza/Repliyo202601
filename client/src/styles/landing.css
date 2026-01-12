@@ -7195,9 +7195,9 @@
   
   /* Fixed height for Problem section to prevent animation jumps */
   #problem-solution > div:first-child {
-    min-height: 700px !important;
-    height: 700px !important;
-    max-height: 700px !important;
+    min-height: 900px !important;
+    height: 900px !important;
+    max-height: 900px !important;
     overflow: hidden !important;
   }
   
