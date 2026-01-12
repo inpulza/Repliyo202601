@@ -2121,7 +2121,6 @@ function ProblemMockupMobile() {
     { icon: FaFacebook, color: '#1877F2', name: 'FB', count: 12 },
     { icon: FaLinkedin, color: '#0A66C2', name: 'LI', count: 8 },
     { icon: FaYoutube, color: '#FF0000', name: 'YT', count: 31 },
-    { icon: GoogleBusinessIcon, color: '#4285F4', name: 'GB', count: 5 },
   ];
   
   const totalMessages = platforms.reduce((sum, p) => sum + p.count, 0);
@@ -2143,7 +2142,7 @@ function ProblemMockupMobile() {
               <div key={platform.name} className="problem-mobile-platform-item">
                 <div 
                   className="problem-mobile-platform-icon"
-                  style={{ background: platform.color === '#000000' ? 'linear-gradient(135deg, #25f4ee, #fe2c55)' : platform.color }}
+                  style={{ background: platform.color }}
                 >
                   <IconComponent className="w-5 h-5 text-white" />
                 </div>
@@ -2192,7 +2191,7 @@ function ProblemMockupMobile() {
             >
               <div 
                 className="problem-mobile-platform-icon"
-                style={{ background: platform.color === '#000000' ? 'linear-gradient(135deg, #25f4ee, #fe2c55)' : platform.color }}
+                style={{ background: platform.color }}
               >
                 <IconComponent className="w-5 h-5 text-white" />
               </div>
