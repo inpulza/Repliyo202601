@@ -749,20 +749,22 @@ function InboxMockup() {
   const mockupRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
+  const { t } = useLanguage();
   
+  const inboxMessages = t.mockups.inbox.allMessages;
   const allMessages = [
-    { id: 1, user: 'María García', avatarImg: avatarMaria, message: '¿Tienen disponible el vestido azul en talla M?', platform: 'instagram', time: 'Ahora', unread: true },
-    { id: 2, user: 'Carlos Rodríguez', avatarImg: avatarCarlos, message: 'Quiero reservar una mesa para el sábado', platform: 'tiktok', time: '2m', unread: true },
-    { id: 3, user: 'Ana López', avatarImg: avatarAna, message: '¿Hacen envíos internacionales a Madrid?', platform: 'facebook', time: '5m', unread: true },
-    { id: 4, user: 'Diego Ramírez', avatarImg: avatarDiego, message: '¿Cuánto tarda el envío a Barcelona?', platform: 'instagram', time: '8m', unread: true },
-    { id: 5, user: 'Laura Martín', avatarImg: avatarLaura, message: 'Me encantó el producto, gracias!', platform: 'tiktok', time: '12m', unread: false },
+    { id: 1, user: inboxMessages[0].user, avatarImg: avatarMaria, message: inboxMessages[0].message, platform: 'instagram', time: inboxMessages[0].time, unread: true },
+    { id: 2, user: inboxMessages[1].user, avatarImg: avatarCarlos, message: inboxMessages[1].message, platform: 'tiktok', time: inboxMessages[1].time, unread: true },
+    { id: 3, user: inboxMessages[2].user, avatarImg: avatarAna, message: inboxMessages[2].message, platform: 'facebook', time: inboxMessages[2].time, unread: true },
+    { id: 4, user: inboxMessages[3].user, avatarImg: avatarDiego, message: inboxMessages[3].message, platform: 'instagram', time: inboxMessages[3].time, unread: true },
+    { id: 5, user: inboxMessages[4].user, avatarImg: avatarLaura, message: inboxMessages[4].message, platform: 'tiktok', time: '12m', unread: false },
   ];
 
   const floatingBubbles = [
-    { id: 1, user: 'María García', avatar: avatarMaria, platform: 'instagram', position: 'pos-top-left', message: '¿Tienen disponible el vestido azul en talla M?' },
-    { id: 2, user: 'Carlos Rodríguez', avatar: avatarCarlos, platform: 'tiktok', position: 'pos-top-right', message: 'Quiero reservar una mesa para el sábado' },
-    { id: 3, user: 'Ana López', avatar: avatarAna, platform: 'facebook', position: 'pos-bottom-left', message: '¿Hacen envíos internacionales a Madrid?' },
-    { id: 4, user: 'Diego Ramírez', avatar: avatarDiego, platform: 'instagram', position: 'pos-bottom-right', message: '¿Cuánto tarda el envío a Barcelona?' },
+    { id: 1, user: inboxMessages[0].user, avatar: avatarMaria, platform: 'instagram', position: 'pos-top-left', message: inboxMessages[0].message },
+    { id: 2, user: inboxMessages[1].user, avatar: avatarCarlos, platform: 'tiktok', position: 'pos-top-right', message: inboxMessages[1].message },
+    { id: 3, user: inboxMessages[2].user, avatar: avatarAna, platform: 'facebook', position: 'pos-bottom-left', message: inboxMessages[2].message },
+    { id: 4, user: inboxMessages[3].user, avatar: avatarDiego, platform: 'instagram', position: 'pos-bottom-right', message: inboxMessages[3].message },
   ];
 
   const [visibleMessages, setVisibleMessages] = useState<number[]>([]);
@@ -775,14 +777,10 @@ function InboxMockup() {
   const [bubbleTypingTexts, setBubbleTypingTexts] = useState<Record<number, string>>({});
   const [visibleBubbles, setVisibleBubbles] = useState<number[]>([]);
 
-  const chatConversation = [
-    { type: 'incoming', text: '¿Tienen disponible el vestido azul en talla M?', time: '14:32' },
-    { type: 'outgoing', text: '¡Hola María! Sí, tenemos el vestido azul disponible en talla M. ¿Te gustaría que te lo reserve?', time: '14:33', isAI: true },
-    { type: 'incoming', text: '¡Perfecto! Sí, por favor resérvenlo', time: '14:35' },
-    { type: 'outgoing', text: '¡Listo! Reservado a tu nombre. Puedes recogerlo hoy hasta las 8pm o mañana. ¿Alguna preferencia?', time: '14:36', isAI: true },
-    { type: 'incoming', text: 'Mañana por la tarde me viene mejor', time: '14:38' },
-    { type: 'outgoing', text: '¡Perfecto María! Te esperamos mañana. Te enviaré un recordatorio. ¿Algo más en lo que pueda ayudarte?', time: '14:39', isAI: true },
-  ];
+  const chatConversation = t.mockups.inbox.conversation.map((conv: { type: string; text: string; time: string }) => ({
+    ...conv,
+    isAI: conv.type === 'outgoing'
+  }));
 
   const bubbleSchedule = [
     { bubbleId: 1, showAt: 100, typingDuration: 1800, inboxArrival: 2000 },
@@ -894,7 +892,7 @@ function InboxMockup() {
           <div className="mockup-nav">
             <span className="nav-item active">
               <Inbox className="w-4 h-4" />
-              Inbox
+              {t.mockups.inbox.nav.inbox}
               <motion.span 
                 key={inboxCount}
                 initial={{ scale: 1.3 }}
@@ -906,17 +904,17 @@ function InboxMockup() {
             </span>
             <span className="nav-item">
               <Users className="w-4 h-4" />
-              CRM
+              {t.mockups.inbox.nav.crm}
             </span>
             <span className="nav-item">
               <BarChart2 className="w-4 h-4" />
-              Analytics
+              {t.mockups.inbox.nav.analytics}
             </span>
           </div>
         </div>
         
         <div className="mockup-filters">
-          <div className="filter-chip active">Todos</div>
+          <div className="filter-chip active">{t.mockups.inbox.filters.all}</div>
           <div className="filter-chip"><FaInstagram className="w-3 h-3" /></div>
           <div className="filter-chip"><FaTiktok className="w-3 h-3" /></div>
           <div className="filter-chip"><FaFacebook className="w-3 h-3" /></div>
@@ -955,12 +953,12 @@ function InboxMockup() {
           <div className="mockup-main-v2">
             <div className="chat-header-v2">
               <div className="chat-user-info">
-                <img src={avatarMaria} alt="María García" className="chat-avatar" />
+                <img src={avatarMaria} alt={inboxMessages[0].user} className="chat-avatar" />
                 <div className="chat-user-details">
-                  <span className="chat-username">María García</span>
+                  <span className="chat-username">{inboxMessages[0].user}</span>
                   <span className="chat-platform">
                     <FaInstagram className="w-3 h-3 text-pink-500" />
-                    Instagram Direct
+                    {t.mockups.inbox.chat.instagramDirect}
                   </span>
                 </div>
               </div>
@@ -993,7 +991,7 @@ function InboxMockup() {
                     <div className="bubble-content">
                       {msg.isAI && (
                         <div className="ai-badge-v2">
-                          <Sparkles className="w-3 h-3" /> Borrador IA
+                          <Sparkles className="w-3 h-3" /> {t.mockups.step2.aiDraft}
                         </div>
                       )}
                       {msg.text}
@@ -1011,7 +1009,7 @@ function InboxMockup() {
                   className="ai-typing-v2"
                 >
                   <Sparkles className="w-4 h-4 text-blue-500" />
-                  <span>Repliyo AI está generando...</span>
+                  <span>{t.mockups.inbox.chat.aiGenerating}</span>
                   <div className="typing-indicator">
                     <span></span><span></span><span></span>
                   </div>
@@ -1022,53 +1020,53 @@ function InboxMockup() {
             <div className="chat-actions-bar">
               <button className="chat-action-btn primary">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Generar borrador</span>
+                <span>{t.mockups.inbox.chat.generateDraft}</span>
               </button>
               <button className="chat-action-btn">
                 <Send className="w-3.5 h-3.5" />
-                <span>Responder</span>
+                <span>{t.mockups.inbox.chat.reply}</span>
               </button>
               <button className="chat-action-btn">
                 <Bell className="w-3.5 h-3.5" />
-                <span>Recordatorio</span>
+                <span>{t.mockups.inbox.chat.reminder}</span>
               </button>
             </div>
             
             <div className="auto-reply-indicator">
               <div className="auto-reply-badge">
                 <Sparkles className="w-4 h-4" />
-                <span>Respuesta automática activa</span>
+                <span>{t.mockups.inbox.chat.autoReplyActive}</span>
               </div>
-              <span className="auto-reply-status">IA respondiendo en tiempo real</span>
+              <span className="auto-reply-status">{t.mockups.inbox.chat.aiResponding}</span>
             </div>
           </div>
           
           <div className="mockup-crm-panel">
             <div className="crm-header">
               <Users className="w-4 h-4" />
-              <span>Cliente</span>
+              <span>{t.mockups.inbox.crm.client}</span>
             </div>
             <div className="crm-content">
-              <img src={avatarMaria} alt="María" className="crm-avatar" />
-              <div className="crm-name">María García</div>
+              <img src={avatarMaria} alt={inboxMessages[0].user} className="crm-avatar" />
+              <div className="crm-name">{inboxMessages[0].user}</div>
               <div className="crm-email">maria.garcia@email.com</div>
               <div className="crm-stats-grid">
                 <div className="crm-stat-item">
                   <span className="stat-number">8</span>
-                  <span className="stat-text">Chats</span>
+                  <span className="stat-text">{t.mockups.inbox.crm.chats}</span>
                 </div>
                 <div className="crm-stat-item">
                   <span className="stat-number">$1.2k</span>
-                  <span className="stat-text">Valor</span>
+                  <span className="stat-text">{t.mockups.inbox.crm.value}</span>
                 </div>
               </div>
               <div className="crm-tags">
-                <span className="crm-tag vip">VIP</span>
-                <span className="crm-tag">Recurrente</span>
+                <span className="crm-tag vip">{t.mockups.inbox.crm.vip}</span>
+                <span className="crm-tag">{t.mockups.inbox.crm.recurring}</span>
               </div>
               <div className="crm-notes">
-                <span className="notes-label">Notas</span>
-                <p className="notes-text">Cliente frecuente, prefiere talla M...</p>
+                <span className="notes-label">{t.mockups.inbox.crm.notes}</span>
+                <p className="notes-text">{t.mockups.inbox.crm.notesText}</p>
               </div>
             </div>
           </div>
@@ -1417,6 +1415,7 @@ function ProblemMockup() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, amount: 0.3 });
   const prefersReducedMotion = useReducedMotion();
+  const { t } = useLanguage();
   
   const phones = [
     { platform: 'instagram', icon: FaInstagram, color: '#E1306C', name: 'Instagram', count: 23, messages: 3 },
@@ -1428,10 +1427,10 @@ function ProblemMockup() {
   ];
   
   const notifications = [
-    { icon: Bell, text: '+82 mensajes sin leer', className: 'n1' },
-    { icon: Clock, text: 'Lead esperando 4 horas', className: 'n2' },
-    { icon: AlertCircle, text: 'Cliente frustrado', className: 'n3' },
-    { icon: MessageSquare, text: 'Venta perdida', className: 'n4' },
+    { icon: Bell, text: t.problemSolution.notifications.unreadMessages, className: 'n1' },
+    { icon: Clock, text: t.problemSolution.notifications.leadWaiting, className: 'n2' },
+    { icon: AlertCircle, text: t.problemSolution.notifications.frustratedClient, className: 'n3' },
+    { icon: MessageSquare, text: t.problemSolution.notifications.lostSale, className: 'n4' },
   ];
 
   const cardVariants = {
@@ -1579,11 +1578,12 @@ function SolutionMockup() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: '-100px' });
   const prefersReducedMotion = useReducedMotion();
+  const { t } = useLanguage();
   
   const sidebarItems = [
-    { icon: MessageSquare, label: 'Inbox', count: '0', active: true },
-    { icon: Users, label: 'CRM' },
-    { icon: Bell, label: 'Recordatorios' },
+    { icon: MessageSquare, label: t.problemSolution.sidebarItems.inbox, count: '0', active: true },
+    { icon: Users, label: t.problemSolution.sidebarItems.crm },
+    { icon: Bell, label: t.problemSolution.sidebarItems.reminders },
   ];
   
   const conversations = [
@@ -1593,11 +1593,11 @@ function SolutionMockup() {
   ];
   
   const indicators = [
-    { icon: Check, text: 'Respuesta en 2 min', className: 'i1' },
-    { icon: Zap, text: 'IA genera borradores', className: 'i2' },
-    { icon: MessageSquare, text: 'Un solo inbox', className: 'i3' },
-    { icon: Users, text: 'CRM integrado', className: 'i4' },
-    { icon: Bell, text: 'Recordatorios automáticos', className: 'i5' },
+    { icon: Check, text: t.problemSolution.indicators.responseTime, className: 'i1' },
+    { icon: Zap, text: t.problemSolution.indicators.aiDrafts, className: 'i2' },
+    { icon: MessageSquare, text: t.problemSolution.indicators.singleInbox, className: 'i3' },
+    { icon: Users, text: t.problemSolution.indicators.integratedCrm, className: 'i4' },
+    { icon: Bell, text: t.problemSolution.indicators.autoReminders, className: 'i5' },
   ];
   
   const panelVariants = {
@@ -1648,7 +1648,7 @@ function SolutionMockup() {
           <div className="inbox-main">
             <div className="inbox-header-bar">
               <div className="platform-tabs">
-                <span className="tab active">Todos</span>
+                <span className="tab active">{t.problemSolution.tabs.all}</span>
                 <span className="tab"><FaInstagram className="w-3 h-3 text-[#E1306C]" /></span>
                 <span className="tab"><FaTiktok className="w-3 h-3 text-white" /></span>
                 <span className="tab"><FaFacebook className="w-3 h-3 text-[#1877F2]" /></span>
@@ -1684,7 +1684,7 @@ function SolutionMockup() {
               </div>
             </div>
             <div className="ai-response-preview">
-              <div className="ai-badge"><Sparkles className="w-3 h-3" /><span>IA</span></div>
+              <div className="ai-badge"><Sparkles className="w-3 h-3" /><span>AI</span></div>
               <div className="response-lines"><div className="line" /><div className="line short" /></div>
               <button className="send-btn"><Send className="w-3 h-3" /></button>
             </div>
@@ -1748,7 +1748,7 @@ function SolutionMockup() {
               transition={{ delay: 0.4, duration: 0.4 }}
             >
               <div className="platform-tabs">
-                <span className="tab active">Todos</span>
+                <span className="tab active">{t.problemSolution.tabs.all}</span>
                 <span className="tab"><FaInstagram className="w-3 h-3 text-[#E1306C]" /></span>
                 <span className="tab"><FaTiktok className="w-3 h-3 text-white" /></span>
                 <span className="tab"><FaFacebook className="w-3 h-3 text-[#1877F2]" /></span>
@@ -1869,6 +1869,7 @@ function SolutionMockup() {
 function ProblemSolutionSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
+  const { t } = useLanguage();
   const { scrollYProgress } = useScroll({ 
     target: sectionRef, 
     offset: ['start end', 'end start'] 
@@ -1889,10 +1890,10 @@ function ProblemSolutionSection() {
             className="problem-side text-center"
           >
             <span className="text-sm uppercase tracking-[0.25em] text-white/40 font-semibold mb-4 block">
-              El problema
+              {t.problemSolution.problemLabel}
             </span>
             <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-16 leading-tight flex flex-col items-center gap-y-2">
-              <span>Responder mensajes en 5 apps es</span>
+              <span>{t.problemSolution.problemTitle}</span>
               <span className="w-full flex justify-center">
                 <SmokeDissolveText />
               </span>
@@ -1912,10 +1913,10 @@ function ProblemSolutionSection() {
             className="solution-side text-center"
           >
             <span className="text-sm uppercase tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-4 block">
-              La solución
+              {t.problemSolution.solutionLabel}
             </span>
             <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-16 leading-tight flex flex-col items-center gap-y-2">
-              <span>Un inbox inteligente que</span>
+              <span>{t.problemSolution.solutionTitle}</span>
               <span className="w-full flex justify-center">
                 <SolutionAnimatedText />
               </span>
@@ -1929,25 +1930,6 @@ function ProblemSolutionSection() {
     </section>
   );
 }
-
-const PROBLEM_WORDS = [
-  "agotador",
-  "ineficiente", 
-  "costoso",
-  "tedioso",
-  "insostenible",
-  "lento",
-  "poco rentable"
-];
-
-const SOLUTION_WORDS = [
-  "vende por ti",
-  "responde al instante",
-  "te ahorra tiempo",
-  "cierra ventas solo",
-  "nunca descansa",
-  "convierte leads"
-];
 
 type SmokeTextProps = {
   words: string[];
@@ -2054,9 +2036,10 @@ function SmokeDissolveTextGeneric({ words, colorClass, glowColor, centered = fal
 }
 
 function SmokeDissolveText() {
+  const { t } = useLanguage();
   return (
     <SmokeDissolveTextGeneric 
-      words={PROBLEM_WORDS} 
+      words={t.problemSolution.problemWords} 
       colorClass="text-red-400/80" 
       glowColor="rgba(248,113,113,0.4)"
       centered={true}
@@ -2065,9 +2048,10 @@ function SmokeDissolveText() {
 }
 
 function SolutionAnimatedText() {
+  const { t } = useLanguage();
   return (
     <SmokeDissolveTextGeneric 
-      words={SOLUTION_WORDS} 
+      words={t.problemSolution.solutionWords} 
       colorClass="text-blue-400" 
       glowColor="rgba(96,165,250,0.5)"
       centered={true}
@@ -2176,14 +2160,14 @@ function FloatingUIElement({ config }: { config: FloatingElementConfig }) {
   );
 }
 
-function TimeSavedCard() {
+function TimeSavedCard({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
   return (
     <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl shadow-orange-500/20 border border-orange-200/50" style={{ width: 140 }}>
       <div className="flex items-center gap-2 mb-2">
         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
           <Timer className="w-4 h-4 text-white" />
         </div>
-        <span className="text-xs font-semibold text-gray-600">Tiempo</span>
+        <span className="text-xs font-semibold text-gray-600">{t.floatingCards.time}</span>
       </div>
       <div className="flex items-center gap-2">
         <span className="text-sm text-gray-400 line-through">4h</span>
@@ -2194,16 +2178,16 @@ function TimeSavedCard() {
   );
 }
 
-function RespondidoBadge() {
+function RespondidoBadge({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
   return (
     <div className="bg-gradient-to-r from-emerald-400 to-green-500 rounded-full px-4 py-2 shadow-lg shadow-green-500/30 flex items-center gap-2">
       <CheckCircle className="w-4 h-4 text-white" />
-      <span className="text-white text-sm font-semibold">Respondido</span>
+      <span className="text-white text-sm font-semibold">{t.floatingCards.responded}</span>
     </div>
   );
 }
 
-function AvatarWithStatus({ imageSrc, name, status }: { imageSrc: string; name: string; status: 'online' | 'busy' }) {
+function AvatarWithStatus({ imageSrc, name, status, t }: { imageSrc: string; name: string; status: 'online' | 'busy'; t: ReturnType<typeof useLanguage>['t'] }) {
   return (
     <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-3 shadow-2xl shadow-purple-500/20 border border-purple-200/50 flex items-center gap-3" style={{ width: 160 }}>
       <div className="relative">
@@ -2212,30 +2196,30 @@ function AvatarWithStatus({ imageSrc, name, status }: { imageSrc: string; name: 
       </div>
       <div>
         <div className="text-sm font-semibold text-gray-800">{name}</div>
-        <div className="text-xs text-gray-500">{status === 'online' ? 'En línea' : 'Ocupado'}</div>
+        <div className="text-xs text-gray-500">{status === 'online' ? t.floatingCards.online : t.floatingCards.busy}</div>
       </div>
     </div>
   );
 }
 
-function SpeedIndicator() {
+function SpeedIndicator({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
   return (
     <div className="bg-cyan-500 rounded-2xl p-4 shadow-lg shadow-cyan-500/30" style={{ width: 110 }}>
       <Rocket className="w-6 h-6 text-white mb-2" />
       <div className="text-2xl font-black text-white">10x</div>
-      <div className="text-xs text-white font-medium">más rápido</div>
+      <div className="text-xs text-white font-medium">{t.floatingCards.faster}</div>
     </div>
   );
 }
 
-function ChatBubbleTyping() {
+function ChatBubbleTyping({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
   return (
     <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl shadow-blue-500/20 border border-blue-200/50" style={{ width: 180 }}>
       <div className="flex items-center gap-2 mb-2">
         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center">
           <MsgSquare className="w-4 h-4 text-white" />
         </div>
-        <span className="text-xs font-semibold text-gray-600">Nuevo mensaje</span>
+        <span className="text-xs font-semibold text-gray-600">{t.floatingCards.newMessage}</span>
       </div>
       <div className="bg-gray-100 rounded-xl p-2 flex items-center gap-1">
         <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -2246,20 +2230,20 @@ function ChatBubbleTyping() {
   );
 }
 
-function QuickReplyPill() {
+function QuickReplyPill({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
   return (
     <div className="bg-gradient-to-r from-violet-500 to-purple-600 rounded-full px-5 py-3 shadow-lg shadow-purple-500/30 flex items-center gap-2">
       <ZapIcon className="w-4 h-4 text-yellow-300" />
-      <span className="text-white text-sm font-semibold">Respuesta IA</span>
+      <span className="text-white text-sm font-semibold">{t.floatingCards.aiReply}</span>
     </div>
   );
 }
 
-function SendButtonCard() {
+function SendButtonCard({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
   return (
     <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-3 shadow-2xl shadow-green-500/20 border border-green-200/50 flex items-center gap-3" style={{ width: 170 }}>
       <div className="flex-1 h-9 bg-gray-100 rounded-xl flex items-center px-3">
-        <span className="text-xs text-gray-400">Escribir...</span>
+        <span className="text-xs text-gray-400">{t.floatingCards.write}</span>
       </div>
       <div className="w-9 h-9 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg shrink-0">
         <SendIcon className="w-4 h-4 text-white ml-0.5" />
@@ -2268,19 +2252,19 @@ function SendButtonCard() {
   );
 }
 
-function NotificationCard() {
+function NotificationCard({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
   return (
     <div className="bg-rose-500 rounded-2xl p-3 shadow-lg shadow-rose-500/30 flex items-center gap-3" style={{ width: 170 }}>
       <Bell className="w-5 h-5 text-white" />
       <div>
-        <div className="text-sm font-semibold text-white">3 nuevos</div>
-        <div className="text-xs text-white font-medium">mensajes</div>
+        <div className="text-sm font-semibold text-white">3 {t.floatingCards.newCount}</div>
+        <div className="text-xs text-white font-medium">{t.floatingCards.messages}</div>
       </div>
     </div>
   );
 }
 
-function AvatarStack() {
+function AvatarStack({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
   return (
     <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl shadow-cyan-500/20 border border-cyan-200/50" style={{ width: 150 }}>
       <div className="flex -space-x-3 mb-2">
@@ -2289,17 +2273,17 @@ function AvatarStack() {
         <img src={avatarAna} alt="" className="w-10 h-10 rounded-full border-2 border-white object-cover shrink-0" />
         <div className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-full border-2 border-white bg-blue-500 flex items-center justify-center text-white text-xs font-bold shrink-0">+12</div>
       </div>
-      <div className="text-xs text-gray-500">Equipo activo</div>
+      <div className="text-xs text-gray-500">{t.floatingCards.activeTeam}</div>
     </div>
   );
 }
 
-function GrowthCard() {
+function GrowthCard({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
   return (
     <div className="bg-emerald-500 rounded-2xl p-4 shadow-lg shadow-emerald-500/30" style={{ width: 130 }}>
       <TrendingUp className="w-5 h-5 text-white mb-1" />
       <div className="text-2xl font-black text-white">+247</div>
-      <div className="text-xs text-white font-medium">leads hoy</div>
+      <div className="text-xs text-white font-medium">{t.floatingCards.leadsToday}</div>
     </div>
   );
 }
@@ -2315,23 +2299,23 @@ function StarRatingCard() {
   );
 }
 
-function LeadCounterCard() {
+function LeadCounterCard({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
   return (
     <div className="bg-violet-600 rounded-2xl p-4 shadow-lg shadow-violet-500/30" style={{ width: 140 }}>
       <UsersIcon className="w-5 h-5 text-white mb-1" />
       <div className="text-2xl font-black text-white">1,847</div>
-      <div className="text-xs text-white font-medium">contactos</div>
+      <div className="text-xs text-white font-medium">{t.floatingCards.contacts}</div>
     </div>
   );
 }
 
-function AIAutopilotCard() {
+function AIAutopilotCard({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
   return (
     <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl shadow-violet-500/20 border border-violet-200/50" style={{ width: 160 }}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Bot className="w-5 h-5 text-violet-500" />
-          <span className="text-sm font-semibold text-gray-700">IA Activa</span>
+          <span className="text-sm font-semibold text-gray-700">{t.floatingCards.aiActive}</span>
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -2344,26 +2328,26 @@ function AIAutopilotCard() {
   );
 }
 
-function MoonSunToggle() {
+function MoonSunToggle({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
   return (
     <div className="bg-indigo-600 rounded-2xl p-4 shadow-lg shadow-indigo-500/30 flex items-center gap-3" style={{ width: 130 }}>
       <Moon className="w-6 h-6 text-yellow-300" />
       <div>
         <div className="text-sm font-bold text-white">24/7</div>
-        <div className="text-xs text-white font-medium">activo</div>
+        <div className="text-xs text-white font-medium">{t.floatingCards.active}</div>
       </div>
     </div>
   );
 }
 
-function AITypingCard() {
+function AITypingCard({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
   return (
     <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-3 shadow-2xl shadow-purple-500/20 border border-purple-200/50" style={{ width: 180 }}>
       <div className="flex items-center gap-2 mb-2">
         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center">
           <SparklesIcon className="w-4 h-4 text-white" />
         </div>
-        <span className="text-xs font-semibold text-gray-600">IA escribiendo...</span>
+        <span className="text-xs font-semibold text-gray-600">{t.floatingCards.aiTyping}</span>
       </div>
       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
         <div className="h-full bg-gradient-to-r from-violet-400 to-purple-500 rounded-full animate-pulse" style={{ width: '70%' }} />
@@ -2372,41 +2356,43 @@ function AITypingCard() {
   );
 }
 
-function AutoReplyStatus() {
+function AutoReplyStatus({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
   return (
     <div className="bg-gradient-to-r from-green-400 to-emerald-500 rounded-full px-4 py-2 shadow-lg shadow-green-500/30 flex items-center gap-2">
       <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-      <span className="text-white text-sm font-semibold">Auto-respuesta</span>
+      <span className="text-white text-sm font-semibold">{t.floatingCards.autoReply}</span>
     </div>
   );
 }
 
-const STAT_FLOATING_ELEMENTS: { [key: number]: FloatingElementConfig[] } = {
-  0: [
-    { component: <TimeSavedCard />, position: { x: '10%', y: '12%' }, delay: 0.05 },
-    { component: <AvatarWithStatus imageSrc={avatarMaria} name="María G." status="online" />, position: { x: '72%', y: '8%' }, delay: 0.1 },
-    { component: <RespondidoBadge />, position: { x: '12%', y: '72%' }, delay: 0.15 },
-    { component: <SpeedIndicator />, position: { x: '78%', y: '66%' }, delay: 0.12 },
-  ],
-  1: [
-    { component: <ChatBubbleTyping />, position: { x: '8%', y: '10%' }, delay: 0.05 },
-    { component: <QuickReplyPill />, position: { x: '74%', y: '12%' }, delay: 0.1 },
-    { component: <SendButtonCard />, position: { x: '10%', y: '68%' }, delay: 0.15 },
-    { component: <NotificationCard />, position: { x: '74%', y: '66%' }, delay: 0.12 },
-  ],
-  2: [
-    { component: <AvatarStack />, position: { x: '10%', y: '10%' }, delay: 0.05 },
-    { component: <GrowthCard />, position: { x: '78%', y: '8%' }, delay: 0.1 },
-    { component: <LeadCounterCard />, position: { x: '12%', y: '66%' }, delay: 0.15 },
-    { component: <StarRatingCard />, position: { x: '76%', y: '70%' }, delay: 0.12 },
-  ],
-  3: [
-    { component: <AIAutopilotCard />, position: { x: '10%', y: '10%' }, delay: 0.05 },
-    { component: <MoonSunToggle />, position: { x: '78%', y: '10%' }, delay: 0.1 },
-    { component: <AITypingCard />, position: { x: '8%', y: '66%' }, delay: 0.15 },
-    { component: <AutoReplyStatus />, position: { x: '74%', y: '70%' }, delay: 0.12 },
-  ],
-};
+function getStatFloatingElements(t: ReturnType<typeof useLanguage>['t']): { [key: number]: FloatingElementConfig[] } {
+  return {
+    0: [
+      { component: <TimeSavedCard t={t} />, position: { x: '10%', y: '12%' }, delay: 0.05 },
+      { component: <AvatarWithStatus imageSrc={avatarMaria} name="María G." status="online" t={t} />, position: { x: '72%', y: '8%' }, delay: 0.1 },
+      { component: <RespondidoBadge t={t} />, position: { x: '12%', y: '72%' }, delay: 0.15 },
+      { component: <SpeedIndicator t={t} />, position: { x: '78%', y: '66%' }, delay: 0.12 },
+    ],
+    1: [
+      { component: <ChatBubbleTyping t={t} />, position: { x: '8%', y: '10%' }, delay: 0.05 },
+      { component: <QuickReplyPill t={t} />, position: { x: '74%', y: '12%' }, delay: 0.1 },
+      { component: <SendButtonCard t={t} />, position: { x: '10%', y: '68%' }, delay: 0.15 },
+      { component: <NotificationCard t={t} />, position: { x: '74%', y: '66%' }, delay: 0.12 },
+    ],
+    2: [
+      { component: <AvatarStack t={t} />, position: { x: '10%', y: '10%' }, delay: 0.05 },
+      { component: <GrowthCard t={t} />, position: { x: '78%', y: '8%' }, delay: 0.1 },
+      { component: <LeadCounterCard t={t} />, position: { x: '12%', y: '66%' }, delay: 0.15 },
+      { component: <StarRatingCard />, position: { x: '76%', y: '70%' }, delay: 0.12 },
+    ],
+    3: [
+      { component: <AIAutopilotCard t={t} />, position: { x: '10%', y: '10%' }, delay: 0.05 },
+      { component: <MoonSunToggle t={t} />, position: { x: '78%', y: '10%' }, delay: 0.1 },
+      { component: <AITypingCard t={t} />, position: { x: '8%', y: '66%' }, delay: 0.15 },
+      { component: <AutoReplyStatus t={t} />, position: { x: '74%', y: '70%' }, delay: 0.12 },
+    ],
+  };
+}
 
 function MetricSection() {
   const ref = useRef(null);
@@ -2414,16 +2400,12 @@ function MetricSection() {
   const prefersReducedMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
   const [activeIndex, setActiveIndex] = useState(0);
+  const { t } = useLanguage();
   
   const scale = useTransform(scrollYProgress, [0, 0.5], prefersReducedMotion ? [1, 1] : [0.8, 1]);
   const opacity = useTransform(scrollYProgress, [0, 0.3], prefersReducedMotion ? [1, 1] : [0, 1]);
   
-  const stats = [
-    { value: "80%", title: "menos tiempo respondiendo", description: "Nuestros usuarios reducen drásticamente el tiempo dedicado a gestionar mensajes." },
-    { value: "2min", title: "tiempo de respuesta promedio", description: "La IA genera borradores instantáneos que solo necesitan un clic para enviar." },
-    { value: "5x", title: "más leads gestionados", description: "Multiplica tu capacidad de atención sin aumentar tu equipo de soporte." },
-    { value: "24/7", title: "cobertura total con IA", description: "Los borradores se preparan automáticamente incluso fuera de horario laboral." },
-  ];
+  const stats = t.metrics.stats;
   
   useEffect(() => {
     if (prefersReducedMotion || !isInView) return;
@@ -2434,7 +2416,8 @@ function MetricSection() {
   }, [prefersReducedMotion, isInView, stats.length]);
   
   const currentStat = stats[activeIndex];
-  const currentElements = STAT_FLOATING_ELEMENTS[activeIndex] || [];
+  const floatingElements = getStatFloatingElements(t);
+  const currentElements = floatingElements[activeIndex] || [];
 
   return (
     <section ref={ref} className="py-48 md:py-56 relative overflow-hidden">
