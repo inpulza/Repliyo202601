@@ -3704,6 +3704,8 @@ function HowItWorksMobile() {
 function HowItWorksSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const stickyRef = useRef<HTMLDivElement>(null);
+  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const lastActiveRef = useRef(0);
   const prefersReducedMotion = useReducedMotion();
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -3735,21 +3737,27 @@ function HowItWorksSection() {
         pinSpacing: false,
       });
 
-      // Track scroll progress to update active step
-      ScrollTrigger.create({
-        trigger: sectionRef.current,
-        start: 'top top',
-        end: 'bottom bottom',
-        onUpdate: (self) => {
-          const progress = self.progress;
-          // Accelerate step transitions - change earlier in scroll
-          const adjustedProgress = Math.min(progress * 1.3, 1);
-          const stepValue = adjustedProgress * 3;
-          const newStep = Math.min(Math.floor(stepValue), 2);
-          if (newStep >= 0) {
-            setActiveStep(newStep);
-          }
-        },
+      // Create a trigger for each step that fires when its center crosses viewport center
+      stepRefs.current.forEach((stepEl, index) => {
+        if (!stepEl) return;
+        
+        ScrollTrigger.create({
+          trigger: stepEl,
+          start: 'top center',
+          end: 'bottom center',
+          onEnter: () => {
+            if (lastActiveRef.current !== index) {
+              lastActiveRef.current = index;
+              setActiveStep(index);
+            }
+          },
+          onEnterBack: () => {
+            if (lastActiveRef.current !== index) {
+              lastActiveRef.current = index;
+              setActiveStep(index);
+            }
+          },
+        });
       });
     }, sectionRef);
 
@@ -3810,6 +3818,7 @@ function HowItWorksSection() {
           {t.howItWorks.steps.map((step, i) => (
             <motion.div 
               key={step.number} 
+              ref={(el: HTMLDivElement | null) => { stepRefs.current[i] = el; }}
               className="how-dual-track-step"
               initial={{ opacity: 0.3 }}
               whileInView={{ opacity: 1 }}
