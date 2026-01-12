@@ -7209,6 +7209,32 @@
     overflow: hidden !important;
   }
   
+  /* Fixed height for Metrics section to prevent animation jumps */
+  #metrics {
+    min-height: 800px !important;
+    height: 800px !important;
+    max-height: 800px !important;
+    overflow: hidden !important;
+    padding-top: 80px !important;
+    padding-bottom: 80px !important;
+  }
+  
+  /* Fixed height for How It Works section to prevent animation jumps */
+  #how {
+    min-height: 800px !important;
+    height: 800px !important;
+    max-height: 800px !important;
+    overflow: hidden !important;
+  }
+  
+  /* Fixed height for Features section to prevent animation jumps */
+  #features {
+    min-height: 1000px !important;
+    height: 1000px !important;
+    max-height: 1000px !important;
+    overflow: hidden !important;
+  }
+  
   #problem-solution .problem-side,
   #problem-solution .solution-side {
     padding: 0 8px;
