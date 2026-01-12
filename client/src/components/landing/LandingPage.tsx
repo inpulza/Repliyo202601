@@ -3597,7 +3597,7 @@ function HowItWorksMobile() {
           colorMid="#e8e8e8"
           colorEnd="#fafafa"
           speed={0.025}
-          scale={0.5}
+          scale={0.75}
           className="rounded-2xl"
         />
         <div className="absolute inset-0 bg-black/10" />
@@ -3836,7 +3836,7 @@ function HowItWorksSection() {
             colorMid="#e8e8e8"
             colorEnd="#fafafa"
             speed={0.025}
-            scale={0.5}
+            scale={0.75}
           />
           {t.howItWorks.steps.map((step, i) => (
             <div 
