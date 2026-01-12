@@ -3704,11 +3704,11 @@ function HowItWorksSection() {
     if (isMobile || prefersReducedMotion || !sectionRef.current || !stickyRef.current) return;
 
     const ctx = gsap.context(() => {
-      // Pin the right visual - end earlier so step 3 doesn't scroll to the very top
+      // Pin the right visual - end when step 3 text is at 50% of viewport
       ScrollTrigger.create({
         trigger: sectionRef.current,
         start: 'top 15%',
-        end: 'bottom-=40% center',
+        end: 'bottom-=50% center',
         pin: stickyRef.current,
         pinSpacing: false,
       });
