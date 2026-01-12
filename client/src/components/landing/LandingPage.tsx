@@ -1299,12 +1299,7 @@ function HeroSection() {
             <a href="/login" className="btn-glow-animated" data-testid="button-empezar-gratis-hero">
               <span className="btn-glow-ring"></span>
               <span className="btn-glow-ring-blur"></span>
-              <span className="btn-glow-fill"></span>
-              <span className="btn-glow-content btn-glow-content-base">
-                <span>{t.hero.cta}</span>
-                <ArrowRight className="w-5 h-5" />
-              </span>
-              <span className="btn-glow-content btn-glow-content-overlay" aria-hidden="true">
+              <span className="btn-glow-content">
                 <span>{t.hero.cta}</span>
                 <ArrowRight className="w-5 h-5" />
               </span>
