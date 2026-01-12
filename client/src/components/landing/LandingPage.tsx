@@ -79,7 +79,13 @@ function Step1ConnectMockup() {
   const radius = 140;
   
   return (
-    <div className="step-mockup connect-mockup-v3">
+    <motion.div 
+      className="step-mockup connect-mockup-v3"
+      initial={{ opacity: 0, scale: 0.9 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true, amount: 0.5 }}
+      transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+    >
       <div className="connect-center-inbox-v3">
         <Inbox className="w-8 h-8 text-white" />
         <div className="radar-ring-css ring-1" />
@@ -120,7 +126,7 @@ function Step1ConnectMockup() {
           );
         })}
       </motion.div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -129,11 +135,18 @@ function Step2AIMockup() {
   const fullResponse = t.mockups.step2.aiResponse;
   
   return (
-    <div className="step-mockup ai-mockup-v3">
+    <motion.div 
+      className="step-mockup ai-mockup-v3"
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true, amount: 0.5 }}
+      transition={{ duration: 0.3 }}
+    >
       <motion.div 
         className="floating-msg incoming"
         initial={{ opacity: 0, x: -30 }}
-        animate={{ opacity: 1, x: 0 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        viewport={{ once: true }}
         transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
       >
         <div className="msg-avatar">
@@ -148,7 +161,8 @@ function Step2AIMockup() {
       <motion.div 
         className="floating-msg outgoing"
         initial={{ opacity: 0, x: 30 }}
-        animate={{ opacity: 1, x: 0 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        viewport={{ once: true }}
         transition={{ duration: 0.4, delay: 0.15, ease: [0.25, 0.46, 0.45, 0.94] }}
       >
         <div className="msg-content">
@@ -158,7 +172,7 @@ function Step2AIMockup() {
           <span className="msg-text">{fullResponse}</span>
         </div>
       </motion.div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -173,17 +187,25 @@ function Step3SendMockup() {
   ];
   
   return (
-    <div className="step-mockup send-mockup-v2">
+    <motion.div 
+      className="step-mockup send-mockup-v2"
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true, amount: 0.5 }}
+      transition={{ duration: 0.3 }}
+    >
       <div className="send-timeline">
         {steps.map((step, idx) => (
-          <React.Fragment key={idx}>
+          <motion.div 
+            key={idx} 
+            className="timeline-item-wrapper"
+            initial={{ opacity: 0, x: 20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.3, delay: idx * 0.08 }}
+          >
             {idx > 0 && <div className="timeline-connector active" />}
-            <motion.div 
-              className="timeline-step active"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: idx * 0.08 }}
-            >
+            <div className="timeline-step active">
               <div className={`timeline-icon-v2 ${step.iconClass}`}>
                 <step.icon className="w-5 h-5" />
               </div>
@@ -191,11 +213,11 @@ function Step3SendMockup() {
                 <span className="timeline-title">{step.title}</span>
                 <span className={`timeline-status ${step.statusClass}`}>{step.status}</span>
               </div>
-            </motion.div>
-          </React.Fragment>
+            </div>
+          </motion.div>
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
