@@ -711,9 +711,9 @@
 }
 
 /* Hero Floating Social Icons - Horizontal stacked like avatars */
+/* Note: visibility controlled by Tailwind classes (hidden md:inline-flex) */
 .hero-floating-icons-left,
 .hero-floating-icons-right {
-  display: inline-flex;
   flex-direction: row;
   align-items: center;
   vertical-align: middle;
