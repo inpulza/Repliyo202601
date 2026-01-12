@@ -1163,12 +1163,50 @@ function Header() {
         <div className="flex items-center gap-3">
           <button 
             onClick={toggleLanguage}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm text-white/70 hover:text-white transition-colors rounded-lg hover:bg-white/5"
+            className="language-toggle-btn group"
             data-testid="button-language-toggle"
             aria-label={language === 'es' ? 'Switch to English' : 'Cambiar a Español'}
           >
-            <Globe className="w-4 h-4" />
-            <span className="font-medium">{language === 'es' ? 'EN' : 'ES'}</span>
+            <div className="language-toggle-track">
+              <div className="language-flag-container">
+                <span className={`language-flag ${language === 'es' ? 'active' : ''}`}>
+                  🇪🇸
+                </span>
+                <span className={`language-flag ${language === 'en' ? 'active' : ''}`}>
+                  🇬🇧
+                </span>
+              </div>
+              <motion.div 
+                className="language-toggle-thumb"
+                layout
+                transition={{
+                  type: "spring",
+                  stiffness: 500,
+                  damping: 30
+                }}
+                style={{
+                  left: language === 'es' ? '2px' : 'calc(100% - 26px)'
+                }}
+              >
+                <motion.span 
+                  key={language}
+                  initial={{ scale: 0.5, opacity: 0, rotate: -180 }}
+                  animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                  className="text-sm"
+                >
+                  {language === 'es' ? '🇪🇸' : '🇬🇧'}
+                </motion.span>
+              </motion.div>
+            </div>
+            <motion.span 
+              key={language}
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="language-label"
+            >
+              {language === 'es' ? 'ES' : 'EN'}
+            </motion.span>
           </button>
           <a href="/login" className="btn-primary text-sm py-2.5 px-5" data-testid="button-login-header">
             {t.header.login}
