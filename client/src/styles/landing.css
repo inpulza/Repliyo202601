@@ -226,7 +226,11 @@
 .landing-page.theme-light [class*="from-indigo-"] .text-white,
 .landing-page.theme-light [class*="from-rose-"] .text-white,
 .landing-page.theme-light [class*="from-green-"] .text-white,
-.landing-page.theme-light [class*="from-orange-"] .text-white {
+.landing-page.theme-light [class*="from-orange-"] .text-white,
+.landing-page.theme-light .platform-tabs .tab .text-white,
+.landing-page.theme-light .solution-mobile-tab .text-white,
+.landing-page.theme-light .problem-mobile-platform-icon .text-white,
+.landing-page.theme-light .solution-mobile-benefit .text-white {
   color: white !important;
 }
 
