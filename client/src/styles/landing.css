@@ -745,9 +745,9 @@
     from 0deg,
     transparent 0%,
     transparent 60%,
-    rgba(255, 255, 255, 1) 70%,
-    rgba(255, 255, 255, 0.8) 75%,
-    rgba(200, 230, 255, 0.6) 80%,
+    #00d4ff 70%,
+    #00b8e6 75%,
+    rgba(0, 180, 255, 0.5) 80%,
     transparent 90%,
     transparent 100%
   );
