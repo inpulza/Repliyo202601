@@ -8127,6 +8127,7 @@
 
   #problem-solution .solution-mobile-crm-info {
     flex: 1;
+    text-align: left;
   }
 
   #problem-solution .solution-mobile-crm-stats {
