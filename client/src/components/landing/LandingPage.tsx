@@ -2133,10 +2133,10 @@ function ProblemMockupMobile() {
   const totalMessages = platforms.reduce((sum, p) => sum + p.count, 0);
   
   const alerts = [
-    { icon: Bell, text: t.problemSolution.notifications.unreadMessages, color: 'from-red-500 to-orange-500' },
-    { icon: Clock, text: t.problemSolution.notifications.leadWaiting, color: 'from-amber-500 to-yellow-500' },
-    { icon: AlertCircle, text: t.problemSolution.notifications.frustratedClient, color: 'from-rose-500 to-pink-500' },
-    { icon: MessageSquare, text: t.problemSolution.notifications.lostSale, color: 'from-purple-500 to-indigo-500' },
+    { icon: Bell, text: t.problemSolution.notifications.unreadMessages },
+    { icon: Clock, text: t.problemSolution.notifications.leadWaiting },
+    { icon: AlertCircle, text: t.problemSolution.notifications.frustratedClient },
+    { icon: MessageSquare, text: t.problemSolution.notifications.lostSale },
   ];
 
   if (prefersReducedMotion) {
@@ -2166,7 +2166,7 @@ function ProblemMockupMobile() {
           {alerts.map((alert, i) => {
             const IconComponent = alert.icon;
             return (
-              <div key={i} className={`problem-mobile-alert bg-gradient-to-r ${alert.color}`}>
+              <div key={i} className="problem-mobile-alert">
                 <IconComponent className="w-4 h-4 text-white" />
                 <span>{alert.text}</span>
               </div>
@@ -2242,7 +2242,7 @@ function ProblemMockupMobile() {
           return (
             <motion.div
               key={i}
-              className={`problem-mobile-alert bg-gradient-to-r ${alert.color}`}
+              className="problem-mobile-alert"
               initial={{ opacity: 0, x: i % 2 === 0 ? -30 : 30 }}
               animate={inView ? { opacity: 1, x: 0 } : {}}
               transition={{ delay: 0.6 + i * 0.12, duration: 0.4, type: 'spring' }}
@@ -2563,10 +2563,10 @@ function SolutionMockupMobile() {
   ];
   
   const benefits = [
-    { icon: Check, text: t.problemSolution.indicators.responseTime, color: 'from-emerald-500 to-green-500' },
-    { icon: Sparkles, text: t.problemSolution.indicators.aiDrafts, color: 'from-violet-500 to-purple-500' },
-    { icon: MessageSquare, text: t.problemSolution.indicators.singleInbox, color: 'from-blue-500 to-cyan-500' },
-    { icon: Users, text: t.problemSolution.indicators.integratedCrm, color: 'from-orange-500 to-amber-500' },
+    { icon: Check, text: t.problemSolution.indicators.responseTime },
+    { icon: Sparkles, text: t.problemSolution.indicators.aiDrafts },
+    { icon: MessageSquare, text: t.problemSolution.indicators.singleInbox },
+    { icon: Users, text: t.problemSolution.indicators.integratedCrm },
   ];
 
   if (prefersReducedMotion) {
@@ -2580,9 +2580,11 @@ function SolutionMockupMobile() {
               <div 
                 key={platform.name} 
                 className="solution-mobile-tab"
-                style={{ background: platform.color === '#000000' ? 'linear-gradient(135deg, #25f4ee, #fe2c55)' : platform.color }}
               >
-                <IconComponent className="w-3.5 h-3.5 text-white" />
+                <IconComponent 
+                  className={`w-3.5 h-3.5 ${platform.name === 'TT' ? 'tiktok-icon' : ''}`}
+                  style={platform.name !== 'TT' ? { color: platform.color } : undefined}
+                />
               </div>
             );
           })}
@@ -2626,8 +2628,8 @@ function SolutionMockupMobile() {
           {benefits.map((benefit, i) => {
             const IconComponent = benefit.icon;
             return (
-              <div key={i} className={`solution-mobile-benefit bg-gradient-to-r ${benefit.color}`}>
-                <IconComponent className="w-3.5 h-3.5 text-white" />
+              <div key={i} className="solution-mobile-benefit">
+                <IconComponent className="w-3.5 h-3.5" />
                 <span>{benefit.text}</span>
               </div>
             );
@@ -2659,12 +2661,14 @@ function SolutionMockupMobile() {
             <motion.div 
               key={platform.name} 
               className="solution-mobile-tab"
-              style={{ background: platform.color === '#000000' ? 'linear-gradient(135deg, #25f4ee, #fe2c55)' : platform.color }}
               initial={{ opacity: 0, scale: 0.5 }}
               animate={inView ? { opacity: 1, scale: 1 } : {}}
               transition={{ delay: 0.15 + i * 0.08, type: 'spring', stiffness: 400 }}
             >
-              <IconComponent className="w-3.5 h-3.5 text-white" />
+              <IconComponent 
+                className={`w-3.5 h-3.5 ${platform.name === 'TT' ? 'tiktok-icon' : ''}`}
+                style={platform.name !== 'TT' ? { color: platform.color } : undefined}
+              />
             </motion.div>
           );
         })}
@@ -2766,12 +2770,12 @@ function SolutionMockupMobile() {
           return (
             <motion.div
               key={i}
-              className={`solution-mobile-benefit bg-gradient-to-r ${benefit.color}`}
+              className="solution-mobile-benefit"
               initial={{ opacity: 0, y: 20, scale: 0.9 }}
               animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
               transition={{ delay: 0.7 + i * 0.1, type: 'spring', stiffness: 300 }}
             >
-              <IconComponent className="w-3.5 h-3.5 text-white" />
+              <IconComponent className="w-3.5 h-3.5" />
               <span>{benefit.text}</span>
             </motion.div>
           );

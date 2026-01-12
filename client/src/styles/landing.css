@@ -7673,9 +7673,6 @@
     align-items: center;
     gap: 4px;
     padding: 16px 32px;
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.1));
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    border-radius: 16px;
   }
   
   #problem-solution .problem-mobile-counter-number {
@@ -7711,6 +7708,7 @@
     padding: 12px 16px;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   }
   
   #problem-solution .problem-mobile-alert svg {
@@ -7732,7 +7730,7 @@
   }
   
   .landing-page.theme-light #problem-solution .problem-mobile-counter {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
+    /* No background in light theme either */
   }
   
   .landing-page.theme-light #problem-solution .problem-mobile-counter-label {
@@ -7775,7 +7773,8 @@
     border-radius: 10px;
     font-size: 12px;
     font-weight: 600;
-    color: white;
+    color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.05);
     white-space: nowrap;
     flex-shrink: 0;
     transition: all 0.2s ease;
@@ -7785,6 +7784,11 @@
     background: var(--landing-primary);
     color: white;
     box-shadow: 0 4px 12px rgba(2, 145, 250, 0.3);
+  }
+
+  /* TikTok gradient icon - special treatment */
+  #problem-solution .solution-mobile-tab .tiktok-icon {
+    color: #25f4ee;
   }
 
   #problem-solution .solution-mobile-inbox {
@@ -7922,22 +7926,24 @@
   }
 
   #problem-solution .solution-mobile-benefits {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
   }
 
   #problem-solution .solution-mobile-benefit {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 14px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    gap: 10px;
+    padding: 10px 16px;
+    border-radius: 20px;
+    background: var(--landing-primary);
+    box-shadow: 0 4px 12px rgba(2, 145, 250, 0.3);
   }
 
   #problem-solution .solution-mobile-benefit span {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     color: white;
     line-height: 1.3;
@@ -7945,6 +7951,7 @@
 
   #problem-solution .solution-mobile-benefit svg {
     flex-shrink: 0;
+    color: white;
   }
 
   /* Light theme for Solution Mobile */
