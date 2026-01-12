@@ -67,6 +67,8 @@ export const es = {
       { value: '5x', title: 'más leads gestionados', description: 'Multiplica tu capacidad de atención sin aumentar tu equipo de soporte.' },
       { value: '24/7', title: 'cobertura total con IA', description: 'Los borradores se preparan automáticamente incluso fuera de horario laboral.' },
     ],
+    viewStatistic: 'Ver estadística',
+    weekDays: ['L', 'M', 'X', 'J', 'V', 'S', 'D'],
   },
   floatingCards: {
     time: 'Tiempo',

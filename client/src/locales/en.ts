@@ -67,6 +67,8 @@ export const en = {
       { value: '5x', title: 'more leads managed', description: 'Multiply your capacity without increasing your support team.' },
       { value: '24/7', title: 'full AI coverage', description: 'Drafts are automatically prepared even outside business hours.' },
     ],
+    viewStatistic: 'View statistic',
+    weekDays: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
   },
   floatingCards: {
     time: 'Time',

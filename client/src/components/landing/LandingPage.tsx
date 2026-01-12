@@ -564,6 +564,7 @@ function FeatureCommentsMockup() {
 
 function FeatureAnalyticsMockup() {
   const bars = [40, 65, 45, 80, 60, 90, 75];
+  const { t } = useLanguage();
   
   return (
     <div className="feature-analytics-mockup">
@@ -585,7 +586,9 @@ function FeatureAnalyticsMockup() {
         ))}
       </div>
       <div className="analytics-labels">
-        <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
+        {t.metrics.weekDays.map((day: string, idx: number) => (
+          <span key={idx}>{day}</span>
+        ))}
       </div>
     </div>
   );
@@ -2487,7 +2490,7 @@ function MetricSection() {
                 ? 'bg-white w-6' 
                 : 'bg-white/40 hover:bg-white/60 w-2.5'
             }`}
-            aria-label={`Ver estadística ${i + 1}`}
+            aria-label={`${t.metrics.viewStatistic} ${i + 1}`}
           />
         ))}
       </div>
