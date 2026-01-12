@@ -8161,14 +8161,15 @@
   #problem-solution .solution-mobile-crm-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    justify-content: center;
+    gap: 8px;
   }
 
   #problem-solution .crm-tag {
-    padding: 4px 10px;
+    padding: 6px 14px;
     background: rgba(100, 116, 139, 0.1);
     border-radius: 20px;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 600;
     color: #64748b;
   }
