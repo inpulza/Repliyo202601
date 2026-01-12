@@ -7943,9 +7943,9 @@
     flex-direction: column;
     gap: 12px;
     padding: 14px;
-    background: linear-gradient(135deg, rgba(2, 145, 250, 0.15) 0%, rgba(2, 145, 250, 0.08) 100%);
+    background: linear-gradient(150deg, rgba(2, 50, 100, 0.98) 0%, rgba(5, 30, 70, 0.99) 100%);
     border-radius: 16px;
-    border: 1px solid rgba(2, 145, 250, 0.3);
+    border: 1px solid rgba(2, 145, 250, 0.4);
   }
 
   #problem-solution .solution-mobile-ai-header {
@@ -7994,7 +7994,7 @@
     line-height: 1.6;
     color: white;
     padding: 12px 14px;
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(0, 20, 50, 0.6);
     border-radius: 12px;
     text-align: left;
   }
@@ -8113,10 +8113,28 @@
   }
 
   .landing-page.theme-light #problem-solution .solution-mobile-ai-response {
-    background: rgba(2, 145, 250, 0.05);
+    background: linear-gradient(150deg, rgba(2, 50, 100, 0.95) 0%, rgba(5, 30, 70, 0.98) 100%);
   }
 
-  .landing-page.theme-light #problem-solution .solution-mobile-ai-line {
-    background: rgba(0, 0, 0, 0.08);
+  .landing-page.theme-light #problem-solution .solution-mobile-ai-text {
+    background: rgba(0, 20, 50, 0.5);
+    color: white;
+  }
+
+  .landing-page.theme-light #problem-solution .solution-mobile-conv {
+    background: linear-gradient(150deg, rgba(15, 23, 42, 0.95) 0%, rgba(10, 16, 30, 0.98) 100%);
+  }
+
+  .landing-page.theme-light #problem-solution .solution-mobile-conv.ai-draft {
+    background: linear-gradient(150deg, rgba(2, 50, 100, 0.95) 0%, rgba(5, 30, 70, 0.98) 100%);
+  }
+
+  .landing-page.theme-light #problem-solution .solution-mobile-conv-name-text,
+  .landing-page.theme-light #problem-solution .solution-mobile-conv-preview-text {
+    color: white;
+  }
+
+  .landing-page.theme-light #problem-solution .solution-mobile-benefit span {
+    color: white;
   }
 }
