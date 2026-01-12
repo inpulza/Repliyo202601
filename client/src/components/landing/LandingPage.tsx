@@ -3810,11 +3810,10 @@ function HowItWorksSection() {
 
     const ctx = gsap.context(() => {
       // Pin the right visual while scrolling through the section
-      // End earlier so step 3 doesn't reach the top - unpin when 50vh from bottom
       ScrollTrigger.create({
         trigger: sectionRef.current,
         start: 'top 15%',
-        end: 'bottom-=50% center',
+        end: 'bottom bottom',
         pin: stickyRef.current,
         pinSpacing: false,
       });
@@ -3823,7 +3822,7 @@ function HowItWorksSection() {
       ScrollTrigger.create({
         trigger: sectionRef.current,
         start: 'top top',
-        end: 'bottom-=50% center',
+        end: 'bottom bottom',
         onUpdate: (self) => {
           const progress = self.progress;
           const stepValue = progress * 3;
