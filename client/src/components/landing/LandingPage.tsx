@@ -3550,6 +3550,111 @@ function MetricSection() {
   );
 }
 
+function HowItWorksMobile() {
+  const [activeStep, setActiveStep] = useState(0);
+  const { t } = useLanguage();
+  const stepMockups = [<Step1ConnectMockup />, <Step2AIMockup />, <Step3SendMockup />];
+  const steps = t.howItWorks.steps;
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % steps.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [steps.length]);
+
+  return (
+    <section id="how" className="py-16 px-4 relative overflow-hidden">
+      <div className="text-center mb-8">
+        <span className="text-xs uppercase tracking-[0.2em] text-[var(--landing-primary)] font-semibold mb-3 block">
+          {t.howItWorks.label}
+        </span>
+        <h2 className="font-display text-2xl font-bold text-white leading-tight">
+          {t.howItWorks.title} <span className="text-white/60">{t.howItWorks.titleHighlight}</span>
+        </h2>
+      </div>
+
+      <div className="flex justify-center gap-3 mb-6">
+        {steps.map((step, i) => (
+          <button
+            key={i}
+            onClick={() => setActiveStep(i)}
+            className={`w-10 h-10 rounded-full font-display font-bold text-sm transition-all duration-300 ${
+              activeStep === i
+                ? 'bg-[var(--landing-primary)] text-white scale-110 shadow-lg shadow-[var(--landing-primary)]/30'
+                : 'bg-white/10 text-white/50 hover:bg-white/20'
+            }`}
+          >
+            {step.number}
+          </button>
+        ))}
+      </div>
+
+      <div 
+        className="relative rounded-2xl overflow-hidden mx-auto max-w-sm"
+        style={{ 
+          backgroundImage: `url(${stepsBgLight})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
+      >
+        <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px]" />
+        
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeStep}
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -50 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="relative z-10 p-6"
+          >
+            <div className="text-center mb-4">
+              <h3 className="font-display text-xl font-bold text-white mb-2">
+                {steps[activeStep].title}
+              </h3>
+              <p className="text-white/80 text-sm leading-relaxed">
+                {steps[activeStep].description}
+              </p>
+            </div>
+            
+            <div className="flex justify-center">
+              <div className="w-48 h-auto">
+                {stepMockups[activeStep]}
+              </div>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
+          <motion.div
+            className="h-full bg-[var(--landing-primary)]"
+            initial={{ width: "0%" }}
+            animate={{ width: "100%" }}
+            transition={{ duration: 5, ease: "linear" }}
+            key={activeStep}
+          />
+        </div>
+      </div>
+
+      <div className="flex justify-center gap-2 mt-4">
+        {steps.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setActiveStep(i)}
+            className={`h-2 rounded-full transition-all duration-300 ${
+              activeStep === i 
+                ? 'bg-[var(--landing-primary)] w-6' 
+                : 'bg-white/30 w-2'
+            }`}
+            aria-label={`Step ${i + 1}`}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function HowItWorksSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -3557,11 +3662,21 @@ function HowItWorksSection() {
   const checkpointsRef = useRef<(HTMLDivElement | null)[]>([]);
   const prefersReducedMotion = useReducedMotion();
   const [activeStep, setActiveStep] = useState(0);
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth <= 768;
+    }
+    return false;
+  });
   const { t } = useLanguage();
 
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   useGSAP(() => {
-    // Disable GSAP pinning on mobile - let CSS handle the layout
-    const isMobile = window.innerWidth <= 768;
     if (prefersReducedMotion || isMobile || !containerRef.current || !sectionRef.current) return;
     
     const ctx = gsap.context(() => {
@@ -3669,9 +3784,13 @@ function HowItWorksSection() {
     }, sectionRef);
     
     return () => ctx.revert();
-  }, { scope: sectionRef });
+  }, { scope: sectionRef, dependencies: [isMobile] });
 
   const stepMockups = [<Step1ConnectMockup />, <Step2AIMockup />, <Step3SendMockup />];
+
+  if (isMobile) {
+    return <HowItWorksMobile />;
+  }
 
   if (prefersReducedMotion) {
     return (
