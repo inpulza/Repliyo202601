@@ -7659,27 +7659,115 @@
     text-align: center;
   }
 
-  /* Compact mobile feature cards - clean version */
+  /* ========================================
+     COMPACT MOBILE FEATURE CARDS
+     Target height: similar to Unified Inbox / Multi-agent
+     ======================================== */
   .mobile-feature-card .feature-card-inner {
     padding: 14px;
+    gap: 0;
+  }
+
+  .mobile-feature-card .feature-icon-wrapper {
+    width: 40px;
+    height: 40px;
+  }
+
+  .mobile-feature-card .feature-icon-wrapper svg {
+    width: 24px;
+    height: 24px;
   }
 
   .mobile-feature-card h3 {
-    margin-top: 8px;
-    margin-bottom: 4px;
+    margin-top: 6px;
+    margin-bottom: 2px;
+    font-size: 0.95rem;
+  }
+
+  .mobile-feature-card p {
+    font-size: 0.75rem;
+    line-height: 1.3;
   }
 
   .mobile-feature-card .feature-mockup-area {
-    margin-top: 10px;
+    margin-top: 8px;
   }
 
-  .mobile-feature-card .feature-ai-mockup,
+  /* AI Replies - VERY compact */
+  .mobile-feature-card .feature-ai-mockup {
+    margin-top: 0;
+  }
+
+  .mobile-feature-card .ai-text-box {
+    padding: 8px 10px;
+    gap: 6px;
+    border-radius: 8px;
+  }
+
+  .mobile-feature-card .ai-text-box svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+  }
+
+  .mobile-feature-card .ai-generated-text {
+    font-size: 0.7rem;
+    line-height: 1.3;
+  }
+
+  /* CRM - VERY compact */
   .mobile-feature-card .feature-crm-mockup {
     margin-top: 0;
   }
 
   .mobile-feature-card .crm-mini-card-v2 {
-    padding: 10px;
+    border-radius: 8px;
+  }
+
+  .mobile-feature-card .crm-mini-header {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .mobile-feature-card .crm-mini-avatar-v2 {
+    width: 28px;
+    height: 28px;
+  }
+
+  .mobile-feature-card .crm-mini-name-v2 {
+    font-size: 0.75rem;
+  }
+
+  .mobile-feature-card .crm-mini-channels svg {
+    width: 10px;
+    height: 10px;
+  }
+
+  .mobile-feature-card .crm-mini-details {
+    padding: 0 8px 8px;
+    gap: 4px;
+  }
+
+  .mobile-feature-card .crm-mini-stat {
+    padding: 4px 6px;
+    gap: 1px;
+  }
+
+  .mobile-feature-card .crm-stat-label {
+    font-size: 0.55rem;
+  }
+
+  .mobile-feature-card .crm-stat-value {
+    font-size: 0.7rem;
+  }
+
+  .mobile-feature-card .crm-mini-tags-v2 {
+    gap: 3px;
+  }
+
+  .mobile-feature-card .crm-tag {
+    padding: 2px 5px;
+    font-size: 0.55rem;
   }
 
   /* Hide desktop bento-grid on mobile */
