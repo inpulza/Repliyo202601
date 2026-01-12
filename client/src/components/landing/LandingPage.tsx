@@ -1265,14 +1265,8 @@ function MobileInboxMockup() {
             </div>
             <div className="mobile-chat-messages">
               {chatMessages.map((msg, idx) => (
-                <motion.div
-                  key={`chat-${idx}-${activeSlide}`}
-                  initial={false}
-                  animate={{ 
-                    opacity: activeSlide >= 1 ? 1 : 0, 
-                    y: activeSlide >= 1 ? 0 : 15 
-                  }}
-                  transition={{ duration: 0.4, delay: activeSlide === 1 ? idx * 0.12 : 0 }}
+                <div
+                  key={`chat-${idx}`}
                   className={`mobile-chat-bubble ${msg.type}`}
                 >
                   {msg.type === 'outgoing' && (
@@ -1282,7 +1276,7 @@ function MobileInboxMockup() {
                     </div>
                   )}
                   <span>{msg.text}</span>
-                </motion.div>
+                </div>
               ))}
             </div>
           </div>
@@ -1293,16 +1287,7 @@ function MobileInboxMockup() {
               <span>{t.mockups.inbox.crm.client}</span>
             </div>
             <div className="mobile-crm-content">
-              <motion.div 
-                key={`crm-profile-${activeSlide}`}
-                initial={false}
-                animate={{ 
-                  scale: activeSlide === 2 ? 1 : 0.95, 
-                  opacity: activeSlide === 2 ? 1 : 0 
-                }}
-                transition={{ duration: 0.4 }}
-                className="mobile-crm-profile"
-              >
+              <div className="mobile-crm-profile">
                 <img src={avatarMaria} alt={inboxMessages[0].user} className="mobile-crm-avatar" />
                 <div className="mobile-crm-name">{inboxMessages[0].user}</div>
                 <div className="mobile-crm-email">maria.garcia@email.com</div>
@@ -1310,17 +1295,8 @@ function MobileInboxMockup() {
                   <span className="mobile-crm-tag vip">{t.mockups.inbox.crm.vip}</span>
                   <span className="mobile-crm-tag">{t.mockups.inbox.crm.recurring}</span>
                 </div>
-              </motion.div>
-              <motion.div 
-                key={`crm-stats-${activeSlide}`}
-                initial={false}
-                animate={{ 
-                  y: activeSlide === 2 ? 0 : 20, 
-                  opacity: activeSlide === 2 ? 1 : 0 
-                }}
-                transition={{ delay: 0.15, duration: 0.4 }}
-                className="mobile-crm-stats"
-              >
+              </div>
+              <div className="mobile-crm-stats">
                 <div className="mobile-crm-stat">
                   <span className="mobile-stat-number">8</span>
                   <span className="mobile-stat-label">{t.mockups.inbox.crm.chats}</span>
@@ -1333,7 +1309,7 @@ function MobileInboxMockup() {
                   <span className="mobile-stat-number">2m</span>
                   <span className="mobile-stat-label">Resp.</span>
                 </div>
-              </motion.div>
+              </div>
             </div>
           </div>
         </div>
