@@ -34,6 +34,9 @@ import stepsBgBlue from '@assets/generated_images/blue_gradient_grain_background
 import stepsBgGreen from '@assets/generated_images/green_gradient_grain_background.png';
 import stepsBgVibrant from '@assets/generated_images/vibrant_blue_violet_gradient.png';
 import stepsBgLight from '@assets/generated_images/teal_cyan_bottom_to_top_gradient.png';
+import howStep1Mockup from '@assets/generated_images/step_1:_connect_networks_mockup.png';
+import howStep2Mockup from '@assets/generated_images/step_2:_ai_learns_mockup.png';
+import howStep3Mockup from '@assets/generated_images/step_3:_auto-send_mockup.png';
 import testimonialBettys from '../../assets/testimonial-bettys.jpg';
 import { ParallaxProvider, useParallax, Parallax } from 'react-scroll-parallax';
 import gsap from 'gsap';
@@ -3837,7 +3840,8 @@ function HowItWorksSection() {
     return () => ctx.revert();
   }, { scope: sectionRef, dependencies: [isMobile, prefersReducedMotion] });
 
-  const stepMockups = [<Step1ConnectMockup />, <Step2AIMockup />, <Step3SendMockup />];
+  const stepMockupImages = [howStep1Mockup, howStep2Mockup, howStep3Mockup];
+  const stepMockupAlts = ['Connect your social networks', 'AI learns your style', 'Auto-send responses'];
 
   if (isMobile) {
     return <HowItWorksMobile />;
@@ -3862,7 +3866,9 @@ function HowItWorksSection() {
                   <span className="step-number">{step.number}</span>
                   <h3 className="font-display text-2xl font-bold text-white mt-4 mb-3">{step.title}</h3>
                   <p className="text-white/50 text-base leading-relaxed mb-6">{step.description}</p>
-                  <div className="step-mockup-container">{stepMockups[i]}</div>
+                  <div className="step-mockup-container">
+                    <img src={stepMockupImages[i]} alt={stepMockupAlts[i]} className="how-step-static-image" />
+                  </div>
                 </div>
               </div>
             ))}
@@ -3923,13 +3929,18 @@ function HowItWorksSection() {
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={activeStep}
-                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: -20 }}
-                    transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+                    initial={{ scaleY: 0, opacity: 0 }}
+                    animate={{ scaleY: 1, opacity: 1 }}
+                    exit={{ scaleY: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                     className="how-dual-track-mockup"
+                    style={{ originY: 0.5, transformOrigin: 'center center' }}
                   >
-                    {stepMockups[activeStep]}
+                    <img 
+                      src={stepMockupImages[activeStep]} 
+                      alt={stepMockupAlts[activeStep]}
+                      className="how-step-static-image"
+                    />
                   </motion.div>
                 </AnimatePresence>
               </div>
