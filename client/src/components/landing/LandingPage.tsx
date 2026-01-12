@@ -3609,17 +3609,12 @@ function HowItWorksMobile() {
             transition={{ duration: 0.3, ease: "easeOut" }}
             className="relative z-10 p-6"
           >
-            <div className="text-center mb-4">
-              <h3 className="font-display text-xl font-bold text-white mb-2">
-                {steps[activeStep].title}
-              </h3>
-              <p className="text-white/80 text-sm leading-relaxed">
-                {steps[activeStep].description}
-              </p>
-            </div>
+            <h3 className="font-display text-xl font-bold text-white text-center mb-4">
+              {steps[activeStep].title}
+            </h3>
             
             <div className="flex justify-center">
-              <div className="w-48 h-auto">
+              <div className="w-56 h-auto">
                 {stepMockups[activeStep]}
               </div>
             </div>

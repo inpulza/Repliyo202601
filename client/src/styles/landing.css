@@ -7288,9 +7288,109 @@
   
   /* ========================================
      HOW IT WORKS SECTION - MOBILE
-     Mobile now uses dedicated HowItWorksMobile component
-     These styles are minimal fallbacks
+     Mobile carousel mockup styles
      ======================================== */
+  
+  /* Make mockups responsive in mobile carousel */
+  .ai-mockup-v3 {
+    padding: 12px !important;
+    gap: 10px !important;
+  }
+  
+  .floating-msg {
+    max-width: 100% !important;
+    padding: 10px 12px !important;
+    gap: 8px !important;
+  }
+  
+  .floating-msg .msg-avatar img {
+    width: 28px !important;
+    height: 28px !important;
+  }
+  
+  .floating-msg .msg-name {
+    font-size: 0.7rem !important;
+  }
+  
+  .floating-msg .msg-text {
+    font-size: 0.65rem !important;
+    line-height: 1.35 !important;
+  }
+  
+  .floating-analyzing {
+    padding: 8px 14px !important;
+    font-size: 0.65rem !important;
+    gap: 6px !important;
+  }
+  
+  .floating-analyzing svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+  
+  .ai-draft-badge-v2 {
+    font-size: 0.55rem !important;
+  }
+  
+  /* Step 1 Connect Mockup */
+  .connect-mockup-v2 {
+    padding: 12px !important;
+    gap: 10px !important;
+  }
+  
+  .connect-mockup-v2 .brand-selection .connected-bubble {
+    font-size: 10px !important;
+    padding: 6px 10px !important;
+  }
+  
+  .connect-mockup-v2 .platform-icons-ring {
+    width: 120px !important;
+    height: 120px !important;
+  }
+  
+  .connect-mockup-v2 .platform-icon {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  
+  .connect-mockup-v2 .platform-icon svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+  
+  /* Step 3 Send Mockup */
+  .send-mockup-v2 {
+    padding: 12px !important;
+  }
+  
+  .send-mockup-v2 .send-inbox-mini {
+    border-radius: 12px !important;
+  }
+  
+  .send-mockup-v2 .inbox-message-item {
+    padding: 8px !important;
+    gap: 8px !important;
+  }
+  
+  .send-mockup-v2 .msg-avatar {
+    width: 28px !important;
+    height: 28px !important;
+  }
+  
+  .send-mockup-v2 .msg-text-lines .line {
+    height: 5px !important;
+  }
+  
+  .send-mockup-v2 .msg-actions button {
+    padding: 4px 8px !important;
+    font-size: 9px !important;
+    gap: 3px !important;
+  }
+  
+  .send-mockup-v2 .msg-actions button svg {
+    width: 10px !important;
+    height: 10px !important;
+  }
   
   /* ========================================
      FEATURES SECTION - MOBILE
