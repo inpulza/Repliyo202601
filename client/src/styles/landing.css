@@ -745,15 +745,16 @@
     from 0deg,
     transparent 0%,
     transparent 60%,
-    rgba(255, 255, 255, 0.95) 70%,
-    var(--landing-primary-light, #4db5ff) 75%,
-    rgba(2, 145, 250, 0.6) 80%,
+    rgba(255, 255, 255, 1) 70%,
+    rgba(255, 255, 255, 0.8) 75%,
+    rgba(200, 230, 255, 0.6) 80%,
     transparent 90%,
     transparent 100%
   );
   transform: translate(-50%, -50%) rotate(0deg);
   animation: spinBorder 3s linear infinite;
   z-index: 0;
+  transition: background 0.4s ease;
 }
 
 /* Inner mask - covers center, leaving only border visible */
@@ -794,6 +795,16 @@
 
 .btn-glow-animated:hover::before {
   animation: spinBorder 1.5s linear infinite;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    transparent 60%,
+    var(--landing-primary) 70%,
+    var(--landing-primary-light, #4db5ff) 75%,
+    rgba(2, 145, 250, 0.6) 80%,
+    transparent 90%,
+    transparent 100%
+  );
 }
 
 .btn-glow-animated:hover::after {
