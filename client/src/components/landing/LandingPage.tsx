@@ -1777,67 +1777,61 @@ function HeroSection() {
                 animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                 transition={{ duration: 0.6, delay: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
               >
-                {/* Left floating social icons */}
-                <span className="hero-floating-icons-left hidden md:flex">
+                {/* Left stacked social icons */}
+                <span className="hero-floating-icons-left hidden md:inline-flex">
                   <motion.span 
                     className="hero-floating-icon"
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                    initial={{ opacity: 0, scale: 0, x: 20 }}
+                    animate={{ opacity: 1, scale: 1, x: 0 }}
                     transition={{ delay: 1.0, duration: 0.4, type: 'spring' }}
-                    style={{ animationDelay: '0s' }}
                   >
-                    <FaInstagram className="w-5 h-5" style={{ color: '#E1306C' }} />
+                    <FaInstagram className="w-5 h-5 lg:w-6 lg:h-6" style={{ color: '#E1306C' }} />
                   </motion.span>
                   <motion.span 
                     className="hero-floating-icon"
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 1.2, duration: 0.4, type: 'spring' }}
-                    style={{ animationDelay: '0.5s' }}
+                    initial={{ opacity: 0, scale: 0, x: 20 }}
+                    animate={{ opacity: 1, scale: 1, x: 0 }}
+                    transition={{ delay: 1.15, duration: 0.4, type: 'spring' }}
                   >
-                    <FaTiktok className="w-5 h-5" style={{ color: '#000000' }} />
+                    <FaTiktok className="w-5 h-5 lg:w-6 lg:h-6" style={{ color: '#000000' }} />
                   </motion.span>
                   <motion.span 
                     className="hero-floating-icon"
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 1.4, duration: 0.4, type: 'spring' }}
-                    style={{ animationDelay: '1s' }}
+                    initial={{ opacity: 0, scale: 0, x: 20 }}
+                    animate={{ opacity: 1, scale: 1, x: 0 }}
+                    transition={{ delay: 1.3, duration: 0.4, type: 'spring' }}
                   >
-                    <FaFacebook className="w-5 h-5" style={{ color: '#1877F2' }} />
+                    <FaFacebook className="w-5 h-5 lg:w-6 lg:h-6" style={{ color: '#1877F2' }} />
                   </motion.span>
                 </span>
                 
                 {t.hero.subtitle}
                 
-                {/* Right floating social icons */}
-                <span className="hero-floating-icons-right hidden md:flex">
+                {/* Right stacked social icons */}
+                <span className="hero-floating-icons-right hidden md:inline-flex">
                   <motion.span 
                     className="hero-floating-icon"
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                    initial={{ opacity: 0, scale: 0, x: -20 }}
+                    animate={{ opacity: 1, scale: 1, x: 0 }}
                     transition={{ delay: 1.1, duration: 0.4, type: 'spring' }}
-                    style={{ animationDelay: '0.25s' }}
                   >
-                    <FaYoutube className="w-5 h-5" style={{ color: '#FF0000' }} />
+                    <FaYoutube className="w-5 h-5 lg:w-6 lg:h-6" style={{ color: '#FF0000' }} />
                   </motion.span>
                   <motion.span 
                     className="hero-floating-icon"
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 1.3, duration: 0.4, type: 'spring' }}
-                    style={{ animationDelay: '0.75s' }}
+                    initial={{ opacity: 0, scale: 0, x: -20 }}
+                    animate={{ opacity: 1, scale: 1, x: 0 }}
+                    transition={{ delay: 1.25, duration: 0.4, type: 'spring' }}
                   >
-                    <FaLinkedin className="w-5 h-5" style={{ color: '#0A66C2' }} />
+                    <FaLinkedin className="w-5 h-5 lg:w-6 lg:h-6" style={{ color: '#0A66C2' }} />
                   </motion.span>
                   <motion.span 
                     className="hero-floating-icon"
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 1.5, duration: 0.4, type: 'spring' }}
-                    style={{ animationDelay: '1.25s' }}
+                    initial={{ opacity: 0, scale: 0, x: -20 }}
+                    animate={{ opacity: 1, scale: 1, x: 0 }}
+                    transition={{ delay: 1.4, duration: 0.4, type: 'spring' }}
                   >
-                    <Globe className="w-5 h-5" style={{ color: '#4285F4' }} />
+                    <Globe className="w-5 h-5 lg:w-6 lg:h-6" style={{ color: '#4285F4' }} />
                   </motion.span>
                 </span>
               </motion.span>

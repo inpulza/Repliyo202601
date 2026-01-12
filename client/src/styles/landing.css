@@ -710,53 +710,74 @@
   z-index: 10;
 }
 
-/* Hero Floating Social Icons */
+/* Hero Floating Social Icons - Horizontal stacked like avatars */
 .hero-floating-icons-left,
 .hero-floating-icons-right {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  flex-direction: column;
-  gap: 12px;
-  z-index: 5;
-}
-
-.hero-floating-icons-left {
-  right: calc(100% + 24px);
-}
-
-.hero-floating-icons-right {
-  left: calc(100% + 24px);
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  vertical-align: middle;
+  margin: 0 8px;
 }
 
 .hero-floating-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   background: white;
-  border-radius: 14px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1);
-  animation: hero-float 3s ease-in-out infinite;
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 2px solid white;
+  margin-left: -12px;
+  position: relative;
+  transition: transform 0.2s ease, z-index 0.2s ease;
 }
 
-.hero-floating-icon:nth-child(2) {
-  animation-delay: 0.5s;
+.hero-floating-icon:first-child {
+  margin-left: 0;
 }
 
-.hero-floating-icon:nth-child(3) {
-  animation-delay: 1s;
-}
+.hero-floating-icon:nth-child(1) { z-index: 6; }
+.hero-floating-icon:nth-child(2) { z-index: 5; }
+.hero-floating-icon:nth-child(3) { z-index: 4; }
 
-@keyframes hero-float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
+.hero-floating-icon:hover {
+  transform: translateY(-4px) scale(1.1);
+  z-index: 10;
 }
 
 /* Light theme adjustments for floating icons */
 .landing-page.theme-light .hero-floating-icon {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+/* Responsive sizing for floating icons */
+@media (min-width: 1024px) {
+  .hero-floating-icon {
+    width: 48px;
+    height: 48px;
+    margin-left: -14px;
+  }
+  .hero-floating-icon:first-child {
+    margin-left: 0;
+  }
+}
+
+@media (min-width: 1280px) {
+  .hero-floating-icon {
+    width: 52px;
+    height: 52px;
+    margin-left: -16px;
+  }
+  .hero-floating-icon:first-child {
+    margin-left: 0;
+  }
+  .hero-floating-icons-left,
+  .hero-floating-icons-right {
+    margin: 0 12px;
+  }
 }
 
 .marquee-section {
