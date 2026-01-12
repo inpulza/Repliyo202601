@@ -3729,7 +3729,7 @@ function HowItWorksSection() {
       // Pin the right visual while scrolling through the section
       ScrollTrigger.create({
         trigger: sectionRef.current,
-        start: 'top 15%',
+        start: 'top 5%',
         end: 'bottom bottom',
         pin: stickyRef.current,
         pinSpacing: false,
