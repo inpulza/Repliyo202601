@@ -2611,7 +2611,8 @@
 }
 
 .how-dual-track-step:first-child {
-  padding-top: 5vh;
+  padding-top: 15vh;
+  justify-content: flex-start;
 }
 
 .how-dual-track-number {
