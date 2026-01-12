@@ -3786,10 +3786,11 @@ function HowItWorksMobile() {
 
 function HowItWorksSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
+  const stickyRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window !== 'undefined') {
-      return window.innerWidth <= 768;
+      return window.innerWidth <= 1024;
     }
     return false;
   });
@@ -3797,41 +3798,44 @@ function HowItWorksSection() {
   const [activeStep, setActiveStep] = useState(0);
 
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    const checkMobile = () => setIsMobile(window.innerWidth <= 1024);
+    checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Scroll tracking using native IntersectionObserver for step tracking
-  useEffect(() => {
-    if (isMobile || prefersReducedMotion) return;
-    
-    const handleScroll = () => {
-      if (!sectionRef.current) return;
-      
-      const section = sectionRef.current;
-      const rect = section.getBoundingClientRect();
-      const sectionHeight = section.offsetHeight;
-      const viewportHeight = window.innerHeight;
-      
-      // Calculate scroll progress through section
-      const scrolledIntoSection = -rect.top;
-      const totalScrollableHeight = sectionHeight - viewportHeight;
-      const progress = Math.max(0, Math.min(1, scrolledIntoSection / totalScrollableHeight));
-      
-      // Map progress to step index
-      const stepValue = progress * 3;
-      const newStep = Math.min(Math.floor(stepValue), 2);
-      if (newStep >= 0 && newStep !== activeStep) {
-        setActiveStep(newStep);
-      }
-    };
-    
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // Initial check
-    
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [isMobile, prefersReducedMotion, activeStep]);
+  // GSAP ScrollTrigger for pinning the right visual
+  useGSAP(() => {
+    if (isMobile || prefersReducedMotion || !sectionRef.current || !stickyRef.current) return;
+
+    const ctx = gsap.context(() => {
+      // Pin the right visual while scrolling through the section
+      ScrollTrigger.create({
+        trigger: sectionRef.current,
+        start: 'top 15%',
+        end: 'bottom bottom',
+        pin: stickyRef.current,
+        pinSpacing: false,
+      });
+
+      // Track scroll progress to update active step
+      ScrollTrigger.create({
+        trigger: sectionRef.current,
+        start: 'top top',
+        end: 'bottom bottom',
+        onUpdate: (self) => {
+          const progress = self.progress;
+          const stepValue = progress * 3;
+          const newStep = Math.min(Math.floor(stepValue), 2);
+          if (newStep >= 0) {
+            setActiveStep(newStep);
+          }
+        },
+      });
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, { scope: sectionRef, dependencies: [isMobile, prefersReducedMotion] });
 
   const stepMockups = [<Step1ConnectMockup />, <Step2AIMockup />, <Step3SendMockup />];
 
@@ -3904,9 +3908,9 @@ function HowItWorksSection() {
           ))}
         </div>
 
-        {/* Right side: Sticky visual */}
+        {/* Right side: Sticky visual - pinned by GSAP */}
         <div className="how-dual-track-right">
-          <div className="how-dual-track-sticky">
+          <div ref={stickyRef} className="how-dual-track-sticky">
             <div className="how-dual-track-visual">
               <LiquidBackground 
                 colorStart="#06b6d4"
