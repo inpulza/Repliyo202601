@@ -2587,10 +2587,10 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 80px;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   align-items: start;
-  padding: 0 60px;
+  padding: 0 100px;
   position: relative;
 }
 
@@ -2611,7 +2611,7 @@
 }
 
 .how-dual-track-step:first-child {
-  padding-top: 15vh;
+  padding-top: 5vh;
   justify-content: flex-start;
 }
 
