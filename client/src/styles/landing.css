@@ -6296,15 +6296,15 @@
 
 .mobile-slides-container {
   display: flex;
+  width: 300%;
   transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 28px;
-  overflow: hidden;
   background: rgba(15, 15, 20, 0.95);
 }
 
 .mobile-slide {
-  min-width: 100%;
-  width: 100%;
+  flex: 0 0 33.333%;
+  width: 33.333%;
   padding: 48px 16px 16px;
   display: flex;
   flex-direction: column;
@@ -6312,6 +6312,7 @@
   min-height: 440px;
   max-height: 440px;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .mobile-slide-header {

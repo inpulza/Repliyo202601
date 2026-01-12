@@ -1209,7 +1209,7 @@ function MobileInboxMockup() {
       <div className="mobile-phone-frame">
         <div className="mobile-phone-notch" />
         
-        <div className="mobile-slides-container" style={{ transform: `translateX(-${activeSlide * 100}%)` }}>
+        <div className="mobile-slides-container" style={{ transform: `translateX(-${activeSlide * 33.333}%)` }}>
           <div className="mobile-slide slide-inbox">
             <div className="mobile-slide-header">
               <Inbox className="w-5 h-5" />
