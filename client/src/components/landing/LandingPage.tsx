@@ -3401,9 +3401,9 @@ function getStatFloatingElements(t: ReturnType<typeof useLanguage>['t']): { [key
 
 function MobileStatBadge({ icon: Icon, text, color }: { icon: React.ElementType; text: string; color: string }) {
   return (
-    <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-white text-sm font-semibold shadow-xl ${color}`}>
-      <Icon className="w-4 h-4 text-white" />
-      <span>{text}</span>
+    <div className={`flex items-center gap-2 px-4 py-2.5 rounded-full shadow-xl ${color}`} style={{ color: 'white' }}>
+      <Icon className="w-4 h-4" style={{ color: 'white' }} />
+      <span className="font-semibold text-sm" style={{ color: 'white' }}>{text}</span>
     </div>
   );
 }
@@ -3457,7 +3457,7 @@ function MetricSection() {
   const mobileElements = getMobileStatElements(t, activeIndex);
 
   return (
-    <section id="metrics" ref={ref} className="pt-40 pb-52 md:py-56 relative overflow-hidden">
+    <section id="metrics" ref={ref} className="pt-48 pb-72 md:py-56 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,145,250,0.12)_0%,transparent_70%)]" />
       
       {!prefersReducedMotion && isInView && (
@@ -3505,7 +3505,7 @@ function MetricSection() {
         {!prefersReducedMotion && isInView && (
           <motion.div
             key={`mobile-bottom-${activeIndex}`}
-            className="absolute inset-x-0 bottom-16 flex justify-center md:hidden pointer-events-none z-30"
+            className="absolute inset-x-0 bottom-6 flex justify-center md:hidden pointer-events-none z-30"
             initial={{ opacity: 0, y: 20, scale: 0.8 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.8 }}
@@ -3546,7 +3546,7 @@ function MetricSection() {
         </AnimatePresence>
       </motion.div>
       
-      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex justify-center gap-2 z-20">
+      <div className="absolute bottom-20 md:bottom-12 left-1/2 -translate-x-1/2 flex justify-center gap-2 z-20">
         {stats.map((_, i) => (
           <button
             key={i}
