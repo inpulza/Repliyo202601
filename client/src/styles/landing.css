@@ -4474,7 +4474,7 @@
   position: absolute;
   inset: -3px;
   border-radius: 19px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.15);
   pointer-events: none;
   z-index: -1;
 }
