@@ -3596,7 +3596,7 @@ function HowItWorksMobile() {
           colorStart="#0d9488"
           colorMid="#d4d4d4"
           colorEnd="#fafafa"
-          speed={0.025}
+          speed={0.035}
           scale={0.75}
           className="rounded-2xl"
         />
@@ -3834,7 +3834,7 @@ function HowItWorksSection() {
             colorStart="#0d9488"
             colorMid="#d4d4d4"
             colorEnd="#fafafa"
-            speed={0.025}
+            speed={0.035}
             scale={0.75}
           />
           {t.howItWorks.steps.map((step, i) => (

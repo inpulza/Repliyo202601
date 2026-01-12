@@ -57,14 +57,14 @@ void main() {
   float time = uTime * uSpeed;
   
   vec2 q = vec2(0.0);
-  q.x = fbm(uv + vec2(1.0, 0.0) + 0.5 * time);
-  q.y = fbm(uv + vec2(0.0, 1.0) + 0.4 * time);
+  q.x = fbm(uv + vec2(1.0, 0.0));
+  q.y = fbm(uv + vec2(0.0, 1.0));
   
   vec2 r = vec2(0.0);
-  r.x = fbm(uv + 2.0 * q + vec2(1.7, 9.2) + 0.1 * time);
-  r.y = fbm(uv + 2.0 * q + vec2(8.3, 2.8) + 0.08 * time);
+  r.x = fbm(uv + 2.5 * q + vec2(1.7, 9.2) + 0.15 * time);
+  r.y = fbm(uv + 2.5 * q + vec2(8.3, 2.8) + 0.12 * time);
   
-  float f = fbm(uv + 2.0 * r);
+  float f = fbm(uv + 2.5 * r);
   
   float pattern = (f * f * f + 0.6 * f * f + 0.5 * f);
   pattern = clamp(pattern, 0.0, 1.0);
