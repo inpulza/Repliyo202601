@@ -7192,6 +7192,15 @@
      PROBLEM/SOLUTION SECTION - MOBILE
      All selectors scoped to #problem-solution
      ======================================== */
+  
+  /* Fixed height for Problem section to prevent animation jumps */
+  #problem-solution > div:first-child {
+    min-height: 700px !important;
+    height: 700px !important;
+    max-height: 700px !important;
+    overflow: hidden !important;
+  }
+  
   #problem-solution .problem-side,
   #problem-solution .solution-side {
     padding: 0 8px;
