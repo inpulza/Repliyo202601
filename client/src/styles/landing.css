@@ -7739,29 +7739,26 @@
   }
 
   /* ========================================
-     SOLUTION MOCKUP MOBILE - NEW DESIGN
+     SOLUTION MOCKUP MOBILE - REDESIGNED
      ======================================== */
   #problem-solution .solution-mockup-mobile {
-    background: linear-gradient(145deg, rgba(30, 35, 45, 0.95) 0%, rgba(20, 25, 35, 0.98) 100%);
-    border-radius: 20px;
-    padding: 20px;
-    border: 1px solid rgba(2, 145, 250, 0.2);
+    background: linear-gradient(160deg, rgba(10, 15, 25, 0.98) 0%, rgba(5, 10, 20, 1) 100%);
+    border-radius: 24px;
+    padding: 16px;
+    border: 1px solid rgba(2, 145, 250, 0.25);
     box-shadow: 
-      0 12px 40px rgba(0, 0, 0, 0.4),
-      0 0 30px -10px rgba(2, 145, 250, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      0 30px 60px rgba(0, 0, 0, 0.6),
+      0 0 50px rgba(2, 145, 250, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
   }
 
   #problem-solution .solution-mobile-tabs {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 12px;
+    gap: 4px;
   }
 
   #problem-solution .solution-mobile-tab {
@@ -7769,25 +7766,26 @@
     align-items: center;
     justify-content: center;
     flex: 1;
-    padding: 10px 8px;
-    border-radius: 10px;
-    font-size: 13px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.6);
-    background: rgba(255, 255, 255, 0.08);
+    padding: 8px 6px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.5);
+    background: transparent;
     white-space: nowrap;
     transition: all 0.2s ease;
+    letter-spacing: 0.02em;
   }
 
   #problem-solution .solution-mobile-tab svg {
-    width: 18px !important;
-    height: 18px !important;
+    width: 16px !important;
+    height: 16px !important;
   }
 
   #problem-solution .solution-mobile-tab.active {
     background: var(--landing-primary);
     color: white;
-    box-shadow: 0 4px 12px rgba(2, 145, 250, 0.3);
+    box-shadow: 0 4px 15px rgba(2, 145, 250, 0.4);
   }
 
   /* TikTok icon - black */
@@ -7798,58 +7796,72 @@
   #problem-solution .solution-mobile-inbox {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 12px;
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 14px;
+    gap: 8px;
   }
 
   #problem-solution .solution-mobile-conv {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 12px;
-    transition: background 0.2s;
+    gap: 10px;
+    padding: 10px 12px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
   }
 
   #problem-solution .solution-mobile-conv.ai-draft {
-    background: rgba(2, 145, 250, 0.1);
-    border: 1px solid rgba(2, 145, 250, 0.15);
+    background: linear-gradient(135deg, rgba(2, 145, 250, 0.12) 0%, rgba(2, 145, 250, 0.06) 100%);
+    border: 1px solid rgba(2, 145, 250, 0.25);
   }
 
   #problem-solution .solution-mobile-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: visible;
+  }
+
+  /* Platform icon badge on avatar */
+  #problem-solution .solution-mobile-avatar svg {
+    position: absolute;
+    bottom: -3px;
+    right: -3px;
+    width: 16px !important;
+    height: 16px !important;
+    padding: 3px;
+    border-radius: 6px;
+    background: white;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   }
 
   #problem-solution .solution-mobile-conv-content {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 2px;
     min-width: 0;
+    text-align: left;
   }
 
   #problem-solution .solution-mobile-conv-name-text {
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 700;
     color: white;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    letter-spacing: -0.01em;
   }
 
   #problem-solution .solution-mobile-conv-preview-text {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -7859,133 +7871,188 @@
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 4px;
+    gap: 6px;
     flex-shrink: 0;
   }
 
   #problem-solution .solution-mobile-conv-time {
     font-size: 10px;
-    color: rgba(255, 255, 255, 0.4);
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.35);
+    letter-spacing: 0.02em;
   }
 
   #problem-solution .solution-mobile-conv-time.highlight {
     color: var(--landing-primary);
-    font-weight: 600;
+    font-weight: 700;
   }
 
   #problem-solution .solution-mobile-conv-status {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
     flex-shrink: 0;
   }
 
   #problem-solution .solution-mobile-conv-status.answered {
-    background: rgba(34, 197, 94, 0.2);
-    color: #22c55e;
+    background: #22c55e;
+    color: white;
+  }
+
+  #problem-solution .solution-mobile-conv-status.answered svg {
+    position: static;
+    width: 12px !important;
+    height: 12px !important;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    color: white;
   }
 
   #problem-solution .solution-mobile-conv-status.ai {
-    background: rgba(2, 145, 250, 0.2);
-    color: var(--landing-primary);
+    background: var(--landing-primary);
+    color: white;
+  }
+
+  #problem-solution .solution-mobile-conv-status.ai svg {
+    position: static;
+    width: 12px !important;
+    height: 12px !important;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    color: white;
   }
 
   #problem-solution .solution-mobile-ai-response {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     padding: 14px;
-    background: rgba(2, 145, 250, 0.08);
-    border-radius: 14px;
-    border: 1px solid rgba(2, 145, 250, 0.15);
+    background: linear-gradient(135deg, rgba(2, 145, 250, 0.15) 0%, rgba(2, 145, 250, 0.08) 100%);
+    border-radius: 16px;
+    border: 1px solid rgba(2, 145, 250, 0.3);
   }
 
   #problem-solution .solution-mobile-ai-header {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
   }
 
   #problem-solution .solution-mobile-ai-badge {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 5px 10px;
-    background: rgba(2, 145, 250, 0.2);
-    color: var(--landing-primary);
+    gap: 4px;
+    padding: 4px 8px;
+    background: var(--landing-primary);
+    color: white;
     font-size: 11px;
     font-weight: 700;
     border-radius: 10px;
   }
 
   #problem-solution .solution-mobile-ai-status {
-    font-size: 11px;
-    color: var(--landing-primary);
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.6);
     font-weight: 500;
-    animation: pulse 1.5s ease-in-out infinite;
+    letter-spacing: 0.03em;
   }
 
-  @keyframes pulse {
+  #problem-solution .solution-mobile-ai-status::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: #22c55e;
+    border-radius: 50%;
+    margin-right: 6px;
+    animation: blink 1.2s ease-in-out infinite;
+  }
+
+  @keyframes blink {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+    50% { opacity: 0.3; }
   }
 
   #problem-solution .solution-mobile-ai-text {
     font-size: 13px;
-    line-height: 1.5;
-    color: rgba(255, 255, 255, 0.9);
-    padding: 10px 12px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 10px;
-    border-left: 3px solid var(--landing-primary);
+    line-height: 1.6;
+    color: white;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    text-align: left;
   }
 
   #problem-solution .solution-mobile-send-btn {
-    align-self: flex-end;
+    align-self: stretch;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 10px 18px;
-    background: var(--landing-primary);
-    border-radius: 20px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, var(--landing-primary) 0%, #0066cc 100%);
+    border-radius: 12px;
     color: white;
-    font-size: 12px;
-    font-weight: 600;
-    box-shadow: 0 4px 15px rgba(2, 145, 250, 0.4);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    box-shadow: 
+      0 8px 20px rgba(2, 145, 250, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
     border: none;
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
   }
 
+  #problem-solution .solution-mobile-send-btn svg {
+    position: static !important;
+    width: 14px !important;
+    height: 14px !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
   #problem-solution .solution-mobile-send-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 20px rgba(2, 145, 250, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 
+      0 12px 28px rgba(2, 145, 250, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
 
   #problem-solution .solution-mobile-benefits {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 8px;
-    margin-top: 8px;
+    margin-top: 4px;
   }
 
   #problem-solution .solution-mobile-benefit {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 16px;
-    border-radius: 20px;
-    background: var(--landing-primary);
-    box-shadow: 0 4px 12px rgba(2, 145, 250, 0.3);
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  #problem-solution .solution-mobile-benefit svg {
+    width: 14px !important;
+    height: 14px !important;
+    color: var(--landing-primary);
+    flex-shrink: 0;
   }
 
   #problem-solution .solution-mobile-benefit span {
-    font-size: 15px;
+    font-size: 11px;
     font-weight: 600;
+    letter-spacing: 0.01em;
     color: white;
     line-height: 1.3;
   }
