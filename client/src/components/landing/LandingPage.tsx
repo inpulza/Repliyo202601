@@ -2592,6 +2592,7 @@ function SolutionMockupMobile() {
         <div className="solution-mobile-inbox">
           <div className="solution-mobile-conv">
             <div className="solution-mobile-avatar">
+              <span className="solution-mobile-avatar-initials">M</span>
               <FaInstagram className="w-2.5 h-2.5" style={{ color: '#E1306C' }} />
             </div>
             <div className="solution-mobile-conv-content">
@@ -2607,6 +2608,7 @@ function SolutionMockupMobile() {
           </div>
           <div className="solution-mobile-conv ai-draft">
             <div className="solution-mobile-avatar">
+              <span className="solution-mobile-avatar-initials">C</span>
               <FaTiktok className="w-2.5 h-2.5" style={{ color: '#000' }} />
             </div>
             <div className="solution-mobile-conv-content">
@@ -2700,6 +2702,7 @@ function SolutionMockupMobile() {
           transition={{ delay: 0.4 }}
         >
           <div className="solution-mobile-avatar">
+            <span className="solution-mobile-avatar-initials">M</span>
             <FaInstagram className="w-2.5 h-2.5" style={{ color: '#E1306C' }} />
           </div>
           <div className="solution-mobile-conv-content">
@@ -2739,6 +2742,7 @@ function SolutionMockupMobile() {
           transition={{ delay: 0.5 }}
         >
           <div className="solution-mobile-avatar">
+            <span className="solution-mobile-avatar-initials">C</span>
             <FaTiktok className="w-2.5 h-2.5" style={{ color: '#000' }} />
           </div>
           <div className="solution-mobile-conv-content">
