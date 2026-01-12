@@ -6219,3 +6219,450 @@
     width: 180px;
   }
 }
+
+/* ========================================
+   DESKTOP/MOBILE MOCKUP VISIBILITY
+   Controls which mockup renders where
+   ======================================== */
+
+/* Desktop: show InboxMockup, hide MobileInboxMockup */
+.desktop-mockup-wrapper {
+  display: block;
+}
+
+.mobile-mockup-wrapper {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .desktop-mockup-wrapper {
+    display: none !important;
+  }
+  
+  .mobile-mockup-wrapper {
+    display: block !important;
+  }
+}
+
+/* ========================================
+   MOBILE INBOX MOCKUP - iPhone Carousel
+   Beautiful phone mockup with slide animation
+   ======================================== */
+
+.mobile-mockup-carousel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 16px;
+}
+
+.mobile-phone-frame {
+  width: 100%;
+  max-width: 320px;
+  background: linear-gradient(145deg, rgba(30, 30, 35, 0.95), rgba(20, 20, 25, 0.98));
+  border-radius: 40px;
+  padding: 12px;
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.mobile-phone-notch {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 28px;
+  background: #000;
+  border-radius: 0 0 16px 16px;
+  z-index: 10;
+}
+
+.mobile-phone-notch::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+}
+
+.mobile-slides-container {
+  display: flex;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 28px;
+  overflow: hidden;
+  background: rgba(15, 15, 20, 0.95);
+}
+
+.mobile-slide {
+  min-width: 100%;
+  padding: 48px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 420px;
+}
+
+.mobile-slide-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  margin-bottom: 16px;
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.mobile-badge {
+  background: var(--landing-primary);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-left: auto;
+}
+
+/* Slide 1: Inbox Messages */
+.mobile-messages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.mobile-message-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  position: relative;
+  transition: background 0.2s;
+}
+
+.mobile-msg-avatar {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.mobile-msg-avatar img {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.mobile-platform-dot {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(15, 15, 20, 0.95);
+}
+
+.mobile-platform-dot.instagram {
+  background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+}
+
+.mobile-platform-dot.tiktok {
+  background: #000;
+}
+
+.mobile-platform-dot.facebook {
+  background: #1877f2;
+}
+
+.mobile-msg-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.mobile-msg-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.mobile-msg-name {
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.mobile-msg-time {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 12px;
+}
+
+.mobile-msg-preview {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.mobile-unread-dot {
+  width: 10px;
+  height: 10px;
+  background: var(--landing-primary);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Slide 2: Chat */
+.mobile-chat-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.mobile-chat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mobile-chat-name {
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.mobile-chat-platform {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+}
+
+.mobile-chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.mobile-chat-bubble {
+  max-width: 85%;
+  padding: 12px 14px;
+  border-radius: 18px;
+  font-size: 14px;
+  line-height: 1.4;
+  position: relative;
+}
+
+.mobile-chat-bubble.incoming {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
+
+.mobile-chat-bubble.outgoing {
+  background: linear-gradient(135deg, var(--landing-primary), #0077cc);
+  color: white;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+
+.mobile-ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.mobile-ai-typing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(var(--landing-primary-rgb), 0.1);
+  border-radius: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  align-self: flex-end;
+}
+
+.mobile-typing-dots {
+  display: flex;
+  gap: 3px;
+}
+
+.mobile-typing-dots span {
+  width: 5px;
+  height: 5px;
+  background: var(--landing-primary);
+  border-radius: 50%;
+  animation: mobileDotBounce 1.4s ease-in-out infinite;
+}
+
+.mobile-typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.mobile-typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes mobileDotBounce {
+  0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+  40% { transform: scale(1.2); opacity: 1; }
+}
+
+/* Slide 3: CRM */
+.mobile-crm-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  flex: 1;
+  padding-top: 20px;
+}
+
+.mobile-crm-profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.mobile-crm-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 12px;
+  border: 3px solid var(--landing-primary);
+}
+
+.mobile-crm-name {
+  color: white;
+  font-weight: 700;
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+
+.mobile-crm-email {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.mobile-crm-tags {
+  display: flex;
+  gap: 8px;
+}
+
+.mobile-crm-tag {
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.mobile-crm-tag.vip {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+.mobile-crm-stats {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.mobile-crm-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+}
+
+.mobile-stat-number {
+  color: white;
+  font-weight: 700;
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.mobile-stat-label {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Carousel Navigation Dots */
+.mobile-carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 0 8px;
+}
+
+.mobile-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s;
+  padding: 0;
+}
+
+.mobile-dot.active {
+  width: 24px;
+  border-radius: 4px;
+  background: var(--landing-primary);
+}
+
+/* Slide Labels */
+.mobile-slide-labels {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 16px;
+}
+
+.mobile-slide-labels span {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 0.3s;
+}
+
+.mobile-slide-labels span.active {
+  color: white;
+}

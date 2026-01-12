@@ -1117,6 +1117,222 @@ function InboxMockup() {
   );
 }
 
+function MobileInboxMockup() {
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [animationCycle, setAnimationCycle] = useState(0);
+  const prefersReducedMotion = useReducedMotion();
+  const { t } = useLanguage();
+  
+  const inboxMessages = t.mockups.inbox.allMessages;
+  const messages = [
+    { id: 1, user: inboxMessages[0].user, avatarImg: avatarMaria, message: inboxMessages[0].message, platform: 'instagram', time: inboxMessages[0].time },
+    { id: 2, user: inboxMessages[1].user, avatarImg: avatarCarlos, message: inboxMessages[1].message, platform: 'tiktok', time: inboxMessages[1].time },
+    { id: 3, user: inboxMessages[2].user, avatarImg: avatarAna, message: inboxMessages[2].message, platform: 'facebook', time: inboxMessages[2].time },
+    { id: 4, user: inboxMessages[3].user, avatarImg: avatarDiego, message: inboxMessages[3].message, platform: 'instagram', time: inboxMessages[3].time },
+  ];
+  
+  const chatMessages = t.mockups.inbox.conversation.slice(0, 4);
+  const [visibleChat, setVisibleChat] = useState(0);
+  const [visibleInbox, setVisibleInbox] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (prefersReducedMotion) {
+      setVisibleInbox([1, 2, 3, 4]);
+      setVisibleChat(4);
+      return;
+    }
+    
+    setVisibleInbox([]);
+    setVisibleChat(0);
+    setActiveSlide(0);
+    
+    const timers: NodeJS.Timeout[] = [];
+    
+    messages.forEach((_, idx) => {
+      timers.push(setTimeout(() => {
+        setVisibleInbox(prev => [...prev, idx + 1]);
+      }, 400 + idx * 500));
+    });
+    
+    timers.push(setTimeout(() => setActiveSlide(1), 3500));
+    
+    chatMessages.forEach((_, idx) => {
+      timers.push(setTimeout(() => {
+        setVisibleChat(idx + 1);
+      }, 4000 + idx * 800));
+    });
+    
+    timers.push(setTimeout(() => setActiveSlide(2), 8000));
+    
+    timers.push(setTimeout(() => {
+      setAnimationCycle(c => c + 1);
+    }, 12000));
+    
+    return () => timers.forEach(clearTimeout);
+  }, [prefersReducedMotion, animationCycle]);
+
+  const PlatformIcon = ({ platform }: { platform: string }) => {
+    switch(platform) {
+      case 'instagram': return <FaInstagram className="w-3 h-3 text-white" />;
+      case 'tiktok': return <FaTiktok className="w-3 h-3 text-white" />;
+      case 'facebook': return <FaFacebook className="w-3 h-3 text-white" />;
+      default: return null;
+    }
+  };
+
+  return (
+    <div className="mobile-mockup-carousel">
+      <div className="mobile-phone-frame">
+        <div className="mobile-phone-notch" />
+        
+        <div className="mobile-slides-container" style={{ transform: `translateX(-${activeSlide * 100}%)` }}>
+          <div className="mobile-slide slide-inbox">
+            <div className="mobile-slide-header">
+              <Inbox className="w-5 h-5" />
+              <span>{t.mockups.inbox.nav.inbox}</span>
+              <motion.span 
+                key={visibleInbox.length}
+                initial={{ scale: 1.3 }}
+                animate={{ scale: 1 }}
+                className="mobile-badge"
+              >
+                {visibleInbox.length}
+              </motion.span>
+            </div>
+            <div className="mobile-messages-list">
+              {messages.map((msg) => (
+                <motion.div
+                  key={msg.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={visibleInbox.includes(msg.id) ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3, type: 'spring' }}
+                  className="mobile-message-item"
+                >
+                  <div className="mobile-msg-avatar">
+                    <img src={msg.avatarImg} alt={msg.user} />
+                    <span className={`mobile-platform-dot ${msg.platform}`}>
+                      <PlatformIcon platform={msg.platform} />
+                    </span>
+                  </div>
+                  <div className="mobile-msg-content">
+                    <div className="mobile-msg-header">
+                      <span className="mobile-msg-name">{msg.user}</span>
+                      <span className="mobile-msg-time">{msg.time}</span>
+                    </div>
+                    <span className="mobile-msg-preview">{msg.message.slice(0, 35)}...</span>
+                  </div>
+                  <span className="mobile-unread-dot" />
+                </motion.div>
+              ))}
+            </div>
+          </div>
+          
+          <div className="mobile-slide slide-chat">
+            <div className="mobile-slide-header">
+              <img src={avatarMaria} alt={inboxMessages[0].user} className="mobile-chat-avatar" />
+              <div className="mobile-chat-info">
+                <span className="mobile-chat-name">{inboxMessages[0].user}</span>
+                <span className="mobile-chat-platform">
+                  <FaInstagram className="w-3 h-3 text-pink-500" />
+                  Instagram
+                </span>
+              </div>
+            </div>
+            <div className="mobile-chat-messages">
+              {chatMessages.slice(0, visibleChat).map((msg, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`mobile-chat-bubble ${msg.type}`}
+                >
+                  {msg.type === 'outgoing' && (
+                    <div className="mobile-ai-badge">
+                      <Sparkles className="w-3 h-3" />
+                      AI
+                    </div>
+                  )}
+                  <span>{msg.text}</span>
+                </motion.div>
+              ))}
+              {activeSlide === 1 && visibleChat < chatMessages.length && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="mobile-ai-typing"
+                >
+                  <Sparkles className="w-4 h-4 text-blue-500" />
+                  <span>{t.mockups.inbox.chat.aiGenerating}</span>
+                  <div className="mobile-typing-dots">
+                    <span /><span /><span />
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </div>
+          
+          <div className="mobile-slide slide-crm">
+            <div className="mobile-slide-header">
+              <Users className="w-5 h-5" />
+              <span>{t.mockups.inbox.crm.client}</span>
+            </div>
+            <div className="mobile-crm-content">
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={activeSlide === 2 ? { scale: 1, opacity: 1 } : {}}
+                className="mobile-crm-profile"
+              >
+                <img src={avatarMaria} alt={inboxMessages[0].user} className="mobile-crm-avatar" />
+                <div className="mobile-crm-name">{inboxMessages[0].user}</div>
+                <div className="mobile-crm-email">maria.garcia@email.com</div>
+                <div className="mobile-crm-tags">
+                  <span className="mobile-crm-tag vip">{t.mockups.inbox.crm.vip}</span>
+                  <span className="mobile-crm-tag">{t.mockups.inbox.crm.recurring}</span>
+                </div>
+              </motion.div>
+              <motion.div 
+                initial={{ y: 20, opacity: 0 }}
+                animate={activeSlide === 2 ? { y: 0, opacity: 1 } : {}}
+                transition={{ delay: 0.2 }}
+                className="mobile-crm-stats"
+              >
+                <div className="mobile-crm-stat">
+                  <span className="mobile-stat-number">8</span>
+                  <span className="mobile-stat-label">{t.mockups.inbox.crm.chats}</span>
+                </div>
+                <div className="mobile-crm-stat">
+                  <span className="mobile-stat-number">$1.2k</span>
+                  <span className="mobile-stat-label">{t.mockups.inbox.crm.value}</span>
+                </div>
+                <div className="mobile-crm-stat">
+                  <span className="mobile-stat-number">2m</span>
+                  <span className="mobile-stat-label">Resp.</span>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="mobile-carousel-dots">
+          {[0, 1, 2].map((idx) => (
+            <button
+              key={idx}
+              className={`mobile-dot ${activeSlide === idx ? 'active' : ''}`}
+              onClick={() => setActiveSlide(idx)}
+            />
+          ))}
+        </div>
+      </div>
+      
+      <div className="mobile-slide-labels">
+        <span className={activeSlide === 0 ? 'active' : ''}>{t.mockups.inbox.nav.inbox}</span>
+        <span className={activeSlide === 1 ? 'active' : ''}>AI Chat</span>
+        <span className={activeSlide === 2 ? 'active' : ''}>{t.mockups.inbox.nav.crm}</span>
+      </div>
+    </div>
+  );
+}
+
 function Header() {
   const [scrolled, setScrolled] = useState(false);
   const prefersReducedMotion = useReducedMotion();
@@ -1316,7 +1532,12 @@ function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           >
-            <InboxMockup />
+            <div className="desktop-mockup-wrapper">
+              <InboxMockup />
+            </div>
+            <div className="mobile-mockup-wrapper">
+              <MobileInboxMockup />
+            </div>
           </motion.div>
         </motion.div>
       </div>
