@@ -7575,8 +7575,7 @@
 
   .features-carousel-container {
     position: relative;
-    overflow: hidden;
-    min-height: 700px;
+    overflow: visible;
   }
 
   .features-carousel-slide {

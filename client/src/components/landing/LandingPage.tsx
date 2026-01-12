@@ -4016,10 +4016,11 @@ function FeaturesSection() {
                   initial={false}
                   animate={{
                     opacity: mobileSlide === slideIdx ? 1 : 0,
-                    x: `${(slideIdx - mobileSlide) * 100}%`,
                   }}
-                  transition={{ duration: 0.4, ease: 'easeOut' }}
-                  style={{ position: slideIdx === 0 ? 'relative' : 'absolute', top: 0, left: 0, width: '100%' }}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
+                  style={{ 
+                    display: mobileSlide === slideIdx ? 'block' : 'none',
+                  }}
                 >
                   <div className="features-slide-cards">
                     {slideIndices.map((i) => renderFeatureCard(t.features.items[i], i, true))}
