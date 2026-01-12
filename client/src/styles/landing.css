@@ -7211,12 +7211,24 @@
   
   /* Fixed height for Metrics section to prevent animation jumps */
   #metrics {
-    min-height: 800px !important;
-    height: 800px !important;
-    max-height: 800px !important;
+    min-height: 600px !important;
+    height: 600px !important;
+    max-height: 600px !important;
     overflow: hidden !important;
     padding-top: 80px !important;
-    padding-bottom: 80px !important;
+    padding-bottom: 40px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+  
+  /* Center the expanding ripples with the stats content */
+  #metrics > div:has(.rounded-full.border-2) {
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
   }
   
   /* Fixed height for How It Works section to prevent animation jumps */
