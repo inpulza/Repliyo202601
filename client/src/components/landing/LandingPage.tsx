@@ -3399,6 +3399,37 @@ function getStatFloatingElements(t: ReturnType<typeof useLanguage>['t']): { [key
   };
 }
 
+function MobileStatBadge({ icon: Icon, text, color }: { icon: React.ElementType; text: string; color: string }) {
+  return (
+    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-xs font-semibold shadow-lg ${color}`}>
+      <Icon className="w-3 h-3" />
+      <span>{text}</span>
+    </div>
+  );
+}
+
+function getMobileStatElements(t: ReturnType<typeof useLanguage>['t'], activeIndex: number) {
+  const elements: { [key: number]: { top: React.ReactNode; bottom: React.ReactNode } } = {
+    0: {
+      top: <MobileStatBadge icon={Timer} text={t.floatingCards.time} color="bg-gradient-to-r from-orange-400 to-red-500" />,
+      bottom: <MobileStatBadge icon={CheckCircle} text={t.floatingCards.responded} color="bg-gradient-to-r from-emerald-400 to-green-500" />,
+    },
+    1: {
+      top: <MobileStatBadge icon={MsgSquare} text={t.floatingCards.newMessage} color="bg-gradient-to-r from-blue-400 to-indigo-500" />,
+      bottom: <MobileStatBadge icon={SendIcon} text={t.floatingCards.write} color="bg-gradient-to-r from-violet-500 to-purple-600" />,
+    },
+    2: {
+      top: <MobileStatBadge icon={TrendingUp} text={t.floatingCards.leadsToday} color="bg-gradient-to-r from-green-400 to-teal-500" />,
+      bottom: <MobileStatBadge icon={Star} text="5.0" color="bg-gradient-to-r from-yellow-400 to-orange-500" />,
+    },
+    3: {
+      top: <MobileStatBadge icon={Bot} text={t.floatingCards.aiActive} color="bg-gradient-to-r from-purple-400 to-pink-500" />,
+      bottom: <MobileStatBadge icon={Moon} text={t.floatingCards.autoReply} color="bg-gradient-to-r from-indigo-400 to-blue-500" />,
+    },
+  };
+  return elements[activeIndex] || elements[0];
+}
+
 function MetricSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: '-100px' });
@@ -3423,9 +3454,10 @@ function MetricSection() {
   const currentStat = stats[activeIndex];
   const floatingElements = getStatFloatingElements(t);
   const currentElements = floatingElements[activeIndex] || [];
+  const mobileElements = getMobileStatElements(t, activeIndex);
 
   return (
-    <section id="metrics" ref={ref} className="py-48 md:py-56 relative overflow-hidden">
+    <section id="metrics" ref={ref} className="py-32 md:py-56 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,145,250,0.12)_0%,transparent_70%)]" />
       
       {!prefersReducedMotion && isInView && (
@@ -3436,6 +3468,7 @@ function MetricSection() {
         </div>
       )}
       
+      {/* Desktop floating elements */}
       <AnimatePresence mode="wait">
         {!prefersReducedMotion && (
           <motion.div 
@@ -3448,6 +3481,37 @@ function MetricSection() {
                 config={element}
               />
             ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Mobile floating badges */}
+      <AnimatePresence mode="wait">
+        {!prefersReducedMotion && isInView && (
+          <motion.div
+            key={`mobile-elements-${activeIndex}`}
+            className="absolute inset-x-0 top-8 flex justify-center md:hidden pointer-events-none z-10"
+            initial={{ opacity: 0, y: -20, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.8 }}
+            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+          >
+            {mobileElements.top}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      <AnimatePresence mode="wait">
+        {!prefersReducedMotion && isInView && (
+          <motion.div
+            key={`mobile-bottom-${activeIndex}`}
+            className="absolute inset-x-0 bottom-24 flex justify-center md:hidden pointer-events-none z-10"
+            initial={{ opacity: 0, y: 20, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.8 }}
+            transition={{ duration: 0.4, delay: 0.1, ease: [0.4, 0, 0.2, 1] }}
+          >
+            {mobileElements.bottom}
           </motion.div>
         )}
       </AnimatePresence>
