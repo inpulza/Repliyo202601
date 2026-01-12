@@ -1434,7 +1434,7 @@ function MobileInboxMockup() {
             <div className="mobile-bubble-header">
               <div className={`mobile-bubble-icon ${bubble.platform}`}>
                 {bubble.platform === 'instagram' && <FaInstagram className="w-3 h-3 text-white" />}
-                {bubble.platform === 'tiktok' && <FaTiktok className="w-3 h-3" style={{ color: '#25f4ee' }} />}
+                {bubble.platform === 'tiktok' && <FaTiktok className="w-3 h-3 text-white" />}
                 {bubble.platform === 'facebook' && <FaFacebook className="w-3 h-3 text-white" />}
                 {bubble.platform === 'youtube' && <FaYoutube className="w-3 h-3 text-white" />}
               </div>
@@ -1469,7 +1469,7 @@ function MobileInboxMockup() {
             <div className="mobile-bubble-header">
               <div className={`mobile-bubble-icon ${bubble.platform}`}>
                 {bubble.platform === 'instagram' && <FaInstagram className="w-3 h-3 text-white" />}
-                {bubble.platform === 'tiktok' && <FaTiktok className="w-3 h-3" style={{ color: '#25f4ee' }} />}
+                {bubble.platform === 'tiktok' && <FaTiktok className="w-3 h-3 text-white" />}
                 {bubble.platform === 'facebook' && <FaFacebook className="w-3 h-3 text-white" />}
                 {bubble.platform === 'youtube' && <FaYoutube className="w-3 h-3 text-white" />}
               </div>
