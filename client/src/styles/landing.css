@@ -788,12 +788,13 @@
 /* Fill layer - expands on hover using clip-path for perfect corners */
 .btn-glow-fill {
   position: absolute;
-  inset: 0;
+  inset: -1px;
   background: white;
-  border-radius: inherit;
-  clip-path: inset(0 100% 0 0 round 12px);
+  border-radius: 13px;
+  clip-path: inset(0 100% 0 0 round 13px);
   transition: clip-path 0.45s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 1;
+  z-index: 5;
+  box-shadow: inset 0 0 0 2px rgba(2, 145, 250, 0.15);
 }
 
 /* Content layers */
@@ -822,12 +823,12 @@
   color: var(--landing-primary);
   clip-path: inset(0 100% 0 0);
   transition: clip-path 0.45s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 3;
+  z-index: 6;
 }
 
 /* Hover states */
 .btn-glow-animated:hover .btn-glow-fill {
-  clip-path: inset(0 0 0 0 round 12px);
+  clip-path: inset(0 0 0 0 round 13px);
 }
 
 .btn-glow-animated:hover .btn-glow-content-overlay {
