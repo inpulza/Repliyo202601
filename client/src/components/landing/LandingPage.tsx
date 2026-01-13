@@ -3737,14 +3737,14 @@ function HowItWorksSection() {
         pinSpacing: false,
       });
 
-      // Create a trigger for each step - use onToggle with isActive for precise control
+      // Create a trigger for each step - swap mockup when text enters/exits viewport
       stepRefs.current.forEach((stepEl, index) => {
         if (!stepEl) return;
         
         ScrollTrigger.create({
           trigger: stepEl,
-          start: 'top 60%',
-          end: 'bottom 40%',
+          start: 'top bottom',
+          end: 'bottom top',
           onToggle: (self) => {
             if (self.isActive && lastActiveRef.current !== index) {
               lastActiveRef.current = index;
