@@ -3865,7 +3865,7 @@ function FeaturesSection() {
   );
 
   return (
-    <section id="features" ref={sectionRef} className="py-32 section-dark relative overflow-hidden">
+    <section id="features" ref={sectionRef} className="py-16 md:py-32 section-dark relative overflow-hidden">
       <Parallax speed={-3} className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-blue-500/5 blur-3xl" />
       </Parallax>
