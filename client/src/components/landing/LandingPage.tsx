@@ -3834,8 +3834,7 @@ function FeaturesSection() {
   const mobileSlides = [
     [0],
     [1],
-    [2],
-    [3],
+    [2, 3],
     [4],
     [5],
     [6],
@@ -3865,7 +3864,7 @@ function FeaturesSection() {
   );
 
   return (
-    <section id="features" ref={sectionRef} className="py-16 md:py-32 section-dark relative overflow-hidden">
+    <section id="features" ref={sectionRef} className="py-12 md:py-32 section-dark relative overflow-hidden">
       <Parallax speed={-3} className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-blue-500/5 blur-3xl" />
       </Parallax>
@@ -3875,7 +3874,7 @@ function FeaturesSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="text-center mb-20"
+          className="text-center mb-10 md:mb-20"
         >
           <span className="text-sm uppercase tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-4 block">
             {t.features.label}
