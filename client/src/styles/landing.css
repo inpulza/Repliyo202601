@@ -2568,7 +2568,86 @@
 }
 
 /* ============================================
-   HOW IT WORKS - DUAL TRACK SCROLL SECTION
+   HOW IT WORKS - SIMPLE SECTION (NEW)
+   ============================================ */
+.how-simple-section {
+  padding: 100px 0;
+  background: var(--landing-bg-light);
+}
+
+.how-simple-header {
+  text-align: center;
+  padding: 0 24px 60px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.how-simple-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 80px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+.how-simple-step {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+.how-simple-step:nth-child(even) {
+  direction: rtl;
+}
+
+.how-simple-step:nth-child(even) > * {
+  direction: ltr;
+}
+
+.how-simple-step-content {
+  padding: 20px 0;
+}
+
+.how-simple-number {
+  font-size: 80px;
+  font-weight: 900;
+  color: rgba(0, 0, 0, 0.06);
+  font-family: 'Space Grotesk', sans-serif;
+  line-height: 1;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.how-simple-step-mockup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 350px;
+}
+
+@media (max-width: 900px) {
+  .how-simple-step {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+  
+  .how-simple-step:nth-child(even) {
+    direction: ltr;
+  }
+  
+  .how-simple-number {
+    font-size: 60px;
+  }
+  
+  .how-simple-step-mockup {
+    min-height: 280px;
+  }
+}
+
+/* ============================================
+   HOW IT WORKS - DUAL TRACK SCROLL SECTION (LEGACY)
    ============================================ */
 .how-dual-track-section {
   position: relative;

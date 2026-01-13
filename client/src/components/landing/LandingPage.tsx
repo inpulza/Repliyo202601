@@ -3702,153 +3702,46 @@ function HowItWorksMobile() {
 }
 
 function HowItWorksSection() {
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const stickyRef = useRef<HTMLDivElement>(null);
-  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const lastActiveRef = useRef(0);
-  const prefersReducedMotion = useReducedMotion();
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.innerWidth <= 1024;
-    }
-    return false;
-  });
   const { t } = useLanguage();
-  const [activeStep, setActiveStep] = useState(0);
-
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth <= 1024);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // GSAP ScrollTrigger for pinning the right visual
-  useGSAP(() => {
-    if (isMobile || prefersReducedMotion || !sectionRef.current || !stickyRef.current) return;
-
-    const ctx = gsap.context(() => {
-      // Pin the right visual while scrolling through the section
-      ScrollTrigger.create({
-        trigger: sectionRef.current,
-        start: 'top top',
-        end: 'bottom bottom',
-        pin: stickyRef.current,
-        pinSpacing: false,
-      });
-
-      // Create a trigger for each step - swap mockup when text enters/exits viewport
-      stepRefs.current.forEach((stepEl, index) => {
-        if (!stepEl) return;
-        
-        ScrollTrigger.create({
-          trigger: stepEl,
-          start: 'top bottom',
-          end: 'bottom top',
-          onToggle: (self) => {
-            if (self.isActive && lastActiveRef.current !== index) {
-              lastActiveRef.current = index;
-              setActiveStep(index);
-            }
-          },
-        });
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, { scope: sectionRef, dependencies: [isMobile, prefersReducedMotion] });
-
   const stepMockups = [<Step1ConnectMockup />, <Step2AIMockup />, <Step3SendMockup />];
 
-  if (isMobile) {
-    return <HowItWorksMobile />;
-  }
-
-  if (prefersReducedMotion) {
-    return (
-      <section id="how" className="py-32 relative">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-20">
-            <span className="text-sm uppercase tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-4 block">
-              {t.howItWorks.label}
-            </span>
-            <h2 className="font-display text-4xl md:text-6xl font-bold text-white">
-              {t.howItWorks.title} <span className="text-white/60">{t.howItWorks.titleHighlight}</span>
-            </h2>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {t.howItWorks.steps.map((step, i) => (
-              <div key={step.number} className="how-card">
-                <div className="card-inner">
-                  <span className="step-number">{step.number}</span>
-                  <h3 className="font-display text-2xl font-bold text-white mt-4 mb-3">{step.title}</h3>
-                  <p className="text-white/50 text-base leading-relaxed mb-6">{step.description}</p>
-                  <div className="step-mockup-container">{stepMockups[i]}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-    );
-  }
-
   return (
-    <section id="how" ref={sectionRef} className="how-dual-track-section relative">
+    <section id="how" className="how-simple-section">
       {/* Header */}
-      <div className="how-dual-track-header">
+      <div className="how-simple-header">
         <span className="text-sm uppercase tracking-[0.25em] text-[var(--landing-primary)] font-semibold mb-4 block">
           {t.howItWorks.label}
         </span>
-        <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-white">
-          {t.howItWorks.title} <span className="text-white/60">{t.howItWorks.titleHighlight}</span>
+        <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-[var(--landing-text)]">
+          {t.howItWorks.title} <span className="text-[var(--landing-text)]/60">{t.howItWorks.titleHighlight}</span>
         </h2>
       </div>
 
-      {/* Dual-track container */}
-      <div className="how-dual-track-container">
-        {/* Left side: Scrollable text blocks */}
-        <div className="how-dual-track-left">
-          {t.howItWorks.steps.map((step, i) => (
-            <motion.div 
-              key={step.number} 
-              ref={(el: HTMLDivElement | null) => { stepRefs.current[i] = el; }}
-              className="how-dual-track-step"
-              initial={{ opacity: 0.3 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: false, amount: 0.6 }}
-              transition={{ duration: 0.4 }}
-            >
-              <span className="how-dual-track-number">{step.number}</span>
-              <h3 className="font-display text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-4">
+      {/* Simple steps - each step is its own row */}
+      <div className="how-simple-steps">
+        {t.howItWorks.steps.map((step, i) => (
+          <motion.div 
+            key={step.number}
+            className="how-simple-step"
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+          >
+            <div className="how-simple-step-content">
+              <span className="how-simple-number">{step.number}</span>
+              <h3 className="font-display text-2xl md:text-3xl lg:text-4xl font-bold text-[var(--landing-text)] mb-4">
                 {step.title}
               </h3>
-              <p className="text-white/60 text-base md:text-lg lg:text-xl leading-relaxed">
+              <p className="text-[var(--landing-text)]/60 text-base md:text-lg lg:text-xl leading-relaxed">
                 {step.description}
               </p>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Right side: Sticky visual - pinned by GSAP */}
-        <div className="how-dual-track-right">
-          <div ref={stickyRef} className="how-dual-track-sticky">
-            <div className="how-dual-track-mockup-wrapper">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeStep}
-                  initial={{ opacity: 0, scale: 0.98 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.98 }}
-                  transition={{ duration: 0.15 }}
-                  className="how-dual-track-mockup"
-                >
-                  {stepMockups[activeStep]}
-                </motion.div>
-              </AnimatePresence>
             </div>
-          </div>
-        </div>
+            <div className="how-simple-step-mockup">
+              {stepMockups[i]}
+            </div>
+          </motion.div>
+        ))}
       </div>
     </section>
   );
