@@ -3737,22 +3737,16 @@ function HowItWorksSection() {
         pinSpacing: false,
       });
 
-      // Create a trigger for each step that fires when it enters the viewport
+      // Create a trigger for each step - use onToggle with isActive for precise control
       stepRefs.current.forEach((stepEl, index) => {
         if (!stepEl) return;
         
         ScrollTrigger.create({
           trigger: stepEl,
-          start: 'top 70%',
-          end: 'bottom 30%',
-          onEnter: () => {
-            if (lastActiveRef.current !== index) {
-              lastActiveRef.current = index;
-              setActiveStep(index);
-            }
-          },
-          onEnterBack: () => {
-            if (lastActiveRef.current !== index) {
+          start: 'top 60%',
+          end: 'bottom 40%',
+          onToggle: (self) => {
+            if (self.isActive && lastActiveRef.current !== index) {
               lastActiveRef.current = index;
               setActiveStep(index);
             }
