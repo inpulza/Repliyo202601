@@ -3651,7 +3651,7 @@ function HowItWorksMobile() {
         ))}
       </div>
 
-      <div className="relative rounded-2xl overflow-hidden mx-auto max-w-sm min-h-[380px] bg-white">
+      <div className="relative overflow-hidden mx-auto max-w-sm min-h-[380px] bg-white">
         {/* All slides rendered simultaneously - only opacity changes to prevent layout shifts */}
         <div className="relative z-10 min-h-[340px]">
           {steps.map((step, i) => (
