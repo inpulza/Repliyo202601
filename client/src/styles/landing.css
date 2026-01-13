@@ -3774,6 +3774,31 @@
   color: #ffffff;
 }
 
+/* Dark text for light backgrounds */
+.timeline-title-dark {
+  color: #1a1a2e !important;
+}
+
+.timeline-status-dark {
+  color: rgba(26, 26, 46, 0.6) !important;
+}
+
+.timeline-status-dark.success {
+  color: #16a34a !important;
+}
+
+.timeline-status-dark.warning {
+  color: #ea580c !important;
+}
+
+.send-timeline-light .timeline-connector {
+  background: rgba(0,0,0,0.1);
+}
+
+.send-timeline-light .timeline-connector.active {
+  background: linear-gradient(to bottom, var(--landing-primary), rgba(2, 145, 250, 0.3));
+}
+
 .timeline-connector {
   width: 2px;
   height: 12px;

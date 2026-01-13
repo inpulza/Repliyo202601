@@ -172,6 +172,22 @@ function Step2AIMockup() {
           <span className="msg-text">{fullResponse}</span>
         </div>
       </motion.div>
+      
+      <motion.div 
+        className="floating-msg incoming"
+        initial={{ opacity: 0, x: -20 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        viewport={{ once: false }}
+        transition={{ duration: 0.2, delay: 0.1 }}
+      >
+        <div className="msg-avatar">
+          <img src={avatarMaria} alt={t.mockups.inbox.crm.client} />
+        </div>
+        <div className="msg-content">
+          <span className="msg-name">{t.mockups.step2.customerName}</span>
+          <span className="msg-text">{t.mockups.step2.customerReply || "Perfect, thanks!"}</span>
+        </div>
+      </motion.div>
     </motion.div>
   );
 }
@@ -194,7 +210,7 @@ function Step3SendMockup() {
       viewport={{ once: false, amount: 0.3 }}
       transition={{ duration: 0.2 }}
     >
-      <div className="send-timeline">
+      <div className="send-timeline send-timeline-light">
         {steps.map((step, idx) => (
           <motion.div 
             key={idx} 
@@ -210,8 +226,8 @@ function Step3SendMockup() {
                 <step.icon className="w-5 h-5" />
               </div>
               <div className="timeline-content">
-                <span className="timeline-title">{step.title}</span>
-                <span className={`timeline-status ${step.statusClass}`}>{step.status}</span>
+                <span className="timeline-title timeline-title-dark">{step.title}</span>
+                <span className={`timeline-status timeline-status-dark ${step.statusClass}`}>{step.status}</span>
               </div>
             </div>
           </motion.div>
@@ -3635,16 +3651,7 @@ function HowItWorksMobile() {
         ))}
       </div>
 
-      <div className="relative rounded-2xl overflow-hidden mx-auto max-w-sm min-h-[380px]">
-        <LiquidBackground 
-          colorStart="#06b6d4"
-          colorMid="#14b8a6"
-          colorEnd="#ffffff"
-          speed={0.08}
-          scale={0.75}
-          className="rounded-2xl"
-        />
-        
+      <div className="relative rounded-2xl overflow-hidden mx-auto max-w-sm min-h-[380px] bg-white shadow-lg border border-gray-100">
         {/* All slides rendered simultaneously - only opacity changes to prevent layout shifts */}
         <div className="relative z-10 min-h-[340px]">
           {steps.map((step, i) => (
@@ -3659,7 +3666,7 @@ function HowItWorksMobile() {
               className="absolute inset-0 p-6"
               style={{ position: i === 0 ? 'relative' : 'absolute' }}
             >
-              <h3 className="font-display text-xl font-bold text-white text-center mb-4">
+              <h3 className="font-display text-xl font-bold text-[var(--landing-text)] text-center mb-4">
                 {step.title}
               </h3>
               
@@ -3672,7 +3679,7 @@ function HowItWorksMobile() {
           ))}
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 z-20">
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/10 z-20">
           <motion.div
             className="h-full bg-[var(--landing-primary)]"
             initial={{ width: "0%" }}
@@ -3703,7 +3710,19 @@ function HowItWorksMobile() {
 
 function HowItWorksSection() {
   const { t } = useLanguage();
+  const [isMobile, setIsMobile] = useState(false);
   const stepMockups = [<Step1ConnectMockup />, <Step2AIMockup />, <Step3SendMockup />];
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 900);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  if (isMobile) {
+    return <HowItWorksMobile />;
+  }
 
   return (
     <section id="how" className="how-simple-section">
