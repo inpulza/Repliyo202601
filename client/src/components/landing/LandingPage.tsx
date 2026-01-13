@@ -3737,14 +3737,14 @@ function HowItWorksSection() {
         pinSpacing: false,
       });
 
-      // Create a trigger for each step that fires when its center crosses viewport center
+      // Create a trigger for each step that fires when it enters the viewport
       stepRefs.current.forEach((stepEl, index) => {
         if (!stepEl) return;
         
         ScrollTrigger.create({
           trigger: stepEl,
-          start: 'top center',
-          end: 'bottom center',
+          start: 'top 70%',
+          end: 'bottom 30%',
           onEnter: () => {
             if (lastActiveRef.current !== index) {
               lastActiveRef.current = index;
