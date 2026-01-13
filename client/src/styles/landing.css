@@ -7591,12 +7591,10 @@
     overflow: hidden !important;
   }
   
-  /* Fixed height for Features section to prevent animation jumps */
+  /* Minimum height for Features section */
   #features {
-    min-height: 1100px !important;
-    height: 1100px !important;
-    max-height: 1100px !important;
-    overflow: hidden !important;
+    min-height: 800px !important;
+    overflow: visible !important;
   }
   
   #problem-solution .problem-side,
