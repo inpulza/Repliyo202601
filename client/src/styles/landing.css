@@ -2578,23 +2578,23 @@
 .how-simple-header {
   text-align: center;
   padding: 0 24px 60px;
-  max-width: 1200px;
+  max-width: 900px;
   margin: 0 auto;
 }
 
 .how-simple-steps {
   display: flex;
   flex-direction: column;
-  gap: 80px;
-  max-width: 1200px;
+  gap: 100px;
+  max-width: 1000px;
   margin: 0 auto;
-  padding: 0 40px;
+  padding: 0 48px;
 }
 
 .how-simple-step {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 60px;
+  gap: 48px;
   align-items: center;
 }
 
