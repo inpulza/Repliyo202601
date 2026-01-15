@@ -1879,25 +1879,32 @@ export function Inbox() {
                         <div className="space-y-2 mb-6">
                           {/* Thread Filter Chips - Icon-only with hover expand */}
                           <div className="flex items-center justify-center gap-2 flex-wrap">
-                            <button
+                            <motion.button
                               onClick={() => setThreadFilterNoReply(!threadFilterNoReply)}
                               disabled={threadFilterStats.noReplyCount === 0}
                               className={cn(
-                                "group inline-flex items-center gap-1.5 py-1.5 rounded-full text-[11px] font-medium transition-all",
+                                "inline-flex items-center gap-1.5 py-1.5 px-2 rounded-full text-[11px] font-medium",
                                 threadFilterNoReply 
-                                  ? "text-indigo-700 px-3 bg-indigo-100" 
-                                  : "text-gray-500 px-1.5 hover:text-gray-700",
+                                  ? "text-indigo-700 bg-indigo-100" 
+                                  : "text-gray-500 hover:text-gray-700",
                                 threadFilterStats.noReplyCount === 0 && "opacity-40 cursor-not-allowed"
                               )}
+                              whileHover="hover"
+                              animate={threadFilterNoReply ? "active" : "idle"}
                               data-testid="filter-no-reply"
                             >
                               <MessageCircle className="h-3.5 w-3.5 shrink-0" />
-                              <span className={cn(
-                                "overflow-hidden whitespace-nowrap transition-all duration-200",
-                                threadFilterNoReply ? "max-w-[80px] opacity-100" : "max-w-0 opacity-0 group-hover:max-w-[80px] group-hover:opacity-100"
-                              )}>
+                              <motion.span
+                                className="overflow-hidden whitespace-nowrap text-[11px]"
+                                variants={{
+                                  idle: { width: 0, opacity: 0 },
+                                  hover: { width: "auto", opacity: 1 },
+                                  active: { width: "auto", opacity: 1 }
+                                }}
+                                transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                              >
                                 Sin respuesta
-                              </span>
+                              </motion.span>
                               {threadFilterStats.noReplyCount > 0 && (
                                 <span className={cn(
                                   "px-1.5 py-0.5 rounded-full text-[10px] shrink-0",
@@ -1906,27 +1913,34 @@ export function Inbox() {
                                   {threadFilterStats.noReplyCount}
                                 </span>
                               )}
-                            </button>
+                            </motion.button>
                             
-                            <button
+                            <motion.button
                               onClick={() => setThreadFilterWithDraft(!threadFilterWithDraft)}
                               disabled={threadFilterStats.withDraftCount === 0}
                               className={cn(
-                                "group inline-flex items-center gap-1.5 py-1.5 rounded-full text-[11px] font-medium transition-all",
+                                "inline-flex items-center gap-1.5 py-1.5 px-2 rounded-full text-[11px] font-medium",
                                 threadFilterWithDraft 
-                                  ? "text-amber-700 px-3 bg-amber-100" 
-                                  : "text-gray-500 px-1.5 hover:text-gray-700",
+                                  ? "text-amber-700 bg-amber-100" 
+                                  : "text-gray-500 hover:text-gray-700",
                                 threadFilterStats.withDraftCount === 0 && "opacity-40 cursor-not-allowed"
                               )}
+                              whileHover="hover"
+                              animate={threadFilterWithDraft ? "active" : "idle"}
                               data-testid="filter-with-draft"
                             >
                               <Pencil className="h-3.5 w-3.5 shrink-0" />
-                              <span className={cn(
-                                "overflow-hidden whitespace-nowrap transition-all duration-200",
-                                threadFilterWithDraft ? "max-w-[80px] opacity-100" : "max-w-0 opacity-0 group-hover:max-w-[80px] group-hover:opacity-100"
-                              )}>
+                              <motion.span
+                                className="overflow-hidden whitespace-nowrap text-[11px]"
+                                variants={{
+                                  idle: { width: 0, opacity: 0 },
+                                  hover: { width: "auto", opacity: 1 },
+                                  active: { width: "auto", opacity: 1 }
+                                }}
+                                transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                              >
                                 Con borrador
-                              </span>
+                              </motion.span>
                               {threadFilterStats.withDraftCount > 0 && (
                                 <span className={cn(
                                   "px-1.5 py-0.5 rounded-full text-[10px] shrink-0",
@@ -1935,27 +1949,34 @@ export function Inbox() {
                                   {threadFilterStats.withDraftCount}
                                 </span>
                               )}
-                            </button>
+                            </motion.button>
                             
-                            <button
+                            <motion.button
                               onClick={() => setThreadFilterWithReminder(!threadFilterWithReminder)}
                               disabled={threadFilterStats.withReminderCount === 0}
                               className={cn(
-                                "group inline-flex items-center gap-1.5 py-1.5 rounded-full text-[11px] font-medium transition-all",
+                                "inline-flex items-center gap-1.5 py-1.5 px-2 rounded-full text-[11px] font-medium",
                                 threadFilterWithReminder 
-                                  ? "text-purple-700 px-3 bg-purple-100" 
-                                  : "text-gray-500 px-1.5 hover:text-gray-700",
+                                  ? "text-purple-700 bg-purple-100" 
+                                  : "text-gray-500 hover:text-gray-700",
                                 threadFilterStats.withReminderCount === 0 && "opacity-40 cursor-not-allowed"
                               )}
+                              whileHover="hover"
+                              animate={threadFilterWithReminder ? "active" : "idle"}
                               data-testid="filter-with-reminder"
                             >
                               <Bell className="h-3.5 w-3.5 shrink-0" />
-                              <span className={cn(
-                                "overflow-hidden whitespace-nowrap transition-all duration-200",
-                                threadFilterWithReminder ? "max-w-[100px] opacity-100" : "max-w-0 opacity-0 group-hover:max-w-[100px] group-hover:opacity-100"
-                              )}>
+                              <motion.span
+                                className="overflow-hidden whitespace-nowrap text-[11px]"
+                                variants={{
+                                  idle: { width: 0, opacity: 0 },
+                                  hover: { width: "auto", opacity: 1 },
+                                  active: { width: "auto", opacity: 1 }
+                                }}
+                                transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                              >
                                 Con recordatorio
-                              </span>
+                              </motion.span>
                               {threadFilterStats.withReminderCount > 0 && (
                                 <span className={cn(
                                   "px-1.5 py-0.5 rounded-full text-[10px] shrink-0",
@@ -1964,7 +1985,7 @@ export function Inbox() {
                                   {threadFilterStats.withReminderCount}
                                 </span>
                               )}
-                            </button>
+                            </motion.button>
                           </div>
                           
                           {/* Divider with message count - Now below filters */}
