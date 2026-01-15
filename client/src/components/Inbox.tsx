@@ -1876,19 +1876,8 @@ export function Inbox() {
                     <>
                       {/* Thread Header - Show if multiple messages in thread */}
                       {threadMessages.length > 1 && (
-                        <div className="space-y-3 mb-4">
-                          <div className="flex items-center justify-center gap-2">
-                            <div className="h-px flex-1 bg-gray-300" />
-                            <span className="text-[10px] font-medium text-gray-500 px-3 py-1 flex items-center gap-1.5">
-                              <MessageCircle className="h-3 w-3" />
-                              Thread · {filteredThreadMessages.length === threadMessages.length 
-                                ? `${threadMessages.length} messages` 
-                                : `${filteredThreadMessages.length} de ${threadMessages.length} messages`}
-                            </span>
-                            <div className="h-px flex-1 bg-gray-300" />
-                          </div>
-                          
-                          {/* Thread Filter Chips */}
+                        <div className="space-y-4 mb-8">
+                          {/* Thread Filter Chips - Now above the divider */}
                           <div className="flex items-center justify-center gap-2 flex-wrap">
                             <button
                               onClick={() => setThreadFilterNoReply(!threadFilterNoReply)}
@@ -1961,6 +1950,18 @@ export function Inbox() {
                                 </span>
                               )}
                             </button>
+                          </div>
+                          
+                          {/* Divider with message count - Now below filters */}
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="h-px flex-1 bg-gray-300" />
+                            <span className="text-[10px] font-medium text-gray-500 px-3 py-1 flex items-center gap-1.5">
+                              <MessageCircle className="h-3 w-3" />
+                              Thread · {filteredThreadMessages.length === threadMessages.length 
+                                ? `${threadMessages.length} messages` 
+                                : `${filteredThreadMessages.length} de ${threadMessages.length} messages`}
+                            </span>
+                            <div className="h-px flex-1 bg-gray-300" />
                           </div>
                         </div>
                       )}
