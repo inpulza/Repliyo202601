@@ -410,16 +410,13 @@ function SingleMessage({
         </div>
         
         <div className={cn(
-          "py-2 text-sm leading-relaxed relative break-words",
+          "text-sm leading-relaxed relative break-words inline-block max-w-full",
           (() => {
             if (msg.direction === 'inbound') {
-              return platformStyles.userBubble;
+              return "bg-white text-gray-900 px-4 py-2 rounded-2xl rounded-tl-md shadow-sm";
             }
-            if (isSentByAI) {
-              return platformStyles.aiBubble;
-            }
-            if (isSentFromRepliyo) {
-              return platformStyles.manualBubble;
+            if (isSentByAI || isSentFromRepliyo) {
+              return "bg-[#0291FA] text-white px-4 py-2 rounded-2xl rounded-tr-md shadow-sm";
             }
             return platformStyles.ownerBubble;
           })()
@@ -468,10 +465,10 @@ function SingleMessage({
           )}
           
           {isSentFromRepliyo && (
-            <div className="mt-2 pt-2 border-t border-gray-200 flex items-center justify-between text-[10px] font-medium text-gray-500">
+            <div className="mt-2 pt-2 border-t border-white/30 flex items-center justify-between text-[10px] font-medium text-white/80">
               <div className="flex items-center gap-1.5">
                 {isSentByReminder ? (
-                  <Bell className="h-3 w-3 text-amber-500" />
+                  <Bell className="h-3 w-3 text-amber-300" />
                 ) : isSentByAI ? (
                   <Bot className="h-3 w-3" />
                 ) : (
@@ -479,7 +476,7 @@ function SingleMessage({
                 )}
                 <span>{isSentByReminder ? "Reminder automático" : isSentByAI ? "Respondido con IA" : "Enviado desde Repliyo"}</span>
               </div>
-              <span className="text-[9px] text-gray-400">
+              <span className="text-[9px] text-white/60">
                 {(msg.content || '').length}/{getCharacterLimit((msg.platform || 'instagram') as Platform, (msg.type || 'comment') as MessageType)}
               </span>
             </div>
