@@ -1955,8 +1955,7 @@ export function Inbox() {
                           {/* Divider with message count - Now below filters */}
                           <div className="flex items-center justify-center gap-2">
                             <div className="h-px flex-1 bg-gray-300" />
-                            <span className="text-[10px] font-medium text-gray-500 px-3 py-1 flex items-center gap-1.5">
-                              <MessageCircle className="h-3 w-3" />
+                            <span className="text-[10px] font-medium text-gray-500 px-3 py-1">
                               Thread · {filteredThreadMessages.length === threadMessages.length 
                                 ? `${threadMessages.length} messages` 
                                 : `${filteredThreadMessages.length} de ${threadMessages.length} messages`}
