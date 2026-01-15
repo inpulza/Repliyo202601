@@ -1877,25 +1877,30 @@ export function Inbox() {
                       {/* Thread Header - Show if multiple messages in thread */}
                       {threadMessages.length > 1 && (
                         <div className="space-y-4 mb-8">
-                          {/* Thread Filter Chips - Now above the divider */}
-                          <div className="flex items-center justify-center gap-2 flex-wrap">
+                          {/* Thread Filter Chips - Icon-only with hover expand */}
+                          <div className="flex items-center justify-center gap-3 flex-wrap">
                             <button
                               onClick={() => setThreadFilterNoReply(!threadFilterNoReply)}
                               disabled={threadFilterStats.noReplyCount === 0}
                               className={cn(
-                                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all",
+                                "group inline-flex items-center gap-1.5 py-1.5 rounded-full text-[11px] font-medium transition-all",
                                 threadFilterNoReply 
-                                  ? "bg-indigo-100 text-indigo-700 border border-indigo-300" 
-                                  : "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200",
+                                  ? "text-indigo-700 px-3 bg-indigo-100" 
+                                  : "text-gray-500 px-1.5 hover:text-gray-700",
                                 threadFilterStats.noReplyCount === 0 && "opacity-40 cursor-not-allowed"
                               )}
                               data-testid="filter-no-reply"
                             >
-                              <MessageCircle className="h-3 w-3" />
-                              Sin respuesta
+                              <MessageCircle className="h-3.5 w-3.5 shrink-0" />
+                              <span className={cn(
+                                "overflow-hidden transition-all duration-200",
+                                threadFilterNoReply ? "max-w-[100px] opacity-100" : "max-w-0 opacity-0 group-hover:max-w-[100px] group-hover:opacity-100"
+                              )}>
+                                Sin respuesta
+                              </span>
                               {threadFilterStats.noReplyCount > 0 && (
                                 <span className={cn(
-                                  "ml-0.5 px-1.5 py-0.5 rounded-full text-[10px]",
+                                  "px-1.5 py-0.5 rounded-full text-[10px] shrink-0",
                                   threadFilterNoReply ? "bg-indigo-200" : "bg-gray-200"
                                 )}>
                                   {threadFilterStats.noReplyCount}
@@ -1907,19 +1912,24 @@ export function Inbox() {
                               onClick={() => setThreadFilterWithDraft(!threadFilterWithDraft)}
                               disabled={threadFilterStats.withDraftCount === 0}
                               className={cn(
-                                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all",
+                                "group inline-flex items-center gap-1.5 py-1.5 rounded-full text-[11px] font-medium transition-all",
                                 threadFilterWithDraft 
-                                  ? "bg-amber-100 text-amber-700 border border-amber-300" 
-                                  : "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200",
+                                  ? "text-amber-700 px-3 bg-amber-100" 
+                                  : "text-gray-500 px-1.5 hover:text-gray-700",
                                 threadFilterStats.withDraftCount === 0 && "opacity-40 cursor-not-allowed"
                               )}
                               data-testid="filter-with-draft"
                             >
-                              <Pencil className="h-3 w-3" />
-                              Con borrador
+                              <Pencil className="h-3.5 w-3.5 shrink-0" />
+                              <span className={cn(
+                                "overflow-hidden transition-all duration-200",
+                                threadFilterWithDraft ? "max-w-[100px] opacity-100" : "max-w-0 opacity-0 group-hover:max-w-[100px] group-hover:opacity-100"
+                              )}>
+                                Con borrador
+                              </span>
                               {threadFilterStats.withDraftCount > 0 && (
                                 <span className={cn(
-                                  "ml-0.5 px-1.5 py-0.5 rounded-full text-[10px]",
+                                  "px-1.5 py-0.5 rounded-full text-[10px] shrink-0",
                                   threadFilterWithDraft ? "bg-amber-200" : "bg-gray-200"
                                 )}>
                                   {threadFilterStats.withDraftCount}
@@ -1931,19 +1941,24 @@ export function Inbox() {
                               onClick={() => setThreadFilterWithReminder(!threadFilterWithReminder)}
                               disabled={threadFilterStats.withReminderCount === 0}
                               className={cn(
-                                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all",
+                                "group inline-flex items-center gap-1.5 py-1.5 rounded-full text-[11px] font-medium transition-all",
                                 threadFilterWithReminder 
-                                  ? "bg-purple-100 text-purple-700 border border-purple-300" 
-                                  : "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200",
+                                  ? "text-purple-700 px-3 bg-purple-100" 
+                                  : "text-gray-500 px-1.5 hover:text-gray-700",
                                 threadFilterStats.withReminderCount === 0 && "opacity-40 cursor-not-allowed"
                               )}
                               data-testid="filter-with-reminder"
                             >
-                              <Bell className="h-3 w-3" />
-                              Con recordatorio
+                              <Bell className="h-3.5 w-3.5 shrink-0" />
+                              <span className={cn(
+                                "overflow-hidden transition-all duration-200",
+                                threadFilterWithReminder ? "max-w-[100px] opacity-100" : "max-w-0 opacity-0 group-hover:max-w-[100px] group-hover:opacity-100"
+                              )}>
+                                Con recordatorio
+                              </span>
                               {threadFilterStats.withReminderCount > 0 && (
                                 <span className={cn(
-                                  "ml-0.5 px-1.5 py-0.5 rounded-full text-[10px]",
+                                  "px-1.5 py-0.5 rounded-full text-[10px] shrink-0",
                                   threadFilterWithReminder ? "bg-purple-200" : "bg-gray-200"
                                 )}>
                                   {threadFilterStats.withReminderCount}
