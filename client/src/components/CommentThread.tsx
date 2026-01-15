@@ -410,13 +410,13 @@ function SingleMessage({
         </div>
         
         <div className={cn(
-          "text-sm leading-relaxed relative break-words inline-block max-w-full",
+          "text-sm leading-relaxed relative break-words",
           (() => {
             if (msg.direction === 'inbound') {
-              return "bg-white text-gray-900 px-4 py-2 rounded-2xl rounded-tl-md";
+              return "bg-white text-gray-900 px-4 py-2 rounded-2xl rounded-tl-md w-fit max-w-[85%] md:max-w-[70%]";
             }
             if (isSentByAI || isSentFromRepliyo) {
-              return "bg-[#0291FA] text-white px-4 py-2 rounded-2xl rounded-tr-md";
+              return "bg-[#0291FA] text-white px-4 py-2 rounded-2xl rounded-tr-md w-fit max-w-[85%] md:max-w-[70%]";
             }
             return platformStyles.ownerBubble;
           })()
