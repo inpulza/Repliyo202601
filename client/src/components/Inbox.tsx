@@ -1988,15 +1988,13 @@ export function Inbox() {
                             </motion.button>
                           </div>
                           
-                          {/* Divider with message count - Now below filters */}
-                          <div className="flex items-center justify-center gap-2">
-                            <div className="h-px flex-1 bg-gray-300" />
-                            <span className="text-[10px] font-medium text-gray-500 px-3 py-1">
+                          {/* Message count label */}
+                          <div className="flex items-center justify-center">
+                            <span className="text-[10px] font-medium text-gray-400">
                               Thread · {filteredThreadMessages.length === threadMessages.length 
                                 ? `${threadMessages.length} messages` 
                                 : `${filteredThreadMessages.length} de ${threadMessages.length} messages`}
                             </span>
-                            <div className="h-px flex-1 bg-gray-300" />
                           </div>
                         </div>
                       )}
