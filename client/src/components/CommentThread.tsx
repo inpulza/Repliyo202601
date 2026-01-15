@@ -158,6 +158,7 @@ interface SingleMessageProps {
   isHighlighted?: boolean;
   isUnread?: boolean;
   onUnreadSeen?: (messageId: string) => void;
+  rootTimestamp?: Date;
   platformStyles: CommentThreadProps['platformStyles'];
   onStartReply: CommentThreadProps['onStartReply'];
   onGenerateDraft: CommentThreadProps['onGenerateDraft'];
@@ -195,6 +196,7 @@ function SingleMessage({
   isHighlighted = false,
   isUnread = false,
   onUnreadSeen,
+  rootTimestamp,
   platformStyles,
   onStartReply,
   onGenerateDraft,
@@ -362,7 +364,25 @@ function SingleMessage({
       <div className="flex flex-col gap-1 min-w-0 flex-1">
         <div className="flex items-baseline gap-2 mb-1 flex-wrap">
           <span className={cn("font-medium text-gray-900", isReply ? "text-xs" : "text-sm")}>{msg.author}</span>
-          <span className="text-[10px] text-muted-foreground">{new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+          <span className="text-[10px] text-muted-foreground">
+            {(() => {
+              const msgDate = new Date(msg.timestamp);
+              const rootDate = rootTimestamp ? new Date(rootTimestamp) : null;
+              const isSameDay = rootDate && 
+                msgDate.getDate() === rootDate.getDate() &&
+                msgDate.getMonth() === rootDate.getMonth() &&
+                msgDate.getFullYear() === rootDate.getFullYear();
+              
+              if (isSameDay || !rootDate) {
+                return msgDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+              } else {
+                const day = msgDate.getDate();
+                const month = msgDate.toLocaleDateString('es-ES', { month: 'short' });
+                const time = msgDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                return `${day} ${month}, ${time}`;
+              }
+            })()}
+          </span>
           {isReply && (
             <span className={cn(
               "text-[9px] font-medium px-1.5 py-0.5 rounded",
@@ -826,6 +846,7 @@ interface ThreadNodeProps {
   depth: number;
   isLastChild: boolean;
   parentMessageHeight?: number; // Height of parent's message bubble for connector calculation
+  rootTimestamp: Date;
   platformStyles: CommentThreadProps['platformStyles'];
   onStartReply: CommentThreadProps['onStartReply'];
   onGenerateDraft: CommentThreadProps['onGenerateDraft'];
@@ -863,6 +884,7 @@ function ThreadNode({
   depth,
   isLastChild,
   parentMessageHeight = 0,
+  rootTimestamp,
   platformStyles,
   onStartReply,
   onGenerateDraft,
@@ -984,6 +1006,7 @@ function ThreadNode({
           isHighlighted={highlightedMessageId === node.message.id}
           isUnread={unreadMessageIds?.has(node.message.id)}
           onUnreadSeen={onUnreadSeen}
+          rootTimestamp={rootTimestamp}
           platformStyles={platformStyles}
           onStartReply={onStartReply}
           onGenerateDraft={onGenerateDraft}
@@ -1030,6 +1053,7 @@ function ThreadNode({
                   depth={depth + 1}
                   isLastChild={index === node.children.length - 1}
                   parentMessageHeight={myMessageHeight}
+                  rootTimestamp={rootTimestamp}
                   platformStyles={platformStyles}
                   onStartReply={onStartReply}
                   onGenerateDraft={onGenerateDraft}
@@ -1228,6 +1252,7 @@ export function CommentThread({
               node={rootNode}
               depth={0}
               isLastChild={index === tree.length - 1}
+              rootTimestamp={new Date(rootNode.message.timestamp)}
               platformStyles={platformStyles}
               onStartReply={onStartReply}
               onGenerateDraft={onGenerateDraft}
