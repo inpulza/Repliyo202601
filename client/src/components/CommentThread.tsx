@@ -384,9 +384,6 @@ function SingleMessage({
               Orphan
             </span>
           )}
-          {msg.direction === 'inbound' && !isOwner && (
-            <SentimentIndicator sentiment={(msg.sentiment || 'neutral') as Sentiment} />
-          )}
           {msg.direction === 'inbound' && authorReminderCount > 0 && (
             <span 
               className="flex items-center gap-0.5 text-[9px] font-medium text-gray-500"
