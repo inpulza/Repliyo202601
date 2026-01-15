@@ -409,147 +409,154 @@ function SingleMessage({
           )}
         </div>
         
+        {/* Wrapper for bubble + actions to share dynamic width */}
         <div className={cn(
-          "text-sm leading-relaxed relative break-words",
-          (() => {
-            if (msg.direction === 'inbound') {
-              return "bg-white text-gray-900 px-4 py-2 rounded-2xl rounded-tl-md w-fit max-w-[85%] md:max-w-[70%]";
-            }
-            if (isSentByAI || isSentFromRepliyo) {
-              return "bg-[#0291FA] text-white px-4 py-2 rounded-2xl rounded-tr-md w-fit max-w-[85%] md:max-w-[70%]";
-            }
-            return platformStyles.ownerBubble;
-          })()
+          "w-fit max-w-[85%] md:max-w-[70%]",
+          msg.direction === 'inbound' && "min-w-[180px]"
         )}>
-          {(msg as any).mediaType === 'audio' && (msg as any).mediaUrl && (
-            <div className="mb-2">
-              <AudioPlayer 
-                src={(msg as any).mediaUrl}
-                transcription={(msg as any).mediaTranscription}
-                isOutbound={isSentFromRepliyo || isOwner}
-              />
-            </div>
-          )}
-          
-          {(msg as any).mediaType === 'image' && (msg as any).mediaUrl && (
-            <div className="mb-2">
-              <img 
-                src={(msg as any).mediaUrl} 
-                alt="Imagen adjunta"
-                className="max-w-full rounded-lg border border-gray-200"
-                loading="lazy"
-              />
-            </div>
-          )}
-          
-          {(msg as any).mediaType === 'video' && (msg as any).mediaUrl && (
-            <div className="mb-2">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
-                  <Video className="h-4 w-4 text-purple-600" />
+          <div className={cn(
+            "text-sm leading-relaxed relative break-words",
+            (() => {
+              if (msg.direction === 'inbound') {
+                return "bg-white text-gray-900 px-4 py-2 rounded-2xl rounded-tl-md";
+              }
+              if (isSentByAI || isSentFromRepliyo) {
+                return "bg-[#0291FA] text-white px-4 py-2 rounded-2xl rounded-tr-md";
+              }
+              return platformStyles.ownerBubble;
+            })()
+          )}>
+            {(msg as any).mediaType === 'audio' && (msg as any).mediaUrl && (
+              <div className="mb-2">
+                <AudioPlayer 
+                  src={(msg as any).mediaUrl}
+                  transcription={(msg as any).mediaTranscription}
+                  isOutbound={isSentFromRepliyo || isOwner}
+                />
+              </div>
+            )}
+            
+            {(msg as any).mediaType === 'image' && (msg as any).mediaUrl && (
+              <div className="mb-2">
+                <img 
+                  src={(msg as any).mediaUrl} 
+                  alt="Imagen adjunta"
+                  className="max-w-full rounded-lg border border-gray-200"
+                  loading="lazy"
+                />
+              </div>
+            )}
+            
+            {(msg as any).mediaType === 'video' && (msg as any).mediaUrl && (
+              <div className="mb-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
+                    <Video className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <span className="text-xs font-medium text-purple-600">Video adjunto</span>
                 </div>
-                <span className="text-xs font-medium text-purple-600">Video adjunto</span>
+                <video 
+                  controls 
+                  className="w-full rounded-lg"
+                  src={(msg as any).mediaUrl}
+                >
+                  Tu navegador no soporta video
+                </video>
               </div>
-              <video 
-                controls 
-                className="w-full rounded-lg"
-                src={(msg as any).mediaUrl}
-              >
-                Tu navegador no soporta video
-              </video>
-            </div>
-          )}
+            )}
+            
+            {msg.content && !['[Mensaje de audio]', '[Imagen]', '[Video]', '[Archivo adjunto]'].includes(msg.content) && (
+              <span>{msg.content}</span>
+            )}
+            
+            {isSentFromRepliyo && (
+              <div className="mt-2 pt-2 border-t border-white/30 flex items-center justify-between text-[10px] font-medium text-white/80">
+                <div className="flex items-center gap-1.5">
+                  {isSentByReminder ? (
+                    <Bell className="h-3 w-3 text-amber-300" />
+                  ) : isSentByAI ? (
+                    <Bot className="h-3 w-3" />
+                  ) : (
+                    <Send className="h-2.5 w-2.5" />
+                  )}
+                  <span>{isSentByReminder ? "Reminder automático" : isSentByAI ? "Respondido con IA" : "Enviado desde Repliyo"}</span>
+                </div>
+                <span className="text-[9px] text-white/60">
+                  {(msg.content || '').length}/{getCharacterLimit((msg.platform || 'instagram') as Platform, (msg.type || 'comment') as MessageType)}
+                </span>
+              </div>
+            )}
+          </div>
           
-          {msg.content && !['[Mensaje de audio]', '[Imagen]', '[Video]', '[Archivo adjunto]'].includes(msg.content) && (
-            <span>{msg.content}</span>
-          )}
-          
-          {isSentFromRepliyo && (
-            <div className="mt-2 pt-2 border-t border-white/30 flex items-center justify-between text-[10px] font-medium text-white/80">
-              <div className="flex items-center gap-1.5">
-                {isSentByReminder ? (
-                  <Bell className="h-3 w-3 text-amber-300" />
-                ) : isSentByAI ? (
-                  <Bot className="h-3 w-3" />
-                ) : (
-                  <Send className="h-2.5 w-2.5" />
+          {/* Actions row - shares width with bubble above */}
+          {!isOwner && msg.direction === 'inbound' && (
+            <div className="flex items-center justify-between mt-1 pt-1">
+              {/* Left side: Toggle replies button */}
+              <div className="flex items-center">
+                {hasChildren && canNest && onToggleExpand && (
+                  <button
+                    onClick={() => onToggleExpand(msg.id)}
+                    className="flex items-center gap-1.5 text-[11px] font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
+                    data-testid={`toggle-replies-${msg.id}`}
+                  >
+                    {isExpanded ? (
+                      <>
+                        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M18 15l-6-6-6 6"/>
+                        </svg>
+                        <span>Ocultar respuestas</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M6 9l6 6 6-6"/>
+                        </svg>
+                        <span>Ver {childrenCount} respuesta{childrenCount > 1 ? 's' : ''}</span>
+                      </>
+                    )}
+                  </button>
                 )}
-                <span>{isSentByReminder ? "Reminder automático" : isSentByAI ? "Respondido con IA" : "Enviado desde Repliyo"}</span>
               </div>
-              <span className="text-[9px] text-white/60">
-                {(msg.content || '').length}/{getCharacterLimit((msg.platform || 'instagram') as Platform, (msg.type || 'comment') as MessageType)}
-              </span>
+              
+              {/* Right side: Reply and Generate Draft buttons */}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => onStartReply(msg)}
+                  data-testid={`button-reply-${msg.id}`}
+                  title="Reply to this message"
+                  className="flex items-center gap-1 text-gray-400 hover:text-indigo-600 transition-colors"
+                >
+                  <svg 
+                    className="h-4 w-4" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                  >
+                    <path d="M3 10h10a5 5 0 0 1 5 5v6" />
+                    <path d="M7 6l-4 4 4 4" />
+                  </svg>
+                  <span className="text-[10px] font-medium">Reply</span>
+                </button>
+                
+                {!msg.aiSuggestedReply && msg.aiReplyStatus !== 'drafted' && !generatingDraftIds.has(msg.id) && (
+                  <button
+                    onClick={() => onGenerateDraft(msg.id)}
+                    disabled={generatingDraftIds.has(msg.id)}
+                    data-testid={`button-generate-draft-${msg.id}`}
+                    title="Generar borrador IA"
+                    className="flex items-center gap-1 transition-colors text-gray-400 hover:text-purple-600"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span className="text-[10px] font-medium">Generar Borrador</span>
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
-        
-        {!isOwner && msg.direction === 'inbound' && (
-          <div className="flex items-center justify-between mt-1 pt-1 max-w-[85%] md:max-w-[70%]">
-            {/* Left side: Toggle replies button */}
-            <div className="flex items-center">
-              {hasChildren && canNest && onToggleExpand && (
-                <button
-                  onClick={() => onToggleExpand(msg.id)}
-                  className="flex items-center gap-1.5 text-[11px] font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
-                  data-testid={`toggle-replies-${msg.id}`}
-                >
-                  {isExpanded ? (
-                    <>
-                      <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M18 15l-6-6-6 6"/>
-                      </svg>
-                      <span>Ocultar respuestas</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M6 9l6 6 6-6"/>
-                      </svg>
-                      <span>Ver {childrenCount} respuesta{childrenCount > 1 ? 's' : ''}</span>
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-            
-            {/* Right side: Reply and Generate Draft buttons */}
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => onStartReply(msg)}
-                data-testid={`button-reply-${msg.id}`}
-                title="Reply to this message"
-                className="flex items-center gap-1 text-gray-400 hover:text-indigo-600 transition-colors"
-              >
-                <svg 
-                  className="h-4 w-4" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round"
-                >
-                  <path d="M3 10h10a5 5 0 0 1 5 5v6" />
-                  <path d="M7 6l-4 4 4 4" />
-                </svg>
-                <span className="text-[10px] font-medium">Reply</span>
-              </button>
-              
-              {!msg.aiSuggestedReply && msg.aiReplyStatus !== 'drafted' && !generatingDraftIds.has(msg.id) && (
-                <button
-                  onClick={() => onGenerateDraft(msg.id)}
-                  disabled={generatingDraftIds.has(msg.id)}
-                  data-testid={`button-generate-draft-${msg.id}`}
-                  title="Generar borrador IA"
-                  className="flex items-center gap-1 transition-colors text-gray-400 hover:text-purple-600"
-                >
-                  <Sparkles className="h-3.5 w-3.5" />
-                  <span className="text-[10px] font-medium">Generar Borrador</span>
-                </button>
-              )}
-            </div>
-          </div>
-        )}
         
         {/* Toggle for outbound messages with children (no Reply/Generate buttons for owner's messages) */}
         {isOwner && hasChildren && canNest && onToggleExpand && (
