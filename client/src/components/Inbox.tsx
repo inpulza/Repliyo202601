@@ -1876,9 +1876,9 @@ export function Inbox() {
                     <>
                       {/* Thread Header - Show if multiple messages in thread */}
                       {threadMessages.length > 1 && (
-                        <div className="space-y-4 mb-8">
+                        <div className="space-y-2 mb-6">
                           {/* Thread Filter Chips - Icon-only with hover expand */}
-                          <div className="flex items-center justify-center gap-3 flex-wrap">
+                          <div className="flex items-center justify-center gap-2 flex-wrap">
                             <button
                               onClick={() => setThreadFilterNoReply(!threadFilterNoReply)}
                               disabled={threadFilterStats.noReplyCount === 0}
@@ -1893,8 +1893,8 @@ export function Inbox() {
                             >
                               <MessageCircle className="h-3.5 w-3.5 shrink-0" />
                               <span className={cn(
-                                "overflow-hidden transition-all duration-200",
-                                threadFilterNoReply ? "max-w-[100px] opacity-100" : "max-w-0 opacity-0 group-hover:max-w-[100px] group-hover:opacity-100"
+                                "overflow-hidden whitespace-nowrap transition-all duration-200",
+                                threadFilterNoReply ? "max-w-[80px] opacity-100" : "max-w-0 opacity-0 group-hover:max-w-[80px] group-hover:opacity-100"
                               )}>
                                 Sin respuesta
                               </span>
@@ -1922,8 +1922,8 @@ export function Inbox() {
                             >
                               <Pencil className="h-3.5 w-3.5 shrink-0" />
                               <span className={cn(
-                                "overflow-hidden transition-all duration-200",
-                                threadFilterWithDraft ? "max-w-[100px] opacity-100" : "max-w-0 opacity-0 group-hover:max-w-[100px] group-hover:opacity-100"
+                                "overflow-hidden whitespace-nowrap transition-all duration-200",
+                                threadFilterWithDraft ? "max-w-[80px] opacity-100" : "max-w-0 opacity-0 group-hover:max-w-[80px] group-hover:opacity-100"
                               )}>
                                 Con borrador
                               </span>
@@ -1951,7 +1951,7 @@ export function Inbox() {
                             >
                               <Bell className="h-3.5 w-3.5 shrink-0" />
                               <span className={cn(
-                                "overflow-hidden transition-all duration-200",
+                                "overflow-hidden whitespace-nowrap transition-all duration-200",
                                 threadFilterWithReminder ? "max-w-[100px] opacity-100" : "max-w-0 opacity-0 group-hover:max-w-[100px] group-hover:opacity-100"
                               )}>
                                 Con recordatorio
