@@ -484,67 +484,70 @@ function SingleMessage({
         </div>
         
         {!isOwner && msg.direction === 'inbound' && (
-          <div className="flex items-center gap-4 mt-1 pt-1">
-            {/* Toggle replies button */}
-            {hasChildren && canNest && onToggleExpand && (
-              <button
-                onClick={() => onToggleExpand(msg.id)}
-                className="flex items-center gap-1.5 text-[11px] font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
-                data-testid={`toggle-replies-${msg.id}`}
-              >
-                {isExpanded ? (
-                  <>
-                    <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M18 15l-6-6-6 6"/>
-                    </svg>
-                    <span>Ocultar respuestas</span>
-                  </>
-                ) : (
-                  <>
-                    <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M6 9l6 6 6-6"/>
-                    </svg>
-                    <span>Ver {childrenCount} respuesta{childrenCount > 1 ? 's' : ''}</span>
-                  </>
-                )}
-              </button>
-            )}
+          <div className="flex items-center justify-between mt-1 pt-1 max-w-[85%] md:max-w-[70%]">
+            {/* Left side: Toggle replies button */}
+            <div className="flex items-center">
+              {hasChildren && canNest && onToggleExpand && (
+                <button
+                  onClick={() => onToggleExpand(msg.id)}
+                  className="flex items-center gap-1.5 text-[11px] font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
+                  data-testid={`toggle-replies-${msg.id}`}
+                >
+                  {isExpanded ? (
+                    <>
+                      <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M18 15l-6-6-6 6"/>
+                      </svg>
+                      <span>Ocultar respuestas</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M6 9l6 6 6-6"/>
+                      </svg>
+                      <span>Ver {childrenCount} respuesta{childrenCount > 1 ? 's' : ''}</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
             
-            {/* Reply button */}
-            <button
-              onClick={() => onStartReply(msg)}
-              data-testid={`button-reply-${msg.id}`}
-              title="Reply to this message"
-              className="flex items-center gap-1 text-gray-400 hover:text-indigo-600 transition-colors"
-            >
-              <svg 
-                className="h-4 w-4" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              >
-                <path d="M3 10h10a5 5 0 0 1 5 5v6" />
-                <path d="M7 6l-4 4 4 4" />
-              </svg>
-              <span className="text-[10px] font-medium">Reply</span>
-            </button>
-            
-            {/* Generate Draft button */}
-            {!msg.aiSuggestedReply && msg.aiReplyStatus !== 'drafted' && !generatingDraftIds.has(msg.id) && (
+            {/* Right side: Reply and Generate Draft buttons */}
+            <div className="flex items-center gap-3">
               <button
-                onClick={() => onGenerateDraft(msg.id)}
-                disabled={generatingDraftIds.has(msg.id)}
-                data-testid={`button-generate-draft-${msg.id}`}
-                title="Generar borrador IA"
-                className="flex items-center gap-1 transition-colors text-gray-400 hover:text-purple-600"
+                onClick={() => onStartReply(msg)}
+                data-testid={`button-reply-${msg.id}`}
+                title="Reply to this message"
+                className="flex items-center gap-1 text-gray-400 hover:text-indigo-600 transition-colors"
               >
-                <Sparkles className="h-3.5 w-3.5" />
-                <span className="text-[10px] font-medium">Generar Borrador</span>
+                <svg 
+                  className="h-4 w-4" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                >
+                  <path d="M3 10h10a5 5 0 0 1 5 5v6" />
+                  <path d="M7 6l-4 4 4 4" />
+                </svg>
+                <span className="text-[10px] font-medium">Reply</span>
               </button>
-            )}
+              
+              {!msg.aiSuggestedReply && msg.aiReplyStatus !== 'drafted' && !generatingDraftIds.has(msg.id) && (
+                <button
+                  onClick={() => onGenerateDraft(msg.id)}
+                  disabled={generatingDraftIds.has(msg.id)}
+                  data-testid={`button-generate-draft-${msg.id}`}
+                  title="Generar borrador IA"
+                  className="flex items-center gap-1 transition-colors text-gray-400 hover:text-purple-600"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span className="text-[10px] font-medium">Generar Borrador</span>
+                </button>
+              )}
+            </div>
           </div>
         )}
         
