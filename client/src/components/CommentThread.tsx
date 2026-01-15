@@ -383,14 +383,6 @@ function SingleMessage({
               }
             })()}
           </span>
-          {isReply && (
-            <span className={cn(
-              "text-[9px] font-medium px-1.5 py-0.5 rounded",
-              platformStyles.badge
-            )}>
-              Reply
-            </span>
-          )}
           {isOrphan && (
             <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200" title="Parent message not found in current thread">
               Orphan
