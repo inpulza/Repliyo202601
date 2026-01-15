@@ -484,7 +484,7 @@ function SingleMessage({
         </div>
         
         {!isOwner && msg.direction === 'inbound' && (
-          <div className="flex items-center justify-between mt-1 pt-1 border-t border-gray-200">
+          <div className="flex items-center justify-between mt-1 pt-1">
             {/* Left side: Toggle replies button (only when has children and can nest) */}
             <div className="flex items-center">
               {hasChildren && canNest && onToggleExpand && (
@@ -553,7 +553,7 @@ function SingleMessage({
         
         {/* Toggle for outbound messages with children (no Reply/Generate buttons for owner's messages) */}
         {isOwner && hasChildren && canNest && onToggleExpand && (
-          <div className="flex items-center mt-1 pt-1 border-t border-gray-200">
+          <div className="flex items-center mt-1 pt-1">
             <button
               onClick={() => onToggleExpand(msg.id)}
               className="flex items-center gap-1.5 text-[11px] font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
