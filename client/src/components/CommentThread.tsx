@@ -1230,7 +1230,7 @@ export function CommentThread({
         <div key={rootNode.message.id} data-testid={`thread-root-${rootNode.message.id}`}>
           {showSeparator && dateDisplay && (
             <div className="flex justify-center my-6" data-testid={`date-separator-${dateKey}`}>
-              <span className="text-[10px] font-medium text-gray-500 bg-white px-4 py-1.5 rounded-full border border-gray-200">
+              <span className="text-[10px] font-medium text-gray-500 bg-[#E2E6EB] px-4 py-1.5 rounded-full">
                 {dateDisplay}
               </span>
             </div>
