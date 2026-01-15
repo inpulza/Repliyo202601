@@ -413,10 +413,10 @@ function SingleMessage({
           "text-sm leading-relaxed relative break-words inline-block max-w-full",
           (() => {
             if (msg.direction === 'inbound') {
-              return "bg-white text-gray-900 px-4 py-2 rounded-2xl rounded-tl-md shadow-sm";
+              return "bg-white text-gray-900 px-4 py-2 rounded-2xl rounded-tl-md";
             }
             if (isSentByAI || isSentFromRepliyo) {
-              return "bg-[#0291FA] text-white px-4 py-2 rounded-2xl rounded-tr-md shadow-sm";
+              return "bg-[#0291FA] text-white px-4 py-2 rounded-2xl rounded-tr-md";
             }
             return platformStyles.ownerBubble;
           })()
