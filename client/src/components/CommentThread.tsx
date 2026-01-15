@@ -1235,7 +1235,7 @@ export function CommentThread({
       {nodesWithDateInfo.map(({ node: rootNode, index, dateKey, dateDisplay, showSeparator }) => (
         <div key={rootNode.message.id} data-testid={`thread-root-${rootNode.message.id}`}>
           {showSeparator && dateDisplay && (
-            <div className="flex justify-center my-6" data-testid={`date-separator-${dateKey}`}>
+            <div className="flex justify-center mt-4 mb-8" data-testid={`date-separator-${dateKey}`}>
               <span className="text-[10px] font-medium text-gray-500 bg-[#E2E6EB] px-4 py-1.5 rounded-full">
                 {dateDisplay}
               </span>
