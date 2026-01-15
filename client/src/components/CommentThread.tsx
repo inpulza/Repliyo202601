@@ -389,7 +389,7 @@ function SingleMessage({
           )}
           {msg.direction === 'inbound' && authorReminderCount > 0 && (
             <span 
-              className="flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200"
+              className="flex items-center gap-0.5 text-[9px] font-medium text-gray-500"
               title={`${authorReminderCount} reminder${authorReminderCount > 1 ? 's' : ''} enviado${authorReminderCount > 1 ? 's' : ''} a este usuario`}
               data-testid={`badge-author-reminders-${msg.id}`}
             >
@@ -399,7 +399,7 @@ function SingleMessage({
           )}
           {!isReply && threadReminderCount > 0 && (
             <span 
-              className="flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200"
+              className="flex items-center gap-0.5 text-[9px] font-medium text-gray-500"
               title={`${threadReminderCount} reminder${threadReminderCount > 1 ? 's' : ''} en este hilo`}
               data-testid={`badge-thread-reminders-${msg.id}`}
             >
