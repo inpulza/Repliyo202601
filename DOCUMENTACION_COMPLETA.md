@@ -8948,4 +8948,658 @@ export function requireAuthHybrid(req: Request, res: Response, next: NextFunctio
 ---
 
 *Documento creado: Enero 2026*
-*Última actualización: 10 Enero 2026 - Fase 4 revisada con notas de compatibilidad, riesgos, orden de ejecución y recomendaciones del agente*
+*Última actualización: 16 Enero 2026 - Agregado Plan de Refactorización Arquitectónica*
+
+---
+
+## PLAN DE REFACTORIZACIÓN ARQUITECTÓNICA - Enero 2026
+
+### Resumen Ejecutivo
+
+Este plan documenta los problemas arquitectónicos identificados en la aplicación y establece una hoja de ruta segura para resolverlos gradualmente sin comprometer la estabilidad del sistema en producción.
+
+**Principio Rector**: Aplicamos el patrón **"Strangler Fig"** - mejoramos incrementalmente mientras mantenemos la aplicación funcional. NO refactorizamos todo de golpe.
+
+---
+
+### Diagnóstico: Problemas Identificados
+
+#### 🔴 Problema 1: Archivos Monolíticos (God Objects)
+
+| Archivo | Tamaño | Responsabilidades Mezcladas |
+|---------|--------|----------------------------|
+| `server/routes.ts` | 162 KB (~100 endpoints) | Autenticación, validación, lógica de negocio, sincronización, websockets, orquestación |
+| `server/storage.ts` | 162 KB | CRUD de todas las entidades, lógica de elegibilidad, transiciones de estado, queries complejas |
+
+**Impacto**: Viola SRP (Single Responsibility Principle), dificulta testing, mantenimiento y onboarding de nuevos desarrolladores.
+
+#### 🔴 Problema 2: Ausencia de Capas Arquitectónicas
+
+**Estructura Actual (Plana):**
+```
+Frontend (React) → Routes (API) → Storage (DB)
+```
+
+**Estructura Recomendada (Por Capas):**
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    PRESENTACIÓN (Frontend)                   │
+├─────────────────────────────────────────────────────────────┤
+│                     CONTROLLERS (Routes)                     │
+├─────────────────────────────────────────────────────────────┤
+│              USE CASES / APPLICATION SERVICES                │
+├─────────────────────────────────────────────────────────────┤
+│                   DOMAIN (Entities + Rules)                  │
+├─────────────────────────────────────────────────────────────┤
+│       INFRASTRUCTURE (Repositories, Adapters, APIs)         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 🔴 Problema 3: Componentes React Gigantes
+
+| Componente | Tamaño | Responsabilidades Mezcladas |
+|------------|--------|----------------------------|
+| `LandingPage.tsx` | 165 KB | UI, animaciones, datos, lógica de presentación |
+| `Inbox.tsx` | 124 KB | Threading, fetching, estados, presentación, acciones |
+| `AIAgentConfig.tsx` | 117 KB | 6 tabs, validación, lógica de negocio AI, formularios |
+| `CRM.tsx` | 87 KB | Vista, filtros, acciones, modales, lógica de merge |
+
+**Impacto**: Componentes no reutilizables, difíciles de testear, alta probabilidad de bugs por efectos secundarios.
+
+#### 🔴 Problema 4: Lógica de Negocio en Frontend
+
+Reglas de negocio críticas ejecutándose en cliente (inseguro, no reutilizable):
+- Threading/agrupación de mensajes
+- Heurísticas de merge de contactos CRM
+- Validación de configuración AI
+- Cálculos de elegibilidad
+
+#### 🔴 Problema 5: Servicios Acoplados
+
+Los servicios en `server/services/` tienen dependencias directas sin abstracción:
+- Acceso directo a `storage` global
+- Llamadas directas a adaptadores Metricool
+- Side-effects de WebSocket mezclados con lógica
+
+**Impacto**: Imposible hacer testing con mocks, cambiar implementaciones, o entender el grafo de dependencias.
+
+#### 🔴 Problema 6: Sin Abstracciones de Dominio
+
+| Abstracción Faltante | Consecuencia |
+|---------------------|--------------|
+| DTOs (Data Transfer Objects) | Records de DB fluyen directamente a la UI sin transformación |
+| Value Objects | No hay validación de invariantes de negocio |
+| Entities | No hay modelado explícito de reglas de dominio |
+| Repository Interfaces | Storage mezcla acceso a datos con lógica |
+
+---
+
+### Plan de Refactorización por Fases
+
+**Leyenda de Checkmarks:**
+- `[ ]` = Pendiente
+- `[~]` = En progreso  
+- `[x]` = Completado
+
+**Estimación de Riesgo:**
+- 🟢 Bajo = No afecta funcionalidad existente
+- 🟡 Medio = Requiere testing cuidadoso
+- 🔴 Alto = Potencial de romper funcionalidad
+
+---
+
+### FASE 0: Preparación y Seguridad 🟢
+
+**Objetivo**: Establecer bases para refactorización segura sin tocar código de producción.
+
+**Duración estimada**: 1-2 días  
+**Dependencias**: Ninguna  
+**Puede ejecutarse en paralelo con**: Desarrollo normal de features
+
+#### Subfase 0.1: Documentación del Estado Actual
+- [ ] **0.1.1** Crear diagrama de arquitectura actual (draw.io o Mermaid)
+- [ ] **0.1.2** Documentar todos los endpoints de `routes.ts` con sus responsabilidades
+- [ ] **0.1.3** Mapear dependencias entre servicios en `server/services/`
+- [ ] **0.1.4** Identificar las 10 rutas más críticas/usadas (analytics o logs)
+- [ ] **0.1.5** Documentar el flujo de datos completo para casos de uso principales:
+  - [ ] Flujo de sincronización Metricool
+  - [ ] Flujo de auto-reply AI
+  - [ ] Flujo de recordatorios
+  - [ ] Flujo de CRM
+
+#### Subfase 0.2: Infraestructura de Testing
+- [ ] **0.2.1** Configurar Jest o Vitest para backend (si no existe)
+- [ ] **0.2.2** Crear primeros tests de integración para endpoints críticos:
+  - [ ] Test de login/logout
+  - [ ] Test de sincronización básica
+  - [ ] Test de envío de reply
+- [ ] **0.2.3** Configurar coverage report mínimo
+- [ ] **0.2.4** Agregar tests de humo (smoke tests) que verifiquen que la app arranca
+
+#### Subfase 0.3: Estrategia de Rollback
+- [ ] **0.3.1** Verificar que checkpoints de Replit están funcionando
+- [ ] **0.3.2** Crear branch de desarrollo para refactorización (`refactor/architecture`)
+- [ ] **0.3.3** Documentar proceso de rollback en caso de emergencia
+
+---
+
+### FASE 1: División de Routes por Contexto 🟡
+
+**Objetivo**: Separar `routes.ts` monolítico en módulos por dominio funcional.
+
+**Duración estimada**: 3-5 días  
+**Dependencias**: Fase 0 completada  
+**Puede ejecutarse en paralelo con**: Fase 2 (parcialmente)
+
+**Estrategia**: Extraer grupos de endpoints a archivos separados SIN cambiar lógica interna.
+
+#### Subfase 1.1: Crear Estructura de Carpetas
+- [ ] **1.1.1** Crear directorio `server/routes/`
+- [ ] **1.1.2** Crear archivo `server/routes/index.ts` como punto de entrada
+- [ ] **1.1.3** Definir convención de nombres: `{dominio}.routes.ts`
+
+#### Subfase 1.2: Extraer Rutas de Autenticación
+- [ ] **1.2.1** Crear `server/routes/auth.routes.ts`
+- [ ] **1.2.2** Mover endpoints: `/api/register`, `/api/login`, `/api/logout`, `/api/user`
+- [ ] **1.2.3** Verificar que login/logout funcionan correctamente
+- [ ] **1.2.4** Actualizar `routes.ts` para importar de `auth.routes.ts`
+
+#### Subfase 1.3: Extraer Rutas de Brands
+- [ ] **1.3.1** Crear `server/routes/brands.routes.ts`
+- [ ] **1.3.2** Mover endpoints relacionados con marcas
+- [ ] **1.3.3** Verificar funcionalidad de gestión de marcas
+- [ ] **1.3.4** Actualizar imports en `routes.ts`
+
+#### Subfase 1.4: Extraer Rutas de Inbox/Mensajes
+- [ ] **1.4.1** Crear `server/routes/inbox.routes.ts`
+- [ ] **1.4.2** Mover endpoints de mensajes, threads, replies
+- [ ] **1.4.3** Verificar funcionalidad de inbox completa
+- [ ] **1.4.4** Actualizar imports
+
+#### Subfase 1.5: Extraer Rutas de CRM
+- [ ] **1.5.1** Crear `server/routes/crm.routes.ts`
+- [ ] **1.5.2** Mover endpoints de contactos, merge, enrichment
+- [ ] **1.5.3** Verificar funcionalidad de CRM
+- [ ] **1.5.4** Actualizar imports
+
+#### Subfase 1.6: Extraer Rutas de AI Agents
+- [ ] **1.6.1** Crear `server/routes/ai-agents.routes.ts`
+- [ ] **1.6.2** Mover endpoints de configuración AI, generate-reply, playground
+- [ ] **1.6.3** Verificar funcionalidad de agentes AI
+- [ ] **1.6.4** Actualizar imports
+
+#### Subfase 1.7: Extraer Rutas de Recordatorios
+- [ ] **1.7.1** Crear `server/routes/reminders.routes.ts`
+- [ ] **1.7.2** Mover endpoints de recordatorios
+- [ ] **1.7.3** Verificar funcionalidad de recordatorios
+- [ ] **1.7.4** Actualizar imports
+
+#### Subfase 1.8: Extraer Rutas de Notificaciones
+- [ ] **1.8.1** Crear `server/routes/notifications.routes.ts`
+- [ ] **1.8.2** Mover endpoints de notificaciones
+- [ ] **1.8.3** Verificar funcionalidad
+- [ ] **1.8.4** Actualizar imports
+
+#### Subfase 1.9: Extraer Rutas de Sincronización
+- [ ] **1.9.1** Crear `server/routes/sync.routes.ts`
+- [ ] **1.9.2** Mover endpoints de sincronización con Metricool
+- [ ] **1.9.3** Verificar sincronización funciona
+- [ ] **1.9.4** Actualizar imports
+
+#### Subfase 1.10: Limpieza Final
+- [ ] **1.10.1** Verificar que `routes.ts` original está vacío o solo tiene router principal
+- [ ] **1.10.2** Eliminar código duplicado
+- [ ] **1.10.3** Ejecutar suite de tests completa
+- [ ] **1.10.4** Verificar que no hay regresiones en producción
+
+**Archivo resultante `server/routes/index.ts`:**
+```typescript
+import { Router } from 'express';
+import authRoutes from './auth.routes';
+import brandsRoutes from './brands.routes';
+import inboxRoutes from './inbox.routes';
+import crmRoutes from './crm.routes';
+import aiAgentsRoutes from './ai-agents.routes';
+import remindersRoutes from './reminders.routes';
+import notificationsRoutes from './notifications.routes';
+import syncRoutes from './sync.routes';
+
+const router = Router();
+
+router.use('/auth', authRoutes);
+router.use('/brands', brandsRoutes);
+router.use('/inbox', inboxRoutes);
+router.use('/crm', crmRoutes);
+router.use('/ai-agents', aiAgentsRoutes);
+router.use('/reminders', remindersRoutes);
+router.use('/notifications', notificationsRoutes);
+router.use('/sync', syncRoutes);
+
+export default router;
+```
+
+---
+
+### FASE 2: División de Storage en Repositorios 🟡
+
+**Objetivo**: Separar `storage.ts` monolítico en repositorios por entidad/dominio.
+
+**Duración estimada**: 3-5 días  
+**Dependencias**: Ninguna (puede ejecutarse en paralelo con Fase 1)  
+**Puede ejecutarse en paralelo con**: Fase 1
+
+**Estrategia**: Extraer métodos relacionados a archivos separados manteniendo la misma interfaz.
+
+#### Subfase 2.1: Crear Estructura de Repositorios
+- [ ] **2.1.1** Crear directorio `server/repositories/`
+- [ ] **2.1.2** Crear archivo `server/repositories/index.ts`
+- [ ] **2.1.3** Definir interfaz base `IRepository<T>`
+
+#### Subfase 2.2: Extraer UserRepository
+- [ ] **2.2.1** Crear `server/repositories/UserRepository.ts`
+- [ ] **2.2.2** Mover métodos: `getUser`, `getUserByEmail`, `createUser`, `updateUser`
+- [ ] **2.2.3** Actualizar referencias en rutas de auth
+- [ ] **2.2.4** Verificar login/registro funcionan
+
+#### Subfase 2.3: Extraer BrandRepository
+- [ ] **2.3.1** Crear `server/repositories/BrandRepository.ts`
+- [ ] **2.3.2** Mover métodos relacionados con marcas
+- [ ] **2.3.3** Actualizar referencias
+- [ ] **2.3.4** Verificar funcionalidad
+
+#### Subfase 2.4: Extraer MessageRepository
+- [ ] **2.4.1** Crear `server/repositories/MessageRepository.ts`
+- [ ] **2.4.2** Mover métodos de mensajes y threads
+- [ ] **2.4.3** Actualizar referencias
+- [ ] **2.4.4** Verificar funcionalidad de inbox
+
+#### Subfase 2.5: Extraer ConversationRepository
+- [ ] **2.5.1** Crear `server/repositories/ConversationRepository.ts`
+- [ ] **2.5.2** Mover métodos de conversaciones
+- [ ] **2.5.3** Actualizar referencias
+- [ ] **2.5.4** Verificar threading funciona
+
+#### Subfase 2.6: Extraer ContactRepository
+- [ ] **2.6.1** Crear `server/repositories/ContactRepository.ts`
+- [ ] **2.6.2** Mover métodos de contactos CRM
+- [ ] **2.6.3** Actualizar referencias
+- [ ] **2.6.4** Verificar CRM funciona
+
+#### Subfase 2.7: Extraer AIAgentRepository
+- [ ] **2.7.1** Crear `server/repositories/AIAgentRepository.ts`
+- [ ] **2.7.2** Mover métodos de agentes AI
+- [ ] **2.7.3** Actualizar referencias
+- [ ] **2.7.4** Verificar configuración AI funciona
+
+#### Subfase 2.8: Extraer ReminderRepository
+- [ ] **2.8.1** Crear `server/repositories/ReminderRepository.ts`
+- [ ] **2.8.2** Mover métodos de recordatorios
+- [ ] **2.8.3** Actualizar referencias
+- [ ] **2.8.4** Verificar recordatorios funcionan
+
+#### Subfase 2.9: Extraer NotificationRepository
+- [ ] **2.9.1** Crear `server/repositories/NotificationRepository.ts`
+- [ ] **2.9.2** Mover métodos de notificaciones
+- [ ] **2.9.3** Actualizar referencias
+- [ ] **2.9.4** Verificar notificaciones funcionan
+
+#### Subfase 2.10: Limpieza Final
+- [ ] **2.10.1** Verificar que `storage.ts` está vacío o solo tiene exports
+- [ ] **2.10.2** Crear `server/repositories/index.ts` con todos los exports
+- [ ] **2.10.3** Ejecutar suite de tests
+- [ ] **2.10.4** Verificar no hay regresiones
+
+---
+
+### FASE 3: Creación de Capa de Servicios/Use Cases 🟡
+
+**Objetivo**: Extraer lógica de negocio de rutas a servicios dedicados.
+
+**Duración estimada**: 5-7 días  
+**Dependencias**: Fase 1 y Fase 2 completadas  
+**Puede ejecutarse en paralelo con**: Fase 4 (frontend)
+
+**Estrategia**: Crear servicios que encapsulen casos de uso, dejando las rutas "thin" (solo validación y orquestación).
+
+#### Subfase 3.1: Definir Estructura de Servicios
+- [ ] **3.1.1** Crear directorio `server/services/usecases/` (si se prefiere separar de servicios existentes)
+- [ ] **3.1.2** Definir patrón de servicios: inyección de repositorios
+- [ ] **3.1.3** Crear interfaz base para casos de uso
+
+#### Subfase 3.2: Extraer Lógica de Inbox
+- [ ] **3.2.1** Crear `InboxService.ts` con métodos de alto nivel
+- [ ] **3.2.2** Mover lógica de threading desde rutas
+- [ ] **3.2.3** Mover lógica de send-reply
+- [ ] **3.2.4** Actualizar `inbox.routes.ts` para usar servicio
+- [ ] **3.2.5** Verificar funcionalidad
+
+#### Subfase 3.3: Extraer Lógica de CRM
+- [ ] **3.3.1** Crear `CRMService.ts`
+- [ ] **3.3.2** Mover lógica de merge de contactos
+- [ ] **3.3.3** Mover lógica de enrichment
+- [ ] **3.3.4** Actualizar `crm.routes.ts`
+- [ ] **3.3.5** Verificar funcionalidad
+
+#### Subfase 3.4: Extraer Lógica de AI Agents
+- [ ] **3.4.1** Crear `AIAgentService.ts` (consolidar con existente si aplica)
+- [ ] **3.4.2** Mover lógica de configuración
+- [ ] **3.4.3** Mover lógica de generate-reply
+- [ ] **3.4.4** Actualizar rutas
+- [ ] **3.4.5** Verificar funcionalidad
+
+#### Subfase 3.5: Refactorizar Servicios Existentes
+- [ ] **3.5.1** Revisar `autoReplyService.ts` - eliminar dependencias directas a storage global
+- [ ] **3.5.2** Revisar `syncService.ts` - inyectar dependencias
+- [ ] **3.5.3** Revisar `reminderService.ts` - inyectar dependencias
+- [ ] **3.5.4** Verificar todos los servicios funcionan
+
+#### Subfase 3.6: Crear DTOs
+- [ ] **3.6.1** Crear directorio `shared/dtos/`
+- [ ] **3.6.2** Crear DTOs para requests de API:
+  - [ ] `CreateMessageDTO`
+  - [ ] `UpdateContactDTO`
+  - [ ] `ConfigureAgentDTO`
+- [ ] **3.6.3** Crear DTOs para responses:
+  - [ ] `MessageResponseDTO`
+  - [ ] `ConversationResponseDTO`
+  - [ ] `ContactResponseDTO`
+- [ ] **3.6.4** Actualizar rutas para usar DTOs
+
+---
+
+### FASE 4: Refactorización de Componentes Frontend 🟡
+
+**Objetivo**: Descomponer componentes React gigantes en componentes más pequeños y reutilizables.
+
+**Duración estimada**: 5-7 días  
+**Dependencias**: Ninguna (puede ejecutarse en paralelo con Fases 1-3)  
+**Puede ejecutarse en paralelo con**: Fases 1, 2, 3
+
+**Estrategia**: Aplicar patrón Container/Presentational, extraer hooks personalizados.
+
+#### Subfase 4.1: Refactorizar Inbox.tsx (124 KB)
+- [ ] **4.1.1** Identificar sub-componentes lógicos:
+  - [ ] `InboxSidebar` (lista de conversaciones)
+  - [ ] `ConversationView` (mensajes)
+  - [ ] `MessageComposer` (caja de respuesta)
+  - [ ] `ThreadHeader` (cabecera de conversación)
+- [ ] **4.1.2** Extraer `useInboxData` hook para fetching
+- [ ] **4.1.3** Extraer `useThreadActions` hook para acciones
+- [ ] **4.1.4** Crear componentes presentacionales
+- [ ] **4.1.5** Actualizar `Inbox.tsx` como container
+- [ ] **4.1.6** Verificar funcionalidad completa
+
+#### Subfase 4.2: Refactorizar AIAgentConfig.tsx (117 KB)
+- [ ] **4.2.1** Identificar sub-componentes por tab:
+  - [ ] `GeneralSettingsTab`
+  - [ ] `PersonalityTab`
+  - [ ] `ChannelSettingsTab`
+  - [ ] `OrchestrationTab`
+  - [ ] `ContextTab`
+  - [ ] `PlaygroundTab`
+- [ ] **4.2.2** Extraer `useAIAgentConfig` hook
+- [ ] **4.2.3** Crear componentes de cada tab
+- [ ] **4.2.4** Actualizar `AIAgentConfig.tsx` como container
+- [ ] **4.2.5** Verificar funcionalidad
+
+#### Subfase 4.3: Refactorizar CRM.tsx (87 KB)
+- [ ] **4.3.1** Identificar sub-componentes:
+  - [ ] `ContactList`
+  - [ ] `ContactDetail`
+  - [ ] `ContactFilters`
+  - [ ] `MergeContactModal`
+- [ ] **4.3.2** Extraer `useCRMData` hook
+- [ ] **4.3.3** Extraer `useCRMActions` hook
+- [ ] **4.3.4** Crear componentes
+- [ ] **4.3.5** Verificar funcionalidad
+
+#### Subfase 4.4: Refactorizar LandingPage.tsx (165 KB)
+- [ ] **4.4.1** Identificar secciones:
+  - [ ] `HeroSection`
+  - [ ] `FeaturesSection`
+  - [ ] `TestimonialsSection`
+  - [ ] `PricingSection`
+  - [ ] `CTASection`
+- [ ] **4.4.2** Extraer componentes de sección
+- [ ] **4.4.3** Mantener animaciones en componentes individuales
+- [ ] **4.4.4** Verificar que landing se ve igual
+
+#### Subfase 4.5: Mover Lógica de Negocio al Backend
+- [ ] **4.5.1** Identificar lógica de threading en frontend
+- [ ] **4.5.2** Crear endpoint backend que retorne threads ya procesados
+- [ ] **4.5.3** Actualizar frontend para consumir endpoint
+- [ ] **4.5.4** Identificar lógica de merge CRM en frontend
+- [ ] **4.5.5** Mover lógica de merge a backend
+- [ ] **4.5.6** Verificar funcionalidad
+
+---
+
+### FASE 5: Abstracciones y Adapters 🟢
+
+**Objetivo**: Crear interfaces para dependencias externas, facilitando testing y cambios futuros.
+
+**Duración estimada**: 2-3 días  
+**Dependencias**: Fase 3 completada  
+**Puede ejecutarse en paralelo con**: Fase 4
+
+#### Subfase 5.1: Crear Interfaces de Adapters
+- [ ] **5.1.1** Crear directorio `server/adapters/interfaces/`
+- [ ] **5.1.2** Crear `IEmailAdapter.ts`
+- [ ] **5.1.3** Crear `ILLMAdapter.ts` (consolidar con existente en `llm/`)
+- [ ] **5.1.4** Crear `IMetricoolAdapter.ts`
+- [ ] **5.1.5** Crear `IWebSocketAdapter.ts`
+
+#### Subfase 5.2: Implementar Adapters
+- [ ] **5.2.1** Crear `ResendEmailAdapter.ts` implementando `IEmailAdapter`
+- [ ] **5.2.2** Refactorizar `gemini-adapter.ts` para implementar `ILLMAdapter`
+- [ ] **5.2.3** Refactorizar `openai-adapter.ts` para implementar `ILLMAdapter`
+- [ ] **5.2.4** Crear `MetricoolAdapter.ts` implementando `IMetricoolAdapter`
+
+#### Subfase 5.3: Inyección de Dependencias
+- [ ] **5.3.1** Crear factory o container simple para inyección
+- [ ] **5.3.2** Actualizar servicios para recibir adapters por inyección
+- [ ] **5.3.3** Verificar que todo funciona con las nuevas abstracciones
+
+---
+
+### FASE 6: Testing y Documentación Final 🟢
+
+**Objetivo**: Asegurar calidad y documentar la nueva arquitectura.
+
+**Duración estimada**: 2-3 días  
+**Dependencias**: Fases 1-5 completadas
+
+#### Subfase 6.1: Tests de Integración
+- [ ] **6.1.1** Crear tests para cada módulo de rutas
+- [ ] **6.1.2** Crear tests para cada repositorio
+- [ ] **6.1.3** Crear tests para servicios principales
+- [ ] **6.1.4** Alcanzar cobertura mínima de 60% en código nuevo
+
+#### Subfase 6.2: Tests E2E
+- [ ] **6.2.1** Crear tests E2E para flujos críticos:
+  - [ ] Login → Inbox → Reply
+  - [ ] Configurar AI Agent → Auto-reply
+  - [ ] CRM → Merge contacts
+- [ ] **6.2.2** Integrar en CI/CD si existe
+
+#### Subfase 6.3: Documentación
+- [ ] **6.3.1** Actualizar diagrama de arquitectura
+- [ ] **6.3.2** Documentar estructura de carpetas final
+- [ ] **6.3.3** Crear guía de contribución para nuevos developers
+- [ ] **6.3.4** Documentar convenciones de código adoptadas
+
+---
+
+### Estructura de Carpetas Objetivo (Post-Refactorización)
+
+```
+server/
+├── routes/                      # Capa de presentación HTTP
+│   ├── index.ts
+│   ├── auth.routes.ts
+│   ├── brands.routes.ts
+│   ├── inbox.routes.ts
+│   ├── crm.routes.ts
+│   ├── ai-agents.routes.ts
+│   ├── reminders.routes.ts
+│   ├── notifications.routes.ts
+│   └── sync.routes.ts
+├── services/                    # Capa de aplicación / casos de uso
+│   ├── InboxService.ts
+│   ├── CRMService.ts
+│   ├── AIAgentService.ts
+│   ├── autoReplyService.ts      # Existente, refactorizado
+│   ├── syncService.ts           # Existente, refactorizado
+│   ├── reminderService.ts       # Existente, refactorizado
+│   └── llm/                     # Existente
+│       ├── types.ts
+│       ├── factory.ts
+│       ├── gemini-adapter.ts
+│       ├── openai-adapter.ts
+│       └── prompt-composer.ts
+├── repositories/                # Capa de acceso a datos
+│   ├── index.ts
+│   ├── UserRepository.ts
+│   ├── BrandRepository.ts
+│   ├── MessageRepository.ts
+│   ├── ConversationRepository.ts
+│   ├── ContactRepository.ts
+│   ├── AIAgentRepository.ts
+│   ├── ReminderRepository.ts
+│   └── NotificationRepository.ts
+├── adapters/                    # Capa de infraestructura externa
+│   ├── interfaces/
+│   │   ├── IEmailAdapter.ts
+│   │   ├── ILLMAdapter.ts
+│   │   ├── IMetricoolAdapter.ts
+│   │   └── IWebSocketAdapter.ts
+│   ├── ResendEmailAdapter.ts
+│   └── MetricoolAdapter.ts
+├── middleware/                  # Existente
+│   └── rateLimiter.ts
+├── app.ts
+├── db.ts
+└── index.ts
+
+shared/
+├── schema.ts                    # Existente
+├── dynamicVariables.ts          # Existente
+├── dtos/                        # NUEVO
+│   ├── requests/
+│   │   ├── CreateMessageDTO.ts
+│   │   ├── UpdateContactDTO.ts
+│   │   └── ConfigureAgentDTO.ts
+│   └── responses/
+│       ├── MessageResponseDTO.ts
+│       ├── ConversationResponseDTO.ts
+│       └── ContactResponseDTO.ts
+└── models/
+    └── auth.ts                  # Existente
+
+client/src/
+├── components/
+│   ├── inbox/                   # NUEVO - componentes de Inbox
+│   │   ├── InboxSidebar.tsx
+│   │   ├── ConversationView.tsx
+│   │   ├── MessageComposer.tsx
+│   │   └── ThreadHeader.tsx
+│   ├── ai-config/               # NUEVO - componentes de AI Config
+│   │   ├── GeneralSettingsTab.tsx
+│   │   ├── PersonalityTab.tsx
+│   │   ├── ChannelSettingsTab.tsx
+│   │   ├── OrchestrationTab.tsx
+│   │   ├── ContextTab.tsx
+│   │   └── PlaygroundTab.tsx
+│   ├── crm/                     # NUEVO - componentes de CRM
+│   │   ├── ContactList.tsx
+│   │   ├── ContactDetail.tsx
+│   │   ├── ContactFilters.tsx
+│   │   └── MergeContactModal.tsx
+│   ├── landing/                 # Existente, refactorizado
+│   │   ├── HeroSection.tsx
+│   │   ├── FeaturesSection.tsx
+│   │   ├── TestimonialsSection.tsx
+│   │   └── ...
+│   └── ui/                      # Existente
+├── hooks/                       # NUEVO - hooks extraídos
+│   ├── useInboxData.ts
+│   ├── useThreadActions.ts
+│   ├── useAIAgentConfig.ts
+│   ├── useCRMData.ts
+│   └── useCRMActions.ts
+├── pages/                       # Existente, simplificado
+│   ├── Inbox.tsx                # Ahora es container
+│   ├── AIAgentConfig.tsx        # Ahora es container
+│   ├── CRM.tsx                  # Ahora es container
+│   └── ...
+└── lib/                         # Existente
+```
+
+---
+
+### Matriz de Dependencias entre Fases
+
+| Fase | Depende de | Puede ejecutarse con |
+|------|-----------|---------------------|
+| Fase 0 | - | Desarrollo normal |
+| Fase 1 | Fase 0 | Fase 2, Fase 4 |
+| Fase 2 | - | Fase 1, Fase 4 |
+| Fase 3 | Fase 1, Fase 2 | Fase 4 |
+| Fase 4 | - | Fase 1, Fase 2, Fase 3 |
+| Fase 5 | Fase 3 | Fase 4 |
+| Fase 6 | Fase 1-5 | - |
+
+**Ejecución Paralela Recomendada:**
+```
+Tiempo →
+─────────────────────────────────────────────────────────────
+Fase 0 │████████│
+Fase 1 │        │████████████████│
+Fase 2 │        │████████████████│
+Fase 4 │        │████████████████████████████│
+Fase 3 │                        │████████████████│
+Fase 5 │                                        │████████│
+Fase 6 │                                                │████│
+─────────────────────────────────────────────────────────────
+```
+
+---
+
+### Métricas de Éxito
+
+| Métrica | Valor Actual | Objetivo Post-Refactorización |
+|---------|--------------|------------------------------|
+| Tamaño máximo archivo backend | 162 KB | < 20 KB |
+| Tamaño máximo componente React | 165 KB | < 15 KB |
+| Archivos con > 1000 líneas | 5+ | 0 |
+| Cobertura de tests | ~0% | > 60% |
+| Tiempo de onboarding nuevo dev | Alto | Medio |
+| Facilidad de agregar feature | Baja | Alta |
+
+---
+
+### Notas de Implementación
+
+1. **NO refactorizar código que no se va a tocar**: Si un endpoint o componente funciona y no necesita cambios, dejarlo.
+
+2. **Refactorizar al tocar**: Cuando se modifique cualquier código, aplicar las mejoras de la fase correspondiente.
+
+3. **Features nuevos con arquitectura nueva**: Todo código nuevo debe seguir la arquitectura objetivo.
+
+4. **Rollback disponible**: En cualquier momento se puede volver a checkpoint anterior si algo falla.
+
+5. **Comunicación**: Antes de empezar cada fase, revisar impacto y comunicar plan.
+
+---
+
+### Registro de Progreso
+
+| Fecha | Fase | Tarea | Estado | Notas |
+|-------|------|-------|--------|-------|
+| 16 Ene 2026 | - | Documento creado | ✅ | Diagnóstico inicial completado |
+| - | - | - | - | - |
+
+---
+
+*Sección creada: 16 Enero 2026*
+*Última actualización: 16 Enero 2026*
