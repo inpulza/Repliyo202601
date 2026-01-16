@@ -417,10 +417,9 @@ function SingleMessage({
             if (msg.direction === 'inbound') {
               return "bg-white text-gray-900 px-4 py-2 rounded-2xl rounded-tl-md w-fit max-w-[85%] md:max-w-[70%]";
             }
-            if (isSentByAI || isSentFromRepliyo) {
-              return "bg-[#0291FA] text-white px-4 py-2 rounded-2xl rounded-tr-md w-fit max-w-[85%] md:max-w-[70%]";
-            }
-            return platformStyles.ownerBubble;
+            // Todos los outbound (respuestas de la marca) tienen fondo azul
+            // Ya sea enviados desde Repliyo o desde la red social directamente
+            return "bg-[#0291FA] text-white px-4 py-2 rounded-2xl rounded-tr-md w-fit max-w-[85%] md:max-w-[70%]";
           })()
         )}>
           {(msg as any).mediaType === 'audio' && (msg as any).mediaUrl && (
