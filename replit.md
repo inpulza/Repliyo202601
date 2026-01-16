@@ -92,3 +92,101 @@ The user interface includes an "Orchestration" tab for managing timing configura
 - **Metricool:** Used for syncing social media DMs and comments.
 - **OpenAI / Gemini:** AI LLM providers for generating responses, summaries, and executing CRM functions.
 - **PostgreSQL:** Primary database for all system data, utilizing UUIDs and JSONB.
+
+---
+
+## Directrices de Arquitectura (IMPORTANTE - SEGUIR SIEMPRE)
+
+> **Referencia completa**: Ver `DOCUMENTACION_COMPLETA.md` sección "PLAN DE REFACTORIZACIÓN ARQUITECTÓNICA"
+
+### Principio Rector: "Strangler Fig Pattern"
+- **NO refactorizar código existente que funciona** a menos que sea necesario tocarlo
+- **Código nuevo SIEMPRE con arquitectura correcta** (ver estructura abajo)
+- **Cuando se modifique código existente**, aplicar mejoras gradualmente
+
+### Estructura de Archivos para Código NUEVO
+
+#### Backend - Rutas nuevas
+```
+server/routes/{dominio}.routes.ts   # NO agregar más endpoints a routes.ts
+```
+Dominios: `auth`, `brands`, `inbox`, `crm`, `ai-agents`, `reminders`, `notifications`, `sync`
+
+#### Backend - Repositorios nuevos
+```
+server/repositories/{Entidad}Repository.ts   # NO agregar más métodos a storage.ts
+```
+Los repositorios solo acceden a datos. La lógica de negocio va en servicios.
+
+#### Backend - Servicios/Use Cases
+```
+server/services/{Dominio}Service.ts   # Lógica de negocio aquí
+```
+- Servicios reciben repositorios como dependencia (no acceso directo a storage)
+- Las rutas deben ser "thin": solo validación → llamar servicio → retornar respuesta
+
+#### Frontend - Componentes nuevos
+```
+client/src/components/{dominio}/   # Componentes pequeños por dominio
+client/src/hooks/use{Nombre}.ts    # Hooks para lógica reutilizable
+```
+- Componentes < 500 líneas
+- Separar Container (datos) de Presentational (UI)
+- Extraer lógica de fetching a hooks personalizados
+
+### Reglas Estrictas
+
+1. **NO agregar código a `routes.ts`** (162KB) → crear archivo en `server/routes/`
+2. **NO agregar código a `storage.ts`** (162KB) → crear archivo en `server/repositories/`
+3. **NO crear componentes React > 500 líneas** → dividir en sub-componentes
+4. **NO poner lógica de negocio en frontend** → moverla a servicios backend
+5. **NO acoplar servicios directamente** → usar interfaces/adapters
+
+### Patrón de Capas (seguir siempre para código nuevo)
+
+```
+Route (validación) → Service (lógica) → Repository (datos)
+                  ↘ Adapter (APIs externas)
+```
+
+### Ejemplo de Código Nuevo Correcto
+
+```typescript
+// server/routes/example.routes.ts
+import { Router } from 'express';
+import { ExampleService } from '../services/ExampleService';
+
+const router = Router();
+
+router.post('/example', async (req, res) => {
+  // Solo validación y orquestación
+  const result = await ExampleService.doSomething(req.body);
+  res.json(result);
+});
+
+export default router;
+```
+
+```typescript
+// server/services/ExampleService.ts
+import { ExampleRepository } from '../repositories/ExampleRepository';
+
+export class ExampleService {
+  static async doSomething(data: CreateExampleDTO) {
+    // Lógica de negocio aquí
+    return ExampleRepository.create(data);
+  }
+}
+```
+
+```typescript
+// server/repositories/ExampleRepository.ts
+import { db } from '../db';
+
+export class ExampleRepository {
+  static async create(data: CreateExampleDTO) {
+    // Solo acceso a datos
+    return db.insert(examples).values(data).returning();
+  }
+}
+```
