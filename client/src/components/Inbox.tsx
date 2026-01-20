@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNexus, type ConversationWithPost } from '@/context/NexusContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { useDraftManagement } from '@/hooks/useDraftManagement';
 import { useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
 import { CRMContextPanel } from './CRMContextPanel';
@@ -88,7 +89,6 @@ import { Reply, X } from 'lucide-react';
 import repliyoLogo from '@/assets/repliyo-logo.jpg';
 import { toast } from '@/hooks/use-toast';
 import { CommentThread } from './CommentThread';
-import { useBulkDraftQueue } from '@/hooks/useBulkDraftQueue';
 import { BulkDraftActionBar } from './BulkDraftActionBar';
 
 
@@ -205,11 +205,6 @@ export function Inbox() {
   const [replyText, setReplyText] = useState("");
   const [isSendingReply, setIsSendingReply] = useState(false);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
-  const [generatingDraftIds, setGeneratingDraftIds] = useState<Set<string>>(new Set());
-  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
-  const [editingDraftText, setEditingDraftText] = useState("");
-  const [showRegenerateConfirm, setShowRegenerateConfirm] = useState<string | null>(null);
-  const [localDraftOverrides, setLocalDraftOverrides] = useState<Map<string, { aiSuggestedReply: string | null; aiReplyStatus: string; draftWasEdited: boolean }>>(new Map());
   
   // Bulk Draft Selection State
   const [selectionEnabled, setSelectionEnabled] = useState(false);
@@ -220,20 +215,16 @@ export function Inbox() {
   // Track the unreadCount at the moment the conversation was opened
   const [capturedUnreadCount, setCapturedUnreadCount] = useState<number>(0);
 
-  // Bulk Draft Queue Hook
-  const bulkDraftQueue = useBulkDraftQueue({
+  // Draft Management Hook - consolidates 14 draft-related states and handlers
+  const draftManagement = useDraftManagement({
     brandId: activeClientId || '',
-    maxConcurrency: 3,
-    onComplete: (results) => {
-      // Clear selection after successful completion
-      if (results.errorCount === 0) {
-        setSelectedMessageIds(new Set());
-        setSelectionEnabled(false);
-      }
-      // Refresh data
-      queryClient.invalidateQueries({ queryKey: ['conversationMessages'] });
+    conversationId: activeConversation?.id,
+    onRefreshFeed: refreshFeed,
+    onBulkComplete: () => {
+      setSelectedMessageIds(new Set());
+      setSelectionEnabled(false);
     },
-    onMessageComplete: (messageId, success) => {
+    onBulkMessageComplete: (messageId, success) => {
       if (success) {
         setSelectedMessageIds(prev => {
           const next = new Set(prev);
@@ -243,6 +234,9 @@ export function Inbox() {
       }
     },
   });
+  
+  // Destructure commonly used values from draftManagement for local use
+  const { getMessageWithOverrides, bulkQueue } = draftManagement;
 
   // Ref to track if we've captured unread IDs for this conversation
   const unreadCapturedRef = React.useRef<string | null>(null);
@@ -293,7 +287,7 @@ export function Inbox() {
 
   const handleBulkGenerate = () => {
     if (selectedMessageIds.size === 0) return;
-    bulkDraftQueue.enqueueMany(Array.from(selectedMessageIds));
+    bulkQueue.enqueueMany(Array.from(selectedMessageIds));
   };
 
   const handleClearSelection = () => {
@@ -680,14 +674,8 @@ export function Inbox() {
     
     // 5. Merge local draft overrides for real-time updates
     // NO global sort - preserve parent-child grouping (newest root first, replies chronologically below)
-    return allMessages.map(msg => {
-      const override = localDraftOverrides.get(msg.id);
-      if (override) {
-        return { ...msg, ...override };
-      }
-      return msg;
-    });
-  }, [activeConversationMessages, localDraftOverrides]);
+    return allMessages.map(msg => draftManagement.getMessageWithOverrides(msg));
+  }, [activeConversationMessages, draftManagement]);
 
   // Derive active draft message (outbound with drafting/pending status) and last inbound message
   const activeDraftMessage = React.useMemo(() => {
@@ -844,11 +832,11 @@ export function Inbox() {
   // Reset editing state, local draft overrides, and thread filters when selecting a new conversation
   useEffect(() => {
     setIsEditing(false);
-    setLocalDraftOverrides(new Map());
+    draftManagement.clearOverrides();
     setThreadFilterNoReply(false);
     setThreadFilterWithDraft(false);
     setThreadFilterWithReminder(false);
-  }, [activeConversation?.id]);
+  }, [activeConversation?.id, draftManagement]);
 
   const handleSyncData = async () => {
     if (!activeClientId || isSyncing) return;
@@ -947,239 +935,6 @@ export function Inbox() {
     } finally {
       setIsGeneratingAI(false);
     }
-  };
-
-  const handleGenerateDraft = async (messageId: string) => {
-    if (!activeClientId || generatingDraftIds.has(messageId)) return;
-    
-    setGeneratingDraftIds(prev => new Set(prev).add(messageId));
-    try {
-      const result = await api.aiAgent.generateDraft(activeClientId, messageId);
-      if (result.success && result.draft) {
-        // Update local state immediately for real-time feedback
-        setLocalDraftOverrides(prev => {
-          const next = new Map(prev);
-          next.set(messageId, {
-            aiSuggestedReply: result.draft,
-            aiReplyStatus: 'drafted',
-            draftWasEdited: false,
-          });
-          return next;
-        });
-        
-        toast({
-          title: "Borrador generado",
-          description: `${result.characterCount} caracteres`,
-        });
-        
-        // Background refresh to sync with server, then clear local override
-        await refreshFeed();
-        setLocalDraftOverrides(prev => {
-          const next = new Map(prev);
-          next.delete(messageId);
-          return next;
-        });
-        if (activeConversation) {
-          queryClient.invalidateQueries({ queryKey: ['conversationMessages', activeConversation.id] });
-        }
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo generar el borrador",
-        variant: "destructive",
-      });
-    } finally {
-      setGeneratingDraftIds(prev => {
-        const next = new Set(prev);
-        next.delete(messageId);
-        return next;
-      });
-    }
-  };
-
-  const handleRegenerateDraft = async (messageId: string, confirmOverwrite: boolean = false) => {
-    if (!activeClientId) return;
-    
-    setGeneratingDraftIds(prev => new Set(prev).add(messageId));
-    try {
-      const result = await api.aiAgent.regenerateDraft(activeClientId, messageId, confirmOverwrite);
-      
-      if (result.requiresConfirmation) {
-        setShowRegenerateConfirm(messageId);
-        setGeneratingDraftIds(prev => {
-          const next = new Set(prev);
-          next.delete(messageId);
-          return next;
-        });
-        return;
-      }
-      
-      setShowRegenerateConfirm(null);
-      if (result.success && result.draft) {
-        // Update local state immediately for real-time feedback
-        setLocalDraftOverrides(prev => {
-          const next = new Map(prev);
-          next.set(messageId, {
-            aiSuggestedReply: result.draft,
-            aiReplyStatus: 'drafted',
-            draftWasEdited: false,
-          });
-          return next;
-        });
-        
-        toast({ title: "Borrador regenerado" });
-        
-        // Background refresh to sync with server, then clear local override
-        await refreshFeed();
-        setLocalDraftOverrides(prev => {
-          const next = new Map(prev);
-          next.delete(messageId);
-          return next;
-        });
-        if (activeConversation) {
-          queryClient.invalidateQueries({ queryKey: ['conversationMessages', activeConversation.id] });
-        }
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo regenerar el borrador",
-        variant: "destructive",
-      });
-    } finally {
-      setGeneratingDraftIds(prev => {
-        const next = new Set(prev);
-        next.delete(messageId);
-        return next;
-      });
-    }
-  };
-
-  const handleSaveDraftEdit = async (messageId: string) => {
-    if (!activeClientId || !editingDraftText.trim()) return;
-    
-    try {
-      await api.aiAgent.updateDraft(activeClientId, messageId, editingDraftText.trim());
-      
-      // Update local state immediately
-      setLocalDraftOverrides(prev => {
-        const next = new Map(prev);
-        next.set(messageId, {
-          aiSuggestedReply: editingDraftText.trim(),
-          aiReplyStatus: 'edited',
-          draftWasEdited: true,
-        });
-        return next;
-      });
-      
-      setEditingDraftId(null);
-      setEditingDraftText("");
-      toast({ title: "Borrador guardado" });
-      
-      // Background refresh to sync with server, then clear local override
-      await refreshFeed();
-      setLocalDraftOverrides(prev => {
-        const next = new Map(prev);
-        next.delete(messageId);
-        return next;
-      });
-      if (activeConversation) {
-        queryClient.invalidateQueries({ queryKey: ['conversationMessages', activeConversation.id] });
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo guardar el borrador",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDiscardDraft = async (messageId: string) => {
-    if (!activeClientId) return;
-    
-    try {
-      await api.aiAgent.discardDraft(activeClientId, messageId);
-      
-      // Update local state immediately - remove draft
-      setLocalDraftOverrides(prev => {
-        const next = new Map(prev);
-        next.set(messageId, {
-          aiSuggestedReply: '',
-          aiReplyStatus: 'none',
-          draftWasEdited: false,
-        });
-        return next;
-      });
-      
-      toast({ title: "Borrador descartado" });
-      
-      // Background refresh to sync with server, then clear local override
-      await refreshFeed();
-      setLocalDraftOverrides(prev => {
-        const next = new Map(prev);
-        next.delete(messageId);
-        return next;
-      });
-      if (activeConversation) {
-        queryClient.invalidateQueries({ queryKey: ['conversationMessages', activeConversation.id] });
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo descartar el borrador",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleSendDraft = async (messageId: string, draft: string) => {
-    if (!activeClientId || !draft.trim()) return;
-    
-    try {
-      const result = await api.aiAgent.sendDraft(activeClientId, messageId);
-      
-      if (result.success) {
-        setLocalDraftOverrides(prev => {
-          const next = new Map(prev);
-          next.set(messageId, {
-            aiSuggestedReply: null,
-            aiReplyStatus: 'sent',
-            draftWasEdited: false,
-          });
-          return next;
-        });
-        
-        toast({ title: "Respuesta enviada", description: "La respuesta se publicó en la red social" });
-        
-        await refreshFeed();
-        setLocalDraftOverrides(prev => {
-          const next = new Map(prev);
-          next.delete(messageId);
-          return next;
-        });
-        if (activeConversation) {
-          queryClient.invalidateQueries({ queryKey: ['conversationMessages', activeConversation.id] });
-        }
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo enviar la respuesta",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const startEditingDraft = (messageId: string, currentDraft: string) => {
-    setEditingDraftId(messageId);
-    setEditingDraftText(currentDraft);
-  };
-
-  const cancelEditingDraft = () => {
-    setEditingDraftId(null);
-    setEditingDraftText("");
   };
 
   if (!isLoadingClients && activeClients.length === 0) {
@@ -2007,26 +1762,13 @@ export function Inbox() {
                         messages={filteredThreadMessages}
                         platformStyles={getPlatformStyles((activeConversation.platform || 'instagram') as Platform)}
                         onStartReply={handleStartReply}
-                        onGenerateDraft={handleGenerateDraft}
-                        generatingDraftIds={generatingDraftIds}
-                        editingDraftId={editingDraftId}
-                        editingDraftText={editingDraftText}
-                        setEditingDraftText={setEditingDraftText}
-                        startEditingDraft={startEditingDraft}
-                        cancelEditingDraft={cancelEditingDraft}
-                        handleSaveDraftEdit={handleSaveDraftEdit}
-                        handleDiscardDraft={handleDiscardDraft}
-                        handleRegenerateDraft={handleRegenerateDraft}
-                        handleSendDraft={handleSendDraft}
-                        showRegenerateConfirm={showRegenerateConfirm}
-                        setShowRegenerateConfirm={setShowRegenerateConfirm}
+                        draftManagement={draftManagement}
                         highlightedMessageId={highlightedMessageId}
                         AudioPlayer={AudioPlayer}
                         SentimentIndicator={SentimentIndicator}
                         selectionEnabled={selectionEnabled}
                         selectedMessageIds={selectedMessageIds}
                         onToggleSelection={handleToggleSelection}
-                        bulkQueueStatusById={bulkDraftQueue.statusById}
                         unreadMessageIds={unreadMessageIds}
                         onUnreadSeen={handleUnreadSeen}
                       />
@@ -2073,14 +1815,14 @@ export function Inbox() {
             {/* Bulk Draft Action Bar */}
             <BulkDraftActionBar
               selectedCount={selectedMessageIds.size}
-              isProcessing={bulkDraftQueue.isProcessing}
-              progress={bulkDraftQueue.progress}
-              completedCount={bulkDraftQueue.completedCount}
-              totalCount={bulkDraftQueue.totalCount}
-              errorCount={bulkDraftQueue.errorCount}
+              isProcessing={bulkQueue.isProcessing}
+              progress={bulkQueue.progress}
+              completedCount={bulkQueue.completedCount}
+              totalCount={bulkQueue.totalCount}
+              errorCount={bulkQueue.errorCount}
               onGenerate={handleBulkGenerate}
               onClearSelection={handleClearSelection}
-              onCancel={bulkDraftQueue.cancel}
+              onCancel={bulkQueue.cancel}
             />
 
             {/* Floating Reply Input Box */}

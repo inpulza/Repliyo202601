@@ -75,19 +75,7 @@ function computeReminderStats(messages: Message[]): ReminderStats {
 
 import type { DraftStatus } from '@/hooks/useBulkDraftQueue';
 
-interface CommentThreadProps {
-  messages: Message[];
-  platformStyles: {
-    userBubble: string;
-    ownerBubble: string;
-    aiBubble: string;
-    manualBubble: string;
-    draftCard: { bg: string; border: string; accent: string; iconBg: string };
-    badge: string;
-    commentBadge: string;
-  };
-  onStartReply: (message: Message) => void;
-  onGenerateDraft: (messageId: string) => void;
+export interface DraftManagementProps {
   generatingDraftIds: Set<string>;
   editingDraftId: string | null;
   editingDraftText: string;
@@ -100,13 +88,30 @@ interface CommentThreadProps {
   handleSendDraft: (messageId: string, content: string) => void;
   showRegenerateConfirm: string | null;
   setShowRegenerateConfirm: (id: string | null) => void;
+  handleGenerateDraft: (messageId: string) => void;
+  bulkQueueStatusById?: Map<string, DraftStatus>;
+  getMessageWithOverrides: <T extends { id: string }>(msg: T) => T & { aiSuggestedReply?: string | null; aiReplyStatus?: string | null; draftWasEdited?: boolean };
+}
+
+interface CommentThreadProps {
+  messages: Message[];
+  platformStyles: {
+    userBubble: string;
+    ownerBubble: string;
+    aiBubble: string;
+    manualBubble: string;
+    draftCard: { bg: string; border: string; accent: string; iconBg: string };
+    badge: string;
+    commentBadge: string;
+  };
+  onStartReply: (message: Message) => void;
+  draftManagement: DraftManagementProps;
   highlightedMessageId?: string | null;
   AudioPlayer: React.ComponentType<{ src: string; transcription?: string; isOutbound?: boolean }>;
   SentimentIndicator: React.ComponentType<{ sentiment: Sentiment }>;
   selectionEnabled?: boolean;
   selectedMessageIds?: Set<string>;
   onToggleSelection?: (messageId: string) => void;
-  bulkQueueStatusById?: Map<string, DraftStatus>;
   unreadMessageIds?: Set<string>;
   onUnreadSeen?: (messageId: string) => void;
 }
@@ -161,25 +166,12 @@ interface SingleMessageProps {
   rootTimestamp?: Date;
   platformStyles: CommentThreadProps['platformStyles'];
   onStartReply: CommentThreadProps['onStartReply'];
-  onGenerateDraft: CommentThreadProps['onGenerateDraft'];
-  generatingDraftIds: Set<string>;
-  editingDraftId: string | null;
-  editingDraftText: string;
-  setEditingDraftText: (text: string) => void;
-  startEditingDraft: (messageId: string, content: string) => void;
-  cancelEditingDraft: () => void;
-  handleSaveDraftEdit: (messageId: string) => void;
-  handleDiscardDraft: (messageId: string) => void;
-  handleRegenerateDraft: (messageId: string, force?: boolean) => void;
-  handleSendDraft: (messageId: string, content: string) => void;
-  showRegenerateConfirm: string | null;
-  setShowRegenerateConfirm: (id: string | null) => void;
+  draftManagement: DraftManagementProps;
   AudioPlayer: CommentThreadProps['AudioPlayer'];
   SentimentIndicator: CommentThreadProps['SentimentIndicator'];
   selectionEnabled?: boolean;
   isSelected?: boolean;
   onToggleSelection?: (messageId: string) => void;
-  bulkStatus?: DraftStatus;
   hasChildren?: boolean;
   childrenCount?: number;
   isExpanded?: boolean;
@@ -199,25 +191,12 @@ function SingleMessage({
   rootTimestamp,
   platformStyles,
   onStartReply,
-  onGenerateDraft,
-  generatingDraftIds,
-  editingDraftId,
-  editingDraftText,
-  setEditingDraftText,
-  startEditingDraft,
-  cancelEditingDraft,
-  handleSaveDraftEdit,
-  handleDiscardDraft,
-  handleRegenerateDraft,
-  handleSendDraft,
-  showRegenerateConfirm,
-  setShowRegenerateConfirm,
+  draftManagement,
   AudioPlayer,
   SentimentIndicator,
   selectionEnabled = false,
   isSelected = false,
   onToggleSelection,
-  bulkStatus,
   hasChildren = false,
   childrenCount = 0,
   isExpanded = false,
@@ -226,6 +205,30 @@ function SingleMessage({
   threadReminderCount = 0,
   authorReminderCount = 0,
 }: SingleMessageProps) {
+  const {
+    generatingDraftIds,
+    editingDraftId,
+    editingDraftText,
+    setEditingDraftText,
+    startEditingDraft,
+    cancelEditingDraft,
+    handleSaveDraftEdit,
+    handleDiscardDraft,
+    handleRegenerateDraft,
+    handleSendDraft,
+    showRegenerateConfirm,
+    setShowRegenerateConfirm,
+    handleGenerateDraft,
+    bulkQueueStatusById,
+    getMessageWithOverrides,
+  } = draftManagement;
+  
+  // Apply local overrides to get the latest draft state (only draft-related fields)
+  const draftOverrides = getMessageWithOverrides(msg);
+  const currentAiSuggestedReply = draftOverrides.aiSuggestedReply;
+  const currentAiReplyStatus = draftOverrides.aiReplyStatus;
+  
+  const bulkStatus = bulkQueueStatusById?.get(msg.id);
   const isOutbound = msg.direction === 'outbound';
   const isOwner = isOutbound;
   const isSentFromRepliyo = isRepliyoMessage(msg.source, msg.internalOrigin);
@@ -235,7 +238,7 @@ function SingleMessage({
   const avatarSize = isReply ? AVATAR_SIZE_REPLY : AVATAR_SIZE_ROOT;
 
   // Can this message be selected for bulk draft generation?
-  const isSelectable = selectionEnabled && msg.direction === 'inbound' && !msg.aiSuggestedReply && msg.aiReplyStatus !== 'drafted';
+  const isSelectable = selectionEnabled && msg.direction === 'inbound' && !currentAiSuggestedReply && currentAiReplyStatus !== 'drafted';
 
   // Auto-scroll to this message when highlighted (from notification deep-link)
   const messageRef = React.useRef<HTMLDivElement>(null);
@@ -535,9 +538,9 @@ function SingleMessage({
             </button>
             
             {/* Generate Draft button */}
-            {!msg.aiSuggestedReply && msg.aiReplyStatus !== 'drafted' && !generatingDraftIds.has(msg.id) && (
+            {!currentAiSuggestedReply && currentAiReplyStatus !== 'drafted' && !generatingDraftIds.has(msg.id) && (
               <button
-                onClick={() => onGenerateDraft(msg.id)}
+                onClick={() => handleGenerateDraft(msg.id)}
                 disabled={generatingDraftIds.has(msg.id)}
                 data-testid={`button-generate-draft-${msg.id}`}
                 title="Generar borrador IA"
@@ -581,19 +584,7 @@ function SingleMessage({
           msg={msg}
           isOwner={isOwner}
           platformStyles={platformStyles}
-          generatingDraftIds={generatingDraftIds}
-          editingDraftId={editingDraftId}
-          editingDraftText={editingDraftText}
-          setEditingDraftText={setEditingDraftText}
-          startEditingDraft={startEditingDraft}
-          cancelEditingDraft={cancelEditingDraft}
-          handleSaveDraftEdit={handleSaveDraftEdit}
-          handleDiscardDraft={handleDiscardDraft}
-          handleRegenerateDraft={handleRegenerateDraft}
-          handleSendDraft={handleSendDraft}
-          showRegenerateConfirm={showRegenerateConfirm}
-          setShowRegenerateConfirm={setShowRegenerateConfirm}
-          onGenerateDraft={onGenerateDraft}
+          draftManagement={draftManagement}
         />
       </div>
       </div>
@@ -605,47 +596,45 @@ interface DraftCardProps {
   msg: Message;
   isOwner: boolean;
   platformStyles: CommentThreadProps['platformStyles'];
-  generatingDraftIds: Set<string>;
-  editingDraftId: string | null;
-  editingDraftText: string;
-  setEditingDraftText: (text: string) => void;
-  startEditingDraft: (messageId: string, content: string) => void;
-  cancelEditingDraft: () => void;
-  handleSaveDraftEdit: (messageId: string) => void;
-  handleDiscardDraft: (messageId: string) => void;
-  handleRegenerateDraft: (messageId: string, force?: boolean) => void;
-  handleSendDraft: (messageId: string, content: string) => void;
-  showRegenerateConfirm: string | null;
-  setShowRegenerateConfirm: (id: string | null) => void;
-  onGenerateDraft: (messageId: string) => void;
+  draftManagement: DraftManagementProps;
 }
 
 function DraftCard({
   msg,
   isOwner,
   platformStyles,
-  generatingDraftIds,
-  editingDraftId,
-  editingDraftText,
-  setEditingDraftText,
-  startEditingDraft,
-  cancelEditingDraft,
-  handleSaveDraftEdit,
-  handleDiscardDraft,
-  handleRegenerateDraft,
-  handleSendDraft,
-  showRegenerateConfirm,
-  setShowRegenerateConfirm,
-  onGenerateDraft,
+  draftManagement,
 }: DraftCardProps) {
-  const draftContent = msg.aiSuggestedReply || '';
+  const {
+    generatingDraftIds,
+    editingDraftId,
+    editingDraftText,
+    setEditingDraftText,
+    startEditingDraft,
+    cancelEditingDraft,
+    handleSaveDraftEdit,
+    handleDiscardDraft,
+    handleRegenerateDraft,
+    handleSendDraft,
+    showRegenerateConfirm,
+    setShowRegenerateConfirm,
+    handleGenerateDraft,
+    getMessageWithOverrides,
+  } = draftManagement;
+  
+  // Apply local overrides to get the latest draft state
+  const draftOverrides = getMessageWithOverrides(msg);
+  const currentAiSuggestedReply = draftOverrides.aiSuggestedReply;
+  const currentAiReplyStatus = draftOverrides.aiReplyStatus;
+  const wasEdited = draftOverrides.draftWasEdited;
+  
+  const draftContent = currentAiSuggestedReply || '';
   const isGeneratingDraft = generatingDraftIds.has(msg.id);
-  const hasError = msg.aiReplyStatus === 'draft_error';
-  const hasDraft = isGeneratingDraft || msg.aiSuggestedReply || hasError;
+  const hasError = currentAiReplyStatus === 'draft_error';
+  const hasDraft = isGeneratingDraft || currentAiSuggestedReply || hasError;
   const isEditingThis = editingDraftId === msg.id;
   const charLimit = getCharacterLimit((msg.platform || 'instagram') as Platform, (msg.type || 'comment') as MessageType);
   const isOverLimit = draftContent.length > charLimit;
-  const wasEdited = (msg as any).draftWasEdited;
 
   if (!hasDraft || isOwner || msg.direction !== 'inbound') return null;
 
@@ -683,7 +672,7 @@ function DraftCard({
               variant="outline"
               size="sm"
               className="h-6 text-[10px] text-red-600 border-red-200 hover:bg-red-50"
-              onClick={() => onGenerateDraft(msg.id)}
+              onClick={() => handleGenerateDraft(msg.id)}
             >
               <RotateCw className="h-2.5 w-2.5 mr-1" />
               Reintentar
@@ -838,36 +827,21 @@ interface ThreadNodeProps {
   node: MessageNode;
   depth: number;
   isLastChild: boolean;
-  parentMessageHeight?: number; // Height of parent's message bubble for connector calculation
+  parentMessageHeight?: number;
   rootTimestamp: Date;
   platformStyles: CommentThreadProps['platformStyles'];
   onStartReply: CommentThreadProps['onStartReply'];
-  onGenerateDraft: CommentThreadProps['onGenerateDraft'];
-  generatingDraftIds: Set<string>;
-  editingDraftId: string | null;
-  editingDraftText: string;
-  setEditingDraftText: (text: string) => void;
-  startEditingDraft: (messageId: string, content: string) => void;
-  cancelEditingDraft: () => void;
-  handleSaveDraftEdit: (messageId: string) => void;
-  handleDiscardDraft: (messageId: string) => void;
-  handleRegenerateDraft: (messageId: string, force?: boolean) => void;
-  handleSendDraft: (messageId: string, content: string) => void;
-  showRegenerateConfirm: string | null;
-  setShowRegenerateConfirm: (id: string | null) => void;
+  draftManagement: DraftManagementProps;
   AudioPlayer: CommentThreadProps['AudioPlayer'];
   SentimentIndicator: CommentThreadProps['SentimentIndicator'];
   highlightedMessageId?: string | null;
   selectionEnabled?: boolean;
   selectedMessageIds?: Set<string>;
   onToggleSelection?: (messageId: string) => void;
-  bulkQueueStatusById?: Map<string, DraftStatus>;
   unreadMessageIds?: Set<string>;
   onUnreadSeen?: (messageId: string) => void;
-  // Collapsible threaded comments props
   expandedIds: Set<string>;
   onToggleExpand: (messageId: string) => void;
-  // Reminder stats
   threadReminderCounts: Map<string, number>;
   authorReminderCounts: Map<string, number>;
 }
@@ -880,26 +854,13 @@ function ThreadNode({
   rootTimestamp,
   platformStyles,
   onStartReply,
-  onGenerateDraft,
-  generatingDraftIds,
-  editingDraftId,
-  editingDraftText,
-  setEditingDraftText,
-  startEditingDraft,
-  cancelEditingDraft,
-  handleSaveDraftEdit,
-  handleDiscardDraft,
-  handleRegenerateDraft,
-  handleSendDraft,
-  showRegenerateConfirm,
-  setShowRegenerateConfirm,
+  draftManagement,
   AudioPlayer,
   SentimentIndicator,
   highlightedMessageId,
   selectionEnabled,
   selectedMessageIds,
   onToggleSelection,
-  bulkQueueStatusById,
   unreadMessageIds,
   onUnreadSeen,
   expandedIds,
@@ -1002,25 +963,12 @@ function ThreadNode({
           rootTimestamp={rootTimestamp}
           platformStyles={platformStyles}
           onStartReply={onStartReply}
-          onGenerateDraft={onGenerateDraft}
-          generatingDraftIds={generatingDraftIds}
-          editingDraftId={editingDraftId}
-          editingDraftText={editingDraftText}
-          setEditingDraftText={setEditingDraftText}
-          startEditingDraft={startEditingDraft}
-          cancelEditingDraft={cancelEditingDraft}
-          handleSaveDraftEdit={handleSaveDraftEdit}
-          handleDiscardDraft={handleDiscardDraft}
-          handleRegenerateDraft={handleRegenerateDraft}
-          handleSendDraft={handleSendDraft}
-          showRegenerateConfirm={showRegenerateConfirm}
-          setShowRegenerateConfirm={setShowRegenerateConfirm}
+          draftManagement={draftManagement}
           AudioPlayer={AudioPlayer}
           SentimentIndicator={SentimentIndicator}
           selectionEnabled={selectionEnabled}
           isSelected={selectedMessageIds?.has(node.message.id)}
           onToggleSelection={onToggleSelection}
-          bulkStatus={bulkQueueStatusById?.get(node.message.id)}
           hasChildren={hasChildren}
           childrenCount={node.children.length}
           isExpanded={isExpanded}
@@ -1049,26 +997,13 @@ function ThreadNode({
                   rootTimestamp={rootTimestamp}
                   platformStyles={platformStyles}
                   onStartReply={onStartReply}
-                  onGenerateDraft={onGenerateDraft}
-                  generatingDraftIds={generatingDraftIds}
-                  editingDraftId={editingDraftId}
-                  editingDraftText={editingDraftText}
-                  setEditingDraftText={setEditingDraftText}
-                  startEditingDraft={startEditingDraft}
-                  cancelEditingDraft={cancelEditingDraft}
-                  handleSaveDraftEdit={handleSaveDraftEdit}
-                  handleDiscardDraft={handleDiscardDraft}
-                  handleRegenerateDraft={handleRegenerateDraft}
-                  handleSendDraft={handleSendDraft}
-                  showRegenerateConfirm={showRegenerateConfirm}
-                  setShowRegenerateConfirm={setShowRegenerateConfirm}
+                  draftManagement={draftManagement}
                   highlightedMessageId={highlightedMessageId}
                   AudioPlayer={AudioPlayer}
                   SentimentIndicator={SentimentIndicator}
                   selectionEnabled={selectionEnabled}
                   selectedMessageIds={selectedMessageIds}
                   onToggleSelection={onToggleSelection}
-                  bulkQueueStatusById={bulkQueueStatusById}
                   unreadMessageIds={unreadMessageIds}
                   onUnreadSeen={onUnreadSeen}
                   expandedIds={expandedIds}
@@ -1096,26 +1031,13 @@ export function CommentThread({
   messages,
   platformStyles,
   onStartReply,
-  onGenerateDraft,
-  generatingDraftIds,
-  editingDraftId,
-  editingDraftText,
-  setEditingDraftText,
-  startEditingDraft,
-  cancelEditingDraft,
-  handleSaveDraftEdit,
-  handleDiscardDraft,
-  handleRegenerateDraft,
-  handleSendDraft,
-  showRegenerateConfirm,
-  setShowRegenerateConfirm,
+  draftManagement,
   highlightedMessageId,
   AudioPlayer,
   SentimentIndicator,
   selectionEnabled,
   selectedMessageIds,
   onToggleSelection,
-  bulkQueueStatusById,
   unreadMessageIds,
   onUnreadSeen,
 }: CommentThreadProps) {
@@ -1248,26 +1170,13 @@ export function CommentThread({
               rootTimestamp={new Date(rootNode.message.timestamp)}
               platformStyles={platformStyles}
               onStartReply={onStartReply}
-              onGenerateDraft={onGenerateDraft}
-              generatingDraftIds={generatingDraftIds}
-              editingDraftId={editingDraftId}
-              editingDraftText={editingDraftText}
-              setEditingDraftText={setEditingDraftText}
-              startEditingDraft={startEditingDraft}
-              cancelEditingDraft={cancelEditingDraft}
-              handleSaveDraftEdit={handleSaveDraftEdit}
-              handleDiscardDraft={handleDiscardDraft}
-              handleRegenerateDraft={handleRegenerateDraft}
-              handleSendDraft={handleSendDraft}
-              showRegenerateConfirm={showRegenerateConfirm}
-              setShowRegenerateConfirm={setShowRegenerateConfirm}
+              draftManagement={draftManagement}
               highlightedMessageId={highlightedMessageId}
               AudioPlayer={AudioPlayer}
               SentimentIndicator={SentimentIndicator}
               selectionEnabled={selectionEnabled}
               selectedMessageIds={selectedMessageIds}
               onToggleSelection={onToggleSelection}
-              bulkQueueStatusById={bulkQueueStatusById}
               unreadMessageIds={unreadMessageIds}
               onUnreadSeen={onUnreadSeen}
               expandedIds={expandedIds}
