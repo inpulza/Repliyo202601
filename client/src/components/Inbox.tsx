@@ -101,20 +101,23 @@ import { BulkDraftActionBar } from './BulkDraftActionBar';
 //   - manualBubble: mensajes enviados manualmente desde Repliyo (outbound, internalOrigin=manual)
 //   - draftBubble: borradores de IA pendientes de enviar
 const getPlatformStyles = (platform: Platform) => {
-    // Estilos unificados sin fondos para look minimalista
-    // Todos los comentarios sin fondo (transparente), solo texto sobre fondo gris
+    // IMPORTANTE: NO CAMBIAR ESTOS ESTILOS SIN CONSULTAR
+    // - userBubble: mensajes del cliente/seguidor (inbound) → transparente
+    // - ownerBubble/aiBubble/manualBubble: respuestas de la marca (outbound) → FONDO AZUL
+    // Esto aplica tanto a mensajes enviados desde Repliyo como desde la red social directamente.
+    // El sistema identifica los mensajes outbound por el ID del dueño de la cuenta.
     const baseStyles = {
         container: "bg-[#EEF2F6]",
         userBubble: "bg-transparent text-gray-900",
-        ownerBubble: "bg-transparent text-gray-900",
-        aiBubble: "bg-transparent text-gray-900",
-        manualBubble: "bg-transparent text-gray-900",
+        ownerBubble: "bg-indigo-600 text-white",
+        aiBubble: "bg-indigo-600 text-white",
+        manualBubble: "bg-indigo-600 text-white",
         draftBubble: "bg-transparent text-gray-900",
         draftCard: { bg: "bg-transparent", border: "border-l-gray-300", accent: "text-gray-600", iconBg: "from-gray-400 to-gray-500" },
         badge: "bg-gray-100 text-gray-700 border-gray-200",
         commentBadge: "text-gray-500",
         bubble: "bg-transparent text-gray-900",
-        replyBubble: "bg-transparent text-gray-900"
+        replyBubble: "bg-indigo-600 text-white"
     };
     
     // Colores de badge/accent por plataforma (solo para badges, no fondos)

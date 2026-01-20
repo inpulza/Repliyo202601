@@ -7948,6 +7948,24 @@ Aunque normalmente Testing-first reduce riesgos, en este proyecto el tamaño ext
 
 ---
 
+### REGLAS DE UI QUE NO DEBEN CAMBIAR (CRÍTICO)
+
+Estas reglas deben mantenerse durante cualquier refactorización:
+
+| Elemento | Regla | Motivo |
+|----------|-------|--------|
+| Mensajes outbound (respuestas de marca) | **Fondo azul (#0291FA o bg-indigo-600)** | Distinguir visualmente respuestas de la marca vs mensajes del cliente |
+| Mensajes inbound (del cliente) | Fondo blanco/transparente | Claridad visual |
+| Esto aplica a: | ownerBubble, aiBubble, manualBubble, replyBubble | Consistencia en toda la app |
+
+**NOTA:** Los mensajes outbound incluyen:
+- Respuestas enviadas desde Repliyo (manual o IA)
+- Respuestas enviadas desde la red social directamente por el dueño de la cuenta
+
+El sistema identifica los mensajes outbound por el campo `direction === 'outbound'` que viene de Metricool.
+
+---
+
 ### FASE 1: COMPONENTES (Plan de Mejora)
 **Objetivo:** Separar lógica de presentación, mejorar reutilización y preparar para testing
 **Riesgo actual:** Componentes pesados dificultan mantenimiento y testing
