@@ -13,19 +13,19 @@ El componente Inbox.tsx tiene una cantidad significativa de estado local que pod
 
 ### Categorías Identificadas (Corregidas)
 
-| Categoría | Estados | Candidato a Hook |
-|-----------|---------|------------------|
-| Draft/Reply Management | 10 | `useDraftManagement` |
-| Conversation Lifecycle | 2 | `useConversationLifecycle` |
-| Sync Control | 3 | `useSyncStatus` |
-| Conversation List Filters | 7 | `useInboxFilters` |
-| Thread Filters | 3 | (incluir en `useInboxFilters`) |
-| Deep Link/Focus Mode | 3 | `useDeepLink` |
-| Bulk Selection | 2 | Ya existe `useBulkDraftQueue` |
-| Unread Tracking | 2 | `useUnreadTracking` |
-| Audio Player | 4 | `useAudioPlayer` (interno) |
-| UI Toggles | 4 | Local (no extraer) |
-| **TOTAL** | **40** | |
+| Categoría | Estados | Candidato a Hook | Estado |
+|-----------|---------|------------------|--------|
+| Draft/Reply Management | 10 | `useDraftManagement` | ⬜ Pendiente |
+| Conversation Lifecycle | 2 | `useConversationLifecycle` | ⬜ Pendiente |
+| Sync Control | 3 | `useSyncStatus` | ⬜ Pendiente |
+| Conversation List Filters | 7 | `useInboxFilters` | ⬜ Pendiente |
+| Thread Filters | 3 | (incluir en `useInboxFilters`) | ⬜ Pendiente |
+| Deep Link/Focus Mode | 3 | `useDeepLink` | ⬜ Pendiente |
+| Bulk Selection | 2 | Ya existe `useBulkDraftQueue` | ✅ Existe |
+| Unread Tracking | 2 | `useUnreadTracking` | ⬜ Pendiente |
+| Audio Player | 4 | `useAudioPlayer` (interno) | ⬜ Pendiente |
+| UI Toggles | 4 | Local (no extraer) | ➖ N/A |
+| **TOTAL** | **40** | | |
 
 ---
 

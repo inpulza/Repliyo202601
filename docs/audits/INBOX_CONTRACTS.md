@@ -15,12 +15,12 @@ Inbox.tsx pasa props a **4 subcomponentes principales**. El análisis revela:
 
 ### Indicadores de Prop Drilling
 
-| Componente | Total Props | Props de Datos | Props Callbacks | Props Pass-through | Severidad |
-|------------|-------------|----------------|-----------------|-------------------|-----------|
-| CommentThread | 25 | 11 | 12 | 2 (componentes) | 🔴 Alta |
-| BulkDraftActionBar | 9 | 6 | 3 | 0 | 🟢 Baja |
-| CRMContextPanel | 8 | 5 | 2 | 0 | 🟢 Baja |
-| ConversationCard | 4 | 2 | 1 | 0 | 🟢 Baja |
+| Componente | Total Props | Props de Datos | Props Callbacks | Props Pass-through | Severidad | Estado Refactor |
+|------------|-------------|----------------|-----------------|-------------------|-----------|-----------------|
+| CommentThread | 25 | 11 | 12 | 2 (componentes) | 🔴 Alta | ⬜ Pendiente |
+| BulkDraftActionBar | 9 | 6 | 3 | 0 | 🟢 Baja | ➖ No requiere |
+| CRMContextPanel | 8 | 5 | 2 | 0 | 🟢 Baja | ➖ No requiere |
+| ConversationCard | 4 | 2 | 1 | 0 | 🟢 Baja | ➖ No requiere |
 
 ---
 

@@ -17,14 +17,14 @@ CRMContextPanel es significativamente más simple que Inbox.tsx:
 
 ### Inventario de Hooks (10 total)
 
-| Tipo | Cantidad | Ubicación |
-|------|----------|-----------|
-| useState | 5 | L149-157 (dentro de CRMPanelContent) |
-| useEffect | 2 | L163, L173 |
-| Custom Hook (mutación) | 1 | useReminderOptOut L159 |
-| Router Hook | 1 | useLocation L148 |
-| UI Hook | 1 | useIsMobile L680 (en CRMContextPanel) |
-| **TOTAL** | **10** | — |
+| Tipo | Cantidad | Ubicación | Estado |
+|------|----------|-----------|--------|
+| useState | 5 | L149-157 (dentro de CRMPanelContent) | ➖ No requiere refactor |
+| useEffect | 2 | L163, L173 | ➖ No requiere refactor |
+| Custom Hook (mutación) | 1 | useReminderOptOut L159 | ✅ Ya es hook |
+| Router Hook | 1 | useLocation L148 | ✅ Estándar |
+| UI Hook | 1 | useIsMobile L680 (en CRMContextPanel) | ✅ Estándar |
+| **TOTAL** | **10** | — | ✅ Componente bien estructurado |
 
 ---
 
