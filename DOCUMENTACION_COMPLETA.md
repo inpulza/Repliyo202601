@@ -7975,6 +7975,9 @@ El sistema identifica los mensajes outbound por el campo `direction === 'outboun
 
 **Objetivo:** Entender qué lógica hay en cada componente antes de mover código
 
+> **📁 Documentos de Auditoría generados:**
+> - `docs/audits/INBOX_HOOKS_AUDIT.md` - Inventario completo de hooks, dependencias y recomendaciones de refactor para Inbox.tsx
+
 | Tarea | Descripción | Criterio de Éxito | Estado |
 |-------|-------------|-------------------|--------|
 | 1.1.1 | Inventariar todos los `useState` y `useEffect` en Inbox.tsx | Lista completa de 25+ estados documentada | ✅ Completado (ver docs/audits/INBOX_HOOKS_AUDIT.md) |
