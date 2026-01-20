@@ -89,15 +89,33 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
     return clients.filter(client => client.status !== 'archived');
   }, [clients]);
 
+  const validatedActiveClientId = React.useMemo(() => {
+    if (!isAuthenticated || isAuthLoading || isLoadingClients) {
+      console.log('[NexusContext] validatedActiveClientId: Auth/clients not ready, returning null', { isAuthenticated, isAuthLoading, isLoadingClients });
+      return null;
+    }
+    if (!activeClientId) {
+      console.log('[NexusContext] validatedActiveClientId: No activeClientId set');
+      return null;
+    }
+    const exists = activeClients.some(c => c.id === activeClientId);
+    if (!exists) {
+      console.log('[NexusContext] validatedActiveClientId: activeClientId not found in activeClients, returning null');
+      return null;
+    }
+    console.log('[NexusContext] validatedActiveClientId: VALID -', activeClientId);
+    return activeClientId;
+  }, [isAuthenticated, isAuthLoading, isLoadingClients, activeClientId, activeClients]);
+
   const { data: conversations = [], isLoading: isLoadingConversations } = useQuery({
-    queryKey: ['conversations', activeClientId],
+    queryKey: ['conversations', validatedActiveClientId],
     queryFn: async () => {
-      console.log('[NexusContext] QUERY: Fetching conversations for clientId:', activeClientId, '| Auth state:', { isAuthenticated, isAuthLoading, isLoadingClients, clientsCount: clients.length });
-      const result = await api.conversations.getAll(activeClientId || undefined);
+      console.log('[NexusContext] QUERY: Fetching conversations for validatedClientId:', validatedActiveClientId);
+      const result = await api.conversations.getAll(validatedActiveClientId || undefined);
       console.log('[NexusContext] QUERY: Conversations loaded:', result.length, 'conversations');
       return result;
     },
-    enabled: !!activeClientId,
+    enabled: !!validatedActiveClientId,
   });
 
   const { data: activeConversationMessages = [], isLoading: isLoadingConversationMessages } = useQuery({
@@ -107,14 +125,14 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
   });
 
   const { data: messages = [], isLoading: isLoadingMessages } = useQuery({
-    queryKey: ['messages', activeClientId],
+    queryKey: ['messages', validatedActiveClientId],
     queryFn: async () => {
-      console.log('[NexusContext] QUERY: Fetching messages for clientId:', activeClientId);
-      const result = await api.messages.getAll(activeClientId || undefined);
+      console.log('[NexusContext] QUERY: Fetching messages for validatedClientId:', validatedActiveClientId);
+      const result = await api.messages.getAll(validatedActiveClientId || undefined);
       console.log('[NexusContext] QUERY: Messages loaded:', result.length, 'messages');
       return result;
     },
-    enabled: !!activeClientId,
+    enabled: !!validatedActiveClientId,
   });
 
   React.useEffect(() => {

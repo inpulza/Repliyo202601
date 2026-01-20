@@ -27,10 +27,39 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
+  const onNewMessageRef = useRef(onNewMessage);
+  const onSyncCompleteRef = useRef(onSyncComplete);
+  const onAgentReplyRef = useRef(onAgentReply);
+  const onAgentCooldownRef = useRef(onAgentCooldown);
+  const showToastsRef = useRef(showToasts);
+  const brandIdRef = useRef(brandId);
+  const userIdRef = useRef(userId);
+
+  useEffect(() => { onNewMessageRef.current = onNewMessage; }, [onNewMessage]);
+  useEffect(() => { onSyncCompleteRef.current = onSyncComplete; }, [onSyncComplete]);
+  useEffect(() => { onAgentReplyRef.current = onAgentReply; }, [onAgentReply]);
+  useEffect(() => { onAgentCooldownRef.current = onAgentCooldown; }, [onAgentCooldown]);
+  useEffect(() => { showToastsRef.current = showToasts; }, [showToasts]);
+  useEffect(() => { brandIdRef.current = brandId; }, [brandId]);
+  useEffect(() => { userIdRef.current = userId; }, [userId]);
+
+  const sendSubscribe = useCallback(() => {
+    const currentBrandId = brandIdRef.current;
+    const currentUserId = userIdRef.current;
+    if (wsRef.current?.readyState === WebSocket.OPEN && (currentBrandId || currentUserId)) {
+      console.log('[useWebSocket] Sending subscribe message for brandId:', currentBrandId);
+      wsRef.current.send(JSON.stringify({
+        type: 'subscribe',
+        brandId: currentBrandId,
+        userId: currentUserId
+      }));
+    }
+  }, []);
+
   const connect = useCallback(() => {
-    console.log('[useWebSocket] connect() called | brandId:', brandId, '| Current state:', wsRef.current?.readyState);
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      console.log('[useWebSocket] Already connected, skipping');
+    console.log('[useWebSocket] connect() called | Current state:', wsRef.current?.readyState);
+    if (wsRef.current?.readyState === WebSocket.OPEN || wsRef.current?.readyState === WebSocket.CONNECTING) {
+      console.log('[useWebSocket] Already connected or connecting, skipping');
       return;
     }
 
@@ -45,15 +74,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       ws.onopen = () => {
         console.log('[useWebSocket] Connection opened');
         setIsConnected(true);
-        
-        if (brandId || userId) {
-          console.log('[useWebSocket] Sending subscribe message for brandId:', brandId);
-          ws.send(JSON.stringify({
-            type: 'subscribe',
-            brandId,
-            userId
-          }));
-        }
+        sendSubscribe();
       };
 
       ws.onmessage = (event) => {
@@ -61,25 +82,25 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
           const payload: NotificationPayload = JSON.parse(event.data);
           setLastMessage(payload);
 
+          const currentBrandId = brandIdRef.current;
+
           switch (payload.type) {
             case 'new_message':
-              // Only process messages for the currently active brand to prevent cross-brand data bleed
-              if (brandId && payload.brandId && payload.brandId !== brandId) {
-                console.debug('[WebSocket] Ignoring message for different brand:', payload.brandId, 'vs active:', brandId);
+              if (currentBrandId && payload.brandId && payload.brandId !== currentBrandId) {
+                console.debug('[WebSocket] Ignoring message for different brand:', payload.brandId, 'vs active:', currentBrandId);
                 break;
               }
-              onNewMessage?.(payload.data);
-              // Toasts disabled - notifications now appear in the notification center panel
+              onNewMessageRef.current?.(payload.data);
               break;
             case 'sync_complete':
-              onSyncComplete?.(payload.data);
+              onSyncCompleteRef.current?.(payload.data);
               break;
             case 'agent_reply':
-              onAgentReply?.(payload.data);
+              onAgentReplyRef.current?.(payload.data);
               break;
             case 'agent_cooldown':
-              onAgentCooldown?.(payload.data);
-              if (showToasts && payload.data?.remainingSeconds !== undefined) {
+              onAgentCooldownRef.current?.(payload.data);
+              if (showToastsRef.current && payload.data?.remainingSeconds !== undefined) {
                 toast({
                   title: "Mensaje omitido por cooldown",
                   description: `El agente esperará ${payload.data.remainingSeconds ?? 0}s antes de responder`,
@@ -104,10 +125,12 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         setIsConnected(false);
         wsRef.current = null;
         
-        console.log('[useWebSocket] Scheduling reconnect in 5 seconds...');
-        reconnectTimeoutRef.current = setTimeout(() => {
-          connect();
-        }, 5000);
+        if (event.code !== 1000) {
+          console.log('[useWebSocket] Scheduling reconnect in 5 seconds...');
+          reconnectTimeoutRef.current = setTimeout(() => {
+            connect();
+          }, 5000);
+        }
       };
 
       ws.onerror = (error) => {
@@ -116,7 +139,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     } catch (error) {
       console.error('[WebSocket] Failed to connect:', error);
     }
-  }, [brandId, userId, onNewMessage, onSyncComplete, onAgentReply, onAgentCooldown, showToasts, toast]);
+  }, [sendSubscribe, toast]);
 
   const disconnect = useCallback(() => {
     console.log('[useWebSocket] disconnect() called');
@@ -125,14 +148,14 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       reconnectTimeoutRef.current = null;
     }
     if (wsRef.current) {
-      wsRef.current.close();
+      wsRef.current.close(1000, 'Component unmounting');
       wsRef.current = null;
     }
     setIsConnected(false);
   }, []);
 
   useEffect(() => {
-    console.log('[useWebSocket] EFFECT: Main connect/disconnect effect triggered | brandId:', brandId);
+    console.log('[useWebSocket] EFFECT: Initial connection');
     connect();
     return () => {
       console.log('[useWebSocket] EFFECT: Cleanup - disconnecting');
@@ -142,14 +165,10 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
   useEffect(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN && brandId) {
-      console.log('[useWebSocket] EFFECT: Re-subscribing to brandId:', brandId);
-      wsRef.current.send(JSON.stringify({
-        type: 'subscribe',
-        brandId,
-        userId
-      }));
+      console.log('[useWebSocket] EFFECT: Brand changed, re-subscribing to:', brandId);
+      sendSubscribe();
     }
-  }, [brandId, userId]);
+  }, [brandId, userId, sendSubscribe]);
 
   return {
     isConnected,
