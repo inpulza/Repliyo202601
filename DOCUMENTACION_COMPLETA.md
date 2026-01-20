@@ -8708,7 +8708,98 @@ export function requireAuthHybrid(req: Request, res: Response, next: NextFunctio
 
 ## PLAN DE REFACTORIZACIÓN ARQUITECTÓNICA - Enero 2026
 
-> **Principio Rector**: Aplicamos el patrón **"Strangler Fig"** - mejoramos incrementalmente mientras mantenemos la aplicación funcional. NO refactorizamos todo de golpe.
+---
+
+### 🌳 PRINCIPIO RECTOR: Patrón "Strangler Fig" (Higuera Estranguladora)
+
+> **REGLA DE ORO**: La aplicación SIEMPRE debe funcionar. En cualquier momento del proceso, si detienes el trabajo, la app debe arrancar y todas las funcionalidades deben operar correctamente.
+
+#### ¿Qué es el patrón Strangler Fig?
+
+Es una técnica de refactorización inspirada en cómo la higuera estranguladora crece alrededor de un árbol viejo:
+
+```
+ANTES:                    DURANTE:                   DESPUÉS:
+┌─────────────┐          ┌─────────────┐            ┌─────────────┐
+│  CÓDIGO     │          │ ┌─────────┐ │            │   CÓDIGO    │
+│  VIEJO      │    →     │ │ NUEVO   │ │     →      │   NUEVO     │
+│  (funciona) │          │ │ (crece) │ │            │  (funciona) │
+│             │          │ └─────────┘ │            │             │
+└─────────────┘          └─────────────┘            └─────────────┘
+                         Código viejo sigue
+                         funcionando mientras
+                         el nuevo crece
+```
+
+**Cómo aplicamos esto:**
+
+| Paso | Acción | Resultado |
+|------|--------|-----------|
+| 1 | Crear el nuevo archivo/componente | El viejo sigue funcionando |
+| 2 | Copiar código del viejo al nuevo | Ambos existen, el viejo sigue activo |
+| 3 | Hacer que el sistema use el nuevo | Verificar que todo funciona |
+| 4 | Eliminar el código viejo (solo cuando el nuevo está probado) | Limpieza final |
+
+**Lo que NUNCA hacemos:**
+- ❌ Borrar código antes de tener el reemplazo funcionando
+- ❌ Cambiar muchos archivos a la vez
+- ❌ Continuar si hay errores
+- ❌ Asumir que funciona sin probar
+
+**Lo que SIEMPRE hacemos:**
+- ✅ Cambios pequeños e incrementales
+- ✅ Verificar después de cada cambio
+- ✅ Mantener ambas versiones hasta confirmar que la nueva funciona
+- ✅ Si algo falla, revertir inmediatamente
+
+---
+
+### 📋 MENSAJE DE INICIO (KICKOFF MESSAGE)
+
+> **Usa este mensaje cada vez que inicies una nueva conversación** para continuar el trabajo de refactorización:
+
+```
+# Contexto del Proyecto
+
+Estoy trabajando en la refactorización arquitectónica del proyecto Repliyo (Sistema de Gestión de Inbox Social Media con Metricool).
+
+## Qué necesito que hagas:
+
+1. **Lee el archivo DOCUMENTACION_COMPLETA.md**, específicamente la sección "PLAN DE REFACTORIZACIÓN ARQUITECTÓNICA"
+
+2. **Revisa el estado actual de las tareas:**
+   - ✅ = Completado
+   - ⬜ = Pendiente
+   - 🟨 = En progreso
+   - 🔴 = Bloqueado
+
+3. **Continúa desde la primera tarea ⬜ pendiente** de la fase activa
+
+## Reglas CRÍTICAS:
+
+- **Sigue el patrón Strangler Fig**: La app SIEMPRE debe funcionar después de cada cambio
+- **Máximo 1 archivo por tarea**: No hagas cambios masivos
+- **Verifica después de cada tarea**: Reinicia la app, prueba que funciona
+- **Marca el progreso inmediatamente**: Actualiza el estado en el documento
+- **Si algo falla, PARA y reporta**: No intentes arreglar múltiples cosas a la vez
+
+## Archivos importantes:
+
+- `DOCUMENTACION_COMPLETA.md` - Plan de refactorización y estado actual
+- `docs/audits/` - Auditorías de código realizadas
+- `server/routes.ts` - Archivo principal de rutas (162 KB, a dividir)
+- `server/storage.ts` - Archivo principal de storage (162 KB, a dividir)
+
+## Antes de empezar:
+
+1. Dime qué fase está activa actualmente
+2. Dime cuál es la siguiente tarea pendiente
+3. Pregúntame si tengo alguna preferencia o instrucción adicional
+
+¡Gracias!
+```
+
+---
 
 ### REGLAS DE UI QUE NO DEBEN CAMBIAR (CRÍTICO)
 
