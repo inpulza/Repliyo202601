@@ -8777,7 +8777,7 @@ Estoy trabajando en la refactorización arquitectónica del proyecto Repliyo (Si
 
 ## Reglas CRÍTICAS:
 
-- **Sigue el patrón Strangler Fig**: La app SIEMPRE debe funcionar después de cada cambio
+- **Sigue el patrón Strangler Fig**: (ver PRINCIPIO RECTOR: Patrón "Strangler Fig" (Higuera Estranguladora) La app SIEMPRE debe funcionar después de cada cambio
 - **Máximo 1 archivo por tarea**: No hagas cambios masivos
 - **Verifica después de cada tarea**: Reinicia la app, prueba que funciona
 - **Marca el progreso inmediatamente**: Actualiza el estado en el documento
@@ -8931,23 +8931,7 @@ Los servicios en `server/services/` tienen dependencias directas sin abstracció
 
 #### 📝 Plantilla para el nuevo agente
 
-Cuando inicies una nueva conversación, usa este mensaje:
-
-```
-Estoy trabajando en la refactorización arquitectónica del proyecto.
-
-**Estado actual:**
-- Lee la sección "Plan de Refactorización por Fases" en DOCUMENTACION_COMPLETA.md
-- Las fases marcadas con ✅ ya están completas
-- Continúa desde la primera fase que tenga tareas ⬜ pendientes
-
-**Reglas importantes:**
-- Sigue las "Reglas de Seguridad para Evitar Pérdida de Contexto"
-- Verifica después de cada tarea
-- Marca el progreso inmediatamente en el documento
-
-Por favor, lee el documento y continúa el trabajo.
-```
+> **Ver sección "MENSAJE DE INICIO (KICKOFF MESSAGE)" arriba** para el mensaje completo que debes usar al iniciar una nueva conversación.
 
 #### ❌ Cuándo NO cambiar de conversación
 

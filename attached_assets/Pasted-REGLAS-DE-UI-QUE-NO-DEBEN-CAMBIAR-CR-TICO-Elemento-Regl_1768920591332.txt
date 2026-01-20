@@ -1,0 +1,104 @@
+REGLAS DE UI QUE NO DEBEN CAMBIAR (CRÍTICO)
+Elemento	Regla	Motivo
+Mensajes outbound (respuestas de marca)	Fondo azul (#0291FA o bg-indigo-600)	Distinguir visualmente respuestas de la marca vs mensajes del cliente
+Mensajes inbound (del cliente)	Fondo blanco/transparente	Claridad visual
+Esto aplica a:	ownerBubble, aiBubble, manualBubble, replyBubble	Consistencia en toda la app
+El sistema identifica los mensajes outbound por el campo direction === 'outbound' que viene de Metricool.
+
+Diagnóstico Detallado: Problemas Identificados
+📁 Documentos de Auditoría Generados:
+
+docs/audits/INBOX_HOOKS_AUDIT.md - Inventario completo de 63 hooks, dependencias y recomendaciones de refactor para Inbox.tsx
+docs/audits/INBOX_CONTRACTS.md - Contratos de props entre Inbox.tsx y sus subcomponentes (CommentThread recibe 25 props, 14 relacionadas a drafts)
+docs/audits/CRMCONTEXTPANEL_AUDIT.md - Auditoría de CRMContextPanel.tsx (10 hooks, bajo prioridad de refactor)
+docs/audits/DUPLICATED_LOGIC.md - Análisis de lógica duplicada: 14 props draft-related, 4 categorías de refactor
+🔴 Problema 1: Archivos Monolíticos (God Objects)
+Archivo	Tamaño	Responsabilidades Mezcladas
+server/routes.ts	162 KB (~100 endpoints)	Autenticación, validación, lógica de negocio, sincronización, websockets, orquestación
+server/storage.ts	162 KB	CRUD de todas las entidades, lógica de elegibilidad, transiciones de estado, queries complejas
+Impacto: Viola SRP (Single Responsibility Principle), dificulta testing, mantenimiento y onboarding de nuevos desarrolladores.
+
+🔴 Problema 2: Ausencia de Capas Arquitectónicas
+Estructura Actual (Plana):
+
+Frontend (React) → Routes (API) → Storage (DB)
+Estructura Recomendada (Por Capas):
+
+┌─────────────────────────────────────────────────────────────┐
+│                    PRESENTACIÓN (Frontend)                   │
+├─────────────────────────────────────────────────────────────┤
+│                     CONTROLLERS (Routes)                     │
+├─────────────────────────────────────────────────────────────┤
+│              USE CASES / APPLICATION SERVICES                │
+├─────────────────────────────────────────────────────────────┤
+│                   DOMAIN (Entities + Rules)                  │
+├─────────────────────────────────────────────────────────────┤
+│       INFRASTRUCTURE (Repositories, Adapters, APIs)         │
+└─────────────────────────────────────────────────────────────┘
+🔴 Problema 3: Componentes React Gigantes
+Componente	Tamaño	Responsabilidades Mezcladas
+LandingPage.tsx	165 KB	UI, animaciones, datos, lógica de presentación
+Inbox.tsx	124 KB	Threading, fetching, estados, presentación, acciones
+AIAgentConfig.tsx	117 KB	6 tabs, validación, lógica de negocio AI, formularios
+CRM.tsx	87 KB	Vista, filtros, acciones, modales, lógica de merge
+Impacto: Componentes no reutilizables, difíciles de testear, alta probabilidad de bugs por efectos secundarios.
+
+🔴 Problema 4: Lógica de Negocio en Frontend
+Reglas de negocio críticas ejecutándose en cliente (inseguro, no reutilizable):
+
+Threading/agrupación de mensajes
+Heurísticas de merge de contactos CRM
+Validación de configuración AI
+Cálculos de elegibilidad
+🔴 Problema 5: Servicios Acoplados
+Los servicios en server/services/ tienen dependencias directas sin abstracción:
+
+Acceso directo a storage global
+Llamadas directas a adaptadores Metricool
+Side-effects de WebSocket mezclados con lógica
+Impacto: Imposible hacer testing con mocks, cambiar implementaciones, o entender el grafo de dependencias.
+
+🔴 Problema 6: Sin Abstracciones de Dominio
+Abstracción Faltante	Consecuencia
+DTOs (Data Transfer Objects)	Records de DB fluyen directamente a la UI sin transformación
+Value Objects	No hay validación de invariantes de negocio
+Entities	No hay modelado explícito de reglas de dominio
+Repository Interfaces	Storage mezcla acceso a datos con lógica
+Plan de Refactorización por Fases
+🛡️ REGLAS DE SEGURIDAD PARA EVITAR PÉRDIDA DE CONTEXTO
+Lección aprendida: En intentos anteriores, el agente perdió contexto cuando las subtareas tenían demasiados cambios. Estas reglas previenen ese problema.
+
+Regla	Descripción
+Máximo 1 archivo por tarea	Cada tarea debe modificar solo 1 archivo principal. Si necesita tocar más, dividir en subtareas.
+Verificar ANTES de continuar	Después de cada tarea, reiniciar la aplicación y verificar que funciona. NO continuar si hay errores.
+Guardar checkpoint después de cada subtarea	El agente debe confirmar que el checkpoint se guardó antes de pasar a la siguiente.
+Tareas atómicas	Cada tarea debe poder revertirse sin afectar otras. Si falla, solo se pierde esa tarea.
+Límite de 50 líneas por cambio	Si un cambio requiere mover más de 50 líneas, dividirlo en partes más pequeñas.
+Marcar progreso inmediatamente	Actualizar el estado en esta documentación al completar cada tarea, no al final de la fase.
+🔄 PUNTOS DE CORTE SEGUROS (Cambio de Conversación)
+Propósito: Cuando la ventana de contexto del agente está muy saturada, es mejor iniciar una nueva conversación. Estos son los puntos donde es seguro hacerlo.
+
+Punto de Corte	Después de...	Verificación antes de cerrar	Qué decirle al nuevo agente
+🟢 Corte 1	Fase 0 completa	Tests de humo pasan, app arranca	"Continúa con Fase 1 (División de Routes). Lee DOCUMENTACION_COMPLETA.md sección Plan de Refactorización."
+🟢 Corte 2	Fases 1+2 completas	Routes divididas, Storage dividido, app funciona	"Continúa con Fase 3 (Capa de Servicios). Las Fases 1 y 2 están ✅."
+🟢 Corte 3	Fase 3 completa	Servicios funcionando, rutas usan servicios	"Continúa con Fase 4 (Frontend) o Fase 5 (Abstracciones)."
+🟢 Corte 4	Fase 4 completa	Componentes React refactorizados, UI funciona igual	"Continúa con Fase 5 si no está hecha, o Fase 6 (Testing Final)."
+🟢 Corte 5	Fases 5+6 completas	Tests pasan, documentación actualizada	"Refactorización completa. Verificar todo funciona."
+⚠️ Reglas para cambiar de conversación
+NUNCA cambiar en medio de una fase - Solo al completar fases enteras.
+Verificar que TODO funciona - App arranca, funcionalidades probadas.
+Actualizar estados en este documento - Marcar tareas completadas con ✅.
+Incluir resumen para el siguiente agente - Al final de la conversación, pedir al agente que escriba un resumen de lo hecho.
+📝 Plantilla para el nuevo agente
+Cuando inicies una nueva conversación, usa este mensaje:
+
+Estoy trabajando en la refactorización arquitectónica del proyecto.
+**Estado actual:**
+- Lee la sección "Plan de Refactorización por Fases" en DOCUMENTACION_COMPLETA.md
+- Las fases marcadas con ✅ ya están completas
+- Continúa desde la primera fase que tenga tareas ⬜ pendientes
+**Reglas importantes:**
+- Sigue las "Reglas de Seguridad para Evitar Pérdida de Contexto"
+- Verifica después de cada tarea
+- Marca el progreso inmediatamente en el documento
+Por favor, lee el documento y continúa el trabajo.
