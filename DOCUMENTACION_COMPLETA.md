@@ -9228,6 +9228,36 @@ Los servicios en `server/services/` tienen dependencias directas sin abstracció
 | 3.5.3 | reminderService: inyectar dependencias | App arranca | ⬜ | |
 | 3.5.4 | Verificar todos los servicios | Auto-reply, sync, reminders funcionan | ⬜ | |
 
+### 3.6 Optimización de Rendimiento de Servicios 🔴 (NUEVA - Identificada 20 Ene 2026)
+
+> **Origen**: Análisis profundo de rendimiento identificó estos problemas críticos que no estaban en el plan original.
+
+#### 3.6.1 Cachear Configuración de Agentes IA
+
+**Problema Identificado**: Cada mensaje entrante ejecuta `storage.getAiAgentByBrand()` ANTES de llamar al LLM, causando queries innecesarias a la BD.
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 3.6.1.1 | Crear AIAgentConfigCache (Map en memoria) | Archivo existe | ⬜ | TTL 5 minutos |
+| 3.6.1.2 | Modificar autoReplyService para usar cache | App arranca | ⬜ | Primero cache, luego BD |
+| 3.6.1.3 | Invalidar cache al actualizar agente | Update invalida cache | ⬜ | En PUT /ai-agents/:id |
+| 3.6.1.4 | Verificar que auto-reply sigue funcionando | Respuestas IA funcionan | ⬜ | |
+
+**Impacto**: Elimina ~80% de queries a la BD en el hot path de auto-reply.
+
+#### 3.6.2 Sync Paralelo de Marcas
+
+**Problema Identificado**: `syncService.syncAllBrands()` procesa marcas **secuencialmente** con 2s de delay. Con 60 marcas, el sync tarda 2+ minutos y se atrasa permanentemente.
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 3.6.2.1 | Refactorizar sync para usar Promise pool | App arranca | ⬜ | Concurrencia: 5 marcas simultáneas |
+| 3.6.2.2 | Implementar tracking de duración de ciclo | Logs muestran duración | ⬜ | Para auto-ajustar intervalo |
+| 3.6.2.3 | Auto-ajustar intervalo según duración | Intervalo dinámico | ⬜ | Si ciclo > 2min, no iniciar nuevo |
+| 3.6.2.4 | Verificar sync con múltiples marcas | Sync no se atrasa | ⬜ | |
+
+**Impacto**: Permite escalar a 50+ marcas sin que el sync se quede atrás.
+
 ---
 
 ## FASE 4: Refactorización Frontend 🟡
@@ -9296,6 +9326,26 @@ Los servicios en `server/services/` tienen dependencias directas sin abstracció
 | 4.5.2 | Crear endpoint que retorne threads procesados | Endpoint responde | ⬜ | |
 | 4.5.3 | Actualizar frontend para usar endpoint | Inbox funciona | ⬜ | |
 | 4.5.4 | Mover lógica de merge CRM a backend | CRM funciona | ⬜ | |
+
+### 4.6 Optimizar NexusContext 🟡 (NUEVA - Identificada 20 Ene 2026)
+
+> **Origen**: Análisis profundo de rendimiento identificó este problema que no estaba en el plan original.
+
+**Problema Identificado**: `NexusContext.tsx` reconstruye su estado completo cada vez que llega un mensaje nuevo, causando re-renders en cascada en TODOS los componentes que lo consumen (Inbox, CRM, etc.).
+
+**Impacto**: El inbox puede sentirse "trabado" cuando hay mucha actividad porque cada mensaje nuevo re-renderiza toda la aplicación.
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 4.6.1 | Analizar qué partes del contexto cambian frecuentemente | Análisis documentado | ⬜ | messages vs config |
+| 4.6.2 | Dividir NexusContext en contextos más pequeños | Contextos separados funcionan | ⬜ | MessagesContext, ConfigContext |
+| 4.6.3 | Memoizar valores del contexto con useMemo | Re-renders reducidos | ⬜ | Verificar con React DevTools |
+| 4.6.4 | Alternativa: Migrar a Zustand con selectores | Selectores funcionan | ⬜ | Solo re-render lo necesario |
+| 4.6.5 | Verificar rendimiento en Inbox con mucha actividad | UI fluida | ⬜ | Probar con múltiples mensajes |
+
+**Solución Recomendada**: 
+- Opción A (menos invasiva): Dividir en `MessagesProvider` + `ConfigProvider` + `UIStateProvider`
+- Opción B (más robusta): Migrar a Zustand con selectores granulares
 
 ---
 
