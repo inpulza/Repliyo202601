@@ -10002,7 +10002,193 @@ messages_brand_timestamp_idx     (brand_id, timestamp)
 
 ---
 
-*Sección creada: 20 Enero 2026*
+## Guía Educativa: Bases de Datos y Rendimiento
+
+*Esta sección explica los conceptos detrás de las optimizaciones de la Fase 7 para referencia futura.*
+
+### OLTP vs OLAP: Los Dos Tipos de Aplicaciones
+
+| Característica | **OLTP** (Transaccional) | **OLAP** (Analítico) |
+|----------------|--------------------------|----------------------|
+| **Significa** | Online Transaction Processing | Online Analytical Processing |
+| **Propósito** | Operaciones del día a día | Análisis de datos históricos |
+| **Operaciones típicas** | Leer/escribir registros individuales | Sumar, promediar, agrupar millones de registros |
+| **Usuarios** | Empleados, clientes, sistemas | Analistas, gerentes, reportes |
+| **Velocidad requerida** | Milisegundos | Segundos a minutos |
+
+#### Ejemplos de Aplicaciones OLTP (como Repliyo)
+
+- **Inbox de Repliyo**: "Dame los mensajes de la conversación X"
+- **Un banco**: "Transfiere $100 de cuenta A a cuenta B"
+- **Amazon checkout**: "Procesa este pedido del cliente"
+- **WhatsApp**: "Envía este mensaje y márcalo como entregado"
+
+**Características:**
+- Muchas operaciones pequeñas y rápidas
+- Leer/escribir 1-100 registros a la vez
+- Miles de usuarios simultáneos
+- Cada operación debe ser instantánea
+
+#### Ejemplos de Aplicaciones OLAP
+
+- **Dashboard de ventas**: "¿Cuánto vendimos este año por región?"
+- **Netflix**: "¿Qué géneros ven más los usuarios de 25-35 años?"
+- **Tu AI Metrics dashboard**: "¿Cuántos tokens gastamos en los últimos 30 días?"
+
+**Características:**
+- Pocas operaciones pero muy pesadas
+- Leer/agregar millones de registros
+- Pocos usuarios (analistas)
+- Puede tardar segundos o minutos
+
+#### ¿Qué Tipo es Repliyo?
+
+| Operación en Repliyo | Tipo | Por qué |
+|---------------------|------|---------|
+| Cargar inbox | OLTP | Muestra ~50 conversaciones recientes |
+| Abrir conversación | OLTP | Carga ~20 mensajes de un hilo |
+| Enviar respuesta | OLTP | Guarda 1 mensaje |
+| Sincronizar Metricool | OLTP | Procesa mensajes uno por uno |
+| **Dashboard AI Metrics** | **OLAP** | Suma tokens de miles de registros |
+| **Dashboard Overview** | **OLAP** | Cuenta mensajes por período |
+
+**Repliyo es 90% OLTP** (transaccional) con algunos dashboards que son OLAP.
+
+---
+
+### Seq Scan vs Index Scan: Cómo Busca la Base de Datos
+
+#### Seq Scan (Sequential Scan) - El Problema
+
+Imagina una biblioteca con 10,000 libros tirados en el piso sin ningún orden. Cada vez que alguien te pide "busca los libros de la marca X", tienes que revisar **los 10,000 libros uno por uno** hasta encontrar los correctos.
+
+```
+📚📚📚📚📚📚📚📚📚📚📚📚📚📚📚📚📚📚 → Revisa TODO → 📗 Encontrado!
+(10,000 libros revisados)
+```
+
+#### Index Scan - La Solución
+
+Agregamos **índices** - como crear estantes organizados en la biblioteca:
+- Un estante para "libros por marca"
+- Un estante para "libros por fecha"
+- Un estante para "libros por conversación"
+
+```
+📇 Índice dice: "Está en posición 847"
+                                   ↓
+📚📚📚📚📚📚📚📚📚📚📚📚📚📚📚📚📚📚
+                                   📗 ¡Directo!
+(1 búsqueda en el índice)
+```
+
+#### Impacto en Escalabilidad
+
+| Mensajes | Sin índices (Seq Scan) | Con índices (Index Scan) |
+|----------|------------------------|--------------------------|
+| 10,000 | 5 ms | 0.4 ms |
+| 100,000 | ~50 ms | ~0.5 ms |
+| 1,000,000 | ~500 ms (lento) | ~1 ms |
+| 10,000,000 | ~5 segundos (inaceptable) | ~5 ms |
+
+---
+
+### ¿Dónde Se Refleja en Repliyo?
+
+#### 1. Cuando Cambias de Marca (ej: de Crishair a Fortress Wellness)
+
+```sql
+SELECT * FROM conversations WHERE brand_id = 'fortress-id' ORDER BY last_message_at
+```
+
+| Antes (Seq Scan) | Ahora (Index Scan) |
+|------------------|-------------------|
+| Revisa las 1,051 conversaciones | Usa el índice `conversations_brand_idx` |
+| 0.75 ms | **0.06 ms** |
+
+**Dónde lo notas:** Cuando haces clic en el selector de marca arriba a la izquierda, el inbox se recarga más rápido.
+
+#### 2. Cuando Abres una Conversación (haces clic en un thread)
+
+```sql
+SELECT * FROM messages WHERE conversation_id = 'conv-123' ORDER BY timestamp
+```
+
+| Antes (Seq Scan) | Ahora (Index Scan) |
+|------------------|-------------------|
+| Revisa los 10,221 mensajes | Usa el índice `messages_conversation_idx` |
+| 4.77 ms | **0.38 ms** |
+
+**Dónde lo notas:** Al hacer clic en cualquier conversación del inbox, los mensajes aparecen más rápido.
+
+#### 3. Cuando Filtras por Estado (ej: "Nuevos", "Abiertos", "Pendientes")
+
+```sql
+SELECT * FROM conversations WHERE brand_id = 'x' AND status = 'new'
+```
+
+| Antes | Ahora |
+|-------|-------|
+| Revisa todas las conversaciones | Usa el índice compuesto `conversations_brand_status_idx` |
+
+**Dónde lo notas:** Los chips de filtro en el inbox (New, Open, Pending, etc.) responden más rápido.
+
+#### 4. Cuando el Sync de Metricool Procesa Mensajes
+
+Cada vez que llega un mensaje nuevo, el sistema busca:
+```sql
+SELECT * FROM messages WHERE brand_id = 'x' ORDER BY timestamp DESC
+```
+
+| Antes | Ahora |
+|-------|-------|
+| Escanea todos los mensajes | Usa `messages_brand_timestamp_idx` |
+
+**Dónde lo notas:** La sincronización con Metricool es más eficiente.
+
+---
+
+### ¿Por Qué los Índices Afectan Según el Tipo de App?
+
+| Tipo de App | Mejor Tipo de Índice | Por qué |
+|-------------|---------------------|---------|
+| **OLTP** (Repliyo inbox) | **B-Tree** (los que pusimos) | Rápidos para buscar registros específicos |
+| **OLAP** (AI Metrics dashboard) | **Vistas Materializadas** (Fase 7.5) | Pre-calculan agregaciones pesadas |
+
+**Resumen:**
+> **OLTP** = "¿Cuál es el mensaje #12345?" → Necesita índices B-Tree ✅ (ya los tienes)
+> 
+> **OLAP** = "¿Cuántos mensajes hubo este mes?" → Necesita vistas materializadas 📊 (Fase 7.5)
+
+---
+
+### Los 8 Índices Creados en Fase 7.1
+
+| Tabla | Índice | Columnas | Uso Principal |
+|-------|--------|----------|---------------|
+| conversations | `conversations_brand_idx` | brand_id | Filtrar por marca |
+| conversations | `conversations_status_idx` | status | Filtrar por estado |
+| conversations | `conversations_last_message_at_idx` | last_message_at | Ordenar por fecha |
+| conversations | `conversations_brand_status_idx` | brand_id + status | Filtro combinado |
+| messages | `messages_brand_idx` | brand_id | Filtrar por marca |
+| messages | `messages_conversation_idx` | conversation_id | Cargar threads |
+| messages | `messages_timestamp_idx` | timestamp | Ordenar por fecha |
+| messages | `messages_brand_timestamp_idx` | brand_id + timestamp | Sync y ordenamiento |
+
+---
+
+### Próximos Pasos de Optimización
+
+| Fase | Descripción | Cuándo Hacerlo |
+|------|-------------|----------------|
+| **7.2** | Índices secundarios (social_posts, notifications) | Cuando esas tablas crezcan |
+| **7.3** | Optimización de queries complejas | Después de dividir storage.ts |
+| **7.5** | Vistas materializadas para dashboards | Cuando AI Metrics se vuelva lento |
+| **7.7** | Índices BRIN para tablas muy grandes | Cuando tengas >5M mensajes |
+
+---
+
+*Sección educativa creada: 20 Enero 2026*
 *Última actualización: 20 Enero 2026*
 
 ---
