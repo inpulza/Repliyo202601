@@ -2104,6 +2104,7 @@ export function Inbox() {
                       <CommentThread
                         messages={filteredThreadMessages}
                         platformStyles={getPlatformStyles((activeConversation.platform || 'instagram') as Platform)}
+                        isDM={activeConversation?.type === 'dm'}
                         onStartReply={handleStartReply}
                         onGenerateDraft={handleGenerateDraft}
                         generatingDraftIds={generatingDraftIds}

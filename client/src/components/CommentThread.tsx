@@ -86,6 +86,7 @@ interface CommentThreadProps {
     badge: string;
     commentBadge: string;
   };
+  isDM?: boolean; // Hide individual reply buttons for DMs since API doesn't support replying to specific messages
   onStartReply: (message: Message) => void;
   onGenerateDraft: (messageId: string) => void;
   generatingDraftIds: Set<string>;
@@ -160,6 +161,7 @@ interface SingleMessageProps {
   onUnreadSeen?: (messageId: string) => void;
   rootTimestamp?: Date;
   platformStyles: CommentThreadProps['platformStyles'];
+  isDM?: boolean;
   onStartReply: CommentThreadProps['onStartReply'];
   onGenerateDraft: CommentThreadProps['onGenerateDraft'];
   generatingDraftIds: Set<string>;
@@ -198,6 +200,7 @@ function SingleMessage({
   onUnreadSeen,
   rootTimestamp,
   platformStyles,
+  isDM = false,
   onStartReply,
   onGenerateDraft,
   generatingDraftIds,
@@ -512,27 +515,29 @@ function SingleMessage({
               </button>
             )}
             
-            {/* Reply button */}
-            <button
-              onClick={() => onStartReply(msg)}
-              data-testid={`button-reply-${msg.id}`}
-              title="Reply to this message"
-              className="flex items-center gap-1 text-gray-400 hover:text-indigo-600 transition-colors"
-            >
-              <svg 
-                className="h-4 w-4" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
+            {/* Reply button - hidden for DMs since API doesn't support replying to specific messages */}
+            {!isDM && (
+              <button
+                onClick={() => onStartReply(msg)}
+                data-testid={`button-reply-${msg.id}`}
+                title="Reply to this message"
+                className="flex items-center gap-1 text-gray-400 hover:text-indigo-600 transition-colors"
               >
-                <path d="M3 10h10a5 5 0 0 1 5 5v6" />
-                <path d="M7 6l-4 4 4 4" />
-              </svg>
-              <span className="text-[10px] font-medium">Reply</span>
-            </button>
+                <svg 
+                  className="h-4 w-4" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                >
+                  <path d="M3 10h10a5 5 0 0 1 5 5v6" />
+                  <path d="M7 6l-4 4 4 4" />
+                </svg>
+                <span className="text-[10px] font-medium">Reply</span>
+              </button>
+            )}
             
             {/* Generate Draft button */}
             {!msg.aiSuggestedReply && msg.aiReplyStatus !== 'drafted' && !generatingDraftIds.has(msg.id) && (
@@ -841,6 +846,7 @@ interface ThreadNodeProps {
   parentMessageHeight?: number; // Height of parent's message bubble for connector calculation
   rootTimestamp: Date;
   platformStyles: CommentThreadProps['platformStyles'];
+  isDM?: boolean;
   onStartReply: CommentThreadProps['onStartReply'];
   onGenerateDraft: CommentThreadProps['onGenerateDraft'];
   generatingDraftIds: Set<string>;
@@ -879,6 +885,7 @@ function ThreadNode({
   parentMessageHeight = 0,
   rootTimestamp,
   platformStyles,
+  isDM = false,
   onStartReply,
   onGenerateDraft,
   generatingDraftIds,
@@ -1001,6 +1008,7 @@ function ThreadNode({
           onUnreadSeen={onUnreadSeen}
           rootTimestamp={rootTimestamp}
           platformStyles={platformStyles}
+          isDM={isDM}
           onStartReply={onStartReply}
           onGenerateDraft={onGenerateDraft}
           generatingDraftIds={generatingDraftIds}
@@ -1048,6 +1056,7 @@ function ThreadNode({
                   parentMessageHeight={myMessageHeight}
                   rootTimestamp={rootTimestamp}
                   platformStyles={platformStyles}
+                  isDM={isDM}
                   onStartReply={onStartReply}
                   onGenerateDraft={onGenerateDraft}
                   generatingDraftIds={generatingDraftIds}
@@ -1095,6 +1104,7 @@ function ThreadNode({
 export function CommentThread({
   messages,
   platformStyles,
+  isDM = false,
   onStartReply,
   onGenerateDraft,
   generatingDraftIds,
@@ -1247,6 +1257,7 @@ export function CommentThread({
               isLastChild={index === tree.length - 1}
               rootTimestamp={new Date(rootNode.message.timestamp)}
               platformStyles={platformStyles}
+              isDM={isDM}
               onStartReply={onStartReply}
               onGenerateDraft={onGenerateDraft}
               generatingDraftIds={generatingDraftIds}
