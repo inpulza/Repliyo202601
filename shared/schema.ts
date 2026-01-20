@@ -119,7 +119,12 @@ export const conversations = pgTable("conversations", {
   reminderCount: integer("reminder_count").default(0),
   lastReminderAt: timestamp("last_reminder_at"),
   reminderStatus: text("reminder_status").default('none'), // 'none' | 'scheduled' | 'sent' | 'max_reached' | 'opted_out'
-});
+}, (table) => ({
+  brandIdx: index("conversations_brand_idx").on(table.brandId),
+  statusIdx: index("conversations_status_idx").on(table.status),
+  lastMessageAtIdx: index("conversations_last_message_at_idx").on(table.lastMessageAt),
+  brandStatusIdx: index("conversations_brand_status_idx").on(table.brandId, table.status),
+}));
 
 export const messages = pgTable("messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -158,7 +163,12 @@ export const messages = pgTable("messages", {
   mediaUrl: text("media_url"),
   mediaTranscription: text("media_transcription"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  brandIdx: index("messages_brand_idx").on(table.brandId),
+  conversationIdx: index("messages_conversation_idx").on(table.conversationId),
+  timestampIdx: index("messages_timestamp_idx").on(table.timestamp),
+  brandTimestampIdx: index("messages_brand_timestamp_idx").on(table.brandId, table.timestamp),
+}));
 
 export const aiAgents = pgTable("ai_agents", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

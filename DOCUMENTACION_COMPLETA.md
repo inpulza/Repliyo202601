@@ -9721,16 +9721,124 @@ const paginatedConversations = await db.select().from(conversations)
 | 7.4.2 | Agregar timeouts de conexión | Timeouts configurados | ⬜ | connectionTimeoutMillis: 10000 |
 | 7.4.3 | Agregar monitoring de conexiones activas | Logs muestran pool status | ⬜ | Para debugging |
 
-### 7.5 Caché de Servidor (PRIORIDAD P2 - Futuro) 🟢
+### 7.5 Vistas Materializadas para Dashboards (PRIORIDAD P2) 🟢
 
-**Nota:** Implementar solo cuando el volumen lo justifique (50+ marcas activas).
+**Objetivo**: Optimizar los dashboards existentes (AI Metrics, Overview) con vistas materializadas para acelerar queries de agregación.  
+**Nota:** Implementar cuando los dashboards se vuelvan lentos con alto volumen de datos.
+
+#### ¿Qué son las Vistas Materializadas?
+- **Vista normal**: Query que se ejecuta cada vez (siempre datos frescos, pero lento)
+- **Vista materializada**: Resultado pre-calculado y almacenado (rápido, pero datos pueden estar "stale")
+- **Trade-off**: Velocidad vs frescura de datos
+
+#### Dashboards Existentes que se Beneficiarían:
+
+| Dashboard | Query Actual | Vista Materializada Propuesta |
+|-----------|--------------|------------------------------|
+| **AI Metrics** | Suma tokens, costos por período desde `ai_agent_audit_log` | `mv_ai_daily_stats` - Agregaciones diarias |
+| **Overview** | Contadores de mensajes, conversaciones por marca | `mv_brand_daily_stats` - Métricas diarias |
+| **Reminders** | `getReminderStats` - Query compleja | `mv_reminder_stats` - Estadísticas pre-calculadas |
+
+#### Tareas
 
 | ID | Tarea | Verificación | Estado | Notas |
 |----|-------|--------------|--------|-------|
-| 7.5.1 | Evaluar necesidad de Redis | Decisión documentada | ⬜ | Basado en métricas reales |
-| 7.5.2 | Cachear configuración de agentes IA | Cache funciona | ⬜ | TTL: 5 minutos |
-| 7.5.3 | Cachear lista de marcas por usuario | Cache funciona | ⬜ | TTL: 1 minuto |
-| 7.5.4 | Invalidación de cache en updates | Cache se invalida correctamente | ⬜ | |
+| 7.5.1 | Medir tiempo actual de carga de AI Metrics | Tiempo documentado | ⬜ | Baseline para comparar |
+| 7.5.2 | Medir tiempo actual de carga de Overview | Tiempo documentado | ⬜ | Baseline para comparar |
+| 7.5.3 | Crear vista materializada `mv_ai_daily_stats` | Vista creada | ⬜ | Ver código abajo |
+| 7.5.4 | Crear vista materializada `mv_brand_daily_stats` | Vista creada | ⬜ | Ver código abajo |
+| 7.5.5 | Implementar job de refresh (cada 15-60 min) | Job funcionando | ⬜ | Usar cron o scheduler |
+| 7.5.6 | Actualizar endpoints para usar vistas | Endpoints usan vistas | ⬜ | Fallback a query directa |
+| 7.5.7 | Medir mejora de rendimiento | Reducción >50% en tiempo de carga | ⬜ | Comparar con baseline |
+
+#### Código de Implementación (SQL)
+
+```sql
+-- Vista Materializada: Métricas diarias de IA por marca
+CREATE MATERIALIZED VIEW mv_ai_daily_stats AS
+SELECT 
+  a.brand_id,
+  DATE(al.created_at) as date,
+  COUNT(*) as total_requests,
+  COUNT(CASE WHEN al.status = 'success' THEN 1 END) as successful,
+  COUNT(CASE WHEN al.status = 'error' THEN 1 END) as failed,
+  SUM(COALESCE(al.prompt_tokens, 0)) as total_prompt_tokens,
+  SUM(COALESCE(al.completion_tokens, 0)) as total_completion_tokens,
+  SUM(COALESCE(al.total_cost_usd, 0)) as total_cost_usd,
+  al.provider,
+  al.model
+FROM ai_agent_audit_log al
+JOIN ai_agents a ON al.agent_id = a.id
+GROUP BY a.brand_id, DATE(al.created_at), al.provider, al.model;
+
+-- Índice para búsquedas rápidas
+CREATE UNIQUE INDEX ON mv_ai_daily_stats (brand_id, date, provider, model);
+
+-- Vista Materializada: Métricas diarias de mensajes por marca
+CREATE MATERIALIZED VIEW mv_brand_daily_stats AS
+SELECT 
+  brand_id,
+  DATE(timestamp) as date,
+  COUNT(*) as total_messages,
+  COUNT(CASE WHEN direction = 'inbound' THEN 1 END) as inbound_count,
+  COUNT(CASE WHEN direction = 'outbound' THEN 1 END) as outbound_count,
+  COUNT(CASE WHEN status = 'unread' THEN 1 END) as unread_count,
+  COUNT(DISTINCT conversation_id) as active_conversations,
+  platform,
+  type
+FROM messages
+GROUP BY brand_id, DATE(timestamp), platform, type;
+
+-- Índice para búsquedas rápidas
+CREATE UNIQUE INDEX ON mv_brand_daily_stats (brand_id, date, platform, type);
+
+-- Refresh (ejecutar cada 15-60 minutos)
+REFRESH MATERIALIZED VIEW CONCURRENTLY mv_ai_daily_stats;
+REFRESH MATERIALIZED VIEW CONCURRENTLY mv_brand_daily_stats;
+```
+
+#### Estrategia de Refresh
+
+| Opción | Frecuencia | Impacto | Recomendado Para |
+|--------|------------|---------|------------------|
+| **Cada 15 min** | Alto | Bajo (CONCURRENTLY no bloquea) | Dashboards en tiempo casi-real |
+| **Cada hora** | Medio | Muy bajo | Reportes que toleran 1h de retraso |
+| **Manual** | Bajo | Ninguno | Reportes mensuales/semanales |
+
+#### Cuándo NO usar Vistas Materializadas
+
+- ❌ Datos que DEBEN estar siempre actualizados (ej: inbox, CRM)
+- ❌ Tablas pequeñas donde el query directo es rápido
+- ❌ Queries simples que ya usan índices eficientemente
+
+### 7.6 Caché de Servidor con Redis (PRIORIDAD P3 - Futuro) 🟢
+
+**Nota:** Implementar solo cuando el volumen lo justifique (50+ marcas activas, >100K mensajes).
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 7.6.1 | Evaluar necesidad de Redis | Decisión documentada | ⬜ | Basado en métricas reales |
+| 7.6.2 | Cachear configuración de agentes IA | Cache funciona | ⬜ | TTL: 5 minutos |
+| 7.6.3 | Cachear lista de marcas por usuario | Cache funciona | ⬜ | TTL: 1 minuto |
+| 7.6.4 | Invalidación de cache en updates | Cache se invalida correctamente | ⬜ | |
+
+### 7.7 Índices Avanzados BRIN (PRIORIDAD P3 - Futuro) 🟢
+
+**Objetivo**: Cuando las tablas superen millones de registros, considerar índices BRIN para columnas de timestamp.  
+**Ventaja**: 100-1000x más pequeños que B-Tree, ideales para datos ordenados temporalmente.
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 7.7.1 | Evaluar tamaño de tabla `messages` | >5M registros = considerar BRIN | ⬜ | |
+| 7.7.2 | Crear índice BRIN en `messages.timestamp` | Índice creado | ⬜ | Solo si >5M registros |
+| 7.7.3 | Crear índice BRIN en `ai_agent_audit_log.created_at` | Índice creado | ⬜ | Para queries de rango de fechas |
+| 7.7.4 | Comparar rendimiento BRIN vs B-Tree | Resultados documentados | ⬜ | |
+
+```sql
+-- Ejemplo: Índice BRIN para tablas muy grandes con datos temporales
+CREATE INDEX messages_timestamp_brin ON messages USING brin (timestamp);
+-- Mucho más pequeño que B-Tree, ideal para queries de rango de fechas
+```
 
 ---
 
@@ -9788,11 +9896,26 @@ npm run db:push  # Aplica cambios a la base de datos
 
 | Subfase | Prioridad | Impacto | Esfuerzo | Dependencias |
 |---------|-----------|---------|----------|--------------|
-| 7.1 Índices Críticos | 🔴 P0 | Alto | Bajo (1 día) | Ninguna |
-| 7.2 Índices Secundarios | 🟡 P1 | Medio | Bajo (1 día) | 7.1 |
+| 7.1 Índices Críticos | 🔴 P0 | Alto | Bajo (1 día) | **Ninguna** ✅ |
+| 7.2 Índices Secundarios | 🟡 P1 | Medio | Bajo (1 día) | 7.1 (opcional) |
 | 7.3 Optimización Queries | 🟡 P1 | Alto | Medio (3-5 días) | Fase 2 (recomendado) |
 | 7.4 Pool Conexiones | 🟢 P2 | Medio | Bajo (1 día) | Ninguna |
-| 7.5 Caché Servidor | 🟢 P2 | Medio | Alto (5+ días) | 7.3 |
+| 7.5 Vistas Materializadas | 🟢 P2 | Medio-Alto | Medio (2-3 días) | 7.1 |
+| 7.6 Caché Redis | 🟢 P3 | Medio | Alto (5+ días) | 7.3, 7.5 |
+| 7.7 Índices BRIN | 🟢 P3 | Bajo-Medio | Bajo (1 día) | >5M registros |
+
+#### ⚠️ CONFIRMACIÓN: Fase 7.1 es INDEPENDIENTE
+
+**Sí, la Fase 7.1 se puede ejecutar SOLA sin afectar ninguna otra fase:**
+
+| Pregunta | Respuesta |
+|----------|-----------|
+| ¿Depende de otras fases? | ❌ No depende de ninguna |
+| ¿Bloquea otras fases? | ❌ No bloquea ninguna |
+| ¿Puede romper la aplicación? | ❌ No, solo AGREGA índices |
+| ¿Es reversible? | ✅ Sí, con `DROP INDEX` |
+| ¿Afecta datos existentes? | ❌ No, solo los indexa |
+| ¿Requiere downtime? | ❌ No, la app sigue funcionando |
 
 ---
 
