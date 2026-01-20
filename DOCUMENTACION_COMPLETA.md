@@ -7977,7 +7977,7 @@ El sistema identifica los mensajes outbound por el campo `direction === 'outboun
 
 | Tarea | Descripción | Criterio de Éxito | Estado |
 |-------|-------------|-------------------|--------|
-| 1.1.1 | Inventariar todos los `useState` y `useEffect` en Inbox.tsx | Lista completa de 25+ estados documentada | ⬜ Pendiente |
+| 1.1.1 | Inventariar todos los `useState` y `useEffect` en Inbox.tsx | Lista completa de 25+ estados documentada | ✅ Completado (ver docs/audits/INBOX_HOOKS_AUDIT.md) |
 | 1.1.2 | Identificar dependencias entre estados (cuáles se afectan mutuamente) | Diagrama de dependencias | ⬜ Pendiente |
 | 1.1.3 | Mapear props contracts entre Inbox → subcomponentes | Documentar tipos esperados | ⬜ Pendiente |
 | 1.1.4 | Repetir auditoría para CRMContextPanel.tsx | Mismo entregable | ⬜ Pendiente |
