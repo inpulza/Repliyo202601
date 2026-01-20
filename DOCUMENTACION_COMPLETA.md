@@ -9963,7 +9963,42 @@ Fase 7.4 │████│ ← Puede hacerse en paralelo
 | Fecha | Subfase | Tarea | Estado | Notas |
 |-------|---------|-------|--------|-------|
 | 20 Ene 2026 | - | Diagnóstico completado | ✅ | Identificados índices faltantes |
-| - | - | - | - | - |
+| 20 Ene 2026 | 7.1 | Índices críticos implementados | ✅ | 8 índices nuevos creados |
+
+#### Fase 7.1 Completada - Detalles
+
+**Fecha:** 20 Enero 2026
+
+**Índices Creados:**
+```
+conversations_brand_idx          (brand_id)
+conversations_status_idx         (status)
+conversations_last_message_at_idx (last_message_at)
+conversations_brand_status_idx   (brand_id, status)
+messages_brand_idx               (brand_id)
+messages_conversation_idx        (conversation_id)
+messages_timestamp_idx           (timestamp)
+messages_brand_timestamp_idx     (brand_id, timestamp)
+```
+
+**Métricas de Rendimiento:**
+
+| Query | Antes (Seq Scan) | Después (Index Scan) | Mejora |
+|-------|------------------|---------------------|--------|
+| `messages WHERE brand_id` | 3.260 ms | 1.727 ms | **47%** |
+| `conversations WHERE brand_id` | 0.749 ms | 0.062 ms | **92%** |
+| `messages WHERE conversation_id` | 4.767 ms | 0.381 ms | **92%** |
+
+**Nota:** Con el dataset actual de 10,221 mensajes y 1,051 conversaciones, las mejoras parecen modestas en milisegundos. Sin embargo, lo crucial es el cambio de **Seq Scan** (escaneo secuencial) a **Index Scan**. Cuando la tabla crezca a 100K o 1M de registros, estas mejoras serán de **10-100x** en rendimiento.
+
+**Estado de Tareas 7.1:**
+- [x] 7.1.1 Índice `messages.brandId`
+- [x] 7.1.2 Índice `messages.conversationId`
+- [x] 7.1.3 Índice `messages.timestamp`
+- [x] 7.1.4 Índice `conversations.brandId`
+- [x] 7.1.5 Índice `conversations.status`
+- [x] 7.1.6 Índice `conversations.lastMessageAt`
+- [x] 7.1.7 Verificación rendimiento post-índices
 
 ---
 
