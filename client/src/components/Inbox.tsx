@@ -4,6 +4,7 @@ import { useNexus, type ConversationWithPost } from '@/context/NexusContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useDraftManagement } from '@/hooks/useDraftManagement';
+import { useInboxFilters, type Platform, type MessageType, type Intent } from '@/hooks/useInboxFilters';
 import { useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
 import { CRMContextPanel } from './CRMContextPanel';
@@ -80,7 +81,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatDistanceToNow } from 'date-fns';
-import { Platform, MessageType, Urgency, Intent, Sentiment, MessageStatus, CRMContact } from '@/lib/types';
+import { Urgency, Sentiment, MessageStatus, CRMContact } from '@/lib/types';
 import { isRepliyoMessage, isAutoReply, isManualReply, isSyncedMessage } from '@/lib/mockData';
 import type { Message } from '@shared/schema';
 import { motion, AnimatePresence } from "framer-motion";
@@ -442,39 +443,46 @@ export function Inbox() {
     return () => clearInterval(interval);
   }, [syncStatus?.lastSyncTime, brandSyncStatus?.syncPaused]);
   
-  // Filters
-  const [searchQuery, setSearchQuery] = useState("");
-  const [intentFilter, setIntentFilter] = useState<Intent | 'all'>('all');
-  const [platformFilter, setPlatformFilter] = useState<Platform | 'all'>('all');
-  const [typeFilter, setTypeFilter] = useState<MessageType | 'all'>('all');
-  const [fireMode, setFireMode] = useState(false);
+  // Filters - consolidated into useInboxFilters hook
+  const inboxFilters = useInboxFilters();
+  const {
+    searchQuery,
+    setSearchQuery,
+    intentFilter,
+    setIntentFilter,
+    platformFilter,
+    setPlatformFilter,
+    typeFilter,
+    setTypeFilter,
+    fireMode,
+    setFireMode,
+    showOnlyUnread,
+    setShowOnlyUnread,
+    showInactiveNetworks,
+    setShowInactiveNetworks,
+    focusedConversationId,
+    setFocusedConversationId,
+    highlightedConversationId,
+    setHighlightedConversationId,
+    highlightedMessageId,
+    setHighlightedMessageId,
+    threadFilterNoReply,
+    setThreadFilterNoReply,
+    threadFilterWithDraft,
+    setThreadFilterWithDraft,
+    threadFilterWithReminder,
+    setThreadFilterWithReminder,
+    handlePlatformFilterClick,
+    resetThreadFilters,
+    clearFocusMode,
+  } = inboxFilters;
+  
+  // UI State (not filters)
   const [isCRMOpen, setIsCRMOpen] = useState(true);
-  const [showInactiveNetworks, setShowInactiveNetworks] = useState(false);
-  const [showOnlyUnread, setShowOnlyUnread] = useState(false);
-  const [highlightedConversationId, setHighlightedConversationId] = useState<string | null>(null);
-  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
-  const [focusedConversationId, setFocusedConversationId] = useState<string | null>(null);
   const [showScrollToTop, setShowScrollToTop] = useState(false);
   const [isBulkButtonHovered, setIsBulkButtonHovered] = useState(false);
   const threadScrollRef = React.useRef<HTMLDivElement>(null);
-  
-  // Thread-level filters (reset when conversation changes)
-  const [threadFilterNoReply, setThreadFilterNoReply] = useState(false);
-  const [threadFilterWithDraft, setThreadFilterWithDraft] = useState(false);
-  const [threadFilterWithReminder, setThreadFilterWithReminder] = useState(false);
   const [location, setLocation] = useLocation();
-
-  // Handler for platform filter clicks - activates unread filter if platform has unread messages
-  const handlePlatformFilterClick = (platform: Platform | 'all', hasUnread: boolean) => {
-    setPlatformFilter(platform);
-    // If clicking on a platform with unread messages, automatically filter to unread only
-    // If clicking a platform WITHOUT unread, or clicking "All", reset the unread filter
-    if (platform !== 'all' && hasUnread) {
-      setShowOnlyUnread(true);
-    } else {
-      setShowOnlyUnread(false);
-    }
-  };
 
   // Deep Link: Process URL params and activate focus mode
   const processDeepLink = React.useCallback(() => {
@@ -541,12 +549,6 @@ export function Inbox() {
     }
   }, [focusedConversationId, conversations, activeConversation, setActiveConversation]);
 
-  // Function to exit focus mode
-  const exitFocusMode = () => {
-    setFocusedConversationId(null);
-    setHighlightedConversationId(null);
-    setHighlightedMessageId(null);
-  };
 
   // Clear message highlight after 5 seconds (after scroll completes)
   useEffect(() => {
@@ -1268,7 +1270,7 @@ export function Inbox() {
           <div className="flex items-center justify-center py-2">
             <button
               className="text-[10px] text-indigo-500 hover:text-indigo-700 flex items-center gap-1"
-              onClick={exitFocusMode}
+              onClick={clearFocusMode}
               data-testid="button-exit-focus-mode"
             >
               <ArrowLeft className="h-2.5 w-2.5" />
