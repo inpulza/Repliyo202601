@@ -8968,6 +8968,7 @@ Los servicios en `server/services/` tienen dependencias directas sin abstracció
 | 4 | Frontend Componentes | 🟡 Medio | 5-7 días | Ninguna (paralelo con 1-3) | ⬜ |
 | 5 | Abstracciones | 🟢 Bajo | 2-3 días | Fase 3 | ⬜ |
 | 6 | Testing Final | 🟢 Bajo | 2-3 días | Fases 1-5 | ⬜ |
+| **7** | **Optimización Base de Datos** | 🟡 Medio | 3-5 días | Ninguna (paralelo con 1-4) | ⬜ |
 
 ---
 
@@ -9475,25 +9476,28 @@ client/src/
 | Fase | Depende de | Puede ejecutarse con |
 |------|-----------|---------------------|
 | Fase 0 | - | Desarrollo normal |
-| Fase 1 | Fase 0 | Fase 2, Fase 4 |
-| Fase 2 | - | Fase 1, Fase 4 |
-| Fase 3 | Fase 1, Fase 2 | Fase 4 |
-| Fase 4 | - | Fase 1, Fase 2, Fase 3 |
+| Fase 1 | Fase 0 | Fase 2, Fase 4, Fase 7 |
+| Fase 2 | - | Fase 1, Fase 4, Fase 7 |
+| Fase 3 | Fase 1, Fase 2 | Fase 4, Fase 7 |
+| Fase 4 | - | Fase 1, Fase 2, Fase 3, Fase 7 |
 | Fase 5 | Fase 3 | Fase 4 |
 | Fase 6 | Fase 1-5 | - |
+| **Fase 7** | - (7.1-7.2), Fase 2 (7.3) | Fase 1, Fase 2, Fase 3, Fase 4 |
 
 **Ejecución Paralela Recomendada:**
 ```
 Tiempo →
-─────────────────────────────────────────────────────────────
-Fase 0 │████████│
-Fase 1 │        │████████████████│
-Fase 2 │        │████████████████│
-Fase 4 │        │████████████████████████████│
-Fase 3 │                        │████████████████│
-Fase 5 │                                        │████████│
-Fase 6 │                                                │████│
-─────────────────────────────────────────────────────────────
+───────────────────────────────────────────────────────────────────
+Fase 7.1│████│  ← PRIMERO: Índices críticos (impacto inmediato)
+Fase 0  │    │████████│
+Fase 1  │            │████████████████│
+Fase 2  │            │████████████████│
+Fase 7.3│                            │████████│  ← Después de Fase 2
+Fase 4  │            │████████████████████████████│
+Fase 3  │                            │████████████████│
+Fase 5  │                                            │████████│
+Fase 6  │                                                    │████│
+───────────────────────────────────────────────────────────────────
 ```
 
 ---
@@ -9508,6 +9512,9 @@ Fase 6 │                                                │████│
 | Cobertura de tests | ~0% | > 60% |
 | Tiempo de onboarding nuevo dev | Alto | Medio |
 | Facilidad de agregar feature | Baja | Alta |
+| **Query inbox (10K mensajes)** | ~500-1000ms | < 200ms |
+| **Query inbox (100K mensajes)** | ~3-5s | < 500ms |
+| **Errores timeout DB** | Desconocido | 0 |
 
 ---
 
@@ -9535,7 +9542,310 @@ Fase 6 │                                                │████│
 ---
 
 *Sección creada: 16 Enero 2026*
-*Última actualización: 16 Enero 2026*
+*Última actualización: 20 Enero 2026*
+
+---
+
+## FASE 7: Optimización de Base de Datos 🟡 (Nueva - 20 Enero 2026)
+
+**Objetivo**: Optimizar rendimiento de la base de datos para soportar crecimiento de marcas y volumen de datos.  
+**Puede ejecutarse en paralelo con Fases 1-4.** Prioridad recomendada: ALTA para 7.1 y 7.2 (índices críticos).
+
+---
+
+### 📊 Diagnóstico Completo de Base de Datos
+
+#### Arquitectura Actual
+
+La base de datos está estructurada jerárquicamente con **18+ tablas principales**:
+
+```
+BRANDS (marcas) ──────────────────────────────────
+   ├── users (usuarios de cada marca)
+   ├── social_accounts (redes sociales conectadas)
+   ├── social_posts (publicaciones)
+   ├── conversations (conversaciones)
+   │      └── messages (mensajes)
+   ├── ai_agents (agentes IA)
+   │      └── ai_agent_audit_log (historial de IA)
+   ├── crm_contacts (contactos CRM)
+   │      └── crm_contact_channels (canales del contacto)
+   ├── reminder_rules / reminder_events (seguimientos)
+   └── notifications (notificaciones)
+```
+
+#### Puntos Fuertes Actuales
+
+| Aspecto | Estado | Detalle |
+|---------|--------|---------|
+| Aislamiento multi-marca | ✅ Bueno | Cada tabla tiene `brandId` para filtrar por marca |
+| Cascade deletes | ✅ Implementado | Al eliminar marca, se borran datos relacionados |
+| Transacciones | ✅ Usadas | Para operaciones atómicas (ej: merge contacts) |
+| Caché frontend | ✅ React Query | 30 segundos de staleTime en hooks |
+| Unique constraints | ✅ Definidos | En tablas críticas (social_accounts, messages) |
+
+#### Puntos de Riesgo Identificados
+
+| Problema | Impacto | Tabla Afectada | Prioridad |
+|----------|---------|----------------|-----------|
+| **Sin índice en `messages.brandId`** | 🔴 Alto | messages | P0 |
+| **Sin índice en `conversations.brandId`** | 🔴 Alto | conversations | P0 |
+| **Consultas complejas sin optimizar** | 🟡 Medio | getInboxThreads (múltiples SELECTs) | P1 |
+| **Sin paginación** en algunas consultas | 🟡 Medio | messages, conversations | P1 |
+| **Pool de conexiones básico** | 🟡 Medio | server/db.ts | P2 |
+| **Sin caché de servidor** | 🟡 Medio | Consultas frecuentes | P2 |
+
+#### Índices Actuales vs Faltantes
+
+**✅ Índices YA DEFINIDOS:**
+```typescript
+// crm_contacts
+emailIdx: index("crm_contacts_email_idx").on(table.email)
+phoneIdx: index("crm_contacts_phone_idx").on(table.phone)
+brandIdx: index("crm_contacts_brand_idx").on(table.brandId)
+statusIdx: index("crm_contacts_status_idx").on(table.status)
+
+// crm_contact_channels
+contactIdx: index("crm_contact_channels_contact_idx").on(table.contactId)
+uniquePlatformExternal: unique().on(table.platform, table.externalId)
+
+// reminder_events
+brandIdx, conversationIdx, contactIdx, statusIdx, scheduledAtIdx
+
+// messages
+metricoolId: text("metricool_id").unique() // Solo este
+```
+
+**❌ Índices FALTANTES (Críticos):**
+```typescript
+// messages - FALTA (tabla más grande)
+brandIdx: index("messages_brand_idx").on(table.brandId)
+conversationIdx: index("messages_conversation_idx").on(table.conversationId)
+timestampIdx: index("messages_timestamp_idx").on(table.timestamp)
+
+// conversations - FALTA
+brandIdx: index("conversations_brand_idx").on(table.brandId)
+statusIdx: index("conversations_status_idx").on(table.status)
+lastMessageAtIdx: index("conversations_last_message_at_idx").on(table.lastMessageAt)
+
+// social_posts - FALTA
+brandIdx: index("social_posts_brand_idx").on(table.brandId)
+
+// notifications - FALTA
+userIdx: index("notifications_user_idx").on(table.userId)
+brandIdx: index("notifications_brand_idx").on(table.brandId)
+```
+
+#### Patrones de Consulta Problemáticos
+
+**Problema 1: getInboxThreads hace múltiples SELECTs**
+```typescript
+// Archivo: server/storage.ts, líneas 644-739
+// Patrón actual (ineficiente):
+1. SELECT todas las conversaciones para brandId
+2. SELECT conteo de mensajes por conversación  
+3. SELECT mensajes no leídos por conversación
+4. Luego agrupa en JavaScript
+
+// Patrón recomendado (eficiente):
+// Un solo SELECT con JOINs y agregaciones SQL
+```
+
+**Problema 2: Sin paginación en queries de inbox**
+```typescript
+// Actual:
+const allConversations = await db.select().from(conversations).where(eq(conversations.brandId, brandId));
+
+// Recomendado:
+const paginatedConversations = await db.select().from(conversations)
+  .where(eq(conversations.brandId, brandId))
+  .limit(pageSize)
+  .offset((page - 1) * pageSize);
+```
+
+#### Estimaciones de Rendimiento
+
+| Escenario | Mensajes Totales | Velocidad Esperada |
+|-----------|------------------|-------------------|
+| 1 marca, 1K mensajes | 1,000 | ⚡ Rápida (<100ms) |
+| 10 marcas, 10K mensajes cada una | 100,000 | 🟢 Aceptable (<500ms) |
+| 50 marcas, 20K mensajes cada una | 1,000,000 | 🟡 Lenta (1-3s sin índices) |
+| 100+ marcas, 50K+ mensajes cada una | 5,000,000+ | 🔴 Problemas (>5s sin índices) |
+
+---
+
+### 7.1 Índices Críticos (PRIORIDAD P0) 🔴
+
+**Objetivo**: Agregar índices faltantes en tablas más consultadas.  
+**Impacto**: Mejora inmediata de 10-100x en queries de inbox.
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 7.1.1 | Agregar índice `messages.brandId` | Migración ejecutada sin error | ⬜ | Crítico para filtrar por marca |
+| 7.1.2 | Agregar índice `messages.conversationId` | Migración ejecutada | ⬜ | Crítico para threading |
+| 7.1.3 | Agregar índice `messages.timestamp` | Migración ejecutada | ⬜ | Para ordenamiento |
+| 7.1.4 | Agregar índice `conversations.brandId` | Migración ejecutada | ⬜ | Crítico |
+| 7.1.5 | Agregar índice `conversations.status` | Migración ejecutada | ⬜ | Para filtros |
+| 7.1.6 | Agregar índice `conversations.lastMessageAt` | Migración ejecutada | ⬜ | Para ordenamiento |
+| 7.1.7 | Verificar rendimiento post-índices | Query de inbox < 200ms | ⬜ | Medir antes/después |
+
+**Relación con otras fases:** Puede ejecutarse independientemente. Recomendado ANTES de Fase 2 (División de Storage).
+
+### 7.2 Índices Secundarios (PRIORIDAD P1) 🟡
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 7.2.1 | Agregar índice `social_posts.brandId` | Migración ejecutada | ⬜ | |
+| 7.2.2 | Agregar índice `notifications.userId` | Migración ejecutada | ⬜ | |
+| 7.2.3 | Agregar índice `notifications.brandId` | Migración ejecutada | ⬜ | |
+| 7.2.4 | Agregar índice `ai_agent_audit_log.agentId` | Migración ejecutada | ⬜ | Para analytics |
+| 7.2.5 | Agregar índice compuesto `messages(brandId, timestamp)` | Migración ejecutada | ⬜ | Optimiza ordenamiento |
+
+### 7.3 Optimización de Consultas (PRIORIDAD P1) 🟡
+
+**Dependencias:** Mejor ejecutar después de Fase 2 (cuando Storage esté dividido en repositorios).
+
+| ID | Tarea | Verificación | Estado | Ref. Fase |
+|----|-------|--------------|--------|-----------|
+| 7.3.1 | Refactorizar `getInboxThreads` a un solo JOIN | Query funciona, < 300ms | ⬜ | Fase 2.5 |
+| 7.3.2 | Implementar paginación en `getMessages` | Endpoint acepta page/limit | ⬜ | Fase 2.4 |
+| 7.3.3 | Implementar paginación en `getConversations` | Endpoint acepta page/limit | ⬜ | Fase 2.5 |
+| 7.3.4 | Optimizar `getPendingCommentsForBatchProcessing` | Query < 500ms | ⬜ | - |
+| 7.3.5 | Agregar EXPLAIN ANALYZE a queries lentas | Resultados documentados | ⬜ | Fase 0.1 |
+
+### 7.4 Pool de Conexiones (PRIORIDAD P2) 🟢
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 7.4.1 | Configurar límites del pool en Neon | Pool configurado en db.ts | ⬜ | max: 10-20 conexiones |
+| 7.4.2 | Agregar timeouts de conexión | Timeouts configurados | ⬜ | connectionTimeoutMillis: 10000 |
+| 7.4.3 | Agregar monitoring de conexiones activas | Logs muestran pool status | ⬜ | Para debugging |
+
+### 7.5 Caché de Servidor (PRIORIDAD P2 - Futuro) 🟢
+
+**Nota:** Implementar solo cuando el volumen lo justifique (50+ marcas activas).
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 7.5.1 | Evaluar necesidad de Redis | Decisión documentada | ⬜ | Basado en métricas reales |
+| 7.5.2 | Cachear configuración de agentes IA | Cache funciona | ⬜ | TTL: 5 minutos |
+| 7.5.3 | Cachear lista de marcas por usuario | Cache funciona | ⬜ | TTL: 1 minuto |
+| 7.5.4 | Invalidación de cache en updates | Cache se invalida correctamente | ⬜ | |
+
+---
+
+### 7.6 Implementación de Índices (Código)
+
+**Archivo a modificar:** `shared/schema.ts`
+
+```typescript
+// AGREGAR al final de la definición de messages:
+export const messages = pgTable("messages", {
+  // ... campos existentes ...
+}, (table) => ({
+  brandIdx: index("messages_brand_idx").on(table.brandId),
+  conversationIdx: index("messages_conversation_idx").on(table.conversationId),
+  timestampIdx: index("messages_timestamp_idx").on(table.timestamp),
+  brandTimestampIdx: index("messages_brand_timestamp_idx").on(table.brandId, table.timestamp),
+}));
+
+// AGREGAR al final de la definición de conversations:
+export const conversations = pgTable("conversations", {
+  // ... campos existentes ...
+}, (table) => ({
+  brandIdx: index("conversations_brand_idx").on(table.brandId),
+  statusIdx: index("conversations_status_idx").on(table.status),
+  lastMessageAtIdx: index("conversations_last_message_at_idx").on(table.lastMessageAt),
+  brandStatusIdx: index("conversations_brand_status_idx").on(table.brandId, table.status),
+}));
+
+// AGREGAR al final de la definición de social_posts:
+export const socialPosts = pgTable("social_posts", {
+  // ... campos existentes ...
+}, (table) => ({
+  uniqueBrandPlatformPost: unique().on(table.brandId, table.platform, table.externalId),
+  brandIdx: index("social_posts_brand_idx").on(table.brandId),
+}));
+
+// AGREGAR al final de la definición de notifications:
+export const notifications = pgTable("notifications", {
+  // ... campos existentes ...
+}, (table) => ({
+  userIdx: index("notifications_user_idx").on(table.userId),
+  brandIdx: index("notifications_brand_idx").on(table.brandId),
+  createdAtIdx: index("notifications_created_at_idx").on(table.createdAt),
+}));
+```
+
+**Después de modificar schema.ts:**
+```bash
+npm run db:push  # Aplica cambios a la base de datos
+```
+
+---
+
+### Matriz de Prioridades Fase 7
+
+| Subfase | Prioridad | Impacto | Esfuerzo | Dependencias |
+|---------|-----------|---------|----------|--------------|
+| 7.1 Índices Críticos | 🔴 P0 | Alto | Bajo (1 día) | Ninguna |
+| 7.2 Índices Secundarios | 🟡 P1 | Medio | Bajo (1 día) | 7.1 |
+| 7.3 Optimización Queries | 🟡 P1 | Alto | Medio (3-5 días) | Fase 2 (recomendado) |
+| 7.4 Pool Conexiones | 🟢 P2 | Medio | Bajo (1 día) | Ninguna |
+| 7.5 Caché Servidor | 🟢 P2 | Medio | Alto (5+ días) | 7.3 |
+
+---
+
+### Métricas de Éxito Fase 7
+
+| Métrica | Valor Actual (Estimado) | Objetivo Post-Optimización |
+|---------|------------------------|---------------------------|
+| Query inbox (10K mensajes) | ~500-1000ms | < 200ms |
+| Query inbox (100K mensajes) | ~3-5s | < 500ms |
+| Query inbox (1M mensajes) | No viable | < 1s |
+| Conexiones DB simultáneas | Sin límite | Máx 20 controladas |
+| Errores de timeout DB | Desconocido | 0 |
+
+---
+
+### Integración con Plan de Refactorización Existente
+
+| Fase Existente | Relación con Fase 7 |
+|----------------|---------------------|
+| Fase 0 (Preparación) | 7.3.5 (EXPLAIN ANALYZE) puede integrarse en 0.1 |
+| Fase 1 (División Routes) | Sin dependencias directas |
+| Fase 2 (División Storage) | 7.3.1-7.3.3 se benefician de repositorios separados |
+| Fase 3 (Servicios) | Servicios pueden usar queries optimizadas |
+| Fase 4 (Frontend) | Frontend se beneficia de respuestas más rápidas |
+| Fase 5 (Abstracciones) | Pool de conexiones puede ser un adapter |
+| Fase 6 (Testing) | Agregar tests de performance para queries |
+
+**Ejecución Recomendada:**
+```
+Tiempo →
+─────────────────────────────────────────────────────────────
+Fase 7.1 │████│ ← PRIMERO (índices críticos, 1 día)
+Fase 0   │    │████████│
+Fase 1   │            │████████████████│
+Fase 2   │            │████████████████│
+Fase 7.3 │                            │████████│ ← Después de Fase 2
+Fase 7.4 │████│ ← Puede hacerse en paralelo
+─────────────────────────────────────────────────────────────
+```
+
+---
+
+### Registro de Progreso Fase 7
+
+| Fecha | Subfase | Tarea | Estado | Notas |
+|-------|---------|-------|--------|-------|
+| 20 Ene 2026 | - | Diagnóstico completado | ✅ | Identificados índices faltantes |
+| - | - | - | - | - |
+
+---
+
+*Sección creada: 20 Enero 2026*
+*Última actualización: 20 Enero 2026*
 
 ---
 
