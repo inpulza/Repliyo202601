@@ -7924,49 +7924,7 @@ Futuro:   C1-C4 (Multi-agente si se valida necesidad)
 
 ---
 
-## PLAN DE MEJORAS TÉCNICAS - Enero 2026
-
-> **NOTA:** Esta sección fue consolidada desde `Documentacion_Completa.md` (archivo eliminado).
-
-### Resumen Ejecutivo
-
-Este documento contiene el plan de mejora técnica para el proyecto Repliyo (Social Media Inbox Management System), organizado en 4 fases principales con subfases y tareas específicas.
-
-### Diagnóstico Actual (Enero 2026)
-
-| Área | Puntuación | Estado |
-|------|------------|--------|
-| Componentes | 7/10 | UI reutilizable, pero componentes principales con lógica mezclada |
-| Arquitectura | 8.5/10 | Híbrido layered/ports-adapters apropiado para SaaS |
-| Testing | 4/10 | No existe, pero es recuperable gracias a la arquitectura |
-
-### Justificación del Orden de Fases
-
-**¿Por qué Componentes → Arquitectura → Testing?**
-
-Aunque normalmente Testing-first reduce riesgos, en este proyecto el tamaño extremo y el estado entrelazado de componentes como Inbox (2,389 líneas) y CRMContextPanel hacen que los refactors de componentes sean **prerrequisito** para tener tests confiables. Si intentamos testear primero, los tests serían frágiles y cambiarían constantemente.
-
----
-
-### REGLAS DE UI QUE NO DEBEN CAMBIAR (CRÍTICO)
-
-Estas reglas deben mantenerse durante cualquier refactorización:
-
-| Elemento | Regla | Motivo |
-|----------|-------|--------|
-| Mensajes outbound (respuestas de marca) | **Fondo azul (#0291FA o bg-indigo-600)** | Distinguir visualmente respuestas de la marca vs mensajes del cliente |
-| Mensajes inbound (del cliente) | Fondo blanco/transparente | Claridad visual |
-| Esto aplica a: | ownerBubble, aiBubble, manualBubble, replyBubble | Consistencia en toda la app |
-
-**NOTA:** Los mensajes outbound incluyen:
-- Respuestas enviadas desde Repliyo (manual o IA)
-- Respuestas enviadas desde la red social directamente por el dueño de la cuenta
-
-El sistema identifica los mensajes outbound por el campo `direction === 'outbound'` que viene de Metricool.
-
----
-
-### FASE 1: COMPONENTES (Plan de Mejora)
+### FASE 1: COMPONENTES - Tareas "Atomic" de Refactorización
 **Objetivo:** Separar lógica de presentación, mejorar reutilización y preparar para testing
 **Riesgo actual:** Componentes pesados dificultan mantenimiento y testing
 **Duración estimada:** 2-3 semanas
@@ -8971,22 +8929,13 @@ export function requireAuthHybrid(req: Request, res: Response, next: NextFunctio
 
 ---
 
-*Documento creado: Enero 2026*
-*Última actualización: 16 Enero 2026 - Agregado Plan de Refactorización Arquitectónica*
+### Diagnóstico Detallado: Problemas Identificados
 
----
-
-## PLAN DE REFACTORIZACIÓN ARQUITECTÓNICA - Enero 2026
-
-### Resumen Ejecutivo
-
-Este plan documenta los problemas arquitectónicos identificados en la aplicación y establece una hoja de ruta segura para resolverlos gradualmente sin comprometer la estabilidad del sistema en producción.
-
-**Principio Rector**: Aplicamos el patrón **"Strangler Fig"** - mejoramos incrementalmente mientras mantenemos la aplicación funcional. NO refactorizamos todo de golpe.
-
----
-
-### Diagnóstico: Problemas Identificados
+> **📁 Documentos de Auditoría Generados:**
+> - `docs/audits/INBOX_HOOKS_AUDIT.md` - Inventario completo de 63 hooks, dependencias y recomendaciones de refactor para Inbox.tsx
+> - `docs/audits/INBOX_CONTRACTS.md` - Contratos de props entre Inbox.tsx y sus subcomponentes (CommentThread recibe 25 props, 14 relacionadas a drafts)
+> - `docs/audits/CRMCONTEXTPANEL_AUDIT.md` - Auditoría de CRMContextPanel.tsx (10 hooks, bajo prioridad de refactor)
+> - `docs/audits/DUPLICATED_LOGIC.md` - Análisis de lógica duplicada: 14 props draft-related, 4 categorías de refactor
 
 #### 🔴 Problema 1: Archivos Monolíticos (God Objects)
 
