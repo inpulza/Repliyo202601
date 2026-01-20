@@ -8819,6 +8819,56 @@ Los servicios en `server/services/` tienen dependencias directas sin abstracció
 
 ---
 
+### 🔄 PUNTOS DE CORTE SEGUROS (Cambio de Conversación)
+
+> **Propósito**: Cuando la ventana de contexto del agente está muy saturada, es mejor iniciar una nueva conversación. Estos son los puntos donde es **seguro** hacerlo.
+
+| Punto de Corte | Después de... | Verificación antes de cerrar | Qué decirle al nuevo agente |
+|----------------|---------------|------------------------------|----------------------------|
+| 🟢 **Corte 1** | Fase 0 completa | Tests de humo pasan, app arranca | "Continúa con Fase 1 (División de Routes). Lee DOCUMENTACION_COMPLETA.md sección Plan de Refactorización." |
+| 🟢 **Corte 2** | Fases 1+2 completas | Routes divididas, Storage dividido, app funciona | "Continúa con Fase 3 (Capa de Servicios). Las Fases 1 y 2 están ✅." |
+| 🟢 **Corte 3** | Fase 3 completa | Servicios funcionando, rutas usan servicios | "Continúa con Fase 4 (Frontend) o Fase 5 (Abstracciones)." |
+| 🟢 **Corte 4** | Fase 4 completa | Componentes React refactorizados, UI funciona igual | "Continúa con Fase 5 si no está hecha, o Fase 6 (Testing Final)." |
+| 🟢 **Corte 5** | Fases 5+6 completas | Tests pasan, documentación actualizada | "Refactorización completa. Verificar todo funciona." |
+
+#### ⚠️ Reglas para cambiar de conversación
+
+1. **NUNCA cambiar en medio de una fase** - Solo al completar fases enteras.
+2. **Verificar que TODO funciona** - App arranca, funcionalidades probadas.
+3. **Actualizar estados en este documento** - Marcar tareas completadas con ✅.
+4. **Incluir resumen para el siguiente agente** - Al final de la conversación, pedir al agente que escriba un resumen de lo hecho.
+
+#### 📝 Plantilla para el nuevo agente
+
+Cuando inicies una nueva conversación, usa este mensaje:
+
+```
+Estoy trabajando en la refactorización arquitectónica del proyecto.
+
+**Estado actual:**
+- Lee la sección "Plan de Refactorización por Fases" en DOCUMENTACION_COMPLETA.md
+- Las fases marcadas con ✅ ya están completas
+- Continúa desde la primera fase que tenga tareas ⬜ pendientes
+
+**Reglas importantes:**
+- Sigue las "Reglas de Seguridad para Evitar Pérdida de Contexto"
+- Verifica después de cada tarea
+- Marca el progreso inmediatamente en el documento
+
+Por favor, lee el documento y continúa el trabajo.
+```
+
+#### ❌ Cuándo NO cambiar de conversación
+
+| Situación | Por qué NO cambiar |
+|-----------|-------------------|
+| En medio de extraer un archivo | El nuevo agente no sabrá qué ya se movió |
+| Con errores sin resolver | El nuevo agente heredará el problema sin contexto |
+| Sin actualizar el documento | El nuevo agente no sabrá qué está hecho |
+| Antes de verificar que todo funciona | Podrías estar pasando un sistema roto |
+
+---
+
 ### Leyenda de Estados
 
 | Estado | Símbolo | Significado |
