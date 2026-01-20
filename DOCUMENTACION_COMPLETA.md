@@ -8907,6 +8907,8 @@ Los servicios en `server/services/` tienen dependencias directas sin abstracció
 | **Tareas atómicas** | Cada tarea debe poder revertirse sin afectar otras. Si falla, solo se pierde esa tarea. |
 | **Límite de 50 líneas por cambio** | Si un cambio requiere mover más de 50 líneas, dividirlo en partes más pequeñas. |
 | **Marcar progreso inmediatamente** | Actualizar el estado en esta documentación al completar cada tarea, no al final de la fase. |
+| **VERIFICAR con grep después de editar** | Después de cada edit, usar `grep` para confirmar que el cambio se aplicó. NO asumir que funcionó. |
+| **NO decir "listo" sin prueba** | Nunca confirmar que algo está hecho sin verificar con herramientas. Los falsos positivos rompen aplicaciones. |
 
 ---
 
