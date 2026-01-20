@@ -7923,253 +7923,6 @@ Futuro:   C1-C4 (Multi-agente si se valida necesidad)
 ```
 
 ---
-
-## PLAN DE REFACTORIZACIÓN ARQUITECTÓNICA - Enero 2026
-
-> **Principio Rector**: Aplicamos el patrón **"Strangler Fig"** - mejoramos incrementalmente mientras mantenemos la aplicación funcional. NO refactorizamos todo de golpe.
-
-### Diagnóstico Actual
-
-| Área | Puntuación | Estado |
-|------|------------|--------|
-| Componentes | 7/10 | UI reutilizable, pero componentes principales con lógica mezclada |
-| Arquitectura | 8.5/10 | Híbrido layered/ports-adapters apropiado para SaaS |
-| Testing | 4/10 | No existe, pero es recuperable gracias a la arquitectura |
-
-### REGLAS DE UI QUE NO DEBEN CAMBIAR (CRÍTICO)
-
-| Elemento | Regla | Motivo |
-|----------|-------|--------|
-| Mensajes outbound (respuestas de marca) | **Fondo azul (#0291FA o bg-indigo-600)** | Distinguir visualmente respuestas de la marca vs mensajes del cliente |
-| Mensajes inbound (del cliente) | Fondo blanco/transparente | Claridad visual |
-| Esto aplica a: | ownerBubble, aiBubble, manualBubble, replyBubble | Consistencia en toda la app |
-
-> El sistema identifica los mensajes outbound por el campo `direction === 'outbound'` que viene de Metricool.
-
----
-
-### FASE 1: COMPONENTES - Tareas "Atomic" de Refactorización
-**Objetivo:** Separar lógica de presentación, mejorar reutilización y preparar para testing
-**Riesgo actual:** Componentes pesados dificultan mantenimiento y testing
-**Duración estimada:** 2-3 semanas
-
-#### Subfase 1.1: Auditoría y Mapeo de Componentes Críticos
-
-**Objetivo:** Entender qué lógica hay en cada componente antes de mover código
-
-> **📁 Documentos de Auditoría generados:**
-> - `docs/audits/INBOX_HOOKS_AUDIT.md` - Inventario completo de hooks, dependencias y recomendaciones de refactor para Inbox.tsx
-> - `docs/audits/INBOX_CONTRACTS.md` - Contratos de props entre Inbox.tsx y sus subcomponentes (CommentThread, CRMContextPanel, etc.)
-> - `docs/audits/CRMCONTEXTPANEL_AUDIT.md` - Auditoría de CRMContextPanel.tsx (10 hooks, bajo prioridad de refactor)
-> - `docs/audits/DUPLICATED_LOGIC.md` - Análisis de lógica duplicada: 14 props draft-related, 4 categorías de refactor
-
-| Tarea | Descripción | Criterio de Éxito | Estado |
-|-------|-------------|-------------------|--------|
-| 1.1.1 | Inventariar todos los `useState` y `useEffect` en Inbox.tsx | Lista completa de 25+ estados documentada | ✅ Completado (ver docs/audits/INBOX_HOOKS_AUDIT.md) |
-| 1.1.2 | Identificar dependencias entre estados (cuáles se afectan mutuamente) | Diagrama de dependencias | ✅ Completado (ver docs/audits/INBOX_HOOKS_AUDIT.md sección 6) |
-| 1.1.3 | Mapear props contracts entre Inbox → subcomponentes | Documentar tipos esperados | ✅ Completado (ver docs/audits/INBOX_CONTRACTS.md) |
-| 1.1.4 | Repetir auditoría para CRMContextPanel.tsx | Mismo entregable | ✅ Completado (ver docs/audits/CRMCONTEXTPANEL_AUDIT.md) |
-| 1.1.5 | Identificar lógica duplicada entre componentes | Lista de candidatos a hooks | ✅ Completado (ver docs/audits/DUPLICATED_LOGIC.md) |
-
-#### Subfase 1.2: Extracción de Lógica a Hooks y Servicios
-
-**Objetivo:** Mover orquestación de datos fuera de componentes hacia hooks reutilizables
-
-| Tarea | Descripción | Criterio de Éxito | Estado |
-|-------|-------------|-------------------|--------|
-| 1.2.1 | Crear `useConversationState` - manejo de conversación activa | Hook funcional sin romper UI | ⬜ Pendiente |
-| 1.2.2 | Crear `useDraftManagement` - lógica de borradores IA | Separar de Inbox.tsx | ⬜ Pendiente |
-| 1.2.3 | Crear `useMessageSync` - sincronización y WebSocket | Reutilizable en otros componentes | ✅ Completado (useWebSocket.ts refactorizado) |
-| 1.2.4 | Crear `useCRMPanel` - lógica del panel CRM | Separar de CRMContextPanel | ⬜ Pendiente |
-| 1.2.5 | Refactorizar NexusContext para exponer menos estado raw | Interfaz más limpia | 🔄 Parcial (validatedActiveClientId agregado) |
-| 1.2.6 | Validar que la UI funciona igual después de cada extracción | Tests manuales pasan | ⬜ Pendiente |
-
-#### Subfase 1.3: Estabilización de Interfaces de Usuario
-
-**Objetivo:** Preparar componentes para testing automatizado
-
-| Tarea | Descripción | Criterio de Éxito | Estado |
-|-------|-------------|-------------------|--------|
-| 1.3.1 | Auditar `data-testid` existentes, documentar patrón | Convención establecida | ⬜ Pendiente |
-| 1.3.2 | Agregar `data-testid` faltantes en elementos interactivos | 100% cobertura en Inbox | ⬜ Pendiente |
-| 1.3.3 | Agregar `data-testid` en elementos de datos dinámicos | 100% cobertura en CRM Panel | ⬜ Pendiente |
-| 1.3.4 | Verificar accesibilidad básica (ARIA labels críticos) | Principales controles accesibles | ⬜ Pendiente |
-
-#### Subfase 1.4: Guardrails y Observabilidad
-
-**Objetivo:** Proteger refactors con feature flags y monitoreo
-
-| Tarea | Descripción | Criterio de Éxito | Estado |
-|-------|-------------|-------------------|--------|
-| 1.4.1 | Implementar sistema simple de feature flags | Toggle para nuevos hooks | ⬜ Pendiente |
-| 1.4.2 | Agregar logging en hooks críticos | Errores visibles en consola | ⬜ Pendiente |
-| 1.4.3 | Crear checklist de validación pre-deploy | Documento de QA | ⬜ Pendiente |
-
----
-
-### FASE 2: ARQUITECTURA (Plan de Mejora)
-**Objetivo:** Modularizar backend para mantenibilidad y testability
-**Riesgo actual:** storage.ts y routes.ts son archivos muy grandes
-**Duración estimada:** 2-3 semanas
-
-#### Subfase 2.1: Modularización de Storage
-
-**Objetivo:** Dividir storage.ts (4,310 líneas) en adaptadores por dominio
-
-| Tarea | Descripción | Criterio de Éxito | Estado |
-|-------|-------------|-------------------|--------|
-| 2.1.1 | Crear `storage/brandAdapter.ts` - métodos de brands | Migrar 10-15 métodos | ⬜ Pendiente |
-| 2.1.2 | Crear `storage/conversationAdapter.ts` | Migrar métodos de conversations | ⬜ Pendiente |
-| 2.1.3 | Crear `storage/messageAdapter.ts` | Migrar métodos de messages | ⬜ Pendiente |
-| 2.1.4 | Crear `storage/crmAdapter.ts` | Migrar métodos CRM (contacts, channels, limbo) | ⬜ Pendiente |
-| 2.1.5 | Crear `storage/reminderAdapter.ts` | Migrar métodos de reminders | ⬜ Pendiente |
-| 2.1.6 | Crear `storage/aiAdapter.ts` | Migrar métodos de AI agents y audit | ⬜ Pendiente |
-| 2.1.7 | Mantener `storage.ts` como facade que re-exporta | Compatibilidad hacia atrás | ⬜ Pendiente |
-| 2.1.8 | Extraer helpers comunes (paginación, errores) | `storage/helpers.ts` | ⬜ Pendiente |
-
-#### Subfase 2.2: Codificación de Workflows Cross-Service
-
-**Objetivo:** Formalizar flujos complejos (sync → CRM → reminders) en orquestadores
-
-| Tarea | Descripción | Criterio de Éxito | Estado |
-|-------|-------------|-------------------|--------|
-| 2.2.1 | Documentar flujo sync → CRM routing → reminder scheduling | Diagrama de secuencia | ⬜ Pendiente |
-| 2.2.2 | Crear `orchestrators/inboundMessageOrchestrator.ts` | Centralizar flujo de mensaje entrante | ⬜ Pendiente |
-| 2.2.3 | Definir interfaces claras entre servicios | Contratos TypeScript | ⬜ Pendiente |
-| 2.2.4 | Implementar circuit breaker para APIs externas (Metricool) | Resiliencia mejorada | ⬜ Pendiente |
-
-#### Subfase 2.3: Reorganización de Routes
-
-**Objetivo:** Dividir routes.ts (4,172 líneas) y mejorar validación
-
-| Tarea | Descripción | Criterio de Éxito | Estado |
-|-------|-------------|-------------------|--------|
-| 2.3.1 | Crear `routes/authRoutes.ts` | Migrar rutas de autenticación | ⬜ Pendiente |
-| 2.3.2 | Crear `routes/brandRoutes.ts` | Migrar rutas de brands | ⬜ Pendiente |
-| 2.3.3 | Crear `routes/conversationRoutes.ts` | Migrar rutas de inbox | ⬜ Pendiente |
-| 2.3.4 | Crear `routes/crmRoutes.ts` | Migrar rutas CRM | ⬜ Pendiente |
-| 2.3.5 | Crear `routes/reminderRoutes.ts` | Migrar rutas de reminders | ⬜ Pendiente |
-| 2.3.6 | Estandarizar validación Zod en middleware | Reducir código repetitivo | ⬜ Pendiente |
-| 2.3.7 | Mantener `routes.ts` como registro central | Compatibilidad | ⬜ Pendiente |
-
----
-
-### FASE 3: TESTING (Plan de Mejora)
-**Objetivo:** Establecer suite de tests para prevenir regresiones
-**Riesgo actual:** Cambios pueden romper funcionalidad sin detectarlo
-**Duración estimada:** 2-3 semanas
-
-#### Subfase 3.1: Configuración de Infraestructura de Testing
-
-**Objetivo:** Preparar herramientas y base de datos de pruebas
-
-| Tarea | Descripción | Criterio de Éxito | Estado |
-|-------|-------------|-------------------|--------|
-| 3.1.1 | Elegir framework: Vitest (recomendado) o Jest | Decisión documentada | ⬜ Pendiente |
-| 3.1.2 | Configurar `vitest.config.ts` | Tests ejecutan sin errores | ⬜ Pendiente |
-| 3.1.3 | Configurar base de datos PostgreSQL de pruebas | Conexión funcional | ⬜ Pendiente |
-| 3.1.4 | Crear fixtures/seeds para datos de prueba | Brands, users, conversations de prueba | ⬜ Pendiente |
-| 3.1.5 | Configurar mocks para APIs externas (Metricool, OpenAI) | Mocks funcionales | ⬜ Pendiente |
-| 3.1.6 | Configurar coverage reports | Reporte generado | ⬜ Pendiente |
-
-#### Subfase 3.2: Tests Unitarios de Servicios Críticos
-
-**Objetivo:** Cubrir lógica de negocio más riesgosa
-
-| Tarea | Descripción | Prioridad | Estado |
-|-------|-------------|-----------|--------|
-| 3.2.1 | Tests para storage adapters (CRUD básico) | ALTA | ⬜ Pendiente |
-| 3.2.2 | Tests para `crmTrafficController` (routing lógica) | ALTA | ⬜ Pendiente |
-| 3.2.3 | Tests para `reminderService` (scheduling, eligibility) | ALTA | ⬜ Pendiente |
-| 3.2.4 | Tests para `syncService` (manejo de errores, cooldowns) | ALTA | ⬜ Pendiente |
-| 3.2.5 | Tests para `thankYouDetector` (detección de cierre) | MEDIA | ⬜ Pendiente |
-| 3.2.6 | Tests para `conversationLifecycleService` | MEDIA | ⬜ Pendiente |
-| 3.2.7 | Tests para helpers de schema (getEffectiveChannelSettings) | BAJA | ⬜ Pendiente |
-
-#### Subfase 3.3: Tests de Integración y Regresión
-
-**Objetivo:** Validar flujos end-to-end críticos
-
-| Tarea | Descripción | Prioridad | Estado |
-|-------|-------------|-----------|--------|
-| 3.3.1 | Test de integración: autenticación (login/logout/session) | ALTA | ⬜ Pendiente |
-| 3.3.2 | Test de integración: fetch de inbox (conversations + messages) | ALTA | ⬜ Pendiente |
-| 3.3.3 | Test de integración: ciclo de vida de reminder | ALTA | ⬜ Pendiente |
-| 3.3.4 | Test de integración: CRM contact creation con channel | MEDIA | ⬜ Pendiente |
-| 3.3.5 | Test de integración: merge de contactos | MEDIA | ⬜ Pendiente |
-| 3.3.6 | Configurar CI para ejecutar tests en cada push | ALTA | ⬜ Pendiente |
-| 3.3.7 | Establecer umbral mínimo de coverage (ej: 40% inicial) | MEDIA | ⬜ Pendiente |
-
----
-
-### Matriz de Dependencias entre Fases (Plan de Mejoras)
-
-```
-FASE 1 (Componentes)
-    │
-    ├─► Subfase 1.2 depende de Subfase 1.1
-    │
-    └─► Subfase 1.3 puede ejecutarse en paralelo con 1.2
-    
-FASE 2 (Arquitectura)
-    │
-    ├─► Puede comenzar después de Subfase 1.2
-    │
-    └─► Subfase 2.2 depende de Subfase 2.1
-    
-FASE 3 (Testing)
-    │
-    ├─► Subfase 3.1 puede comenzar en paralelo con Fase 2
-    │
-    └─► Subfases 3.2 y 3.3 dependen de Fases 1 y 2 completadas
-
-FASE 4 (Autenticación Social) ← NUEVA
-    │
-    ├─► Puede comenzar INDEPENDIENTE de Fases 1-3
-    │
-    ├─► Subfase 4.2 depende de Subfase 4.1
-    │
-    ├─► Subfase 4.3 depende de Subfase 4.2
-    │
-    ├─► Subfase 4.4 puede ejecutarse en paralelo con 4.3
-    │
-    ├─► Subfase 4.5 depende de Subfases 4.3 y 4.4
-    │
-    └─► Subfase 4.7 (Testing) depende de todas las anteriores
-```
-
----
-
-### Estimación de Esfuerzo Total (Plan de Mejoras)
-
-| Fase | Subfases | Tareas | Duración Estimada |
-|------|----------|--------|-------------------|
-| Fase 1: Componentes | 4 | 18 | 2-3 semanas |
-| Fase 2: Arquitectura | 3 | 19 | 2-3 semanas |
-| Fase 3: Testing | 3 | 17 | 2-3 semanas |
-| Fase 4: Autenticación Social | 7 | 44 | 1-2 semanas |
-| **TOTAL** | **17** | **98** | **7-11 semanas** |
-
----
-
-### Principios de Implementación (Plan de Mejoras)
-
-1. **No romper producción:** Cada cambio debe ser backwards-compatible
-2. **Commits pequeños:** Una tarea = un commit verificable
-3. **Feature flags:** Usar toggles para activar/desactivar refactors
-4. **Validación continua:** Probar manualmente después de cada subfase
-5. **Documentar decisiones:** Actualizar este documento con cambios
-
----
-
-### Notas Importantes (Plan de Mejoras)
-
-- **storage.ts mantiene compatibilidad:** Al modularizar, storage.ts se convierte en "facade" que re-exporta, evitando romper imports existentes
-- **routes.ts mantiene registro central:** Similar al storage, routes.ts registra las rutas modulares
-- **Testing gradual:** Comenzar con 40% coverage y aumentar progresivamente
-- **Priorizar servicios críticos:** sync, CRM routing, reminders son los más riesgosos
-
----
 ## Cambios Implementados
 
 ### 8 Enero 2026 - Fix: Auto-Reply para Comentarios Anidados en Hilos
@@ -8950,6 +8703,22 @@ export function requireAuthHybrid(req: Request, res: Response, next: NextFunctio
   return res.status(401).json({ message: "Unauthorized" });
 }
 ```
+
+---
+
+## PLAN DE REFACTORIZACIÓN ARQUITECTÓNICA - Enero 2026
+
+> **Principio Rector**: Aplicamos el patrón **"Strangler Fig"** - mejoramos incrementalmente mientras mantenemos la aplicación funcional. NO refactorizamos todo de golpe.
+
+### REGLAS DE UI QUE NO DEBEN CAMBIAR (CRÍTICO)
+
+| Elemento | Regla | Motivo |
+|----------|-------|--------|
+| Mensajes outbound (respuestas de marca) | **Fondo azul (#0291FA o bg-indigo-600)** | Distinguir visualmente respuestas de la marca vs mensajes del cliente |
+| Mensajes inbound (del cliente) | Fondo blanco/transparente | Claridad visual |
+| Esto aplica a: | ownerBubble, aiBubble, manualBubble, replyBubble | Consistencia en toda la app |
+
+> El sistema identifica los mensajes outbound por el campo `direction === 'outbound'` que viene de Metricool.
 
 ---
 
