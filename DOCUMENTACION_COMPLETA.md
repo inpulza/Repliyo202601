@@ -7975,47 +7975,47 @@ El sistema identifica los mensajes outbound por el campo `direction === 'outboun
 
 **Objetivo:** Entender qué lógica hay en cada componente antes de mover código
 
-| Tarea | Descripción | Criterio de Éxito |
-|-------|-------------|-------------------|
-| 1.1.1 | Inventariar todos los `useState` y `useEffect` en Inbox.tsx | Lista completa de 25+ estados documentada |
-| 1.1.2 | Identificar dependencias entre estados (cuáles se afectan mutuamente) | Diagrama de dependencias |
-| 1.1.3 | Mapear props contracts entre Inbox → subcomponentes | Documentar tipos esperados |
-| 1.1.4 | Repetir auditoría para CRMContextPanel.tsx | Mismo entregable |
-| 1.1.5 | Identificar lógica duplicada entre componentes | Lista de candidatos a hooks |
+| Tarea | Descripción | Criterio de Éxito | Estado |
+|-------|-------------|-------------------|--------|
+| 1.1.1 | Inventariar todos los `useState` y `useEffect` en Inbox.tsx | Lista completa de 25+ estados documentada | ⬜ Pendiente |
+| 1.1.2 | Identificar dependencias entre estados (cuáles se afectan mutuamente) | Diagrama de dependencias | ⬜ Pendiente |
+| 1.1.3 | Mapear props contracts entre Inbox → subcomponentes | Documentar tipos esperados | ⬜ Pendiente |
+| 1.1.4 | Repetir auditoría para CRMContextPanel.tsx | Mismo entregable | ⬜ Pendiente |
+| 1.1.5 | Identificar lógica duplicada entre componentes | Lista de candidatos a hooks | ⬜ Pendiente |
 
 #### Subfase 1.2: Extracción de Lógica a Hooks y Servicios
 
 **Objetivo:** Mover orquestación de datos fuera de componentes hacia hooks reutilizables
 
-| Tarea | Descripción | Criterio de Éxito |
-|-------|-------------|-------------------|
-| 1.2.1 | Crear `useConversationState` - manejo de conversación activa | Hook funcional sin romper UI |
-| 1.2.2 | Crear `useDraftManagement` - lógica de borradores IA | Separar de Inbox.tsx |
-| 1.2.3 | Crear `useMessageSync` - sincronización y WebSocket | Reutilizable en otros componentes |
-| 1.2.4 | Crear `useCRMPanel` - lógica del panel CRM | Separar de CRMContextPanel |
-| 1.2.5 | Refactorizar NexusContext para exponer menos estado raw | Interfaz más limpia |
-| 1.2.6 | Validar que la UI funciona igual después de cada extracción | Tests manuales pasan |
+| Tarea | Descripción | Criterio de Éxito | Estado |
+|-------|-------------|-------------------|--------|
+| 1.2.1 | Crear `useConversationState` - manejo de conversación activa | Hook funcional sin romper UI | ⬜ Pendiente |
+| 1.2.2 | Crear `useDraftManagement` - lógica de borradores IA | Separar de Inbox.tsx | ⬜ Pendiente |
+| 1.2.3 | Crear `useMessageSync` - sincronización y WebSocket | Reutilizable en otros componentes | ✅ Completado (useWebSocket.ts refactorizado) |
+| 1.2.4 | Crear `useCRMPanel` - lógica del panel CRM | Separar de CRMContextPanel | ⬜ Pendiente |
+| 1.2.5 | Refactorizar NexusContext para exponer menos estado raw | Interfaz más limpia | 🔄 Parcial (validatedActiveClientId agregado) |
+| 1.2.6 | Validar que la UI funciona igual después de cada extracción | Tests manuales pasan | ⬜ Pendiente |
 
 #### Subfase 1.3: Estabilización de Interfaces de Usuario
 
 **Objetivo:** Preparar componentes para testing automatizado
 
-| Tarea | Descripción | Criterio de Éxito |
-|-------|-------------|-------------------|
-| 1.3.1 | Auditar `data-testid` existentes, documentar patrón | Convención establecida |
-| 1.3.2 | Agregar `data-testid` faltantes en elementos interactivos | 100% cobertura en Inbox |
-| 1.3.3 | Agregar `data-testid` en elementos de datos dinámicos | 100% cobertura en CRM Panel |
-| 1.3.4 | Verificar accesibilidad básica (ARIA labels críticos) | Principales controles accesibles |
+| Tarea | Descripción | Criterio de Éxito | Estado |
+|-------|-------------|-------------------|--------|
+| 1.3.1 | Auditar `data-testid` existentes, documentar patrón | Convención establecida | ⬜ Pendiente |
+| 1.3.2 | Agregar `data-testid` faltantes en elementos interactivos | 100% cobertura en Inbox | ⬜ Pendiente |
+| 1.3.3 | Agregar `data-testid` en elementos de datos dinámicos | 100% cobertura en CRM Panel | ⬜ Pendiente |
+| 1.3.4 | Verificar accesibilidad básica (ARIA labels críticos) | Principales controles accesibles | ⬜ Pendiente |
 
 #### Subfase 1.4: Guardrails y Observabilidad
 
 **Objetivo:** Proteger refactors con feature flags y monitoreo
 
-| Tarea | Descripción | Criterio de Éxito |
-|-------|-------------|-------------------|
-| 1.4.1 | Implementar sistema simple de feature flags | Toggle para nuevos hooks |
-| 1.4.2 | Agregar logging en hooks críticos | Errores visibles en consola |
-| 1.4.3 | Crear checklist de validación pre-deploy | Documento de QA |
+| Tarea | Descripción | Criterio de Éxito | Estado |
+|-------|-------------|-------------------|--------|
+| 1.4.1 | Implementar sistema simple de feature flags | Toggle para nuevos hooks | ⬜ Pendiente |
+| 1.4.2 | Agregar logging en hooks críticos | Errores visibles en consola | ⬜ Pendiente |
+| 1.4.3 | Crear checklist de validación pre-deploy | Documento de QA | ⬜ Pendiente |
 
 ---
 
@@ -8028,41 +8028,41 @@ El sistema identifica los mensajes outbound por el campo `direction === 'outboun
 
 **Objetivo:** Dividir storage.ts (4,310 líneas) en adaptadores por dominio
 
-| Tarea | Descripción | Criterio de Éxito |
-|-------|-------------|-------------------|
-| 2.1.1 | Crear `storage/brandAdapter.ts` - métodos de brands | Migrar 10-15 métodos |
-| 2.1.2 | Crear `storage/conversationAdapter.ts` | Migrar métodos de conversations |
-| 2.1.3 | Crear `storage/messageAdapter.ts` | Migrar métodos de messages |
-| 2.1.4 | Crear `storage/crmAdapter.ts` | Migrar métodos CRM (contacts, channels, limbo) |
-| 2.1.5 | Crear `storage/reminderAdapter.ts` | Migrar métodos de reminders |
-| 2.1.6 | Crear `storage/aiAdapter.ts` | Migrar métodos de AI agents y audit |
-| 2.1.7 | Mantener `storage.ts` como facade que re-exporta | Compatibilidad hacia atrás |
-| 2.1.8 | Extraer helpers comunes (paginación, errores) | `storage/helpers.ts` |
+| Tarea | Descripción | Criterio de Éxito | Estado |
+|-------|-------------|-------------------|--------|
+| 2.1.1 | Crear `storage/brandAdapter.ts` - métodos de brands | Migrar 10-15 métodos | ⬜ Pendiente |
+| 2.1.2 | Crear `storage/conversationAdapter.ts` | Migrar métodos de conversations | ⬜ Pendiente |
+| 2.1.3 | Crear `storage/messageAdapter.ts` | Migrar métodos de messages | ⬜ Pendiente |
+| 2.1.4 | Crear `storage/crmAdapter.ts` | Migrar métodos CRM (contacts, channels, limbo) | ⬜ Pendiente |
+| 2.1.5 | Crear `storage/reminderAdapter.ts` | Migrar métodos de reminders | ⬜ Pendiente |
+| 2.1.6 | Crear `storage/aiAdapter.ts` | Migrar métodos de AI agents y audit | ⬜ Pendiente |
+| 2.1.7 | Mantener `storage.ts` como facade que re-exporta | Compatibilidad hacia atrás | ⬜ Pendiente |
+| 2.1.8 | Extraer helpers comunes (paginación, errores) | `storage/helpers.ts` | ⬜ Pendiente |
 
 #### Subfase 2.2: Codificación de Workflows Cross-Service
 
 **Objetivo:** Formalizar flujos complejos (sync → CRM → reminders) en orquestadores
 
-| Tarea | Descripción | Criterio de Éxito |
-|-------|-------------|-------------------|
-| 2.2.1 | Documentar flujo sync → CRM routing → reminder scheduling | Diagrama de secuencia |
-| 2.2.2 | Crear `orchestrators/inboundMessageOrchestrator.ts` | Centralizar flujo de mensaje entrante |
-| 2.2.3 | Definir interfaces claras entre servicios | Contratos TypeScript |
-| 2.2.4 | Implementar circuit breaker para APIs externas (Metricool) | Resiliencia mejorada |
+| Tarea | Descripción | Criterio de Éxito | Estado |
+|-------|-------------|-------------------|--------|
+| 2.2.1 | Documentar flujo sync → CRM routing → reminder scheduling | Diagrama de secuencia | ⬜ Pendiente |
+| 2.2.2 | Crear `orchestrators/inboundMessageOrchestrator.ts` | Centralizar flujo de mensaje entrante | ⬜ Pendiente |
+| 2.2.3 | Definir interfaces claras entre servicios | Contratos TypeScript | ⬜ Pendiente |
+| 2.2.4 | Implementar circuit breaker para APIs externas (Metricool) | Resiliencia mejorada | ⬜ Pendiente |
 
 #### Subfase 2.3: Reorganización de Routes
 
 **Objetivo:** Dividir routes.ts (4,172 líneas) y mejorar validación
 
-| Tarea | Descripción | Criterio de Éxito |
-|-------|-------------|-------------------|
-| 2.3.1 | Crear `routes/authRoutes.ts` | Migrar rutas de autenticación |
-| 2.3.2 | Crear `routes/brandRoutes.ts` | Migrar rutas de brands |
-| 2.3.3 | Crear `routes/conversationRoutes.ts` | Migrar rutas de inbox |
-| 2.3.4 | Crear `routes/crmRoutes.ts` | Migrar rutas CRM |
-| 2.3.5 | Crear `routes/reminderRoutes.ts` | Migrar rutas de reminders |
-| 2.3.6 | Estandarizar validación Zod en middleware | Reducir código repetitivo |
-| 2.3.7 | Mantener `routes.ts` como registro central | Compatibilidad |
+| Tarea | Descripción | Criterio de Éxito | Estado |
+|-------|-------------|-------------------|--------|
+| 2.3.1 | Crear `routes/authRoutes.ts` | Migrar rutas de autenticación | ⬜ Pendiente |
+| 2.3.2 | Crear `routes/brandRoutes.ts` | Migrar rutas de brands | ⬜ Pendiente |
+| 2.3.3 | Crear `routes/conversationRoutes.ts` | Migrar rutas de inbox | ⬜ Pendiente |
+| 2.3.4 | Crear `routes/crmRoutes.ts` | Migrar rutas CRM | ⬜ Pendiente |
+| 2.3.5 | Crear `routes/reminderRoutes.ts` | Migrar rutas de reminders | ⬜ Pendiente |
+| 2.3.6 | Estandarizar validación Zod en middleware | Reducir código repetitivo | ⬜ Pendiente |
+| 2.3.7 | Mantener `routes.ts` como registro central | Compatibilidad | ⬜ Pendiente |
 
 ---
 
@@ -8075,42 +8075,42 @@ El sistema identifica los mensajes outbound por el campo `direction === 'outboun
 
 **Objetivo:** Preparar herramientas y base de datos de pruebas
 
-| Tarea | Descripción | Criterio de Éxito |
-|-------|-------------|-------------------|
-| 3.1.1 | Elegir framework: Vitest (recomendado) o Jest | Decisión documentada |
-| 3.1.2 | Configurar `vitest.config.ts` | Tests ejecutan sin errores |
-| 3.1.3 | Configurar base de datos PostgreSQL de pruebas | Conexión funcional |
-| 3.1.4 | Crear fixtures/seeds para datos de prueba | Brands, users, conversations de prueba |
-| 3.1.5 | Configurar mocks para APIs externas (Metricool, OpenAI) | Mocks funcionales |
-| 3.1.6 | Configurar coverage reports | Reporte generado |
+| Tarea | Descripción | Criterio de Éxito | Estado |
+|-------|-------------|-------------------|--------|
+| 3.1.1 | Elegir framework: Vitest (recomendado) o Jest | Decisión documentada | ⬜ Pendiente |
+| 3.1.2 | Configurar `vitest.config.ts` | Tests ejecutan sin errores | ⬜ Pendiente |
+| 3.1.3 | Configurar base de datos PostgreSQL de pruebas | Conexión funcional | ⬜ Pendiente |
+| 3.1.4 | Crear fixtures/seeds para datos de prueba | Brands, users, conversations de prueba | ⬜ Pendiente |
+| 3.1.5 | Configurar mocks para APIs externas (Metricool, OpenAI) | Mocks funcionales | ⬜ Pendiente |
+| 3.1.6 | Configurar coverage reports | Reporte generado | ⬜ Pendiente |
 
 #### Subfase 3.2: Tests Unitarios de Servicios Críticos
 
 **Objetivo:** Cubrir lógica de negocio más riesgosa
 
-| Tarea | Descripción | Prioridad |
-|-------|-------------|-----------|
-| 3.2.1 | Tests para storage adapters (CRUD básico) | ALTA |
-| 3.2.2 | Tests para `crmTrafficController` (routing lógica) | ALTA |
-| 3.2.3 | Tests para `reminderService` (scheduling, eligibility) | ALTA |
-| 3.2.4 | Tests para `syncService` (manejo de errores, cooldowns) | ALTA |
-| 3.2.5 | Tests para `thankYouDetector` (detección de cierre) | MEDIA |
-| 3.2.6 | Tests para `conversationLifecycleService` | MEDIA |
-| 3.2.7 | Tests para helpers de schema (getEffectiveChannelSettings) | BAJA |
+| Tarea | Descripción | Prioridad | Estado |
+|-------|-------------|-----------|--------|
+| 3.2.1 | Tests para storage adapters (CRUD básico) | ALTA | ⬜ Pendiente |
+| 3.2.2 | Tests para `crmTrafficController` (routing lógica) | ALTA | ⬜ Pendiente |
+| 3.2.3 | Tests para `reminderService` (scheduling, eligibility) | ALTA | ⬜ Pendiente |
+| 3.2.4 | Tests para `syncService` (manejo de errores, cooldowns) | ALTA | ⬜ Pendiente |
+| 3.2.5 | Tests para `thankYouDetector` (detección de cierre) | MEDIA | ⬜ Pendiente |
+| 3.2.6 | Tests para `conversationLifecycleService` | MEDIA | ⬜ Pendiente |
+| 3.2.7 | Tests para helpers de schema (getEffectiveChannelSettings) | BAJA | ⬜ Pendiente |
 
 #### Subfase 3.3: Tests de Integración y Regresión
 
 **Objetivo:** Validar flujos end-to-end críticos
 
-| Tarea | Descripción | Prioridad |
-|-------|-------------|-----------|
-| 3.3.1 | Test de integración: autenticación (login/logout/session) | ALTA |
-| 3.3.2 | Test de integración: fetch de inbox (conversations + messages) | ALTA |
-| 3.3.3 | Test de integración: ciclo de vida de reminder | ALTA |
-| 3.3.4 | Test de integración: CRM contact creation con channel | MEDIA |
-| 3.3.5 | Test de integración: merge de contactos | MEDIA |
-| 3.3.6 | Configurar CI para ejecutar tests en cada push | ALTA |
-| 3.3.7 | Establecer umbral mínimo de coverage (ej: 40% inicial) | MEDIA |
+| Tarea | Descripción | Prioridad | Estado |
+|-------|-------------|-----------|--------|
+| 3.3.1 | Test de integración: autenticación (login/logout/session) | ALTA | ⬜ Pendiente |
+| 3.3.2 | Test de integración: fetch de inbox (conversations + messages) | ALTA | ⬜ Pendiente |
+| 3.3.3 | Test de integración: ciclo de vida de reminder | ALTA | ⬜ Pendiente |
+| 3.3.4 | Test de integración: CRM contact creation con channel | MEDIA | ⬜ Pendiente |
+| 3.3.5 | Test de integración: merge de contactos | MEDIA | ⬜ Pendiente |
+| 3.3.6 | Configurar CI para ejecutar tests en cada push | ALTA | ⬜ Pendiente |
+| 3.3.7 | Establecer umbral mínimo de coverage (ej: 40% inicial) | MEDIA | ⬜ Pendiente |
 
 ---
 
