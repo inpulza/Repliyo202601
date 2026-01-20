@@ -90,7 +90,7 @@ El patrón "Strangler Fig" (higo estrangulador) es una técnica de refactorizaci
 |------|-----------|--------|---------|
 | `useDraftManagement` | Gestión de borradores (10 estados, 7 callbacks) | ✅ Creado + Integrado | `hooks/useDraftManagement.ts` |
 | `useInboxFilters` | Filtros de lista + thread (10 estados) | ✅ Creado + Integrado | `hooks/useInboxFilters.ts` |
-| `useUnreadTracking` | Seguimiento de mensajes no leídos (2 estados) | 🔸 Creado, NO integrado | `hooks/useUnreadTracking.ts` |
+| `useUnreadTracking` | Seguimiento de mensajes no leídos (2 estados) | ✅ Creado + Integrado | `hooks/useUnreadTracking.ts` |
 | `useConversationLifecycle` | Estados de conversación (2 estados) | ⬜ Pendiente | - |
 | `useSyncStatus` | Estado de sincronización (3 estados) | ⬜ Pendiente | - |
 | `useDeepLink` | Deep links y navegación (3 estados) | ⬜ Pendiente | - |
@@ -130,10 +130,15 @@ const {
 } = inboxFilters;
 ```
 
-**useUnreadTracking** (❌ NO integrado - hook creado pero NO usado):
-- El hook existe en `hooks/useUnreadTracking.ts`
-- Inbox.tsx todavía usa `useState` local para `unreadMessageIds` y `capturedUnreadCount`
-- **ACCIÓN REQUERIDA:** Integrar el hook o eliminarlo
+**useUnreadTracking** (✅ Integrado en Inbox.tsx línea ~218):
+```typescript
+const unreadTracking = useUnreadTracking({
+  activeConversation,
+  activeConversationMessages,
+  conversations,
+});
+const { unreadMessageIds, clearUnreadMessage: handleUnreadSeen } = unreadTracking;
+```
 
 ---
 

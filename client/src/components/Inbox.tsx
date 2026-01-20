@@ -5,6 +5,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useDraftManagement } from '@/hooks/useDraftManagement';
 import { useInboxFilters, type Platform, type MessageType, type Intent } from '@/hooks/useInboxFilters';
+import { useUnreadTracking } from '@/hooks/useUnreadTracking';
 import { useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
 import { CRMContextPanel } from './CRMContextPanel';
@@ -211,10 +212,13 @@ export function Inbox() {
   const [selectionEnabled, setSelectionEnabled] = useState(false);
   const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set());
   
-  // Unread message tracking - captures IDs of unread messages when opening a conversation
-  const [unreadMessageIds, setUnreadMessageIds] = useState<Set<string>>(new Set());
-  // Track the unreadCount at the moment the conversation was opened
-  const [capturedUnreadCount, setCapturedUnreadCount] = useState<number>(0);
+  // Unread Tracking Hook - consolidates unread message tracking states and effects
+  const unreadTracking = useUnreadTracking({
+    activeConversation,
+    activeConversationMessages,
+    conversations,
+  });
+  const { unreadMessageIds, clearUnreadMessage: handleUnreadSeen } = unreadTracking;
 
   // Draft Management Hook - consolidates 14 draft-related states and handlers
   const draftManagement = useDraftManagement({
@@ -238,41 +242,12 @@ export function Inbox() {
   
   // Destructure commonly used values from draftManagement for local use
   const { getMessageWithOverrides, bulkQueue } = draftManagement;
-
-  // Ref to track if we've captured unread IDs for this conversation
-  const unreadCapturedRef = React.useRef<string | null>(null);
   
   // Clear selection AND disable selection mode when conversation changes
-  // Also capture the unreadCount at the moment of opening
   React.useEffect(() => {
     setSelectedMessageIds(new Set());
     setSelectionEnabled(false);
-    setUnreadMessageIds(new Set()); // Reset unread tracking when switching conversations
-    unreadCapturedRef.current = null; // Reset the ref so we can capture for new conversation
-    // Capture the unreadCount at the moment of opening (before it gets reset to 0)
-    setCapturedUnreadCount(activeConversation?.unreadCount || 0);
   }, [activeConversation?.id]);
-  
-  // Capture unread message IDs when messages load for the active conversation
-  // Only capture if the conversation had unreadCount > 0 when opened
-  React.useEffect(() => {
-    if (!activeConversation?.id || !activeConversationMessages?.length) return;
-    
-    // Only capture once per conversation, and only if there were unread messages
-    if (unreadCapturedRef.current === activeConversation.id) return;
-    if (capturedUnreadCount <= 0) return;
-    
-    // Get the N most recent inbound messages where N = capturedUnreadCount
-    const inboundMessages = activeConversationMessages
-      .filter(m => m.direction === 'inbound')
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-      .slice(0, capturedUnreadCount);
-    
-    if (inboundMessages.length > 0) {
-      setUnreadMessageIds(new Set(inboundMessages.map(m => m.id)));
-      unreadCapturedRef.current = activeConversation.id;
-    }
-  }, [activeConversation?.id, activeConversationMessages, capturedUnreadCount]);
 
   const handleToggleSelection = (messageId: string) => {
     setSelectedMessageIds(prev => {
@@ -294,15 +269,6 @@ export function Inbox() {
   const handleClearSelection = () => {
     setSelectedMessageIds(new Set());
   };
-  
-  // Callback when user has seen an unread message (visible in viewport for 6 seconds)
-  const handleUnreadSeen = React.useCallback((messageId: string) => {
-    setUnreadMessageIds(prev => {
-      const next = new Set(prev);
-      next.delete(messageId);
-      return next;
-    });
-  }, []);
 
   const { data: syncStatus } = useQuery<SyncStatus>({
     queryKey: ['/api/sync/status'],

@@ -25,15 +25,20 @@ export function useUnreadTracking({
   useEffect(() => {
     if (!activeConversation?.id || !activeConversationMessages?.length) return;
     
-    if (capturedUnreadCount > 0 && unreadCapturedRef.current !== activeConversation.id) {
-      const unreadIds = activeConversationMessages
-        .slice(-capturedUnreadCount)
-        .map(m => m.id);
-      
-      if (unreadIds.length > 0) {
-        setUnreadMessageIds(new Set(unreadIds));
-        unreadCapturedRef.current = activeConversation.id;
-      }
+    // Only capture once per conversation, and only if there were unread messages
+    if (unreadCapturedRef.current === activeConversation.id) return;
+    if (capturedUnreadCount <= 0) return;
+    
+    // Get the N most recent inbound messages where N = capturedUnreadCount
+    // IMPORTANT: Only inbound messages can be "unread" - outbound are our own replies
+    const inboundMessages = activeConversationMessages
+      .filter(m => m.direction === 'inbound')
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, capturedUnreadCount);
+    
+    if (inboundMessages.length > 0) {
+      setUnreadMessageIds(new Set(inboundMessages.map(m => m.id)));
+      unreadCapturedRef.current = activeConversation.id;
     }
   }, [activeConversation?.id, activeConversationMessages, capturedUnreadCount]);
 

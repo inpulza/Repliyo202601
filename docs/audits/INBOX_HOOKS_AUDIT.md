@@ -24,7 +24,7 @@ El componente Inbox.tsx tiene una cantidad significativa de estado local que pod
 | Thread Filters | 3 | (incluir en `useInboxFilters`) | ✅ Completado | Incluido en useInboxFilters |
 | Deep Link/Focus Mode | 3 | `useDeepLink` | ⬜ Pendiente | Estados incluidos en useInboxFilters |
 | Bulk Selection | 2 | Ya existe `useBulkDraftQueue` | ✅ Existe | |
-| Unread Tracking | 2 | `useUnreadTracking` | 🔸 Creado | Hook creado, pendiente integrar en Inbox.tsx |
+| Unread Tracking | 2 | `useUnreadTracking` | ✅ Completado | Hook creado e integrado en Inbox.tsx |
 | Audio Player | 4 | `useAudioPlayer` (interno) | ⬜ Pendiente | |
 | UI Toggles | 4 | Local (no extraer) | ➖ N/A | |
 | **TOTAL** | **40** | | | |
