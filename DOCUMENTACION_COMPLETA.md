@@ -9603,3 +9603,184 @@ Fase 6 │                                                │████│
 
 *Sección creada: 16 Enero 2026*
 *Última actualización: 16 Enero 2026*
+
+---
+
+## Fix Critico: Problema de Carga Inicial del Inbox - 20 Enero 2026
+
+### Problema Reportado
+Cuando el usuario inicia sesion y la aplicacion carga la cuenta por defecto (ej: "Fortress Wellness Center"), el inbox se queda vacio con el mensaje "No conversations match your filters". El usuario tiene que:
+- Cambiar manualmente a otra cuenta y volver, O
+- Recargar la pagina completa
+
+### Diagnostico Completo
+
+#### 1. Race Condition en Inicializacion (CONFIRMADO)
+**Archivo:** `client/src/context/NexusContext.tsx`
+
+**Problema:**
+- El `activeClientId` se lee de localStorage inmediatamente al cargar (lineas 50-56)
+- La query de conversaciones se dispara con `enabled: !!activeClientId` (lineas 84-88)
+- PERO la query de clientes tiene `enabled: isAuthenticated && !isAuthLoading` (lineas 74-78)
+
+**Resultado:** Las queries de `conversations` y `messages` pueden dispararse ANTES de que:
+1. La autenticacion este confirmada
+2. La lista de clientes este cargada
+3. El `activeClientId` sea validado contra clientes existentes
+
+#### 2. Reconexiones Constantes de WebSocket (CONFIRMADO)
+**Archivo:** `client/src/hooks/useWebSocket.ts`
+
+**Problema:**
+- El callback `connect` depende de `brandId`, `userId`, callbacks (`onNewMessage`, etc.), y `toast`
+- Cada vez que alguna dependencia cambia, `connect` se recrea
+- El `useEffect` depende de `connect` y `disconnect`
+- Esto causa un ciclo de desconexion/reconexion cada vez que cambia el contexto
+
+#### 3. Validacion de activeClientId Tardia
+**Archivo:** `client/src/context/NexusContext.tsx`
+
+**Problema:**
+El `activeClientId` de localStorage puede contener un ID de cliente que:
+- Ya no existe
+- Fue archivado
+- Pertenece a otra cuenta
+
+La validacion ocurre en un `useEffect` que se ejecuta DESPUES de que las queries ya se dispararon.
+
+---
+
+### Plan de Implementacion
+
+## FASE 1: Preparacion y Logging (SIN CAMBIOS FUNCIONALES)
+**Objetivo:** Agregar logging para entender mejor el flujo sin modificar comportamiento
+
+### Subfase 1.1: Agregar logging de inicializacion
+**Archivo:** `client/src/context/NexusContext.tsx`
+- [ ] Agregar console.log cuando se lee activeClientId de localStorage
+- [ ] Agregar console.log cuando se disparan las queries de conversaciones/mensajes
+- [ ] Agregar console.log cuando se completa la carga de clientes
+
+### Subfase 1.2: Agregar logging de WebSocket
+**Archivo:** `client/src/hooks/useWebSocket.ts`
+- [ ] Agregar console.log cuando se recrea el callback connect
+- [ ] Agregar console.log con motivo de desconexion
+
+### Verificacion Fase 1:
+- [ ] Ejecutar aplicacion y verificar logs en consola
+- [ ] Reproducir el problema del inbox vacio
+- [ ] Capturar secuencia de eventos en logs
+- [ ] Confirmar que no hay errores nuevos
+
+---
+
+## FASE 2: Corregir Race Condition en NexusContext
+**Objetivo:** Asegurar que queries solo se disparen cuando todo este listo
+
+### Subfase 2.1: Gate de autenticacion en queries
+**Archivo:** `client/src/context/NexusContext.tsx`
+- [ ] Modificar query de `conversations` para incluir `isAuthenticated && !isAuthLoading`
+- [ ] Modificar query de `messages` para incluir `isAuthenticated && !isAuthLoading`
+- [ ] Agregar condicion de que `clients.length > 0` o `!isLoadingClients`
+
+### Subfase 2.2: Validar activeClientId antes de usar
+**Archivo:** `client/src/context/NexusContext.tsx`
+- [ ] Crear variable `validatedActiveClientId` que solo tenga valor cuando:
+  - isAuthenticated === true
+  - isAuthLoading === false
+  - isLoadingClients === false
+  - El ID existe en la lista de activeClients
+- [ ] Usar `validatedActiveClientId` en lugar de `activeClientId` para las queries
+
+### Verificacion Fase 2:
+- [ ] Iniciar sesion desde cero (sin localStorage)
+- [ ] Verificar que conversaciones cargan correctamente
+- [ ] Iniciar sesion con cuenta guardada en localStorage
+- [ ] Verificar que conversaciones cargan correctamente
+- [ ] Cambiar entre cuentas y verificar que funciona
+- [ ] Revisar consola por errores
+
+---
+
+## FASE 3: Estabilizar WebSocket
+**Objetivo:** Evitar reconexiones innecesarias
+
+### Subfase 3.1: Separar conexion de suscripcion
+**Archivo:** `client/src/hooks/useWebSocket.ts`
+- [ ] Mover logica de `subscribe` fuera del callback `connect`
+- [ ] Crear funcion `sendSubscribe` separada
+- [ ] El `connect` solo debe manejar conexion basica
+
+### Subfase 3.2: Memoizar callbacks correctamente
+**Archivo:** `client/src/hooks/useWebSocket.ts`
+- [ ] Usar refs para callbacks (`onNewMessage`, etc.) en lugar de dependencias
+- [ ] Reducir dependencias del useCallback `connect`
+- [ ] Manejar cambio de brandId en useEffect separado
+
+### Verificacion Fase 3:
+- [ ] Verificar que WebSocket se conecta UNA vez al cargar
+- [ ] Cambiar de cuenta y verificar que solo se envia mensaje de subscribe (no reconexion)
+- [ ] Revisar logs del servidor por conexiones/desconexiones
+- [ ] Verificar que notificaciones en tiempo real funcionan
+
+---
+
+## FASE 4: Testing Manual Completo
+**Objetivo:** Verificar que todos los flujos funcionan correctamente
+
+### Subfase 4.1: Flujo de login fresco
+- [ ] Cerrar sesion
+- [ ] Limpiar localStorage
+- [ ] Iniciar sesion
+- [ ] Verificar que inbox carga con la primera cuenta
+
+### Subfase 4.2: Flujo de login con cuenta guardada
+- [ ] Guardar cuenta especifica en localStorage
+- [ ] Refrescar pagina
+- [ ] Verificar que inbox carga con esa cuenta
+
+### Subfase 4.3: Flujo de cambio de cuenta
+- [ ] Cambiar a otra cuenta
+- [ ] Verificar que inbox se actualiza
+- [ ] Cambiar de vuelta a cuenta original
+- [ ] Verificar que inbox se actualiza
+
+### Subfase 4.4: Flujo de notificaciones en tiempo real
+- [ ] Abrir inbox
+- [ ] (Desde otra fuente) Enviar mensaje a la cuenta activa
+- [ ] Verificar que aparece notificacion
+- [ ] Verificar que conversacion se actualiza
+
+---
+
+### Archivos a Modificar
+
+| Archivo | Cambios | Riesgo |
+|---------|---------|--------|
+| `client/src/context/NexusContext.tsx` | Agregar gates de autenticacion a queries | Medio - afecta carga de datos global |
+| `client/src/hooks/useWebSocket.ts` | Refactorizar manejo de dependencias | Bajo - cambio aislado |
+| `client/src/components/Inbox.tsx` | Posiblemente actualizar uso de WebSocket | Bajo |
+
+### Rollback Plan
+Si algo falla en cualquier fase:
+1. Usar el sistema de checkpoints de Replit para volver a estado anterior
+2. O revertir cambios manualmente en archivos especificos
+
+### Registro de Progreso
+
+| Fecha | Fase | Subtarea | Estado | Notas |
+|-------|------|----------|--------|-------|
+| 20 Ene 2026 | 0 | Diagnostico inicial | COMPLETADO | Race condition y WebSocket confirmados |
+| 20 Ene 2026 | 0 | Plan documentado | COMPLETADO | Este documento |
+| - | 1.1 | Logging NexusContext | PENDIENTE | - |
+| - | 1.2 | Logging WebSocket | PENDIENTE | - |
+| - | 2.1 | Gate queries | PENDIENTE | - |
+| - | 2.2 | Validar activeClientId | PENDIENTE | - |
+| - | 3.1 | Separar conexion/suscripcion | PENDIENTE | - |
+| - | 3.2 | Memoizar callbacks | PENDIENTE | - |
+| - | 4.x | Testing manual | PENDIENTE | - |
+
+---
+
+*Seccion creada: 20 Enero 2026*
+*Estado: En progreso*

@@ -28,19 +28,26 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   const { toast } = useToast();
 
   const connect = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    console.log('[useWebSocket] connect() called | brandId:', brandId, '| Current state:', wsRef.current?.readyState);
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      console.log('[useWebSocket] Already connected, skipping');
+      return;
+    }
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws`;
     
     try {
+      console.log('[useWebSocket] Creating new WebSocket connection to:', wsUrl);
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
+        console.log('[useWebSocket] Connection opened');
         setIsConnected(true);
         
         if (brandId || userId) {
+          console.log('[useWebSocket] Sending subscribe message for brandId:', brandId);
           ws.send(JSON.stringify({
             type: 'subscribe',
             brandId,
@@ -92,10 +99,12 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         }
       };
 
-      ws.onclose = () => {
+      ws.onclose = (event) => {
+        console.log('[useWebSocket] Connection closed | code:', event.code, '| reason:', event.reason, '| wasClean:', event.wasClean);
         setIsConnected(false);
         wsRef.current = null;
         
+        console.log('[useWebSocket] Scheduling reconnect in 5 seconds...');
         reconnectTimeoutRef.current = setTimeout(() => {
           connect();
         }, 5000);
@@ -110,6 +119,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   }, [brandId, userId, onNewMessage, onSyncComplete, onAgentReply, onAgentCooldown, showToasts, toast]);
 
   const disconnect = useCallback(() => {
+    console.log('[useWebSocket] disconnect() called');
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
@@ -122,12 +132,17 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   }, []);
 
   useEffect(() => {
+    console.log('[useWebSocket] EFFECT: Main connect/disconnect effect triggered | brandId:', brandId);
     connect();
-    return () => disconnect();
+    return () => {
+      console.log('[useWebSocket] EFFECT: Cleanup - disconnecting');
+      disconnect();
+    };
   }, [connect, disconnect]);
 
   useEffect(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN && brandId) {
+      console.log('[useWebSocket] EFFECT: Re-subscribing to brandId:', brandId);
       wsRef.current.send(JSON.stringify({
         type: 'subscribe',
         brandId,

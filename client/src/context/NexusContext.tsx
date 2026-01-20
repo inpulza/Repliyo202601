@@ -49,8 +49,11 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [activeClientId, setActiveClientIdState] = useState<string | null>(() => {
     try {
-      return localStorage.getItem(ACTIVE_BRAND_KEY);
+      const savedId = localStorage.getItem(ACTIVE_BRAND_KEY);
+      console.log('[NexusContext] INIT: Read activeClientId from localStorage:', savedId);
+      return savedId;
     } catch {
+      console.log('[NexusContext] INIT: Failed to read localStorage, returning null');
       return null;
     }
   });
@@ -73,7 +76,12 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
 
   const { data: clients = [], isLoading: isLoadingClients } = useQuery({
     queryKey: ['clients'],
-    queryFn: api.clients.getAll,
+    queryFn: async () => {
+      console.log('[NexusContext] QUERY: Fetching clients...');
+      const result = await api.clients.getAll();
+      console.log('[NexusContext] QUERY: Clients loaded:', result.length, 'clients');
+      return result;
+    },
     enabled: isAuthenticated && !isAuthLoading,
   });
 
@@ -83,7 +91,12 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
 
   const { data: conversations = [], isLoading: isLoadingConversations } = useQuery({
     queryKey: ['conversations', activeClientId],
-    queryFn: () => api.conversations.getAll(activeClientId || undefined),
+    queryFn: async () => {
+      console.log('[NexusContext] QUERY: Fetching conversations for clientId:', activeClientId, '| Auth state:', { isAuthenticated, isAuthLoading, isLoadingClients, clientsCount: clients.length });
+      const result = await api.conversations.getAll(activeClientId || undefined);
+      console.log('[NexusContext] QUERY: Conversations loaded:', result.length, 'conversations');
+      return result;
+    },
     enabled: !!activeClientId,
   });
 
@@ -95,18 +108,27 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
 
   const { data: messages = [], isLoading: isLoadingMessages } = useQuery({
     queryKey: ['messages', activeClientId],
-    queryFn: () => api.messages.getAll(activeClientId || undefined),
+    queryFn: async () => {
+      console.log('[NexusContext] QUERY: Fetching messages for clientId:', activeClientId);
+      const result = await api.messages.getAll(activeClientId || undefined);
+      console.log('[NexusContext] QUERY: Messages loaded:', result.length, 'messages');
+      return result;
+    },
     enabled: !!activeClientId,
   });
 
   React.useEffect(() => {
+    console.log('[NexusContext] EFFECT: Checking activeClientId validation | State:', { isAuthenticated, isAuthLoading, activeClientsCount: activeClients.length, isLoadingClients, activeClientId });
     if (isAuthenticated && !isAuthLoading && activeClients.length > 0 && !isLoadingClients) {
       if (activeClientId) {
         const savedClientExists = activeClients.some(c => c.id === activeClientId);
+        console.log('[NexusContext] EFFECT: Saved client exists?', savedClientExists);
         if (!savedClientExists) {
+          console.log('[NexusContext] EFFECT: Saved client NOT found, switching to first client:', activeClients[0].id);
           setActiveClientId(activeClients[0].id);
         }
       } else {
+        console.log('[NexusContext] EFFECT: No activeClientId, setting to first client:', activeClients[0].id);
         setActiveClientId(activeClients[0].id);
       }
     }
