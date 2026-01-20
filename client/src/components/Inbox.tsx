@@ -16,6 +16,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   Search,
   Flame,
@@ -59,6 +66,7 @@ import {
   Bell,
   PanelRightOpen,
   PanelRightClose,
+  FileText,
 } from 'lucide-react';
 import { FaInstagram, FaFacebook, FaLinkedin, FaTiktok, FaYoutube, FaWhatsapp } from 'react-icons/fa';
 import { GoogleBusinessIcon } from './GoogleBusinessIcon';
@@ -336,6 +344,11 @@ export function Inbox() {
   const [isUpdatingSyncPause, setIsUpdatingSyncPause] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  
+  // Conversation summary modal state
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
+  const [conversationSummary, setConversationSummary] = useState<string | null>(null);
 
   const handleGenerateSummary = async () => {
     if (!activeConversation || isGeneratingSummary) return;
@@ -358,6 +371,34 @@ export function Inbox() {
     } finally {
       setIsGeneratingSummary(false);
     }
+  };
+
+  // Handle summarize conversation for the modal
+  const handleSummarizeConversation = async () => {
+    if (!activeConversation || isSummarizing) return;
+    
+    setIsSummarizing(true);
+    setConversationSummary(null);
+    setSummaryDialogOpen(true);
+    
+    try {
+      const result = await api.lifecycle.generateSummary(activeConversation.id);
+      if (result && result.success && result.summary) {
+        setConversationSummary(result.summary);
+      } else {
+        throw new Error(result?.message || "No se recibió resumen válido");
+      }
+    } catch (error: any) {
+      setIsSummarizing(false);
+      setSummaryDialogOpen(false);
+      toast({
+        title: "Error al resumir",
+        description: error.message || "No se pudo generar el resumen",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsSummarizing(false);
   };
 
   const handleUpdateConversationStatus = async (newStatus: ConversationStatus) => {
@@ -877,7 +918,28 @@ export function Inbox() {
   };
 
   const handleSendReply = async () => {
-    if (!replyToMessage || !replyText.trim() || isSendingReply) return;
+    if (!replyText.trim() || isSendingReply || !activeConversation) return;
+    
+    // For DMs without replyToMessage, use the last message in the conversation
+    let targetMessageId: string | null = replyToMessage?.id || null;
+    
+    if (!targetMessageId && activeConversation.type === 'dm') {
+      if (activeConversationMessages?.length) {
+        const lastInbound = activeConversationMessages.filter(m => m.direction === 'inbound').slice(-1)[0];
+        const lastMessage = activeConversationMessages.slice(-1)[0];
+        targetMessageId = lastInbound?.id || lastMessage?.id || null;
+      }
+    }
+    
+    // Can't send without a target message
+    if (!targetMessageId) {
+      toast({
+        title: "Sin mensajes",
+        description: "No hay mensajes en esta conversación para responder",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsSendingReply(true);
     try {
@@ -886,9 +948,9 @@ export function Inbox() {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          messageId: replyToMessage.id,
+          messageId: targetMessageId,
           text: replyText.trim(),
-          includeMention: true,
+          includeMention: activeConversation.type !== 'dm', // No mention for DMs
         }),
       });
       
@@ -897,7 +959,13 @@ export function Inbox() {
         throw new Error(errorData.error || 'Failed to send reply');
       }
       
-      handleCancelReply();
+      // Only cancel reply if we were replying to a specific message (comments)
+      if (replyToMessage) {
+        handleCancelReply();
+      } else {
+        // For DMs, just clear the text
+        setReplyText("");
+      }
       await refreshFeed();
       if (activeConversation) {
         queryClient.invalidateQueries({ queryKey: ['conversationMessages', activeConversation.id] });
@@ -911,21 +979,51 @@ export function Inbox() {
   };
 
   const getReplyCharacterLimit = () => {
-    if (!replyToMessage) return 2200;
-    return getCharacterLimit(
-      (replyToMessage.platform || 'instagram') as Platform, 
-      (replyToMessage.type || 'comment') as MessageType
-    );
+    if (replyToMessage) {
+      return getCharacterLimit(
+        (replyToMessage.platform || 'instagram') as Platform, 
+        (replyToMessage.type || 'comment') as MessageType
+      );
+    }
+    // For DMs without replyToMessage, use conversation data
+    if (activeConversation) {
+      return getCharacterLimit(
+        (activeConversation.platform || 'instagram') as Platform, 
+        activeConversation.type === 'dm' ? 'dm' : (activeConversation.type as MessageType)
+      );
+    }
+    return 2200;
   };
 
   const handleGenerateAIReply = async () => {
-    if (!replyToMessage || !activeClientId || !activeConversation || isGeneratingAI) return;
+    if (!activeClientId || !activeConversation || isGeneratingAI) return;
+    
+    // For DMs without replyToMessage, use the last inbound message or the last message in the conversation
+    let targetMessageId: string | null = replyToMessage?.id || null;
+    
+    if (!targetMessageId && activeConversation.type === 'dm') {
+      if (activeConversationMessages?.length) {
+        const lastInbound = activeConversationMessages.filter(m => m.direction === 'inbound').slice(-1)[0];
+        const lastMessage = activeConversationMessages.slice(-1)[0];
+        targetMessageId = lastInbound?.id || lastMessage?.id || null;
+      }
+    }
+    
+    // For AI generation, we need a real message ID to analyze
+    if (!targetMessageId) {
+      toast({
+        title: "Sin contexto",
+        description: "No hay mensajes en la conversación para generar una respuesta",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsGeneratingAI(true);
     try {
       const result = await api.aiAgent.generateReply(
         activeClientId, 
-        replyToMessage.id,
+        targetMessageId,
         activeConversation.id
       );
       
@@ -2083,47 +2181,49 @@ export function Inbox() {
               onCancel={bulkDraftQueue.cancel}
             />
 
-            {/* Floating Reply Input Box */}
+            {/* Floating Reply Input Box - Always visible for DMs, on-demand for comments */}
             <AnimatePresence>
-              {replyToMessage && (
+              {(activeConversation?.type === 'dm' || replyToMessage) && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 20 }}
-                  className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4"
+                  className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-20"
                 >
-                  {/* Quoted Message Preview */}
-                  <div className="mb-3 flex items-start gap-2">
-                    <div className="flex-1 bg-gray-50 rounded-lg p-3 border border-gray-200">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-semibold text-gray-700">
-                          Respondiendo a {replyToMessage.author}
-                        </span>
-                        <PlatformIcon 
-                          platform={(replyToMessage.platform || 'instagram') as Platform} 
-                          className="h-3 w-3" 
-                        />
+                  {/* Quoted Message Preview - Only show for comments when replyToMessage is set */}
+                  {replyToMessage && activeConversation?.type !== 'dm' && (
+                    <div className="mb-3 flex items-start gap-2">
+                      <div className="flex-1 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-semibold text-gray-700">
+                            Respondiendo a {replyToMessage.author}
+                          </span>
+                          <PlatformIcon 
+                            platform={(replyToMessage.platform || 'instagram') as Platform} 
+                            className="h-3 w-3" 
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500 line-clamp-2">
+                          {replyToMessage.content}
+                        </p>
                       </div>
-                      <p className="text-xs text-gray-500 line-clamp-2">
-                        {replyToMessage.content}
-                      </p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                        onClick={handleCancelReply}
+                        data-testid="button-cancel-reply"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
-                      onClick={handleCancelReply}
-                      data-testid="button-cancel-reply"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  )}
 
                   {/* Reply Input */}
                   <div className="flex gap-3">
                     <div className="flex-1 flex flex-col gap-1">
                       <Textarea
-                        placeholder="Escribe tu respuesta..."
+                        placeholder={activeConversation?.type === 'dm' ? "Escribe un mensaje..." : "Escribe tu respuesta..."}
                         value={replyText}
                         onChange={(e) => setReplyText(e.target.value)}
                         className="flex-1 min-h-[60px] max-h-[120px] resize-none text-sm"
@@ -2135,26 +2235,50 @@ export function Inbox() {
                         }}
                       />
                       <div className="flex items-center justify-between">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleGenerateAIReply}
-                          disabled={isGeneratingAI || !activeClientId}
-                          className="h-6 text-[10px] font-medium text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 px-2"
-                          data-testid="button-generate-ai-reply"
-                        >
-                          {isGeneratingAI ? (
-                            <>
-                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                              Generando...
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="h-3 w-3 mr-1" />
-                              Generar con IA
-                            </>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleGenerateAIReply}
+                            disabled={isGeneratingAI || !activeClientId}
+                            className="h-6 text-[10px] font-medium text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 px-2"
+                            data-testid="button-generate-ai-reply"
+                          >
+                            {isGeneratingAI ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                Generando...
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="h-3 w-3 mr-1" />
+                                Generar con IA
+                              </>
+                            )}
+                          </Button>
+                          {activeConversation?.type === 'dm' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleSummarizeConversation}
+                              disabled={isSummarizing || !activeClientId}
+                              className="h-6 text-[10px] font-medium text-gray-500 hover:text-purple-600 hover:bg-purple-50 px-2"
+                              data-testid="button-summarize-conversation"
+                            >
+                              {isSummarizing ? (
+                                <>
+                                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                  Resumiendo...
+                                </>
+                              ) : (
+                                <>
+                                  <FileText className="h-3 w-3 mr-1" />
+                                  Resumir
+                                </>
+                              )}
+                            </Button>
                           )}
-                        </Button>
+                        </div>
                         <span className="text-[10px] text-gray-400">Ctrl+Enter</span>
                       </div>
                     </div>
@@ -2221,6 +2345,36 @@ export function Inbox() {
             queryClient.invalidateQueries({ queryKey: ['crmContact'] });
           }}
       />
+
+      {/* Conversation Summary Dialog */}
+      <Dialog open={summaryDialogOpen} onOpenChange={setSummaryDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-purple-600" />
+              Resumen de Conversación
+            </DialogTitle>
+            <DialogDescription>
+              Resumen generado por IA de la conversación actual
+            </DialogDescription>
+          </DialogHeader>
+          
+          {isSummarizing ? (
+            <div className="flex flex-col items-center justify-center py-8 gap-3">
+              <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+              <p className="text-sm text-gray-500">Generando resumen...</p>
+            </div>
+          ) : conversationSummary ? (
+            <div className="bg-gray-50 rounded-lg p-4 border">
+              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{conversationSummary}</p>
+            </div>
+          ) : (
+            <div className="text-center py-6 text-gray-500">
+              <p className="text-sm">No se pudo generar el resumen.</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

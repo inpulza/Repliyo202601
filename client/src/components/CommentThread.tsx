@@ -344,7 +344,7 @@ function SingleMessage({
       {/* Message Content - Always uses flex layout, width unchanged */}
       <div className="flex gap-3 flex-1">
       <Avatar className={cn(
-        "mt-1 flex-shrink-0 relative z-10 ring-[3px] ring-white",
+        "mt-1 flex-shrink-0 relative ring-[3px] ring-white",
         isReply ? "h-6 w-6" : "h-8 w-8"
       )}>
         <AvatarImage 

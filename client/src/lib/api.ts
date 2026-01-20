@@ -598,7 +598,7 @@ export const api = {
       return res.json();
     },
 
-    generateSummary: async (conversationId: string): Promise<{ summary: string; sentiment: string; intent: string; resolution: string }> => {
+    generateSummary: async (conversationId: string): Promise<{ success: boolean; summary: string; message: string }> => {
       const res = await fetch(`${API_BASE}/conversations/${conversationId}/generate-summary`, {
         method: 'POST',
       });
