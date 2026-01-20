@@ -9,12 +9,12 @@
 
 Se identificaron **4 categorías principales** de lógica duplicada o candidata a extracción:
 
-| Categoría | Archivos Afectados | Prioridad | Acción Recomendada | Estado |
-|-----------|--------------------|-----------|--------------------|--------|
-| Draft Management (14 props) | 2 (Inbox, CommentThread) | 🔴 Alta | Extraer a `useDraftManagement` | ⬜ Pendiente |
-| Platform Icons | 7 | 🟡 Media | Crear `PlatformIcon` component | ⬜ Pendiente |
-| Formateo de Fechas | 7 | 🟢 Baja | Crear `formatTimeAgo` util | ⬜ Pendiente |
-| Unread Tracking | 2 (Inbox, CommentThread) | 🟡 Media | Incluir en contexto de conversación | ⬜ Pendiente |
+| Categoría | Archivos Afectados | Prioridad | Acción Recomendada |
+|-----------|--------------------|-----------|--------------------|
+| Draft Management (14 props) | 2 (Inbox, CommentThread) | 🔴 Alta | Extraer a `useDraftManagement` |
+| Platform Icons | 7 | 🟡 Media | Crear `PlatformIcon` component |
+| Formateo de Fechas | 7 | 🟢 Baja | Crear `formatTimeAgo` util |
+| Unread Tracking | 2 (Inbox, CommentThread) | 🟡 Media | Incluir en contexto de conversación |
 
 ---
 

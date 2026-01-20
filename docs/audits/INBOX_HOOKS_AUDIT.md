@@ -13,28 +13,19 @@ El componente Inbox.tsx tiene una cantidad significativa de estado local que pod
 
 ### Categorías Identificadas (Corregidas)
 
-**Última actualización:** 20 Enero 2026 12:50
-
-| Categoría | Estados | Candidato a Hook | Estado | Notas |
-|-----------|---------|------------------|--------|-------|
-| Draft/Reply Management | 10 | `useDraftManagement` | ✅ Completado | Hook creado e integrado en Inbox.tsx |
-| Conversation Lifecycle | 2 | `useConversationLifecycle` | ⬜ Pendiente | |
-| Sync Control | 3 | `useSyncStatus` | ⬜ Pendiente | |
-| Conversation List Filters | 7 | `useInboxFilters` | ✅ Completado | Hook creado e integrado en Inbox.tsx |
-| Thread Filters | 3 | (incluir en `useInboxFilters`) | ✅ Completado | Incluido en useInboxFilters |
-| Deep Link/Focus Mode | 3 | `useDeepLink` | ⬜ Pendiente | Estados incluidos en useInboxFilters |
-| Bulk Selection | 2 | Ya existe `useBulkDraftQueue` | ✅ Existe | |
-| Unread Tracking | 2 | `useUnreadTracking` | ✅ Completado | Hook creado e integrado en Inbox.tsx |
-| Audio Player | 4 | `useAudioPlayer` (interno) | ⬜ Pendiente | |
-| UI Toggles | 4 | Local (no extraer) | ➖ N/A | |
-| **TOTAL** | **40** | | | |
-
-### Utilidades Creadas (Fase 1.2)
-
-| Archivo | Tipo | Estado | Notas |
-|---------|------|--------|-------|
-| `client/src/components/ui/PlatformIcon.tsx` | Componente | 🔸 Creado | Uso opcional, Strangler Fig |
-| `client/src/lib/date-utils.ts` | Utilidad | 🔸 Creado | Uso opcional, Strangler Fig |
+| Categoría | Estados | Candidato a Hook |
+|-----------|---------|------------------|
+| Draft/Reply Management | 10 | `useDraftManagement` |
+| Conversation Lifecycle | 2 | `useConversationLifecycle` |
+| Sync Control | 3 | `useSyncStatus` |
+| Conversation List Filters | 7 | `useInboxFilters` |
+| Thread Filters | 3 | (incluir en `useInboxFilters`) |
+| Deep Link/Focus Mode | 3 | `useDeepLink` |
+| Bulk Selection | 2 | Ya existe `useBulkDraftQueue` |
+| Unread Tracking | 2 | `useUnreadTracking` |
+| Audio Player | 4 | `useAudioPlayer` (interno) |
+| UI Toggles | 4 | Local (no extraer) |
+| **TOTAL** | **40** | |
 
 ---
 
