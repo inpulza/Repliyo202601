@@ -9718,3 +9718,125 @@ Si algo falla en cualquier fase:
 
 *Seccion creada: 20 Enero 2026*
 *Estado: Implementacion completada - Esperando verificacion del usuario*
+
+---
+
+## Mejoras al Inbox Reply Bar - 20 Enero 2026
+
+### Cambios Implementados
+
+#### 1. Barra de Respuesta Siempre Visible para DMs
+**Archivos modificados:** `client/src/components/Inbox.tsx`
+
+**Problema:** Los usuarios tenían que hacer clic en "Reply" para poder escribir una respuesta en conversaciones de DM.
+
+**Solución:** La barra de respuesta ahora se muestra automáticamente cuando se selecciona una conversación de tipo DM, sin necesidad de hacer clic en ningún botón.
+
+**Lógica de fallback para el mensaje objetivo:**
+1. Si hay un `replyToMessage` seleccionado → usar ese
+2. Si no, buscar el último mensaje inbound (del cliente)
+3. Si no hay inbound, usar el último mensaje (cualquier dirección)
+4. Si no hay mensajes, mostrar toast de error
+
+```typescript
+// Inbox.tsx - handleSendReply
+let targetMessageId: string | null = replyToMessage?.id || null;
+
+if (!targetMessageId && activeConversation.type === 'dm') {
+  if (activeConversationMessages?.length) {
+    const lastInbound = activeConversationMessages.filter(m => m.direction === 'inbound').slice(-1)[0];
+    const lastMessage = activeConversationMessages.slice(-1)[0];
+    targetMessageId = lastInbound?.id || lastMessage?.id || null;
+  }
+}
+```
+
+#### 2. Botón "Resumir" para Generar Resumen de Conversación
+**Archivos modificados:** `client/src/components/Inbox.tsx`, `client/src/lib/api.ts`
+
+**Funcionalidad:** Nuevo botón junto a "Generar con IA" que permite generar un resumen ejecutivo de la conversación actual usando IA.
+
+**Ubicación:** Solo visible en conversaciones de tipo DM.
+
+**Flujo:**
+1. Usuario hace clic en "Resumir"
+2. Se abre un modal con indicador de carga
+3. Se llama a `POST /api/conversations/:id/generate-summary`
+4. El endpoint devuelve un objeto `{ success, summary: { summary, sentiment, intent, resolution }, message }`
+5. El frontend extrae `summary.summary` (el texto del resumen) y lo muestra en el modal
+6. Si hay error, se cierra el modal y se muestra un toast
+
+**Endpoint utilizado:**
+```typescript
+// POST /api/conversations/:id/generate-summary
+// Respuesta:
+{
+  success: boolean;
+  summary: {
+    summary: string;      // Texto del resumen (2-3 oraciones)
+    sentiment: string;    // positive | neutral | negative
+    intent: string;       // Qué pidió el cliente
+    resolution: string;   // Cómo se resolvió
+  } | null;
+  message: string;
+}
+```
+
+**Componentes de estado agregados:**
+```typescript
+const [isSummarizing, setIsSummarizing] = useState(false);
+const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
+const [conversationSummary, setConversationSummary] = useState<string | null>(null);
+```
+
+**Bug corregido:** El endpoint devuelve `summary` como un objeto, no un string. El frontend ahora extrae correctamente `result.summary.summary` para obtener el texto.
+
+#### 3. Ocultar Botón "Reply" Individual en DMs
+**Archivos modificados:** `client/src/components/CommentThread.tsx`, `client/src/components/Inbox.tsx`
+
+**Problema:** El botón "Reply" en mensajes individuales dentro de DMs no funcionaba porque la API de Metricool no soporta responder a un mensaje específico dentro de un hilo de DM.
+
+**Solución:** Se agregó prop `isDM` que se propaga a través de los componentes:
+- `CommentThread` → `ThreadNode` → `SingleMessage`
+
+El botón "Reply" ahora solo se muestra cuando `!isDM`.
+
+```typescript
+// CommentThreadProps
+isDM?: boolean; // Hide individual reply buttons for DMs
+
+// SingleMessage render
+{!isDM && (
+  <button onClick={() => onStartReply(msg)}>Reply</button>
+)}
+```
+
+**En comentarios:** El botón "Reply" sigue visible porque ahí sí tiene sentido responder a comentarios específicos.
+
+#### 4. Corrección de Z-Index del Avatar
+**Archivos modificados:** `client/src/components/CommentThread.tsx`
+
+**Problema:** El avatar fallback en hilos de comentarios tenía `z-10`, lo que causaba que se superpusiera sobre la caja de texto de respuesta.
+
+**Solución:** Se removió la clase `z-10` del avatar. La barra de respuesta tiene `z-20`, por lo que siempre queda por encima.
+
+### Archivos Modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `client/src/components/Inbox.tsx` | Barra siempre visible para DMs, botón "Resumir", lógica de fallback |
+| `client/src/components/CommentThread.tsx` | Prop `isDM`, ocultar botón Reply en DMs, z-index del avatar |
+| `client/src/lib/api.ts` | Tipo correcto para `generateSummary` response |
+
+### Limitaciones Conocidas
+
+1. **Responder a mensaje específico en DMs:** No soportado por la API de Metricool. `replyToConversation` solo acepta `conversationId`, `recipient` y `text` - no hay parámetro para `messageId` específico.
+
+2. **DMs sin mensajes:** Si una conversación de DM no tiene mensajes, no se puede enviar respuesta ni generar respuesta con IA (se muestra toast de error).
+
+3. **Resumen modifica datos:** El botón "Resumir" llama al endpoint que persiste el resumen en la base de datos (no es solo preview).
+
+---
+
+*Sección creada: 20 Enero 2026*
+*Estado: Completado*
