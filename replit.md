@@ -15,6 +15,12 @@ The system employs a multi-tenant architecture with a focus on modularity and ex
 ### UI/UX Decisions
 The user interface includes an "Orchestration" tab for managing timing configurations and an "Automation" tab for response modes. A `CRMContextPanel` provides a unified view of customer profiles, channels, and activity metrics. Design emphasizes clear visual indicators for contact status, connected channels, and a chronological timeline of interactions.
 
+### Reglas UI Críticas (NO CAMBIAR)
+- **Mensajes outbound (respuestas de marca):** Fondo azul (#0291FA), texto blanco, piquito en esquina superior IZQUIERDA
+- **Mensajes inbound (del cliente):** Fondo blanco, texto gris, piquito en esquina superior IZQUIERDA
+- **Esto aplica a:** ownerBubble, aiBubble, manualBubble, replyBubble en Inbox.tsx y CommentThread.tsx
+- **Nota:** Los mensajes outbound incluyen respuestas desde Repliyo Y desde la red social directamente (identificados por `direction === 'outbound'`)
+
 ### Technical Implementations
 - **Core AI Services:** `autoReplyService`, `dmBufferService`, and `syncService` process messages, buffer DMs, apply cooldowns, and trigger AI responses.
 - **Dynamic Personality:** `prompt-composer.ts` adjusts AI responses based on contextual variables.
