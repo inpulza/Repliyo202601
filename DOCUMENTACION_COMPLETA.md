@@ -7977,12 +7977,13 @@ El sistema identifica los mensajes outbound por el campo `direction === 'outboun
 
 > **📁 Documentos de Auditoría generados:**
 > - `docs/audits/INBOX_HOOKS_AUDIT.md` - Inventario completo de hooks, dependencias y recomendaciones de refactor para Inbox.tsx
+> - `docs/audits/INBOX_CONTRACTS.md` - Contratos de props entre Inbox.tsx y sus subcomponentes (CommentThread, CRMContextPanel, etc.)
 
 | Tarea | Descripción | Criterio de Éxito | Estado |
 |-------|-------------|-------------------|--------|
 | 1.1.1 | Inventariar todos los `useState` y `useEffect` en Inbox.tsx | Lista completa de 25+ estados documentada | ✅ Completado (ver docs/audits/INBOX_HOOKS_AUDIT.md) |
 | 1.1.2 | Identificar dependencias entre estados (cuáles se afectan mutuamente) | Diagrama de dependencias | ✅ Completado (ver docs/audits/INBOX_HOOKS_AUDIT.md sección 6) |
-| 1.1.3 | Mapear props contracts entre Inbox → subcomponentes | Documentar tipos esperados | ⬜ Pendiente |
+| 1.1.3 | Mapear props contracts entre Inbox → subcomponentes | Documentar tipos esperados | ✅ Completado (ver docs/audits/INBOX_CONTRACTS.md) |
 | 1.1.4 | Repetir auditoría para CRMContextPanel.tsx | Mismo entregable | ⬜ Pendiente |
 | 1.1.5 | Identificar lógica duplicada entre componentes | Lista de candidatos a hooks | ⬜ Pendiente |
 
