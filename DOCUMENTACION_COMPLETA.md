@@ -8802,397 +8802,431 @@ Los servicios en `server/services/` tienen dependencias directas sin abstracció
 
 ### Plan de Refactorización por Fases
 
-**Leyenda de Checkmarks:**
-- `[ ]` = Pendiente
-- `[~]` = En progreso  
-- `[x]` = Completado
+---
 
-**Estimación de Riesgo:**
-- 🟢 Bajo = No afecta funcionalidad existente
-- 🟡 Medio = Requiere testing cuidadoso
-- 🔴 Alto = Potencial de romper funcionalidad
+### 🛡️ REGLAS DE SEGURIDAD PARA EVITAR PÉRDIDA DE CONTEXTO
+
+> **Lección aprendida**: En intentos anteriores, el agente perdió contexto cuando las subtareas tenían demasiados cambios. Estas reglas previenen ese problema.
+
+| Regla | Descripción |
+|-------|-------------|
+| **Máximo 1 archivo por tarea** | Cada tarea debe modificar solo 1 archivo principal. Si necesita tocar más, dividir en subtareas. |
+| **Verificar ANTES de continuar** | Después de cada tarea, reiniciar la aplicación y verificar que funciona. NO continuar si hay errores. |
+| **Guardar checkpoint después de cada subtarea** | El agente debe confirmar que el checkpoint se guardó antes de pasar a la siguiente. |
+| **Tareas atómicas** | Cada tarea debe poder revertirse sin afectar otras. Si falla, solo se pierde esa tarea. |
+| **Límite de 50 líneas por cambio** | Si un cambio requiere mover más de 50 líneas, dividirlo en partes más pequeñas. |
+| **Marcar progreso inmediatamente** | Actualizar el estado en esta documentación al completar cada tarea, no al final de la fase. |
 
 ---
 
-### FASE 0: Preparación y Seguridad 🟢
+### Leyenda de Estados
+
+| Estado | Símbolo | Significado |
+|--------|---------|-------------|
+| Pendiente | ⬜ | No iniciado |
+| En progreso | 🟨 | Trabajando actualmente |
+| Completado | ✅ | Terminado y verificado |
+| Bloqueado | 🔴 | Requiere resolver dependencia primero |
+
+---
+
+### Resumen de Fases
+
+| Fase | Nombre | Riesgo | Duración | Dependencias | Estado |
+|------|--------|--------|----------|--------------|--------|
+| 0 | Preparación y Seguridad | 🟢 Bajo | 1-2 días | Ninguna | ⬜ |
+| 1 | División de Routes | 🟡 Medio | 3-5 días | Fase 0 | ⬜ |
+| 2 | División de Storage | 🟡 Medio | 3-5 días | Ninguna (paralelo con Fase 1) | ⬜ |
+| 3 | Capa de Servicios | 🟡 Medio | 5-7 días | Fases 1 y 2 | ⬜ |
+| 4 | Frontend Componentes | 🟡 Medio | 5-7 días | Ninguna (paralelo con 1-3) | ⬜ |
+| 5 | Abstracciones | 🟢 Bajo | 2-3 días | Fase 3 | ⬜ |
+| 6 | Testing Final | 🟢 Bajo | 2-3 días | Fases 1-5 | ⬜ |
+
+---
+
+## FASE 0: Preparación y Seguridad 🟢
 
 **Objetivo**: Establecer bases para refactorización segura sin tocar código de producción.
 
-**Duración estimada**: 1-2 días  
-**Dependencias**: Ninguna  
-**Puede ejecutarse en paralelo con**: Desarrollo normal de features
+### 0.1 Documentación del Estado Actual
 
-#### Subfase 0.1: Documentación del Estado Actual
-- [ ] **0.1.1** Crear diagrama de arquitectura actual (draw.io o Mermaid)
-- [ ] **0.1.2** Documentar todos los endpoints de `routes.ts` con sus responsabilidades
-- [ ] **0.1.3** Mapear dependencias entre servicios en `server/services/`
-- [ ] **0.1.4** Identificar las 10 rutas más críticas/usadas (analytics o logs)
-- [ ] **0.1.5** Documentar el flujo de datos completo para casos de uso principales:
-  - [ ] Flujo de sincronización Metricool
-  - [ ] Flujo de auto-reply AI
-  - [ ] Flujo de recordatorios
-  - [ ] Flujo de CRM
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 0.1.1 | Crear diagrama de arquitectura actual (Mermaid en docs/) | Archivo existe y es legible | ⬜ | Usar Mermaid para que sea versionable |
+| 0.1.2 | Documentar endpoints de routes.ts | Lista completa en docs/ENDPOINTS.md | ⬜ | Incluir método HTTP y ruta |
+| 0.1.3 | Mapear dependencias entre servicios | Diagrama en docs/SERVICES_MAP.md | ⬜ | Quién llama a quién |
+| 0.1.4 | Identificar 10 rutas más usadas | Lista priorizada documentada | ⬜ | Basarse en logs o intuición |
+| 0.1.5 | Documentar flujo de sincronización Metricool | Diagrama de secuencia | ⬜ | Paso a paso |
+| 0.1.6 | Documentar flujo de auto-reply AI | Diagrama de secuencia | ⬜ | Desde mensaje hasta respuesta |
+| 0.1.7 | Documentar flujo de recordatorios | Diagrama de secuencia | ⬜ | Desde programación hasta envío |
+| 0.1.8 | Documentar flujo de CRM | Diagrama de secuencia | ⬜ | Merge, enrichment |
 
-#### Subfase 0.2: Infraestructura de Testing
-- [ ] **0.2.1** Configurar Jest o Vitest para backend (si no existe)
-- [ ] **0.2.2** Crear primeros tests de integración para endpoints críticos:
-  - [ ] Test de login/logout
-  - [ ] Test de sincronización básica
-  - [ ] Test de envío de reply
-- [ ] **0.2.3** Configurar coverage report mínimo
-- [ ] **0.2.4** Agregar tests de humo (smoke tests) que verifiquen que la app arranca
+### 0.2 Infraestructura de Testing
 
-#### Subfase 0.3: Estrategia de Rollback
-- [ ] **0.3.1** Verificar que checkpoints de Replit están funcionando
-- [ ] **0.3.2** Crear branch de desarrollo para refactorización (`refactor/architecture`)
-- [ ] **0.3.3** Documentar proceso de rollback en caso de emergencia
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 0.2.1 | Configurar Vitest para backend | `npm run test` ejecuta sin errores | ⬜ | Preferir Vitest sobre Jest |
+| 0.2.2 | Test de humo: app arranca | Test pasa, servidor responde en / | ⬜ | Más importante que tests específicos |
+| 0.2.3 | Test de login/logout | Endpoints retornan 200/401 correctamente | ⬜ | Crítico antes de tocar auth |
+| 0.2.4 | Test de sincronización básica | Mock de Metricool, verificar storage | ⬜ | Puede ser test de integración |
+| 0.2.5 | Configurar coverage report | `npm run test:coverage` genera reporte | ⬜ | Meta inicial: 20% |
 
----
+### 0.3 Estrategia de Rollback
 
-### FASE 1: División de Routes por Contexto 🟡
-
-**Objetivo**: Separar `routes.ts` monolítico en módulos por dominio funcional.
-
-**Duración estimada**: 3-5 días  
-**Dependencias**: Fase 0 completada  
-**Puede ejecutarse en paralelo con**: Fase 2 (parcialmente)
-
-**Estrategia**: Extraer grupos de endpoints a archivos separados SIN cambiar lógica interna.
-
-#### Subfase 1.1: Crear Estructura de Carpetas
-- [ ] **1.1.1** Crear directorio `server/routes/`
-- [ ] **1.1.2** Crear archivo `server/routes/index.ts` como punto de entrada
-- [ ] **1.1.3** Definir convención de nombres: `{dominio}.routes.ts`
-
-#### Subfase 1.2: Extraer Rutas de Autenticación
-- [ ] **1.2.1** Crear `server/routes/auth.routes.ts`
-- [ ] **1.2.2** Mover endpoints: `/api/register`, `/api/login`, `/api/logout`, `/api/user`
-- [ ] **1.2.3** Verificar que login/logout funcionan correctamente
-- [ ] **1.2.4** Actualizar `routes.ts` para importar de `auth.routes.ts`
-
-#### Subfase 1.3: Extraer Rutas de Brands
-- [ ] **1.3.1** Crear `server/routes/brands.routes.ts`
-- [ ] **1.3.2** Mover endpoints relacionados con marcas
-- [ ] **1.3.3** Verificar funcionalidad de gestión de marcas
-- [ ] **1.3.4** Actualizar imports en `routes.ts`
-
-#### Subfase 1.4: Extraer Rutas de Inbox/Mensajes
-- [ ] **1.4.1** Crear `server/routes/inbox.routes.ts`
-- [ ] **1.4.2** Mover endpoints de mensajes, threads, replies
-- [ ] **1.4.3** Verificar funcionalidad de inbox completa
-- [ ] **1.4.4** Actualizar imports
-
-#### Subfase 1.5: Extraer Rutas de CRM
-- [ ] **1.5.1** Crear `server/routes/crm.routes.ts`
-- [ ] **1.5.2** Mover endpoints de contactos, merge, enrichment
-- [ ] **1.5.3** Verificar funcionalidad de CRM
-- [ ] **1.5.4** Actualizar imports
-
-#### Subfase 1.6: Extraer Rutas de AI Agents
-- [ ] **1.6.1** Crear `server/routes/ai-agents.routes.ts`
-- [ ] **1.6.2** Mover endpoints de configuración AI, generate-reply, playground
-- [ ] **1.6.3** Verificar funcionalidad de agentes AI
-- [ ] **1.6.4** Actualizar imports
-
-#### Subfase 1.7: Extraer Rutas de Recordatorios
-- [ ] **1.7.1** Crear `server/routes/reminders.routes.ts`
-- [ ] **1.7.2** Mover endpoints de recordatorios
-- [ ] **1.7.3** Verificar funcionalidad de recordatorios
-- [ ] **1.7.4** Actualizar imports
-
-#### Subfase 1.8: Extraer Rutas de Notificaciones
-- [ ] **1.8.1** Crear `server/routes/notifications.routes.ts`
-- [ ] **1.8.2** Mover endpoints de notificaciones
-- [ ] **1.8.3** Verificar funcionalidad
-- [ ] **1.8.4** Actualizar imports
-
-#### Subfase 1.9: Extraer Rutas de Sincronización
-- [ ] **1.9.1** Crear `server/routes/sync.routes.ts`
-- [ ] **1.9.2** Mover endpoints de sincronización con Metricool
-- [ ] **1.9.3** Verificar sincronización funciona
-- [ ] **1.9.4** Actualizar imports
-
-#### Subfase 1.10: Limpieza Final
-- [ ] **1.10.1** Verificar que `routes.ts` original está vacío o solo tiene router principal
-- [ ] **1.10.2** Eliminar código duplicado
-- [ ] **1.10.3** Ejecutar suite de tests completa
-- [ ] **1.10.4** Verificar que no hay regresiones en producción
-
-**Archivo resultante `server/routes/index.ts`:**
-```typescript
-import { Router } from 'express';
-import authRoutes from './auth.routes';
-import brandsRoutes from './brands.routes';
-import inboxRoutes from './inbox.routes';
-import crmRoutes from './crm.routes';
-import aiAgentsRoutes from './ai-agents.routes';
-import remindersRoutes from './reminders.routes';
-import notificationsRoutes from './notifications.routes';
-import syncRoutes from './sync.routes';
-
-const router = Router();
-
-router.use('/auth', authRoutes);
-router.use('/brands', brandsRoutes);
-router.use('/inbox', inboxRoutes);
-router.use('/crm', crmRoutes);
-router.use('/ai-agents', aiAgentsRoutes);
-router.use('/reminders', remindersRoutes);
-router.use('/notifications', notificationsRoutes);
-router.use('/sync', syncRoutes);
-
-export default router;
-```
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 0.3.1 | Verificar checkpoints de Replit funcionan | Crear checkpoint, modificar archivo, restaurar | ⬜ | Probar antes de empezar |
+| 0.3.2 | Documentar proceso de rollback | Instrucciones en docs/ROLLBACK.md | ⬜ | Paso a paso para emergencias |
 
 ---
 
-### FASE 2: División de Storage en Repositorios 🟡
+## FASE 1: División de Routes por Contexto 🟡
 
-**Objetivo**: Separar `storage.ts` monolítico en repositorios por entidad/dominio.
+**Objetivo**: Separar routes.ts monolítico en módulos por dominio.  
+**Estrategia**: Extraer endpoints a archivos separados SIN cambiar lógica interna.
 
-**Duración estimada**: 3-5 días  
-**Dependencias**: Ninguna (puede ejecutarse en paralelo con Fase 1)  
-**Puede ejecutarse en paralelo con**: Fase 1
+### 1.1 Crear Estructura Base
 
-**Estrategia**: Extraer métodos relacionados a archivos separados manteniendo la misma interfaz.
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 1.1.1 | Crear directorio server/routes/ | Carpeta existe | ⬜ | Solo crear carpeta |
+| 1.1.2 | Crear server/routes/index.ts vacío | Archivo existe con export default | ⬜ | Estructura básica |
 
-#### Subfase 2.1: Crear Estructura de Repositorios
-- [ ] **2.1.1** Crear directorio `server/repositories/`
-- [ ] **2.1.2** Crear archivo `server/repositories/index.ts`
-- [ ] **2.1.3** Definir interfaz base `IRepository<T>`
+### 1.2 Extraer Rutas de Autenticación
 
-#### Subfase 2.2: Extraer UserRepository
-- [ ] **2.2.1** Crear `server/repositories/UserRepository.ts`
-- [ ] **2.2.2** Mover métodos: `getUser`, `getUserByEmail`, `createUser`, `updateUser`
-- [ ] **2.2.3** Actualizar referencias en rutas de auth
-- [ ] **2.2.4** Verificar login/registro funcionan
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 1.2.1 | Crear auth.routes.ts con endpoints de auth | Archivo existe, sin errores de sintaxis | ⬜ | /register, /login, /logout, /user |
+| 1.2.2 | Actualizar routes.ts para importar auth | App arranca sin errores | ⬜ | Verificar en navegador |
+| 1.2.3 | Probar login y logout manualmente | Funciona igual que antes | ⬜ | Prueba real en UI |
 
-#### Subfase 2.3: Extraer BrandRepository
-- [ ] **2.3.1** Crear `server/repositories/BrandRepository.ts`
-- [ ] **2.3.2** Mover métodos relacionados con marcas
-- [ ] **2.3.3** Actualizar referencias
-- [ ] **2.3.4** Verificar funcionalidad
+### 1.3 Extraer Rutas de Brands
 
-#### Subfase 2.4: Extraer MessageRepository
-- [ ] **2.4.1** Crear `server/repositories/MessageRepository.ts`
-- [ ] **2.4.2** Mover métodos de mensajes y threads
-- [ ] **2.4.3** Actualizar referencias
-- [ ] **2.4.4** Verificar funcionalidad de inbox
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 1.3.1 | Crear brands.routes.ts | Archivo existe, sin errores | ⬜ | Todos los endpoints de marcas |
+| 1.3.2 | Actualizar imports en routes.ts | App arranca sin errores | ⬜ | |
+| 1.3.3 | Verificar gestión de marcas | Crear/editar marca funciona | ⬜ | Prueba en UI |
 
-#### Subfase 2.5: Extraer ConversationRepository
-- [ ] **2.5.1** Crear `server/repositories/ConversationRepository.ts`
-- [ ] **2.5.2** Mover métodos de conversaciones
-- [ ] **2.5.3** Actualizar referencias
-- [ ] **2.5.4** Verificar threading funciona
+### 1.4 Extraer Rutas de Inbox
 
-#### Subfase 2.6: Extraer ContactRepository
-- [ ] **2.6.1** Crear `server/repositories/ContactRepository.ts`
-- [ ] **2.6.2** Mover métodos de contactos CRM
-- [ ] **2.6.3** Actualizar referencias
-- [ ] **2.6.4** Verificar CRM funciona
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 1.4.1 | Crear inbox.routes.ts | Archivo existe, sin errores | ⬜ | Mensajes, threads, replies |
+| 1.4.2 | Actualizar imports | App arranca | ⬜ | |
+| 1.4.3 | Verificar inbox completo | Ver mensajes, enviar reply | ⬜ | Probar flujo completo |
 
-#### Subfase 2.7: Extraer AIAgentRepository
-- [ ] **2.7.1** Crear `server/repositories/AIAgentRepository.ts`
-- [ ] **2.7.2** Mover métodos de agentes AI
-- [ ] **2.7.3** Actualizar referencias
-- [ ] **2.7.4** Verificar configuración AI funciona
+### 1.5 Extraer Rutas de CRM
 
-#### Subfase 2.8: Extraer ReminderRepository
-- [ ] **2.8.1** Crear `server/repositories/ReminderRepository.ts`
-- [ ] **2.8.2** Mover métodos de recordatorios
-- [ ] **2.8.3** Actualizar referencias
-- [ ] **2.8.4** Verificar recordatorios funcionan
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 1.5.1 | Crear crm.routes.ts | Archivo existe, sin errores | ⬜ | Contactos, merge, enrichment |
+| 1.5.2 | Actualizar imports | App arranca | ⬜ | |
+| 1.5.3 | Verificar CRM | Ver contactos, hacer merge | ⬜ | |
 
-#### Subfase 2.9: Extraer NotificationRepository
-- [ ] **2.9.1** Crear `server/repositories/NotificationRepository.ts`
-- [ ] **2.9.2** Mover métodos de notificaciones
-- [ ] **2.9.3** Actualizar referencias
-- [ ] **2.9.4** Verificar notificaciones funcionan
+### 1.6 Extraer Rutas de AI Agents
 
-#### Subfase 2.10: Limpieza Final
-- [ ] **2.10.1** Verificar que `storage.ts` está vacío o solo tiene exports
-- [ ] **2.10.2** Crear `server/repositories/index.ts` con todos los exports
-- [ ] **2.10.3** Ejecutar suite de tests
-- [ ] **2.10.4** Verificar no hay regresiones
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 1.6.1 | Crear ai-agents.routes.ts | Archivo existe, sin errores | ⬜ | Config, generate-reply, playground |
+| 1.6.2 | Actualizar imports | App arranca | ⬜ | |
+| 1.6.3 | Verificar configuración AI | Guardar config, generar respuesta | ⬜ | |
 
----
+### 1.7 Extraer Rutas de Recordatorios
 
-### FASE 3: Creación de Capa de Servicios/Use Cases 🟡
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 1.7.1 | Crear reminders.routes.ts | Archivo existe, sin errores | ⬜ | |
+| 1.7.2 | Actualizar imports | App arranca | ⬜ | |
+| 1.7.3 | Verificar recordatorios | Ver lista de recordatorios | ⬜ | |
 
-**Objetivo**: Extraer lógica de negocio de rutas a servicios dedicados.
+### 1.8 Extraer Rutas de Notificaciones
 
-**Duración estimada**: 5-7 días  
-**Dependencias**: Fase 1 y Fase 2 completadas  
-**Puede ejecutarse en paralelo con**: Fase 4 (frontend)
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 1.8.1 | Crear notifications.routes.ts | Archivo existe, sin errores | ⬜ | |
+| 1.8.2 | Actualizar imports | App arranca | ⬜ | |
+| 1.8.3 | Verificar notificaciones | Panel de notificaciones funciona | ⬜ | |
 
-**Estrategia**: Crear servicios que encapsulen casos de uso, dejando las rutas "thin" (solo validación y orquestación).
+### 1.9 Extraer Rutas de Sincronización
 
-#### Subfase 3.1: Definir Estructura de Servicios
-- [ ] **3.1.1** Crear directorio `server/services/usecases/` (si se prefiere separar de servicios existentes)
-- [ ] **3.1.2** Definir patrón de servicios: inyección de repositorios
-- [ ] **3.1.3** Crear interfaz base para casos de uso
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 1.9.1 | Crear sync.routes.ts | Archivo existe, sin errores | ⬜ | Endpoints de Metricool |
+| 1.9.2 | Actualizar imports | App arranca | ⬜ | |
+| 1.9.3 | Verificar sincronización | Sync manual funciona | ⬜ | |
 
-#### Subfase 3.2: Extraer Lógica de Inbox
-- [ ] **3.2.1** Crear `InboxService.ts` con métodos de alto nivel
-- [ ] **3.2.2** Mover lógica de threading desde rutas
-- [ ] **3.2.3** Mover lógica de send-reply
-- [ ] **3.2.4** Actualizar `inbox.routes.ts` para usar servicio
-- [ ] **3.2.5** Verificar funcionalidad
+### 1.10 Limpieza Final
 
-#### Subfase 3.3: Extraer Lógica de CRM
-- [ ] **3.3.1** Crear `CRMService.ts`
-- [ ] **3.3.2** Mover lógica de merge de contactos
-- [ ] **3.3.3** Mover lógica de enrichment
-- [ ] **3.3.4** Actualizar `crm.routes.ts`
-- [ ] **3.3.5** Verificar funcionalidad
-
-#### Subfase 3.4: Extraer Lógica de AI Agents
-- [ ] **3.4.1** Crear `AIAgentService.ts` (consolidar con existente si aplica)
-- [ ] **3.4.2** Mover lógica de configuración
-- [ ] **3.4.3** Mover lógica de generate-reply
-- [ ] **3.4.4** Actualizar rutas
-- [ ] **3.4.5** Verificar funcionalidad
-
-#### Subfase 3.5: Refactorizar Servicios Existentes
-- [ ] **3.5.1** Revisar `autoReplyService.ts` - eliminar dependencias directas a storage global
-- [ ] **3.5.2** Revisar `syncService.ts` - inyectar dependencias
-- [ ] **3.5.3** Revisar `reminderService.ts` - inyectar dependencias
-- [ ] **3.5.4** Verificar todos los servicios funcionan
-
-#### Subfase 3.6: Crear DTOs
-- [ ] **3.6.1** Crear directorio `shared/dtos/`
-- [ ] **3.6.2** Crear DTOs para requests de API:
-  - [ ] `CreateMessageDTO`
-  - [ ] `UpdateContactDTO`
-  - [ ] `ConfigureAgentDTO`
-- [ ] **3.6.3** Crear DTOs para responses:
-  - [ ] `MessageResponseDTO`
-  - [ ] `ConversationResponseDTO`
-  - [ ] `ContactResponseDTO`
-- [ ] **3.6.4** Actualizar rutas para usar DTOs
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 1.10.1 | Verificar routes.ts solo tiene imports | Archivo pequeño, solo router principal | ⬜ | |
+| 1.10.2 | Eliminar código duplicado | Sin código repetido | ⬜ | |
+| 1.10.3 | Ejecutar todos los tests | 100% pasan | ⬜ | |
 
 ---
 
-### FASE 4: Refactorización de Componentes Frontend 🟡
+## FASE 2: División de Storage en Repositorios 🟡
 
-**Objetivo**: Descomponer componentes React gigantes en componentes más pequeños y reutilizables.
+**Objetivo**: Separar storage.ts monolítico en repositorios por entidad.  
+**Puede ejecutarse en paralelo con Fase 1.**
 
-**Duración estimada**: 5-7 días  
-**Dependencias**: Ninguna (puede ejecutarse en paralelo con Fases 1-3)  
-**Puede ejecutarse en paralelo con**: Fases 1, 2, 3
+### 2.1 Crear Estructura Base
 
-**Estrategia**: Aplicar patrón Container/Presentational, extraer hooks personalizados.
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 2.1.1 | Crear directorio server/repositories/ | Carpeta existe | ⬜ | |
+| 2.1.2 | Crear index.ts con exports | Archivo existe | ⬜ | |
 
-#### Subfase 4.1: Refactorizar Inbox.tsx (124 KB)
-- [ ] **4.1.1** Identificar sub-componentes lógicos:
-  - [ ] `InboxSidebar` (lista de conversaciones)
-  - [ ] `ConversationView` (mensajes)
-  - [ ] `MessageComposer` (caja de respuesta)
-  - [ ] `ThreadHeader` (cabecera de conversación)
-- [ ] **4.1.2** Extraer `useInboxData` hook para fetching
-- [ ] **4.1.3** Extraer `useThreadActions` hook para acciones
-- [ ] **4.1.4** Crear componentes presentacionales
-- [ ] **4.1.5** Actualizar `Inbox.tsx` como container
-- [ ] **4.1.6** Verificar funcionalidad completa
+### 2.2 Extraer UserRepository
 
-#### Subfase 4.2: Refactorizar AIAgentConfig.tsx (117 KB)
-- [ ] **4.2.1** Identificar sub-componentes por tab:
-  - [ ] `GeneralSettingsTab`
-  - [ ] `PersonalityTab`
-  - [ ] `ChannelSettingsTab`
-  - [ ] `OrchestrationTab`
-  - [ ] `ContextTab`
-  - [ ] `PlaygroundTab`
-- [ ] **4.2.2** Extraer `useAIAgentConfig` hook
-- [ ] **4.2.3** Crear componentes de cada tab
-- [ ] **4.2.4** Actualizar `AIAgentConfig.tsx` como container
-- [ ] **4.2.5** Verificar funcionalidad
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 2.2.1 | Crear UserRepository.ts | Archivo existe | ⬜ | getUser, getUserByEmail, createUser, updateUser |
+| 2.2.2 | Actualizar referencias en auth | App arranca | ⬜ | |
+| 2.2.3 | Verificar login/registro | Funciona en UI | ⬜ | |
 
-#### Subfase 4.3: Refactorizar CRM.tsx (87 KB)
-- [ ] **4.3.1** Identificar sub-componentes:
-  - [ ] `ContactList`
-  - [ ] `ContactDetail`
-  - [ ] `ContactFilters`
-  - [ ] `MergeContactModal`
-- [ ] **4.3.2** Extraer `useCRMData` hook
-- [ ] **4.3.3** Extraer `useCRMActions` hook
-- [ ] **4.3.4** Crear componentes
-- [ ] **4.3.5** Verificar funcionalidad
+### 2.3 Extraer BrandRepository
 
-#### Subfase 4.4: Refactorizar LandingPage.tsx (165 KB)
-- [ ] **4.4.1** Identificar secciones:
-  - [ ] `HeroSection`
-  - [ ] `FeaturesSection`
-  - [ ] `TestimonialsSection`
-  - [ ] `PricingSection`
-  - [ ] `CTASection`
-- [ ] **4.4.2** Extraer componentes de sección
-- [ ] **4.4.3** Mantener animaciones en componentes individuales
-- [ ] **4.4.4** Verificar que landing se ve igual
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 2.3.1 | Crear BrandRepository.ts | Archivo existe | ⬜ | |
+| 2.3.2 | Actualizar referencias | App arranca | ⬜ | |
+| 2.3.3 | Verificar marcas | CRUD funciona | ⬜ | |
 
-#### Subfase 4.5: Mover Lógica de Negocio al Backend
-- [ ] **4.5.1** Identificar lógica de threading en frontend
-- [ ] **4.5.2** Crear endpoint backend que retorne threads ya procesados
-- [ ] **4.5.3** Actualizar frontend para consumir endpoint
-- [ ] **4.5.4** Identificar lógica de merge CRM en frontend
-- [ ] **4.5.5** Mover lógica de merge a backend
-- [ ] **4.5.6** Verificar funcionalidad
+### 2.4 Extraer MessageRepository
 
----
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 2.4.1 | Crear MessageRepository.ts | Archivo existe | ⬜ | |
+| 2.4.2 | Actualizar referencias | App arranca | ⬜ | |
+| 2.4.3 | Verificar inbox | Mensajes cargan | ⬜ | |
 
-### FASE 5: Abstracciones y Adapters 🟢
+### 2.5 Extraer ConversationRepository
 
-**Objetivo**: Crear interfaces para dependencias externas, facilitando testing y cambios futuros.
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 2.5.1 | Crear ConversationRepository.ts | Archivo existe | ⬜ | |
+| 2.5.2 | Actualizar referencias | App arranca | ⬜ | |
+| 2.5.3 | Verificar threading | Threads se muestran bien | ⬜ | |
 
-**Duración estimada**: 2-3 días  
-**Dependencias**: Fase 3 completada  
-**Puede ejecutarse en paralelo con**: Fase 4
+### 2.6 Extraer ContactRepository
 
-#### Subfase 5.1: Crear Interfaces de Adapters
-- [ ] **5.1.1** Crear directorio `server/adapters/interfaces/`
-- [ ] **5.1.2** Crear `IEmailAdapter.ts`
-- [ ] **5.1.3** Crear `ILLMAdapter.ts` (consolidar con existente en `llm/`)
-- [ ] **5.1.4** Crear `IMetricoolAdapter.ts`
-- [ ] **5.1.5** Crear `IWebSocketAdapter.ts`
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 2.6.1 | Crear ContactRepository.ts | Archivo existe | ⬜ | |
+| 2.6.2 | Actualizar referencias | App arranca | ⬜ | |
+| 2.6.3 | Verificar CRM | Contactos cargan | ⬜ | |
 
-#### Subfase 5.2: Implementar Adapters
-- [ ] **5.2.1** Crear `ResendEmailAdapter.ts` implementando `IEmailAdapter`
-- [ ] **5.2.2** Refactorizar `gemini-adapter.ts` para implementar `ILLMAdapter`
-- [ ] **5.2.3** Refactorizar `openai-adapter.ts` para implementar `ILLMAdapter`
-- [ ] **5.2.4** Crear `MetricoolAdapter.ts` implementando `IMetricoolAdapter`
+### 2.7 Extraer AIAgentRepository
 
-#### Subfase 5.3: Inyección de Dependencias
-- [ ] **5.3.1** Crear factory o container simple para inyección
-- [ ] **5.3.2** Actualizar servicios para recibir adapters por inyección
-- [ ] **5.3.3** Verificar que todo funciona con las nuevas abstracciones
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 2.7.1 | Crear AIAgentRepository.ts | Archivo existe | ⬜ | |
+| 2.7.2 | Actualizar referencias | App arranca | ⬜ | |
+| 2.7.3 | Verificar config AI | Configuración carga | ⬜ | |
+
+### 2.8 Extraer ReminderRepository
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 2.8.1 | Crear ReminderRepository.ts | Archivo existe | ⬜ | |
+| 2.8.2 | Actualizar referencias | App arranca | ⬜ | |
+| 2.8.3 | Verificar recordatorios | Lista carga | ⬜ | |
+
+### 2.9 Extraer NotificationRepository
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 2.9.1 | Crear NotificationRepository.ts | Archivo existe | ⬜ | |
+| 2.9.2 | Actualizar referencias | App arranca | ⬜ | |
+| 2.9.3 | Verificar notificaciones | Panel funciona | ⬜ | |
+
+### 2.10 Limpieza Final
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 2.10.1 | Storage.ts solo tiene exports | Archivo pequeño | ⬜ | |
+| 2.10.2 | Ejecutar todos los tests | 100% pasan | ⬜ | |
 
 ---
 
-### FASE 6: Testing y Documentación Final 🟢
+## FASE 3: Capa de Servicios/Use Cases 🟡
 
-**Objetivo**: Asegurar calidad y documentar la nueva arquitectura.
+**Objetivo**: Extraer lógica de negocio de rutas a servicios dedicados.  
+**Dependencias**: Fase 1 y Fase 2 completadas.
 
-**Duración estimada**: 2-3 días  
-**Dependencias**: Fases 1-5 completadas
+### 3.1 Estructura de Servicios
 
-#### Subfase 6.1: Tests de Integración
-- [ ] **6.1.1** Crear tests para cada módulo de rutas
-- [ ] **6.1.2** Crear tests para cada repositorio
-- [ ] **6.1.3** Crear tests para servicios principales
-- [ ] **6.1.4** Alcanzar cobertura mínima de 60% en código nuevo
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 3.1.1 | Decidir si crear server/services/usecases/ o usar existente | Decisión documentada | ⬜ | |
+| 3.1.2 | Definir patrón de inyección de dependencias | Documentado en ARCHITECTURE.md | ⬜ | |
 
-#### Subfase 6.2: Tests E2E
-- [ ] **6.2.1** Crear tests E2E para flujos críticos:
-  - [ ] Login → Inbox → Reply
-  - [ ] Configurar AI Agent → Auto-reply
-  - [ ] CRM → Merge contacts
-- [ ] **6.2.2** Integrar en CI/CD si existe
+### 3.2 Servicio de Inbox
 
-#### Subfase 6.3: Documentación
-- [ ] **6.3.1** Actualizar diagrama de arquitectura
-- [ ] **6.3.2** Documentar estructura de carpetas final
-- [ ] **6.3.3** Crear guía de contribución para nuevos developers
-- [ ] **6.3.4** Documentar convenciones de código adoptadas
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 3.2.1 | Crear InboxService.ts básico | Archivo existe | ⬜ | |
+| 3.2.2 | Mover lógica de threading | App arranca | ⬜ | |
+| 3.2.3 | Mover lógica de send-reply | App arranca | ⬜ | |
+| 3.2.4 | Actualizar inbox.routes.ts | Rutas usan servicio | ⬜ | |
+| 3.2.5 | Verificar inbox completo | Todo funciona en UI | ⬜ | |
+
+### 3.3 Servicio de CRM
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 3.3.1 | Crear CRMService.ts | Archivo existe | ⬜ | |
+| 3.3.2 | Mover lógica de merge | App arranca | ⬜ | |
+| 3.3.3 | Mover lógica de enrichment | App arranca | ⬜ | |
+| 3.3.4 | Verificar CRM | Merge funciona | ⬜ | |
+
+### 3.4 Servicio de AI Agents
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 3.4.1 | Crear o consolidar AIAgentService.ts | Archivo existe | ⬜ | |
+| 3.4.2 | Mover lógica de configuración | App arranca | ⬜ | |
+| 3.4.3 | Mover lógica de generate-reply | App arranca | ⬜ | |
+| 3.4.4 | Verificar AI | Generar respuesta funciona | ⬜ | |
+
+### 3.5 Refactorizar Servicios Existentes
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 3.5.1 | autoReplyService: eliminar dependencias globales | App arranca | ⬜ | |
+| 3.5.2 | syncService: inyectar dependencias | App arranca | ⬜ | |
+| 3.5.3 | reminderService: inyectar dependencias | App arranca | ⬜ | |
+| 3.5.4 | Verificar todos los servicios | Auto-reply, sync, reminders funcionan | ⬜ | |
+
+---
+
+## FASE 4: Refactorización Frontend 🟡
+
+**Objetivo**: Descomponer componentes React gigantes.  
+**Puede ejecutarse en paralelo con Fases 1-3.**
+
+### 4.1 Refactorizar Inbox.tsx (124 KB)
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 4.1.1 | Extraer InboxSidebar.tsx | Componente funciona aislado | ⬜ | Lista de conversaciones |
+| 4.1.2 | Extraer ConversationView.tsx | Componente funciona | ⬜ | Vista de mensajes |
+| 4.1.3 | Extraer MessageComposer.tsx | Componente funciona | ⬜ | Caja de respuesta |
+| 4.1.4 | Extraer ThreadHeader.tsx | Componente funciona | ⬜ | Cabecera |
+| 4.1.5 | Extraer useInboxData hook | Hook funciona | ⬜ | Fetching de datos |
+| 4.1.6 | Extraer useThreadActions hook | Hook funciona | ⬜ | Acciones |
+| 4.1.7 | Actualizar Inbox.tsx como container | Inbox funciona completo | ⬜ | |
+
+### 4.2 Refactorizar AIAgentConfig.tsx (117 KB)
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 4.2.1 | Extraer GeneralSettingsTab.tsx | Tab funciona | ⬜ | |
+| 4.2.2 | Extraer PersonalityTab.tsx | Tab funciona | ⬜ | |
+| 4.2.3 | Extraer ChannelSettingsTab.tsx | Tab funciona | ⬜ | |
+| 4.2.4 | Extraer OrchestrationTab.tsx | Tab funciona | ⬜ | |
+| 4.2.5 | Extraer ContextTab.tsx | Tab funciona | ⬜ | |
+| 4.2.6 | Extraer PlaygroundTab.tsx | Tab funciona | ⬜ | |
+| 4.2.7 | Extraer useAIAgentConfig hook | Hook funciona | ⬜ | |
+| 4.2.8 | Actualizar AIAgentConfig.tsx | Config completa funciona | ⬜ | |
+
+### 4.3 Refactorizar CRM.tsx (87 KB)
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 4.3.1 | Extraer ContactList.tsx | Componente funciona | ⬜ | |
+| 4.3.2 | Extraer ContactDetail.tsx | Componente funciona | ⬜ | |
+| 4.3.3 | Extraer ContactFilters.tsx | Componente funciona | ⬜ | |
+| 4.3.4 | Extraer MergeContactModal.tsx | Modal funciona | ⬜ | |
+| 4.3.5 | Extraer useCRMData hook | Hook funciona | ⬜ | |
+| 4.3.6 | Actualizar CRM.tsx | CRM completo funciona | ⬜ | |
+
+### 4.4 Refactorizar LandingPage.tsx (165 KB)
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 4.4.1 | Extraer HeroSection.tsx | Sección se ve igual | ⬜ | |
+| 4.4.2 | Extraer FeaturesSection.tsx | Sección se ve igual | ⬜ | |
+| 4.4.3 | Extraer TestimonialsSection.tsx | Sección se ve igual | ⬜ | |
+| 4.4.4 | Extraer PricingSection.tsx | Sección se ve igual | ⬜ | |
+| 4.4.5 | Extraer CTASection.tsx | Sección se ve igual | ⬜ | |
+| 4.4.6 | Actualizar LandingPage.tsx | Landing completa se ve igual | ⬜ | |
+
+### 4.5 Mover Lógica al Backend
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 4.5.1 | Identificar lógica de threading en frontend | Lista documentada | ⬜ | |
+| 4.5.2 | Crear endpoint que retorne threads procesados | Endpoint responde | ⬜ | |
+| 4.5.3 | Actualizar frontend para usar endpoint | Inbox funciona | ⬜ | |
+| 4.5.4 | Mover lógica de merge CRM a backend | CRM funciona | ⬜ | |
+
+---
+
+## FASE 5: Abstracciones y Adapters 🟢
+
+**Objetivo**: Crear interfaces para dependencias externas.  
+**Dependencias**: Fase 3 completada.
+
+### 5.1 Crear Interfaces
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 5.1.1 | Crear server/adapters/interfaces/ | Carpeta existe | ⬜ | |
+| 5.1.2 | Crear IEmailAdapter.ts | Interfaz definida | ⬜ | |
+| 5.1.3 | Crear ILLMAdapter.ts | Interfaz definida | ⬜ | Consolidar con llm/ existente |
+| 5.1.4 | Crear IMetricoolAdapter.ts | Interfaz definida | ⬜ | |
+
+### 5.2 Implementar Adapters
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 5.2.1 | ResendEmailAdapter implementa IEmailAdapter | Emails funcionan | ⬜ | |
+| 5.2.2 | gemini-adapter implementa ILLMAdapter | Gemini funciona | ⬜ | |
+| 5.2.3 | openai-adapter implementa ILLMAdapter | OpenAI funciona | ⬜ | |
+| 5.2.4 | MetricoolAdapter implementa IMetricoolAdapter | Sync funciona | ⬜ | |
+
+### 5.3 Inyección de Dependencias
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 5.3.1 | Crear factory simple para inyección | Factory funciona | ⬜ | |
+| 5.3.2 | Servicios reciben adapters por inyección | Todo funciona | ⬜ | |
+
+---
+
+## FASE 6: Testing y Documentación Final 🟢
+
+**Objetivo**: Asegurar calidad y documentar la nueva arquitectura.  
+**Dependencias**: Fases 1-5 completadas.
+
+### 6.1 Tests de Integración
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 6.1.1 | Tests para cada módulo de rutas | Tests pasan | ⬜ | |
+| 6.1.2 | Tests para cada repositorio | Tests pasan | ⬜ | |
+| 6.1.3 | Tests para servicios principales | Tests pasan | ⬜ | |
+| 6.1.4 | Cobertura mínima 60% en código nuevo | Reporte lo confirma | ⬜ | |
+
+### 6.2 Tests E2E
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 6.2.1 | Test E2E: Login → Inbox → Reply | Test pasa | ⬜ | |
+| 6.2.2 | Test E2E: Config AI → Auto-reply | Test pasa | ⬜ | |
+| 6.2.3 | Test E2E: CRM → Merge contacts | Test pasa | ⬜ | |
+
+### 6.3 Documentación
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 6.3.1 | Actualizar diagrama de arquitectura | Refleja nueva estructura | ⬜ | |
+| 6.3.2 | Documentar estructura de carpetas final | Actualizado en docs/ | ⬜ | |
+| 6.3.3 | Crear guía de contribución | Archivo existe | ⬜ | |
+| 6.3.4 | Documentar convenciones de código | Archivo existe | ⬜ | |
 
 ---
 
