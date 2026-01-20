@@ -45,8 +45,10 @@ const NexusContext = createContext<NexusContextType | undefined>(undefined);
 const ACTIVE_BRAND_KEY = 'repliyo_active_brand_id';
 
 export const NexusProvider = ({ children }: { children: ReactNode }) => {
+  console.log('🔵 [NexusProvider] RENDER - Component mounting/rendering');
   const queryClient = useQueryClient();
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  console.log('🔵 [NexusProvider] AUTH STATE:', { isAuthenticated, isAuthLoading });
   const [activeClientId, setActiveClientIdState] = useState<string | null>(() => {
     try {
       const savedId = localStorage.getItem(ACTIVE_BRAND_KEY);
