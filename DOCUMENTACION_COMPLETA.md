@@ -9248,40 +9248,46 @@ Por favor, lee el documento y continúa el trabajo.
 **Objetivo**: Descomponer componentes React gigantes.  
 **Puede ejecutarse en paralelo con Fases 1-3.**
 
+> 📁 **Documentos de referencia para esta fase:**
+> - `docs/audits/INBOX_HOOKS_AUDIT.md` - 63 hooks inventariados, dependencias y recomendaciones
+> - `docs/audits/INBOX_CONTRACTS.md` - Contratos de props entre componentes
+> - `docs/audits/CRMCONTEXTPANEL_AUDIT.md` - Auditoría de CRMContextPanel
+> - `docs/audits/DUPLICATED_LOGIC.md` - Lógica duplicada a consolidar
+
 ### 4.1 Refactorizar Inbox.tsx (124 KB)
 
-| ID | Tarea | Verificación | Estado | Notas |
-|----|-------|--------------|--------|-------|
-| 4.1.1 | Extraer InboxSidebar.tsx | Componente funciona aislado | ⬜ | Lista de conversaciones |
-| 4.1.2 | Extraer ConversationView.tsx | Componente funciona | ⬜ | Vista de mensajes |
-| 4.1.3 | Extraer MessageComposer.tsx | Componente funciona | ⬜ | Caja de respuesta |
-| 4.1.4 | Extraer ThreadHeader.tsx | Componente funciona | ⬜ | Cabecera |
-| 4.1.5 | Extraer useInboxData hook | Hook funciona | ⬜ | Fetching de datos |
-| 4.1.6 | Extraer useThreadActions hook | Hook funciona | ⬜ | Acciones |
-| 4.1.7 | Actualizar Inbox.tsx como container | Inbox funciona completo | ⬜ | |
+| ID | Tarea | Verificación | Estado | Referencia |
+|----|-------|--------------|--------|------------|
+| 4.1.1 | Extraer InboxSidebar.tsx | Componente funciona aislado | ⬜ | `INBOX_HOOKS_AUDIT.md` |
+| 4.1.2 | Extraer ConversationView.tsx | Componente funciona | ⬜ | `INBOX_CONTRACTS.md` |
+| 4.1.3 | Extraer MessageComposer.tsx | Componente funciona | ⬜ | `DUPLICATED_LOGIC.md` (14 props draft) |
+| 4.1.4 | Extraer ThreadHeader.tsx | Componente funciona | ⬜ | `INBOX_CONTRACTS.md` |
+| 4.1.5 | Extraer useInboxData hook | Hook funciona | ⬜ | `INBOX_HOOKS_AUDIT.md` (sección hooks) |
+| 4.1.6 | Extraer useThreadActions hook | Hook funciona | ⬜ | `INBOX_HOOKS_AUDIT.md` |
+| 4.1.7 | Actualizar Inbox.tsx como container | Inbox funciona completo | ⬜ | Todos los anteriores |
 
 ### 4.2 Refactorizar AIAgentConfig.tsx (117 KB)
 
-| ID | Tarea | Verificación | Estado | Notas |
-|----|-------|--------------|--------|-------|
-| 4.2.1 | Extraer GeneralSettingsTab.tsx | Tab funciona | ⬜ | |
-| 4.2.2 | Extraer PersonalityTab.tsx | Tab funciona | ⬜ | |
-| 4.2.3 | Extraer ChannelSettingsTab.tsx | Tab funciona | ⬜ | |
-| 4.2.4 | Extraer OrchestrationTab.tsx | Tab funciona | ⬜ | |
-| 4.2.5 | Extraer ContextTab.tsx | Tab funciona | ⬜ | |
-| 4.2.6 | Extraer PlaygroundTab.tsx | Tab funciona | ⬜ | |
-| 4.2.7 | Extraer useAIAgentConfig hook | Hook funciona | ⬜ | |
-| 4.2.8 | Actualizar AIAgentConfig.tsx | Config completa funciona | ⬜ | |
+| ID | Tarea | Verificación | Estado | Referencia |
+|----|-------|--------------|--------|------------|
+| 4.2.1 | Extraer GeneralSettingsTab.tsx | Tab funciona | ⬜ | - |
+| 4.2.2 | Extraer PersonalityTab.tsx | Tab funciona | ⬜ | - |
+| 4.2.3 | Extraer ChannelSettingsTab.tsx | Tab funciona | ⬜ | - |
+| 4.2.4 | Extraer OrchestrationTab.tsx | Tab funciona | ⬜ | - |
+| 4.2.5 | Extraer ContextTab.tsx | Tab funciona | ⬜ | - |
+| 4.2.6 | Extraer PlaygroundTab.tsx | Tab funciona | ⬜ | - |
+| 4.2.7 | Extraer useAIAgentConfig hook | Hook funciona | ⬜ | - |
+| 4.2.8 | Actualizar AIAgentConfig.tsx | Config completa funciona | ⬜ | - |
 
 ### 4.3 Refactorizar CRM.tsx (87 KB)
 
-| ID | Tarea | Verificación | Estado | Notas |
-|----|-------|--------------|--------|-------|
-| 4.3.1 | Extraer ContactList.tsx | Componente funciona | ⬜ | |
-| 4.3.2 | Extraer ContactDetail.tsx | Componente funciona | ⬜ | |
-| 4.3.3 | Extraer ContactFilters.tsx | Componente funciona | ⬜ | |
-| 4.3.4 | Extraer MergeContactModal.tsx | Modal funciona | ⬜ | |
-| 4.3.5 | Extraer useCRMData hook | Hook funciona | ⬜ | |
+| ID | Tarea | Verificación | Estado | Referencia |
+|----|-------|--------------|--------|------------|
+| 4.3.1 | Extraer ContactList.tsx | Componente funciona | ⬜ | `CRMCONTEXTPANEL_AUDIT.md` |
+| 4.3.2 | Extraer ContactDetail.tsx | Componente funciona | ⬜ | `CRMCONTEXTPANEL_AUDIT.md` |
+| 4.3.3 | Extraer ContactFilters.tsx | Componente funciona | ⬜ | - |
+| 4.3.4 | Extraer MergeContactModal.tsx | Modal funciona | ⬜ | `DUPLICATED_LOGIC.md` |
+| 4.3.5 | Extraer useCRMData hook | Hook funciona | ⬜ | `CRMCONTEXTPANEL_AUDIT.md` |
 | 4.3.6 | Actualizar CRM.tsx | CRM completo funciona | ⬜ | |
 
 ### 4.4 Refactorizar LandingPage.tsx (165 KB)
