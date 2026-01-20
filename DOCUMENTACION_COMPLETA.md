@@ -7924,6 +7924,30 @@ Futuro:   C1-C4 (Multi-agente si se valida necesidad)
 
 ---
 
+## PLAN DE REFACTORIZACIÓN ARQUITECTÓNICA - Enero 2026
+
+> **Principio Rector**: Aplicamos el patrón **"Strangler Fig"** - mejoramos incrementalmente mientras mantenemos la aplicación funcional. NO refactorizamos todo de golpe.
+
+### Diagnóstico Actual
+
+| Área | Puntuación | Estado |
+|------|------------|--------|
+| Componentes | 7/10 | UI reutilizable, pero componentes principales con lógica mezclada |
+| Arquitectura | 8.5/10 | Híbrido layered/ports-adapters apropiado para SaaS |
+| Testing | 4/10 | No existe, pero es recuperable gracias a la arquitectura |
+
+### REGLAS DE UI QUE NO DEBEN CAMBIAR (CRÍTICO)
+
+| Elemento | Regla | Motivo |
+|----------|-------|--------|
+| Mensajes outbound (respuestas de marca) | **Fondo azul (#0291FA o bg-indigo-600)** | Distinguir visualmente respuestas de la marca vs mensajes del cliente |
+| Mensajes inbound (del cliente) | Fondo blanco/transparente | Claridad visual |
+| Esto aplica a: | ownerBubble, aiBubble, manualBubble, replyBubble | Consistencia en toda la app |
+
+> El sistema identifica los mensajes outbound por el campo `direction === 'outbound'` que viene de Metricool.
+
+---
+
 ### FASE 1: COMPONENTES - Tareas "Atomic" de Refactorización
 **Objetivo:** Separar lógica de presentación, mejorar reutilización y preparar para testing
 **Riesgo actual:** Componentes pesados dificultan mantenimiento y testing
