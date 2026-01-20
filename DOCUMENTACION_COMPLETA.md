@@ -9772,15 +9772,16 @@ Si algo falla en cualquier fase:
 |-------|------|----------|--------|-------|
 | 20 Ene 2026 | 0 | Diagnostico inicial | COMPLETADO | Race condition y WebSocket confirmados |
 | 20 Ene 2026 | 0 | Plan documentado | COMPLETADO | Este documento |
-| - | 1.1 | Logging NexusContext | PENDIENTE | - |
-| - | 1.2 | Logging WebSocket | PENDIENTE | - |
-| - | 2.1 | Gate queries | PENDIENTE | - |
-| - | 2.2 | Validar activeClientId | PENDIENTE | - |
-| - | 3.1 | Separar conexion/suscripcion | PENDIENTE | - |
-| - | 3.2 | Memoizar callbacks | PENDIENTE | - |
-| - | 4.x | Testing manual | PENDIENTE | - |
+| 20 Ene 2026 | 1.1 | Logging NexusContext | COMPLETADO | Logging de diagnostico agregado |
+| 20 Ene 2026 | 1.2 | Logging WebSocket | COMPLETADO | Logging de diagnostico agregado |
+| 20 Ene 2026 | 2.1 | Gate queries | COMPLETADO | Queries ahora esperan autenticacion completa |
+| 20 Ene 2026 | 2.2 | Validar activeClientId | COMPLETADO | validatedActiveClientId creado y en uso |
+| 20 Ene 2026 | 3.1 | Separar conexion/suscripcion | COMPLETADO | sendSubscribe() separado de connect() |
+| 20 Ene 2026 | 3.2 | Memoizar callbacks | COMPLETADO | Refs para todos los callbacks evitan reconexiones |
+| 20 Ene 2026 | - | Revision Arquitecto | COMPLETADO | Aprobado sin cambios requeridos |
+| - | 4.x | Testing manual | PENDIENTE | Requiere prueba del usuario |
 
 ---
 
 *Seccion creada: 20 Enero 2026*
-*Estado: En progreso*
+*Estado: Implementacion completada - Esperando verificacion del usuario*
