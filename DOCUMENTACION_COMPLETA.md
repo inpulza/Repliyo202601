@@ -8931,7 +8931,7 @@ Los servicios en `server/services/` tienen dependencias directas sin abstracció
 
 #### 📝 Plantilla para el nuevo agente
 
-> **Ver sección "MENSAJE DE INICIO (KICKOFF MESSAGE)" arriba** para el mensaje completo que debes usar al iniciar una nueva conversación.
+> **Ver sección "📋 MENSAJE DE INICIO (KICKOFF MESSAGE)" más arriba** para el mensaje completo que debes usar al iniciar una nueva conversación.
 
 #### ❌ Cuándo NO cambiar de conversación
 
