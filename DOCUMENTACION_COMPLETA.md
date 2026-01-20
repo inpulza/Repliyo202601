@@ -7979,6 +7979,7 @@ El sistema identifica los mensajes outbound por el campo `direction === 'outboun
 > - `docs/audits/INBOX_HOOKS_AUDIT.md` - Inventario completo de hooks, dependencias y recomendaciones de refactor para Inbox.tsx
 > - `docs/audits/INBOX_CONTRACTS.md` - Contratos de props entre Inbox.tsx y sus subcomponentes (CommentThread, CRMContextPanel, etc.)
 > - `docs/audits/CRMCONTEXTPANEL_AUDIT.md` - Auditoría de CRMContextPanel.tsx (10 hooks, bajo prioridad de refactor)
+> - `docs/audits/DUPLICATED_LOGIC.md` - Análisis de lógica duplicada: 14 props draft-related, 4 categorías de refactor
 
 | Tarea | Descripción | Criterio de Éxito | Estado |
 |-------|-------------|-------------------|--------|
@@ -7986,7 +7987,7 @@ El sistema identifica los mensajes outbound por el campo `direction === 'outboun
 | 1.1.2 | Identificar dependencias entre estados (cuáles se afectan mutuamente) | Diagrama de dependencias | ✅ Completado (ver docs/audits/INBOX_HOOKS_AUDIT.md sección 6) |
 | 1.1.3 | Mapear props contracts entre Inbox → subcomponentes | Documentar tipos esperados | ✅ Completado (ver docs/audits/INBOX_CONTRACTS.md) |
 | 1.1.4 | Repetir auditoría para CRMContextPanel.tsx | Mismo entregable | ✅ Completado (ver docs/audits/CRMCONTEXTPANEL_AUDIT.md) |
-| 1.1.5 | Identificar lógica duplicada entre componentes | Lista de candidatos a hooks | ⬜ Pendiente |
+| 1.1.5 | Identificar lógica duplicada entre componentes | Lista de candidatos a hooks | ✅ Completado (ver docs/audits/DUPLICATED_LOGIC.md) |
 
 #### Subfase 1.2: Extracción de Lógica a Hooks y Servicios
 
