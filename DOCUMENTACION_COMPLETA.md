@@ -7993,35 +7993,46 @@ El sistema identifica los mensajes outbound por el campo `direction === 'outboun
 
 **Objetivo:** Mover orquestación de datos fuera de componentes hacia hooks reutilizables
 
-| Tarea | Descripción | Criterio de Éxito | Estado |
-|-------|-------------|-------------------|--------|
-| 1.2.1 | Crear `useConversationState` - manejo de conversación activa | Hook funcional sin romper UI | ⬜ Pendiente |
-| 1.2.2 | Crear `useDraftManagement` - lógica de borradores IA | Separar de Inbox.tsx | ⬜ Pendiente |
-| 1.2.3 | Crear `useMessageSync` - sincronización y WebSocket | Reutilizable en otros componentes | ✅ Completado (useWebSocket.ts refactorizado) |
-| 1.2.4 | Crear `useCRMPanel` - lógica del panel CRM | Separar de CRMContextPanel | ⬜ Pendiente |
-| 1.2.5 | Refactorizar NexusContext para exponer menos estado raw | Interfaz más limpia | 🔄 Parcial (validatedActiveClientId agregado) |
-| 1.2.6 | Validar que la UI funciona igual después de cada extracción | Tests manuales pasan | ⬜ Pendiente |
+> **⚠️ Guía de Atomicidad:**
+> - 🔒 **Atómico:** Debes completar la tarea entera. Dejarlo a medias puede romper la app.
+> - 🔓 **Seguro:** Puedes parar a medias. Los cambios parciales no rompen nada.
+> - ⚡ **Por lotes:** Se puede hacer archivo por archivo. Cada archivo migrado es una parada segura.
+
+| Tarea | Descripción | Criterio de Éxito | Atomicidad | Estado |
+|-------|-------------|-------------------|------------|--------|
+| 1.2.1 | Crear `useDraftManagement` - 14 props de Inbox→CommentThread | Reducir 25 props a 11 | 🔒 Atómico | ⬜ Pendiente |
+| 1.2.2 | Crear `useInboxFilters` - 10 estados de filtros | Hook funcional | 🔒 Atómico | ⬜ Pendiente |
+| 1.2.3 | Crear `PlatformIcon` componente unificado (7 archivos) | Componente creado | ⚡ Por lotes | ⬜ Pendiente |
+| 1.2.4 | Crear `date-utils.ts` con formatTimeAgo (7 archivos) | Util creada | ⚡ Por lotes | ⬜ Pendiente |
+| 1.2.5 | Crear `useUnreadTracking` - 2 estados de no leídos | Reducir 2 props más | 🔒 Atómico | ⬜ Pendiente |
+| 1.2.6 | Validar que la UI funciona igual después de cada extracción | Tests manuales pasan | 🔓 Seguro | ⬜ Pendiente |
+
+> **📋 Referencia:** Ver `docs/audits/DUPLICATED_LOGIC.md` para detalles de cada extracción
+
+**Tareas previas completadas (de versión anterior del plan):**
+- ~~Crear `useMessageSync`~~ → ✅ Completado (useWebSocket.ts refactorizado)
+- ~~Refactorizar NexusContext~~ → 🔄 Parcial (validatedActiveClientId agregado)
 
 #### Subfase 1.3: Estabilización de Interfaces de Usuario
 
 **Objetivo:** Preparar componentes para testing automatizado
 
-| Tarea | Descripción | Criterio de Éxito | Estado |
-|-------|-------------|-------------------|--------|
-| 1.3.1 | Auditar `data-testid` existentes, documentar patrón | Convención establecida | ⬜ Pendiente |
-| 1.3.2 | Agregar `data-testid` faltantes en elementos interactivos | 100% cobertura en Inbox | ⬜ Pendiente |
-| 1.3.3 | Agregar `data-testid` en elementos de datos dinámicos | 100% cobertura en CRM Panel | ⬜ Pendiente |
-| 1.3.4 | Verificar accesibilidad básica (ARIA labels críticos) | Principales controles accesibles | ⬜ Pendiente |
+| Tarea | Descripción | Criterio de Éxito | Atomicidad | Estado |
+|-------|-------------|-------------------|------------|--------|
+| 1.3.1 | Auditar `data-testid` existentes, documentar patrón | Convención establecida | 🔓 Seguro | ⬜ Pendiente |
+| 1.3.2 | Agregar `data-testid` faltantes en elementos interactivos | 100% cobertura en Inbox | ⚡ Por lotes | ⬜ Pendiente |
+| 1.3.3 | Agregar `data-testid` en elementos de datos dinámicos | 100% cobertura en CRM Panel | ⚡ Por lotes | ⬜ Pendiente |
+| 1.3.4 | Verificar accesibilidad básica (ARIA labels críticos) | Principales controles accesibles | ⚡ Por lotes | ⬜ Pendiente |
 
 #### Subfase 1.4: Guardrails y Observabilidad
 
 **Objetivo:** Proteger refactors con feature flags y monitoreo
 
-| Tarea | Descripción | Criterio de Éxito | Estado |
-|-------|-------------|-------------------|--------|
-| 1.4.1 | Implementar sistema simple de feature flags | Toggle para nuevos hooks | ⬜ Pendiente |
-| 1.4.2 | Agregar logging en hooks críticos | Errores visibles en consola | ⬜ Pendiente |
-| 1.4.3 | Crear checklist de validación pre-deploy | Documento de QA | ⬜ Pendiente |
+| Tarea | Descripción | Criterio de Éxito | Atomicidad | Estado |
+|-------|-------------|-------------------|------------|--------|
+| 1.4.1 | Implementar sistema simple de feature flags | Toggle para nuevos hooks | 🔓 Seguro | ⬜ Pendiente |
+| 1.4.2 | Agregar logging en hooks críticos | Errores visibles en consola | ⚡ Por lotes | ⬜ Pendiente |
+| 1.4.3 | Crear checklist de validación pre-deploy | Documento de QA | 🔓 Seguro | ⬜ Pendiente |
 
 ---
 
@@ -8034,16 +8045,18 @@ El sistema identifica los mensajes outbound por el campo `direction === 'outboun
 
 **Objetivo:** Dividir storage.ts (4,310 líneas) en adaptadores por dominio
 
-| Tarea | Descripción | Criterio de Éxito | Estado |
-|-------|-------------|-------------------|--------|
-| 2.1.1 | Crear `storage/brandAdapter.ts` - métodos de brands | Migrar 10-15 métodos | ⬜ Pendiente |
-| 2.1.2 | Crear `storage/conversationAdapter.ts` | Migrar métodos de conversations | ⬜ Pendiente |
-| 2.1.3 | Crear `storage/messageAdapter.ts` | Migrar métodos de messages | ⬜ Pendiente |
-| 2.1.4 | Crear `storage/crmAdapter.ts` | Migrar métodos CRM (contacts, channels, limbo) | ⬜ Pendiente |
-| 2.1.5 | Crear `storage/reminderAdapter.ts` | Migrar métodos de reminders | ⬜ Pendiente |
-| 2.1.6 | Crear `storage/aiAdapter.ts` | Migrar métodos de AI agents y audit | ⬜ Pendiente |
-| 2.1.7 | Mantener `storage.ts` como facade que re-exporta | Compatibilidad hacia atrás | ⬜ Pendiente |
-| 2.1.8 | Extraer helpers comunes (paginación, errores) | `storage/helpers.ts` | ⬜ Pendiente |
+| Tarea | Descripción | Criterio de Éxito | Atomicidad | Estado |
+|-------|-------------|-------------------|------------|--------|
+| 2.1.1 | Crear `storage/brandAdapter.ts` - métodos de brands | Migrar 10-15 métodos | 🔒 Atómico | ⬜ Pendiente |
+| 2.1.2 | Crear `storage/conversationAdapter.ts` | Migrar métodos de conversations | 🔒 Atómico | ⬜ Pendiente |
+| 2.1.3 | Crear `storage/messageAdapter.ts` | Migrar métodos de messages | 🔒 Atómico | ⬜ Pendiente |
+| 2.1.4 | Crear `storage/crmAdapter.ts` | Migrar métodos CRM (contacts, channels, limbo) | 🔒 Atómico | ⬜ Pendiente |
+| 2.1.5 | Crear `storage/reminderAdapter.ts` | Migrar métodos de reminders | 🔒 Atómico | ⬜ Pendiente |
+| 2.1.6 | Crear `storage/aiAdapter.ts` | Migrar métodos de AI agents y audit | 🔒 Atómico | ⬜ Pendiente |
+| 2.1.7 | Mantener `storage.ts` como facade que re-exporta | Compatibilidad hacia atrás | 🔓 Seguro | ⬜ Pendiente |
+| 2.1.8 | Extraer helpers comunes (paginación, errores) | `storage/helpers.ts` | 🔓 Seguro | ⬜ Pendiente |
+
+> **⚠️ Nota Subfase 2.1:** Cada adaptador (2.1.1-2.1.6) es atómico: debes mover TODOS los métodos relacionados de un dominio antes de pasar al siguiente. Pero puedes parar entre adaptadores (ej: completar brandAdapter, parar, después hacer conversationAdapter).
 
 #### Subfase 2.2: Codificación de Workflows Cross-Service
 
