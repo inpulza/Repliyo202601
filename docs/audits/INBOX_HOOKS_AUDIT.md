@@ -239,64 +239,258 @@ El componente Inbox.tsx tiene una cantidad significativa de estado local que pod
 
 ---
 
-## Diagrama de Dependencias (Detallado)
+## 6. Diagrama de Dependencias (Tarea 1.1.2)
+
+### 6.1 Diagrama Mermaid - Clusters por Dominio
+
+```mermaid
+flowchart TD
+    subgraph Context["NexusContext (externo)"]
+        conversations
+        activeConversation
+        activeConversationMessages
+        setActiveConversation
+    end
+
+    subgraph Filters["CLUSTER: Inbox Filters"]
+        searchQuery
+        intentFilter
+        platformFilter
+        typeFilter
+        showOnlyUnread
+        showInactiveNetworks
+        fireMode
+    end
+
+    subgraph ThreadFilters["CLUSTER: Thread Filters"]
+        threadFilterNoReply
+        threadFilterWithDraft
+        threadFilterWithReminder
+    end
+
+    subgraph DeepLink["CLUSTER: Deep Link"]
+        focusedConversationId
+        highlightedConversationId
+        highlightedMessageId
+        processDeepLink
+    end
+
+    subgraph Unread["CLUSTER: Unread Tracking"]
+        unreadMessageIds
+        capturedUnreadCount
+        unreadCapturedRef
+    end
+
+    subgraph Selection["CLUSTER: Bulk Selection"]
+        selectionEnabled
+        selectedMessageIds
+    end
+
+    subgraph Drafts["CLUSTER: Draft Management"]
+        isEditing
+        replyToMessage
+        replyText
+        isSendingReply
+        isGeneratingAI
+        generatingDraftIds
+        editingDraftId
+        editingDraftText
+        showRegenerateConfirm
+        localDraftOverrides
+    end
+
+    subgraph Lifecycle["CLUSTER: Conversation Lifecycle"]
+        isUpdatingStatus
+        isGeneratingSummary
+    end
+
+    subgraph Sync["CLUSTER: Sync Control"]
+        isSyncing
+        isUpdatingSyncPause
+        syncCountdown
+    end
+
+    subgraph Memos["useMemo Derivados"]
+        threadMessages
+        activeDraftMessage
+        lastInboundMessage
+        threadFilterStats
+        filteredThreadMessages
+        filteredConversations
+        platformUnreadCounts
+    end
+
+    %% Flujo principal de datos
+    activeConversationMessages --> threadMessages
+    localDraftOverrides --> threadMessages
+    threadMessages --> activeDraftMessage
+    threadMessages --> lastInboundMessage
+    threadMessages --> threadFilterStats
+    threadFilterStats --> filteredThreadMessages
+    ThreadFilters --> filteredThreadMessages
+
+    conversations --> filteredConversations
+    Filters --> filteredConversations
+    focusedConversationId --> filteredConversations
+    conversations --> platformUnreadCounts
+
+    filteredConversations --> setActiveConversation
+
+    %% Triggers de useEffect
+    activeConversation -->|"useEffect L252"| Selection
+    activeConversation -->|"useEffect L252"| Unread
+    activeConversation -->|"useEffect L845"| isEditing
+    activeConversation -->|"useEffect L845"| localDraftOverrides
+    activeConversation -->|"useEffect L845"| ThreadFilters
+
+    focusedConversationId -->|"useEffect L541"| setActiveConversation
+    highlightedMessageId -->|"useEffect L558 setTimeout 5s"| clearHighlight["setHighlightedMessageId(null)"]
+    filteredConversations -->|"useEffect L836 auto-select"| setActiveConversation
+
+    %% Flujo Deep Link
+    processDeepLink --> focusedConversationId
+    processDeepLink --> highlightedConversationId
+    processDeepLink --> highlightedMessageId
+
+    %% Flujo Sync
+    syncStatus --> syncCountdown
+```
+
+### 6.2 Tabla de Dependencias Completa
+
+| Estado | Upstream (quién lo actualiza) | Downstream (a quién afecta) | Trigger/Condición |
+|--------|-------------------------------|-----------------------------|--------------------|
+| **SELECTION CLUSTER** |
+| `selectedMessageIds` | handleToggleSelection, handleClearSelection, useEffect L252, bulkDraftQueue.onComplete/onMessageComplete | BulkDraftActionBar UI, handleBulkGenerate | User click, conversation change, bulk complete |
+| `selectionEnabled` | toggle button, useEffect L252, bulkDraftQueue.onComplete | Selection checkboxes visibility | User click, conversation change |
+| **UNREAD CLUSTER** |
+| `unreadMessageIds` | useEffect L263, handleUnreadSeen | Message highlight rings UI | Messages load, user scrolls (6s visibility) |
+| `capturedUnreadCount` | useEffect L252 | useEffect L263 (captura IDs) | Conversation open |
+| `unreadCapturedRef` | useEffect L252, useEffect L263 | Evita doble captura | Internal flag |
+| **DEEP LINK CLUSTER** |
+| `focusedConversationId` | processDeepLink, exitFocusMode | filteredConversations, useEffect L541 | URL params, exit button |
+| `highlightedConversationId` | processDeepLink, exitFocusMode, setTimeout 3s | Conversation list highlight CSS | URL params, cleared after 3s |
+| `highlightedMessageId` | processDeepLink, useEffect L558 (setTimeout 5s clears) | Message scroll-to, highlight ring | URL params, cleared after 5s |
+| **FILTER CLUSTER** |
+| `searchQuery` | input onChange | filteredConversations | User typing |
+| `intentFilter` | Select onChange | filteredConversations (si implementado) | User selection |
+| `platformFilter` | handlePlatformFilterClick | filteredConversations, showOnlyUnread | Platform icon click |
+| `typeFilter` | Select onChange | filteredConversations | User selection |
+| `showOnlyUnread` | handlePlatformFilterClick, toggle button | filteredConversations | Platform click con unread, toggle |
+| `showInactiveNetworks` | toggle button | filteredConversations (excluye inactive providers) | User toggle |
+| `fireMode` | toggle button | UI visual indicator (no filtrado activo) | User toggle |
+| **THREAD FILTER CLUSTER** |
+| `threadFilterNoReply` | chip click, useEffect L845 | filteredThreadMessages | User click, conversation change resets |
+| `threadFilterWithDraft` | chip click, useEffect L845 | filteredThreadMessages | User click, conversation change resets |
+| `threadFilterWithReminder` | chip click, useEffect L845 | filteredThreadMessages | User click, conversation change resets |
+| **DRAFT CLUSTER** |
+| `isEditing` | toggle, useEffect L845 | Draft UI mode | User toggle, conversation change resets |
+| `replyToMessage` | handleStartReply, handleCancelReply | Reply composer visibility | User actions |
+| `replyText` | input onChange, handleStartReply (reset), handleCancelReply (reset) | Reply composer content | User typing |
+| `isSendingReply` | handleSendReply | Reply button loading | Send start/end |
+| `isGeneratingAI` | handleGenerateAIReply | AI button loading | AI generation |
+| `generatingDraftIds` | handleGenerateDraft, handleRegenerateDraft | Loading spinners per message | Draft generation start/end |
+| `editingDraftId` | startEditingDraft, cancelEditingDraft, handleSaveDraftEdit | Draft textarea visibility | User actions |
+| `editingDraftText` | startEditingDraft, cancelEditingDraft, input onChange | Draft textarea content | User editing |
+| `showRegenerateConfirm` | handleRegenerateDraft (opens), confirm/cancel actions | Confirm dialog visibility | User clicks regenerate |
+| `localDraftOverrides` | handleGenerateDraft, handleRegenerateDraft, handleSaveDraftEdit, handleDiscardDraft, handleSendDraft, useEffect L845 | threadMessages (merge) | Draft actions, conversation change resets |
+| **LIFECYCLE CLUSTER** |
+| `isUpdatingStatus` | handleUpdateConversationStatus | Dropdown disabled state | Status change start/end |
+| `isGeneratingSummary` | handleGenerateSummary | Summary button loading | Summary generation start/end |
+| **SYNC CLUSTER** |
+| `syncCountdown` | useEffect L432 (interval 1s) | Countdown display in header | Timer updates every second |
+| `isSyncing` | handleSyncData | Sync button loading spinner | Sync start/end |
+| `isUpdatingSyncPause` | handleToggleSyncPause | Pause toggle button loading | Toggle start/end |
+| **UI TOGGLES** |
+| `isCRMOpen` | toggle button | CRM panel visibility | User toggle |
+| `showScrollToTop` | scroll handler (internal) | Scroll-to-top button visibility | Scroll position |
+| `isBulkButtonHovered` | mouse events | Bulk button tooltip/styling | Mouse enter/leave |
+| **AUDIO PLAYER (interno, líneas 2398-2500)** |
+| `isPlaying` | play/pause button | Audio element play state | User click |
+| `currentTime` | audio timeupdate event | Progress bar position | Audio playback |
+| `duration` | audio loadedmetadata event | Progress bar max | Audio load |
+| `showTranscription` | toggle button | Transcription panel visibility | User toggle |
+| **NESTED COMPONENT (AudioMessage, línea 2636)** |
+| `isExpanded` | click on expandable section | Expanded content visibility | User click |
+| **REFS** |
+| `threadScrollRef` | React.useRef | Scroll container reference | Direct DOM access |
+| `audioRef` | React.useRef | Audio element reference | Audio control |
+| `progressRef` | React.useRef | Progress bar reference | Click-to-seek |
+
+> **Checksum:** 40 useState documentados en tabla (coincide con inventario sección 1)
+
+### 6.2.1 useEffect Triggers Completos (8 instancias)
+
+| Línea | Dependencias | Estados que ACTUALIZA | Descripción |
+|-------|--------------|----------------------|-------------|
+| 252 | `[activeConversation?.id]` | selectedMessageIds, selectionEnabled, unreadMessageIds, capturedUnreadCount, unreadCapturedRef | Reset completo al cambiar conversación |
+| 263 | `[activeConversation?.id, activeConversationMessages, capturedUnreadCount]` | unreadMessageIds, unreadCapturedRef | Captura IDs de mensajes no leídos |
+| 432 | `[syncStatus?.lastSyncTime, brandSyncStatus?.syncPaused]` | syncCountdown | Actualiza countdown cada segundo |
+| 510 | `[processDeepLink]` | (indirectamente via processDeepLink) | Ejecuta deep link al montar + navigation events |
+| 541 | `[focusedConversationId, conversations, activeConversation, setActiveConversation]` | activeConversation (via setActiveConversation) | Auto-selecciona conversación de deep link |
+| 558 | `[highlightedMessageId]` | highlightedMessageId | Limpia highlight después de 5s |
+| 836 | `[filteredConversations, activeConversation, isMobile, setActiveConversation]` | activeConversation (via setActiveConversation) | Auto-selecciona primera conversación (desktop) |
+| 845 | `[activeConversation?.id]` | isEditing, localDraftOverrides, threadFilterNoReply, threadFilterWithDraft, threadFilterWithReminder | Reset editing state y filtros |
+
+### 6.3 Cadenas de Dependencia Multi-Hop (Críticas para Refactor)
 
 ```
-                         NexusContext
-                              │
-        ┌─────────────────────┼─────────────────────┐
-        │                     │                     │
-        ▼                     ▼                     ▼
-  conversations      activeConversation    activeConversationMessages
-        │                     │                     │
-        │                     │                     ▼
-        │                     │            localDraftOverrides ──────┐
-        │                     │                     │                │
-        │                     │                     ▼                │
-        │                     │              threadMessages ◄────────┘
-        │                     │                     │
-        │                     │         ┌───────────┼───────────┐
-        │                     │         │           │           │
-        │                     │         ▼           ▼           ▼
-        │                     │   activeDraft   lastInbound  threadFilterStats
-        │                     │                                    │
-        │                     │                                    ▼
-        │                     │                          filteredThreadMessages
-        │                     │                                    │
-        ▼                     ▼                                    │
-  inboxFilters ──────► filteredConversations                       │
-  (7 estados)                 │                                    │
-        │                     │                                    │
-        ▼                     ▼                                    ▼
-  platformUnreadCounts   UI: Conversation List              UI: Message Thread
-                              │                                    │
-                              │                                    │
-                              ▼                                    ▼
-                      unreadTracking ◄─────────────────── BulkDraftActionBar
-                      (captura IDs)                        (selectedMessageIds)
+1. Conversation Selection Chain (6 estados reseteados):
+   activeConversation.id CHANGE
+   └─► useEffect L252
+       ├─► setSelectedMessageIds(empty)
+       ├─► setSelectionEnabled(false)
+       ├─► setUnreadMessageIds(empty)
+       └─► setCapturedUnreadCount(unreadCount)
+   └─► useEffect L845
+       ├─► setIsEditing(false)
+       ├─► setLocalDraftOverrides(empty)
+       ├─► setThreadFilterNoReply(false)
+       ├─► setThreadFilterWithDraft(false)
+       └─► setThreadFilterWithReminder(false)
 
-Flujo de Deep Links:
-  URL params ──► processDeepLink ──► focusedConversationId ──► filteredConversations
-                                          │
-                                          ▼
-                                  setActiveConversation (auto-select)
+2. Deep Link Focus Chain:
+   URL params
+   └─► processDeepLink()
+       ├─► setFocusedConversationId(id)
+       ├─► setHighlightedConversationId(id)
+       └─► setHighlightedMessageId(msgId)
+   └─► useEffect L541
+       └─► setActiveConversation(found)
+   └─► setTimeout 3s → setHighlightedConversationId(null)
+   └─► useEffect L558 → setTimeout 5s → setHighlightedMessageId(null)
 
-Flujo de Sync:
-  syncStatus ──► syncCountdown (useEffect) ──► UI countdown display
-       │
-       ▼
-  handleSyncData ──► refreshFeed ──► invalidateQueries
+3. Thread Message Derivation Chain:
+   activeConversationMessages + localDraftOverrides
+   └─► threadMessages (useMemo L633)
+       ├─► activeDraftMessage (useMemo L693)
+       ├─► lastInboundMessage (useMemo L700)
+       └─► threadFilterStats (useMemo L710)
+           └─► filteredThreadMessages (useMemo L792)
+
+4. Platform Filter + Unread Chain:
+   handlePlatformFilterClick(platform, hasUnread)
+   ├─► setPlatformFilter(platform)
+   └─► setShowOnlyUnread(hasUnread)
+   └─► filteredConversations recalculates
 ```
 
-### Dependencias Críticas
+### 6.4 Insights para Refactorización
 
-| Estado/Memo | Depende de | Afecta a |
-|-------------|------------|----------|
-| `threadMessages` | activeConversationMessages, localDraftOverrides | activeDraftMessage, lastInboundMessage, threadFilterStats |
-| `filteredConversations` | conversations, todos los filtros, focusedConversationId | UI lista, auto-select |
-| `threadFilterStats` | threadMessages | filteredThreadMessages, badges de filtros |
-| `unreadMessageIds` | capturedUnreadCount, activeConversationMessages | highlight visual de mensajes nuevos |
-| `localDraftOverrides` | API responses (optimistic updates) | threadMessages (merge) |
+**Co-cambios identificados (estados que SIEMPRE se actualizan juntos):**
+
+| Grupo | Estados | Frecuencia | Acción Recomendada |
+|-------|---------|------------|-------------------|
+| Reset Conversation | selectedMessageIds, selectionEnabled, unreadMessageIds, capturedUnreadCount | Siempre | Mantener en mismo hook |
+| Reset Thread State | isEditing, localDraftOverrides, threadFilter* | Siempre | Combinar en useInboxFilters |
+| Deep Link Highlight | focusedConversationId, highlightedConversationId, highlightedMessageId | Siempre | Extraer a useDeepLink |
+| Platform + Unread | platformFilter, showOnlyUnread | handlePlatformFilterClick | Mantener juntos en useInboxFilters |
+| Draft Edit | editingDraftId, editingDraftText | startEditingDraft/cancelEditingDraft | Extraer a useDraftManagement |
+
+**Acoplamiento crítico detectado:**
+- `threadMessages` es el hub central: 5 useMemos dependen de él
+- `activeConversation?.id` dispara 2 useEffects que resetean 10 estados combinados
+- `filteredConversations` depende de 7 estados de filtro + focusedConversationId
 
 ---
 
