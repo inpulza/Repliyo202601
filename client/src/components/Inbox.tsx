@@ -384,7 +384,12 @@ export function Inbox() {
     try {
       const result = await api.lifecycle.generateSummary(activeConversation.id);
       if (result && result.success && result.summary) {
-        setConversationSummary(result.summary);
+        // result.summary is an object { summary, sentiment, intent, resolution }
+        // Extract the text summary string
+        const summaryText = typeof result.summary === 'string' 
+          ? result.summary 
+          : result.summary.summary;
+        setConversationSummary(summaryText || "Resumen generado sin texto");
       } else {
         throw new Error(result?.message || "No se recibió resumen válido");
       }
