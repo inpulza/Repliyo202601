@@ -1,8 +1,28 @@
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
+import { z } from 'zod';
 import { SentimentAlertRepository } from '../repositories/SentimentAlertRepository';
 import { storage } from '../storage';
 import type { AuthenticatedUser } from '../auth';
+
+const validSeverities = ['P1', 'P2', 'P3', 'P4'] as const;
+const validStatuses = ['new', 'acknowledged', 'in_progress', 'resolved', 'dismissed'] as const;
+
+const alertListQuerySchema = z.object({
+  severity: z.string().optional().transform(val =>
+    val ? val.split(',').filter(s => validSeverities.includes(s as any)) : undefined
+  ),
+  status: z.string().optional().transform(val =>
+    val ? val.split(',').filter(s => validStatuses.includes(s as any)) : undefined
+  ),
+  limit: z.string().optional().transform(val => Math.min(parseInt(val || '50') || 50, 200)),
+  offset: z.string().optional().transform(val => Math.max(parseInt(val || '0') || 0, 0)),
+});
+
+const updateStatusBodySchema = z.object({
+  status: z.enum(validStatuses),
+  notes: z.string().max(2000).optional(),
+});
 
 const router = Router();
 
@@ -51,10 +71,11 @@ const validateBrandAccess = async (req: Request, res: Response, next: NextFuncti
 router.get('/api/brands/:brandId/sentiment-alerts', requireAuth, validateBrandAccess, async (req: Request, res: Response) => {
   try {
     const { brandId } = req.params;
-    const severity = req.query.severity ? (req.query.severity as string).split(',') : undefined;
-    const status = req.query.status ? (req.query.status as string).split(',') : undefined;
-    const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
-    const offset = parseInt(req.query.offset as string) || 0;
+    const parsed = alertListQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid query parameters', details: parsed.error.issues });
+    }
+    const { severity, status, limit, offset } = parsed.data;
 
     const alerts = await SentimentAlertRepository.getByBrand(brandId, {
       severity,
@@ -95,13 +116,13 @@ router.get('/api/brands/:brandId/sentiment-alerts/count', requireAuth, validateB
 router.patch('/api/brands/:brandId/sentiment-alerts/:id/status', requireAuth, validateBrandAccess, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { status, notes } = req.body;
     const user = (req as any).user;
 
-    const validStatuses = ['new', 'acknowledged', 'in_progress', 'resolved', 'dismissed'];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
+    const parsed = updateStatusBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request body', details: parsed.error.issues });
     }
+    const { status, notes } = parsed.data;
 
     const alert = await SentimentAlertRepository.getById(id);
     if (!alert) {

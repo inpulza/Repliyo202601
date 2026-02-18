@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 interface NotificationPayload {
-  type: 'new_message' | 'sync_complete' | 'agent_reply' | 'agent_cooldown' | 'subscribed' | 'connected' | 'error';
+  type: 'new_message' | 'sync_complete' | 'agent_reply' | 'agent_cooldown' | 'crisis_alert' | 'subscribed' | 'connected' | 'error';
   brandId?: string;
   data?: any;
   message?: string;
@@ -16,11 +16,12 @@ interface UseWebSocketOptions {
   onSyncComplete?: (data: any) => void;
   onAgentReply?: (data: any) => void;
   onAgentCooldown?: (data: any) => void;
+  onCrisisAlert?: (data: any) => void;
   showToasts?: boolean;
 }
 
 export function useWebSocket(options: UseWebSocketOptions = {}) {
-  const { brandId, userId, onNewMessage, onSyncComplete, onAgentReply, onAgentCooldown, showToasts = true } = options;
+  const { brandId, userId, onNewMessage, onSyncComplete, onAgentReply, onAgentCooldown, onCrisisAlert, showToasts = true } = options;
   const [isConnected, setIsConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState<NotificationPayload | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -31,6 +32,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   const onSyncCompleteRef = useRef(onSyncComplete);
   const onAgentReplyRef = useRef(onAgentReply);
   const onAgentCooldownRef = useRef(onAgentCooldown);
+  const onCrisisAlertRef = useRef(onCrisisAlert);
   const showToastsRef = useRef(showToasts);
   const brandIdRef = useRef(brandId);
   const userIdRef = useRef(userId);
@@ -39,6 +41,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   useEffect(() => { onSyncCompleteRef.current = onSyncComplete; }, [onSyncComplete]);
   useEffect(() => { onAgentReplyRef.current = onAgentReply; }, [onAgentReply]);
   useEffect(() => { onAgentCooldownRef.current = onAgentCooldown; }, [onAgentCooldown]);
+  useEffect(() => { onCrisisAlertRef.current = onCrisisAlert; }, [onCrisisAlert]);
   useEffect(() => { showToastsRef.current = showToasts; }, [showToasts]);
   useEffect(() => { brandIdRef.current = brandId; }, [brandId]);
   useEffect(() => { userIdRef.current = userId; }, [userId]);
@@ -105,6 +108,17 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
                   title: "Mensaje omitido por cooldown",
                   description: `El agente esperará ${payload.data.remainingSeconds ?? 0}s antes de responder`,
                   variant: "default",
+                });
+              }
+              break;
+            case 'crisis_alert':
+              onCrisisAlertRef.current?.(payload.data);
+              if (showToastsRef.current) {
+                const severity = payload.data?.severity || 'P1';
+                toast({
+                  title: `⚠️ Alerta ${severity} detectada`,
+                  description: payload.data?.messagePreview?.substring(0, 80) || 'Nuevo mensaje crítico requiere atención',
+                  variant: "destructive",
                 });
               }
               break;

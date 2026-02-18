@@ -173,7 +173,7 @@ export function CrisisAlerts() {
         </Card>
       </div>
 
-      <div className="mt-4 space-y-3 px-4">
+      <div className="mt-4 space-y-3 px-4" data-testid="filter-section">
         <div className="flex items-center gap-2 flex-wrap">
           <Filter className="w-4 h-4 text-gray-400" />
           <span className="text-xs font-medium text-gray-500 mr-1">Severidad:</span>
@@ -221,13 +221,13 @@ export function CrisisAlerts() {
         </div>
       </div>
 
-      <div className="mt-4 px-4 space-y-3 pb-20">
+      <div className="mt-4 px-4 space-y-3 pb-20" data-testid="alerts-list">
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
+          <div data-testid="loading-alerts" className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
           </div>
         ) : alerts.length === 0 ? (
-          <Card>
+          <Card data-testid="empty-alerts">
             <CardContent className="py-12 text-center">
               <ShieldAlert className="w-12 h-12 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-500 text-sm">No hay alertas con los filtros seleccionados</p>
@@ -272,10 +272,10 @@ export function CrisisAlerts() {
                         )}
                       </div>
 
-                      <p className="text-sm text-gray-800 font-medium mb-1">
+                      <p data-testid={`text-author-${alert.id}`} className="text-sm text-gray-800 font-medium mb-1">
                         @{alert.messageAuthor}
                       </p>
-                      <p className="text-sm text-gray-600 line-clamp-2">
+                      <p data-testid={`text-message-${alert.id}`} className="text-sm text-gray-600 line-clamp-2">
                         "{alert.messagePreview}"
                       </p>
 
