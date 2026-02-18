@@ -160,18 +160,6 @@ export function Login() {
             Acceso social no disponible de momento
           </p>
 
-          {/* Divider */}
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-gray-50 text-gray-400">
-                acceso con credenciales
-              </span>
-            </div>
-          </div>
-
           {/* Login Form */}
           <form onSubmit={handleLogin} className="space-y-5">
             <div className="space-y-2">
