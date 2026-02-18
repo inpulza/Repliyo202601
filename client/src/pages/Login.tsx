@@ -86,10 +86,6 @@ export function Login() {
     }
   };
 
-  const handleSocialLogin = () => {
-    window.location.href = '/api/login';
-  };
-
   const slides = carouselSlides;
 
   return (
@@ -115,13 +111,13 @@ export function Login() {
             </p>
           </div>
 
-          {/* Social Login Buttons */}
+          {/* Social Login Buttons - Disabled */}
           <div className="grid grid-cols-2 gap-3 mb-6">
             <Button
               type="button"
               variant="outline"
-              className="h-12 border-gray-300 hover:bg-gray-100 font-medium"
-              onClick={handleSocialLogin}
+              className="h-12 border-gray-200 font-medium opacity-50 cursor-not-allowed"
+              disabled
               data-testid="button-google-login"
             >
               <GoogleIcon />
@@ -130,8 +126,8 @@ export function Login() {
             <Button
               type="button"
               variant="outline"
-              className="h-12 border-gray-300 hover:bg-gray-100 font-medium"
-              onClick={handleSocialLogin}
+              className="h-12 border-gray-200 font-medium opacity-50 cursor-not-allowed"
+              disabled
               data-testid="button-github-login"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -142,8 +138,8 @@ export function Login() {
             <Button
               type="button"
               variant="outline"
-              className="h-12 border-gray-300 hover:bg-gray-100 font-medium"
-              onClick={handleSocialLogin}
+              className="h-12 border-gray-200 font-medium opacity-50 cursor-not-allowed"
+              disabled
               data-testid="button-apple-login"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -154,8 +150,8 @@ export function Login() {
             <Button
               type="button"
               variant="outline"
-              className="h-12 border-gray-300 hover:bg-gray-100 font-medium"
-              onClick={handleSocialLogin}
+              className="h-12 border-gray-200 font-medium opacity-50 cursor-not-allowed"
+              disabled
               data-testid="button-twitter-login"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -165,7 +161,7 @@ export function Login() {
             </Button>
           </div>
           <p className="text-xs text-center text-gray-500 mb-4 -mt-3">
-            Serás redirigido a Replit para elegir tu proveedor
+            Proximamente - Acceso social no disponible
           </p>
 
           {/* Divider */}
@@ -267,17 +263,18 @@ export function Login() {
             </Button>
           </form>
 
-          {/* Register Link */}
+          {/* Contact for Access */}
           <p className="mt-8 text-center text-gray-600">
-            ¿No tienes una cuenta?{' '}
-            <button
-              type="button"
+            ¿Necesitas acceso?{' '}
+            <a
+              href="https://wa.me/17864346163"
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-indigo-600 hover:text-indigo-700 font-medium"
-              onClick={() => setLocation('/register')}
-              data-testid="link-register"
+              data-testid="link-contact-access"
             >
-              Crear una cuenta
-            </button>
+              Contáctanos por WhatsApp
+            </a>
           </p>
         </div>
       </div>

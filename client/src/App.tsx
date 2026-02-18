@@ -18,7 +18,6 @@ import { useEffect } from "react";
 import { Connections } from "@/pages/Connections";
 import { IntegrationsPage } from "@/pages/Integrations";
 import { Login } from "@/pages/Login";
-import Register from "@/pages/Register";
 import { ProfileSettings } from "@/pages/ProfileSettings";
 import { CRM } from "@/pages/CRM";
 import { CrisisAlerts } from "@/pages/CrisisAlerts";
@@ -83,7 +82,7 @@ function Router() {
       {/* Public routes */}
       <Route path="/" component={HomeRoute} />
       <Route path="/login" component={Login} />
-      <Route path="/register" component={Register} />
+      <Route path="/register">{() => <LegacyRedirect newPath="/login" />}</Route>
       
       {/* Legacy URL redirects (for old bookmarks) */}
       <Route path="/inbox">{() => <LegacyRedirect newPath="/app/inbox" />}</Route>

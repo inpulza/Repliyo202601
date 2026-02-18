@@ -183,6 +183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   app.post("/api/auth/public-register", authRateLimiter, async (req, res) => {
+    return res.status(403).json({ error: "El registro público está deshabilitado. Contáctanos por WhatsApp para solicitar acceso." });
     try {
       const { email, password, name } = publicRegisterSchema.parse(req.body);
 

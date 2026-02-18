@@ -83,19 +83,11 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
-    ensureStrategy(req.hostname);
-    passport.authenticate(`replitauth:${req.hostname}`, {
-      prompt: "login consent",
-      scope: ["openid", "email", "profile", "offline_access"],
-    })(req, res, next);
+    return res.status(403).json({ error: "Social login is currently disabled. Please use email/password." });
   });
 
   app.get("/api/callback", (req, res, next) => {
-    ensureStrategy(req.hostname);
-    passport.authenticate(`replitauth:${req.hostname}`, {
-      successReturnToOrRedirect: "/app/inbox",
-      failureRedirect: "/login",
-    })(req, res, next);
+    return res.redirect("/login");
   });
 
   app.get("/api/logout", (req, res) => {
