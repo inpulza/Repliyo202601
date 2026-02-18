@@ -229,21 +229,24 @@ export function Inbox() {
   // Track the unreadCount at the moment the conversation was opened
   const [capturedUnreadCount, setCapturedUnreadCount] = useState<number>(0);
 
+  // Track message IDs that were just bulk-generated so we can re-select them after data refresh
+  const bulkGeneratedIdsRef = React.useRef<string[]>([]);
+
   // Bulk Draft Queue Hook
   const bulkDraftQueue = useBulkDraftQueue({
     brandId: activeClientId || '',
     maxConcurrency: 3,
     onComplete: (results) => {
-      // Clear selection after successful completion
-      if (results.errorCount === 0) {
-        setSelectedMessageIds(new Set());
-        setSelectionEnabled(false);
-      }
-      // Refresh data
       queryClient.invalidateQueries({ queryKey: ['conversationMessages'] });
+      if (bulkGeneratedIdsRef.current.length > 0) {
+        const generatedIds = new Set(bulkGeneratedIdsRef.current);
+        setSelectedMessageIds(generatedIds);
+        bulkGeneratedIdsRef.current = [];
+      }
     },
     onMessageComplete: (messageId, success) => {
       if (success) {
+        bulkGeneratedIdsRef.current.push(messageId);
         setSelectedMessageIds(prev => {
           const next = new Set(prev);
           next.delete(messageId);
