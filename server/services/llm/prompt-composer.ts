@@ -1129,6 +1129,58 @@ function replaceReminderVariables(
   return result;
 }
 
+/**
+ * Detecta el idioma predominante de la conversación basándose en los mensajes inbound del cliente.
+ * Usa heurísticas simples de palabras comunes para detectar español, inglés y portugués.
+ * 
+ * @returns 'es' | 'en' | 'pt' | 'other'
+ */
+function detectConversationLanguage(conversationHistory: Message[]): 'es' | 'en' | 'pt' | 'other' {
+  const inboundMessages = conversationHistory.filter(m => m.direction === 'inbound' && m.content);
+  if (inboundMessages.length === 0) return 'es';
+
+  const combinedText = inboundMessages
+    .map(m => m.content || '')
+    .join(' ')
+    .toLowerCase();
+
+  if (combinedText.length < 3) return 'es';
+
+  const englishWords = ['the', 'is', 'are', 'was', 'were', 'have', 'has', 'had', 'will', 'would', 'could', 'should', 'can', 'do', 'does', 'did', 'not', 'but', 'and', 'or', 'for', 'with', 'this', 'that', 'what', 'how', 'much', 'many', 'about', 'your', 'you', 'my', 'please', 'thank', 'thanks', 'hello', 'help', 'need', 'want', 'looking', 'interested', 'information', 'price', 'cost', 'available', 'where', 'when', 'who', 'which', 'more', 'some', 'any', 'also', 'just', 'know', 'like', 'good', 'great', 'nice', 'yes', 'sure', 'okay', 'really', 'very', 'much', 'here', 'there'];
+  const spanishWords = ['el', 'la', 'los', 'las', 'es', 'son', 'fue', 'era', 'tiene', 'hay', 'para', 'por', 'con', 'que', 'del', 'una', 'como', 'más', 'pero', 'este', 'esta', 'eso', 'hola', 'gracias', 'buenas', 'buenos', 'quiero', 'necesito', 'puede', 'puedo', 'dónde', 'cuándo', 'cuánto', 'precio', 'información', 'disponible', 'interesado', 'interesada', 'también', 'bien', 'favor', 'ayuda', 'tengo', 'estoy', 'soy', 'muy', 'aquí', 'ahí', 'algo', 'todo', 'nada', 'donde', 'cuando', 'cuanto'];
+  const portugueseWords = ['o', 'os', 'uma', 'umas', 'é', 'são', 'foi', 'tem', 'há', 'para', 'por', 'com', 'que', 'como', 'mais', 'mas', 'este', 'esta', 'isso', 'olá', 'obrigado', 'obrigada', 'bom', 'boa', 'quero', 'preciso', 'pode', 'posso', 'onde', 'quando', 'quanto', 'preço', 'informação', 'disponível', 'interessado', 'interessada', 'também', 'bem', 'ajuda', 'tenho', 'estou', 'sou', 'muito', 'aqui', 'ali', 'algo', 'tudo', 'nada', 'você', 'vocês', 'não', 'sim'];
+
+  const words = combinedText.split(/\s+/);
+
+  let enScore = 0;
+  let esScore = 0;
+  let ptScore = 0;
+
+  for (const word of words) {
+    const clean = word.replace(/[^a-záéíóúñüàâãçê]/gi, '');
+    if (clean.length < 2) continue;
+    if (englishWords.includes(clean)) enScore++;
+    if (spanishWords.includes(clean)) esScore++;
+    if (portugueseWords.includes(clean)) ptScore++;
+  }
+
+  // Check for strong language markers
+  if (/[áéíóúñ¿¡]/.test(combinedText)) esScore += 3;
+  if (/[ãõçâê]/.test(combinedText)) ptScore += 5;
+  if (/\b(you|your|i'm|don't|can't|won't|isn't|aren't|didn't|doesn't|wouldn't|couldn't|shouldn't|i've|i'll|we're|they're|it's)\b/i.test(combinedText)) enScore += 5;
+  if (/\b(você|não|sim|obrigad[oa])\b/i.test(combinedText)) ptScore += 5;
+
+  const maxScore = Math.max(enScore, esScore, ptScore);
+
+  if (maxScore === 0) return 'es';
+  if (ptScore === maxScore && ptScore > esScore) return 'pt';
+  if (enScore === maxScore && enScore > esScore) return 'en';
+  if (esScore >= maxScore) return 'es';
+  if (maxScore > 0 && esScore === 0 && enScore === 0 && ptScore === 0) return 'other';
+
+  return 'es';
+}
+
 export function composeReminderPrompt(context: ReminderPromptContext): ReminderPromptResult {
   const { 
     agent, 
@@ -1288,6 +1340,16 @@ ${crmLines.join('\n')}
   const platformGuidelines = PLATFORM_LENGTH_GUIDELINES[platform.toLowerCase()] || PLATFORM_LENGTH_GUIDELINES.default;
   const lengthInstruction = `\n\n**LÍMITE DE CARACTERES (${platform.toUpperCase()}):** ${platformGuidelines.style}`;
   
+  // Detectar idioma de la conversación basándose en los mensajes del cliente
+  const detectedLanguage = detectConversationLanguage(conversationHistory);
+  const languageInstruction = detectedLanguage === 'en'
+    ? `\n\n**CRITICAL - LANGUAGE RULE:** The customer wrote in ENGLISH. You MUST respond in ENGLISH. Do NOT respond in Spanish. The examples below are just for reference of the structure; translate and adapt them to English.`
+    : detectedLanguage === 'pt'
+    ? `\n\n**CRÍTICO - REGLA DE IDIOMA:** El cliente escribió en PORTUGUÉS. DEBES responder en PORTUGUÉS. NO respondas en español. Los ejemplos abajo son solo referencia de estructura; tradúcelos y adáptalos al portugués.`
+    : detectedLanguage === 'other'
+    ? `\n\n**CRÍTICO - REGLA DE IDIOMA:** Responde EXACTAMENTE en el mismo idioma que usó el cliente en sus mensajes. Detecta el idioma del historial de conversación y úsalo. Los ejemplos abajo son solo referencia de estructura; adáptalos al idioma del cliente.`
+    : '';
+  
   // Encontrar la última respuesta del agente para referencia
   const outboundMessages = conversationHistory.filter(m => m.direction === 'outbound');
   const lastAgentMessage = outboundMessages.length > 0 ? outboundMessages[outboundMessages.length - 1] : null;
@@ -1296,23 +1358,28 @@ ${crmLines.join('\n')}
   userParts.push(`
 --- TAREA: MENSAJE DE FOLLOW-UP ---
 **ESTO ES UN RECORDATORIO/FOLLOW-UP, NO UNA NUEVA RESPUESTA.**
+${languageInstruction}
 
 Tu objetivo es generar un mensaje BREVE que:
 1. **Pregunte si el cliente pudo realizar la acción** que le sugeriste anteriormente (ej: contactar por WhatsApp, visitar el local, revisar información)
 2. **NO repitas la información original** - el cliente ya la recibió
 3. **Ofrece ayuda adicional** si la necesita
 
+**REGLA DE IDIOMA:** Responde SIEMPRE en el mismo idioma que el cliente usó en la conversación. Si el cliente escribió en inglés, responde en inglés. Si escribió en español, responde en español. Analiza el historial para determinar el idioma.
+
 ${lastAgentMessage ? `Tu último mensaje al cliente fue: "${actionFromLastMessage}${actionFromLastMessage.length >= 100 ? '...' : ''}"` : ''}
 
-**EJEMPLOS DE BUEN FOLLOW-UP:**
-- "Hola ${firstName || 'cliente'}! ¿Pudiste contactarnos por WhatsApp? Estamos aquí si tienes alguna pregunta 😊"
-- "Hey ${firstName || ''}! Solo quería saber si pudiste revisar la información. ¿Necesitas ayuda con algo más?"
-- "Hola! ¿Todo bien? ¿Pudiste comunicarte con nosotros? Aquí estamos para ayudarte"
+**EJEMPLOS DE BUEN FOLLOW-UP (adapta al idioma del cliente):**
+- ES: "Hola ${firstName || 'cliente'}! ¿Pudiste contactarnos por WhatsApp? Estamos aquí si tienes alguna pregunta 😊"
+- EN: "Hi ${firstName || 'there'}! Were you able to reach us on WhatsApp? We're here if you have any questions 😊"
+- ES: "Hey ${firstName || ''}! Solo quería saber si pudiste revisar la información. ¿Necesitas ayuda con algo más?"
+- EN: "Hey ${firstName || ''}! Just wanted to check if you were able to review the information. Need any help?"
 
 **EJEMPLOS DE MAL FOLLOW-UP (NO HACER):**
 - Repetir la misma respuesta anterior
 - Volver a dar toda la información de contacto
 - Responder como si fuera un mensaje nuevo
+- Responder en un idioma diferente al del cliente
 
 ${hasContext ? 'Usa el historial para entender qué acción sugeriste y pregunta específicamente por ella.' : 'No hay historial disponible, genera un mensaje amable preguntando si necesita ayuda.'}
 ${firstName ? `\nUsa el nombre "${firstName}" para personalizar.` : ''}${mentionInstruction}${lengthInstruction}
@@ -1326,6 +1393,7 @@ Responde SOLO con el mensaje de follow-up, sin explicaciones.`);
 Tipo: ${isDm ? 'DM' : 'Comentario'}
 Reminder: #${reminderNumber}/${maxReminders}
 Historial: ${conversationHistory.length} mensajes
+Idioma detectado: ${detectedLanguage}
 UserSummary: ${userSummary ? 'Sí' : 'No'}
 SocialPost: ${socialPost?.caption ? 'Sí' : 'No'}
 CRM Profile: ${crmProfile ? 'Sí' : 'No'}
