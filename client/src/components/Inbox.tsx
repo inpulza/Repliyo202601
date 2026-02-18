@@ -644,6 +644,15 @@ export function Inbox() {
     enabled: !!activeClientId,
   });
 
+  const { data: crisisAlertsByConversation = {} } = useQuery<Record<string, { severity: string; sentiment: string; category: string; status: string }>>({
+    queryKey: ['crisisAlertsByConversation', activeClientId],
+    queryFn: () => activeClientId ? api.sentimentAlerts.getByConversation(activeClientId) : Promise.resolve({}),
+    enabled: !!activeClientId,
+    refetchInterval: 60000,
+  });
+
+  const crisisConversationCount = Object.keys(crisisAlertsByConversation).length;
+
   const normalizeProviderToPlatform = (provider: string): string => {
     const mapping: Record<string, string> = {
       'tiktokbusiness': 'tiktok',
@@ -684,13 +693,26 @@ export function Inbox() {
       if (!showInactiveNetworks && inactiveProviders.length > 0) {
         if (inactiveProviders.includes(c.platform.toLowerCase())) return false;
       }
+      if (fireMode) {
+        if (!crisisAlertsByConversation[c.id]) return false;
+      }
       return true;
     })
-    .sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
+    .sort((a, b) => {
+      if (fireMode) {
+        const sevRank: Record<string, number> = { P1: 1, P2: 2, P3: 3, P4: 4 };
+        const aAlert = crisisAlertsByConversation[a.id];
+        const bAlert = crisisAlertsByConversation[b.id];
+        if (aAlert && bAlert && aAlert.severity !== bAlert.severity) {
+          return (sevRank[aAlert.severity] || 99) - (sevRank[bAlert.severity] || 99);
+        }
+      }
+      return new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime();
+    });
 
   // Calculate Stats for Header (from conversations)
   const totalUnread = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
-  const criticalCount = 0;
+  const criticalCount = crisisConversationCount;
   const opportunityCount = 0;
   const pendingCount = totalUnread;
 
@@ -1540,7 +1562,7 @@ export function Inbox() {
                 />
             </div>
             
-            <div className={cn("flex items-center gap-2 shrink-0 px-3 py-1.5 rounded-md transition-colors", fireMode ? "bg-white" : "bg-white")} title="Fire Mode: Show High & Medium Urgency">
+            <div className={cn("flex items-center gap-2 shrink-0 px-3 py-1.5 rounded-md transition-colors", fireMode ? "bg-red-50 ring-1 ring-red-200" : "bg-white")} title="Fire Mode: Show Crisis Alerts (P1/P2)" data-testid="fire-mode-toggle">
                 <Switch 
                     id="fire-mode" 
                     checked={fireMode} 
@@ -1549,6 +1571,11 @@ export function Inbox() {
                 />
                 <Label htmlFor="fire-mode" className={cn("text-xs font-bold cursor-pointer select-none flex items-center gap-1", fireMode ? "text-red-600" : "text-gray-500")}>
                     <Flame className={cn("h-3.5 w-3.5", fireMode && "fill-red-500")} />
+                    {crisisConversationCount > 0 && (
+                      <span className={cn("text-[10px] font-bold min-w-[16px] h-4 flex items-center justify-center rounded-full px-1", fireMode ? "bg-red-500 text-white" : "bg-red-100 text-red-600")} data-testid="text-crisis-count">
+                        {crisisConversationCount}
+                      </span>
+                    )}
                 </Label>
             </div>
           </div>
@@ -1724,6 +1751,7 @@ export function Inbox() {
                       isSelected={activeConversation?.id === conv.id} 
                       onClick={() => setActiveConversation(conv)}
                       isHighlighted={highlightedConversationId === conv.id}
+                      crisisAlert={crisisAlertsByConversation[conv.id]}
                     />
                   </React.Fragment>
                 ))

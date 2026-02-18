@@ -10616,15 +10616,28 @@ sentiment_alerts (
 ### API Endpoints
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| GET | `/api/sentiment-alerts` | Listar alertas con filtros (brandId, severity, status, limit, offset) |
-| GET | `/api/sentiment-alerts/stats` | Estadísticas por severidad y status |
-| PATCH | `/api/sentiment-alerts/:id/status` | Actualizar status (acknowledge/resolve/dismiss) |
+| GET | `/api/brands/:brandId/sentiment-alerts` | Listar alertas con filtros (severity, status, limit, offset) |
+| GET | `/api/brands/:brandId/sentiment-alerts/stats` | Estadísticas por severidad y status |
+| GET | `/api/brands/:brandId/sentiment-alerts/count` | Conteo de alertas activas P1/P2 |
+| GET | `/api/brands/:brandId/sentiment-alerts/by-conversation` | Mapa de conversaciones con alertas activas P1/P2 (para Fire Mode) |
+| GET | `/api/brands/:brandId/sentiment-alerts/:id` | Obtener alerta individual |
+| PATCH | `/api/brands/:brandId/sentiment-alerts/:id/status` | Actualizar status (acknowledge/in_progress/resolve/dismiss) |
 
 ### Frontend - Crisis Alerts Dashboard (`/app/crisis-alerts`)
 - **Estadísticas:** Cards con conteo por severidad (P1-P4) y status (nuevas/resueltas)
 - **Filtros:** Toggle por severidad y status
 - **Lista de alertas:** Cards con severidad, categoría, status, preview del mensaje, acciones
-- **Acciones:** Acknowledge, Resolve, Dismiss, Ver conversación
+- **Acciones:** Acknowledge, In Progress, Resolve, Dismiss, Ver conversación
+
+### Fire Mode - Integración con Inbox (18-Feb-2026)
+El toggle "Fire Mode" (icono de llama) en el Inbox filtra conversaciones para mostrar solo aquellas con alertas de crisis activas (P1/P2).
+
+- **Query:** `useQuery` con `refetchInterval: 60000` al endpoint `by-conversation`
+- **Filtro:** Cuando Fire Mode está activo, `filteredConversations` solo muestra conversaciones con alertas P1/P2
+- **Ordenamiento:** En Fire Mode, P1 se muestra antes que P2
+- **Badge visual:** `ConversationCard` muestra badge de severidad (P1 rojo, P2 naranja) con icono `AlertTriangle`
+- **Contador:** El toggle muestra el número de conversaciones con alertas activas
+- **Seguridad:** Endpoint protegido por `requireAuth` + `validateBrandAccess`
 
 *Sección creada: 18 Febrero 2026*
 *Estado: Completado*

@@ -844,6 +844,13 @@ export const api = {
       return data.count;
     },
 
+    getByConversation: async (brandId: string): Promise<Record<string, { severity: string; sentiment: string; category: string; status: string }>> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/sentiment-alerts/by-conversation`);
+      if (!res.ok) throw new Error('Failed to fetch alerts by conversation');
+      const data = await res.json();
+      return data.conversations;
+    },
+
     updateStatus: async (brandId: string, alertId: string, status: string, notes?: string): Promise<any> => {
       const res = await fetch(`${API_BASE}/brands/${brandId}/sentiment-alerts/${alertId}/status`, {
         method: 'PATCH',

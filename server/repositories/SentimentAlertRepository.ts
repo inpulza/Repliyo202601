@@ -124,4 +124,34 @@ export class SentimentAlertRepository {
       );
     return result?.count || 0;
   }
+
+  static async getActiveAlertsByConversation(brandId: string): Promise<
+    Array<{ conversationId: string; severity: string; sentiment: string; category: string; status: string }>
+  > {
+    const alerts = await db
+      .select({
+        conversationId: sentimentAlerts.conversationId,
+        severity: sentimentAlerts.severity,
+        sentiment: sentimentAlerts.sentiment,
+        category: sentimentAlerts.category,
+        status: sentimentAlerts.status,
+      })
+      .from(sentimentAlerts)
+      .where(
+        and(
+          eq(sentimentAlerts.brandId, brandId),
+          inArray(sentimentAlerts.status, ['new', 'acknowledged', 'in_progress']),
+          inArray(sentimentAlerts.severity, ['P1', 'P2'])
+        )
+      )
+      .orderBy(desc(sentimentAlerts.createdAt));
+
+    return alerts.filter(a => a.conversationId !== null) as Array<{
+      conversationId: string;
+      severity: string;
+      sentiment: string;
+      category: string;
+      status: string;
+    }>;
+  }
 }

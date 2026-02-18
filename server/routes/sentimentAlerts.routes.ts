@@ -113,6 +113,32 @@ router.get('/api/brands/:brandId/sentiment-alerts/count', requireAuth, validateB
   }
 });
 
+router.get('/api/brands/:brandId/sentiment-alerts/by-conversation', requireAuth, validateBrandAccess, async (req: Request, res: Response) => {
+  try {
+    const { brandId } = req.params;
+    const alerts = await SentimentAlertRepository.getActiveAlertsByConversation(brandId);
+
+    const severityRank: Record<string, number> = { P1: 1, P2: 2, P3: 3, P4: 4 };
+    const byConversation: Record<string, { severity: string; sentiment: string; category: string; status: string }> = {};
+    for (const alert of alerts) {
+      const existing = byConversation[alert.conversationId];
+      if (!existing || (severityRank[alert.severity] || 99) < (severityRank[existing.severity] || 99)) {
+        byConversation[alert.conversationId] = {
+          severity: alert.severity,
+          sentiment: alert.sentiment,
+          category: alert.category,
+          status: alert.status,
+        };
+      }
+    }
+
+    res.json({ success: true, conversations: byConversation });
+  } catch (error: any) {
+    console.error('[SentimentAlerts] By-conversation error:', error);
+    res.status(500).json({ error: 'Failed to fetch alerts by conversation', details: error.message });
+  }
+});
+
 router.patch('/api/brands/:brandId/sentiment-alerts/:id/status', requireAuth, validateBrandAccess, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

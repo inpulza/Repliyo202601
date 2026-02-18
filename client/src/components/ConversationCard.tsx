@@ -3,12 +3,19 @@ import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from 'date-fns';
-import { MessageCircle, MessageSquare, ExternalLink, Play } from 'lucide-react';
+import { MessageCircle, MessageSquare, ExternalLink, Play, AlertTriangle } from 'lucide-react';
 import { FaInstagram, FaFacebook, FaLinkedin, FaTiktok, FaYoutube, FaWhatsapp } from 'react-icons/fa';
 import { GoogleBusinessIcon } from './GoogleBusinessIcon';
 import { motion } from "framer-motion";
 import type { ConversationWithPost } from '@/context/NexusContext';
 import type { Platform } from '@/lib/types';
+
+export type CrisisAlertInfo = {
+  severity: string;
+  sentiment: string;
+  category: string;
+  status: string;
+};
 
 function PlatformIcon({ platform, className }: { platform: Platform; className?: string }) {
   const icons: Record<Platform, React.ReactNode> = {
@@ -28,9 +35,10 @@ interface ConversationCardProps {
   isSelected: boolean;
   onClick: () => void;
   isHighlighted?: boolean;
+  crisisAlert?: CrisisAlertInfo;
 }
 
-export function ConversationCard({ conversation, isSelected, onClick, isHighlighted = false }: ConversationCardProps) {
+export function ConversationCard({ conversation, isSelected, onClick, isHighlighted = false, crisisAlert }: ConversationCardProps) {
   const platform = conversation.platform as Platform;
   const isComment = conversation.type === 'comment';
   const isDM = conversation.type === 'dm';
@@ -174,7 +182,7 @@ export function ConversationCard({ conversation, isSelected, onClick, isHighligh
           </div>
 
           <div className="flex items-center justify-between mt-2">
-            <div className="flex items-center gap-1 text-[10px] text-gray-400 shrink-0">
+            <div className="flex items-center gap-1.5 text-[10px] text-gray-400 shrink-0">
               {isDM && (
                 <>
                   <MessageCircle className="h-3.5 w-3.5" />
@@ -186,6 +194,20 @@ export function ConversationCard({ conversation, isSelected, onClick, isHighligh
                   <MessageSquare className="h-3.5 w-3.5" />
                   <span>Comments</span>
                 </>
+              )}
+              {crisisAlert && (
+                <span
+                  data-testid={`badge-crisis-${conversation.id}`}
+                  className={cn(
+                    "flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold ml-1",
+                    crisisAlert.severity === 'P1'
+                      ? "bg-red-100 text-red-700 ring-1 ring-red-300"
+                      : "bg-orange-100 text-orange-700 ring-1 ring-orange-300"
+                  )}
+                >
+                  <AlertTriangle className="h-2.5 w-2.5" />
+                  {crisisAlert.severity}
+                </span>
               )}
             </div>
             
