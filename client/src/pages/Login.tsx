@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Command, Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Command, Loader2, Mail, Lock, Eye, EyeOff, Shield, MessageCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -102,21 +102,46 @@ export function Login() {
           </div>
 
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Inicia sesión en tu cuenta
             </h1>
             <p className="text-gray-600">
-              ¡Bienvenido de nuevo! Selecciona un método para iniciar sesión:
+              Ingresa tus credenciales para acceder al panel
             </p>
           </div>
 
+          {/* Invite-Only Banner */}
+          <div className="mb-6 rounded-xl border border-indigo-100 bg-gradient-to-r from-indigo-50/80 to-violet-50/80 p-4" data-testid="invite-only-banner">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-100">
+                <Shield className="h-4 w-4 text-indigo-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900">Acceso solo por invitación</p>
+                <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                  De momento el acceso a Repliyo es exclusivo. Si necesitas una cuenta, contáctanos.
+                </p>
+                <a
+                  href="https://wa.me/17864346163"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+                  data-testid="link-whatsapp-banner"
+                >
+                  <MessageCircle className="h-3.5 w-3.5" />
+                  Solicitar acceso por WhatsApp
+                </a>
+              </div>
+            </div>
+          </div>
+
           {/* Social Login Buttons - Disabled */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="grid grid-cols-2 gap-3 mb-2">
             <Button
               type="button"
               variant="outline"
-              className="h-12 border-gray-200 font-medium opacity-50 cursor-not-allowed"
+              className="h-12 border-gray-200 font-medium opacity-40 cursor-not-allowed"
               disabled
               data-testid="button-google-login"
             >
@@ -126,7 +151,7 @@ export function Login() {
             <Button
               type="button"
               variant="outline"
-              className="h-12 border-gray-200 font-medium opacity-50 cursor-not-allowed"
+              className="h-12 border-gray-200 font-medium opacity-40 cursor-not-allowed"
               disabled
               data-testid="button-github-login"
             >
@@ -138,7 +163,7 @@ export function Login() {
             <Button
               type="button"
               variant="outline"
-              className="h-12 border-gray-200 font-medium opacity-50 cursor-not-allowed"
+              className="h-12 border-gray-200 font-medium opacity-40 cursor-not-allowed"
               disabled
               data-testid="button-apple-login"
             >
@@ -150,7 +175,7 @@ export function Login() {
             <Button
               type="button"
               variant="outline"
-              className="h-12 border-gray-200 font-medium opacity-50 cursor-not-allowed"
+              className="h-12 border-gray-200 font-medium opacity-40 cursor-not-allowed"
               disabled
               data-testid="button-twitter-login"
             >
@@ -160,18 +185,18 @@ export function Login() {
               <span className="ml-2">X</span>
             </Button>
           </div>
-          <p className="text-xs text-center text-gray-500 mb-4 -mt-3">
-            Proximamente - Acceso social no disponible
+          <p className="text-[11px] text-center text-gray-400 mb-5">
+            Acceso social no disponible de momento
           </p>
 
           {/* Divider */}
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
+              <div className="w-full border-t border-gray-200" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-gray-50 text-gray-500">
-                o continúa con email
+              <span className="px-4 bg-gray-50 text-gray-400">
+                acceso con credenciales
               </span>
             </div>
           </div>
@@ -263,18 +288,9 @@ export function Login() {
             </Button>
           </form>
 
-          {/* Contact for Access */}
-          <p className="mt-8 text-center text-gray-600">
-            ¿Necesitas acceso?{' '}
-            <a
-              href="https://wa.me/17864346163"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-indigo-600 hover:text-indigo-700 font-medium"
-              data-testid="link-contact-access"
-            >
-              Contáctanos por WhatsApp
-            </a>
+          {/* Footer Note */}
+          <p className="mt-8 text-center text-xs text-gray-400" data-testid="text-login-footer">
+            Acceso restringido a usuarios autorizados
           </p>
         </div>
       </div>
