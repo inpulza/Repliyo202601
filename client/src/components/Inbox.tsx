@@ -766,65 +766,8 @@ export function Inbox() {
     });
   }, [activeConversationMessages, localDraftOverrides]);
 
-  // Selectable messages for bulk operations: only inbound messages that need action
-  // (no outbound reply yet OR already have a draft ready to send)
-  const selectableMessages = React.useMemo(() => {
-    if (!threadMessages.length) return [];
-    
-    const childrenByParent = new Map<string, typeof threadMessages>();
-    threadMessages.forEach(m => {
-      if (m.parentMessageId) {
-        const siblings = childrenByParent.get(m.parentMessageId) || [];
-        siblings.push(m);
-        childrenByParent.set(m.parentMessageId, siblings);
-      }
-    });
-    
-    const hasOutboundReply = (msgId: string): boolean => {
-      const children = childrenByParent.get(msgId) || [];
-      for (const child of children) {
-        if (child.direction === 'outbound') return true;
-        if (hasOutboundReply(child.id)) return true;
-      }
-      return false;
-    };
-    
-    return threadMessages.filter(m => {
-      if (m.direction !== 'inbound') return false;
-      const hasDraftReady = m.aiSuggestedReply && m.aiReplyStatus === 'drafted';
-      if (hasDraftReady) return true;
-      return !hasOutboundReply(m.id);
-    });
-  }, [threadMessages]);
-
-  const selectableMessageIdSet = React.useMemo(() => {
-    return new Set(selectableMessages.map(m => m.id));
-  }, [selectableMessages]);
-
-  const selectedWithDraft = React.useMemo(() => {
-    return selectableMessages.filter(m => selectedMessageIds.has(m.id) && m.aiSuggestedReply && m.aiReplyStatus === 'drafted');
-  }, [selectableMessages, selectedMessageIds]);
-
-  const selectedWithoutDraft = React.useMemo(() => {
-    return selectableMessages.filter(m => selectedMessageIds.has(m.id) && !m.aiSuggestedReply && m.aiReplyStatus !== 'drafted');
-  }, [selectableMessages, selectedMessageIds]);
-
-  const handleBulkGenerate = () => {
-    const ids = selectedWithoutDraft.map(m => m.id);
-    if (ids.length === 0) return;
-    bulkDraftQueue.enqueueMany(ids);
-  };
-
-  const handleBulkSend = () => {
-    const ids = selectedWithDraft.map(m => m.id);
-    if (ids.length === 0) return;
-    bulkSendQueue.enqueueMany(ids);
-  };
-
-  const handleSelectAll = () => {
-    const allIds = new Set(selectableMessages.map(m => m.id));
-    setSelectedMessageIds(allIds);
-  };
+  // Note: selectableMessages, selectedWithDraft, selectedWithoutDraft, and bulk handlers
+  // are defined after threadFilterStats below (they depend on threadFilterStats.noReplyIds)
 
   // Derive active draft message (outbound with drafting/pending status) and last inbound message
   const activeDraftMessage = React.useMemo(() => {
@@ -924,6 +867,47 @@ export function Inbox() {
       withReminderIds,
     };
   }, [threadMessages]);
+
+  // Selectable messages for bulk operations: only inbound messages that need action
+  // Uses threadFilterStats.noReplyIds (proven logic) + draft-ready messages
+  const selectableMessages = React.useMemo(() => {
+    if (!threadMessages.length) return [];
+    return threadMessages.filter(m => {
+      if (m.direction !== 'inbound') return false;
+      const hasDraftReady = m.aiSuggestedReply && m.aiReplyStatus === 'drafted';
+      if (hasDraftReady) return true;
+      return threadFilterStats.noReplyIds.has(m.id);
+    });
+  }, [threadMessages, threadFilterStats.noReplyIds]);
+
+  const selectableMessageIdSet = React.useMemo(() => {
+    return new Set(selectableMessages.map(m => m.id));
+  }, [selectableMessages]);
+
+  const selectedWithDraft = React.useMemo(() => {
+    return selectableMessages.filter(m => selectedMessageIds.has(m.id) && m.aiSuggestedReply && m.aiReplyStatus === 'drafted');
+  }, [selectableMessages, selectedMessageIds]);
+
+  const selectedWithoutDraft = React.useMemo(() => {
+    return selectableMessages.filter(m => selectedMessageIds.has(m.id) && !m.aiSuggestedReply && m.aiReplyStatus !== 'drafted');
+  }, [selectableMessages, selectedMessageIds]);
+
+  const handleBulkGenerate = () => {
+    const ids = selectedWithoutDraft.map(m => m.id);
+    if (ids.length === 0) return;
+    bulkDraftQueue.enqueueMany(ids);
+  };
+
+  const handleBulkSend = () => {
+    const ids = selectedWithDraft.map(m => m.id);
+    if (ids.length === 0) return;
+    bulkSendQueue.enqueueMany(ids);
+  };
+
+  const handleSelectAll = () => {
+    const allIds = new Set(selectableMessages.map(m => m.id));
+    setSelectedMessageIds(allIds);
+  };
 
   // Apply thread filters to get filtered messages
   const filteredThreadMessages = React.useMemo(() => {
