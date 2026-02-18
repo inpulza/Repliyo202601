@@ -1,0 +1,11 @@
+Vale, te quiero comentar algo. Hay una funcionalidad muy crítica que quiero implementar a raíz de que en las cuentas que yo manejo (por ejemplo, las cuentas de taxi, las cuentas de las clínicas, los mensajes en todas las redes sociales) puede haber un tipo de mensaje.
+
+O sea, me ha pasado que hay mensajes delicados que se me han perdido en los comment threads o incluso son tantos mensajes que entran a veces en las cuentas que se me pierden en base a todos los mensajes delicados. Por ejemplo, en la cuenta de Viotrust el otro día un cliente escribió que nosotros lo habíamos hecho a los taxis muy mal, que habíamos puesto un mayor ingreso, que el IRS le podía generar problemas, que no hicieran taxes con nosotros.
+
+Entonces este tipo de mensajes yo necesito ubicarlos muy rápidamente y que se me resalten a la vista o que me vayan filtrando en algún lugar. Con las clínicas por ejemplo, cualquier tipo de cosas graves.
+
+Yo realmente no sé cómo se llama esto si se llama gestión de crisis, cómo se llama esto de forma oficial en las empresas. Quiero que me investigue sobre eso primero. Sobre cómo se llama, qué hace, por qué pasa. Todo lo que tenga que ver con este tipo de gestión de crisis de mensajes para una empresa, primero para tener un overview y después en base a esto tener el contexto y saber cómo implementarlo e identificarlo.
+
+Porque yo no sé ahora mismo desde un punto de vista técnico cómo podemos filtrar ese tipo de mensaje. De acuerdo al flujo que tenemos, que es que los mensajes entran, se envían a través de la API para que lo responda el LLM y nos envíe la respuesta y la ponga y la envíe a través de la API del Metricool, pero la identificación de mensajes (o sea la catalogación del sentimiento, etc.) no sé si tenemos que hacerla con una I con la integración de un function calling con Gemini por ejemplo o GPT no integrado dentro de la aplicación ya o sea es como enganchar un cerebro a la aplicación a través del Function Calling.
+
+Esta es mi idea pero a lo mejor no es la mejor ni la más idónea. Entonces necesito tu ayuda planificando esta etapa e investigando sobre el tema para saber efectivamente cómo implementar este tipo de gestión de crisis de comentarios. 
