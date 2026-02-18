@@ -94,7 +94,7 @@ export function Login() {
       <div className="w-full lg:w-1/2 bg-gray-50 flex flex-col justify-center px-8 sm:px-16 lg:px-24 py-12">
         <div className="max-w-md w-full mx-auto">
           {/* Logo */}
-          <div className="flex items-center gap-3 mb-10">
+          <div className="flex items-center justify-center gap-3 mb-10">
             <div className="h-10 w-10 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg">
               <Command className="h-5 w-5 text-white" />
             </div>
