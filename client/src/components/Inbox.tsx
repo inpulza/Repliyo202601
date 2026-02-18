@@ -766,11 +766,40 @@ export function Inbox() {
     });
   }, [activeConversationMessages, localDraftOverrides]);
 
-  // Selectable messages for bulk operations
+  // Selectable messages for bulk operations: only inbound messages that need action
+  // (no outbound reply yet OR already have a draft ready to send)
   const selectableMessages = React.useMemo(() => {
     if (!threadMessages.length) return [];
-    return threadMessages.filter(m => m.direction === 'inbound');
+    
+    const childrenByParent = new Map<string, typeof threadMessages>();
+    threadMessages.forEach(m => {
+      if (m.parentMessageId) {
+        const siblings = childrenByParent.get(m.parentMessageId) || [];
+        siblings.push(m);
+        childrenByParent.set(m.parentMessageId, siblings);
+      }
+    });
+    
+    const hasOutboundReply = (msgId: string): boolean => {
+      const children = childrenByParent.get(msgId) || [];
+      for (const child of children) {
+        if (child.direction === 'outbound') return true;
+        if (hasOutboundReply(child.id)) return true;
+      }
+      return false;
+    };
+    
+    return threadMessages.filter(m => {
+      if (m.direction !== 'inbound') return false;
+      const hasDraftReady = m.aiSuggestedReply && m.aiReplyStatus === 'drafted';
+      if (hasDraftReady) return true;
+      return !hasOutboundReply(m.id);
+    });
   }, [threadMessages]);
+
+  const selectableMessageIdSet = React.useMemo(() => {
+    return new Set(selectableMessages.map(m => m.id));
+  }, [selectableMessages]);
 
   const selectedWithDraft = React.useMemo(() => {
     return selectableMessages.filter(m => selectedMessageIds.has(m.id) && m.aiSuggestedReply && m.aiReplyStatus === 'drafted');
@@ -2218,6 +2247,7 @@ export function Inbox() {
                         SentimentIndicator={SentimentIndicator}
                         selectionEnabled={selectionEnabled}
                         selectedMessageIds={selectedMessageIds}
+                        selectableMessageIds={selectableMessageIdSet}
                         onToggleSelection={handleToggleSelection}
                         bulkQueueStatusById={(() => { const m = new Map(Array.from(bulkDraftQueue.statusById)); Array.from(bulkSendQueue.statusById).forEach(([k, v]) => m.set(k, v)); return m; })()}
                         unreadMessageIds={unreadMessageIds}

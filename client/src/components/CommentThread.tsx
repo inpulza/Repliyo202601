@@ -106,6 +106,7 @@ interface CommentThreadProps {
   SentimentIndicator: React.ComponentType<{ sentiment: Sentiment }>;
   selectionEnabled?: boolean;
   selectedMessageIds?: Set<string>;
+  selectableMessageIds?: Set<string>;
   onToggleSelection?: (messageId: string) => void;
   bulkQueueStatusById?: Map<string, DraftStatus>;
   unreadMessageIds?: Set<string>;
@@ -180,6 +181,7 @@ interface SingleMessageProps {
   SentimentIndicator: CommentThreadProps['SentimentIndicator'];
   selectionEnabled?: boolean;
   isSelected?: boolean;
+  selectableMessageIds?: Set<string>;
   onToggleSelection?: (messageId: string) => void;
   bulkStatus?: DraftStatus;
   hasChildren?: boolean;
@@ -219,6 +221,7 @@ function SingleMessage({
   SentimentIndicator,
   selectionEnabled = false,
   isSelected = false,
+  selectableMessageIds,
   onToggleSelection,
   bulkStatus,
   hasChildren = false,
@@ -238,7 +241,7 @@ function SingleMessage({
   const avatarSize = isReply ? AVATAR_SIZE_REPLY : AVATAR_SIZE_ROOT;
 
   // Can this message be selected for bulk draft generation or bulk send?
-  const isSelectable = selectionEnabled && msg.direction === 'inbound';
+  const isSelectable = selectionEnabled && msg.direction === 'inbound' && (!selectableMessageIds || selectableMessageIds.has(msg.id));
 
   // Auto-scroll to this message when highlighted (from notification deep-link)
   const messageRef = React.useRef<HTMLDivElement>(null);
@@ -876,14 +879,13 @@ interface ThreadNodeProps {
   highlightedMessageId?: string | null;
   selectionEnabled?: boolean;
   selectedMessageIds?: Set<string>;
+  selectableMessageIds?: Set<string>;
   onToggleSelection?: (messageId: string) => void;
   bulkQueueStatusById?: Map<string, DraftStatus>;
   unreadMessageIds?: Set<string>;
   onUnreadSeen?: (messageId: string) => void;
-  // Collapsible threaded comments props
   expandedIds: Set<string>;
   onToggleExpand: (messageId: string) => void;
-  // Reminder stats
   threadReminderCounts: Map<string, number>;
   authorReminderCounts: Map<string, number>;
 }
@@ -915,6 +917,7 @@ function ThreadNode({
   highlightedMessageId,
   selectionEnabled,
   selectedMessageIds,
+  selectableMessageIds,
   onToggleSelection,
   bulkQueueStatusById,
   unreadMessageIds,
@@ -1037,6 +1040,7 @@ function ThreadNode({
           SentimentIndicator={SentimentIndicator}
           selectionEnabled={selectionEnabled}
           isSelected={selectedMessageIds?.has(node.message.id)}
+          selectableMessageIds={selectableMessageIds}
           onToggleSelection={onToggleSelection}
           bulkStatus={bulkQueueStatusById?.get(node.message.id)}
           hasChildren={hasChildren}
@@ -1086,6 +1090,7 @@ function ThreadNode({
                   SentimentIndicator={SentimentIndicator}
                   selectionEnabled={selectionEnabled}
                   selectedMessageIds={selectedMessageIds}
+                  selectableMessageIds={selectableMessageIds}
                   onToggleSelection={onToggleSelection}
                   bulkQueueStatusById={bulkQueueStatusById}
                   unreadMessageIds={unreadMessageIds}
@@ -1134,6 +1139,7 @@ export function CommentThread({
   SentimentIndicator,
   selectionEnabled,
   selectedMessageIds,
+  selectableMessageIds,
   onToggleSelection,
   bulkQueueStatusById,
   unreadMessageIds,
@@ -1287,6 +1293,7 @@ export function CommentThread({
               SentimentIndicator={SentimentIndicator}
               selectionEnabled={selectionEnabled}
               selectedMessageIds={selectedMessageIds}
+              selectableMessageIds={selectableMessageIds}
               onToggleSelection={onToggleSelection}
               bulkQueueStatusById={bulkQueueStatusById}
               unreadMessageIds={unreadMessageIds}
