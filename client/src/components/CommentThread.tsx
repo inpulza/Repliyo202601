@@ -237,8 +237,8 @@ function SingleMessage({
 
   const avatarSize = isReply ? AVATAR_SIZE_REPLY : AVATAR_SIZE_ROOT;
 
-  // Can this message be selected for bulk draft generation?
-  const isSelectable = selectionEnabled && msg.direction === 'inbound' && !msg.aiSuggestedReply && msg.aiReplyStatus !== 'drafted';
+  // Can this message be selected for bulk draft generation or bulk send?
+  const isSelectable = selectionEnabled && msg.direction === 'inbound';
 
   // Auto-scroll to this message when highlighted (from notification deep-link)
   const messageRef = React.useRef<HTMLDivElement>(null);

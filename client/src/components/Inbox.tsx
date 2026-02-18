@@ -97,6 +97,7 @@ import repliyoLogo from '@/assets/repliyo-logo.jpg';
 import { toast } from '@/hooks/use-toast';
 import { CommentThread } from './CommentThread';
 import { useBulkDraftQueue } from '@/hooks/useBulkDraftQueue';
+import { useBulkSendQueue } from '@/hooks/useBulkSendQueue';
 import { BulkDraftActionBar } from './BulkDraftActionBar';
 
 
@@ -252,6 +253,38 @@ export function Inbox() {
     },
   });
 
+  // Bulk Send Queue Hook
+  const bulkSendQueue = useBulkSendQueue({
+    brandId: activeClientId || '',
+    maxConcurrency: 2,
+    onComplete: (results) => {
+      if (results.errorCount === 0) {
+        setSelectedMessageIds(new Set());
+        setSelectionEnabled(false);
+      }
+      queryClient.invalidateQueries({ queryKey: ['conversationMessages'] });
+      refreshFeed();
+    },
+    onMessageComplete: (messageId, success) => {
+      if (success) {
+        setLocalDraftOverrides(prev => {
+          const next = new Map(prev);
+          next.set(messageId, {
+            aiSuggestedReply: null,
+            aiReplyStatus: 'sent',
+            draftWasEdited: false,
+          });
+          return next;
+        });
+        setSelectedMessageIds(prev => {
+          const next = new Set(prev);
+          next.delete(messageId);
+          return next;
+        });
+      }
+    },
+  });
+
   // Ref to track if we've captured unread IDs for this conversation
   const unreadCapturedRef = React.useRef<string | null>(null);
   
@@ -297,11 +330,6 @@ export function Inbox() {
       }
       return next;
     });
-  };
-
-  const handleBulkGenerate = () => {
-    if (selectedMessageIds.size === 0) return;
-    bulkDraftQueue.enqueueMany(Array.from(selectedMessageIds));
   };
 
   const handleClearSelection = () => {
@@ -734,6 +762,37 @@ export function Inbox() {
       return msg;
     });
   }, [activeConversationMessages, localDraftOverrides]);
+
+  // Selectable messages for bulk operations
+  const selectableMessages = React.useMemo(() => {
+    if (!threadMessages.length) return [];
+    return threadMessages.filter(m => m.direction === 'inbound');
+  }, [threadMessages]);
+
+  const selectedWithDraft = React.useMemo(() => {
+    return selectableMessages.filter(m => selectedMessageIds.has(m.id) && m.aiSuggestedReply && m.aiReplyStatus === 'drafted');
+  }, [selectableMessages, selectedMessageIds]);
+
+  const selectedWithoutDraft = React.useMemo(() => {
+    return selectableMessages.filter(m => selectedMessageIds.has(m.id) && !m.aiSuggestedReply && m.aiReplyStatus !== 'drafted');
+  }, [selectableMessages, selectedMessageIds]);
+
+  const handleBulkGenerate = () => {
+    const ids = selectedWithoutDraft.map(m => m.id);
+    if (ids.length === 0) return;
+    bulkDraftQueue.enqueueMany(ids);
+  };
+
+  const handleBulkSend = () => {
+    const ids = selectedWithDraft.map(m => m.id);
+    if (ids.length === 0) return;
+    bulkSendQueue.enqueueMany(ids);
+  };
+
+  const handleSelectAll = () => {
+    const allIds = new Set(selectableMessages.map(m => m.id));
+    setSelectedMessageIds(allIds);
+  };
 
   // Derive active draft message (outbound with drafting/pending status) and last inbound message
   const activeDraftMessage = React.useMemo(() => {
@@ -2130,7 +2189,7 @@ export function Inbox() {
                         selectionEnabled={selectionEnabled}
                         selectedMessageIds={selectedMessageIds}
                         onToggleSelection={handleToggleSelection}
-                        bulkQueueStatusById={bulkDraftQueue.statusById}
+                        bulkQueueStatusById={(() => { const m = new Map(Array.from(bulkDraftQueue.statusById)); Array.from(bulkSendQueue.statusById).forEach(([k, v]) => m.set(k, v)); return m; })()}
                         unreadMessageIds={unreadMessageIds}
                         onUnreadSeen={handleUnreadSeen}
                       />
@@ -2177,14 +2236,24 @@ export function Inbox() {
             {/* Bulk Draft Action Bar */}
             <BulkDraftActionBar
               selectedCount={selectedMessageIds.size}
+              selectableCount={selectableMessages.length}
+              sendableCount={selectedWithDraft.length}
               isProcessing={bulkDraftQueue.isProcessing}
+              isSending={bulkSendQueue.isProcessing}
               progress={bulkDraftQueue.progress}
+              sendProgress={bulkSendQueue.progress}
               completedCount={bulkDraftQueue.completedCount}
+              sendCompletedCount={bulkSendQueue.completedCount}
               totalCount={bulkDraftQueue.totalCount}
+              sendTotalCount={bulkSendQueue.totalCount}
               errorCount={bulkDraftQueue.errorCount}
+              sendErrorCount={bulkSendQueue.errorCount}
               onGenerate={handleBulkGenerate}
+              onSend={handleBulkSend}
+              onSelectAll={handleSelectAll}
               onClearSelection={handleClearSelection}
               onCancel={bulkDraftQueue.cancel}
+              onCancelSend={bulkSendQueue.cancel}
             />
 
             {/* Floating Reply Input Box - Always visible for DMs, on-demand for comments */}
