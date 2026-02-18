@@ -200,10 +200,14 @@ export function Inbox() {
   useWebSocket({
     brandId: activeClientId || undefined,
     onNewMessage: () => {
-      // Use correct cache keys that match NexusContext queries
       queryClient.invalidateQueries({ queryKey: ['messages', activeClientId] });
       queryClient.invalidateQueries({ queryKey: ['conversations', activeClientId] });
       queryClient.invalidateQueries({ queryKey: ['conversationMessages'] });
+    },
+    onCrisisAlert: () => {
+      queryClient.invalidateQueries({ queryKey: ['crisisAlertsByConversation'] });
+      queryClient.invalidateQueries({ queryKey: ['sentiment-alerts'] });
+      queryClient.invalidateQueries({ queryKey: ['sentiment-alerts-stats'] });
     },
     showToasts: true,
   });
@@ -1738,7 +1742,15 @@ export function Inbox() {
                 </div>
               ) : filteredConversations.length === 0 ? (
                  <div className="p-8 text-center text-muted-foreground text-sm">
-                    No conversations match your filters.
+                    {fireMode ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <Flame className="h-8 w-8 text-gray-300" />
+                        <p className="font-medium text-gray-500">No hay alertas de crisis activas</p>
+                        <p className="text-xs text-gray-400">No se detectaron mensajes P1/P2 sin resolver</p>
+                      </div>
+                    ) : (
+                      "No conversations match your filters."
+                    )}
                  </div>
               ) : (
                 filteredConversations.map((conv, index) => (

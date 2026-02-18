@@ -91,6 +91,7 @@ export function CrisisAlerts() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sentiment-alerts'] });
       queryClient.invalidateQueries({ queryKey: ['sentiment-alerts-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['crisisAlertsByConversation'] });
       toast({ title: 'Alerta actualizada', description: 'El estado de la alerta ha sido actualizado.' });
     },
     onError: () => {
