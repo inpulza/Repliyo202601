@@ -21,6 +21,7 @@ import { Login } from "@/pages/Login";
 import Register from "@/pages/Register";
 import { ProfileSettings } from "@/pages/ProfileSettings";
 import { CRM } from "@/pages/CRM";
+import { CrisisAlerts } from "@/pages/CrisisAlerts";
 import { LandingPage } from "@/components/landing/LandingPage";
 import { Loader2 } from "lucide-react";
 
@@ -141,6 +142,13 @@ function Router() {
         {() => (
           <DashboardLayout>
             <CRM />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/app/crisis-alerts">
+        {() => (
+          <DashboardLayout>
+            <CrisisAlerts />
           </DashboardLayout>
         )}
       </Route>

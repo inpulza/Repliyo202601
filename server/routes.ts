@@ -110,7 +110,10 @@ const filterByBrand = (brandIdParamName?: string) => {
   };
 };
 
+import sentimentAlertsRouter from './routes/sentimentAlerts.routes';
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  app.use(sentimentAlertsRouter);
   
   const registerSchema = z.object({
     email: z.string().email(),

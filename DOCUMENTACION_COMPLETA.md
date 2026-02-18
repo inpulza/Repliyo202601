@@ -10546,3 +10546,85 @@ isDM?: boolean; // Hide individual reply buttons for DMs
 
 *Sección creada: 20 Enero 2026*
 *Estado: Completado*
+
+---
+
+## Crisis Management & Sentiment Analysis System (18-Feb-2026)
+
+### Descripción General
+Sistema automático de análisis de sentimiento y gestión de crisis que clasifica todos los mensajes inbound (DMs y comentarios) usando LLM, generando alertas para mensajes críticos (P1/P2) y proporcionando un dashboard dedicado para triage en tiempo real.
+
+### Arquitectura
+
+#### Backend
+| Archivo | Responsabilidad |
+|---------|----------------|
+| `server/services/SentimentAnalysisService.ts` | Clasificación LLM de sentimiento/severidad/categoría |
+| `server/repositories/SentimentAlertRepository.ts` | CRUD para tabla `sentiment_alerts` |
+| `server/routes/sentimentAlerts.routes.ts` | API REST para gestión de alertas |
+| `shared/schema.ts` | Tabla `sentiment_alerts` + tipos + enums |
+
+#### Frontend
+| Archivo | Responsabilidad |
+|---------|----------------|
+| `client/src/pages/CrisisAlerts.tsx` | Dashboard de Crisis Alerts con filtros y acciones |
+| `client/src/lib/api.ts` | Métodos cliente para API de alertas |
+
+### Modelo de Datos
+
+```sql
+sentiment_alerts (
+  id UUID PK DEFAULT gen_random_uuid(),
+  brand_id UUID NOT NULL,
+  message_id INTEGER NOT NULL,
+  conversation_id INTEGER,
+  platform TEXT,
+  customer_name TEXT,
+  message_text TEXT NOT NULL,
+  sentiment TEXT NOT NULL,
+  severity TEXT NOT NULL,
+  category TEXT NOT NULL,
+  confidence REAL,
+  ai_summary TEXT,
+  suggested_action TEXT,
+  status TEXT DEFAULT 'new',
+  acknowledged_by UUID,
+  acknowledged_at TIMESTAMP,
+  resolved_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW()
+)
+```
+
+### Clasificación de Severidad
+- **P1 (Crítico):** Amenazas legales, seguridad, IRS/regulatorio, daño masivo a reputación
+- **P2 (Alto):** Fallo de servicio severo, riesgo de churn alto, desinformación viral
+- **P3 (Medio):** Quejas generales, insatisfacción moderada
+- **P4 (Bajo):** Feedback negativo menor, sugerencias
+
+### Categorías de Crisis
+`legal_threat`, `safety_concern`, `service_failure`, `reputation_damage`, `customer_churn`, `misinformation`, `regulatory_risk`, `general_complaint`, `other`
+
+### Integración con syncService
+- Patrón "fire-and-forget" async para no bloquear el sync de mensajes
+- Pre-clasificación: análisis ANTES del auto-reply para prevenir respuestas inapropiadas del bot
+- Actualiza campos `messages.sentiment` y `messages.urgency` en cada mensaje
+- Crea alertas en `sentiment_alerts` solo para P1/P2
+
+### WebSocket
+- Evento `crisis_alert` emitido en tiempo real para alertas P1/P2
+
+### API Endpoints
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/sentiment-alerts` | Listar alertas con filtros (brandId, severity, status, limit, offset) |
+| GET | `/api/sentiment-alerts/stats` | Estadísticas por severidad y status |
+| PATCH | `/api/sentiment-alerts/:id/status` | Actualizar status (acknowledge/resolve/dismiss) |
+
+### Frontend - Crisis Alerts Dashboard (`/app/crisis-alerts`)
+- **Estadísticas:** Cards con conteo por severidad (P1-P4) y status (nuevas/resueltas)
+- **Filtros:** Toggle por severidad y status
+- **Lista de alertas:** Cards con severidad, categoría, status, preview del mensaje, acciones
+- **Acciones:** Acknowledge, Resolve, Dismiss, Ver conversación
+
+*Sección creada: 18 Febrero 2026*
+*Estado: Completado*

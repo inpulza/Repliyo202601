@@ -6,7 +6,7 @@ import cookie from 'cookie';
 import signature from 'cookie-signature';
 
 interface NotificationPayload {
-  type: 'new_message' | 'sync_complete' | 'agent_reply' | 'agent_cooldown';
+  type: 'new_message' | 'sync_complete' | 'agent_reply' | 'agent_cooldown' | 'crisis_alert';
   brandId: string;
   data: any;
 }
@@ -228,6 +228,14 @@ class WebSocketService {
     if (sentCount > 0) {
       log(`[WebSocket] Broadcast ${payload.type} to ${sentCount} clients`, 'ws');
     }
+  }
+
+  notifyCrisisAlert(brandId: string, alertData: any): void {
+    this.broadcast({
+      type: 'crisis_alert',
+      brandId,
+      data: alertData
+    });
   }
 
   getConnectedClientsCount(): number {

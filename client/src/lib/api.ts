@@ -808,4 +808,56 @@ export const api = {
       return data.failures || [];
     },
   },
+
+  sentimentAlerts: {
+    getByBrand: async (brandId: string, options?: {
+      severity?: string[];
+      status?: string[];
+      limit?: number;
+      offset?: number;
+    }): Promise<{ alerts: any[]; count: number }> => {
+      const params = new URLSearchParams();
+      if (options?.severity?.length) params.set('severity', options.severity.join(','));
+      if (options?.status?.length) params.set('status', options.status.join(','));
+      if (options?.limit) params.set('limit', String(options.limit));
+      if (options?.offset) params.set('offset', String(options.offset));
+      const res = await fetch(`${API_BASE}/brands/${brandId}/sentiment-alerts?${params}`);
+      if (!res.ok) throw new Error('Failed to fetch sentiment alerts');
+      return res.json();
+    },
+
+    getStats: async (brandId: string): Promise<{
+      total: number;
+      byStatus: Record<string, number>;
+      bySeverity: Record<string, number>;
+      byCategory: Record<string, number>;
+    }> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/sentiment-alerts/stats`);
+      if (!res.ok) throw new Error('Failed to fetch alert stats');
+      return res.json();
+    },
+
+    getActiveCount: async (brandId: string): Promise<number> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/sentiment-alerts/count`);
+      if (!res.ok) throw new Error('Failed to fetch active count');
+      const data = await res.json();
+      return data.count;
+    },
+
+    updateStatus: async (brandId: string, alertId: string, status: string, notes?: string): Promise<any> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/sentiment-alerts/${alertId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, notes }),
+      });
+      if (!res.ok) throw new Error('Failed to update alert status');
+      return res.json();
+    },
+
+    getById: async (brandId: string, alertId: string): Promise<any> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/sentiment-alerts/${alertId}`);
+      if (!res.ok) throw new Error('Failed to fetch alert');
+      return res.json();
+    },
+  },
 };

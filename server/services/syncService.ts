@@ -8,6 +8,7 @@ import { contactEnrichmentService } from "./contactEnrichmentService";
 import { llmEnrichmentService } from "./llmEnrichmentService";
 import { conversationLifecycleService } from "./conversationLifecycleService";
 import { thankYouDetector } from "./thankYouDetector";
+import { sentimentAnalysisService } from "./SentimentAnalysisService";
 import { log } from "../app";
 
 interface BrandSyncResult {
@@ -431,6 +432,17 @@ class SyncService {
           if (isReallyNew && isInbound) {
             newInboundCount++; // Increment counter for truly new inbound messages
             
+            // SENTIMENT ANALYSIS: Classify message sentiment and detect crisis (async, fire-and-forget)
+            void sentimentAnalysisService.processInboundMessage(
+              savedMessage.id,
+              content,
+              brandId,
+              conversationRecord.id,
+              platform,
+              author,
+              new Date(msg.timestamp)
+            ).catch(err => log(`[SyncService] Sentiment analysis error: ${err.message}`, "sync"));
+            
             // LIFECYCLE INTEGRATION: Record customer message and handle status transitions
             void conversationLifecycleService.recordCustomerMessage(conversationRecord.id)
               .catch(err => log(`[SyncService] Lifecycle recordCustomerMessage error: ${err.message}`, "sync"));
@@ -633,6 +645,17 @@ class SyncService {
         // Only notify and trigger auto-reply for NEW INBOUND comments (not from brand)
         if (isReallyNew && !isCommentFromBrand) {
           newInboundCount++; // Increment counter for truly new inbound comments
+          
+          // SENTIMENT ANALYSIS: Classify comment sentiment and detect crisis (async, fire-and-forget)
+          void sentimentAnalysisService.processInboundMessage(
+            savedComment.id,
+            comment.content,
+            brandId,
+            conversationRecord.id,
+            platform,
+            comment.author,
+            new Date(comment.timestamp)
+          ).catch(err => log(`[SyncService] Comment sentiment analysis error: ${err.message}`, "sync"));
           
           // Track first inbound author for Smart Digest notifications
           if (!firstInboundAuthor) {

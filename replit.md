@@ -58,7 +58,16 @@ The user interface includes an "Orchestration" tab for managing timing configura
   - UI: Componente `ConversationTimeline.tsx` integrado en `CRMContextPanel.tsx` como sección "Customer Journey"
   - Soporta ambos modos: conversationId (individual) y contactId (agregado de todas las conversaciones)
 
-### URL Structure (Updated 10-Jan-2026)
+- **Crisis Management & Sentiment Analysis (18-Feb-2026):** Automated analysis of all inbound messages using LLM to classify sentiment and severity, with a dedicated Crisis Alerts dashboard.
+  - `SentimentAnalysisService.ts`: LLM-based classification of messages into sentiment (critical/negative/neutral/positive) and severity (P1-P4). Identifies crisis categories: legal_threat, safety_concern, service_failure, reputation_damage, customer_churn, misinformation, regulatory_risk, general_complaint.
+  - `SentimentAlertRepository.ts`: CRUD operations for `sentiment_alerts` table with filtering by severity, status, and brand.
+  - `sentimentAlerts.routes.ts`: REST API for listing, acknowledging, resolving, dismissing alerts with stats endpoint.
+  - Integration: Hooks into `syncService` for both DM and comment inbound flows (fire-and-forget async pattern). Populates `messages.sentiment` and `messages.urgency` fields.
+  - WebSocket: Real-time `crisis_alert` events emitted for P1/P2 severity messages.
+  - Frontend: `CrisisAlerts.tsx` page at `/app/crisis-alerts` with severity/status filtering, statistics cards, and action buttons.
+  - Pre-classification approach: Messages analyzed before auto-reply to prevent inappropriate bot responses to critical messages.
+
+### URL Structure (Updated 18-Feb-2026)
 - **`/`** - Public landing page (Repliyo.com). Authenticated users auto-redirect to `/app/inbox`.
 - **`/login`** - Login page with email/password and OAuth (Google, GitHub, Apple, Twitter via Replit Auth).
 - **`/register`** - Public registration page with email verification (OTP).
@@ -66,6 +75,7 @@ The user interface includes an "Orchestration" tab for managing timing configura
   - `/app/inbox` - Smart Inbox (main view)
   - `/app/overview` - Dashboard overview
   - `/app/crm` - CRM contacts
+  - `/app/crisis-alerts` - Crisis Alerts dashboard (sentiment analysis & triage)
   - `/app/connections` - Brand connections
   - `/app/integrations` - Third-party integrations
   - `/app/settings` - Agent settings
@@ -116,7 +126,7 @@ The user interface includes an "Orchestration" tab for managing timing configura
 ```
 server/routes/{dominio}.routes.ts   # NO agregar más endpoints a routes.ts
 ```
-Dominios: `auth`, `brands`, `inbox`, `crm`, `ai-agents`, `reminders`, `notifications`, `sync`
+Dominios: `auth`, `brands`, `inbox`, `crm`, `ai-agents`, `reminders`, `notifications`, `sync`, `sentimentAlerts`
 
 #### Backend - Repositorios nuevos
 ```

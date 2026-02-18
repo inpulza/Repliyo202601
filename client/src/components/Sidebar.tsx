@@ -17,7 +17,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
-  Users
+  Users,
+  ShieldAlert
 } from 'lucide-react';
 import { NotificationCenter } from './NotificationCenter';
 import {
@@ -67,6 +68,7 @@ export function Sidebar() {
     { href: "/app/overview", icon: BarChart3, label: "Overview" },
     { href: "/app/inbox", icon: Inbox, label: "Smart Inbox" },
     { href: "/app/crm", icon: Users, label: "CRM" },
+    { href: "/app/crisis-alerts", icon: ShieldAlert, label: "Crisis Alerts" },
     { href: "/app/connections", icon: LayoutDashboard, label: "Connections" },
     { href: "/app/integrations", icon: Command, label: "Integrations" },
     { href: "/app/settings", icon: Settings, label: "Agent Settings" },
