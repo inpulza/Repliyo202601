@@ -2,7 +2,11 @@ import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { SentimentAlertRepository } from '../repositories/SentimentAlertRepository';
+import { sentimentAnalysisService } from '../services/SentimentAnalysisService';
 import { storage } from '../storage';
+import { db } from '../db';
+import { messages } from '@shared/schema';
+import { eq, and, isNotNull, sql, notInArray } from 'drizzle-orm';
 import type { AuthenticatedUser } from '../auth';
 
 const validSeverities = ['P1', 'P2', 'P3', 'P4'] as const;
@@ -181,6 +185,99 @@ router.get('/api/brands/:brandId/sentiment-alerts/:id', requireAuth, validateBra
   } catch (error: any) {
     console.error('[SentimentAlerts] Get error:', error);
     res.status(500).json({ error: 'Failed to fetch alert', details: error.message });
+  }
+});
+
+router.post('/api/brands/:brandId/sentiment-alerts/backfill', requireAuth, validateBrandAccess, async (req: Request, res: Response) => {
+  try {
+    const { brandId } = req.params;
+    const { limit: maxMessages = 100 } = req.body || {};
+
+    const CRISIS_KEYWORDS = [
+      'scam', 'fraud', 'estafa', 'steal', 'stolen', 'robo',
+      'lawsuit', 'demanda', 'legal', 'lawyer', 'abogado',
+      'police', 'policia', 'denuncia',
+      'worst', 'terrible', 'horrible', 'disgusting',
+      'never again', 'nunca mas', 'nunca más',
+      'refund', 'reembolso', 'money back',
+      'rip off', 'ripoff',
+      'threat', 'amenaz',
+      'angry', 'furious', 'furioso',
+      'hate', 'odio',
+      'urgent', 'urgente', 'emergency', 'emergencia',
+      'disappointed', 'decepcion', 'decepción',
+      'unacceptable', 'inaceptable',
+      'complaint', 'queja',
+      'broken', 'damaged', 'dañado',
+      'dead', 'die', 'kill', 'morir',
+      'help me', 'ayuda', 'socorro',
+      'depresion', 'depresión', 'ansiedad', 'anxiety',
+      'no aguanto', 'ya no puedo', 'necesito ayuda',
+    ];
+
+    const keywordCondition = CRISIS_KEYWORDS
+      .map(kw => `m.content ILIKE '%${kw.replace(/'/g, "''")}%'`)
+      .join(' OR ');
+
+    const flaggedMessages = await db.execute(sql.raw(`
+      SELECT m.id, m.content, m.platform, m.author, m.created_at, m.conversation_id
+      FROM messages m
+      WHERE m.direction = 'inbound'
+        AND m.brand_id = '${brandId}'
+        AND m.content IS NOT NULL
+        AND LENGTH(m.content) > 10
+        AND (${keywordCondition})
+        AND m.id NOT IN (SELECT sa.message_id FROM sentiment_alerts sa WHERE sa.message_id IS NOT NULL)
+      ORDER BY m.created_at DESC
+      LIMIT ${Math.min(Number(maxMessages) || 100, 200)}
+    `));
+
+    const messagesToProcess = flaggedMessages.rows || flaggedMessages;
+    const totalFound = Array.isArray(messagesToProcess) ? messagesToProcess.length : 0;
+
+    res.json({
+      success: true,
+      status: 'started',
+      totalMessages: totalFound,
+      message: `Processing ${totalFound} flagged messages in background. Check Crisis Alerts dashboard for results.`,
+    });
+
+    (async () => {
+      let processed = 0;
+      let alertsCreated = 0;
+      let errors = 0;
+
+      for (const msg of (messagesToProcess as any[])) {
+        try {
+          const outcome = await sentimentAnalysisService.processInboundMessage(
+            msg.id,
+            msg.content,
+            brandId,
+            msg.conversation_id,
+            msg.platform || 'unknown',
+            msg.author || 'unknown',
+            new Date(msg.created_at),
+          );
+
+          if (outcome.alertCreated) alertsCreated++;
+          processed++;
+
+          if (processed % 10 === 0) {
+            console.log(`[Backfill] Brand ${brandId}: ${processed}/${totalFound} processed, ${alertsCreated} alerts created`);
+          }
+
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (err) {
+          errors++;
+          console.error(`[Backfill] Error processing message ${msg.id}:`, err);
+        }
+      }
+
+      console.log(`[Backfill] COMPLETED for brand ${brandId}: ${processed} processed, ${alertsCreated} alerts created, ${errors} errors`);
+    })();
+  } catch (error: any) {
+    console.error('[SentimentAlerts] Backfill error:', error);
+    res.status(500).json({ error: 'Failed to start backfill', details: error.message });
   }
 });
 
