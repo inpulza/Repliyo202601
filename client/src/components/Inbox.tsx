@@ -1980,9 +1980,17 @@ export function Inbox() {
                 {threadMessages.length > 1 && (
                   <motion.button
                     onClick={() => {
-                      setSelectionEnabled(!selectionEnabled);
-                      if (selectionEnabled) {
+                      const newEnabled = !selectionEnabled;
+                      setSelectionEnabled(newEnabled);
+                      if (!newEnabled) {
                         setSelectedMessageIds(new Set());
+                      } else {
+                        const draftReadyIds = new Set(
+                          threadMessages
+                            .filter(m => m.direction === 'inbound' && m.aiSuggestedReply && m.aiReplyStatus === 'drafted')
+                            .map(m => m.id)
+                        );
+                        setSelectedMessageIds(draftReadyIds);
                       }
                     }}
                     onPointerEnter={() => setIsBulkButtonHovered(true)}
@@ -2011,7 +2019,7 @@ export function Inbox() {
                           transition={{ duration: 0.15 }}
                           className="text-[10px] font-medium whitespace-nowrap pl-3 pr-1"
                         >
-                          {selectionEnabled ? "Cancelar" : "Generar borradores"}
+                          {selectionEnabled ? "Cancelar" : "Selección múltiple"}
                         </motion.span>
                       )}
                     </AnimatePresence>
@@ -2156,13 +2164,32 @@ export function Inbox() {
                             </motion.button>
                           </div>
                           
-                          {/* Message count label */}
-                          <div className="flex items-center justify-center">
+                          {/* Message count label + Send All Drafts shortcut */}
+                          <div className="flex items-center justify-center gap-2">
                             <span className="text-[10px] font-medium text-gray-400">
                               Thread · {filteredThreadMessages.length === threadMessages.length 
                                 ? `${threadMessages.length} messages` 
                                 : `${filteredThreadMessages.length} de ${threadMessages.length} messages`}
                             </span>
+                            {threadFilterWithDraft && threadFilterStats.withDraftCount > 0 && (
+                              <button
+                                onClick={() => {
+                                  const draftReadyIds = threadMessages
+                                    .filter(m => m.direction === 'inbound' && m.aiSuggestedReply && m.aiReplyStatus === 'drafted')
+                                    .map(m => m.id);
+                                  if (draftReadyIds.length === 0) return;
+                                  setSelectionEnabled(true);
+                                  setSelectedMessageIds(new Set(draftReadyIds));
+                                  bulkSendQueue.enqueueMany(draftReadyIds);
+                                }}
+                                disabled={bulkSendQueue.isProcessing}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium bg-green-500 text-white hover:bg-green-600 transition-colors disabled:opacity-50"
+                                data-testid="button-send-all-drafts"
+                              >
+                                <Send className="h-3 w-3" />
+                                Enviar todos ({threadFilterStats.withDraftCount})
+                              </button>
+                            )}
                           </div>
                         </div>
                       )}

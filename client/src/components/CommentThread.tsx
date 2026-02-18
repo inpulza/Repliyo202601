@@ -330,13 +330,23 @@ function SingleMessage({
             ) : bulkStatus === 'error' ? (
               <AlertCircle className="h-4 w-4 text-red-500" />
             ) : (
-              <input
-                type="checkbox"
-                checked={isSelected}
-                onChange={() => onToggleSelection?.(msg.id)}
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                data-testid={`checkbox-select-${msg.id}`}
-              />
+              <div className="flex flex-col items-center gap-0.5">
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={() => onToggleSelection?.(msg.id)}
+                  className={cn(
+                    "h-4 w-4 rounded cursor-pointer focus:ring-indigo-500",
+                    msg.aiSuggestedReply && msg.aiReplyStatus === 'drafted'
+                      ? "border-green-400 text-green-600 focus:ring-green-500"
+                      : "border-gray-300 text-indigo-600"
+                  )}
+                  data-testid={`checkbox-select-${msg.id}`}
+                />
+                {msg.aiSuggestedReply && msg.aiReplyStatus === 'drafted' && (
+                  <div className="h-1.5 w-1.5 rounded-full bg-green-500" title="Borrador listo para enviar" />
+                )}
+              </div>
             )
           ) : (
             <div className="h-4 w-4" />
