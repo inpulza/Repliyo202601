@@ -135,6 +135,7 @@ export function CrisisAlerts() {
         <p className="text-sm text-gray-500 mt-1">Monitoreo de sentimiento y gestión de crisis en mensajes</p>
       </div>
 
+      <div className="flex-1 overflow-y-auto">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4">
         <Card data-testid="stat-p1-count">
           <CardContent className="p-3 flex items-center justify-between">
@@ -379,6 +380,7 @@ export function CrisisAlerts() {
             );
           })
         )}
+      </div>
       </div>
     </div>
   );
