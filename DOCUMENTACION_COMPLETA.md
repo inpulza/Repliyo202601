@@ -10639,5 +10639,24 @@ El toggle "Fire Mode" (icono de llama) en el Inbox filtra conversaciones para mo
 - **Contador:** El toggle muestra el número de conversaciones con alertas activas
 - **Seguridad:** Endpoint protegido por `requireAuth` + `validateBrandAccess`
 
+### Fire Mode - Bypass de filtros (18-Feb-2026)
+Cuando Fire Mode está activo, **bypasea todos los demás filtros** (no leídos, plataforma, tipo, búsqueda) para mostrar TODAS las conversaciones con alertas de crisis activas. Esto garantiza que ninguna conversación crítica se oculte por filtros activos.
+
+### Indicadores de Severidad en Mensajes Individuales (18-Feb-2026)
+Los mensajes inbound con urgencia P1 o P2 muestran un badge visual junto al timestamp:
+- **P1:** Badge rojo con icono `ShieldAlert` y texto "P1"
+- **P2:** Badge naranja con icono `ShieldAlert` y texto "P2"
+- Ubicación: junto a los badges de reminders en la línea de metadatos del mensaje
+- Solo visible en mensajes `inbound` con campo `urgency` = P1 o P2
+
+### Filtro "Con alerta" en Comment Threads (18-Feb-2026)
+Nuevo chip de filtro en la barra de filtros del hilo de comentarios:
+- **Nombre:** "Con alerta" (icono `ShieldAlert`, color rojo)
+- **Funcionalidad:** Filtra mensajes del hilo para mostrar solo los que tienen alertas P1/P2
+- **Estadísticas:** Muestra contador de mensajes con alertas en el hilo actual
+- **Ubicación:** Junto a los filtros existentes (Sin respuesta, Con borrador, Con recordatorio)
+- **Estado:** `threadFilterWithCrisis` en el componente Inbox
+- **Reset:** Se resetea al cambiar de conversación
+
 *Sección creada: 18 Febrero 2026*
 *Estado: Completado*

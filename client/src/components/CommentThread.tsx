@@ -16,7 +16,8 @@ import {
   Check, 
   Loader2,
   Video,
-  Bell
+  Bell,
+  ShieldAlert
 } from 'lucide-react';
 import { Platform, MessageType, Sentiment } from '@/lib/types';
 import { isRepliyoMessage, isAutoReply, isReminderMessage } from '@/lib/mockData';
@@ -423,6 +424,19 @@ function SingleMessage({
               <Bell className="h-3 w-3" />
               <span className="text-gray-500">Hilo:</span>
               <span className="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full text-[9px] font-medium min-w-[18px] text-center">{threadReminderCount}</span>
+            </span>
+          )}
+          {msg.direction === 'inbound' && msg.urgency && (msg.urgency === 'P1' || msg.urgency === 'P2') && (
+            <span 
+              className={cn(
+                "flex items-center gap-1 text-[10px] font-bold ml-2 px-1.5 py-0.5 rounded-full",
+                msg.urgency === 'P1' ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"
+              )}
+              title={`Alerta ${msg.urgency}: ${msg.sentiment || 'crisis'}`}
+              data-testid={`badge-crisis-${msg.id}`}
+            >
+              <ShieldAlert className="h-3 w-3" />
+              {msg.urgency}
             </span>
           )}
         </div>

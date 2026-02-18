@@ -67,6 +67,7 @@ import {
   PanelRightOpen,
   PanelRightClose,
   FileText,
+  ShieldAlert,
 } from 'lucide-react';
 import { FaInstagram, FaFacebook, FaLinkedin, FaTiktok, FaYoutube, FaWhatsapp } from 'react-icons/fa';
 import { GoogleBusinessIcon } from './GoogleBusinessIcon';
@@ -549,6 +550,7 @@ export function Inbox() {
   const [threadFilterNoReply, setThreadFilterNoReply] = useState(false);
   const [threadFilterWithDraft, setThreadFilterWithDraft] = useState(false);
   const [threadFilterWithReminder, setThreadFilterWithReminder] = useState(false);
+  const [threadFilterWithCrisis, setThreadFilterWithCrisis] = useState(false);
   const [location, setLocation] = useLocation();
 
   // Handler for platform filter clicks - activates unread filter if platform has unread messages
@@ -681,6 +683,10 @@ export function Inbox() {
       if (focusedConversationId) {
         return c.id === focusedConversationId;
       }
+      // Fire Mode: bypass all other filters, show ONLY conversations with crisis alerts
+      if (fireMode) {
+        return !!crisisAlertsByConversation[c.id];
+      }
       // Normal filters
       if (showOnlyUnread && (c.unreadCount || 0) === 0) return false;
       if (platformFilter !== 'all' && c.platform !== platformFilter) return false;
@@ -696,9 +702,6 @@ export function Inbox() {
       }
       if (!showInactiveNetworks && inactiveProviders.length > 0) {
         if (inactiveProviders.includes(c.platform.toLowerCase())) return false;
-      }
-      if (fireMode) {
-        if (!crisisAlertsByConversation[c.id]) return false;
       }
       return true;
     })
@@ -814,15 +817,17 @@ export function Inbox() {
 
   // Compute thread filter statistics
   const threadFilterStats = React.useMemo(() => {
-    if (!threadMessages.length) return { noReplyCount: 0, withDraftCount: 0, withReminderCount: 0, noReplyIds: new Set<string>(), withDraftIds: new Set<string>(), withReminderIds: new Set<string>() };
+    if (!threadMessages.length) return { noReplyCount: 0, withDraftCount: 0, withReminderCount: 0, withCrisisCount: 0, noReplyIds: new Set<string>(), withDraftIds: new Set<string>(), withReminderIds: new Set<string>(), withCrisisIds: new Set<string>() };
     
     const noReplyIds = new Set<string>();
     const withDraftIds = new Set<string>();
     const withReminderIds = new Set<string>();
+    const withCrisisIds = new Set<string>();
     
     // Separate counters for display (count unique items, not expanded IDs)
     let draftCount = 0;
     let reminderCount = 0;
+    let crisisCount = 0;
     
     // Build parent-child map for quick lookup
     const childrenByParent = new Map<string, typeof threadMessages>();
@@ -884,13 +889,26 @@ export function Inbox() {
       }
     });
     
+    const crisisRootIds = new Set<string>();
+    threadMessages.forEach(m => {
+      if (m.direction === 'inbound' && m.urgency && (m.urgency === 'P1' || m.urgency === 'P2')) {
+        withCrisisIds.add(m.id);
+        const rootId = getRootId(m.id);
+        if (rootId !== m.id) withCrisisIds.add(rootId);
+        crisisRootIds.add(rootId);
+      }
+    });
+    crisisCount = crisisRootIds.size;
+
     return {
       noReplyCount: noReplyIds.size,
       withDraftCount: draftCount,
       withReminderCount: reminderCount,
+      withCrisisCount: crisisCount,
       noReplyIds,
       withDraftIds,
       withReminderIds,
+      withCrisisIds,
     };
   }, [threadMessages]);
 
@@ -937,7 +955,7 @@ export function Inbox() {
 
   // Apply thread filters to get filtered messages
   const filteredThreadMessages = React.useMemo(() => {
-    const anyFilterActive = threadFilterNoReply || threadFilterWithDraft || threadFilterWithReminder;
+    const anyFilterActive = threadFilterNoReply || threadFilterWithDraft || threadFilterWithReminder || threadFilterWithCrisis;
     if (!anyFilterActive) return threadMessages;
     
     // Build set of message IDs to show
@@ -975,9 +993,12 @@ export function Inbox() {
     if (threadFilterWithReminder) {
       threadFilterStats.withReminderIds.forEach(id => addThreadBranch(id));
     }
+    if (threadFilterWithCrisis) {
+      threadFilterStats.withCrisisIds.forEach(id => addThreadBranch(id));
+    }
     
     return threadMessages.filter(m => visibleIds.has(m.id));
-  }, [threadMessages, threadFilterNoReply, threadFilterWithDraft, threadFilterWithReminder, threadFilterStats]);
+  }, [threadMessages, threadFilterNoReply, threadFilterWithDraft, threadFilterWithReminder, threadFilterWithCrisis, threadFilterStats]);
 
   // Auto-select first conversation (Desktop Only)
   useEffect(() => {
@@ -995,6 +1016,7 @@ export function Inbox() {
     setThreadFilterNoReply(false);
     setThreadFilterWithDraft(false);
     setThreadFilterWithReminder(false);
+    setThreadFilterWithCrisis(false);
   }, [activeConversation?.id]);
 
   const handleSyncData = async () => {
@@ -2212,6 +2234,42 @@ export function Inbox() {
                                   threadFilterWithReminder ? "bg-purple-200" : "bg-gray-200"
                                 )}>
                                   {threadFilterStats.withReminderCount}
+                                </span>
+                              )}
+                            </motion.button>
+                            
+                            <motion.button
+                              onClick={() => setThreadFilterWithCrisis(!threadFilterWithCrisis)}
+                              disabled={threadFilterStats.withCrisisCount === 0}
+                              className={cn(
+                                "inline-flex items-center gap-1.5 py-1.5 px-2 rounded-full text-[11px] font-medium",
+                                threadFilterWithCrisis 
+                                  ? "text-red-700 bg-red-100" 
+                                  : "text-gray-500 hover:text-gray-700",
+                                threadFilterStats.withCrisisCount === 0 && "opacity-40 cursor-not-allowed"
+                              )}
+                              whileHover="hover"
+                              animate={threadFilterWithCrisis ? "active" : "idle"}
+                              data-testid="filter-with-crisis"
+                            >
+                              <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
+                              <motion.span
+                                className="overflow-hidden whitespace-nowrap text-[11px]"
+                                variants={{
+                                  idle: { width: 0, opacity: 0 },
+                                  hover: { width: "auto", opacity: 1 },
+                                  active: { width: "auto", opacity: 1 }
+                                }}
+                                transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                              >
+                                Con alerta
+                              </motion.span>
+                              {threadFilterStats.withCrisisCount > 0 && (
+                                <span className={cn(
+                                  "px-1.5 py-0.5 rounded-full text-[10px] shrink-0",
+                                  threadFilterWithCrisis ? "bg-red-200" : "bg-gray-200"
+                                )}>
+                                  {threadFilterStats.withCrisisCount}
                                 </span>
                               )}
                             </motion.button>
