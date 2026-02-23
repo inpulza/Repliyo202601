@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -93,36 +94,67 @@ const STEP_LABELS = ['About You', 'Your Business', 'Social Media', 'Your Goals',
 
 function StepIndicator({ currentStep }: { currentStep: number }) {
   return (
-    <div className="flex items-center justify-center gap-1 mb-8" data-testid="step-indicator">
-      {STEP_LABELS.map((label, index) => {
-        const isActive = index === currentStep;
-        const isCompleted = index < currentStep;
-        const Icon = STEP_ICONS[index];
-        return (
-          <React.Fragment key={index}>
-            {index > 0 && (
-              <div className={`h-0.5 w-6 sm:w-10 transition-colors ${isCompleted ? 'bg-indigo-500' : 'bg-gray-200'}`} />
-            )}
-            <div className="flex flex-col items-center gap-1">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all ${
+    <div className="mb-10" data-testid="step-indicator">
+      <div className="flex items-start justify-between relative">
+        <div className="absolute top-4 left-0 right-0 flex items-center px-[calc(50%/(5))]" style={{ left: '10%', right: '10%' }}>
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="flex-1 h-[2px] mx-0">
+              <motion.div
+                className="h-full rounded-full"
+                initial={false}
+                animate={{
+                  backgroundColor: i < currentStep ? '#6366f1' : '#e5e7eb',
+                }}
+                transition={{ duration: 0.4, ease: 'easeInOut' }}
+              />
+            </div>
+          ))}
+        </div>
+
+        {STEP_LABELS.map((label, index) => {
+          const isActive = index === currentStep;
+          const isCompleted = index < currentStep;
+          const Icon = STEP_ICONS[index];
+          return (
+            <div key={index} className="flex flex-col items-center z-10" style={{ width: '20%' }}>
+              <motion.div
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
                   isCompleted
-                    ? 'bg-indigo-500 text-white'
+                    ? 'bg-indigo-500 text-white shadow-md shadow-indigo-200'
                     : isActive
-                    ? 'bg-indigo-100 text-indigo-700 ring-2 ring-indigo-500'
+                    ? 'bg-white text-indigo-700 ring-2 ring-indigo-500 shadow-md shadow-indigo-100'
                     : 'bg-gray-100 text-gray-400'
                 }`}
+                initial={false}
+                animate={{
+                  scale: isActive ? 1.1 : 1,
+                }}
+                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                 data-testid={`step-icon-${index}`}
               >
-                {isCompleted ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
-              </div>
-              <span className={`text-[10px] font-medium hidden sm:block ${isActive ? 'text-indigo-700' : isCompleted ? 'text-indigo-500' : 'text-gray-400'}`}>
+                {isCompleted ? (
+                  <motion.div
+                    initial={{ scale: 0, rotate: -90 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                  >
+                    <Check className="w-4 h-4" />
+                  </motion.div>
+                ) : (
+                  <Icon className="w-4 h-4" />
+                )}
+              </motion.div>
+              <span
+                className={`text-[10px] font-medium mt-2 whitespace-nowrap hidden sm:block transition-colors duration-300 ${
+                  isActive ? 'text-indigo-700' : isCompleted ? 'text-indigo-500' : 'text-gray-400'
+                }`}
+              >
                 {label}
               </span>
             </div>
-          </React.Fragment>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -609,17 +641,33 @@ export function GetStarted() {
           </div>
 
           {isSuccess ? (
-            <SuccessState />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <SuccessState />
+            </motion.div>
           ) : (
             <>
               <StepIndicator currentStep={step} />
 
-              <div className="min-h-[400px]">
-                {step === 0 && <Step1AboutYou data={formData} onChange={updateFormData} />}
-                {step === 1 && <Step2Business data={formData} onChange={updateFormData} />}
-                {step === 2 && <Step3SocialMedia data={formData} onChange={updateFormData} />}
-                {step === 3 && <Step4Goals data={formData} onChange={updateFormData} />}
-                {step === 4 && <Step5Confirmation data={formData} />}
+              <div className="min-h-[400px] overflow-hidden">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={step}
+                    initial={{ opacity: 0, x: 30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -30 }}
+                    transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  >
+                    {step === 0 && <Step1AboutYou data={formData} onChange={updateFormData} />}
+                    {step === 1 && <Step2Business data={formData} onChange={updateFormData} />}
+                    {step === 2 && <Step3SocialMedia data={formData} onChange={updateFormData} />}
+                    {step === 3 && <Step4Goals data={formData} onChange={updateFormData} />}
+                    {step === 4 && <Step5Confirmation data={formData} />}
+                  </motion.div>
+                </AnimatePresence>
               </div>
 
               <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
