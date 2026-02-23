@@ -18,11 +18,16 @@ export const sessionStore = new PgStore({
 const isReplit = !!process.env.REPL_ID || !!process.env.REPLIT_DEPLOYMENT;
 const isProduction = process.env.NODE_ENV === "production" || isReplit;
 
+const sessionSecret = process.env.SESSION_SECRET;
+if (isProduction && !sessionSecret) {
+  console.error('[Session] CRITICAL: SESSION_SECRET environment variable is required in production! Using fallback - this is NOT secure.');
+}
+
 console.log(`[Session] Config: isReplit=${isReplit}, isProduction=${isProduction}, NODE_ENV=${process.env.NODE_ENV}`);
 
 export const sessionMiddleware = session({
   store: sessionStore,
-  secret: process.env.SESSION_SECRET || "dev-secret-change-in-production",
+  secret: sessionSecret || "dev-secret-change-in-production",
   resave: false,
   saveUninitialized: false,
   name: 'connect.sid',
@@ -30,7 +35,7 @@ export const sessionMiddleware = session({
     secure: isProduction,
     httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-    sameSite: isProduction ? 'none' : 'lax',
+    sameSite: 'lax',
     path: '/',
   },
 });

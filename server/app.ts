@@ -31,6 +31,15 @@ declare module 'http' {
 
 app.use(sessionMiddleware);
 
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  next();
+});
+
 app.use(express.json({
   verify: (req, _res, buf) => {
     req.rawBody = buf;
@@ -53,7 +62,9 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
+      
+      const sensitiveRoutes = ['/api/auth/login', '/api/auth/register', '/api/auth/public-register', '/api/auth/verify-email', '/api/auth/change-password', '/api/auth/me', '/api/auth/resend-code'];
+      if (capturedJsonResponse && !sensitiveRoutes.some(r => path.startsWith(r))) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
 

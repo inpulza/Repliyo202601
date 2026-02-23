@@ -309,16 +309,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       sendWelcomeEmail(user.email, user.name).catch(console.error);
 
-      req.session.userId = userId;
-      req.session.save((err) => {
-        if (err) {
-          console.error('[Auth] Session save error after verification:', err);
+      req.session.regenerate((regenerateErr) => {
+        if (regenerateErr) {
+          console.error('[Auth] Session regenerate error after verification:', regenerateErr);
         }
-        console.log(`[Auth] Email verified - userId: ${userId}`);
-        res.json({ 
-          success: true,
-          user: sanitizeUser(activatedUser!),
-          message: "¡Cuenta verificada exitosamente!"
+        req.session.userId = userId;
+        req.session.save((err) => {
+          if (err) {
+            console.error('[Auth] Session save error after verification:', err);
+          }
+          console.log(`[Auth] Email verified - userId: ${userId}`);
+          res.json({ 
+            success: true,
+            user: sanitizeUser(activatedUser!),
+            message: "¡Cuenta verificada exitosamente!"
+          });
         });
       });
     } catch (error: any) {
@@ -418,16 +423,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      req.session.userId = user.id;
-      
-      // Force session save before responding
-      req.session.save((err) => {
-        if (err) {
-          console.error('[Auth] Session save error:', err);
+      req.session.regenerate((regenerateErr) => {
+        if (regenerateErr) {
+          console.error('[Auth] Session regenerate error:', regenerateErr);
           return res.status(500).json({ error: "Failed to create session" });
         }
-        console.log(`[Auth] Login successful - userId: ${user.id}, sessionID: ${req.sessionID}`);
-        res.json(sanitizeUser(user));
+        
+        req.session.userId = user.id;
+        req.session.save((err) => {
+          if (err) {
+            console.error('[Auth] Session save error:', err);
+            return res.status(500).json({ error: "Failed to create session" });
+          }
+          console.log(`[Auth] Login successful - userId: ${user.id}`);
+          res.json(sanitizeUser(user));
+        });
       });
     } catch (error) {
       res.status(400).json({ error: "Invalid login data" });
