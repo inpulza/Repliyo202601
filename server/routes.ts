@@ -312,11 +312,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.regenerate((regenerateErr) => {
         if (regenerateErr) {
           console.error('[Auth] Session regenerate error after verification:', regenerateErr);
+          return res.status(500).json({ error: "Error al crear la sesión" });
         }
         req.session.userId = userId;
         req.session.save((err) => {
           if (err) {
             console.error('[Auth] Session save error after verification:', err);
+            return res.status(500).json({ error: "Error al guardar la sesión" });
           }
           console.log(`[Auth] Email verified - userId: ${userId}`);
           res.json({ 

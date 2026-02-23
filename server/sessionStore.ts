@@ -20,14 +20,14 @@ const isProduction = process.env.NODE_ENV === "production" || isReplit;
 
 const sessionSecret = process.env.SESSION_SECRET;
 if (isProduction && !sessionSecret) {
-  console.error('[Session] CRITICAL: SESSION_SECRET environment variable is required in production! Using fallback - this is NOT secure.');
+  throw new Error('[Session] FATAL: SESSION_SECRET environment variable is required in production! Set it in your secrets before deploying.');
 }
 
 console.log(`[Session] Config: isReplit=${isReplit}, isProduction=${isProduction}, NODE_ENV=${process.env.NODE_ENV}`);
 
 export const sessionMiddleware = session({
   store: sessionStore,
-  secret: sessionSecret || "dev-secret-change-in-production",
+  secret: sessionSecret || "dev-secret-for-local-only",
   resave: false,
   saveUninitialized: false,
   name: 'connect.sid',
