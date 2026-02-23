@@ -138,7 +138,7 @@ export function Login() {
             <div className="mt-3 pt-3 border-t border-gray-100">
               <a
                 href="/get-started"
-                className="flex items-center justify-center gap-2 w-full rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-xs font-semibold text-white hover:from-indigo-700 hover:to-violet-700 transition-all shadow-sm"
+                className="flex items-center justify-center gap-2 w-full rounded-lg border border-indigo-600 px-4 py-2.5 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 transition-all"
                 data-testid="link-get-started"
               >
                 <ArrowRight className="h-3.5 w-3.5" />
