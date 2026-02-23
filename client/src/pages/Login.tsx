@@ -68,8 +68,8 @@ export function Login() {
       const user = await response.json();
       
       toast({
-        title: "¡Bienvenido!",
-        description: `Sesión iniciada como ${user.name}`,
+        title: "Welcome!",
+        description: `Logged in as ${user.name}`,
       });
 
       await refreshAuth();
@@ -77,8 +77,8 @@ export function Login() {
     } catch (error: any) {
       console.error('Login error:', error);
       toast({
-        title: "Error de Login",
-        description: error.message || 'Credenciales inválidas',
+        title: "Login Error",
+        description: error.message || 'Invalid credentials',
         variant: "destructive",
       });
     } finally {
@@ -103,7 +103,7 @@ export function Login() {
 
           {/* Invite-Only Access Block */}
           <p className="mb-3 text-center text-sm font-medium text-gray-900" data-testid="invite-only-label">
-            Acceso por invitación
+            Invite-only access
           </p>
           <div className="rounded-lg border border-gray-200 bg-white p-4 mb-8" data-testid="invite-only-block">
             <div className="flex items-center gap-3">
@@ -113,7 +113,7 @@ export function Login() {
                 </svg>
               </div>
               <p className="flex-1 min-w-0 text-xs text-gray-500">
-                ¿Necesitas una cuenta? Escríbenos por WhatsApp o visita{' '}
+                Need an account? Message us on WhatsApp or visit{' '}
                 <a
                   href="https://www.inpulza.com"
                   target="_blank"
@@ -132,7 +132,7 @@ export function Login() {
                 data-testid="link-whatsapp-access"
               >
                 <MessageCircle className="h-3.5 w-3.5" />
-                Contáctanos
+                Contact us
               </a>
             </div>
           </div>
@@ -183,7 +183,7 @@ export function Login() {
             </Button>
           </div>
           <p className="text-[11px] text-center text-gray-400 mb-5">
-            Acceso social no disponible de momento
+            Social login not available at this time
           </p>
 
           {/* Login Form */}
@@ -195,7 +195,7 @@ export function Login() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="tu@email.com"
+                  placeholder="you@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -207,7 +207,7 @@ export function Login() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-gray-700">Contraseña</Label>
+              <Label htmlFor="password" className="text-gray-700">Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <Input
@@ -242,16 +242,16 @@ export function Login() {
                   data-testid="checkbox-remember"
                 />
                 <Label htmlFor="remember" className="text-sm text-gray-600 cursor-pointer">
-                  Recordarme
+                  Remember me
                 </Label>
               </div>
               <button
                 type="button"
                 className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
-                onClick={() => toast({ title: "Próximamente", description: "Recuperación de contraseña estará disponible pronto" })}
+                onClick={() => toast({ title: "Coming soon", description: "Password recovery will be available soon" })}
                 data-testid="link-forgot-password"
               >
-                ¿Olvidaste tu contraseña?
+                Forgot your password?
               </button>
             </div>
 
@@ -265,10 +265,10 @@ export function Login() {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Iniciando sesión...
+                  Signing in...
                 </>
               ) : (
-                'Iniciar Sesión'
+                'Sign In'
               )}
             </Button>
           </form>

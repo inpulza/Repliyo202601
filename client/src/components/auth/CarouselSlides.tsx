@@ -104,10 +104,10 @@ export function Slide1_JoinRepliyo() {
       </div>
       
       <h3 className="text-2xl font-bold text-white text-center mb-3">
-        Únete a Repliyo
+        Join Repliyo
       </h3>
       <p className="text-indigo-100 text-center text-sm max-w-xs">
-        Gestiona todas tus conversaciones de redes sociales en un solo lugar
+        Manage all your social media conversations in one place
       </p>
     </div>
   );
@@ -122,7 +122,7 @@ export function Slide2_ConnectApps() {
             <div className="w-3 h-3 rounded-full bg-red-400" />
             <div className="w-3 h-3 rounded-full bg-yellow-400" />
             <div className="w-3 h-3 rounded-full bg-green-400" />
-            <span className="ml-3 text-sm text-gray-500 font-medium">Inbox Unificado</span>
+            <span className="ml-3 text-sm text-gray-500 font-medium">Unified Inbox</span>
           </div>
           <div className="p-4 space-y-3">
             <div className="flex items-center gap-3">
@@ -173,10 +173,10 @@ export function Slide2_ConnectApps() {
       </div>
       
       <h3 className="text-2xl font-bold text-white text-center mb-3">
-        Conecta con todas tus redes
+        Connect all your networks
       </h3>
       <p className="text-indigo-100 text-center text-sm max-w-xs">
-        Instagram, Facebook, YouTube, TikTok y más en un solo lugar
+        Instagram, Facebook, YouTube, TikTok and more in one place
       </p>
     </div>
   );
@@ -216,7 +216,7 @@ export function Slide3_AutomateResponses() {
                     <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
                     </svg>
-                    <span className="text-xs text-white font-medium">Respuesta IA</span>
+                    <span className="text-xs text-white font-medium">AI Response</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="w-1.5 h-1.5 rounded-full bg-green-300 animate-pulse" />
@@ -255,10 +255,10 @@ export function Slide3_AutomateResponses() {
       </div>
       
       <h3 className="text-2xl font-bold text-white text-center mb-3">
-        Automatiza tus respuestas
+        Automate your responses
       </h3>
       <p className="text-indigo-100 text-center text-sm max-w-xs">
-        IA inteligente que responde por ti mientras descansas
+        Smart AI that responds for you while you rest
       </p>
     </div>
   );
@@ -276,7 +276,7 @@ export function Slide4_IntegratedCRM() {
               <div className="w-7 h-7 rounded-full bg-green-400 border-2 border-white" />
               <div className="w-7 h-7 rounded-full bg-amber-400 border-2 border-white" />
             </div>
-            <span className="text-white text-sm font-medium ml-2">+127 contactos</span>
+            <span className="text-white text-sm font-medium ml-2">+127 contacts</span>
           </div>
           <div className="p-4 space-y-2.5">
             <div className="flex items-center gap-3 p-2.5 bg-indigo-50 rounded-lg">
@@ -285,7 +285,7 @@ export function Slide4_IntegratedCRM() {
               </div>
               <div className="flex-1">
                 <div className="text-sm font-medium text-gray-800">María Castro</div>
-                <div className="text-xs text-gray-500">Interesado en Premium</div>
+                <div className="text-xs text-gray-500">Interested in Premium</div>
               </div>
               <div className="flex items-center gap-1.5">
                 <InstagramIcon />
@@ -298,7 +298,7 @@ export function Slide4_IntegratedCRM() {
               </div>
               <div className="flex-1">
                 <div className="text-sm font-medium text-gray-800">Juan López</div>
-                <div className="text-xs text-gray-500">Nuevo mensaje</div>
+                <div className="text-xs text-gray-500">New message</div>
               </div>
               <div className="flex items-center gap-1.5">
                 <FacebookIcon />
@@ -342,10 +342,10 @@ export function Slide4_IntegratedCRM() {
       </div>
       
       <h3 className="text-2xl font-bold text-white text-center mb-3">
-        CRM integrado
+        Integrated CRM
       </h3>
       <p className="text-indigo-100 text-center text-sm max-w-xs">
-        Gestiona tus contactos y conversaciones en un solo lugar
+        Manage your contacts and conversations in one place
       </p>
     </div>
   );
@@ -356,10 +356,10 @@ export function Slide5_Features() {
     <div className="flex flex-col items-center justify-center h-full px-8">
       <div className="space-y-4 mb-8">
         {[
-          { icon: '🤖', text: 'Respuestas automáticas con IA' },
-          { icon: '📊', text: 'Análisis y métricas en tiempo real' },
-          { icon: '🎯', text: 'CRM integrado para tu equipo' },
-          { icon: '⚡', text: 'Notificaciones inteligentes' },
+          { icon: '🤖', text: 'Automatic AI responses' },
+          { icon: '📊', text: 'Real-time analytics and metrics' },
+          { icon: '🎯', text: 'Integrated CRM for your team' },
+          { icon: '⚡', text: 'Smart notifications' },
         ].map((feature, i) => (
           <div 
             key={i} 
@@ -373,10 +373,10 @@ export function Slide5_Features() {
       </div>
       
       <h3 className="text-2xl font-bold text-white text-center mb-3">
-        Todo lo que necesitas
+        Everything you need
       </h3>
       <p className="text-indigo-100 text-center text-sm max-w-xs">
-        Herramientas potentes para escalar tu atención al cliente
+        Powerful tools to scale your customer support
       </p>
     </div>
   );
@@ -405,14 +405,14 @@ export function Slide6_GetStarted() {
                 </div>
               </div>
               <div className="px-3 py-1 bg-green-100 rounded-full">
-                <span className="text-xs text-green-700 font-medium">Activo</span>
+                <span className="text-xs text-green-700 font-medium">Active</span>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2">
               {[1, 2, 3].map(i => (
                 <div key={i} className="bg-gray-50 rounded-lg p-3 text-center">
                   <div className="text-lg font-bold text-gray-800">{i * 12}</div>
-                  <div className="text-xs text-gray-500">Mensajes</div>
+                  <div className="text-xs text-gray-500">Messages</div>
                 </div>
               ))}
             </div>
@@ -421,10 +421,10 @@ export function Slide6_GetStarted() {
       </div>
       
       <h3 className="text-2xl font-bold text-white text-center mb-3">
-        Comienza en minutos
+        Get started in minutes
       </h3>
       <p className="text-indigo-100 text-center text-sm max-w-xs">
-        Configura tu cuenta y conecta tus redes sociales rápidamente
+        Set up your account and connect your social networks quickly
       </p>
     </div>
   );
