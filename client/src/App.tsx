@@ -22,6 +22,7 @@ import { ProfileSettings } from "@/pages/ProfileSettings";
 import { CRM } from "@/pages/CRM";
 import { CrisisAlerts } from "@/pages/CrisisAlerts";
 import { LandingPage } from "@/components/landing/LandingPage";
+import { GetStarted } from "@/pages/GetStarted";
 import { Loader2 } from "lucide-react";
 
 function AppRedirect() {
@@ -82,6 +83,7 @@ function Router() {
       {/* Public routes */}
       <Route path="/" component={HomeRoute} />
       <Route path="/login" component={Login} />
+      <Route path="/get-started" component={GetStarted} />
       <Route path="/register">{() => <LegacyRedirect newPath="/login" />}</Route>
       
       {/* Legacy URL redirects (for old bookmarks) */}

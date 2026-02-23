@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertBrandSchema, insertUserSchema, insertMessageSchema, updateMessageSchema, updateConversationSchema, insertSocialAccountSchema, updateReminderRulesSchema, type User } from "@shared/schema";
+import { insertBrandSchema, insertUserSchema, insertMessageSchema, updateMessageSchema, updateConversationSchema, insertSocialAccountSchema, updateReminderRulesSchema, insertLeadSchema, type User } from "@shared/schema";
 import { hashPassword, verifyPassword, sanitizeUser, sanitizeBrand, type AuthenticatedUser } from "./auth";
 import { MetricoolService } from "./services/metricool";
 import { syncService } from "./services/syncService";
@@ -11,7 +11,7 @@ import { authRateLimiter, syncRateLimiter, aiRateLimiter, sendMessageRateLimiter
 import { authStorage } from "./replit_integrations/auth";
 import { z } from "zod";
 import crypto from "crypto";
-import { sendVerificationEmail, sendWelcomeEmail } from "./services/emailService";
+import { sendVerificationEmail, sendWelcomeEmail, sendLeadNotification, sendLeadConfirmation } from "./services/emailService";
 
 // Extend Express Request to include our user type (compatible with Passport)
 declare global {
@@ -121,6 +121,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     name: z.string().min(1),
     role: z.enum(['admin', 'client']).default('client'),
     brandId: z.string().nullable().optional(),
+  });
+
+  app.post("/api/leads", async (req, res) => {
+    try {
+      const data = insertLeadSchema.parse(req.body);
+      const lead = await storage.createLead(data);
+
+      sendLeadNotification(lead).catch(err =>
+        console.error('[Routes] Failed to send lead notification email:', err)
+      );
+
+      if (lead.email) {
+        sendLeadConfirmation(lead.email, lead.name).catch(err =>
+          console.error('[Routes] Failed to send lead confirmation email:', err)
+        );
+      }
+
+      res.status(201).json({ id: lead.id, message: "Lead submitted successfully" });
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      console.error('[Routes] Lead creation error:', error);
+      res.status(500).json({ error: "Failed to submit form" });
+    }
   });
 
   const loginSchema = z.object({

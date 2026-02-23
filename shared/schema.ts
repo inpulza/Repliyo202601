@@ -1205,3 +1205,33 @@ export const updateSentimentAlertSchema = insertSentimentAlertSchema.partial();
 export type InsertSentimentAlert = z.infer<typeof insertSentimentAlertSchema>;
 export type SentimentAlert = typeof sentimentAlerts.$inferSelect;
 export type UpdateSentimentAlert = z.infer<typeof updateSentimentAlertSchema>;
+
+export const leads = pgTable("leads", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  role: text("role"),
+  companyName: text("company_name"),
+  industry: text("industry"),
+  teamSize: text("team_size"),
+  country: text("country"),
+  platforms: text("platforms").array(),
+  monthlyVolume: text("monthly_volume"),
+  brandCount: text("brand_count"),
+  goals: text("goals").array(),
+  painPoint: text("pain_point"),
+  currentTools: text("current_tools"),
+  source: text("source").default('website'),
+  status: text("status").notNull().default('new'),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertLeadSchema = createInsertSchema(leads).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+});
+
+export type InsertLead = z.infer<typeof insertLeadSchema>;
+export type Lead = typeof leads.$inferSelect;

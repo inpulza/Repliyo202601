@@ -23,7 +23,8 @@ import {
   type ConversationStatus, type ClosedBy,
   type ReminderRules, type InsertReminderRules, type UpdateReminderRules,
   type ReminderEvent, type InsertReminderEvent, type ReminderStatus,
-  type ConversationTimeline, type TimelineEvent
+  type ConversationTimeline, type TimelineEvent,
+  leads, type Lead, type InsertLead
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, isNull, isNotNull, gte, lte, sql, inArray, notInArray } from "drizzle-orm";
@@ -351,6 +352,9 @@ export interface IStorage {
   
   // Cross-Brand Account Detection (for preventing false inbound detection)
   getKnownBrandAccountNames(platform: string): Promise<Set<string>>;
+
+  // Leads
+  createLead(lead: InsertLead): Promise<Lead>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -4400,6 +4404,11 @@ export class DatabaseStorage implements IStorage {
     }
     
     return accountNames;
+  }
+
+  async createLead(lead: InsertLead): Promise<Lead> {
+    const [newLead] = await db.insert(leads).values(lead).returning();
+    return newLead;
   }
 }
 

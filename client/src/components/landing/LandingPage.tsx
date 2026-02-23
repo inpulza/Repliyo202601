@@ -1867,7 +1867,7 @@ function HeroSection() {
             transition={{ delay: 1.5, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             className="flex items-center justify-center"
           >
-            <GlowButton href="/login">
+            <GlowButton href="/get-started">
               {t.hero.cta}
             </GlowButton>
           </motion.div>
@@ -4057,7 +4057,7 @@ function CTASection() {
 
         <div className="lg:col-span-5 p-12 md:p-20 lg:p-24 flex items-center justify-center border-t lg:border-t-0 lg:border-l border-white/5">
           <motion.a
-            href="/login"
+            href="/get-started"
             initial={{ opacity: 0, scale: 0.8 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
