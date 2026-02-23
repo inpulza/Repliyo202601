@@ -95,65 +95,63 @@ const STEP_LABELS = ['About You', 'Your Business', 'Social Media', 'Your Goals',
 function StepIndicator({ currentStep }: { currentStep: number }) {
   return (
     <div className="mb-10" data-testid="step-indicator">
-      <div className="flex items-start justify-between relative">
-        <div className="absolute top-4 left-0 right-0 flex items-center px-[calc(50%/(5))]" style={{ left: '10%', right: '10%' }}>
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="flex-1 h-[2px] mx-0">
-              <motion.div
-                className="h-full rounded-full"
-                initial={false}
-                animate={{
-                  backgroundColor: i < currentStep ? '#6366f1' : '#e5e7eb',
-                }}
-                transition={{ duration: 0.4, ease: 'easeInOut' }}
-              />
-            </div>
-          ))}
-        </div>
-
-        {STEP_LABELS.map((label, index) => {
-          const isActive = index === currentStep;
-          const isCompleted = index < currentStep;
-          const Icon = STEP_ICONS[index];
-          return (
-            <div key={index} className="flex flex-col items-center z-10" style={{ width: '20%' }}>
-              <motion.div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
-                  isCompleted
-                    ? 'bg-indigo-500 text-white shadow-md shadow-indigo-200'
-                    : isActive
-                    ? 'bg-white text-indigo-700 ring-2 ring-indigo-500 shadow-md shadow-indigo-100'
-                    : 'bg-gray-100 text-gray-400'
-                }`}
-                initial={false}
-                animate={{
-                  scale: isActive ? 1.1 : 1,
-                }}
-                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                data-testid={`step-icon-${index}`}
-              >
-                {isCompleted ? (
-                  <motion.div
-                    initial={{ scale: 0, rotate: -90 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                  >
-                    <Check className="w-4 h-4" />
-                  </motion.div>
-                ) : (
-                  <Icon className="w-4 h-4" />
+      <div className="relative">
+        <div className="flex items-center justify-between">
+          {STEP_LABELS.map((label, index) => {
+            const isActive = index === currentStep;
+            const isCompleted = index < currentStep;
+            const Icon = STEP_ICONS[index];
+            return (
+              <React.Fragment key={index}>
+                {index > 0 && (
+                  <div className="flex-1 h-[2px] relative -mx-0.5">
+                    <div className="absolute inset-0 bg-gray-200 rounded-full" />
+                    <motion.div
+                      className="absolute inset-y-0 left-0 rounded-full bg-indigo-500"
+                      initial={false}
+                      animate={{ width: isCompleted ? '100%' : '0%' }}
+                      transition={{ duration: 0.4, ease: 'easeInOut' }}
+                    />
+                  </div>
                 )}
-              </motion.div>
-              <span
-                className={`text-[10px] font-medium mt-2 whitespace-nowrap hidden sm:block transition-colors duration-300 ${
-                  isActive ? 'text-indigo-700' : isCompleted ? 'text-indigo-500' : 'text-gray-400'
-                }`}
-              >
-                {label}
-              </span>
-            </div>
-          );
-        })}
+                <div className="flex flex-col items-center z-10 shrink-0">
+                  <motion.div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
+                      isCompleted
+                        ? 'bg-indigo-500 text-white shadow-md shadow-indigo-200'
+                        : isActive
+                        ? 'bg-white text-indigo-700 ring-2 ring-indigo-500 shadow-md shadow-indigo-100'
+                        : 'bg-gray-100 text-gray-400'
+                    }`}
+                    initial={false}
+                    animate={{ scale: isActive ? 1.1 : 1 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    data-testid={`step-icon-${index}`}
+                  >
+                    {isCompleted ? (
+                      <motion.div
+                        initial={{ scale: 0, rotate: -90 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                      >
+                        <Check className="w-4 h-4" />
+                      </motion.div>
+                    ) : (
+                      <Icon className="w-4 h-4" />
+                    )}
+                  </motion.div>
+                  <span
+                    className={`text-[10px] font-medium mt-2 whitespace-nowrap hidden sm:block transition-colors duration-300 ${
+                      isActive ? 'text-indigo-700' : isCompleted ? 'text-indigo-500' : 'text-gray-400'
+                    }`}
+                  >
+                    {label}
+                  </span>
+                </div>
+              </React.Fragment>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
