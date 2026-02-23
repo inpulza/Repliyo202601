@@ -172,7 +172,7 @@ export async function sendLeadNotification(lead: Lead): Promise<boolean> {
 
     await client.emails.send({
       from: fromEmail || 'Repliyo <noreply@repliyo.com>',
-      to: 'clients@repliyo.com',
+      to: 'clientes@repliyo.com',
       subject: `New Lead: ${lead.name} - ${lead.companyName || 'No company'}`,
       html: `
         <!DOCTYPE html>
