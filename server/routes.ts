@@ -114,7 +114,46 @@ import sentimentAlertsRouter from './routes/sentimentAlerts.routes';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use(sentimentAlertsRouter);
-  
+
+  const SITE_URL = "https://repliyo.com";
+
+  app.get("/sitemap.xml", (_req, res) => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>${SITE_URL}/</loc>
+    <xhtml:link rel="alternate" hreflang="es" href="${SITE_URL}/" />
+    <xhtml:link rel="alternate" hreflang="en" href="${SITE_URL}/?lang=en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="${SITE_URL}/" />
+  </url>
+  <url>
+    <loc>${SITE_URL}/?lang=en</loc>
+    <xhtml:link rel="alternate" hreflang="es" href="${SITE_URL}/" />
+    <xhtml:link rel="alternate" hreflang="en" href="${SITE_URL}/?lang=en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="${SITE_URL}/" />
+  </url>
+  <url>
+    <loc>${SITE_URL}/get-started</loc>
+  </url>
+</urlset>`;
+
+    res.header("Content-Type", "application/xml");
+    res.send(xml);
+  });
+
+  app.get("/robots.txt", (_req, res) => {
+    const robotsTxt = `User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /api/
+
+Sitemap: ${SITE_URL}/sitemap.xml
+`;
+    res.header("Content-Type", "text/plain");
+    res.send(robotsTxt);
+  });
+
   const registerSchema = z.object({
     email: z.string().email(),
     password: z.string().min(6),
