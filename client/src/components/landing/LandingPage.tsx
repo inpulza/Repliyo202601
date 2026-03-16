@@ -4082,14 +4082,15 @@ function Footer() {
   return (
     <footer className="section-dark border-t border-white/5">
       <div className="relative w-full overflow-hidden py-16">
-        <motion.h1 
+        <motion.p 
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
+          aria-hidden="true"
           className="font-display font-black text-[18vw] leading-[0.75] text-center select-none tracking-tight text-outline"
         >
           REPLIYO
-        </motion.h1>
+        </motion.p>
         <div className="max-w-7xl mx-auto px-6 mt-10">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-white/40 font-mono">
             <span>{t.footer.copyright}</span>
