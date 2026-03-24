@@ -424,7 +424,7 @@ function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemp
                             <AlertTriangle className="h-3.5 w-3.5 text-amber-500 mt-0.5 shrink-0" />
                             <div className="flex-1">
                               <span className="text-amber-700 font-medium">Token expirado.</span>{' '}
-                              <span className="text-amber-600">El token de acceso venció. Actualiza el secreto <code className="bg-amber-100 px-0.5 rounded">META_*_PAGE_TOKEN</code> con un token nuevo y luego reconecta.</span>
+                              <span className="text-amber-600">El token de acceso venció. Actualiza el secreto <code className="bg-amber-100 px-0.5 rounded">META_*_USER_TOKEN</code> con un token nuevo y luego reconecta.</span>
                               <div className="mt-1.5">
                                 <button
                                   className="text-amber-700 underline font-medium hover:text-amber-900"
