@@ -4545,12 +4545,12 @@ Sitemap: ${SITE_URL}/sitemap.xml
     }
   });
 
-  // GET /api/brands/:brandId/meta-pages/available-from-env — scan env for META_*_PAGE_TOKEN secrets
+  // GET /api/brands/:brandId/meta-pages/available-from-env — scan env for META_*_USER_TOKEN secrets
   app.get("/api/brands/:brandId/meta-pages/available-from-env", requireAuth, filterByBrand('brandId'), async (req, res) => {
     try {
       const available: { varName: string; tokenPreview: string }[] = [];
       for (const [key, value] of Object.entries(process.env)) {
-        if (key.startsWith('META_') && key.endsWith('_PAGE_TOKEN') && value) {
+        if (key.startsWith('META_') && key.endsWith('_USER_TOKEN') && value) {
           available.push({ varName: key, tokenPreview: `••••${value.slice(-4)}` });
         }
       }
@@ -4564,7 +4564,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
   app.post("/api/brands/:brandId/meta-pages/auto-connect", requireAuth, filterByBrand('brandId'), async (req, res) => {
     try {
       const { varName } = req.body as { varName: string };
-      if (!varName || !varName.startsWith('META_') || !varName.endsWith('_PAGE_TOKEN')) {
+      if (!varName || !varName.startsWith('META_') || !varName.endsWith('_USER_TOKEN')) {
         return res.status(400).json({ error: "Invalid varName" });
       }
       let token = process.env[varName];
