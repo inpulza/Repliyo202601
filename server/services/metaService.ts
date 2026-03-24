@@ -75,32 +75,59 @@ export async function checkPagePermissions(pageAccessToken: string, pageId?: str
   hasMessaging: boolean;
   permissions: string[];
   error?: string;
+  pageName?: string;
 }> {
   try {
-    // For Page Tokens: check by fetching the page's tasks (MESSAGING = pages_messaging)
+    // Step 1: Validate token by fetching basic page info
     const targetId = pageId || 'me';
-    const url = `${META_API_BASE}/${targetId}?fields=tasks,name&access_token=${pageAccessToken}`;
-    const res = await fetch(url);
-    const data = await res.json() as any;
+    const meUrl = `${META_API_BASE}/${targetId}?fields=id,name,category&access_token=${pageAccessToken}`;
+    const meRes = await fetch(meUrl);
+    const meData = await meRes.json() as any;
 
-    if (data.error) {
-      // Fallback: try /me/permissions (works for User Tokens)
-      const permUrl = `${META_API_BASE}/me/permissions?access_token=${pageAccessToken}`;
-      const permRes = await fetch(permUrl);
-      const permData = await permRes.json() as any;
-      if (permData.error) return { hasMessaging: false, permissions: [], error: data.error.message };
-      const granted = (permData.data || [])
-        .filter((p: any) => p.status === 'granted')
-        .map((p: any) => p.permission as string);
-      return { hasMessaging: granted.includes('pages_messaging'), permissions: granted };
+    if (meData.error) {
+      return { hasMessaging: false, permissions: [], error: meData.error.message };
     }
 
-    // tasks field: e.g. ["ADVERTISE", "MESSAGING", "MODERATE", ...]
-    const tasks: string[] = data.tasks || [];
-    const hasMessaging = tasks.includes('MESSAGING');
+    // Step 2: Try /me/accounts to get tasks (works if we can infer messaging capability)
+    // Since we verified above that the page exists, try fetching messaging settings
+    const msgUrl = `${META_API_BASE}/${targetId}/subscribed_apps?access_token=${pageAccessToken}`;
+    const msgRes = await fetch(msgUrl);
+    const msgData = await msgRes.json() as any;
+
+    // If subscribed_apps works without permission error → pages_manage_metadata OK
+    // If it gives a permissions error, note it but don't fail the whole check
+    const hasMessagingPermError = msgData.error?.code === 200 ||
+      (msgData.error?.message || '').toLowerCase().includes('permission');
+
+    // Step 3: Try sending to a clearly invalid comment to distinguish permission vs comment errors
+    const testUrl = `${META_API_BASE}/000000000000000_000000000000000/private_replies`;
+    const testBody = new URLSearchParams({ message: 'test', access_token: pageAccessToken });
+    const testRes = await fetch(testUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: testBody.toString(),
+    });
+    const testData = await testRes.json() as any;
+
+    // If error is about the object not existing (not about permissions) → token HAS messaging permission
+    // Error codes: 100 = object doesn't exist, 200 = permission error
+    const testErrCode = testData.error?.code;
+    const testErrMsg = (testData.error?.message || '').toLowerCase();
+    const hasMessaging = testErrCode === 100 ||
+      testErrMsg.includes('does not exist') ||
+      testErrMsg.includes('nonexisting') ||
+      testErrMsg.includes('unsupported') ||
+      (!testData.error); // Unlikely but handle success
+
+    const notPermissionError = !testErrMsg.includes('permission') && testErrCode !== 200 && testErrCode !== 190;
+
     return {
-      hasMessaging,
-      permissions: tasks.map((t: string) => t.toLowerCase()),
+      hasMessaging: hasMessaging || notPermissionError,
+      pageName: meData.name,
+      permissions: ['Token válido', meData.category || ''],
+      error: (!hasMessaging && !notPermissionError && testData.error)
+        ? `El token no tiene pages_messaging: ${testData.error.message}`
+        : undefined,
     };
   } catch (err: any) {
     return { hasMessaging: false, permissions: [], error: err.message };

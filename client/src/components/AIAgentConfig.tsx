@@ -424,16 +424,17 @@ function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemp
                         ) : perms.hasMessaging ? (
                           <>
                             <CheckCircle className="h-3.5 w-3.5 text-green-600 mt-0.5 shrink-0" />
-                            <span className="text-green-700"><strong>MESSAGING ✓</strong> — El token tiene los permisos necesarios para enviar respuestas privadas. Tasks: {perms.permissions.join(', ')}</span>
+                            <span className="text-green-700">
+                              <strong>pages_messaging ✓</strong> — Token válido con acceso a Private Replies.
+                              {(perms as any).pageName && <span className="text-green-600"> Página: {(perms as any).pageName}</span>}
+                            </span>
                           </>
                         ) : (
                           <>
                             <XCircle className="h-3.5 w-3.5 text-red-500 mt-0.5 shrink-0" />
                             <span className="text-red-700">
-                              <strong>MESSAGING faltante.</strong> El token no tiene acceso a mensajería.{' '}
-                              {perms.permissions.length > 0
-                                ? <span>Tasks actuales: {perms.permissions.join(', ')}</span>
-                                : <span>Asegúrate de que la página tenga el rol de Mensajes habilitado en Meta.</span>}
+                              <strong>pages_messaging faltante.</strong> El token no puede enviar Private Replies.{' '}
+                              Ve a Meta Developers → tu App → App Review → Permisos → agrega <code className="bg-red-100 px-0.5 rounded">pages_messaging</code> y reconecta la página.
                             </span>
                           </>
                         )}
