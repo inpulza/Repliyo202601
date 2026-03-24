@@ -142,6 +142,8 @@ function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemp
   const [showToken, setShowToken] = useState(false);
   const [newPage, setNewPage] = useState({ pageId: '', pageName: '', pageAccessToken: '' });
   const [isSavingPage, setIsSavingPage] = useState(false);
+  const [isAutoConnecting, setIsAutoConnecting] = useState<string | null>(null);
+  const templateTextareaRef = React.useRef<HTMLTextAreaElement>(null);
 
   const { data: pagesData, isLoading: isLoadingPages } = useQuery({
     queryKey: ['metaPages', brandId],
@@ -154,6 +156,56 @@ function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemp
   });
 
   const pages = pagesData || [];
+
+  const { data: envTokensData } = useQuery({
+    queryKey: ['metaPagesEnvTokens', brandId],
+    queryFn: async () => {
+      const res = await fetch(`/api/brands/${brandId}/meta-pages/available-from-env`, { credentials: 'include' });
+      const d = await res.json();
+      return d.available as { varName: string; tokenPreview: string }[];
+    },
+    enabled: !!brandId && showAddModal,
+  });
+  const envTokens = envTokensData || [];
+
+  const handleAutoConnect = async (varName: string) => {
+    setIsAutoConnecting(varName);
+    try {
+      const res = await fetch(`/api/brands/${brandId}/meta-pages/auto-connect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ varName }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al conectar');
+      queryClient.invalidateQueries({ queryKey: ['metaPages', brandId] });
+      toast({ title: 'Página conectada', description: `${data.page.pageName} conectada automáticamente` });
+      setShowAddModal(false);
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message, variant: 'destructive' });
+    } finally {
+      setIsAutoConnecting(null);
+    }
+  };
+
+  const insertVariableAtCursor = (placeholder: string) => {
+    const textarea = templateTextareaRef.current;
+    if (!textarea) {
+      onTemplateChange((template || '') + placeholder);
+      return;
+    }
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const current = template || '';
+    const newValue = current.substring(0, start) + placeholder + current.substring(end);
+    onTemplateChange(newValue);
+    setTimeout(() => {
+      textarea.focus();
+      const newPos = start + placeholder.length;
+      textarea.setSelectionRange(newPos, newPos);
+    }, 0);
+  };
 
   const handleTogglePage = async (page: MetaPage) => {
     try {
@@ -337,26 +389,30 @@ function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemp
           <div className="space-y-2">
             <Label className="text-xs font-medium">Template del mensaje</Label>
             <Textarea
+              ref={templateTextareaRef}
               value={template}
               onChange={(e) => onTemplateChange(e.target.value)}
               placeholder="Hola {{first_name}} 👋 He visto tu comentario..."
               className="min-h-[100px] text-sm font-mono resize-none"
               data-testid="textarea-private-reply-template"
             />
-            <div className="flex flex-wrap gap-1.5">
-              {PRIVATE_REPLY_VARIABLES.map((v) => (
-                <button
-                  key={v.placeholder}
-                  type="button"
-                  onClick={() => onTemplateChange(template + v.placeholder)}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs hover:bg-blue-100 transition-colors"
-                  title={v.description}
-                  data-testid={`button-var-${v.placeholder}`}
-                >
-                  <Variable className="h-2.5 w-2.5" />
-                  {v.placeholder}
-                </button>
-              ))}
+            <div className="space-y-1.5">
+              <p className="text-[10px] text-muted-foreground">Variables disponibles — haz clic para insertar en el cursor:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {PRIVATE_REPLY_VARIABLES.map((v) => (
+                  <button
+                    key={v.placeholder}
+                    type="button"
+                    onClick={() => insertVariableAtCursor(v.placeholder)}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200 text-xs hover:bg-violet-100 transition-colors font-mono"
+                    title={v.description}
+                    data-testid={`button-var-${v.placeholder}`}
+                  >
+                    <Variable className="h-2.5 w-2.5" />
+                    {v.placeholder}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -391,10 +447,10 @@ function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemp
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ul className="space-y-2 text-xs text-muted-foreground">
+          <ul className="space-y-2.5 text-xs text-muted-foreground">
             <li className="flex items-start gap-2">
               <span className="text-amber-500 mt-0.5">⚠</span>
-              Solo funciona en <strong>comentarios de Facebook</strong> (no Instagram, TikTok u otras redes)
+              <span>Solo funciona en <strong>comentarios de Facebook Pages</strong>. La API de Meta <strong className="text-destructive">no tiene este feature para Instagram</strong> — en Instagram solo puedes responder públicamente al comentario o esperar a que el usuario te escriba primero.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-amber-500 mt-0.5">⚠</span>
@@ -406,11 +462,11 @@ function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemp
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-500 mt-0.5">ℹ</span>
-              El usuario recibirá el mensaje en su <strong>Inbox de Facebook Messenger</strong>
+              El usuario recibirá el mensaje en su <strong>Inbox de Facebook Messenger</strong> (no en su email ni en Instagram)
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-500 mt-0.5">ℹ</span>
-              Si el usuario responde, la conversación continuará en <strong>DM</strong> y el agente de IA podrá seguir respondiendo automáticamente
+              Si el usuario responde, la conversación continuará en <strong>DM de Messenger</strong> y el agente de IA podrá seguir respondiendo automáticamente
             </li>
           </ul>
         </CardContent>
@@ -426,6 +482,46 @@ function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemp
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-2">
+            {/* Auto-detect from env secrets */}
+            {envTokens.length > 0 && (
+              <div className="rounded-lg border border-green-200 bg-green-50 p-3 space-y-2">
+                <p className="text-xs font-semibold text-green-800 flex items-center gap-1.5">
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  Tokens detectados en Replit Secrets
+                </p>
+                <div className="space-y-1.5">
+                  {envTokens.map((t) => (
+                    <div key={t.varName} className="flex items-center justify-between gap-2 bg-white rounded border border-green-200 px-2.5 py-1.5">
+                      <div>
+                        <p className="text-xs font-mono font-medium text-gray-700">{t.varName}</p>
+                        <p className="text-[10px] text-gray-400">{t.tokenPreview}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        className="h-7 text-xs bg-green-600 hover:bg-green-700 gap-1"
+                        onClick={() => handleAutoConnect(t.varName)}
+                        disabled={isAutoConnecting === t.varName}
+                        data-testid={`button-auto-connect-${t.varName}`}
+                      >
+                        {isAutoConnecting === t.varName ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Link className="h-3 w-3" />
+                        )}
+                        Conectar
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="relative flex items-center gap-2">
+              <div className="flex-1 border-t border-border" />
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">o ingresa manualmente</span>
+              <div className="flex-1 border-t border-border" />
+            </div>
+
             <div className="space-y-1.5">
               <Label className="text-sm">Nombre de la página</Label>
               <Input

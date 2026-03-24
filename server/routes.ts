@@ -4532,6 +4532,53 @@ Sitemap: ${SITE_URL}/sitemap.xml
     }
   });
 
+  // GET /api/brands/:brandId/meta-pages/available-from-env — scan env for META_*_PAGE_TOKEN secrets
+  app.get("/api/brands/:brandId/meta-pages/available-from-env", requireAuth, filterByBrand('brandId'), async (req, res) => {
+    try {
+      const available: { varName: string; tokenPreview: string }[] = [];
+      for (const [key, value] of Object.entries(process.env)) {
+        if (key.startsWith('META_') && key.endsWith('_PAGE_TOKEN') && value) {
+          available.push({ varName: key, tokenPreview: `••••${value.slice(-4)}` });
+        }
+      }
+      res.json({ available });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to scan env", details: err.message });
+    }
+  });
+
+  // POST /api/brands/:brandId/meta-pages/auto-connect — read token from env, fetch page info, save
+  app.post("/api/brands/:brandId/meta-pages/auto-connect", requireAuth, filterByBrand('brandId'), async (req, res) => {
+    try {
+      const { varName } = req.body as { varName: string };
+      if (!varName || !varName.startsWith('META_') || !varName.endsWith('_PAGE_TOKEN')) {
+        return res.status(400).json({ error: "Invalid varName" });
+      }
+      const token = process.env[varName];
+      if (!token) return res.status(404).json({ error: `Secret ${varName} no encontrado en el entorno` });
+
+      // Call Meta Graph API to get page ID and name
+      const graphRes = await fetch(`https://graph.facebook.com/me?fields=id,name&access_token=${token}`);
+      const graphData = await graphRes.json() as { id?: string; name?: string; error?: { message: string } };
+
+      if (graphData.error || !graphData.id) {
+        return res.status(400).json({ error: graphData.error?.message || "Token inválido o sin permisos suficientes" });
+      }
+
+      const page = await storage.upsertMetaPageConnection({
+        brandId: req.params.brandId,
+        pageId: graphData.id,
+        pageName: graphData.name || graphData.id,
+        pageAccessToken: token,
+        isActive: true,
+      });
+
+      res.json({ success: true, page: { ...page, pageAccessToken: `••••${page.pageAccessToken.slice(-4)}` } });
+    } catch (err: any) {
+      res.status(500).json({ error: "Error al conectar página", details: err.message });
+    }
+  });
+
   // POST /api/inbox/private-reply — send a private reply via Meta API
   app.post("/api/inbox/private-reply", requireAuth, async (req, res) => {
     try {
