@@ -181,8 +181,23 @@ function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemp
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al conectar');
+      if (data.requiresSelection) {
+        // Multiple pages found — for now connect all of them
+        for (const p of data.pages) {
+          await fetch(`/api/brands/${brandId}/meta-pages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ pageId: p.pageId, pageName: p.pageName, pageAccessToken: p._token, brandId }),
+          });
+        }
+        queryClient.invalidateQueries({ queryKey: ['metaPages', brandId] });
+        toast({ title: `${data.pages.length} páginas conectadas`, description: data.message });
+        setShowAddModal(false);
+        return;
+      }
       queryClient.invalidateQueries({ queryKey: ['metaPages', brandId] });
-      toast({ title: 'Página conectada', description: `${data.page.pageName} conectada automáticamente` });
+      toast({ title: 'Página conectada', description: `${data.page.pageName} conectada con el Page Token correcto` });
       setShowAddModal(false);
     } catch (e: any) {
       toast({ title: 'Error', description: e.message, variant: 'destructive' });

@@ -4570,19 +4570,48 @@ Sitemap: ${SITE_URL}/sitemap.xml
       const token = process.env[varName];
       if (!token) return res.status(404).json({ error: `Secret ${varName} no encontrado en el entorno` });
 
-      // Call Meta Graph API to get page ID and name
-      const graphRes = await fetch(`https://graph.facebook.com/me?fields=id,name&access_token=${token}`);
-      const graphData = await graphRes.json() as { id?: string; name?: string; error?: { message: string } };
+      // Try /me/accounts first — works if token is a User Access Token (most common case)
+      // This exchanges the User Token for the actual Page Access Token(s)
+      const accountsRes = await fetch(`https://graph.facebook.com/me/accounts?fields=id,name,access_token&access_token=${token}`);
+      const accountsData = await accountsRes.json() as { data?: Array<{id: string; name: string; access_token: string}>; error?: { message: string } };
 
-      if (graphData.error || !graphData.id) {
-        return res.status(400).json({ error: graphData.error?.message || "Token inválido o sin permisos suficientes" });
+      let pageId: string;
+      let pageName: string;
+      let pageAccessToken: string;
+
+      if (!accountsData.error && accountsData.data && accountsData.data.length > 0) {
+        // It's a User Token — use the first page's actual Page Access Token
+        const firstPage = accountsData.data[0];
+        pageId = firstPage.id;
+        pageName = firstPage.name;
+        pageAccessToken = firstPage.access_token;
+
+        // Return all available pages if more than one, so frontend can show a picker
+        if (accountsData.data.length > 1) {
+          return res.json({
+            success: false,
+            requiresSelection: true,
+            pages: accountsData.data.map(p => ({ pageId: p.id, pageName: p.name, pageAccessToken: `••••${p.access_token.slice(-4)}`, _token: p.access_token })),
+            message: `Se encontraron ${accountsData.data.length} páginas. Selecciona cuál conectar.`,
+          });
+        }
+      } else {
+        // Might already be a Page Access Token — try /me directly
+        const meRes = await fetch(`https://graph.facebook.com/me?fields=id,name&access_token=${token}`);
+        const meData = await meRes.json() as { id?: string; name?: string; error?: { message: string } };
+        if (meData.error || !meData.id) {
+          return res.status(400).json({ error: meData.error?.message || accountsData.error?.message || "Token inválido o sin permisos suficientes" });
+        }
+        pageId = meData.id;
+        pageName = meData.name || meData.id;
+        pageAccessToken = token;
       }
 
       const page = await storage.upsertMetaPageConnection({
         brandId: req.params.brandId,
-        pageId: graphData.id,
-        pageName: graphData.name || graphData.id,
-        pageAccessToken: token,
+        pageId,
+        pageName,
+        pageAccessToken,
         isActive: true,
       });
 
