@@ -4568,22 +4568,23 @@ Sitemap: ${SITE_URL}/sitemap.xml
         return res.status(400).json({ error: "Invalid varName" });
       }
       let token = process.env[varName];
-      if (!token) return res.status(404).json({ error: `Secret ${varName} no encontrado en el entorno` });
+      if (!token) return res.status(404).json({ error: `Secret ${varName} no encontrado. Reinicia el servidor después de agregar el secret.` });
+
+      log(`[MetaAutoConnect] Using token from ${varName} (last 4: ...${token.slice(-4)})`, "express");
 
       // If META_APP_ID and META_APP_SECRET are available, exchange short-lived token for long-lived one.
-      // Long-lived User Tokens last 60 days, and Page Tokens derived from them never expire.
       const appId = process.env.META_APP_ID;
       const appSecret = process.env.META_APP_SECRET;
       if (appId && appSecret) {
         try {
           const exchangeUrl = `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${token}`;
           const exchangeRes = await fetch(exchangeUrl);
-          const exchangeData = await exchangeRes.json() as { access_token?: string; error?: { message: string } };
+          const exchangeData = await exchangeRes.json() as { access_token?: string; error?: { message: string; code?: number } };
           if (exchangeData.access_token) {
             token = exchangeData.access_token;
             log("[MetaAutoConnect] Successfully exchanged for long-lived token", "express");
           } else {
-            log(`[MetaAutoConnect] Token exchange failed (non-fatal): ${exchangeData.error?.message}`, "express");
+            log(`[MetaAutoConnect] Token exchange failed (non-fatal): ${JSON.stringify(exchangeData.error)}`, "express");
           }
         } catch (exchangeErr: any) {
           log(`[MetaAutoConnect] Token exchange exception (non-fatal): ${exchangeErr.message}`, "express");
@@ -4591,9 +4592,9 @@ Sitemap: ${SITE_URL}/sitemap.xml
       }
 
       // Try /me/accounts first — works if token is a User Access Token (most common case)
-      // This exchanges the User Token for the actual Page Access Token(s)
       const accountsRes = await fetch(`https://graph.facebook.com/me/accounts?fields=id,name,access_token&access_token=${token}`);
-      const accountsData = await accountsRes.json() as { data?: Array<{id: string; name: string; access_token: string}>; error?: { message: string } };
+      const accountsData = await accountsRes.json() as { data?: Array<{id: string; name: string; access_token: string}>; error?: { message: string; code?: number } };
+      log(`[MetaAutoConnect] /me/accounts response: ${JSON.stringify({ hasData: !!accountsData.data, count: accountsData.data?.length, error: accountsData.error })}`, "express");
 
       let pageId: string;
       let pageName: string;
@@ -4605,6 +4606,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
         pageId = firstPage.id;
         pageName = firstPage.name;
         pageAccessToken = firstPage.access_token;
+        log(`[MetaAutoConnect] Found page via User Token: ${pageName} (${pageId})`, "express");
 
         // Return all available pages if more than one, so frontend can show a picker
         if (accountsData.data.length > 1) {
@@ -4618,13 +4620,24 @@ Sitemap: ${SITE_URL}/sitemap.xml
       } else {
         // Might already be a Page Access Token — try /me directly
         const meRes = await fetch(`https://graph.facebook.com/me?fields=id,name&access_token=${token}`);
-        const meData = await meRes.json() as { id?: string; name?: string; error?: { message: string } };
+        const meData = await meRes.json() as { id?: string; name?: string; error?: { message: string; code?: number } };
+        log(`[MetaAutoConnect] /me response: ${JSON.stringify({ id: meData.id, name: meData.name, error: meData.error })}`, "express");
+
         if (meData.error || !meData.id) {
-          return res.status(400).json({ error: meData.error?.message || accountsData.error?.message || "Token inválido o sin permisos suficientes" });
+          const errCode = meData.error?.code || accountsData.error?.code;
+          const errMsg = meData.error?.message || accountsData.error?.message || "Token inválido o sin permisos suficientes";
+          let userMsg = errMsg;
+          if (errCode === 190) {
+            userMsg = `El token ha expirado. Genera un nuevo User Token en Meta Graph API Explorer (https://developers.facebook.com/tools/explorer), asegúrate de que tenga los permisos pages_show_list y pages_messaging, y actualiza el secret ${varName} con el nuevo valor.`;
+          } else if (errCode === 200 || errMsg.includes('permission')) {
+            userMsg = `El token no tiene los permisos necesarios (pages_show_list, pages_messaging). Asegúrate de agregarlos en Graph API Explorer antes de generar el token.`;
+          }
+          return res.status(400).json({ error: userMsg, errorCode: errCode });
         }
         pageId = meData.id;
         pageName = meData.name || meData.id;
         pageAccessToken = token;
+        log(`[MetaAutoConnect] Found page via Page Token: ${pageName} (${pageId})`, "express");
       }
 
       const page = await storage.upsertMetaPageConnection({
