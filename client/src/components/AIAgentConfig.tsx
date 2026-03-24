@@ -143,6 +143,8 @@ function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemp
   const [newPage, setNewPage] = useState({ pageId: '', pageName: '', pageAccessToken: '' });
   const [isSavingPage, setIsSavingPage] = useState(false);
   const [isAutoConnecting, setIsAutoConnecting] = useState<string | null>(null);
+  const [pagePermissions, setPagePermissions] = useState<Record<string, { hasMessaging: boolean; permissions: string[]; error?: string } | null>>({});
+  const [checkingPerms, setCheckingPerms] = useState<string | null>(null);
   const templateTextareaRef = React.useRef<HTMLTextAreaElement>(null);
 
   const { data: pagesData, isLoading: isLoadingPages } = useQuery({
@@ -186,6 +188,19 @@ function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemp
       toast({ title: 'Error', description: e.message, variant: 'destructive' });
     } finally {
       setIsAutoConnecting(null);
+    }
+  };
+
+  const handleCheckPermissions = async (pageId: string) => {
+    setCheckingPerms(pageId);
+    try {
+      const res = await fetch(`/api/brands/${brandId}/meta-pages/${pageId}/check-permissions`, { credentials: 'include' });
+      const data = await res.json();
+      setPagePermissions(prev => ({ ...prev, [pageId]: data }));
+    } catch (e: any) {
+      setPagePermissions(prev => ({ ...prev, [pageId]: { hasMessaging: false, permissions: [], error: e.message } }));
+    } finally {
+      setCheckingPerms(null);
     }
   };
 
@@ -338,37 +353,78 @@ function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemp
             </div>
           ) : (
             <div className="space-y-3">
-              {pages.map((page) => (
-                <div key={page.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/20" data-testid={`meta-page-${page.id}`}>
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                      <FaFacebook className="h-4 w-4 text-blue-600" />
+              {pages.map((page) => {
+                const perms = pagePermissions[page.id];
+                return (
+                  <div key={page.id} className="rounded-lg border border-border bg-muted/20 overflow-hidden" data-testid={`meta-page-${page.id}`}>
+                    <div className="flex items-center justify-between p-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                          <FaFacebook className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{page.pageName}</p>
+                          <p className="text-xs text-muted-foreground">
+                            ID: {page.pageId} &middot; Token: {page.pageAccessToken}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
+                          onClick={() => handleCheckPermissions(page.id)}
+                          disabled={checkingPerms === page.id}
+                          data-testid={`button-check-perms-${page.id}`}
+                          title="Verificar permisos del token"
+                        >
+                          {checkingPerms === page.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Shield className="h-3 w-3" />}
+                          Verificar
+                        </Button>
+                        <Switch
+                          checked={page.isActive}
+                          onCheckedChange={() => handleTogglePage(page)}
+                          data-testid={`switch-page-active-${page.id}`}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleDeletePage(page.id)}
+                          data-testid={`button-delete-page-${page.id}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{page.pageName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        ID: {page.pageId} &middot; Token: {page.pageAccessToken}
-                      </p>
-                    </div>
+                    {/* Permission check result */}
+                    {perms && (
+                      <div className={`px-3 py-2 border-t text-xs flex items-start gap-2 ${perms.hasMessaging ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
+                        {perms.error ? (
+                          <>
+                            <XCircle className="h-3.5 w-3.5 text-red-500 mt-0.5 shrink-0" />
+                            <span className="text-red-700">Error al verificar: {perms.error}</span>
+                          </>
+                        ) : perms.hasMessaging ? (
+                          <>
+                            <CheckCircle className="h-3.5 w-3.5 text-green-600 mt-0.5 shrink-0" />
+                            <span className="text-green-700"><strong>pages_messaging ✓</strong> — El token tiene los permisos necesarios para enviar respuestas privadas.</span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="h-3.5 w-3.5 text-red-500 mt-0.5 shrink-0" />
+                            <span className="text-red-700">
+                              <strong>pages_messaging faltante.</strong> Ve a Meta Developers → tu App → App Review → Permisos y funciones → agrega <code className="bg-red-100 px-1 rounded">pages_messaging</code> y vuelve a conectar la página.{' '}
+                              {perms.permissions.length > 0 && <span className="text-red-500">Permisos actuales: {perms.permissions.join(', ')}</span>}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2 shrink-0 ml-2">
-                    <Switch
-                      checked={page.isActive}
-                      onCheckedChange={() => handleTogglePage(page)}
-                      data-testid={`switch-page-active-${page.id}`}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                      onClick={() => handleDeletePage(page.id)}
-                      data-testid={`button-delete-page-${page.id}`}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>

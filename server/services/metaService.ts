@@ -28,6 +28,8 @@ export async function sendPrivateReply(
     log(`${logPrefix} Sending private reply to comment ${commentId}`, "sync");
 
     const url = `${META_API_BASE}/${commentId}/private_replies`;
+    log(`${logPrefix} URL: ${url}`, "sync");
+
     const body = new URLSearchParams({
       message,
       access_token: pageAccessToken,
@@ -44,8 +46,21 @@ export async function sendPrivateReply(
     if (!response.ok || data.error) {
       const errMsg = data.error?.message || `HTTP ${response.status}`;
       const errCode = data.error?.code;
-      log(`${logPrefix} Error: ${errMsg} (code ${errCode})`, "sync");
-      return { success: false, error: errMsg, errorCode: errCode };
+      const errSubcode = data.error?.error_subcode;
+      log(`${logPrefix} Error: ${errMsg} (code ${errCode}, subcode ${errSubcode})`, "sync");
+      log(`${logPrefix} Full error response: ${JSON.stringify(data)}`, "sync");
+
+      // Map known errors to friendlier messages
+      let userFriendlyError = errMsg;
+      if (errMsg?.includes("missing permissions") || errMsg?.includes("does not exist") || errMsg?.includes("Unsupported")) {
+        userFriendlyError = `El token de la página no tiene el permiso 'pages_messaging'. Ve a Meta Developers → tu App → App Review → Permisos, agrega 'pages_messaging' y vuelve a intentarlo. Error original: ${errMsg}`;
+      } else if (errCode === 100 || errMsg?.includes("outside of")) {
+        userFriendlyError = "El comentario tiene más de 7 días o ya se envió una respuesta privada a este comentario.";
+      } else if (errCode === 200 || errMsg?.includes("permission")) {
+        userFriendlyError = `Permiso denegado. Asegúrate de que el token tenga 'pages_messaging'. Error: ${errMsg}`;
+      }
+
+      return { success: false, error: userFriendlyError, errorCode: errCode };
     }
 
     log(`${logPrefix} Private reply sent successfully. ID: ${data.id}`, "sync");
@@ -53,6 +68,25 @@ export async function sendPrivateReply(
   } catch (err: any) {
     log(`${logPrefix} Exception: ${err.message}`, "sync");
     return { success: false, error: err.message };
+  }
+}
+
+export async function checkPagePermissions(pageAccessToken: string): Promise<{
+  hasMessaging: boolean;
+  permissions: string[];
+  error?: string;
+}> {
+  try {
+    const url = `${META_API_BASE}/me/permissions?access_token=${pageAccessToken}`;
+    const res = await fetch(url);
+    const data = await res.json() as any;
+    if (data.error) return { hasMessaging: false, permissions: [], error: data.error.message };
+    const granted = (data.data || [])
+      .filter((p: any) => p.status === 'granted')
+      .map((p: any) => p.permission as string);
+    return { hasMessaging: granted.includes('pages_messaging'), permissions: granted };
+  } catch (err: any) {
+    return { hasMessaging: false, permissions: [], error: err.message };
   }
 }
 

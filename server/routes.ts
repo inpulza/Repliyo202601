@@ -111,7 +111,7 @@ const filterByBrand = (brandIdParamName?: string) => {
 };
 
 import sentimentAlertsRouter from './routes/sentimentAlerts.routes';
-import { sendPrivateReply, interpolateTemplate } from "./services/metaService";
+import { sendPrivateReply, interpolateTemplate, checkPagePermissions } from "./services/metaService";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use(sentimentAlertsRouter);
@@ -4529,6 +4529,19 @@ Sitemap: ${SITE_URL}/sitemap.xml
       res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ error: "Failed to delete Meta page connection", details: err.message });
+    }
+  });
+
+  // GET /api/brands/:brandId/meta-pages/:id/check-permissions — verify a page token has needed permissions
+  app.get("/api/brands/:brandId/meta-pages/:id/check-permissions", requireAuth, filterByBrand('brandId'), async (req, res) => {
+    try {
+      const pages = await storage.getMetaPageConnections(req.params.brandId);
+      const page = pages.find(p => p.id === req.params.id);
+      if (!page) return res.status(404).json({ error: "Page not found" });
+      const result = await checkPagePermissions(page.pageAccessToken);
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to check permissions", details: err.message });
     }
   });
 
