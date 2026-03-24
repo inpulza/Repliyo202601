@@ -81,6 +81,76 @@ export async function sendPrivateReply(
   }
 }
 
+export async function sendInstagramPrivateReply(
+  commentId: string,
+  message: string,
+  pageAccessToken: string,
+  igUserId: string
+): Promise<PrivateReplyResult> {
+  const logPrefix = "[MetaIGPrivateReply]";
+
+  try {
+    log(`${logPrefix} Sending private reply to IG comment ${commentId} via igUserId ${igUserId}`, "sync");
+
+    const url = `${META_API_BASE}/${igUserId}/messages`;
+    const body = JSON.stringify({
+      recipient: { comment_id: commentId },
+      message: { text: message },
+    });
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${pageAccessToken}`,
+      },
+      body,
+    });
+
+    const data = await response.json() as any;
+
+    if (!response.ok || data.error) {
+      const errMsg = data.error?.message || `HTTP ${response.status}`;
+      const errCode = data.error?.code;
+      const errSubcode = data.error?.error_subcode;
+      log(`${logPrefix} Error: ${errMsg} (code ${errCode}, subcode ${errSubcode})`, "sync");
+      log(`${logPrefix} Full error: ${JSON.stringify(data)}`, "sync");
+
+      let userFriendlyError = errMsg;
+      if (errCode === 190) {
+        userFriendlyError = `El token de acceso ha expirado. Ve a la configuración y reconecta la página.`;
+        return { success: false, error: userFriendlyError, errorCode: errCode, tokenExpired: true };
+      } else if (errCode === 200) {
+        userFriendlyError = `Permiso denegado: el token no tiene 'instagram_manage_messages'. Agrégalo en Meta Developers → tu App → Permisos.`;
+      } else if (errCode === 100) {
+        userFriendlyError = `El comentario no se encontró (código 100). Verifica que el comentario existe y no ha sido eliminado. ID usado: ${commentId}`;
+      }
+
+      return { success: false, error: userFriendlyError, errorCode: errCode };
+    }
+
+    log(`${logPrefix} Instagram private reply sent. Response: ${JSON.stringify(data)}`, "sync");
+    return { success: true, messageId: data.message_id || data.id };
+  } catch (err: any) {
+    log(`${logPrefix} Exception: ${err.message}`, "sync");
+    return { success: false, error: err.message };
+  }
+}
+
+export async function fetchIgUserIdForPage(pageId: string, pageAccessToken: string): Promise<string | null> {
+  try {
+    const url = `${META_API_BASE}/${pageId}?fields=instagram_business_account&access_token=${pageAccessToken}`;
+    const res = await fetch(url);
+    const data = await res.json() as any;
+    const igId = data.instagram_business_account?.id;
+    log(`[MetaIgUserId] pageId=${pageId} → igUserId=${igId || 'none'}`, "sync");
+    return igId || null;
+  } catch (err: any) {
+    log(`[MetaIgUserId] Exception fetching igUserId: ${err.message}`, "sync");
+    return null;
+  }
+}
+
 export async function checkPagePermissions(pageAccessToken: string, pageId?: string): Promise<{
   hasMessaging: boolean;
   permissions: string[];
