@@ -4538,7 +4538,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
       const pages = await storage.getMetaPageConnections(req.params.brandId);
       const page = pages.find(p => p.id === req.params.id);
       if (!page) return res.status(404).json({ error: "Page not found" });
-      const result = await checkPagePermissions(page.pageAccessToken);
+      const result = await checkPagePermissions(page.pageAccessToken, page.pageId);
       res.json(result);
     } catch (err: any) {
       res.status(500).json({ error: "Failed to check permissions", details: err.message });

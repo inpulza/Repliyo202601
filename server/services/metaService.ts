@@ -71,20 +71,37 @@ export async function sendPrivateReply(
   }
 }
 
-export async function checkPagePermissions(pageAccessToken: string): Promise<{
+export async function checkPagePermissions(pageAccessToken: string, pageId?: string): Promise<{
   hasMessaging: boolean;
   permissions: string[];
   error?: string;
 }> {
   try {
-    const url = `${META_API_BASE}/me/permissions?access_token=${pageAccessToken}`;
+    // For Page Tokens: check by fetching the page's tasks (MESSAGING = pages_messaging)
+    const targetId = pageId || 'me';
+    const url = `${META_API_BASE}/${targetId}?fields=tasks,name&access_token=${pageAccessToken}`;
     const res = await fetch(url);
     const data = await res.json() as any;
-    if (data.error) return { hasMessaging: false, permissions: [], error: data.error.message };
-    const granted = (data.data || [])
-      .filter((p: any) => p.status === 'granted')
-      .map((p: any) => p.permission as string);
-    return { hasMessaging: granted.includes('pages_messaging'), permissions: granted };
+
+    if (data.error) {
+      // Fallback: try /me/permissions (works for User Tokens)
+      const permUrl = `${META_API_BASE}/me/permissions?access_token=${pageAccessToken}`;
+      const permRes = await fetch(permUrl);
+      const permData = await permRes.json() as any;
+      if (permData.error) return { hasMessaging: false, permissions: [], error: data.error.message };
+      const granted = (permData.data || [])
+        .filter((p: any) => p.status === 'granted')
+        .map((p: any) => p.permission as string);
+      return { hasMessaging: granted.includes('pages_messaging'), permissions: granted };
+    }
+
+    // tasks field: e.g. ["ADVERTISE", "MESSAGING", "MODERATE", ...]
+    const tasks: string[] = data.tasks || [];
+    const hasMessaging = tasks.includes('MESSAGING');
+    return {
+      hasMessaging,
+      permissions: tasks.map((t: string) => t.toLowerCase()),
+    };
   } catch (err: any) {
     return { hasMessaging: false, permissions: [], error: err.message };
   }
