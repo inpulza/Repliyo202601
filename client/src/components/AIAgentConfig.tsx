@@ -143,7 +143,7 @@ function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemp
   const [newPage, setNewPage] = useState({ pageId: '', pageName: '', pageAccessToken: '' });
   const [isSavingPage, setIsSavingPage] = useState(false);
   const [isAutoConnecting, setIsAutoConnecting] = useState<string | null>(null);
-  const [pagePermissions, setPagePermissions] = useState<Record<string, { hasMessaging: boolean; permissions: string[]; error?: string; tokenExpired?: boolean; pageName?: string } | null>>({});
+  const [pagePermissions, setPagePermissions] = useState<Record<string, { hasMessaging: boolean; permissions: string[]; error?: string; tokenExpired?: boolean; pageName?: string; expiresAt?: number; daysUntilExpiry?: number | null; isPermanent?: boolean } | null>>({});
   const [checkingPerms, setCheckingPerms] = useState<string | null>(null);
   const templateTextareaRef = React.useRef<HTMLTextAreaElement>(null);
 
@@ -197,7 +197,19 @@ function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemp
         return;
       }
       queryClient.invalidateQueries({ queryKey: ['metaPages', brandId] });
-      toast({ title: 'Página conectada', description: `${data.page.pageName} conectada con el Page Token correcto` });
+      if (data.tokenInfo?.isPermanent === true) {
+        toast({ title: 'Página conectada ✓', description: `${data.page.pageName} conectada con un token permanente que nunca expira.` });
+      } else if (data.tokenInfo?.isPermanent === false && data.tokenInfo?.daysUntilExpiry !== null) {
+        const days = data.tokenInfo.daysUntilExpiry;
+        toast({
+          title: 'Página conectada — token temporal',
+          description: `${data.page.pageName} conectada, pero el token vence en ${days} días. Para que nunca expire, asegúrate de que META_APP_ID y META_APP_SECRET estén configurados correctamente y vuelve a conectar.`,
+          variant: 'default',
+          duration: 10000,
+        });
+      } else {
+        toast({ title: 'Página conectada', description: `${data.page.pageName} conectada con el Page Token correcto` });
+      }
       setShowAddModal(false);
     } catch (e: any) {
       toast({ title: 'Error', description: e.message, variant: 'destructive' });
@@ -417,6 +429,8 @@ function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemp
                     {perms && (
                       <div className={`px-3 py-2 border-t text-xs flex items-start gap-2 ${
                         perms.tokenExpired ? 'bg-amber-50 border-amber-100' :
+                        perms.hasMessaging && perms.daysUntilExpiry !== undefined && perms.daysUntilExpiry !== null && perms.daysUntilExpiry <= 7 ? 'bg-orange-50 border-orange-100' :
+                        perms.hasMessaging && perms.isPermanent === false ? 'bg-yellow-50 border-yellow-100' :
                         perms.hasMessaging ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'
                       }`}>
                         {perms.tokenExpired ? (
@@ -441,13 +455,41 @@ function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemp
                             <span className="text-red-700">Error al verificar: {perms.error}</span>
                           </>
                         ) : perms.hasMessaging ? (
-                          <>
-                            <CheckCircle className="h-3.5 w-3.5 text-green-600 mt-0.5 shrink-0" />
-                            <span className="text-green-700">
-                              <strong>pages_messaging ✓</strong> — Token válido con acceso a Private Replies.
-                              {perms.pageName && <span className="text-green-600"> Página: {perms.pageName}</span>}
-                            </span>
-                          </>
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center gap-1.5">
+                              <CheckCircle className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                              <span className="text-green-700">
+                                <strong>pages_messaging ✓</strong> — Token válido con acceso a Private Replies.
+                                {perms.pageName && <span className="text-green-600"> Página: {perms.pageName}</span>}
+                              </span>
+                            </div>
+                            {/* Token expiry info */}
+                            {perms.isPermanent === true && (
+                              <div className="flex items-center gap-1 text-green-600 pl-5">
+                                <CheckCircle className="h-3 w-3" />
+                                <span>Token permanente — nunca expira ✓</span>
+                              </div>
+                            )}
+                            {perms.isPermanent === false && perms.daysUntilExpiry !== null && perms.daysUntilExpiry !== undefined && (
+                              <div className={`flex items-start gap-1 pl-5 ${perms.daysUntilExpiry <= 0 ? 'text-red-600' : perms.daysUntilExpiry <= 7 ? 'text-orange-600' : 'text-yellow-700'}`}>
+                                <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
+                                <div>
+                                  {perms.daysUntilExpiry <= 0
+                                    ? <span><strong>Token expirado.</strong> Ya no funcionará — reconecta la página ahora.</span>
+                                    : perms.daysUntilExpiry <= 7
+                                    ? <span><strong>Expira en {perms.daysUntilExpiry} días.</strong> Renuévalo pronto o los private replies dejarán de funcionar.</span>
+                                    : <span>Token temporal — expira en {perms.daysUntilExpiry} días. Para que nunca expire, reconecta generando desde Graph API Explorer con un User Token largo.</span>
+                                  }
+                                  <button
+                                    className="ml-1 underline font-medium hover:opacity-80"
+                                    onClick={() => setShowAddModal(true)}
+                                  >
+                                    Reconectar →
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         ) : (
                           <>
                             <XCircle className="h-3.5 w-3.5 text-red-500 mt-0.5 shrink-0" />

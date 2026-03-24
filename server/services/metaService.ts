@@ -87,8 +87,32 @@ export async function checkPagePermissions(pageAccessToken: string, pageId?: str
   error?: string;
   pageName?: string;
   tokenExpired?: boolean;
+  expiresAt?: number;
+  daysUntilExpiry?: number | null;
+  isPermanent?: boolean;
 }> {
   try {
+    // Step 0: Check token expiry via debug_token
+    let expiresAt: number | undefined;
+    let daysUntilExpiry: number | null | undefined;
+    let isPermanent: boolean | undefined;
+    try {
+      const debugUrl = `${META_API_BASE}/debug_token?input_token=${pageAccessToken}&access_token=${pageAccessToken}`;
+      const debugRes = await fetch(debugUrl);
+      const debugData = await debugRes.json() as any;
+      if (debugData?.data?.expires_at !== undefined) {
+        expiresAt = debugData.data.expires_at;
+        if (expiresAt === 0) {
+          isPermanent = true;
+          daysUntilExpiry = null; // never expires
+        } else {
+          isPermanent = false;
+          const msLeft = (expiresAt * 1000) - Date.now();
+          daysUntilExpiry = Math.ceil(msLeft / 86400000);
+        }
+      }
+    } catch (_) {}
+
     // Step 1: Validate token by fetching basic page info
     const targetId = pageId || 'me';
     const meUrl = `${META_API_BASE}/${targetId}?fields=id,name,category&access_token=${pageAccessToken}`;
@@ -96,7 +120,7 @@ export async function checkPagePermissions(pageAccessToken: string, pageId?: str
     const meData = await meRes.json() as any;
 
     if (meData.error) {
-      const isExpired = meData.error.code === 190;
+      const isExpired = meData.error.code === 190 || (daysUntilExpiry !== undefined && daysUntilExpiry !== null && daysUntilExpiry <= 0);
       return {
         hasMessaging: false,
         permissions: [],
@@ -104,6 +128,9 @@ export async function checkPagePermissions(pageAccessToken: string, pageId?: str
           ? "El token de acceso ha expirado. Reconecta la página con un token actualizado."
           : meData.error.message,
         tokenExpired: isExpired,
+        expiresAt,
+        daysUntilExpiry,
+        isPermanent,
       };
     }
 
@@ -147,6 +174,9 @@ export async function checkPagePermissions(pageAccessToken: string, pageId?: str
       error: (!hasMessaging && !notPermissionError && testData.error)
         ? `El token no tiene pages_messaging: ${testData.error.message}`
         : undefined,
+      expiresAt,
+      daysUntilExpiry,
+      isPermanent,
     };
   } catch (err: any) {
     return { hasMessaging: false, permissions: [], error: err.message };

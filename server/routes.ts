@@ -4648,7 +4648,39 @@ Sitemap: ${SITE_URL}/sitemap.xml
         isActive: true,
       });
 
-      res.json({ success: true, page: { ...page, pageAccessToken: `••••${page.pageAccessToken.slice(-4)}` } });
+      // Check if the stored page token is permanent (expires_at = 0)
+      let tokenExpiresAt: number | undefined;
+      let tokenDaysLeft: number | null | undefined;
+      let tokenIsPermanent: boolean | undefined;
+      try {
+        const debugUrl = `https://graph.facebook.com/debug_token?input_token=${pageAccessToken}&access_token=${pageAccessToken}`;
+        const debugRes = await fetch(debugUrl);
+        const debugData = await debugRes.json() as any;
+        if (debugData?.data?.expires_at !== undefined) {
+          tokenExpiresAt = debugData.data.expires_at;
+          if (tokenExpiresAt === 0) {
+            tokenIsPermanent = true;
+            tokenDaysLeft = null;
+          } else {
+            tokenIsPermanent = false;
+            const msLeft = (tokenExpiresAt! * 1000) - Date.now();
+            tokenDaysLeft = Math.ceil(msLeft / 86400000);
+          }
+          console.log(`[MetaAutoConnect] Token debug: expires_at=${tokenExpiresAt}, isPermanent=${tokenIsPermanent}, daysLeft=${tokenDaysLeft}`, "express");
+        }
+      } catch (debugErr: any) {
+        console.log(`[MetaAutoConnect] debug_token check failed (non-fatal): ${debugErr.message}`, "express");
+      }
+
+      res.json({
+        success: true,
+        page: { ...page, pageAccessToken: `••••${page.pageAccessToken.slice(-4)}` },
+        tokenInfo: {
+          isPermanent: tokenIsPermanent,
+          daysUntilExpiry: tokenDaysLeft,
+          expiresAt: tokenExpiresAt,
+        },
+      });
     } catch (err: any) {
       res.status(500).json({ error: "Error al conectar página", details: err.message });
     }
