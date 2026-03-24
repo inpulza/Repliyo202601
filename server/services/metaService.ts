@@ -50,14 +50,19 @@ export async function sendPrivateReply(
       log(`${logPrefix} Error: ${errMsg} (code ${errCode}, subcode ${errSubcode})`, "sync");
       log(`${logPrefix} Full error response: ${JSON.stringify(data)}`, "sync");
 
-      // Map known errors to friendlier messages
+      // Map known errors to friendlier messages (by code, not text — text is ambiguous)
       let userFriendlyError = errMsg;
-      if (errMsg?.includes("missing permissions") || errMsg?.includes("does not exist") || errMsg?.includes("Unsupported")) {
-        userFriendlyError = `El token de la página no tiene el permiso 'pages_messaging'. Ve a Meta Developers → tu App → App Review → Permisos, agrega 'pages_messaging' y vuelve a intentarlo. Error original: ${errMsg}`;
-      } else if (errCode === 100 || errMsg?.includes("outside of")) {
-        userFriendlyError = "El comentario tiene más de 7 días o ya se envió una respuesta privada a este comentario.";
-      } else if (errCode === 200 || errMsg?.includes("permission")) {
-        userFriendlyError = `Permiso denegado. Asegúrate de que el token tenga 'pages_messaging'. Error: ${errMsg}`;
+      if (errCode === 200) {
+        // 200 = permission denied — token is missing pages_messaging
+        userFriendlyError = `Permiso denegado: el token no tiene 'pages_messaging'. Ve a Meta Developers → tu App → Permisos y agrega 'pages_messaging'. Error: ${errMsg}`;
+      } else if (errCode === 100 && errSubcode === 33) {
+        // 100/33 = object not found — comment ID doesn't exist or is wrong platform
+        userFriendlyError = `El comentario no se encontró en el API de Facebook (código 100/33). Posibles causas:\n• El comentario es de Instagram, no de Facebook (los Private Replies de Instagram aún no están habilitados)\n• El comentario fue eliminado\n• El ID del comentario tiene un formato incorrecto\n\nID usado: ${commentId}`;
+      } else if (errCode === 100 && errMsg?.includes("outside of")) {
+        // 7-day window expired
+        userFriendlyError = "El comentario tiene más de 7 días o ya se envió una respuesta privada antes. Facebook solo permite Private Replies dentro de los primeros 7 días.";
+      } else if (errMsg?.includes("admin") || errMsg?.includes("page owner")) {
+        userFriendlyError = "No se puede enviar un Private Reply al administrador de la página (no puedes responderte a ti mismo).";
       }
 
       return { success: false, error: userFriendlyError, errorCode: errCode };

@@ -4658,6 +4658,9 @@ Sitemap: ${SITE_URL}/sitemap.xml
       // Extract the comment ID from rawData
       const rawData = typeof message.rawData === 'string' ? JSON.parse(message.rawData) : message.rawData;
       const commentId = rawData?.id || rawData?.root?.id || message.metricoolId;
+      log(`[PrivateReply] Message platform: ${message.platform}, type: ${message.type}, metricoolId: ${message.metricoolId}`, "sync");
+      log(`[PrivateReply] rawData keys: ${Object.keys(rawData || {}).join(', ')}`, "sync");
+      log(`[PrivateReply] Resolved commentId: ${commentId}`, "sync");
       if (!commentId) {
         return res.status(400).json({ error: "Cannot determine comment ID for private reply" });
       }
