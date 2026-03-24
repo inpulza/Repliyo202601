@@ -24,7 +24,8 @@ import {
   type ReminderRules, type InsertReminderRules, type UpdateReminderRules,
   type ReminderEvent, type InsertReminderEvent, type ReminderStatus,
   type ConversationTimeline, type TimelineEvent,
-  leads, type Lead, type InsertLead
+  leads, type Lead, type InsertLead,
+  metaPageConnections, type MetaPageConnection, type InsertMetaPageConnection, type UpdateMetaPageConnection
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, isNull, isNotNull, gte, lte, sql, inArray, notInArray } from "drizzle-orm";
@@ -355,6 +356,13 @@ export interface IStorage {
 
   // Leads
   createLead(lead: InsertLead): Promise<Lead>;
+
+  // Meta Page Connections (Private Replies)
+  getMetaPageConnections(brandId: string): Promise<MetaPageConnection[]>;
+  getMetaPageConnectionByPageId(brandId: string, pageId: string): Promise<MetaPageConnection | undefined>;
+  upsertMetaPageConnection(data: InsertMetaPageConnection): Promise<MetaPageConnection>;
+  updateMetaPageConnection(id: string, data: UpdateMetaPageConnection): Promise<MetaPageConnection | undefined>;
+  deleteMetaPageConnection(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -4409,6 +4417,52 @@ export class DatabaseStorage implements IStorage {
   async createLead(lead: InsertLead): Promise<Lead> {
     const [newLead] = await db.insert(leads).values(lead).returning();
     return newLead;
+  }
+
+  async getMetaPageConnections(brandId: string): Promise<MetaPageConnection[]> {
+    return await db
+      .select()
+      .from(metaPageConnections)
+      .where(eq(metaPageConnections.brandId, brandId))
+      .orderBy(desc(metaPageConnections.createdAt));
+  }
+
+  async getMetaPageConnectionByPageId(brandId: string, pageId: string): Promise<MetaPageConnection | undefined> {
+    const [row] = await db
+      .select()
+      .from(metaPageConnections)
+      .where(and(eq(metaPageConnections.brandId, brandId), eq(metaPageConnections.pageId, pageId)));
+    return row;
+  }
+
+  async upsertMetaPageConnection(data: InsertMetaPageConnection): Promise<MetaPageConnection> {
+    const [row] = await db
+      .insert(metaPageConnections)
+      .values({ ...data, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: [metaPageConnections.brandId, metaPageConnections.pageId],
+        set: {
+          pageName: data.pageName,
+          pageAccessToken: data.pageAccessToken,
+          isActive: data.isActive,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return row;
+  }
+
+  async updateMetaPageConnection(id: string, data: UpdateMetaPageConnection): Promise<MetaPageConnection | undefined> {
+    const [row] = await db
+      .update(metaPageConnections)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(metaPageConnections.id, id))
+      .returning();
+    return row;
+  }
+
+  async deleteMetaPageConnection(id: string): Promise<void> {
+    await db.delete(metaPageConnections).where(eq(metaPageConnections.id, id));
   }
 }
 

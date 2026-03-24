@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertBrandSchema, insertUserSchema, insertMessageSchema, updateMessageSchema, updateConversationSchema, insertSocialAccountSchema, updateReminderRulesSchema, insertLeadSchema, type User } from "@shared/schema";
+import { insertBrandSchema, insertUserSchema, insertMessageSchema, updateMessageSchema, updateConversationSchema, insertSocialAccountSchema, updateReminderRulesSchema, insertLeadSchema, insertMetaPageConnectionSchema, type User } from "@shared/schema";
 import { hashPassword, verifyPassword, sanitizeUser, sanitizeBrand, type AuthenticatedUser } from "./auth";
 import { MetricoolService } from "./services/metricool";
 import { syncService } from "./services/syncService";
@@ -111,6 +111,7 @@ const filterByBrand = (brandIdParamName?: string) => {
 };
 
 import sentimentAlertsRouter from './routes/sentimentAlerts.routes';
+import { sendPrivateReply, interpolateTemplate } from "./services/metaService";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use(sentimentAlertsRouter);
@@ -4476,6 +4477,171 @@ Sitemap: ${SITE_URL}/sitemap.xml
     } catch (error: any) {
       console.error('[Analytics] Get failure reasons error:', error);
       res.status(500).json({ error: "Failed to get failure reasons", details: error.message });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Meta Page Connections (Private Replies)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // GET /api/brands/:brandId/meta-pages — list all page connections for a brand
+  app.get("/api/brands/:brandId/meta-pages", requireAuth, filterByBrand('brandId'), async (req, res) => {
+    try {
+      const pages = await storage.getMetaPageConnections(req.params.brandId);
+      const safePaged = pages.map(p => ({
+        ...p,
+        pageAccessToken: p.pageAccessToken ? `••••${p.pageAccessToken.slice(-4)}` : '',
+      }));
+      res.json({ success: true, pages: safePaged });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to get Meta page connections", details: err.message });
+    }
+  });
+
+  // POST /api/brands/:brandId/meta-pages — add or update a page connection
+  app.post("/api/brands/:brandId/meta-pages", requireAuth, filterByBrand('brandId'), async (req, res) => {
+    try {
+      const parsed = insertMetaPageConnectionSchema.safeParse({ ...req.body, brandId: req.params.brandId });
+      if (!parsed.success) return res.status(400).json({ error: "Invalid data", details: parsed.error.flatten() });
+      const page = await storage.upsertMetaPageConnection(parsed.data);
+      res.json({ success: true, page: { ...page, pageAccessToken: `••••${page.pageAccessToken.slice(-4)}` } });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to save Meta page connection", details: err.message });
+    }
+  });
+
+  // PATCH /api/brands/:brandId/meta-pages/:id — toggle isActive or update fields
+  app.patch("/api/brands/:brandId/meta-pages/:id", requireAuth, filterByBrand('brandId'), async (req, res) => {
+    try {
+      const { isActive, pageName } = req.body;
+      const page = await storage.updateMetaPageConnection(req.params.id, { isActive, pageName });
+      if (!page) return res.status(404).json({ error: "Page connection not found" });
+      res.json({ success: true, page: { ...page, pageAccessToken: `••••${page.pageAccessToken.slice(-4)}` } });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to update Meta page connection", details: err.message });
+    }
+  });
+
+  // DELETE /api/brands/:brandId/meta-pages/:id — remove a page connection
+  app.delete("/api/brands/:brandId/meta-pages/:id", requireAuth, filterByBrand('brandId'), async (req, res) => {
+    try {
+      await storage.deleteMetaPageConnection(req.params.id);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to delete Meta page connection", details: err.message });
+    }
+  });
+
+  // POST /api/inbox/private-reply — send a private reply via Meta API
+  app.post("/api/inbox/private-reply", requireAuth, async (req, res) => {
+    try {
+      const { messageId, text } = req.body;
+      if (!messageId || !text?.trim()) {
+        return res.status(400).json({ error: "messageId and text are required" });
+      }
+
+      const message = await storage.getMessage(messageId);
+      if (!message) return res.status(404).json({ error: "Message not found" });
+      if (message.platform?.toLowerCase() !== 'facebook') {
+        return res.status(400).json({ error: "Private replies only work for Facebook comments" });
+      }
+      if (message.type !== 'comment') {
+        return res.status(400).json({ error: "Private replies only work for comments" });
+      }
+
+      const user = req.user as AuthenticatedUser;
+      const brand = await storage.getBrand(message.brandId);
+      if (!brand) return res.status(404).json({ error: "Brand not found" });
+
+      // Check private reply is enabled for this brand
+      const agent = await storage.getAiAgentByBrand(brand.id);
+      if (!agent?.privateReplyEnabled) {
+        return res.status(403).json({ error: "Private replies are not enabled for this brand" });
+      }
+
+      // Get the page access token — find active page for this brand
+      const pages = await storage.getMetaPageConnections(brand.id);
+      const activePage = pages.find(p => p.isActive);
+      if (!activePage) {
+        return res.status(400).json({ error: "No active Facebook page connection found. Configure one in Private Replies settings." });
+      }
+
+      // Extract the comment ID from rawData
+      const rawData = typeof message.rawData === 'string' ? JSON.parse(message.rawData) : message.rawData;
+      const commentId = rawData?.id || rawData?.root?.id || message.metricoolId;
+      if (!commentId) {
+        return res.status(400).json({ error: "Cannot determine comment ID for private reply" });
+      }
+
+      // Send via Meta API
+      const result = await sendPrivateReply(commentId, text.trim(), activePage.pageAccessToken);
+      if (!result.success) {
+        return res.status(500).json({ error: result.error || "Failed to send private reply", errorCode: result.errorCode });
+      }
+
+      // Save outbound message in DB
+      const outbound = await storage.createMessage({
+        brandId: brand.id,
+        conversationId: message.conversationId,
+        platform: 'facebook',
+        type: 'comment',
+        direction: 'outbound',
+        author: brand.name,
+        content: text.trim(),
+        timestamp: new Date(),
+        status: 'sent',
+        parentMessageId: message.id,
+        metricoolId: result.messageId || null,
+        source: 'repliyo',
+        internalOrigin: 'meta_private_reply',
+      });
+
+      // Update conversation last message
+      if (message.conversationId) {
+        await storage.updateConversation(message.conversationId, {
+          lastMessageAt: new Date(),
+          lastMessagePreview: text.trim().slice(0, 100),
+        });
+      }
+
+      res.json({ success: true, message: outbound });
+    } catch (err: any) {
+      console.error('[PrivateReply] Error:', err);
+      res.status(500).json({ error: "Failed to send private reply", details: err.message });
+    }
+  });
+
+  // GET /api/inbox/private-reply/template — get interpolated template preview for a message
+  app.get("/api/inbox/private-reply/template", requireAuth, async (req, res) => {
+    try {
+      const { messageId } = req.query as { messageId: string };
+      if (!messageId) return res.status(400).json({ error: "messageId required" });
+
+      const message = await storage.getMessage(messageId);
+      if (!message) return res.status(404).json({ error: "Message not found" });
+
+      const agent = await storage.getAiAgentByBrand(message.brandId);
+      if (!agent?.privateReplyTemplate) return res.json({ text: '' });
+
+      // Get post context if available
+      let postContext = '';
+      if (message.conversationId) {
+        const conv = await storage.getConversation(message.conversationId);
+        if (conv?.socialPostId) {
+          const post = await storage.getSocialPost(conv.socialPostId);
+          postContext = post?.caption?.slice(0, 200) || '';
+        }
+      }
+
+      const interpolated = interpolateTemplate(agent.privateReplyTemplate, {
+        username: message.author || '',
+        comment: message.content || '',
+        postContext,
+      });
+
+      res.json({ text: interpolated });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to get template", details: err.message });
     }
   });
 

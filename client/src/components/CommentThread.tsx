@@ -17,7 +17,8 @@ import {
   Loader2,
   Video,
   Bell,
-  ShieldAlert
+  ShieldAlert,
+  Mail
 } from 'lucide-react';
 import { Platform, MessageType, Sentiment } from '@/lib/types';
 import { isRepliyoMessage, isAutoReply, isReminderMessage } from '@/lib/mockData';
@@ -112,6 +113,8 @@ interface CommentThreadProps {
   bulkQueueStatusById?: Map<string, DraftStatus>;
   unreadMessageIds?: Set<string>;
   onUnreadSeen?: (messageId: string) => void;
+  onPrivateReply?: (message: Message) => void;
+  privateReplyEnabled?: boolean;
 }
 
 const MAX_DEPTH = 4;
@@ -192,6 +195,9 @@ interface SingleMessageProps {
   canNest?: boolean;
   threadReminderCount?: number;
   authorReminderCount?: number;
+  onPrivateReply?: (message: Message) => void;
+  privateReplyEnabled?: boolean;
+  hasPrivateReplySent?: boolean;
 }
 
 function SingleMessage({
@@ -232,6 +238,9 @@ function SingleMessage({
   canNest = true,
   threadReminderCount = 0,
   authorReminderCount = 0,
+  onPrivateReply,
+  privateReplyEnabled = false,
+  hasPrivateReplySent = false,
 }: SingleMessageProps) {
   const isOutbound = msg.direction === 'outbound';
   const isOwner = isOutbound;
@@ -513,6 +522,13 @@ function SingleMessage({
               </span>
             </div>
           )}
+
+          {msg.internalOrigin === 'meta_private_reply' && (
+            <div className="mt-2 pt-2 border-t border-blue-400/40 flex items-center gap-1.5 text-[10px] font-medium text-blue-200">
+              <Mail className="h-3 w-3" />
+              <span>📨 Resp. privada enviada</span>
+            </div>
+          )}
         </div>
         
         {!isOwner && msg.direction === 'inbound' && (
@@ -563,6 +579,27 @@ function SingleMessage({
                   <path d="M7 6l-4 4 4 4" />
                 </svg>
                 <span className="text-[10px] font-medium">Reply</span>
+              </button>
+            )}
+
+            {/* Private Reply button - only for inbound Facebook comments when private reply is enabled */}
+            {!isDM && privateReplyEnabled && !isOwner && msg.platform?.toLowerCase() === 'facebook' && !msg.parentMessageId && (
+              <button
+                onClick={() => onPrivateReply?.(msg)}
+                disabled={hasPrivateReplySent}
+                data-testid={`button-private-reply-${msg.id}`}
+                title={hasPrivateReplySent ? "Respuesta privada ya enviada" : "Enviar respuesta privada por DM"}
+                className={cn(
+                  "flex items-center gap-1 transition-colors",
+                  hasPrivateReplySent
+                    ? "text-gray-300 cursor-not-allowed"
+                    : "text-gray-400 hover:text-blue-600"
+                )}
+              >
+                <Mail className="h-3.5 w-3.5" />
+                <span className="text-[10px] font-medium">
+                  {hasPrivateReplySent ? "PR enviada" : "Resp. Privada"}
+                </span>
               </button>
             )}
             
@@ -902,6 +939,8 @@ interface ThreadNodeProps {
   onToggleExpand: (messageId: string) => void;
   threadReminderCounts: Map<string, number>;
   authorReminderCounts: Map<string, number>;
+  onPrivateReply?: (message: Message) => void;
+  privateReplyEnabled?: boolean;
 }
 
 function ThreadNode({
@@ -940,10 +979,13 @@ function ThreadNode({
   onToggleExpand,
   threadReminderCounts,
   authorReminderCounts,
+  onPrivateReply,
+  privateReplyEnabled,
 }: ThreadNodeProps) {
   const isReply = depth > 0;
   const hasChildren = node.children.length > 0;
   const canNest = depth < MAX_DEPTH;
+  const hasPrivateReplySent = node.children.some(c => c.message.internalOrigin === 'meta_private_reply');
   
   // Collapsible state: check if this node is expanded (default is collapsed)
   const isExpanded = expandedIds.has(node.message.id);
@@ -1064,6 +1106,9 @@ function ThreadNode({
           canNest={canNest}
           threadReminderCount={depth === 0 ? threadReminderCounts.get(node.message.id) || 0 : 0}
           authorReminderCount={node.message.author ? authorReminderCounts.get(node.message.author.toLowerCase()) || 0 : 0}
+          onPrivateReply={onPrivateReply}
+          privateReplyEnabled={privateReplyEnabled}
+          hasPrivateReplySent={hasPrivateReplySent}
         />
       </div>
 
@@ -1113,6 +1158,8 @@ function ThreadNode({
                   onToggleExpand={onToggleExpand}
                   threadReminderCounts={threadReminderCounts}
                   authorReminderCounts={authorReminderCounts}
+                  onPrivateReply={onPrivateReply}
+                  privateReplyEnabled={privateReplyEnabled}
                 />
               ))}
             </div>
@@ -1158,6 +1205,8 @@ export function CommentThread({
   bulkQueueStatusById,
   unreadMessageIds,
   onUnreadSeen,
+  onPrivateReply,
+  privateReplyEnabled,
 }: CommentThreadProps) {
   const tree = React.useMemo(() => buildMessageTree(messages), [messages]);
   
@@ -1316,6 +1365,8 @@ export function CommentThread({
               onToggleExpand={handleToggleExpand}
               threadReminderCounts={reminderStats.threadReminderCounts}
               authorReminderCounts={reminderStats.authorReminderCounts}
+              onPrivateReply={onPrivateReply}
+              privateReplyEnabled={privateReplyEnabled}
             />
         </div>
       ))}

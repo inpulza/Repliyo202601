@@ -68,6 +68,7 @@ import {
   PanelRightClose,
   FileText,
   ShieldAlert,
+  Mail,
 } from 'lucide-react';
 import { FaInstagram, FaFacebook, FaLinkedin, FaTiktok, FaYoutube, FaWhatsapp } from 'react-icons/fa';
 import { GoogleBusinessIcon } from './GoogleBusinessIcon';
@@ -228,6 +229,10 @@ export function Inbox() {
   // Bulk Draft Selection State
   const [selectionEnabled, setSelectionEnabled] = useState(false);
   const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set());
+
+  // Private Reply state
+  const [isPrivateReplyMode, setIsPrivateReplyMode] = useState(false);
+  const [privateReplyTargetMessage, setPrivateReplyTargetMessage] = useState<Message | null>(null);
   
   // Unread message tracking - captures IDs of unread messages when opening a conversation
   const [unreadMessageIds, setUnreadMessageIds] = useState<Set<string>>(new Set());
@@ -363,6 +368,15 @@ export function Inbox() {
     queryFn: () => activeClientId ? api.metricool.getSyncStatus(activeClientId) : Promise.resolve({ syncPaused: false }),
     enabled: !!activeClientId,
   });
+
+  // AI Agent config query - for private reply feature
+  const { data: agentConfig } = useQuery({
+    queryKey: ['aiAgent', activeClientId],
+    queryFn: () => activeClientId ? api.aiAgent.get(activeClientId) : Promise.resolve(null),
+    enabled: !!activeClientId,
+    staleTime: 60000,
+  });
+  const privateReplyEnabled = !!(agentConfig?.privateReplyEnabled);
 
   // CRM Contact Query - fetch contact when DM conversation is selected
   const { data: crmContactData, isLoading: isLoadingCrmContact } = useQuery({
@@ -1043,9 +1057,52 @@ export function Inbox() {
   const handleCancelReply = () => {
     setReplyToMessage(null);
     setReplyText("");
+    setIsPrivateReplyMode(false);
+    setPrivateReplyTargetMessage(null);
+  };
+
+  const handlePrivateReply = async (message: Message) => {
+    if (!activeClientId) return;
+    try {
+      const { text } = await api.inbox.getPrivateReplyTemplate(activeClientId, message.id);
+      setReplyText(text || '');
+    } catch {
+      setReplyText('');
+    }
+    setPrivateReplyTargetMessage(message);
+    setIsPrivateReplyMode(true);
+    setReplyToMessage(message);
+  };
+
+  const handleSendPrivateReply = async () => {
+    if (!replyText.trim() || isSendingReply || !privateReplyTargetMessage) return;
+    setIsSendingReply(true);
+    try {
+      await api.inbox.sendPrivateReply(privateReplyTargetMessage.id, replyText.trim());
+      toast({
+        title: "Respuesta privada enviada",
+        description: "El usuario recibirá tu mensaje en privado por DM.",
+      });
+      handleCancelReply();
+      await refreshFeed();
+      if (activeConversation) {
+        queryClient.invalidateQueries({ queryKey: ['conversationMessages', activeConversation.id] });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error al enviar respuesta privada",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingReply(false);
+    }
   };
 
   const handleSendReply = async () => {
+    if (isPrivateReplyMode) {
+      return handleSendPrivateReply();
+    }
     if (!replyText.trim() || isSendingReply || !activeConversation) return;
     
     // For DMs without replyToMessage, use the last message in the conversation
@@ -2311,6 +2368,8 @@ export function Inbox() {
                         platformStyles={getPlatformStyles((activeConversation.platform || 'instagram') as Platform)}
                         isDM={activeConversation?.type === 'dm'}
                         onStartReply={handleStartReply}
+                        onPrivateReply={handlePrivateReply}
+                        privateReplyEnabled={privateReplyEnabled}
                         onGenerateDraft={handleGenerateDraft}
                         generatingDraftIds={generatingDraftIds}
                         editingDraftId={editingDraftId}
@@ -2407,8 +2466,34 @@ export function Inbox() {
                   exit={{ opacity: 0, y: 20 }}
                   className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-20"
                 >
-                  {/* Quoted Message Preview - Only show for comments when replyToMessage is set */}
-                  {replyToMessage && activeConversation?.type !== 'dm' && (
+                  {/* Private Reply Header */}
+                  {isPrivateReplyMode && replyToMessage && (
+                    <div className="mb-3 flex items-start gap-2">
+                      <div className="flex-1 bg-blue-50 rounded-lg p-3 border border-blue-200">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Mail className="h-3.5 w-3.5 text-blue-600" />
+                          <span className="text-xs font-semibold text-blue-700">
+                            Enviando como Respuesta Privada
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-blue-500 line-clamp-2">
+                          Comentario de {replyToMessage.author}: {replyToMessage.content}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                        onClick={handleCancelReply}
+                        data-testid="button-cancel-private-reply"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Quoted Message Preview - Only show for comments when replyToMessage is set and NOT in private reply mode */}
+                  {replyToMessage && activeConversation?.type !== 'dm' && !isPrivateReplyMode && (
                     <div className="mb-3 flex items-start gap-2">
                       <div className="flex-1 bg-gray-50 rounded-lg p-3 border border-gray-200">
                         <div className="flex items-center gap-2 mb-1">
@@ -2502,17 +2587,24 @@ export function Inbox() {
                     <div className="flex flex-col gap-1">
                       <Button
                         onClick={handleSendReply}
-                        disabled={!replyText.trim() || isSendingReply || replyText.length > getReplyCharacterLimit()}
+                        disabled={!replyText.trim() || isSendingReply || (!isPrivateReplyMode && replyText.length > getReplyCharacterLimit())}
                         className={cn(
                           "h-10 px-4",
-                          replyText.length > getReplyCharacterLimit() 
-                            ? "bg-red-100 text-red-500 hover:bg-red-100" 
+                          !isPrivateReplyMode && replyText.length > getReplyCharacterLimit()
+                            ? "bg-red-100 text-red-500 hover:bg-red-100"
+                            : isPrivateReplyMode
+                            ? "bg-blue-600 hover:bg-blue-700"
                             : "bg-indigo-600 hover:bg-indigo-700"
                         )}
                         data-testid="button-send-reply"
                       >
                         {isSendingReply ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : isPrivateReplyMode ? (
+                          <>
+                            <Mail className="h-4 w-4 mr-1" />
+                            Enviar PR
+                          </>
                         ) : (
                           <>
                             <Send className="h-4 w-4 mr-1" />

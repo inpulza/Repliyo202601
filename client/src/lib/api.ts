@@ -867,4 +867,28 @@ export const api = {
       return res.json();
     },
   },
+
+  inbox: {
+    sendPrivateReply: async (messageId: string, text: string): Promise<{ success: boolean; messageId?: string }> => {
+      const res = await fetch(`${API_BASE}/inbox/private-reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ messageId, text }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to send private reply');
+      }
+      return res.json();
+    },
+
+    getPrivateReplyTemplate: async (brandId: string, messageId: string): Promise<{ text: string }> => {
+      const res = await fetch(`${API_BASE}/inbox/private-reply/template?brandId=${brandId}&messageId=${messageId}`, {
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to get template');
+      return res.json();
+    },
+  },
 };

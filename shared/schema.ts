@@ -195,6 +195,9 @@ export const aiAgents = pgTable("ai_agents", {
   dmReplyMode: text("dm_reply_mode").notNull().default('batch'), // 'auto' | 'first_only' | 'batch'
   cooldownPerConversation: boolean("cooldown_per_conversation").notNull().default(true),
   autoMentionEnabled: boolean("auto_mention_enabled").notNull().default(false),
+  // Private Replies (Meta API)
+  privateReplyEnabled: boolean("private_reply_enabled").notNull().default(false),
+  privateReplyTemplate: text("private_reply_template"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -1205,6 +1208,35 @@ export const updateSentimentAlertSchema = insertSentimentAlertSchema.partial();
 export type InsertSentimentAlert = z.infer<typeof insertSentimentAlertSchema>;
 export type SentimentAlert = typeof sentimentAlerts.$inferSelect;
 export type UpdateSentimentAlert = z.infer<typeof updateSentimentAlertSchema>;
+
+export const metaPageConnections = pgTable("meta_page_connections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brandId: varchar("brand_id").notNull().references(() => brands.id, { onDelete: 'cascade' }),
+  pageId: text("page_id").notNull(),
+  pageName: text("page_name").notNull(),
+  pageAccessToken: text("page_access_token").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueBrandPage: unique().on(table.brandId, table.pageId),
+}));
+
+export const metaPageConnectionsRelations = relations(metaPageConnections, ({ one }) => ({
+  brand: one(brands, { fields: [metaPageConnections.brandId], references: [brands.id] }),
+}));
+
+export const insertMetaPageConnectionSchema = createInsertSchema(metaPageConnections).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateMetaPageConnectionSchema = insertMetaPageConnectionSchema.partial();
+
+export type InsertMetaPageConnection = z.infer<typeof insertMetaPageConnectionSchema>;
+export type MetaPageConnection = typeof metaPageConnections.$inferSelect;
+export type UpdateMetaPageConnection = z.infer<typeof updateMetaPageConnectionSchema>;
 
 export const leads = pgTable("leads", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

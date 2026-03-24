@@ -30,8 +30,8 @@ import {
   Bot, Settings, MessageSquare, MessageCircle, Zap, Shield, History, 
   Play, Save, Loader2, Sparkles, Brain, BookOpen,
   Clock, AlertTriangle, CheckCircle, XCircle, Share2, Variable, Copy,
-  ChevronDown, ChevronUp, Filter, RotateCcw, Eye, Info, Pencil, X,
-  FileText, Plus, Trash2, Tag, AtSign, Bell
+  ChevronDown, ChevronUp, Filter, RotateCcw, Eye, EyeOff, Info, Pencil, X,
+  FileText, Plus, Trash2, Tag, AtSign, Bell, Mail, Facebook, Link, ToggleLeft
 } from 'lucide-react';
 import { ReminderSettingsForm, type ReminderSettingsFormHandle } from './ReminderSettingsForm';
 import { PromptEditor, type PromptEditorHandle } from './PromptEditor';
@@ -118,6 +118,376 @@ const DEFAULT_GUARDRAIL = `Restricciones de seguridad:
 - Evita temas políticos, religiosos o controversiales
 - Si detectas un cliente muy molesto, sugiere contactar a un agente humano`;
 
+interface MetaPage {
+  id: string;
+  brandId: string;
+  pageId: string;
+  pageName: string;
+  pageAccessToken: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+interface PrivateRepliesTabProps {
+  brandId: string;
+  enabled: boolean;
+  template: string;
+  onEnabledChange: (v: boolean) => void;
+  onTemplateChange: (v: string) => void;
+}
+
+function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemplateChange }: PrivateRepliesTabProps) {
+  const queryClient = useQueryClient();
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showToken, setShowToken] = useState(false);
+  const [newPage, setNewPage] = useState({ pageId: '', pageName: '', pageAccessToken: '' });
+  const [isSavingPage, setIsSavingPage] = useState(false);
+
+  const { data: pagesData, isLoading: isLoadingPages } = useQuery({
+    queryKey: ['metaPages', brandId],
+    queryFn: async () => {
+      const res = await fetch(`/api/brands/${brandId}/meta-pages`, { credentials: 'include' });
+      const d = await res.json();
+      return d.pages as MetaPage[];
+    },
+    enabled: !!brandId,
+  });
+
+  const pages = pagesData || [];
+
+  const handleTogglePage = async (page: MetaPage) => {
+    try {
+      await fetch(`/api/brands/${brandId}/meta-pages/${page.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ isActive: !page.isActive }),
+      });
+      queryClient.invalidateQueries({ queryKey: ['metaPages', brandId] });
+    } catch (e) {
+      toast({ title: 'Error', description: 'No se pudo actualizar', variant: 'destructive' });
+    }
+  };
+
+  const handleDeletePage = async (id: string) => {
+    if (!confirm('¿Eliminar esta conexión de Facebook?')) return;
+    try {
+      await fetch(`/api/brands/${brandId}/meta-pages/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      queryClient.invalidateQueries({ queryKey: ['metaPages', brandId] });
+      toast({ title: 'Página eliminada' });
+    } catch (e) {
+      toast({ title: 'Error', description: 'No se pudo eliminar', variant: 'destructive' });
+    }
+  };
+
+  const handleAddPage = async () => {
+    if (!newPage.pageId || !newPage.pageName || !newPage.pageAccessToken) {
+      toast({ title: 'Completa todos los campos', variant: 'destructive' });
+      return;
+    }
+    setIsSavingPage(true);
+    try {
+      const res = await fetch(`/api/brands/${brandId}/meta-pages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(newPage),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Error');
+      }
+      queryClient.invalidateQueries({ queryKey: ['metaPages', brandId] });
+      toast({ title: 'Página conectada', description: `${newPage.pageName} agregada correctamente` });
+      setShowAddModal(false);
+      setNewPage({ pageId: '', pageName: '', pageAccessToken: '' });
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message, variant: 'destructive' });
+    } finally {
+      setIsSavingPage(false);
+    }
+  };
+
+  const PRIVATE_REPLY_VARIABLES = [
+    { placeholder: '{{first_name}}', description: 'Primer nombre del usuario' },
+    { placeholder: '{{username}}', description: 'Nombre completo del usuario' },
+    { placeholder: '{{post_context}}', description: 'Descripción del post comentado' },
+    { placeholder: '{{comment}}', description: 'Texto del comentario' },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Card 1: Master switch */}
+      <Card className="border border-border shadow-none">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base font-semibold">
+            <Mail className="h-4 w-4 text-blue-600" />
+            Private Replies
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Envía mensajes privados a personas que comentan en tus publicaciones de Facebook. El botón aparecerá en el Inbox junto a los comentarios de Facebook.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Activar Private Replies</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Muestra el botón "Resp. Privada" en el Inbox para comentarios de Facebook
+              </p>
+            </div>
+            <Switch
+              checked={enabled}
+              onCheckedChange={onEnabledChange}
+              data-testid="switch-private-reply-enabled"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Card 2: Facebook pages */}
+      <Card className="border border-border shadow-none">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                <FaFacebook className="h-4 w-4 text-blue-600" />
+                Páginas de Facebook conectadas
+              </CardTitle>
+              <CardDescription className="text-xs mt-1">
+                Conecta las páginas desde donde se enviarán los mensajes privados
+              </CardDescription>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowAddModal(true)}
+              className="gap-1.5 shadow-none"
+              data-testid="button-add-meta-page"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Agregar página
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoadingPages ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+              <Loader2 className="h-4 w-4 animate-spin" /> Cargando páginas...
+            </div>
+          ) : pages.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground">
+              <FaFacebook className="h-8 w-8 mx-auto mb-2 opacity-20" />
+              <p className="text-sm">No hay páginas conectadas</p>
+              <p className="text-xs mt-1">Agrega una página de Facebook para comenzar</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pages.map((page) => (
+                <div key={page.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/20" data-testid={`meta-page-${page.id}`}>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                      <FaFacebook className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{page.pageName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        ID: {page.pageId} &middot; Token: {page.pageAccessToken}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-2">
+                    <Switch
+                      checked={page.isActive}
+                      onCheckedChange={() => handleTogglePage(page)}
+                      data-testid={`switch-page-active-${page.id}`}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => handleDeletePage(page.id)}
+                      data-testid={`button-delete-page-${page.id}`}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Card 3: Message template */}
+      <Card className="border border-border shadow-none">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base font-semibold">
+            <MessageCircle className="h-4 w-4 text-muted-foreground" />
+            Mensaje de Private Reply
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Este texto se usará como punto de partida en el Inbox. El agente puede editarlo antes de enviar.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-xs font-medium">Template del mensaje</Label>
+            <Textarea
+              value={template}
+              onChange={(e) => onTemplateChange(e.target.value)}
+              placeholder="Hola {{first_name}} 👋 He visto tu comentario..."
+              className="min-h-[100px] text-sm font-mono resize-none"
+              data-testid="textarea-private-reply-template"
+            />
+            <div className="flex flex-wrap gap-1.5">
+              {PRIVATE_REPLY_VARIABLES.map((v) => (
+                <button
+                  key={v.placeholder}
+                  type="button"
+                  onClick={() => onTemplateChange(template + v.placeholder)}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs hover:bg-blue-100 transition-colors"
+                  title={v.description}
+                  data-testid={`button-var-${v.placeholder}`}
+                >
+                  <Variable className="h-2.5 w-2.5" />
+                  {v.placeholder}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {template && (
+            <div className="rounded-lg bg-blue-50 border border-blue-100 p-3">
+              <p className="text-xs font-medium text-blue-700 mb-1">Vista previa (con datos de ejemplo):</p>
+              <p className="text-sm text-blue-900 italic">
+                {template
+                  .replace(/\{\{first_name\}\}/gi, 'Jordan')
+                  .replace(/\{\{username\}\}/gi, 'Jordan Delgado')
+                  .replace(/\{\{post_context\}\}/gi, 'nuevo curso de derecho internacional')
+                  .replace(/\{\{comment\}\}/gi, 'me interesa!')}
+              </p>
+            </div>
+          )}
+
+          <Alert className="border-amber-200 bg-amber-50">
+            <Info className="h-3.5 w-3.5 text-amber-600" />
+            <AlertDescription className="text-xs text-amber-800">
+              El agente puede editar el mensaje en el Inbox antes de enviarlo. Nunca se envía automáticamente.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+
+      {/* Card 4: Restrictions */}
+      <Card className="border border-border shadow-none">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base font-semibold">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            Restricciones de la API de Facebook
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-2 text-xs text-muted-foreground">
+            <li className="flex items-start gap-2">
+              <span className="text-amber-500 mt-0.5">⚠</span>
+              Solo funciona en <strong>comentarios de Facebook</strong> (no Instagram, TikTok u otras redes)
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-amber-500 mt-0.5">⚠</span>
+              Solo se puede enviar <strong>1 respuesta privada por comentario</strong>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-amber-500 mt-0.5">⚠</span>
+              El comentario debe tener <strong>menos de 7 días</strong> de antigüedad
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-blue-500 mt-0.5">ℹ</span>
+              El usuario recibirá el mensaje en su <strong>Inbox de Facebook Messenger</strong>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-blue-500 mt-0.5">ℹ</span>
+              Si el usuario responde, la conversación continuará en <strong>DM</strong> y el agente de IA podrá seguir respondiendo automáticamente
+            </li>
+          </ul>
+        </CardContent>
+      </Card>
+
+      {/* Add Page Modal */}
+      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+        <DialogContent className="sm:max-w-md" data-testid="modal-add-meta-page">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FaFacebook className="h-4 w-4 text-blue-600" />
+              Conectar página de Facebook
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label className="text-sm">Nombre de la página</Label>
+              <Input
+                placeholder="Jordan Inpulza"
+                value={newPage.pageName}
+                onChange={(e) => setNewPage({ ...newPage, pageName: e.target.value })}
+                data-testid="input-page-name"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm">Page ID de Facebook</Label>
+              <Input
+                placeholder="468497419676631"
+                value={newPage.pageId}
+                onChange={(e) => setNewPage({ ...newPage, pageId: e.target.value })}
+                data-testid="input-page-id"
+              />
+              <p className="text-xs text-muted-foreground">
+                Encuéntralo en: Facebook &rarr; Tu página &rarr; Info &rarr; ID de la página
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm">Page Access Token</Label>
+              <div className="relative">
+                <Input
+                  type={showToken ? 'text' : 'password'}
+                  placeholder="EAAUrjM5..."
+                  value={newPage.pageAccessToken}
+                  onChange={(e) => setNewPage({ ...newPage, pageAccessToken: e.target.value })}
+                  className="pr-10"
+                  data-testid="input-page-token"
+                />
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowToken(!showToken)}
+                >
+                  {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <Alert className="border-amber-200 bg-amber-50 py-2">
+                <AlertDescription className="text-xs text-amber-800">
+                  Necesita permiso <code className="font-mono font-bold">pages_messaging</code>. Genera el token en Meta Graph API Explorer.
+                </AlertDescription>
+              </Alert>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="ghost" onClick={() => setShowAddModal(false)} data-testid="button-cancel-add-page">
+                Cancelar
+              </Button>
+              <Button onClick={handleAddPage} disabled={isSavingPage} className="gap-2" data-testid="button-confirm-add-page">
+                {isSavingPage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                Conectar página
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 export function AIAgentConfig() {
   const { activeClient, isLoadingClients } = useNexus();
   const queryClient = useQueryClient();
@@ -197,6 +567,8 @@ export function AIAgentConfig() {
     dmReplyMode: 'batch',
     autoMentionEnabled: false,
     isActive: true,
+    privateReplyEnabled: false,
+    privateReplyTemplate: 'Hola {{first_name}} 👋 He visto tu comentario y quería contactarte en privado. ¿En qué podemos ayudarte?',
   });
 
   const { data: agent, isLoading: isLoadingAgent } = useQuery({
@@ -389,6 +761,8 @@ export function AIAgentConfig() {
         autoMentionEnabled: agent.autoMentionEnabled ?? false,
         platformSettings: agent.platformSettings || undefined,
         isActive: agent.isActive ?? true,
+        privateReplyEnabled: agent.privateReplyEnabled ?? false,
+        privateReplyTemplate: agent.privateReplyTemplate || 'Hola {{first_name}} 👋 He visto tu comentario y quería contactarte en privado. ¿En qué podemos ayudarte?',
       });
     }
   }, [agent]);
@@ -557,6 +931,11 @@ export function AIAgentConfig() {
                 <Bell className="h-3.5 w-3.5 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">Recordatorios</span>
                 <span className="sm:hidden">Rec</span>
+              </TabsTrigger>
+              <TabsTrigger value="private-replies" className="gap-1.5 md:gap-2 data-[state=active]:bg-muted rounded-md px-2.5 md:px-3 text-xs md:text-sm" data-testid="tab-private-replies">
+                <Mail className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Private Replies</span>
+                <span className="sm:hidden">PR</span>
               </TabsTrigger>
             </TabsList>
           </div>
@@ -1954,6 +2333,18 @@ export function AIAgentConfig() {
             <TabsContent value="reminders" className="mt-0">
               {activeClient?.id && (
                 <ReminderSettingsForm ref={reminderFormRef} brandId={activeClient.id} />
+              )}
+            </TabsContent>
+
+            <TabsContent value="private-replies" className="mt-0 space-y-6">
+              {activeClient?.id && (
+                <PrivateRepliesTab
+                  brandId={activeClient.id}
+                  enabled={formData.privateReplyEnabled ?? false}
+                  template={formData.privateReplyTemplate ?? ''}
+                  onEnabledChange={(v) => handleFormChange({ privateReplyEnabled: v })}
+                  onTemplateChange={(v) => handleFormChange({ privateReplyTemplate: v })}
+                />
               )}
             </TabsContent>
           </div>

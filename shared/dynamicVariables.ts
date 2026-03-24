@@ -7,6 +7,12 @@ export interface DynamicVariable {
 
 export const DYNAMIC_VARIABLES: DynamicVariable[] = [
   {
+    key: 'first_name',
+    placeholder: '{{first_name}}',
+    description: 'Primer nombre detectado del usuario (extraído del username o nombre de display)',
+    example: 'Jordan',
+  },
+  {
     key: 'interaction_mode',
     placeholder: '{{interaction_mode}}',
     description: 'Tipo de interacción: "reply" (respuesta normal) o "reminder" (follow-up automático)',
