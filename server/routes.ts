@@ -286,7 +286,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
         console.error('[Auth] Failed to send verification email to:', email);
       }
 
-      console.log(`[Auth] New registration - email: ${email}, userId: ${user.id}`);
+      console.console.log(`[Auth] New registration - email: ${email}, userId: ${user.id}`);
       
       res.status(201).json({ 
         success: true,
@@ -360,7 +360,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
             console.error('[Auth] Session save error after verification:', err);
             return res.status(500).json({ error: "Error al guardar la sesión" });
           }
-          console.log(`[Auth] Email verified - userId: ${userId}`);
+          console.console.log(`[Auth] Email verified - userId: ${userId}`);
           res.json({ 
             success: true,
             user: sanitizeUser(activatedUser!),
@@ -477,7 +477,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
             console.error('[Auth] Session save error:', err);
             return res.status(500).json({ error: "Failed to create session" });
           }
-          console.log(`[Auth] Login successful - userId: ${user.id}`);
+          console.console.log(`[Auth] Login successful - userId: ${user.id}`);
           res.json(sanitizeUser(user));
         });
       });
@@ -1189,7 +1189,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
       let metricoolId = rawData.id || message.metricoolId;
       if (message.platform?.toLowerCase() === 'youtube' && rawData.parentId) {
         metricoolId = rawData.parentId;
-        console.log(`[Reply] YouTube nested comment detected, using parentId: ${metricoolId}`);
+        console.console.log(`[Reply] YouTube nested comment detected, using parentId: ${metricoolId}`);
       }
       
       if (!metricoolId) {
@@ -1306,7 +1306,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
           recipient = rawData?.from?.id || rawData?.root?.owner;
         }
         
-        console.log("[Reply] DM recipient resolution:", { 
+        console.console.log("[Reply] DM recipient resolution:", { 
           recipient, 
           selfAccountId, 
           messageFrom: rawData?.message?.from || rawData?.from,
@@ -1494,7 +1494,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
         return res.status(400).json({ error: "Sincronización pausada para esta marca. Reanuda la sincronización para continuar." });
       }
 
-      console.log(`🔄 Starting sync for brand: ${brand.name} (${brand.metricoolBlogId})`);
+      console.console.log(`🔄 Starting sync for brand: ${brand.name} (${brand.metricoolBlogId})`);
 
       const metricool = new MetricoolService({
         userToken: brand.metricoolToken,
@@ -1623,7 +1623,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
                 parentMessageId: savedComment.id,
               });
               commentsCount++;
-              console.log(`   ↳ Saved nested reply from ${replyAuthor}`);
+              console.console.log(`   ↳ Saved nested reply from ${replyAuthor}`);
             } catch (replyError: any) {
               console.error(`Error upserting reply:`, replyError.message);
             }
@@ -1633,7 +1633,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
         }
       }
 
-      console.log(`✅ Sync completed: ${conversationsCount} conversation messages, ${commentsCount} comments`);
+      console.console.log(`✅ Sync completed: ${conversationsCount} conversation messages, ${commentsCount} comments`);
 
       res.json({
         success: true,
@@ -2541,10 +2541,10 @@ Sitemap: ${SITE_URL}/sitemap.xml
       
       if (message.platform?.toLowerCase() === 'youtube' && parsedRawData?.parentId) {
         objectIdToUse = parsedRawData.parentId;
-        console.log(`[SendDraft] YouTube nested comment detected, using parentId: ${objectIdToUse} instead of ${message.metricoolId}`);
+        console.console.log(`[SendDraft] YouTube nested comment detected, using parentId: ${objectIdToUse} instead of ${message.metricoolId}`);
       }
       
-      console.log(`[SendDraft] Sending draft for message ${messageId}:`, {
+      console.console.log(`[SendDraft] Sending draft for message ${messageId}:`, {
         platform: message.platform,
         type: message.type,
         metricoolId: message.metricoolId,
@@ -2667,7 +2667,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
         }
       }
       
-      console.log(`[SendDraft] Successfully sent draft for message ${messageId}, created reply message ${replyMessage.id}`);
+      console.console.log(`[SendDraft] Successfully sent draft for message ${messageId}, created reply message ${replyMessage.id}`);
       
       res.json({ 
         success: true, 
@@ -2738,7 +2738,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
         }
       }
       
-      console.log(`[Backfill] Created ${created} draft notifications for brand ${brandId}`);
+      console.console.log(`[Backfill] Created ${created} draft notifications for brand ${brandId}`);
       
       res.json({
         success: true,
@@ -3290,7 +3290,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
             { platform, externalId, username: username || displayName, avatarUrl }
           );
           
-          console.log(`[CRM] Created contact ${result.contact.id} with channel, linked ${result.linkedConversations} conversations`);
+          console.console.log(`[CRM] Created contact ${result.contact.id} with channel, linked ${result.linkedConversations} conversations`);
           return res.status(201).json({ contact: result.contact, channel: result.channel });
         } catch (txError: any) {
           if (txError.message === 'CONTACT_ALREADY_EXISTS') {
@@ -4570,7 +4570,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
       let token = process.env[varName];
       if (!token) return res.status(404).json({ error: `Secret ${varName} no encontrado. Reinicia el servidor después de agregar el secret.` });
 
-      log(`[MetaAutoConnect] Using token from ${varName} (last 4: ...${token.slice(-4)})`, "express");
+      console.log(`[MetaAutoConnect] Using token from ${varName} (last 4: ...${token.slice(-4)})`, "express");
 
       // If META_APP_ID and META_APP_SECRET are available, exchange short-lived token for long-lived one.
       const appId = process.env.META_APP_ID;
@@ -4582,19 +4582,19 @@ Sitemap: ${SITE_URL}/sitemap.xml
           const exchangeData = await exchangeRes.json() as { access_token?: string; error?: { message: string; code?: number } };
           if (exchangeData.access_token) {
             token = exchangeData.access_token;
-            log("[MetaAutoConnect] Successfully exchanged for long-lived token", "express");
+            console.log("[MetaAutoConnect] Successfully exchanged for long-lived token", "express");
           } else {
-            log(`[MetaAutoConnect] Token exchange failed (non-fatal): ${JSON.stringify(exchangeData.error)}`, "express");
+            console.log(`[MetaAutoConnect] Token exchange failed (non-fatal): ${JSON.stringify(exchangeData.error)}`, "express");
           }
         } catch (exchangeErr: any) {
-          log(`[MetaAutoConnect] Token exchange exception (non-fatal): ${exchangeErr.message}`, "express");
+          console.log(`[MetaAutoConnect] Token exchange exception (non-fatal): ${exchangeErr.message}`, "express");
         }
       }
 
       // Try /me/accounts first — works if token is a User Access Token (most common case)
       const accountsRes = await fetch(`https://graph.facebook.com/me/accounts?fields=id,name,access_token&access_token=${token}`);
       const accountsData = await accountsRes.json() as { data?: Array<{id: string; name: string; access_token: string}>; error?: { message: string; code?: number } };
-      log(`[MetaAutoConnect] /me/accounts response: ${JSON.stringify({ hasData: !!accountsData.data, count: accountsData.data?.length, error: accountsData.error })}`, "express");
+      console.log(`[MetaAutoConnect] /me/accounts response: ${JSON.stringify({ hasData: !!accountsData.data, count: accountsData.data?.length, error: accountsData.error })}`, "express");
 
       let pageId: string;
       let pageName: string;
@@ -4606,7 +4606,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
         pageId = firstPage.id;
         pageName = firstPage.name;
         pageAccessToken = firstPage.access_token;
-        log(`[MetaAutoConnect] Found page via User Token: ${pageName} (${pageId})`, "express");
+        console.log(`[MetaAutoConnect] Found page via User Token: ${pageName} (${pageId})`, "express");
 
         // Return all available pages if more than one, so frontend can show a picker
         if (accountsData.data.length > 1) {
@@ -4621,7 +4621,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
         // Might already be a Page Access Token — try /me directly
         const meRes = await fetch(`https://graph.facebook.com/me?fields=id,name&access_token=${token}`);
         const meData = await meRes.json() as { id?: string; name?: string; error?: { message: string; code?: number } };
-        log(`[MetaAutoConnect] /me response: ${JSON.stringify({ id: meData.id, name: meData.name, error: meData.error })}`, "express");
+        console.log(`[MetaAutoConnect] /me response: ${JSON.stringify({ id: meData.id, name: meData.name, error: meData.error })}`, "express");
 
         if (meData.error || !meData.id) {
           const errCode = meData.error?.code || accountsData.error?.code;
@@ -4637,7 +4637,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
         pageId = meData.id;
         pageName = meData.name || meData.id;
         pageAccessToken = token;
-        log(`[MetaAutoConnect] Found page via Page Token: ${pageName} (${pageId})`, "express");
+        console.log(`[MetaAutoConnect] Found page via Page Token: ${pageName} (${pageId})`, "express");
       }
 
       const page = await storage.upsertMetaPageConnection({
@@ -4658,27 +4658,33 @@ Sitemap: ${SITE_URL}/sitemap.xml
   app.post("/api/inbox/private-reply", requireAuth, async (req, res) => {
     try {
       const { messageId, text } = req.body;
+      console.log(`[PrivateReply] REQUEST RECEIVED — messageId: ${messageId}, text length: ${text?.length}`, "express");
       if (!messageId || !text?.trim()) {
         return res.status(400).json({ error: "messageId and text are required" });
       }
 
       const message = await storage.getMessage(messageId);
+      console.log(`[PrivateReply] Message found: ${!!message}, platform: ${message?.platform}, type: ${message?.type}`, "express");
       if (!message) return res.status(404).json({ error: "Message not found" });
       if (message.platform?.toLowerCase() !== 'facebook') {
-        return res.status(400).json({ error: "Private replies only work for Facebook comments" });
+        console.log(`[PrivateReply] BLOCKED: platform is '${message.platform}', not facebook`, "express");
+        return res.status(400).json({ error: `Private replies only work for Facebook comments (this is ${message.platform})` });
       }
       if (message.type !== 'comment') {
-        return res.status(400).json({ error: "Private replies only work for comments" });
+        console.log(`[PrivateReply] BLOCKED: type is '${message.type}', not comment`, "express");
+        return res.status(400).json({ error: `Private replies only work for comments (this is ${message.type})` });
       }
 
       const user = req.user as AuthenticatedUser;
       const brand = await storage.getBrand(message.brandId);
+      console.log(`[PrivateReply] Brand found: ${brand?.name}, brandId: ${message.brandId}`, "express");
       if (!brand) return res.status(404).json({ error: "Brand not found" });
 
       // Check private reply is enabled for this brand
       const agent = await storage.getAiAgentByBrand(brand.id);
+      console.log(`[PrivateReply] Agent privateReplyEnabled: ${agent?.privateReplyEnabled}`, "express");
       if (!agent?.privateReplyEnabled) {
-        return res.status(403).json({ error: "Private replies are not enabled for this brand" });
+        return res.status(403).json({ error: "Private replies are not enabled for this brand. Enable it in AI Agent settings." });
       }
 
       // Get the page access token — find active page for this brand
@@ -4691,13 +4697,13 @@ Sitemap: ${SITE_URL}/sitemap.xml
       // Extract the comment ID from rawData
       const rawData = typeof message.rawData === 'string' ? JSON.parse(message.rawData) : message.rawData;
       const commentId = rawData?.id || rawData?.root?.id || message.metricoolId;
-      log(`[PrivateReply] Message platform: ${message.platform}, type: ${message.type}, metricoolId: ${message.metricoolId}`, "sync");
-      log(`[PrivateReply] Resolved commentId: ${commentId}`, "sync");
+      console.log(`[PrivateReply] Message platform: ${message.platform}, type: ${message.type}, metricoolId: ${message.metricoolId}`, "sync");
+      console.log(`[PrivateReply] Resolved commentId: ${commentId}`, "sync");
       if (!commentId) {
         return res.status(400).json({ error: "Cannot determine comment ID for private reply" });
       }
 
-      log(`[PrivateReply] Attempting private reply for commentId: ${commentId}`, "sync");
+      console.log(`[PrivateReply] Attempting private reply for commentId: ${commentId}`, "sync");
 
       // Send via Meta API — let Meta decide if it supports private replies for this content
       const result = await sendPrivateReply(commentId, text.trim(), activePage.pageAccessToken);

@@ -1075,7 +1075,11 @@ export function Inbox() {
   };
 
   const handleSendPrivateReply = async () => {
-    if (!replyText.trim() || isSendingReply || !privateReplyTargetMessage) return;
+    console.log('[PrivateReply] handleSendPrivateReply called', { replyTextLen: replyText.trim().length, isSendingReply, hasTarget: !!privateReplyTargetMessage, targetId: privateReplyTargetMessage?.id });
+    if (!replyText.trim() || isSendingReply || !privateReplyTargetMessage) {
+      console.log('[PrivateReply] BLOCKED by guard', { emptyText: !replyText.trim(), isSendingReply, noTarget: !privateReplyTargetMessage });
+      return;
+    }
     setIsSendingReply(true);
     try {
       await api.inbox.sendPrivateReply(privateReplyTargetMessage.id, replyText.trim());
