@@ -286,7 +286,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
         console.error('[Auth] Failed to send verification email to:', email);
       }
 
-      console.console.log(`[Auth] New registration - email: ${email}, userId: ${user.id}`);
+      console.log(`[Auth] New registration - email: ${email}, userId: ${user.id}`);
       
       res.status(201).json({ 
         success: true,
@@ -360,7 +360,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
             console.error('[Auth] Session save error after verification:', err);
             return res.status(500).json({ error: "Error al guardar la sesión" });
           }
-          console.console.log(`[Auth] Email verified - userId: ${userId}`);
+          console.log(`[Auth] Email verified - userId: ${userId}`);
           res.json({ 
             success: true,
             user: sanitizeUser(activatedUser!),
@@ -477,7 +477,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
             console.error('[Auth] Session save error:', err);
             return res.status(500).json({ error: "Failed to create session" });
           }
-          console.console.log(`[Auth] Login successful - userId: ${user.id}`);
+          console.log(`[Auth] Login successful - userId: ${user.id}`);
           res.json(sanitizeUser(user));
         });
       });
@@ -1189,7 +1189,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
       let metricoolId = rawData.id || message.metricoolId;
       if (message.platform?.toLowerCase() === 'youtube' && rawData.parentId) {
         metricoolId = rawData.parentId;
-        console.console.log(`[Reply] YouTube nested comment detected, using parentId: ${metricoolId}`);
+        console.log(`[Reply] YouTube nested comment detected, using parentId: ${metricoolId}`);
       }
       
       if (!metricoolId) {
@@ -1306,7 +1306,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
           recipient = rawData?.from?.id || rawData?.root?.owner;
         }
         
-        console.console.log("[Reply] DM recipient resolution:", { 
+        console.log("[Reply] DM recipient resolution:", { 
           recipient, 
           selfAccountId, 
           messageFrom: rawData?.message?.from || rawData?.from,
@@ -1494,7 +1494,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
         return res.status(400).json({ error: "Sincronización pausada para esta marca. Reanuda la sincronización para continuar." });
       }
 
-      console.console.log(`🔄 Starting sync for brand: ${brand.name} (${brand.metricoolBlogId})`);
+      console.log(`🔄 Starting sync for brand: ${brand.name} (${brand.metricoolBlogId})`);
 
       const metricool = new MetricoolService({
         userToken: brand.metricoolToken,
@@ -1623,7 +1623,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
                 parentMessageId: savedComment.id,
               });
               commentsCount++;
-              console.console.log(`   ↳ Saved nested reply from ${replyAuthor}`);
+              console.log(`   ↳ Saved nested reply from ${replyAuthor}`);
             } catch (replyError: any) {
               console.error(`Error upserting reply:`, replyError.message);
             }
@@ -1633,7 +1633,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
         }
       }
 
-      console.console.log(`✅ Sync completed: ${conversationsCount} conversation messages, ${commentsCount} comments`);
+      console.log(`✅ Sync completed: ${conversationsCount} conversation messages, ${commentsCount} comments`);
 
       res.json({
         success: true,
@@ -2541,10 +2541,10 @@ Sitemap: ${SITE_URL}/sitemap.xml
       
       if (message.platform?.toLowerCase() === 'youtube' && parsedRawData?.parentId) {
         objectIdToUse = parsedRawData.parentId;
-        console.console.log(`[SendDraft] YouTube nested comment detected, using parentId: ${objectIdToUse} instead of ${message.metricoolId}`);
+        console.log(`[SendDraft] YouTube nested comment detected, using parentId: ${objectIdToUse} instead of ${message.metricoolId}`);
       }
       
-      console.console.log(`[SendDraft] Sending draft for message ${messageId}:`, {
+      console.log(`[SendDraft] Sending draft for message ${messageId}:`, {
         platform: message.platform,
         type: message.type,
         metricoolId: message.metricoolId,
@@ -2667,7 +2667,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
         }
       }
       
-      console.console.log(`[SendDraft] Successfully sent draft for message ${messageId}, created reply message ${replyMessage.id}`);
+      console.log(`[SendDraft] Successfully sent draft for message ${messageId}, created reply message ${replyMessage.id}`);
       
       res.json({ 
         success: true, 
@@ -2738,7 +2738,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
         }
       }
       
-      console.console.log(`[Backfill] Created ${created} draft notifications for brand ${brandId}`);
+      console.log(`[Backfill] Created ${created} draft notifications for brand ${brandId}`);
       
       res.json({
         success: true,
@@ -3290,7 +3290,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
             { platform, externalId, username: username || displayName, avatarUrl }
           );
           
-          console.console.log(`[CRM] Created contact ${result.contact.id} with channel, linked ${result.linkedConversations} conversations`);
+          console.log(`[CRM] Created contact ${result.contact.id} with channel, linked ${result.linkedConversations} conversations`);
           return res.status(201).json({ contact: result.contact, channel: result.channel });
         } catch (txError: any) {
           if (txError.message === 'CONTACT_ALREADY_EXISTS') {
