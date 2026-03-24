@@ -4684,20 +4684,9 @@ Sitemap: ${SITE_URL}/sitemap.xml
         return res.status(400).json({ error: "Cannot determine comment ID for private reply" });
       }
 
-      // Detect Instagram-cross-posted content: post IDs starting with "122" (18 digits) are Instagram media IDs
-      // that appear in Facebook inboxes but require the Instagram API, not Facebook's private_replies endpoint
-      const postId = commentId.split('_')[0] || '';
-      const isInstagramCrossPost = postId.length >= 17 && postId.startsWith('122');
-      const postLink = rawData?.root?.element?.link || '';
-      const isReelOrIgContent = postLink.includes('/reel/') || isInstagramCrossPost;
-      if (isReelOrIgContent) {
-        return res.status(400).json({
-          error: "Este comentario es de un Reel de Instagram compartido en Facebook. El API de Facebook no puede enviar Private Replies a comentarios de Instagram — se necesita el endpoint de Instagram. Esta funcionalidad (Fase 2) estará disponible próximamente. Por ahora, responde directamente desde Instagram.",
-          errorCode: "INSTAGRAM_CROSSPOST"
-        });
-      }
+      log(`[PrivateReply] Attempting private reply for commentId: ${commentId}`, "sync");
 
-      // Send via Meta API
+      // Send via Meta API — let Meta decide if it supports private replies for this content
       const result = await sendPrivateReply(commentId, text.trim(), activePage.pageAccessToken);
       if (!result.success) {
         return res.status(result.tokenExpired ? 401 : 500).json({
