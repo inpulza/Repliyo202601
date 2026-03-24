@@ -877,8 +877,10 @@ export const api = {
         body: JSON.stringify({ messageId, text }),
       });
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || 'Failed to send private reply');
+        const errorData = await res.json();
+        const err: any = new Error(errorData.error || 'Failed to send private reply');
+        err.tokenExpired = errorData.tokenExpired || false;
+        throw err;
       }
       return res.json();
     },

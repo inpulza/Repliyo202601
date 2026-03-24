@@ -1089,11 +1089,20 @@ export function Inbox() {
         queryClient.invalidateQueries({ queryKey: ['conversationMessages', activeConversation.id] });
       }
     } catch (error: any) {
-      toast({
-        title: "Error al enviar respuesta privada",
-        description: error.message,
-        variant: "destructive",
-      });
+      if (error.tokenExpired) {
+        toast({
+          title: "Token expirado",
+          description: "El token de acceso a Facebook venció. Ve a Configuración → Private Replies y reconecta la página con un token actualizado.",
+          variant: "destructive",
+          duration: 8000,
+        });
+      } else {
+        toast({
+          title: "Error al enviar respuesta privada",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsSendingReply(false);
     }

@@ -4567,8 +4567,28 @@ Sitemap: ${SITE_URL}/sitemap.xml
       if (!varName || !varName.startsWith('META_') || !varName.endsWith('_PAGE_TOKEN')) {
         return res.status(400).json({ error: "Invalid varName" });
       }
-      const token = process.env[varName];
+      let token = process.env[varName];
       if (!token) return res.status(404).json({ error: `Secret ${varName} no encontrado en el entorno` });
+
+      // If META_APP_ID and META_APP_SECRET are available, exchange short-lived token for long-lived one.
+      // Long-lived User Tokens last 60 days, and Page Tokens derived from them never expire.
+      const appId = process.env.META_APP_ID;
+      const appSecret = process.env.META_APP_SECRET;
+      if (appId && appSecret) {
+        try {
+          const exchangeUrl = `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${token}`;
+          const exchangeRes = await fetch(exchangeUrl);
+          const exchangeData = await exchangeRes.json() as { access_token?: string; error?: { message: string } };
+          if (exchangeData.access_token) {
+            token = exchangeData.access_token;
+            log("[MetaAutoConnect] Successfully exchanged for long-lived token", "express");
+          } else {
+            log(`[MetaAutoConnect] Token exchange failed (non-fatal): ${exchangeData.error?.message}`, "express");
+          }
+        } catch (exchangeErr: any) {
+          log(`[MetaAutoConnect] Token exchange exception (non-fatal): ${exchangeErr.message}`, "express");
+        }
+      }
 
       // Try /me/accounts first — works if token is a User Access Token (most common case)
       // This exchanges the User Token for the actual Page Access Token(s)
@@ -4680,7 +4700,11 @@ Sitemap: ${SITE_URL}/sitemap.xml
       // Send via Meta API
       const result = await sendPrivateReply(commentId, text.trim(), activePage.pageAccessToken);
       if (!result.success) {
-        return res.status(500).json({ error: result.error || "Failed to send private reply", errorCode: result.errorCode });
+        return res.status(result.tokenExpired ? 401 : 500).json({
+          error: result.error || "Failed to send private reply",
+          errorCode: result.errorCode,
+          tokenExpired: result.tokenExpired || false,
+        });
       }
 
       // Save outbound message in DB

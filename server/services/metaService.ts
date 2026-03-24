@@ -8,6 +8,7 @@ export interface PrivateReplyResult {
   messageId?: string;
   error?: string;
   errorCode?: number;
+  tokenExpired?: boolean;
 }
 
 export interface TemplateContext {
@@ -52,7 +53,11 @@ export async function sendPrivateReply(
 
       // Map known errors to friendlier messages (by code, not text — text is ambiguous)
       let userFriendlyError = errMsg;
-      if (errCode === 200) {
+      if (errCode === 190) {
+        // 190 = token expired or invalid session
+        userFriendlyError = `El token de acceso ha expirado. Ve a la configuración de Private Replies y reconecta la página con un token actualizado.`;
+        return { success: false, error: userFriendlyError, errorCode: errCode, tokenExpired: true };
+      } else if (errCode === 200) {
         // 200 = permission denied — token is missing pages_messaging
         userFriendlyError = `Permiso denegado: el token no tiene 'pages_messaging'. Ve a Meta Developers → tu App → Permisos y agrega 'pages_messaging'. Error: ${errMsg}`;
       } else if (errCode === 100 && errSubcode === 33) {
@@ -81,6 +86,7 @@ export async function checkPagePermissions(pageAccessToken: string, pageId?: str
   permissions: string[];
   error?: string;
   pageName?: string;
+  tokenExpired?: boolean;
 }> {
   try {
     // Step 1: Validate token by fetching basic page info
@@ -90,7 +96,15 @@ export async function checkPagePermissions(pageAccessToken: string, pageId?: str
     const meData = await meRes.json() as any;
 
     if (meData.error) {
-      return { hasMessaging: false, permissions: [], error: meData.error.message };
+      const isExpired = meData.error.code === 190;
+      return {
+        hasMessaging: false,
+        permissions: [],
+        error: isExpired
+          ? "El token de acceso ha expirado. Reconecta la página con un token actualizado."
+          : meData.error.message,
+        tokenExpired: isExpired,
+      };
     }
 
     // Step 2: Try /me/accounts to get tasks (works if we can infer messaging capability)

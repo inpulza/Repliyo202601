@@ -143,7 +143,7 @@ function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemp
   const [newPage, setNewPage] = useState({ pageId: '', pageName: '', pageAccessToken: '' });
   const [isSavingPage, setIsSavingPage] = useState(false);
   const [isAutoConnecting, setIsAutoConnecting] = useState<string | null>(null);
-  const [pagePermissions, setPagePermissions] = useState<Record<string, { hasMessaging: boolean; permissions: string[]; error?: string } | null>>({});
+  const [pagePermissions, setPagePermissions] = useState<Record<string, { hasMessaging: boolean; permissions: string[]; error?: string; tokenExpired?: boolean; pageName?: string } | null>>({});
   const [checkingPerms, setCheckingPerms] = useState<string | null>(null);
   const templateTextareaRef = React.useRef<HTMLTextAreaElement>(null);
 
@@ -415,8 +415,27 @@ function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemp
                     </div>
                     {/* Permission check result */}
                     {perms && (
-                      <div className={`px-3 py-2 border-t text-xs flex items-start gap-2 ${perms.hasMessaging ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
-                        {perms.error ? (
+                      <div className={`px-3 py-2 border-t text-xs flex items-start gap-2 ${
+                        perms.tokenExpired ? 'bg-amber-50 border-amber-100' :
+                        perms.hasMessaging ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'
+                      }`}>
+                        {perms.tokenExpired ? (
+                          <>
+                            <AlertTriangle className="h-3.5 w-3.5 text-amber-500 mt-0.5 shrink-0" />
+                            <div className="flex-1">
+                              <span className="text-amber-700 font-medium">Token expirado.</span>{' '}
+                              <span className="text-amber-600">El token de acceso venció. Actualiza el secreto <code className="bg-amber-100 px-0.5 rounded">META_*_PAGE_TOKEN</code> con un token nuevo y luego reconecta.</span>
+                              <div className="mt-1.5">
+                                <button
+                                  className="text-amber-700 underline font-medium hover:text-amber-900"
+                                  onClick={() => setShowAddModal(true)}
+                                >
+                                  Reconectar página →
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        ) : perms.error ? (
                           <>
                             <XCircle className="h-3.5 w-3.5 text-red-500 mt-0.5 shrink-0" />
                             <span className="text-red-700">Error al verificar: {perms.error}</span>
@@ -426,7 +445,7 @@ function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemp
                             <CheckCircle className="h-3.5 w-3.5 text-green-600 mt-0.5 shrink-0" />
                             <span className="text-green-700">
                               <strong>pages_messaging ✓</strong> — Token válido con acceso a Private Replies.
-                              {(perms as any).pageName && <span className="text-green-600"> Página: {(perms as any).pageName}</span>}
+                              {perms.pageName && <span className="text-green-600"> Página: {perms.pageName}</span>}
                             </span>
                           </>
                         ) : (
