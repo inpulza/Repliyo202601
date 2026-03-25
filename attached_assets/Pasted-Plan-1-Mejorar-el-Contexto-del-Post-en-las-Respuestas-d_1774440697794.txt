@@ -1,0 +1,59 @@
+Plan 1: Mejorar el Contexto del Post en las Respuestas de IA
+Diagnóstico del problema (lo que encontré en el código):
+
+El PromptComposer actualmente solo envía el campo caption del post, cortado a 500 caracteres, así:
+
+--- CONTEXTO DEL POST COMENTADO ---
+"Lo que nadie te cuenta sobre el dolor de las rupturas 💔🧠 Ese vacío que sientes..."
+Y para DMs siempre pone: "Este es un mensaje directo privado." — sin contexto real.
+
+Lo que falta y cómo mejoraría las respuestas:
+
+Problema	Solución
+Solo la caption cruda — puede empezar con hashtags o emojis	Limpiar y extraer el "gancho" del post (primeras 2-3 frases limpias)
+No sabe si es video, reel, imagen o foto	Incluir el tipo de contenido (video, reel, image)
+No sabe el platform específico	Ya se pasa pero no se cruza con el context
+Para DMs dice "mensaje privado" sin más	Si el DM viene referenciado a un post, incluir ese contexto
+El LLM refencia el post de forma robótica: "he visto tu comentario sobre..."	Agregar instrucción en el prompt de cómo referenciar el post naturalmente
+Archivos a modificar:
+
+server/services/llm/prompt-composer.ts — función buildVariableContext y la sección CONTEXTO DEL POST COMENTADO
+Opcionalmente enriquecer el objeto socialPost que llega desde autoReplyService.ts
+Plan 2: Private Replies Automáticos en Facebook
+Diagnóstico del problema:
+
+El sistema actual es 100% manual: el agente tiene que entrar al Inbox, ver el comentario, hacer clic en "Private Reply", revisar el template, y enviarlo. El único automatismo es después de ese primer envío — una vez que el usuario responde por Messenger, el autoReplyService toma el control.
+
+Arquitectura propuesta — dos modos:
+
+Modo Manual (actual, conservado):
+Igual que hoy — agente entra al Inbox, hace clic, revisa, envía.
+
+Modo Automático (nuevo):
+Cuando entra un comentario nuevo de Facebook → el sistema espera un delay configurable (ej. 5 minutos) → envía automáticamente el private reply template interpolado.
+
+Cambios necesarios:
+
+Capa	Cambio
+DB	Nueva columna en ai_agents: auto_private_reply_enabled (boolean) + auto_private_reply_delay_minutes (integer, default 0)
+Backend	En syncService.ts, cuando se detecta un comentario nuevo de Facebook y autoPrivateReplyEnabled=true, llamar directamente a sendPrivateReply() con el template interpolado
+UI — AIAgentConfig	Dentro de la pestaña Private Replies: dos sub-pestañas — Manual (actual)
+Seguridad	No enviar si ya se envió un private reply a ese comentario (idempotencia usando internalOrigin=meta_private_reply en mensajes existentes)
+Flujo automático completo:
+
+Comentario nuevo en FB
+    ↓
+syncService detecta: platform=facebook, type=comment, isNew=true
+    ↓
+¿autoPrivateReplyEnabled=true para este brand?
+    ↓ SÍ
+Esperar delay configurado (0-30 min)
+    ↓
+Interpolate template: {{first_name}}, {{username}}, {{comment}}
+    ↓
+sendPrivateReply() → Meta API
+    ↓
+Guardar mensaje con internalOrigin=meta_private_reply
+    ↓
+A partir de ahí: autoReplyService maneja el thread de Messenger
+¿Quieres que implemente los dos, uno primero, o los dos en paralelo? El Plan 2 (auto private replies) impacta directamente el valor del producto, el Plan 1 (contexto) mejora la calidad de TODAS las respuestas de IA. Te recomiendo empezar por el Plan 1 ya que beneficia inmediatamente a todas las redes sociales, no solo Facebook.

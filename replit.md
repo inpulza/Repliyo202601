@@ -44,6 +44,75 @@ The `PromptComposer` (`server/services/llm/prompt-composer.ts`) builds AI prompt
 - **Database Integrity:** Utilizes Foreign Key constraints (`ON DELETE SET NULL`) and consistent schema definitions.
 - **Normalized Providers:** Standardizes social media platform naming.
 
+## Pending Feature Plans
+
+### Plan 1: Mejorar el Contexto del Post en Respuestas de IA
+**Objetivo:** Enriquecer la información que se envía al LLM sobre el post que se está comentando, para que las respuestas sean más naturales y relevantes.
+
+**Diagnóstico:** `PromptComposer` (`server/services/llm/prompt-composer.ts`) actualmente solo envía el campo `caption` del post, truncado a 500 caracteres. Para DMs pone siempre: `"Este es un mensaje directo privado."`.
+
+**Problemas identificados:**
+- Solo la caption cruda — puede empezar con hashtags o emojis sin contexto → **Solución:** Limpiar y extraer el "gancho" del post (primeras 2-3 frases limpias)
+- No sabe si es video, reel, imagen o foto → **Solución:** Incluir el tipo de contenido (`video`, `reel`, `image`)
+- Para DMs no hay contexto real → **Solución:** Si el DM viene referenciado a un post, incluir ese contexto
+- El LLM referencia el post de forma robótica ("he visto tu comentario sobre...") → **Solución:** Agregar instrucción en el prompt de cómo referenciar el post de forma natural
+
+**Archivos a modificar:**
+- `server/services/llm/prompt-composer.ts` — función `buildVariableContext` y la sección `--- CONTEXTO DEL POST COMENTADO ---`
+- Opcionalmente enriquecer el objeto `socialPost` que llega desde `autoReplyService.ts`
+
+---
+
+### Plan 2: Private Replies Automáticos en Facebook
+**Objetivo:** Añadir un modo automático a los Facebook Private Replies: cuando llega un comentario nuevo, el sistema lo responde automáticamente con el template configurado, sin que el agente tenga que hacer clic.
+
+**Diagnóstico:** El sistema actual es 100% manual. El agente debe entrar al Inbox, hacer clic en "Private Reply", revisar el template y enviarlo. El único automatismo existe *después* del primer envío — cuando el usuario responde por Messenger, `autoReplyService` toma el control.
+
+**Arquitectura propuesta — dos modos:**
+- **Modo Manual (conservado):** Igual que hoy — agente entra al Inbox, hace clic, revisa y envía.
+- **Modo Automático (nuevo):** Comentario nuevo en Facebook → esperar delay configurable → enviar template interpolado automáticamente.
+
+**Cambios necesarios:**
+
+| Capa | Cambio |
+|---|---|
+| DB | Nueva columna en `ai_agents`: `auto_private_reply_enabled` (boolean) + `auto_private_reply_delay_minutes` (integer, default 0) |
+| Backend | En `syncService.ts`, cuando se detecta comentario nuevo de Facebook y `autoPrivateReplyEnabled=true`, llamar directamente a `sendPrivateReply()` con el template interpolado |
+| UI — AIAgentConfig | Dentro de la pestaña Private Replies: dos sub-pestañas — **Manual** (actual) \| **Automático** (toggle on/off + configuración de delay) |
+| Seguridad | No enviar si ya se envió un private reply a ese comentario (idempotencia usando `internalOrigin=meta_private_reply` en mensajes existentes) |
+
+**Flujo automático completo:**
+```
+Comentario nuevo en FB
+    ↓
+syncService detecta: platform=facebook, type=comment, isNew=true
+    ↓
+¿autoPrivateReplyEnabled=true para este brand?
+    ↓ SÍ
+Esperar delay configurado (0-30 min)
+    ↓
+Interpolate template: {{first_name}}, {{username}}, {{comment}}
+    ↓
+sendPrivateReply() → Meta API
+    ↓
+Guardar mensaje con internalOrigin=meta_private_reply
+    ↓
+A partir de ahí: autoReplyService maneja el thread de Messenger automáticamente
+```
+
+---
+
+### Meta App Review — Checklist para "Repliyo Inbox"
+Para publicar la app y desbloquear `pages_messaging` para todos los usuarios (no solo developers/testers):
+1. **Settings → Basic:** Subir App Icon (1024x1024), añadir Privacy Policy URL (`/privacy`), Category = Business
+2. **App Review → Permissions and Features:** Solicitar Advanced Access para `pages_messaging`
+3. **Cuestionario `pages_messaging`:** Describir uso (private replies de comentarios en Facebook Pages → Messenger para soporte al cliente)
+4. **Video demo:** Mostrar flujo completo — comentario en FB → botón Private Reply en Repliyo → mensaje enviado por Messenger (2-3 min)
+5. **Cambiar a Live Mode:** Settings → Basic → Switch to Live Mode
+6. **URL del App Review:** `https://developers.facebook.com/apps/[APP-ID]/app-review/`
+- App "Repliyo Inbox-IG" (Instagram sin Facebook Login, App ID: 1127262189526061) — NO usar para production, tiene conflictos con Business Manager ownership
+- App principal "Repliyo Inbox" — esta es la que hay que publicar
+
 ## External Dependencies
 - **Metricool:** Used for syncing social media direct messages and comments.
 - **OpenAI / Gemini:** Large Language Model (LLM) providers for generating responses, summaries, and executing CRM functions.
