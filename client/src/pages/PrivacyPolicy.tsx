@@ -1,8 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Lock, Eye, FileText, Mail, ArrowLeft } from 'lucide-react';
+import { Lock, Eye, FileText, Mail, ArrowLeft, Shield } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { GlowButton } from '../components/landing/GlowButton';
+import repliyoLogo from '../assets/repliyo-logo.jpg';
 import '../styles/landing.css';
 
 const PrivacyPolicy = () => {
@@ -47,14 +48,15 @@ const PrivacyPolicy = () => {
       <nav className="relative z-20 border-b border-white/5 bg-[#050505]/80 backdrop-blur-md sticky top-0">
         <div className="max-w-4xl mx-auto px-6 h-20 flex items-center justify-between">
           <div 
-            className="flex items-center gap-2 cursor-pointer group" 
+            className="flex items-center cursor-pointer group" 
             onClick={() => setLocation('/')}
             data-testid="link-home"
           >
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
-              <Shield className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-heading font-bold text-xl tracking-tight">Repliyo</span>
+            <img 
+              src={repliyoLogo} 
+              alt="Repliyo" 
+              className="h-8 w-auto object-contain group-hover:opacity-80 transition-opacity" 
+            />
           </div>
           
           <button 

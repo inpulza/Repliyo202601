@@ -37,6 +37,7 @@ import stepsBgGreen from '@assets/generated_images/green_gradient_grain_backgrou
 import stepsBgVibrant from '@assets/generated_images/vibrant_blue_violet_gradient.png';
 import stepsBgLight from '@assets/generated_images/teal_cyan_bottom_to_top_gradient.png';
 import testimonialBettys from '../../assets/testimonial-bettys.jpg';
+import repliyoLogo from '../../assets/repliyo-logo.jpg';
 import { ParallaxProvider, useParallax, Parallax } from 'react-scroll-parallax';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -1610,7 +1611,9 @@ function Header() {
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-        <a href="/" className="font-display font-bold text-2xl text-white" data-testid="link-logo">Repliyo</a>
+        <a href="/" className="flex items-center" data-testid="link-logo">
+          <img src={repliyoLogo} alt="Repliyo" className="h-9 w-auto object-contain" />
+        </a>
         <nav className="hidden md:flex items-center gap-8">
           <a href="#features" onClick={(e) => scrollToSection(e, 'features')} className="nav-link" data-testid="link-nav-producto">{t.header.product}</a>
           <a href="#how" onClick={(e) => scrollToSection(e, 'how')} className="nav-link" data-testid="link-nav-como-funciona">{t.header.howItWorks}</a>
@@ -4123,8 +4126,52 @@ function Footer() {
 }
 
 export function LandingPage() {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <ParallaxProvider>
+      <AnimatePresence>
+        {loading && (
+          <motion.div
+            key="splash"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5, ease: 'easeInOut' }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#050505]"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+              className="flex flex-col items-center gap-6"
+            >
+              <img src={repliyoLogo} alt="Repliyo" className="h-16 w-auto object-contain" />
+              <motion.div
+                className="flex gap-1.5"
+                initial="hidden"
+                animate="visible"
+                variants={{ visible: { transition: { staggerChildren: 0.15 } } }}
+              >
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="w-1.5 h-1.5 rounded-full bg-white/30"
+                    variants={{
+                      hidden: { opacity: 0.2, y: 0 },
+                      visible: { opacity: [0.2, 1, 0.2], y: [0, -4, 0], transition: { duration: 0.8, repeat: Infinity, delay: i * 0.15 } }
+                    }}
+                  />
+                ))}
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="landing-page theme-light" data-testid="landing-page">
         <Header />
         <main>
