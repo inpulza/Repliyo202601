@@ -25,6 +25,7 @@ The user interface features an "Orchestration" tab for timing configurations, an
 - **Customer Journey Timeline:** Aggregates data from messages, summaries, reminders, and status history to provide a chronological view of customer interactions.
 - **Authentication System:** Hybrid authentication supporting email/password and OAuth via Replit Auth (Google, GitHub, Apple, Twitter). Includes a secure email registration and verification flow.
 - **URL Structure:** Clearly defined routes for public landing, authentication, and authenticated dashboard sections (e.g., `/app/inbox`, `/app/crm`, `/app/crisis-alerts`).
+- **Facebook Private Replies (Mar-2026):** Agents can send private DMs (Messenger messages) to users who commented on Facebook posts, Reels, or videos, directly from the Inbox. Uses the Meta Messenger Platform Send API (`POST /{page-id}/messages` with `recipient.comment_id`). Metricool stores comment IDs in compound format `{postId}_{commentId}`; the system extracts the real ID from the permalink's `comment_id=` param or by stripping the post prefix. Page Access Tokens are permanent (`expires_at=0`) and stored in `meta_page_connections`. Requires `pages_messaging` permission. Key files: `server/services/metaService.ts` (API call), `server/routes.ts` (ID extraction + route), `client/src/components/AIAgentConfig.tsx` (page connection UI).
 
 ### System Design Choices
 - **Multi-Tenant Architecture:** Data isolation per brand using `brandId`.
@@ -35,4 +36,5 @@ The user interface features an "Orchestration" tab for timing configurations, an
 ## External Dependencies
 - **Metricool:** Used for syncing social media direct messages and comments.
 - **OpenAI / Gemini:** Large Language Model (LLM) providers for generating responses, summaries, and executing CRM functions.
+- **Meta Graph API / Messenger Platform:** Used for sending Facebook Private Replies (DMs) from Page to comment authors.
 - **PostgreSQL:** The primary relational database for all system data, leveraging UUIDs and JSONB data types.

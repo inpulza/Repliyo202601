@@ -10660,3 +10660,124 @@ Nuevo chip de filtro en la barra de filtros del hilo de comentarios:
 
 *Sección creada: 18 Febrero 2026*
 *Estado: Completado*
+
+---
+
+## Private Replies vía Facebook Messenger Platform (25-Mar-2026)
+
+### Descripción
+Funcionalidad que permite enviar mensajes privados (DM) a usuarios que comentan en publicaciones de Facebook (posts, Reels, videos) directamente desde el inbox de Repliyo, usando la API de Meta.
+
+### Flujo completo de Private Reply
+
+1. El agente selecciona un comentario de Facebook en el inbox
+2. Hace clic en el botón "Respuesta privada" y escribe el mensaje
+3. El sistema extrae el comment ID real del comentario (ver formato de IDs más abajo)
+4. Se llama a `POST /{page-id}/messages` con el comment ID como destinatario
+5. El usuario recibe un DM en su Messenger desde la página de Facebook
+
+### Formato de IDs — Problema y solución
+
+**Problema:** Metricool almacena los IDs de comentarios en formato compuesto:
+```
+{postId}_{commentId}   →   ejemplo: 122200652672575116_884686284607817
+```
+
+**Lo que Facebook necesita:** Solo el ID del comentario (la parte después del `_`):
+```
+884686284607817
+```
+
+**Solución implementada** (en `server/routes.ts`):
+```typescript
+// Prioridad 1: extraer comment_id del permalink guardado en rawData
+const permalinkMatch = (rawData?.root?.properties?.permalink || rawData?.properties?.permalink || '')
+  .match(/comment_id=(\d+)/);
+
+// Prioridad 2 (fallback): tomar la parte después del último "_"
+const commentId = permalinkMatch
+  ? permalinkMatch[1]
+  : (rawCommentId.includes('_') ? rawCommentId.split('_').pop() : rawCommentId);
+```
+
+### Endpoint de la API — Por qué cambiamos
+
+| | Endpoint | Estado |
+|---|---|---|
+| Antiguo | `POST /{comment-id}/private_replies` | Obsoleto — no funciona para Reels/vídeos |
+| Actual | `POST /{page-id}/messages` | Moderno — funciona para todo tipo de publicación |
+
+**Endpoint actual** (`server/services/metaService.ts`):
+```typescript
+POST https://graph.facebook.com/v19.0/{pageId}/messages
+Authorization: Bearer {pageAccessToken}
+Content-Type: application/json
+
+{
+  "recipient": { "comment_id": "884686284607817" },
+  "message": { "text": "Tu mensaje aquí" },
+  "messaging_type": "RESPONSE"
+}
+```
+
+**Respuesta exitosa de Facebook:**
+```json
+{ "recipient_id": "USER_PSID", "message_id": "mid.xxxx" }
+```
+
+### Flujo de tokens
+
+```
+Token de usuario corto (2h)
+  → Intercambio con APP_ID + APP_SECRET
+  → Token de usuario largo (60 días)
+  → GET /me/accounts
+  → Page Access Token (PERMANENTE, expires_at = 0)
+  → Almacenado en tabla meta_page_connections
+```
+
+Solo el Page Access Token se usa para llamadas a la API. Se obtiene automáticamente al conectar la página.
+
+### Permisos necesarios (Meta App)
+
+| Permiso | Descripción |
+|---|---|
+| `pages_messaging` | Enviar mensajes desde la página |
+| `pages_read_engagement` | Leer comentarios |
+| `pages_manage_metadata` | Gestionar configuración de página |
+
+### Restricciones de Facebook
+
+- **Ventana de 7 días:** Solo se puede enviar Private Reply dentro de los 7 días posteriores al comentario original
+- **Una sola respuesta:** Facebook solo permite un Private Reply por comentario
+- **No puedes responderte a ti mismo:** No se puede enviar un Private Reply al administrador de la página
+
+### Marca configurada para pruebas
+
+| Campo | Valor |
+|---|---|
+| Marca | Jordan Inpulza |
+| Page ID | `468497419676631` |
+| Brand ID | `9328112e-feed-40c8-b6a3-a69ec99303a8` |
+| Token ENV | `META_JORDAN_INPULZA_USER_TOKEN` |
+
+### Archivos involucrados
+
+| Archivo | Responsabilidad |
+|---|---|
+| `server/services/metaService.ts` | Función `sendPrivateReply()` — llama a la API de Meta |
+| `server/routes.ts` | Ruta `POST /api/messages/:id/private-reply` — extrae comment ID y coordina el envío |
+| `client/src/components/AIAgentConfig.tsx` | UI para conectar/gestionar páginas de Facebook |
+| `client/src/components/Inbox.tsx` | Botón de respuesta privada y toast de resultado |
+| `shared/schema.ts` | Tabla `meta_page_connections` (pageId, pageAccessToken, isActive, etc.) |
+
+### Errores conocidos y sus significados
+
+| Código | Significado | Acción |
+|---|---|---|
+| 190 | Token expirado o sesión inválida | Reconectar la página con token actualizado |
+| 200 / 10 | Permiso denegado — falta `pages_messaging` | Agregar permiso en Meta Developers |
+| 100 / 33 | Comentario no encontrado | Verificar que el comment ID sea correcto y pertenezca a Facebook (no Instagram) |
+| 100 + "outside of" | Ventana de 7 días expirada o ya se envió una respuesta privada | No se puede reenviar |
+
+*Sección creada: 25 Marzo 2026*
