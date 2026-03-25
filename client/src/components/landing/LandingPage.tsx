@@ -4093,7 +4093,16 @@ function Footer() {
         </motion.p>
         <div className="max-w-7xl mx-auto px-6 mt-10">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-white/40 font-mono">
-            <span>{t.footer.copyright}</span>
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <span>{t.footer.copyright}</span>
+              <a 
+                href="/privacy" 
+                className="hover:text-white transition-colors underline decoration-white/10 underline-offset-4"
+                data-testid="link-footer-privacy"
+              >
+                Política de Privacidad
+              </a>
+            </div>
             <a
               href="https://wa.me/17864346163"
               target="_blank"

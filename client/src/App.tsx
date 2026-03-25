@@ -25,6 +25,7 @@ const CRM = lazy(() => import("@/pages/CRM").then(m => ({ default: m.CRM })));
 const CrisisAlerts = lazy(() => import("@/pages/CrisisAlerts").then(m => ({ default: m.CrisisAlerts })));
 const LandingPage = lazy(() => import("@/components/landing/LandingPage").then(m => ({ default: m.LandingPage })));
 const GetStarted = lazy(() => import("@/pages/GetStarted").then(m => ({ default: m.GetStarted })));
+const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy"));
 
 function PageLoader() {
   return (
@@ -96,6 +97,7 @@ function Router() {
       {/* Public routes */}
       <Route path="/" component={HomeRoute} />
       <Route path="/login" component={Login} />
+      <Route path="/privacy">{() => <Suspense fallback={<PageLoader />}><PrivacyPolicy /></Suspense>}</Route>
       <Route path="/get-started">{() => <Suspense fallback={<PageLoader />}><GetStarted /></Suspense>}</Route>
       <Route path="/register">{() => <LegacyRedirect newPath="/login" />}</Route>
       
