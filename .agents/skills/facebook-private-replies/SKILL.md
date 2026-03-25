@@ -1,43 +1,53 @@
 ---
 name: facebook-private-replies
-description: Configure and implement Facebook Private Replies (sending DMs to users who comment on Facebook posts/Reels/videos) for a Repliyo brand account. Use when setting up a new Facebook page connection, troubleshooting private reply errors, adding a new brand/account, or debugging Facebook Messenger Platform API issues. Covers Facebook Developer Portal setup, token generation, Replit secrets, and technical implementation details.
+description: Configure and implement Facebook and Instagram Private Replies (sending DMs to users who comment on Facebook posts/Reels/videos or Instagram posts) for a Repliyo brand account. Use when setting up a new Facebook or Instagram page connection, troubleshooting private reply errors, adding a new brand/account, or debugging Facebook Messenger Platform API issues. Covers Facebook Developer Portal setup, token generation, Replit secrets, Instagram Business Account ID lookup, and technical implementation details for both platforms.
 ---
 
-# Facebook Private Replies — Repliyo
+# Private Replies — Facebook & Instagram (Repliyo)
 
-Allows agents to send private Messenger DMs to users who comment on a Facebook Page's posts, Reels, or videos, directly from the Repliyo inbox.
+Allows agents to send private DMs to users who comment on a brand's Facebook or Instagram posts, directly from the Repliyo inbox.
 
 ---
 
-## Anatomy of the Feature
+## Platform Comparison
 
-```
-Inbox comment → Extract real comment ID → POST /{page-id}/messages → User receives DM in Messenger
-```
+| | Facebook Pages | Instagram Business |
+|---|---|---|
+| **Status** | ✅ Implemented (Mar 2026) | 🔄 Pending implementation |
+| **Endpoint** | `POST /{page-id}/messages` | `POST /{ig-user-id}/messages` |
+| **Recipient param** | `recipient.comment_id` | `recipient.comment_id` |
+| **Token** | Page Access Token | Same Page Access Token (if IG linked to Page) |
+| **Key permission** | `pages_messaging` | `instagram_manage_messages` |
+| **Where DM arrives** | User's Messenger inbox | User's Instagram DM inbox |
+| **Max age** | 7 days from comment | 7 days from comment |
+| **Max sends** | 1 per comment | 1 per comment |
+| **Follow-ups** | Only if user replies (24h window) | Only if user replies (24h window) |
 
-**Key files:**
+---
+
+## Key Files
+
 | File | Role |
 |---|---|
-| `server/services/metaService.ts` | `sendPrivateReply()` — calls Facebook API |
-| `server/routes.ts` | `POST /api/messages/:id/private-reply` — ID extraction + coordination |
+| `server/services/metaService.ts` | `sendPrivateReply()` — calls Facebook/Instagram API |
+| `server/routes.ts` | `POST /api/messages/:id/private-reply` — ID extraction + routing |
 | `client/src/components/AIAgentConfig.tsx` | UI to connect/manage Facebook pages |
 | `shared/schema.ts` | `meta_page_connections` table |
 
 ---
 
-## Part 1 — Facebook Developer Portal Setup (per brand)
+# PHASE 1 — Facebook (COMPLETE ✅)
 
-Do this once per Meta App. If the app already exists, skip to Step 4.
+## Facebook Developer Portal Setup (once per Meta App)
 
 ### Step 1 — Create a Meta App
 1. Go to https://developers.facebook.com/apps
-2. Click **Create App**
-3. Select **Business** type
-4. Fill in app name and contact email
-5. Connect to a Business Portfolio if available
+2. Click **Create App** → Select **Business** type
+3. Fill in app name and contact email
+4. Connect to a Business Portfolio if available
 
 ### Step 2 — Add Messenger Product
-1. In the app dashboard → **Add Product** → **Messenger** → Set Up
+App dashboard → **Add Product** → **Messenger** → Set Up
 
 ### Step 3 — Request Required Permissions
 Go to **App Review → Permissions and Features** and request:
@@ -49,91 +59,59 @@ Go to **App Review → Permissions and Features** and request:
 | `pages_manage_metadata` | Page configuration |
 | `pages_show_list` | List pages the user manages |
 
-> **Note:** For development/testing, these permissions work without App Review approval as long as you use a token from an Admin of the app. For production with external users, App Review is required.
+> For development/testing, these work without App Review as long as the token belongs to an Admin of the app. For production with external users, App Review is required.
 
 ### Step 4 — Generate a User Access Token
 1. Go to https://developers.facebook.com/tools/explorer
-2. Select your app from the dropdown
-3. Click **Generate Access Token**
-4. Check these permissions:
-   - `pages_messaging`
-   - `pages_read_engagement`
-   - `pages_manage_metadata`
-   - `pages_show_list`
-5. Copy the token — this is a **short-lived User Token (2 hours)**
-
-> The system will automatically exchange it for a permanent Page Token. You never need to regenerate it unless you want to reconfigure.
+2. Select your app → Click **Generate Access Token**
+3. Check: `pages_messaging`, `pages_read_engagement`, `pages_manage_metadata`, `pages_show_list`
+4. Copy the token — this is a **short-lived User Token (2 hours)** — the system auto-exchanges it for a permanent Page Token
 
 ### Step 5 — Find the Facebook Page ID
-Option A: Go to the page on Facebook → **About** → scroll down to find "Page ID"  
-Option B: Use Graph API Explorer: `GET /me/accounts` — returns list of pages with their IDs
+- Option A: Facebook page → **About** → scroll to "Page ID"
+- Option B: Graph API Explorer → `GET /me/accounts` → returns all pages with IDs
 
----
-
-## Part 2 — Repliyo Configuration (per brand)
+## Repliyo Configuration (per brand)
 
 ### Step 1 — Create the Replit Secret
-Name the secret following this pattern:
 ```
-META_{BRAND_NAME_UPPERCASE}_USER_TOKEN
+META_{BRAND_NAME_UPPERCASE}_USER_TOKEN = <short-lived user token>
 ```
-Example for "Jordan Inpulza":
-```
-META_JORDAN_INPULZA_USER_TOKEN = <the short-lived user token from Step 4 above>
-```
+Example: `META_JORDAN_INPULZA_USER_TOKEN`
 
-Use the `environment-secrets` skill to set this via Replit's secret manager.
+Use the `environment-secrets` skill to set this in Replit's secret manager.
 
-### Step 2 — Configure Auto-Connect in Code
-In `server/routes.ts`, find the auto-connect route for `META_*` tokens. The system reads env vars matching `META_*_USER_TOKEN`, exchanges them for permanent Page Tokens, and stores them in `meta_page_connections`.
+### Step 2 — Auto-Connect
+The system reads all `META_*_USER_TOKEN` env vars at startup, exchanges them for permanent Page Tokens, and stores them in `meta_page_connections`. Restart the app after adding a new secret.
 
-If adding a completely new brand, verify that the auto-connect logic scans all `META_*_USER_TOKEN` env vars and links them to the correct `brand_id` in the database.
+### Step 3 — Verify via UI
+1. Brand Settings → AI Agent Config → **Private Replies** tab
+2. Page should appear automatically
+3. Click **Check Permissions** — confirm `pages_messaging` shows ✓
+4. Set page as **Active**
 
-### Step 3 — Connect via the UI
-1. Go to Repliyo → Brand Settings → AI Agent Config → **Private Replies**
-2. The page should appear automatically after the auto-connect runs
-3. If not, use the manual form:
-   - Page ID: `468497419676631` (example)
-   - Page Name: display name
-   - Page Access Token: permanent token from `/me/accounts`
-4. Click **Check Permissions** to verify `pages_messaging` is active
-5. Set the page as **Active**
-
----
-
-## Part 3 — Token Flow (Technical)
+## Token Flow
 
 ```
-Short-lived User Token (2h)  [stored in Replit Secret]
+Short-lived User Token (2h)  [Replit Secret]
     ↓  GET /oauth/access_token?grant_type=fb_exchange_token
 Long-lived User Token (60 days)
     ↓  GET /me/accounts
-Page Access Token (PERMANENT, expires_at = 0)  [stored in meta_page_connections]
-    ↓  Used for all API calls
+Page Access Token (PERMANENT, expires_at = 0)  [meta_page_connections DB]
 ```
 
-Only the permanent Page Token is used at runtime. It never expires as long as the user stays admin of the page.
+## Comment ID Extraction — Critical
 
----
-
-## Part 4 — Comment ID Extraction (Critical)
-
-### The Problem
-Metricool stores comment IDs in compound format:
+Metricool stores comment IDs in compound format `{postId}_{commentId}`:
 ```
-{postId}_{commentId}   →   122200652672575116_884686284607817
+122200652672575116_884686284607817  →  only need: 884686284607817
 ```
 
-Facebook's API needs **only** the comment ID:
-```
-884686284607817
-```
-
-### The Solution (in `server/routes.ts`)
+Code in `server/routes.ts`:
 ```typescript
 const rawCommentId = rawData?.id || rawData?.root?.id || message.metricoolId;
 
-// Priority 1: extract from permalink (most reliable)
+// Priority 1: extract comment_id from permalink
 const permalinkMatch = (rawData?.root?.properties?.permalink || rawData?.properties?.permalink || '')
   .match(/comment_id=(\d+)/);
 
@@ -143,11 +121,8 @@ const commentId = permalinkMatch
   : (rawCommentId.includes('_') ? rawCommentId.split('_').pop() : rawCommentId);
 ```
 
----
+## Facebook API Call
 
-## Part 5 — The API Call
-
-**Endpoint (Messenger Platform Send API — modern, works for all content types):**
 ```
 POST https://graph.facebook.com/v19.0/{PAGE_ID}/messages
 Authorization: Bearer {PAGE_ACCESS_TOKEN}
@@ -160,70 +135,181 @@ Content-Type: application/json
 }
 ```
 
-**Success response:**
-```json
-{ "recipient_id": "USER_PSID", "message_id": "mid.xxxx" }
-```
+> **Why not `/{comment-id}/private_replies`?** That's the old 2016 endpoint. It does NOT work for Reels and videos. The Messenger Platform Send API is the modern standard used by Respond.io, ManyChat, etc.
 
-> **Why not `/{comment-id}/private_replies`?** That endpoint is the old approach (~2016). It does NOT work for Reels and videos. The Messenger Platform Send API is the modern standard used by Respond.io, ManyChat, etc.
+## New Brand Account Checklist (Facebook)
 
----
-
-## Part 6 — Facebook Restrictions
-
-| Rule | Detail |
-|---|---|
-| **7-day window** | Private reply must be sent within 7 days of the original comment |
-| **One reply only** | Facebook allows only one private reply per comment |
-| **No self-reply** | Cannot send a private reply to the page admin (yourself) |
-| **Platform scope** | Only works for Facebook comments — Instagram requires different API + permissions |
-
----
-
-## Part 7 — Error Reference
-
-| Error Code | Meaning | Action |
-|---|---|---|
-| `190` | Token expired or invalid | Reconnect page with a fresh User Token |
-| `200` / `10` | Permission denied — missing `pages_messaging` | Add permission in Meta Developers → App Review |
-| `100` / subcode `33` | Object not found — wrong comment ID or Instagram comment | Verify comment ID format; check if comment is on Facebook (not Instagram) |
-| `100` + "outside of" | 7-day window expired or already replied | Cannot send — inform agent |
-| "admin" / "page owner" | Trying to reply to yourself | Block this case in UI |
-
----
-
-## Part 8 — Adding a New Brand Account (Checklist)
-
-- [ ] Generate User Access Token in Facebook Graph Explorer with correct permissions
+- [ ] Generate User Access Token in Graph API Explorer with correct permissions
 - [ ] Create Replit Secret: `META_{BRAND}_USER_TOKEN`
-- [ ] Restart the application so auto-connect reads the new secret
+- [ ] Restart the app so auto-connect reads the new secret
 - [ ] Verify page appears in AIAgentConfig → Private Replies tab
-- [ ] Click "Check Permissions" and confirm `pages_messaging` shows ✓
+- [ ] Click "Check Permissions" — confirm `pages_messaging` ✓
 - [ ] Set page as Active
 - [ ] Test with a real comment (< 7 days old, from a non-admin user)
 - [ ] Verify DM arrives in user's Messenger
 
 ---
 
-## Part 9 — Database Schema
+# PHASE 2 — Instagram (PENDING 🔄)
+
+## How Instagram Private Replies Work
+
+**Endpoint:**
+```
+POST https://graph.facebook.com/v19.0/{ig-user-id}/messages
+Authorization: Bearer {PAGE_ACCESS_TOKEN}
+Content-Type: application/json
+
+{
+  "recipient": { "comment_id": "<IG_COMMENT_ID>" },
+  "message": { "text": "Hola, gracias por tu comentario..." }
+}
+```
+
+**Success response:**
+```json
+{ "recipient_id": "526...", "message_id": "aWdfZ..." }
+```
+
+> **Key difference from Facebook:** The `{ig-user-id}` is the **Instagram Business Account ID**, NOT the Facebook Page ID.
+
+## Getting the Instagram Business Account ID
+
+```
+GET https://graph.facebook.com/{page-id}?fields=instagram_business_account&access_token={token}
+
+Response:
+{ "instagram_business_account": { "id": "17841400000000000" } }
+```
+
+This ID goes into the `igUserId` field in `meta_page_connections`.
+
+## Additional Permissions Needed
+
+| Permission | Purpose |
+|---|---|
+| `instagram_manage_messages` | **Required** — send DMs from IG comments |
+| `instagram_manage_comments` | Read Instagram comments |
+| `pages_read_engagement` | Already needed for Facebook |
+
+## Code Changes Required
+
+### 1. Schema (`shared/schema.ts`)
+Add new column to `meta_page_connections`:
+```typescript
+igUserId: varchar("ig_user_id")  // Instagram Business Account ID, nullable
+```
+Run `npm run db:push` after.
+
+### 2. Auto-connect (`server/routes.ts`)
+Modify auto-connect to also fetch and store `igUserId`:
+```
+GET /me?fields=id,name,instagram_business_account
+```
+Save `instagram_business_account.id` as `igUserId`.
+
+### 3. New function (`server/services/metaService.ts`)
+```typescript
+async function sendInstagramPrivateReply(igUserId, commentId, message, pageAccessToken)
+// POST graph.facebook.com/{igUserId}/messages
+// body: { recipient: { comment_id: commentId }, message: { text: message } }
+```
+
+### 4. Routing logic (`server/routes.ts`)
+In the private reply route, detect platform and use correct function:
+```typescript
+if (message.platform === 'FACEBOOK') {
+  result = await sendPrivateReply(commentId, text, token, pageId);
+} else if (message.platform === 'INSTAGRAM') {
+  result = await sendInstagramPrivateReply(igUserId, commentId, text, token);
+}
+```
+
+### 5. Frontend (`client/src/components/Inbox.tsx` or `CommentThread.tsx`)
+Enable the Private Reply button for Instagram comments:
+```typescript
+// Before: message.platform === 'FACEBOOK' only
+// After: message.platform === 'FACEBOOK' || message.platform === 'INSTAGRAM'
+```
+
+### 6. AIAgentConfig UI
+Update restriction card: replace "no funciona en Instagram" with the actual requirement: "Para Instagram requiere `instagram_manage_messages` y cuenta Business/Creator".
+
+## Instagram Setup Steps (Meta Developers)
+
+### Step 1 — Check current permissions
+1. https://developers.facebook.com → select your app
+2. **App Review → Permissions and Features**
+3. Note which are active: `pages_messaging`, `instagram_manage_messages`, `instagram_manage_comments`
+
+### Step 2 — Add `instagram_manage_messages`
+1. Same "Permissions and Features" section
+2. Search `instagram_manage_messages` → **Request**
+3. In dev mode: activates immediately for your own account
+4. For production: requires Meta App Review
+
+### Step 3 — Get Instagram Business Account ID
+1. Graph API Explorer (tools.facebook.com/explorer)
+2. Use your existing Page Token
+3. Query: `GET /{page-id}?fields=instagram_business_account`
+4. Save the returned `id` — needed for the `igUserId` field
+
+### Step 4 — Test manually before implementing
+1. Graph API Explorer → POST → `/{ig-user-id}/messages`
+2. Body: `{ "recipient": { "comment_id": "<real IG comment ID>" }, "message": { "text": "Test" } }`
+3. Verify: `{ "recipient_id": "...", "message_id": "..." }` ✅
+
+### Step 5 — Validate Metricool's comment ID format for IG
+Instagram comment IDs from Metricool may also be in compound format. Test with a real comment ID from the DB against the Graph API to confirm what format is accepted.
+
+## Implementation Order
+
+1. [ ] Confirm Meta Developer steps (1-5) with user
+2. [ ] Add `igUserId` column to `meta_page_connections` in schema + db:push
+3. [ ] Modify auto-connect to fetch and store `igUserId`
+4. [ ] New function `sendInstagramPrivateReply()` in metaService.ts
+5. [ ] Update routes.ts — platform detection + correct function call
+6. [ ] Enable button in UI for Instagram comments
+7. [ ] Update AIAgentConfig restriction card
+8. [ ] End-to-end test with real Instagram comment
+
+---
+
+## Error Reference (Both Platforms)
+
+| Code | Meaning | Action |
+|---|---|---|
+| `190` | Token expired or invalid | Reconnect page with fresh User Token |
+| `200` / `10` | Permission denied — missing `pages_messaging` or `instagram_manage_messages` | Add permission in Meta Developers |
+| `100` / subcode `33` | Object not found — wrong comment ID or wrong platform | Verify comment ID format and platform |
+| `100` + "outside of" | 7-day window expired or already replied | Cannot send |
+| "admin" / "page owner" | Replying to yourself (page admin) | Block in UI |
+
+## Facebook Restrictions
+
+- 7-day window from original comment
+- Only one private reply per comment
+- Cannot reply to the page admin (yourself)
+- Only works for Facebook comments (not Instagram — different API)
+
+## Database Schema
 
 Table: `meta_page_connections`
 ```typescript
 {
   id: uuid (PK),
   brandId: uuid (FK → brands),
-  pageId: text,           // Facebook Page ID (e.g. "468497419676631")
+  pageId: text,           // Facebook Page ID
   pageName: text,
   pageAccessToken: text,  // Permanent Page Token (expires_at=0)
+  igUserId: text | null,  // Instagram Business Account ID (Phase 2)
   isActive: boolean,
   createdAt: timestamp
 }
 ```
 
----
+## Brands Configured
 
-## Brands Configured (as of Mar 2026)
-
-| Brand | Page ID | Secret Name |
-|---|---|---|
-| Jordan Inpulza | `468497419676631` | `META_JORDAN_INPULZA_USER_TOKEN` |
+| Brand | Page ID | IG User ID | Secret |
+|---|---|---|---|
+| Jordan Inpulza | `468497419676631` | TBD (Phase 2) | `META_JORDAN_INPULZA_USER_TOKEN` |
