@@ -80,4 +80,31 @@ export const DYNAMIC_VARIABLES: DynamicVariable[] = [
   },
 ];
 
+export const PRIVATE_REPLY_VARIABLES: DynamicVariable[] = [
+  {
+    key: 'username',
+    placeholder: '{{username}}',
+    description: 'Nombre completo del usuario que comentó',
+    example: 'Melva Vidal',
+  },
+  {
+    key: 'first_name',
+    placeholder: '{{first_name}}',
+    description: 'Primer nombre del usuario',
+    example: 'Melva',
+  },
+  {
+    key: 'comment',
+    placeholder: '{{comment}}',
+    description: 'Texto del comentario que dejó el usuario',
+    example: 'Me interesa, más info por favor',
+  },
+  {
+    key: 'post_context',
+    placeholder: '{{post_context}}',
+    description: 'Información del post/reel/video donde comentó (tipo de contenido, tema, caption)',
+    example: 'Reel de Facebook sobre automatización con IA para negocios',
+  },
+];
+
 export type VariableKey = typeof DYNAMIC_VARIABLES[number]['key'];

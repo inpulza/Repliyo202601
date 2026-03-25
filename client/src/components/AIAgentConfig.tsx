@@ -3,7 +3,7 @@ import { useNexus } from '@/context/NexusContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { AiAgent, AiAgentAuditLog, SocialAccount, PlaygroundTemplate } from '@shared/schema';
-import { DYNAMIC_VARIABLES } from '@shared/dynamicVariables';
+import { DYNAMIC_VARIABLES, PRIVATE_REPLY_VARIABLES } from '@shared/dynamicVariables';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -112,6 +112,21 @@ function normalizeProviderKey(provider: string): keyof typeof PLATFORM_CONFIG | 
   return null;
 }
 
+const DEFAULT_PRIVATE_REPLY_PROMPT = `## 1. Rol
+Eres un asistente que responde a comentarios de Facebook/Instagram con mensajes privados de Messenger.
+
+## 2. Estructura del Mensaje
+1. Saludo: "Hola {{username}}"
+2. Referencia al contenido: menciona el tipo de contenido (reel, video, publicación) y su tema usando {{post_context}}
+3. Respuesta al comentario: aborda lo que dijo el usuario en {{comment}}
+
+## 3. Reglas
+- Máximo 3-4 oraciones en total
+- Tono cálido, cercano y personal
+- SIEMPRE haz referencia al post/reel donde comentó (nunca un saludo genérico)
+- No uses hashtags ni emojis excesivos
+- Si el comentario es negativo, responde con empatía y ofrece ayuda`;
+
 const DEFAULT_GUARDRAIL = `Restricciones de seguridad:
 - No compartas información confidencial de la empresa
 - No hagas promesas que no puedas cumplir
@@ -159,6 +174,7 @@ function PrivateRepliesTab({
   const [pagePermissions, setPagePermissions] = useState<Record<string, { hasMessaging: boolean; permissions: string[]; error?: string; tokenExpired?: boolean; pageName?: string; expiresAt?: number; daysUntilExpiry?: number | null; isPermanent?: boolean } | null>>({});
   const [checkingPerms, setCheckingPerms] = useState<string | null>(null);
   const templateTextareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const privateReplyPromptRef = React.useRef<PromptEditorHandle>(null);
 
   const { data: pagesData, isLoading: isLoadingPages } = useQuery({
     queryKey: ['metaPages', brandId],
@@ -317,13 +333,6 @@ function PrivateRepliesTab({
       setIsSavingPage(false);
     }
   };
-
-  const PRIVATE_REPLY_VARIABLES = [
-    { placeholder: '{{first_name}}', description: 'Primer nombre del usuario' },
-    { placeholder: '{{username}}', description: 'Nombre completo del usuario' },
-    { placeholder: '{{post_context}}', description: 'Descripción del post comentado' },
-    { placeholder: '{{comment}}', description: 'Texto del comentario' },
-  ];
 
   return (
     <div className="space-y-6">
@@ -671,23 +680,74 @@ function PrivateRepliesTab({
                     <Alert className="border-blue-200 bg-blue-50">
                       <Info className="h-3.5 w-3.5 text-blue-600" />
                       <AlertDescription className="text-xs text-blue-800">
-                        Este prompt se usa exclusivamente para generar los private replies. Se combina con tu System Prompt general. Si falla, se enviará el template como respaldo.
+                        Este prompt se usa <strong>solo para el primer mensaje</strong> de private reply. Si el usuario responde al DM, la conversación la continúa el sistema con el <strong>Prompt general</strong> (pestaña Prompt). Si la IA falla, se enviará el template como respaldo.
                       </AlertDescription>
                     </Alert>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-medium">Prompt para Private Reply (IA)</Label>
-                      <p className="text-xs text-muted-foreground">
-                        Instrucciones específicas para que la IA genere los mensajes privados. Variables disponibles: <code className="bg-muted px-1 rounded">{'{{username}}'}</code> (nombre del usuario), <code className="bg-muted px-1 rounded">{'{{comment}}'}</code> (texto del comentario), <code className="bg-muted px-1 rounded">{'{{post_context}}'}</code> (info del post/reel/video).
-                      </p>
-                      <Textarea
-                        value={autoPrivateReplyPrompt}
-                        onChange={(e) => onAutoPrivateReplyPromptChange(e.target.value)}
-                        data-testid="textarea-auto-private-reply-prompt"
-                        rows={8}
-                        className="text-sm font-mono"
-                        placeholder="Ej: Eres un asistente que responde a comentarios de Facebook con mensajes privados de Messenger..."
-                      />
-                    </div>
+                    <Card className="border border-border shadow-none">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                            <Sparkles className="h-3.5 w-3.5 text-violet-500" />
+                            Prompt de Private Reply
+                          </CardTitle>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const textarea = document.querySelector('[data-testid="textarea-auto-private-reply-prompt"]');
+                                if (textarea) (textarea as HTMLElement).focus();
+                              }}
+                              className="h-7 gap-1.5 text-xs"
+                              data-testid="button-edit-private-reply-prompt"
+                            >
+                              <Pencil className="h-3 w-3" />
+                              Editar
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                if (autoPrivateReplyPrompt) {
+                                  navigator.clipboard.writeText(autoPrivateReplyPrompt);
+                                  toast({ title: "Copiado", description: "Prompt de Private Reply copiado al portapapeles" });
+                                }
+                              }}
+                              disabled={!autoPrivateReplyPrompt}
+                              className="h-7 gap-1.5 text-xs"
+                              data-testid="button-copy-private-reply-prompt"
+                            >
+                              <Copy className="h-3 w-3" />
+                              Copiar
+                            </Button>
+                          </div>
+                        </div>
+                        <CardDescription className="text-xs">
+                          Instrucciones específicas para generar el mensaje privado automático. Se combina con tu System Prompt general.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <PromptEditor
+                          ref={privateReplyPromptRef}
+                          value={autoPrivateReplyPrompt || ''}
+                          onChange={(value) => onAutoPrivateReplyPromptChange(value)}
+                          placeholder={"## 1. Rol\nEres un asistente que responde comentarios de Facebook con mensajes privados de Messenger.\n\n## 2. Estructura del Mensaje\n1. Saludo: \"Hola {{username}}\"\n2. Referencia al contenido: usa {{post_context}}\n3. Respuesta al comentario\n\n## 3. Reglas\n- Máximo 3-4 oraciones\n- Tono cálido y personal"}
+                          minHeight="250px"
+                          maxHeight="50vh"
+                          className="shadow-none"
+                          data-testid="textarea-auto-private-reply-prompt"
+                        />
+                        <div className="flex items-center justify-between">
+                          <VariablePicker
+                            onSelectVariable={(placeholder) => privateReplyPromptRef.current?.insertVariable(placeholder)}
+                            variables={PRIVATE_REPLY_VARIABLES}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            {(autoPrivateReplyPrompt?.length || 0).toLocaleString()} caracteres
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
                 )}
               </div>
@@ -868,7 +928,7 @@ export function AIAgentConfig() {
   
   const [editModal, setEditModal] = useState<{
     isOpen: boolean;
-    field: 'systemPrompt' | 'knowledgeBase' | 'guardrailPrompt' | null;
+    field: 'systemPrompt' | 'knowledgeBase' | 'guardrailPrompt' | 'autoPrivateReplyPrompt' | null;
     title: string;
     value: string;
   }>({ isOpen: false, field: null, title: '', value: '' });
@@ -888,7 +948,7 @@ export function AIAgentConfig() {
     category: string;
   }>({ isOpen: false, id: '', content: '', title: '', category: 'general' });
 
-  const openEditModal = (field: 'systemPrompt' | 'knowledgeBase' | 'guardrailPrompt', title: string) => {
+  const openEditModal = (field: 'systemPrompt' | 'knowledgeBase' | 'guardrailPrompt' | 'autoPrivateReplyPrompt', title: string) => {
     setEditModal({
       isOpen: true,
       field,
@@ -933,13 +993,7 @@ export function AIAgentConfig() {
     autoPrivateReplyEnabled: false,
     autoPrivateReplyDelayMinutes: 0,
     autoPrivateReplyUseAi: false,
-    autoPrivateReplyPrompt: `Eres un asistente que responde a comentarios de Facebook con mensajes privados de Messenger.
-REGLAS OBLIGATORIAS:
-1. SIEMPRE inicia el mensaje con "Hola {{username}}" seguido de una referencia al contenido donde comentó (ej: "he visto tu comentario en nuestro reel sobre [tema]", "vi tu mensaje en nuestro video sobre [tema]").
-2. Usa la información de {{post_context}} para identificar el tipo de contenido (reel, video, publicación) y su tema.
-3. Después de la referencia al post, responde al comentario de forma cálida y útil.
-4. Máximo 3-4 oraciones en total.
-5. No uses saludos genéricos sin referencia al post.`,
+    autoPrivateReplyPrompt: DEFAULT_PRIVATE_REPLY_PROMPT,
   });
 
   const { data: agent, isLoading: isLoadingAgent } = useQuery({
@@ -1137,13 +1191,7 @@ REGLAS OBLIGATORIAS:
         autoPrivateReplyEnabled: agent.autoPrivateReplyEnabled ?? false,
         autoPrivateReplyDelayMinutes: agent.autoPrivateReplyDelayMinutes ?? 0,
         autoPrivateReplyUseAi: agent.autoPrivateReplyUseAi ?? false,
-        autoPrivateReplyPrompt: agent.autoPrivateReplyPrompt || `Eres un asistente que responde a comentarios de Facebook con mensajes privados de Messenger.
-REGLAS OBLIGATORIAS:
-1. SIEMPRE inicia el mensaje con "Hola {{username}}" seguido de una referencia al contenido donde comentó (ej: "he visto tu comentario en nuestro reel sobre [tema]", "vi tu mensaje en nuestro video sobre [tema]").
-2. Usa la información de {{post_context}} para identificar el tipo de contenido (reel, video, publicación) y su tema.
-3. Después de la referencia al post, responde al comentario de forma cálida y útil.
-4. Máximo 3-4 oraciones en total.
-5. No uses saludos genéricos sin referencia al post.`,
+        autoPrivateReplyPrompt: agent.autoPrivateReplyPrompt || DEFAULT_PRIVATE_REPLY_PROMPT,
       });
     }
   }, [agent]);
@@ -2749,6 +2797,7 @@ REGLAS OBLIGATORIAS:
                 {editModal.field === 'systemPrompt' && <MessageSquare className="h-4 w-4 md:h-5 md:w-5" />}
                 {editModal.field === 'knowledgeBase' && <BookOpen className="h-4 w-4 md:h-5 md:w-5" />}
                 {editModal.field === 'guardrailPrompt' && <Shield className="h-4 w-4 md:h-5 md:w-5" />}
+                {editModal.field === 'autoPrivateReplyPrompt' && <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-violet-500" />}
                 <span className="hidden sm:inline">Editar</span> {editModal.title}
               </DialogTitle>
               <div className="flex items-center gap-2">

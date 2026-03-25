@@ -3,14 +3,16 @@ import { Code2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
-import { DYNAMIC_VARIABLES } from "@shared/dynamicVariables";
+import { DYNAMIC_VARIABLES, type DynamicVariable } from "@shared/dynamicVariables";
 
 interface VariablePickerProps {
   onSelectVariable: (placeholder: string) => void;
   disabled?: boolean;
+  variables?: DynamicVariable[];
 }
 
-export function VariablePicker({ onSelectVariable, disabled }: VariablePickerProps) {
+export function VariablePicker({ onSelectVariable, disabled, variables }: VariablePickerProps) {
+  const variableList = variables || DYNAMIC_VARIABLES;
   const [open, setOpen] = React.useState(false);
 
   const handleSelect = (placeholder: string) => {
@@ -39,7 +41,7 @@ export function VariablePicker({ onSelectVariable, disabled }: VariablePickerPro
           <CommandList>
             <CommandEmpty>No se encontraron variables.</CommandEmpty>
             <CommandGroup heading="Variables Dinámicas">
-              {DYNAMIC_VARIABLES.map((variable) => (
+              {variableList.map((variable) => (
                 <CommandItem
                   key={variable.key}
                   value={`${variable.key} ${variable.description}`}
