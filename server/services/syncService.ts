@@ -581,6 +581,23 @@ class SyncService {
         // Determine direction based on whether it's from brand
         const commentDirection = isCommentFromBrand ? 'outbound' : 'inbound';
 
+        let commentMediaUrl: string | null = (comment as any).commentMediaUrl || comment.rawData?.root?.mediaUrl || null;
+        let commentMediaType: string | null = null;
+        let commentContent = comment.content;
+
+        if (commentMediaUrl) {
+          commentMediaType = this.detectMediaType(commentMediaUrl);
+          if (!commentMediaType && (commentMediaUrl.includes('giphy.com') || commentMediaUrl.includes('fbcdn') || commentMediaUrl.includes('external-'))) {
+            commentMediaType = 'image';
+          }
+        }
+
+        if ((!commentContent || commentContent.trim() === '') && commentMediaUrl) {
+          commentContent = '[Sticker]';
+        }
+
+        const previewText = commentContent === '[Sticker]' ? '🎭 Sticker' : commentContent.substring(0, 100);
+
         const conversationRecord = await storage.upsertConversation({
           brandId,
           socialPostId,
@@ -590,9 +607,9 @@ class SyncService {
           customerName,
           customerAvatar,
           lastMessageAt: new Date(comment.timestamp),
-          lastMessagePreview: comment.content.substring(0, 100),
+          lastMessagePreview: previewText,
           status: 'open',
-        }, isNewComment && !isCommentFromBrand); // Only increment unread if NEW inbound comment (not from brand)
+        }, isNewComment && !isCommentFromBrand);
 
         const savedComment = await storage.upsertMessage({
           brandId,
@@ -604,13 +621,15 @@ class SyncService {
           source: 'metricool_sync' as const,
           author: comment.author,
           authorAvatar: comment.authorAvatar || null,
-          content: comment.content,
+          content: commentContent,
           timestamp: new Date(comment.timestamp),
           status: isCommentFromBrand ? "read" as const : "unread" as const,
           sourceUrl: comment.postUrl || null,
           rawData: comment.rawData || comment,
           threadId: postExternalId,
           parentMessageId: null,
+          mediaUrl: commentMediaUrl,
+          mediaType: commentMediaType,
           urgency: null,
           intent: null,
           sentiment: null,
@@ -651,7 +670,7 @@ class SyncService {
           // SENTIMENT ANALYSIS: Classify comment sentiment and detect crisis (async, fire-and-forget)
           void sentimentAnalysisService.processInboundMessage(
             savedComment.id,
-            comment.content,
+            commentContent,
             brandId,
             conversationRecord.id,
             platform,
@@ -671,7 +690,7 @@ class SyncService {
             id: savedComment.id,
             platform,
             author: comment.author,
-            content: comment.content.substring(0, 100),
+            content: previewText,
             type: 'comment',
             conversationId: conversationRecord.id,
           });
@@ -700,8 +719,20 @@ class SyncService {
             
             const replyAuthor = replyAuthorParticipant?.name || `Unknown Reply Author`;
             const replyAvatar = replyAuthorParticipant?.imageProfileUrl || null;
-            const replyContent = reply.text || '';
+            let replyContent = reply.text || '';
             const replyTimestamp = reply.creationDate || comment.timestamp;
+
+            let replyMediaUrl: string | null = reply.mediaUrl || null;
+            let replyMediaType: string | null = null;
+            if (replyMediaUrl) {
+              replyMediaType = this.detectMediaType(replyMediaUrl);
+              if (!replyMediaType && (replyMediaUrl.includes('giphy.com') || replyMediaUrl.includes('fbcdn') || replyMediaUrl.includes('external-'))) {
+                replyMediaType = 'image';
+              }
+            }
+            if ((!replyContent || replyContent.trim() === '') && replyMediaUrl) {
+              replyContent = '[Sticker]';
+            }
             
             // Detect if reply is from brand's own account
             let isReplyFromBrand = false;
@@ -745,6 +776,8 @@ class SyncService {
               rawData: reply,
               threadId: postExternalId,
               parentMessageId: savedComment.id,
+              mediaUrl: replyMediaUrl,
+              mediaType: replyMediaType,
               urgency: null,
               intent: null,
               sentiment: null,

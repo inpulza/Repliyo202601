@@ -473,7 +473,7 @@ function SingleMessage({
             </div>
           )}
           
-          {(msg as any).mediaType === 'image' && (msg as any).mediaUrl && (
+          {(msg as any).mediaType === 'image' && (msg as any).mediaUrl && msg.content !== '[Sticker]' && (
             <div className="mb-2">
               <img 
                 src={(msg as any).mediaUrl} 
@@ -502,7 +502,25 @@ function SingleMessage({
             </div>
           )}
           
-          {msg.content && !['[Mensaje de audio]', '[Imagen]', '[Video]', '[Archivo adjunto]'].includes(msg.content) && (
+          {msg.content === '[Sticker]' && (msg as any).mediaUrl ? (
+            <div className="my-1">
+              <img 
+                src={(msg as any).mediaUrl} 
+                alt="Sticker"
+                className="max-w-[120px] max-h-[120px] rounded-lg"
+                loading="lazy"
+                data-testid={`sticker-${msg.id}`}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const fallback = document.createElement('span');
+                  fallback.textContent = '🎭 Sticker';
+                  fallback.className = 'text-sm italic opacity-70';
+                  target.parentElement?.appendChild(fallback);
+                }}
+              />
+            </div>
+          ) : msg.content && !['[Mensaje de audio]', '[Imagen]', '[Video]', '[Archivo adjunto]'].includes(msg.content) && (
             <span>{msg.content}</span>
           )}
           

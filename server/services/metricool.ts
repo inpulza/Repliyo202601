@@ -34,6 +34,7 @@ interface MetricoolComment {
   author: string;
   authorAvatar?: string;
   content: string;
+  commentMediaUrl?: string | null;
   timestamp: string;
   replies?: any[];
   rawData?: any;
@@ -242,6 +243,8 @@ export class MetricoolService {
         let timestamp = new Date().toISOString();
         let postUrl = null;
 
+        let commentMediaUrl: string | null = null;
+
         if (comment.provider === 'LINKEDIN' || comment.provider === 'TIKTOKBUSINESS' || comment.provider === 'INSTAGRAM' || comment.provider === 'FACEBOOK' || comment.provider === 'YOUTUBE') {
           const ownerId = comment.root?.owner;
           const participants = comment.participants || [];
@@ -250,6 +253,7 @@ export class MetricoolService {
           author = ownerParticipant?.name || `Unknown ${comment.provider} User`;
           authorAvatar = ownerParticipant?.imageProfileUrl || null;
           content = comment.root?.text || '';
+          commentMediaUrl = comment.root?.mediaUrl || null;
           timestamp = comment.root?.creationDate || comment.creationDate || timestamp;
           postUrl = comment.root?.element?.link || null;
         } else {
@@ -268,6 +272,7 @@ export class MetricoolService {
           author,
           authorAvatar,
           content,
+          commentMediaUrl,
           timestamp,
           replies: comment.replies || comment.comments || [],
           rawData: comment,
