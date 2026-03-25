@@ -71,9 +71,10 @@ export async function sendPrivateReply(
       } else if (errCode === 100 && errSubcode === 33) {
         // 100/33 = object not found — comment ID doesn't exist or is wrong platform
         userFriendlyError = `El comentario no se encontró en el API de Facebook (código 100/33). Posibles causas:\n• El comentario es de Instagram, no de Facebook (los Private Replies de Instagram aún no están habilitados)\n• El comentario fue eliminado\n• El ID del comentario tiene un formato incorrecto\n\nID usado: ${commentId} | Page ID: ${pageId}`;
-      } else if (errCode === 100 && errMsg?.includes("outside of")) {
-        // 7-day window expired
+      } else if (errCode === 100 && (errMsg?.includes("outside of") || errMsg?.includes("allowed window"))) {
         userFriendlyError = "El comentario tiene más de 7 días o ya se envió una respuesta privada antes. Facebook solo permite Private Replies dentro de los primeros 7 días.";
+      } else if (errCode === 100) {
+        userFriendlyError = `Parámetro inválido al enviar Private Reply. Posibles causas:\n• El comentario ya recibió una respuesta privada previamente\n• El usuario tiene los mensajes privados desactivados\n• El formato del ID del comentario es incorrecto\n\nDetalle técnico: ${errMsg} (subcode: ${errSubcode})\nComment ID usado: ${commentId}`;
       } else if (errMsg?.includes("admin") || errMsg?.includes("page owner")) {
         userFriendlyError = "No se puede enviar un Private Reply al administrador de la página (no puedes responderte a ti mismo).";
       } else if (errCode === 10903 || errMsg?.toLowerCase().includes("cant reply to this activity") || errMsg?.toLowerCase().includes("cannot reply to this")) {

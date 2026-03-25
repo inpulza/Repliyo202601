@@ -4755,12 +4755,19 @@ Sitemap: ${SITE_URL}/sitemap.xml
 
       // Metricool stores comment IDs in compound format "POSTID_COMMENTID" (e.g. "122200652672575116_884686284607817")
       // Facebook's Private Replies API needs just the real comment ID (e.g. "884686284607817")
-      // Extract it from the permalink if available, otherwise strip the post prefix
+      // Extract from compound ID by splitting on underscore; permalink comment_id is unreliable
+      // (some permalinks have comment_id=POSTID instead of the actual comment ID)
+      const extractedFromCompound = rawCommentId.includes('_') ? rawCommentId.split('_').pop() : null;
       const permalinkMatch = (rawData?.root?.properties?.permalink || rawData?.properties?.permalink || '')
         .match(/comment_id=(\d+)/);
-      const commentId = permalinkMatch
-        ? permalinkMatch[1]
-        : (rawCommentId.includes('_') ? rawCommentId.split('_').pop() : rawCommentId);
+      let commentId: string;
+      if (extractedFromCompound) {
+        commentId = extractedFromCompound;
+      } else if (permalinkMatch) {
+        commentId = permalinkMatch[1];
+      } else {
+        commentId = rawCommentId;
+      }
       console.log(`[PrivateReply] Resolved real commentId: ${commentId} (from raw: ${rawCommentId})`, "sync");
 
       console.log(`[PrivateReply] Attempting private reply for commentId: ${commentId}, platform: ${platform}`, "sync");

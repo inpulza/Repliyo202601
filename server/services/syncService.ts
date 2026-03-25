@@ -971,11 +971,19 @@ class SyncService {
         log(`${logPrefix} Could not determine commentId for comment ${comment.id} — skipping`, "sync");
         return;
       }
+      // Prefer extracting from compound POSTID_COMMENTID format; permalink comment_id is unreliable
+      // (some permalinks have comment_id=POSTID instead of the actual comment ID)
+      const extractedFromCompound = rawCommentId.includes('_') ? rawCommentId.split('_').pop() : null;
       const permalinkMatch = (rawData?.root?.properties?.permalink || rawData?.properties?.permalink || '')
         .match(/comment_id=(\d+)/);
-      const commentId = permalinkMatch
-        ? permalinkMatch[1]
-        : (rawCommentId.includes('_') ? rawCommentId.split('_').pop() : rawCommentId);
+      let commentId: string;
+      if (extractedFromCompound) {
+        commentId = extractedFromCompound;
+      } else if (permalinkMatch) {
+        commentId = permalinkMatch[1];
+      } else {
+        commentId = rawCommentId;
+      }
 
       log(`${logPrefix} Will send auto private reply for commentId ${commentId} with delay=${agent.autoPrivateReplyDelayMinutes ?? 0}min`, "sync");
 
