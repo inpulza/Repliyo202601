@@ -21,25 +21,32 @@ export interface TemplateContext {
 export async function sendPrivateReply(
   commentId: string,
   message: string,
-  pageAccessToken: string
+  pageAccessToken: string,
+  pageId: string
 ): Promise<PrivateReplyResult> {
   const logPrefix = "[MetaPrivateReply]";
 
   try {
-    log(`${logPrefix} Sending private reply to comment ${commentId}`, "sync");
+    log(`${logPrefix} Sending private reply to comment ${commentId} via page ${pageId}`, "sync");
 
-    const url = `${META_API_BASE}/${commentId}/private_replies`;
+    // Use the Messenger Platform Send API (modern approach — works for posts, Reels, and videos)
+    // POST /{page-id}/messages with recipient.comment_id
+    const url = `${META_API_BASE}/${pageId}/messages`;
     log(`${logPrefix} URL: ${url}`, "sync");
 
-    const body = new URLSearchParams({
-      message,
-      access_token: pageAccessToken,
+    const body = JSON.stringify({
+      recipient: { comment_id: commentId },
+      message: { text: message },
+      messaging_type: "RESPONSE",
     });
 
     const response = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: body.toString(),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${pageAccessToken}`,
+      },
+      body,
     });
 
     const data = await response.json() as any;
@@ -57,12 +64,12 @@ export async function sendPrivateReply(
         // 190 = token expired or invalid session
         userFriendlyError = `El token de acceso ha expirado. Ve a la configuración de Private Replies y reconecta la página con un token actualizado.`;
         return { success: false, error: userFriendlyError, errorCode: errCode, tokenExpired: true };
-      } else if (errCode === 200) {
-        // 200 = permission denied — token is missing pages_messaging
+      } else if (errCode === 200 || errCode === 10) {
+        // 200/10 = permission denied — token is missing pages_messaging
         userFriendlyError = `Permiso denegado: el token no tiene 'pages_messaging'. Ve a Meta Developers → tu App → Permisos y agrega 'pages_messaging'. Error: ${errMsg}`;
       } else if (errCode === 100 && errSubcode === 33) {
         // 100/33 = object not found — comment ID doesn't exist or is wrong platform
-        userFriendlyError = `El comentario no se encontró en el API de Facebook (código 100/33). Posibles causas:\n• El comentario es de Instagram, no de Facebook (los Private Replies de Instagram aún no están habilitados)\n• El comentario fue eliminado\n• El ID del comentario tiene un formato incorrecto\n\nID usado: ${commentId}`;
+        userFriendlyError = `El comentario no se encontró en el API de Facebook (código 100/33). Posibles causas:\n• El comentario es de Instagram, no de Facebook (los Private Replies de Instagram aún no están habilitados)\n• El comentario fue eliminado\n• El ID del comentario tiene un formato incorrecto\n\nID usado: ${commentId} | Page ID: ${pageId}`;
       } else if (errCode === 100 && errMsg?.includes("outside of")) {
         // 7-day window expired
         userFriendlyError = "El comentario tiene más de 7 días o ya se envió una respuesta privada antes. Facebook solo permite Private Replies dentro de los primeros 7 días.";
@@ -73,8 +80,8 @@ export async function sendPrivateReply(
       return { success: false, error: userFriendlyError, errorCode: errCode };
     }
 
-    log(`${logPrefix} Private reply sent successfully. ID: ${data.id}`, "sync");
-    return { success: true, messageId: data.id };
+    log(`${logPrefix} Private reply sent successfully. recipient_id: ${data.recipient_id}, message_id: ${data.message_id}`, "sync");
+    return { success: true, messageId: data.message_id };
   } catch (err: any) {
     log(`${logPrefix} Exception: ${err.message}`, "sync");
     return { success: false, error: err.message };

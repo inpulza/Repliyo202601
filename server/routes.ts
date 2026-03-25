@@ -4747,8 +4747,8 @@ Sitemap: ${SITE_URL}/sitemap.xml
 
       console.log(`[PrivateReply] Attempting private reply for commentId: ${commentId}`, "sync");
 
-      // Send via Meta API — let Meta decide if it supports private replies for this content
-      const result = await sendPrivateReply(commentId, text.trim(), activePage.pageAccessToken);
+      // Send via Meta API — use Messenger Platform Send API (works for posts, Reels, videos)
+      const result = await sendPrivateReply(commentId, text.trim(), activePage.pageAccessToken, activePage.pageId);
       if (!result.success) {
         return res.status(result.tokenExpired ? 401 : 500).json({
           error: result.error || "Failed to send private reply",
