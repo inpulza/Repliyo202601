@@ -76,8 +76,8 @@ export async function sendPrivateReply(
         userFriendlyError = "El comentario tiene más de 7 días o ya se envió una respuesta privada antes. Facebook solo permite Private Replies dentro de los primeros 7 días.";
       } else if (errMsg?.includes("admin") || errMsg?.includes("page owner")) {
         userFriendlyError = "No se puede enviar un Private Reply al administrador de la página (no puedes responderte a ti mismo).";
-      } else if (errMsg?.toLowerCase().includes("cant reply to this activity") || errMsg?.toLowerCase().includes("cannot reply to this")) {
-        userFriendlyError = "Este usuario no puede recibir respuestas privadas en esta actividad. Posibles causas: el comentario ya recibió una respuesta privada anteriormente, el usuario tiene mensajes desactivados, o Facebook no permite Private Replies en este tipo de contenido.";
+      } else if (errCode === 10903 || errMsg?.toLowerCase().includes("cant reply to this activity") || errMsg?.toLowerCase().includes("cannot reply to this")) {
+        userFriendlyError = "No se puede enviar un Private Reply a este comentario. La causa más común es que el comentario fue hecho desde una Página de Facebook (no un perfil personal) — las Pages no tienen bandeja de Messenger. Otras causas posibles: el comentario ya recibió una respuesta privada, el usuario tiene mensajes desactivados, o el tipo de contenido no lo permite.";
       }
 
       return { success: false, error: userFriendlyError, errorCode: errCode };
