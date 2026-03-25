@@ -999,12 +999,16 @@ class SyncService {
       if (agent.autoPrivateReplyUseAi) {
         // AI-generated private reply
         try {
-          const { createLLMProvider } = await import("./llm");
-          if (!agent.llmModel || !agent.systemPrompt) {
-            log(`${logPrefix} AI mode requires llmModel and systemPrompt — falling back to template`, "sync");
+          const { createLLMProvider } = await import("./llm/factory");
+          if (!agent.systemPrompt) {
+            log(`${logPrefix} AI mode requires systemPrompt — falling back to template`, "sync");
             throw new Error("missing_config");
           }
-          // Get post context for the prompt
+          const secrets = {
+            openaiApiKey: process.env.OPENAI_API_KEY,
+            geminiApiKey: process.env.GEMINI_API_KEY,
+          };
+          const llm = createLLMProvider(agent, secrets);
           let postContext = '';
           if (conversation?.socialPostId) {
             const post = await storage.getSocialPost(conversation.socialPostId);
@@ -1012,8 +1016,7 @@ class SyncService {
           }
           const systemPrompt = `${agent.systemPrompt}\n\nEres un asistente que responde a comentarios de Facebook con mensajes privados de Messenger. Tu respuesta debe ser cálida, personal y de no más de 3 oraciones. No incluyas saludos genéricos.`;
           const userPrompt = `El usuario "${comment.author}" comentó en tu publicación de Facebook:\n"${comment.content}"\n\n${postContext ? `Contexto del post:\n${postContext}\n\n` : ''}Escribe un mensaje privado de Messenger para responder a su comentario de forma natural y útil.`;
-          const llm = createLLMProvider(agent.llmModel);
-          const result = await llm.complete(systemPrompt, userPrompt, { maxTokens: 300, temperature: 0.7 });
+          const result = await llm.generateRawCompletion(systemPrompt, userPrompt, { maxTokens: 300, temperature: 0.7 });
           replyText = result.text?.trim() || '';
           if (!replyText) throw new Error("empty_response");
           log(`${logPrefix} AI-generated reply: "${replyText.substring(0, 80)}..."`, "sync");
