@@ -111,7 +111,7 @@ const filterByBrand = (brandIdParamName?: string) => {
 };
 
 import sentimentAlertsRouter from './routes/sentimentAlerts.routes';
-import { sendPrivateReply, interpolateTemplate, checkPagePermissions } from "./services/metaService";
+import { sendPrivateReply, sendInstagramPrivateReply, interpolateTemplate, checkPagePermissions } from "./services/metaService";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use(sentimentAlertsRouter);
@@ -4640,11 +4640,27 @@ Sitemap: ${SITE_URL}/sitemap.xml
         console.log(`[MetaAutoConnect] Found page via Page Token: ${pageName} (${pageId})`, "express");
       }
 
+      // Auto-fetch Instagram Business Account ID for this page (if any)
+      let igUserId: string | undefined;
+      try {
+        const igRes = await fetch(`https://graph.facebook.com/${pageId}?fields=instagram_business_account&access_token=${pageAccessToken}`);
+        const igData = await igRes.json() as any;
+        if (igData?.instagram_business_account?.id) {
+          igUserId = igData.instagram_business_account.id;
+          console.log(`[MetaAutoConnect] Found Instagram Business Account ID: ${igUserId}`, "express");
+        } else {
+          console.log(`[MetaAutoConnect] No Instagram Business Account linked to page ${pageId}`, "express");
+        }
+      } catch (igErr: any) {
+        console.log(`[MetaAutoConnect] Could not fetch Instagram Business Account ID: ${igErr.message}`, "express");
+      }
+
       const page = await storage.upsertMetaPageConnection({
         brandId: req.params.brandId,
         pageId,
         pageName,
         pageAccessToken,
+        ...(igUserId ? { igUserId } : {}),
         isActive: true,
       });
 
@@ -4698,9 +4714,10 @@ Sitemap: ${SITE_URL}/sitemap.xml
       const message = await storage.getMessage(messageId);
       console.log(`[PrivateReply] Message found: ${!!message}, platform: ${message?.platform}, type: ${message?.type}`, "express");
       if (!message) return res.status(404).json({ error: "Message not found" });
-      if (message.platform?.toLowerCase() !== 'facebook') {
-        console.log(`[PrivateReply] BLOCKED: platform is '${message.platform}', not facebook`, "express");
-        return res.status(400).json({ error: `Private replies only work for Facebook comments (this is ${message.platform})` });
+      const platform = message.platform?.toLowerCase();
+      if (platform !== 'facebook' && platform !== 'instagram') {
+        console.log(`[PrivateReply] BLOCKED: platform is '${message.platform}', not facebook or instagram`, "express");
+        return res.status(400).json({ error: `Private replies solo funcionan para comentarios de Facebook o Instagram (esta es ${message.platform})` });
       }
       if (message.type !== 'comment') {
         console.log(`[PrivateReply] BLOCKED: type is '${message.type}', not comment`, "express");
@@ -4745,10 +4762,22 @@ Sitemap: ${SITE_URL}/sitemap.xml
         : (rawCommentId.includes('_') ? rawCommentId.split('_').pop() : rawCommentId);
       console.log(`[PrivateReply] Resolved real commentId: ${commentId} (from raw: ${rawCommentId})`, "sync");
 
-      console.log(`[PrivateReply] Attempting private reply for commentId: ${commentId}`, "sync");
+      console.log(`[PrivateReply] Attempting private reply for commentId: ${commentId}, platform: ${platform}`, "sync");
 
-      // Send via Meta API — use Messenger Platform Send API (works for posts, Reels, videos)
-      const result = await sendPrivateReply(commentId, text.trim(), activePage.pageAccessToken, activePage.pageId);
+      // Route to the correct API based on platform
+      let result;
+      if (platform === 'instagram') {
+        if (!activePage.igUserId) {
+          return res.status(400).json({ error: "Esta página no tiene un Instagram Business Account ID configurado. Contacta al administrador para que lo agregue en la configuración." });
+        }
+        console.log(`[PrivateReply] Using Instagram API: igUserId=${activePage.igUserId}`, "sync");
+        result = await sendInstagramPrivateReply(activePage.igUserId, commentId, text.trim(), activePage.pageAccessToken);
+      } else {
+        // Facebook — use Messenger Platform Send API (works for posts, Reels, videos)
+        console.log(`[PrivateReply] Using Facebook Messenger API: pageId=${activePage.pageId}`, "sync");
+        result = await sendPrivateReply(commentId, text.trim(), activePage.pageAccessToken, activePage.pageId);
+      }
+
       if (!result.success) {
         return res.status(result.tokenExpired ? 401 : 500).json({
           error: result.error || "Failed to send private reply",
@@ -4761,7 +4790,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
       const outbound = await storage.createMessage({
         brandId: brand.id,
         conversationId: message.conversationId,
-        platform: 'facebook',
+        platform: message.platform,
         type: 'comment',
         direction: 'outbound',
         author: brand.name,

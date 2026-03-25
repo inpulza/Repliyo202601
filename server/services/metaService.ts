@@ -88,6 +88,69 @@ export async function sendPrivateReply(
   }
 }
 
+export async function sendInstagramPrivateReply(
+  igUserId: string,
+  commentId: string,
+  message: string,
+  pageAccessToken: string
+): Promise<PrivateReplyResult> {
+  const logPrefix = "[IGPrivateReply]";
+
+  try {
+    log(`${logPrefix} Sending private reply to IG comment ${commentId} via ig_user_id ${igUserId}`, "sync");
+
+    const url = `${META_API_BASE}/${igUserId}/messages`;
+    log(`${logPrefix} URL: ${url}`, "sync");
+
+    const body = JSON.stringify({
+      recipient: { comment_id: commentId },
+      message: { text: message },
+      messaging_type: "RESPONSE",
+    });
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${pageAccessToken}`,
+      },
+      body,
+    });
+
+    const data = await response.json() as any;
+
+    if (!response.ok || data.error) {
+      const errMsg = data.error?.message || `HTTP ${response.status}`;
+      const errCode = data.error?.code;
+      const errSubcode = data.error?.error_subcode;
+      log(`${logPrefix} Error: ${errMsg} (code ${errCode}, subcode ${errSubcode})`, "sync");
+      log(`${logPrefix} Full error response: ${JSON.stringify(data)}`, "sync");
+
+      let userFriendlyError = errMsg;
+      if (errCode === 190) {
+        userFriendlyError = `El token de acceso ha expirado. Reconecta la página en la configuración de Private Replies.`;
+        return { success: false, error: userFriendlyError, errorCode: errCode, tokenExpired: true };
+      } else if (errCode === 200 || errCode === 10) {
+        userFriendlyError = `Permiso denegado: el token no tiene 'instagram_manage_messages'. Ve a Meta Developers y agrega ese permiso. Error: ${errMsg}`;
+      } else if (errCode === 100 && errSubcode === 33) {
+        userFriendlyError = `El comentario de Instagram no se encontró (código 100/33). Puede que haya sido eliminado o que el ID tenga formato incorrecto.\n\nIG User ID: ${igUserId} | Comment ID: ${commentId}`;
+      } else if (errCode === 100 && errMsg?.includes("outside of")) {
+        userFriendlyError = "El comentario tiene más de 7 días o ya se envió una respuesta privada. Instagram solo permite un Private Reply por comentario dentro de los 7 días.";
+      } else if (errMsg?.includes("admin") || errMsg?.includes("page owner")) {
+        userFriendlyError = "No se puede enviar un Private Reply al administrador de la cuenta (no puedes responderte a ti mismo).";
+      }
+
+      return { success: false, error: userFriendlyError, errorCode: errCode };
+    }
+
+    log(`${logPrefix} Instagram private reply sent successfully. recipient_id: ${data.recipient_id}, message_id: ${data.message_id}`, "sync");
+    return { success: true, messageId: data.message_id };
+  } catch (err: any) {
+    log(`${logPrefix} Exception: ${err.message}`, "sync");
+    return { success: false, error: err.message };
+  }
+}
+
 export async function checkPagePermissions(pageAccessToken: string, pageId?: string): Promise<{
   hasMessaging: boolean;
   permissions: string[];

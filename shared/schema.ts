@@ -1215,6 +1215,7 @@ export const metaPageConnections = pgTable("meta_page_connections", {
   pageId: text("page_id").notNull(),
   pageName: text("page_name").notNull(),
   pageAccessToken: text("page_access_token").notNull(),
+  igUserId: text("ig_user_id"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

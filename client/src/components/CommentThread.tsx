@@ -582,8 +582,8 @@ function SingleMessage({
               </button>
             )}
 
-            {/* Private Reply button - only for inbound Facebook comments when private reply is enabled */}
-            {!isDM && privateReplyEnabled && !isOwner && msg.platform?.toLowerCase() === 'facebook' && !msg.parentMessageId && (
+            {/* Private Reply button - for inbound Facebook and Instagram comments when private reply is enabled */}
+            {!isDM && privateReplyEnabled && !isOwner && (msg.platform?.toLowerCase() === 'facebook' || msg.platform?.toLowerCase() === 'instagram') && !msg.parentMessageId && (
               <button
                 onClick={() => onPrivateReply?.(msg)}
                 disabled={hasPrivateReplySent}

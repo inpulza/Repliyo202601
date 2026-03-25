@@ -322,7 +322,7 @@ function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemp
             Private Replies
           </CardTitle>
           <CardDescription className="text-xs">
-            Envía mensajes privados a personas que comentan en tus publicaciones de Facebook. El botón aparecerá en el Inbox junto a los comentarios de Facebook.
+            Envía mensajes privados a personas que comentan en tus publicaciones de Facebook e Instagram. El botón aparecerá en el Inbox junto a los comentarios de ambas plataformas.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -330,7 +330,7 @@ function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemp
             <div>
               <p className="text-sm font-medium">Activar Private Replies</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Muestra el botón "Resp. Privada" en el Inbox para comentarios de Facebook
+                Muestra el botón "Resp. Privada" en el Inbox para comentarios de Facebook e Instagram
               </p>
             </div>
             <Switch
@@ -585,7 +585,7 @@ function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemp
           <ul className="space-y-2.5 text-xs text-muted-foreground">
             <li className="flex items-start gap-2">
               <span className="text-amber-500 mt-0.5">⚠</span>
-              <span>Solo funciona en <strong>comentarios de Facebook Pages</strong>. La API de Meta <strong className="text-destructive">no tiene este feature para Instagram</strong> — en Instagram solo puedes responder públicamente al comentario o esperar a que el usuario te escriba primero.</span>
+              <span>Funciona en <strong>comentarios de Facebook Pages</strong> e <strong>Instagram Business/Creator</strong>. Para Instagram requiere el permiso <code>instagram_manage_messages</code> en tu Meta App y que la cuenta de Instagram esté vinculada a la página de Facebook.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-amber-500 mt-0.5">⚠</span>
