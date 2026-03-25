@@ -1020,8 +1020,13 @@ class SyncService {
             const post = await storage.getSocialPost(conversation.socialPostId);
             postContext = enrichPostContext(post, 'facebook', 'comment');
           }
-          const systemPrompt = `${agent.systemPrompt}\n\nEres un asistente que responde a comentarios de Facebook con mensajes privados de Messenger.\nREGLAS OBLIGATORIAS:\n1. SIEMPRE inicia el mensaje con "Hola [nombre]" seguido de una referencia al contenido donde comentó (ej: "he visto tu comentario en nuestro reel sobre [tema]", "vi tu mensaje en nuestro video sobre [tema]", "noté tu comentario en nuestra publicación sobre [tema]").\n2. Usa la información del "Contexto del post" para identificar el tipo de contenido (reel, video, publicación) y su tema.\n3. Después de la referencia al post, responde al comentario de forma cálida y útil.\n4. Máximo 3-4 oraciones en total.\n5. No uses saludos genéricos sin referencia al post.`;
-          const userPrompt = `El usuario "${comment.author}" comentó:\n"${comment.content}"\n\n${postContext ? `Contexto del post donde comentó:\n${postContext}\n\n` : ''}Escribe un mensaje privado de Messenger. IMPORTANTE: Abre con "Hola ${comment.author}" + referencia específica al post/reel/video donde comentó (usa el contexto del post para saber de qué trata).`;
+          const privateReplyInstructions = agent.autoPrivateReplyPrompt || `Eres un asistente que responde a comentarios de Facebook con mensajes privados de Messenger.\nREGLAS OBLIGATORIAS:\n1. SIEMPRE inicia el mensaje con "Hola [nombre]" seguido de una referencia al contenido donde comentó.\n2. Usa la información del contexto del post para identificar el tipo de contenido y su tema.\n3. Después de la referencia al post, responde al comentario de forma cálida y útil.\n4. Máximo 3-4 oraciones en total.`;
+          const resolvedInstructions = privateReplyInstructions
+            .replace(/\{\{username\}\}/g, comment.author || '')
+            .replace(/\{\{comment\}\}/g, comment.content || '')
+            .replace(/\{\{post_context\}\}/g, postContext || '');
+          const systemPrompt = `${agent.systemPrompt}\n\n${resolvedInstructions}`;
+          const userPrompt = `El usuario "${comment.author}" comentó:\n"${comment.content}"\n\n${postContext ? `Contexto del post donde comentó:\n${postContext}\n\n` : ''}Escribe un mensaje privado de Messenger respondiendo al comentario.`;
           const result = await llm.generateRawCompletion(systemPrompt, userPrompt, { maxTokens: 300, temperature: 0.7 });
           replyText = result.text?.trim() || '';
           if (!replyText) throw new Error("empty_response");

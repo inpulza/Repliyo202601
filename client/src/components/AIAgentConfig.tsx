@@ -135,18 +135,20 @@ interface PrivateRepliesTabProps {
   autoPrivateReplyEnabled: boolean;
   autoPrivateReplyDelayMinutes: number;
   autoPrivateReplyUseAi: boolean;
+  autoPrivateReplyPrompt: string;
   onEnabledChange: (v: boolean) => void;
   onTemplateChange: (v: string) => void;
   onAutoPrivateReplyEnabledChange: (v: boolean) => void;
   onAutoPrivateReplyDelayMinutesChange: (v: number) => void;
   onAutoPrivateReplyUseAiChange: (v: boolean) => void;
+  onAutoPrivateReplyPromptChange: (v: string) => void;
 }
 
 function PrivateRepliesTab({
   brandId, enabled, template,
-  autoPrivateReplyEnabled, autoPrivateReplyDelayMinutes, autoPrivateReplyUseAi,
+  autoPrivateReplyEnabled, autoPrivateReplyDelayMinutes, autoPrivateReplyUseAi, autoPrivateReplyPrompt,
   onEnabledChange, onTemplateChange,
-  onAutoPrivateReplyEnabledChange, onAutoPrivateReplyDelayMinutesChange, onAutoPrivateReplyUseAiChange
+  onAutoPrivateReplyEnabledChange, onAutoPrivateReplyDelayMinutesChange, onAutoPrivateReplyUseAiChange, onAutoPrivateReplyPromptChange
 }: PrivateRepliesTabProps) {
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
@@ -665,12 +667,28 @@ function PrivateRepliesTab({
                   </button>
                 </div>
                 {autoPrivateReplyUseAi && (
-                  <Alert className="border-blue-200 bg-blue-50">
-                    <Info className="h-3.5 w-3.5 text-blue-600" />
-                    <AlertDescription className="text-xs text-blue-800">
-                      El agente usará tu prompt del sistema y el contexto del post para generar un mensaje único por cada comentarista. Si falla, se enviará el template como respaldo.
-                    </AlertDescription>
-                  </Alert>
+                  <div className="space-y-3">
+                    <Alert className="border-blue-200 bg-blue-50">
+                      <Info className="h-3.5 w-3.5 text-blue-600" />
+                      <AlertDescription className="text-xs text-blue-800">
+                        Este prompt se usa exclusivamente para generar los private replies. Se combina con tu System Prompt general. Si falla, se enviará el template como respaldo.
+                      </AlertDescription>
+                    </Alert>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium">Prompt para Private Reply (IA)</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Instrucciones específicas para que la IA genere los mensajes privados. Variables disponibles: <code className="bg-muted px-1 rounded">{'{{username}}'}</code> (nombre del usuario), <code className="bg-muted px-1 rounded">{'{{comment}}'}</code> (texto del comentario), <code className="bg-muted px-1 rounded">{'{{post_context}}'}</code> (info del post/reel/video).
+                      </p>
+                      <Textarea
+                        value={autoPrivateReplyPrompt}
+                        onChange={(e) => onAutoPrivateReplyPromptChange(e.target.value)}
+                        data-testid="textarea-auto-private-reply-prompt"
+                        rows={8}
+                        className="text-sm font-mono"
+                        placeholder="Ej: Eres un asistente que responde a comentarios de Facebook con mensajes privados de Messenger..."
+                      />
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -915,6 +933,13 @@ export function AIAgentConfig() {
     autoPrivateReplyEnabled: false,
     autoPrivateReplyDelayMinutes: 0,
     autoPrivateReplyUseAi: false,
+    autoPrivateReplyPrompt: `Eres un asistente que responde a comentarios de Facebook con mensajes privados de Messenger.
+REGLAS OBLIGATORIAS:
+1. SIEMPRE inicia el mensaje con "Hola {{username}}" seguido de una referencia al contenido donde comentó (ej: "he visto tu comentario en nuestro reel sobre [tema]", "vi tu mensaje en nuestro video sobre [tema]").
+2. Usa la información de {{post_context}} para identificar el tipo de contenido (reel, video, publicación) y su tema.
+3. Después de la referencia al post, responde al comentario de forma cálida y útil.
+4. Máximo 3-4 oraciones en total.
+5. No uses saludos genéricos sin referencia al post.`,
   });
 
   const { data: agent, isLoading: isLoadingAgent } = useQuery({
@@ -1112,6 +1137,13 @@ export function AIAgentConfig() {
         autoPrivateReplyEnabled: agent.autoPrivateReplyEnabled ?? false,
         autoPrivateReplyDelayMinutes: agent.autoPrivateReplyDelayMinutes ?? 0,
         autoPrivateReplyUseAi: agent.autoPrivateReplyUseAi ?? false,
+        autoPrivateReplyPrompt: agent.autoPrivateReplyPrompt || `Eres un asistente que responde a comentarios de Facebook con mensajes privados de Messenger.
+REGLAS OBLIGATORIAS:
+1. SIEMPRE inicia el mensaje con "Hola {{username}}" seguido de una referencia al contenido donde comentó (ej: "he visto tu comentario en nuestro reel sobre [tema]", "vi tu mensaje en nuestro video sobre [tema]").
+2. Usa la información de {{post_context}} para identificar el tipo de contenido (reel, video, publicación) y su tema.
+3. Después de la referencia al post, responde al comentario de forma cálida y útil.
+4. Máximo 3-4 oraciones en total.
+5. No uses saludos genéricos sin referencia al post.`,
       });
     }
   }, [agent]);
@@ -2694,11 +2726,13 @@ export function AIAgentConfig() {
                   autoPrivateReplyEnabled={formData.autoPrivateReplyEnabled ?? false}
                   autoPrivateReplyDelayMinutes={formData.autoPrivateReplyDelayMinutes ?? 0}
                   autoPrivateReplyUseAi={formData.autoPrivateReplyUseAi ?? false}
+                  autoPrivateReplyPrompt={formData.autoPrivateReplyPrompt ?? ''}
                   onEnabledChange={(v) => handleFormChange({ privateReplyEnabled: v })}
                   onTemplateChange={(v) => handleFormChange({ privateReplyTemplate: v })}
                   onAutoPrivateReplyEnabledChange={(v) => handleFormChange({ autoPrivateReplyEnabled: v })}
                   onAutoPrivateReplyDelayMinutesChange={(v) => handleFormChange({ autoPrivateReplyDelayMinutes: v })}
                   onAutoPrivateReplyUseAiChange={(v) => handleFormChange({ autoPrivateReplyUseAi: v })}
+                  onAutoPrivateReplyPromptChange={(v) => handleFormChange({ autoPrivateReplyPrompt: v })}
                 />
               )}
             </TabsContent>

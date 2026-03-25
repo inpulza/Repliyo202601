@@ -202,6 +202,7 @@ export const aiAgents = pgTable("ai_agents", {
   autoPrivateReplyEnabled: boolean("auto_private_reply_enabled").notNull().default(false),
   autoPrivateReplyDelayMinutes: integer("auto_private_reply_delay_minutes").notNull().default(0),
   autoPrivateReplyUseAi: boolean("auto_private_reply_use_ai").notNull().default(false),
+  autoPrivateReplyPrompt: text("auto_private_reply_prompt"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
