@@ -107,18 +107,27 @@ Metricool stores comment IDs in compound format `{postId}_{commentId}`:
 122200652672575116_884686284607817  →  only need: 884686284607817
 ```
 
-Code in `server/routes.ts`:
+**⚠️ Permalink `comment_id` is UNRELIABLE** — some permalinks contain `comment_id=POSTID` instead of the actual comment ID (e.g., Melva Vidal's comment had `comment_id=122200710758575116` which was the post ID, not the comment). Always prioritize the compound split.
+
+Code in `server/routes.ts` and `server/services/syncService.ts`:
 ```typescript
 const rawCommentId = rawData?.id || rawData?.root?.id || message.metricoolId;
 
-// Priority 1: extract comment_id from permalink
+// Priority 1: extract from compound POSTID_COMMENTID (always reliable)
+const extractedFromCompound = rawCommentId.includes('_') ? rawCommentId.split('_').pop() : null;
+
+// Priority 2 fallback: permalink comment_id (unreliable — may contain post ID)
 const permalinkMatch = (rawData?.root?.properties?.permalink || rawData?.properties?.permalink || '')
   .match(/comment_id=(\d+)/);
 
-// Priority 2 fallback: strip post prefix
-const commentId = permalinkMatch
-  ? permalinkMatch[1]
-  : (rawCommentId.includes('_') ? rawCommentId.split('_').pop() : rawCommentId);
+let commentId: string;
+if (extractedFromCompound) {
+  commentId = extractedFromCompound;
+} else if (permalinkMatch) {
+  commentId = permalinkMatch[1];
+} else {
+  commentId = rawCommentId;
+}
 ```
 
 ## Facebook API Call
@@ -283,6 +292,7 @@ Instagram comment IDs from Metricool may also be in compound format. Test with a
 | `200` / `10` | Permission denied — missing `pages_messaging` or `instagram_manage_messages` | Add permission in Meta Developers |
 | `100` / subcode `33` | Object not found — wrong comment ID or wrong platform | Verify comment ID format and platform |
 | `100` + "outside of" | 7-day window expired or already replied | Cannot send |
+| `100` (generic) | Invalid parameter — often wrong comment ID format (e.g., sending post ID instead of comment ID) | Check compound ID extraction logic |
 | "admin" / "page owner" | Replying to yourself (page admin) | Block in UI |
 
 ## Facebook Restrictions
