@@ -1,0 +1,26 @@
+HANDOFF — Repliyo: Mejoras de Private Reply con LLM
+
+Contexto del proyecto: Repliyo — plataforma de gestión de inbox de redes sociales (React + TypeScript + Express + PostgreSQL + Drizzle ORM). Todo el contexto técnico del proyecto está en replit.md, léelo primero.
+
+Lo que hay que implementar (en orden de prioridad):
+
+Plan 1 — Mejorar el contexto del post en respuestas de IA (empezar por este)
+
+El PromptComposer en server/services/llm/prompt-composer.ts actualmente solo envía el campo caption del post (500 chars truncados) al LLM. Para DMs siempre pone "Este es un mensaje directo privado.". Las respuestas del LLM quedan robóticas porque no tiene contexto rico del post.
+
+Hay que modificar:
+
+server/services/llm/prompt-composer.ts — función buildVariableContext y la sección --- CONTEXTO DEL POST COMENTADO ---
+Incluir: tipo de contenido (video/reel/image), limpiar la caption (extraer primeras frases sin hashtags), instrucción al LLM de cómo referenciar el post de forma natural (no robótica)
+Para DMs: si hay post asociado, incluirlo; si no, mantener el fallback pero mejorarlo
+Plan 2 — Private Replies automáticos en Facebook
+
+El sistema actual de Facebook Private Replies es 100% manual. Hay que añadir un modo automático: cuando llega un comentario nuevo en Facebook, el sistema espera un delay configurable y envía automáticamente el template interpolado.
+
+Cambios necesarios:
+
+DB: Nueva columna en ai_agents: auto_private_reply_enabled (boolean) + auto_private_reply_delay_minutes (integer, default 0)
+Backend: En syncService.ts, detectar comentario nuevo de Facebook + autoPrivateReplyEnabled=true → llamar sendPrivateReply() directamente con template interpolado
+UI: En AIAgentConfig.tsx, dentro de la pestaña Private Replies: dos sub-pestañas — Manual (actual) | Automático (toggle + delay configurable)
+Idempotencia: No enviar si ya existe un mensaje con internalOrigin=meta_private_reply para ese comentario
+Los detalles completos de ambos planes están en la sección ## Pending Feature Plans del replit.md.
