@@ -1,0 +1,48 @@
+Customize use case
+Customize use case settings and permissions to make your app work the way you want it to.
+Use case switcher
+​
+Messenger from Meta
+​
+Messenger API Setup
+Follow the steps to set up your API. Once finished, your Facebook Business Page can start sending and receiving messages.
+​
+Messenger Platform
+Welcome to the Messenger Platform!
+The Messenger Platform offers a rich set of APIs, web plug-ins, and a complete webview that give you everything you need to build awesome experiences. Reach people across every device and platform they use, support multiple communication channels, create hybrid experiences that incorporate automated and live chat, and more, all in Messenger.
+To ensure quality and prevent abuse of the platform, all Messenger apps must be submitted for review before they can interact with everyone on Messenger. During development you will be able to send messages to anyone that has been granted either the administrator, developer or tester role for your app.
+To get started, please read the developer documentation for complete details. Your access to and use of the platform are subject to Platform Policies and Developer Policies, together with all other applicable terms and policies.
+1. Configure webhooks
+Configure a custom webhook URL or use services that help you set up an endpoint. Learn more.
+Callback URL
+Verify token
+
+Attach a client certificate to Webhook requests. Learn more.
+2. Generate access tokens
+Connect Facebook pages to generate access tokens and set up webhook subscriptions.
+Page Name
+Webhook Subscription
+Token
+
+Jordan Inpulza
+468497419676631
+No fields subscribed.
+Add Page
+3. Complete App Review
+This permission or feature requires successful completion of the App Review process before your app can access live data.
+You should create a prototype and submit for app review. This helps us review your overall app experience.
+To send and receive messages, request pages_messaging permission. To access more messaging features, please review our documentation. Learn more
+Advanced∙Optional
+Optional Advanced Settings
+Enterprise partner support
+Submit questions about Messenger API and developer tools to the enterprise support team. Also, track and manage the status of previously submitted questions.
+Will your Page be affected by updates due to new privacy rules in Europe?
+Check if your Page is affected by updates we're making due to new privacy rules in Europe. See developer documentation for more info on the criteria.
+Enter Page IDs separated by ',' comma, ';' semicolon, or ' ' space.
+
+Submit
+
+Cancel
+Built-in NLP
+Built-in NLP (natural language processing) parses the messages your Page receives to help detect meaning and extract information about dates, time and more. To automatically integrate built-in NLP, start by choosing a Page. Learn more
+Subscribe a Page first under the "Webhooks" section to use Built-in NLP
