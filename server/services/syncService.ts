@@ -1078,6 +1078,8 @@ class SyncService {
       }
 
       // Save outbound message in a DM conversation (not in the comment thread)
+      // Strategy: find ANY existing facebook DM conversation for this user by customerId OR customerName
+      // This avoids creating duplicate DM conversations when the sync uses a different ID than the FB API returns.
       const brand = await storage.getBrand(brandId);
       let dmConversationId = comment.conversationId;
 
@@ -1085,10 +1087,38 @@ class SyncService {
         const customerName = comment.author || 'Unknown';
         const dmCustomerId = result.recipientId || customerName;
 
-        let dmConv = await storage.getConversationByKey(brandId, 'facebook', dmCustomerId, null, null);
-        if (!dmConv && result.recipientId) {
+        // Search by multiple identifiers to find the existing DM conversation
+        // Priority: recipientId (PSID) → comment author name → original customerId from comment's conversation
+        let dmConv: any = null;
+
+        // 1. Try recipientId (the PSID returned by Facebook API)
+        if (result.recipientId) {
+          dmConv = await storage.getConversationByKey(brandId, 'facebook', result.recipientId, null, null);
+        }
+
+        // 2. Try customer name (how Metricool sync often stores it)
+        if (!dmConv) {
           dmConv = await storage.getConversationByKey(brandId, 'facebook', customerName, null, null);
         }
+
+        // 3. Try the comment author's external ID (from the comment conversation)
+        if (!dmConv) {
+          const commentConv = await storage.getConversation(comment.conversationId);
+          if (commentConv?.customerId && commentConv.customerId !== customerName) {
+            dmConv = await storage.getConversationByKey(brandId, 'facebook', commentConv.customerId, null, null);
+          }
+        }
+
+        // 4. Broad search: find any DM conversation matching by customer name (case-insensitive)
+        if (!dmConv) {
+          const allDmConvs = await storage.getConversationsByBrand(brandId);
+          dmConv = allDmConvs.find(c => 
+            c.platform === 'facebook' && 
+            c.type === 'dm' && 
+            c.customerName?.toLowerCase() === customerName.toLowerCase()
+          );
+        }
+
         if (!dmConv) {
           dmConv = await storage.createConversation({
             brandId,
@@ -1100,10 +1130,14 @@ class SyncService {
             lastMessagePreview: replyText.trim().slice(0, 100),
             status: 'new',
           });
+          log(`${logPrefix} Created new DM conversation ${dmConv.id} for ${customerName}`, "sync");
+        } else {
+          log(`${logPrefix} Found existing DM conversation ${dmConv.id} for ${customerName}`, "sync");
         }
+
         dmConversationId = dmConv.id;
       } catch (convErr: any) {
-        log(`${logPrefix} Could not create DM conversation: ${convErr.message} — using comment conversation`, "sync");
+        log(`${logPrefix} Could not find/create DM conversation: ${convErr.message} — using comment conversation`, "sync");
       }
 
       await storage.createMessage({
