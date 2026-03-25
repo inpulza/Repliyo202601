@@ -677,17 +677,18 @@ class SyncService {
           });
 
           this.triggerAutoReply(brandId, savedComment, conversationRecord);
+        }
 
-          // AUTO PRIVATE REPLY — Facebook only
-          // Fire-and-forget: runs after delay without blocking the sync loop
-          if (platform === 'facebook') {
-            void this.triggerAutoPrivateReply(
-              brandId,
-              savedComment,
-              conversationRecord,
-              comment.rawData
-            ).catch((err: Error) => log(`[SyncService] AutoPrivateReply error: ${err.message}`, "sync"));
-          }
+        // AUTO PRIVATE REPLY — Facebook only, runs for ALL non-brand comments (not just new ones)
+        // The function has built-in idempotency: checks if a private reply was already sent before acting.
+        // This ensures comments that arrived before the feature was enabled still get a reply.
+        if (platform === 'facebook' && !isCommentFromBrand) {
+          void this.triggerAutoPrivateReply(
+            brandId,
+            savedComment,
+            conversationRecord,
+            comment.rawData
+          ).catch((err: Error) => log(`[SyncService] AutoPrivateReply error: ${err.message}`, "sync"));
         }
 
         const nestedReplies = (comment.replies && comment.replies.length > 0) ? comment.replies : (comment.rawData?.root?.comments || []);
@@ -938,7 +939,13 @@ class SyncService {
     try {
       const agent = await storage.getAiAgentByBrand(brandId);
       if (!agent?.autoPrivateReplyEnabled) {
-        log(`${logPrefix} Disabled for brand ${brandId} — skipping`, "sync");
+        return;
+      }
+
+      // Time filter: only process comments from the last 24 hours to avoid spamming old comments
+      const commentAge = Date.now() - new Date(comment.timestamp || comment.createdAt).getTime();
+      const MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+      if (commentAge > MAX_AGE_MS) {
         return;
       }
 
@@ -954,9 +961,10 @@ class SyncService {
         }
       }
 
-      // Get Facebook page connection
+      // Get Facebook page connection (meta_page_connections has no 'platform' column —
+      // each row covers both Facebook and Instagram via pageId + igUserId)
       const pageConnections = await storage.getMetaPageConnections(brandId);
-      const activePage = pageConnections.find((p: any) => p.isActive && p.platform === 'facebook');
+      const activePage = pageConnections.find((p: any) => p.isActive && p.pageId);
       if (!activePage) {
         log(`${logPrefix} No active Facebook page connection for brand ${brandId} — skipping`, "sync");
         return;
