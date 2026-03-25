@@ -742,48 +742,40 @@ export function enrichPostContextForTemplate(
   const permalink = socialPost.permalink || '';
 
   let contentType = '';
-  if (normalizedPlatform === 'tiktok') contentType = 'tu video de TikTok';
-  else if (normalizedPlatform === 'youtube') contentType = 'tu video de YouTube';
+  if (normalizedPlatform === 'tiktok') contentType = 'nuestro video de TikTok';
+  else if (normalizedPlatform === 'youtube') contentType = 'nuestro video de YouTube';
   else if (normalizedPlatform === 'instagram') {
-    if (permalink.includes('/reel/') || permalink.includes('/reels/')) contentType = 'tu Reel de Instagram';
-    else contentType = 'tu publicación de Instagram';
+    if (permalink.includes('/reel/') || permalink.includes('/reels/')) contentType = 'nuestro Reel de Instagram';
+    else contentType = 'nuestra publicación de Instagram';
   } else if (normalizedPlatform === 'facebook') {
-    if (permalink.includes('/videos/') || permalink.includes('/video/')) contentType = 'tu video de Facebook';
-    else if (permalink.includes('/reel') || permalink.includes('reels')) contentType = 'tu Reel de Facebook';
-    else contentType = 'tu publicación de Facebook';
+    if (permalink.includes('/videos/') || permalink.includes('/video/')) contentType = 'nuestro video de Facebook';
+    else if (permalink.includes('/reel') || permalink.includes('reels')) contentType = 'nuestro Reel de Facebook';
+    else contentType = 'nuestra publicación de Facebook';
   } else {
     const label = normalizedPlatform.charAt(0).toUpperCase() + normalizedPlatform.slice(1);
-    contentType = `tu publicación de ${label}`;
+    contentType = `nuestra publicación de ${label}`;
   }
 
-  let cleanCaption = '';
+  let topicSummary = '';
   if (socialPost.caption) {
     const rawCaption = socialPost.caption.trim();
     const lines = rawCaption.split('\n');
-    let lastContentLineIndex = lines.length - 1;
-    for (let i = lines.length - 1; i >= 0; i--) {
-      const line = lines[i].trim();
-      if (line === '') { lastContentLineIndex = i - 1; continue; }
-      const words = line.split(/\s+/).filter(w => w.length > 0);
-      const hashtagWords = words.filter(w => w.startsWith('#'));
-      if (words.length > 0 && hashtagWords.length / words.length >= 0.6) {
-        lastContentLineIndex = i - 1;
-      } else break;
+    const firstLine = lines[0]?.trim() || '';
+    let cleaned = firstLine
+      .replace(/#\w+/g, '')
+      .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}\u{20E3}\u{E0020}-\u{E007F}]/gu, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (cleaned.length > 60) {
+      const lastSpace = cleaned.substring(0, 60).lastIndexOf(' ');
+      cleaned = (lastSpace > 30 ? cleaned.substring(0, lastSpace) : cleaned.substring(0, 60)).trim();
     }
-    const contentLines = lines.slice(0, lastContentLineIndex + 1).filter(l => l.trim().length > 0);
-    if (contentLines.length > 0) {
-      cleanCaption = contentLines.join(' ').trim();
-    } else {
-      cleanCaption = rawCaption.replace(/#\w+/g, '').replace(/\s+/g, ' ').trim();
-    }
-    if (cleanCaption.length > 120) {
-      const truncated = cleanCaption.substring(0, 120);
-      const lastSpace = truncated.lastIndexOf(' ');
-      cleanCaption = (lastSpace > 80 ? cleanCaption.substring(0, lastSpace) : truncated) + '...';
+    if (cleaned.length > 0) {
+      topicSummary = cleaned;
     }
   }
 
-  if (cleanCaption) return `${contentType} sobre ${cleanCaption}`;
+  if (topicSummary) return `${contentType} sobre "${topicSummary}"`;
   return contentType;
 }
 
