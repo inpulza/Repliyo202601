@@ -112,6 +112,7 @@ const filterByBrand = (brandIdParamName?: string) => {
 
 import sentimentAlertsRouter from './routes/sentimentAlerts.routes';
 import { sendPrivateReply, sendInstagramPrivateReply, interpolateTemplate, checkPagePermissions } from "./services/metaService";
+import { enrichPostContext } from "./services/llm/prompt-composer";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use(sentimentAlertsRouter);
@@ -4830,13 +4831,13 @@ Sitemap: ${SITE_URL}/sitemap.xml
       const agent = await storage.getAiAgentByBrand(message.brandId);
       if (!agent?.privateReplyTemplate) return res.json({ text: '' });
 
-      // Get post context if available
+      // Get post context enriquecido if available
       let postContext = '';
       if (message.conversationId) {
         const conv = await storage.getConversation(message.conversationId);
         if (conv?.socialPostId) {
           const post = await storage.getSocialPost(conv.socialPostId);
-          postContext = post?.caption?.slice(0, 200) || '';
+          postContext = enrichPostContext(post, message.platform || conv.platform || '', message.type || 'comment');
         }
       }
 

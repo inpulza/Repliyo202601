@@ -10,6 +10,8 @@ import { conversationLifecycleService } from "./conversationLifecycleService";
 import { thankYouDetector } from "./thankYouDetector";
 import { sentimentAnalysisService } from "./SentimentAnalysisService";
 import { log } from "../app";
+import { sendPrivateReply, interpolateTemplate } from "./metaService";
+import { enrichPostContext } from "./llm/prompt-composer";
 
 interface BrandSyncResult {
   newBrands: string[];
@@ -675,6 +677,17 @@ class SyncService {
           });
 
           this.triggerAutoReply(brandId, savedComment, conversationRecord);
+
+          // AUTO PRIVATE REPLY — Facebook only
+          // Fire-and-forget: runs after delay without blocking the sync loop
+          if (platform === 'facebook') {
+            void this.triggerAutoPrivateReply(
+              brandId,
+              savedComment,
+              conversationRecord,
+              comment.rawData
+            ).catch((err: Error) => log(`[SyncService] AutoPrivateReply error: ${err.message}`, "sync"));
+          }
         }
 
         const nestedReplies = (comment.replies && comment.replies.length > 0) ? comment.replies : (comment.rawData?.root?.comments || []);
@@ -908,6 +921,171 @@ class SyncService {
     }).catch(error => {
       log(`[SyncService] Error fetching brand for auto-reply: ${error.message}`, "sync");
     });
+  }
+
+  /**
+   * Auto Private Reply: If the AI agent has autoPrivateReplyEnabled=true and this is a Facebook comment,
+   * send a Facebook Messenger private reply after the configured delay.
+   * Idempotency: only sends once per comment (checks existing meta_private_reply messages).
+   */
+  private async triggerAutoPrivateReply(
+    brandId: string,
+    comment: any,
+    conversation: any,
+    rawData: any
+  ): Promise<void> {
+    const logPrefix = '[AutoPrivateReply]';
+    try {
+      const agent = await storage.getAiAgentByBrand(brandId);
+      if (!agent?.autoPrivateReplyEnabled) {
+        log(`${logPrefix} Disabled for brand ${brandId} — skipping`, "sync");
+        return;
+      }
+
+      // Idempotency: check if a private reply was already sent for this comment
+      if (conversation?.id) {
+        const convMessages = await storage.getMessagesByConversation(conversation.id);
+        const alreadySent = convMessages.some(
+          (m: any) => m.internalOrigin === 'meta_private_reply' && m.parentMessageId === comment.id
+        );
+        if (alreadySent) {
+          log(`${logPrefix} Private reply already sent for comment ${comment.id} — skipping`, "sync");
+          return;
+        }
+      }
+
+      // Get Facebook page connection
+      const pageConnections = await storage.getMetaPageConnections(brandId);
+      const activePage = pageConnections.find((p: any) => p.isActive && p.platform === 'facebook');
+      if (!activePage) {
+        log(`${logPrefix} No active Facebook page connection for brand ${brandId} — skipping`, "sync");
+        return;
+      }
+
+      // Extract the real Facebook comment ID (same logic as routes.ts private reply endpoint)
+      const rawCommentId = rawData?.id || rawData?.root?.id || comment.metricoolId;
+      if (!rawCommentId) {
+        log(`${logPrefix} Could not determine commentId for comment ${comment.id} — skipping`, "sync");
+        return;
+      }
+      const permalinkMatch = (rawData?.root?.properties?.permalink || rawData?.properties?.permalink || '')
+        .match(/comment_id=(\d+)/);
+      const commentId = permalinkMatch
+        ? permalinkMatch[1]
+        : (rawCommentId.includes('_') ? rawCommentId.split('_').pop() : rawCommentId);
+
+      log(`${logPrefix} Will send auto private reply for commentId ${commentId} with delay=${agent.autoPrivateReplyDelayMinutes ?? 0}min`, "sync");
+
+      // Apply delay if configured
+      const delayMs = ((agent.autoPrivateReplyDelayMinutes ?? 0) * 60 * 1000);
+      if (delayMs > 0) {
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+
+      // Re-check idempotency after delay
+      if (conversation?.id) {
+        const convMessages = await storage.getMessagesByConversation(conversation.id);
+        const alreadySent = convMessages.some(
+          (m: any) => m.internalOrigin === 'meta_private_reply' && m.parentMessageId === comment.id
+        );
+        if (alreadySent) {
+          log(`${logPrefix} Private reply sent during delay window for comment ${comment.id} — skipping`, "sync");
+          return;
+        }
+      }
+
+      // Build reply text
+      let replyText: string;
+      if (agent.autoPrivateReplyUseAi) {
+        // AI-generated private reply
+        try {
+          const { createLLMProvider } = await import("./llm");
+          if (!agent.llmModel || !agent.systemPrompt) {
+            log(`${logPrefix} AI mode requires llmModel and systemPrompt — falling back to template`, "sync");
+            throw new Error("missing_config");
+          }
+          // Get post context for the prompt
+          let postContext = '';
+          if (conversation?.socialPostId) {
+            const post = await storage.getSocialPost(conversation.socialPostId);
+            postContext = enrichPostContext(post, 'facebook', 'comment');
+          }
+          const systemPrompt = `${agent.systemPrompt}\n\nEres un asistente que responde a comentarios de Facebook con mensajes privados de Messenger. Tu respuesta debe ser cálida, personal y de no más de 3 oraciones. No incluyas saludos genéricos.`;
+          const userPrompt = `El usuario "${comment.author}" comentó en tu publicación de Facebook:\n"${comment.content}"\n\n${postContext ? `Contexto del post:\n${postContext}\n\n` : ''}Escribe un mensaje privado de Messenger para responder a su comentario de forma natural y útil.`;
+          const llm = createLLMProvider(agent.llmModel);
+          const result = await llm.complete(systemPrompt, userPrompt, { maxTokens: 300, temperature: 0.7 });
+          replyText = result.text?.trim() || '';
+          if (!replyText) throw new Error("empty_response");
+          log(`${logPrefix} AI-generated reply: "${replyText.substring(0, 80)}..."`, "sync");
+        } catch (err: any) {
+          log(`${logPrefix} AI generation failed (${err.message}) — falling back to template`, "sync");
+          if (!agent.privateReplyTemplate) {
+            log(`${logPrefix} No template fallback available — aborting`, "sync");
+            return;
+          }
+          let postContext = '';
+          if (conversation?.socialPostId) {
+            const post = await storage.getSocialPost(conversation.socialPostId);
+            postContext = enrichPostContext(post, 'facebook', 'comment');
+          }
+          replyText = interpolateTemplate(agent.privateReplyTemplate, {
+            username: comment.author || '',
+            comment: comment.content || '',
+            postContext,
+          });
+        }
+      } else {
+        // Template-based private reply
+        if (!agent.privateReplyTemplate) {
+          log(`${logPrefix} No private reply template configured — skipping`, "sync");
+          return;
+        }
+        let postContext = '';
+        if (conversation?.socialPostId) {
+          const post = await storage.getSocialPost(conversation.socialPostId);
+          postContext = enrichPostContext(post, 'facebook', 'comment');
+        }
+        replyText = interpolateTemplate(agent.privateReplyTemplate, {
+          username: comment.author || '',
+          comment: comment.content || '',
+          postContext,
+        });
+      }
+
+      if (!replyText?.trim()) {
+        log(`${logPrefix} Empty reply text — skipping`, "sync");
+        return;
+      }
+
+      // Send private reply via Facebook Messenger API
+      const result = await sendPrivateReply(commentId, replyText.trim(), activePage.pageAccessToken, activePage.pageId);
+      if (!result.success) {
+        log(`${logPrefix} Facebook API error: ${result.error}`, "sync");
+        return;
+      }
+
+      // Save outbound message for audit trail
+      const brand = await storage.getBrand(brandId);
+      await storage.createMessage({
+        brandId,
+        conversationId: comment.conversationId,
+        platform: 'facebook',
+        type: 'comment',
+        direction: 'outbound',
+        author: brand?.name || 'Repliyo',
+        content: replyText.trim(),
+        timestamp: new Date(),
+        status: 'sent',
+        parentMessageId: comment.id,
+        metricoolId: result.messageId || null,
+        source: 'repliyo',
+        internalOrigin: 'meta_private_reply',
+      });
+
+      log(`${logPrefix} ✅ Auto private reply sent for comment ${comment.id} (commentId=${commentId})`, "sync");
+    } catch (err: any) {
+      log(`${logPrefix} Unhandled error: ${err.message}`, "sync");
+    }
   }
 
   getStatus(): {

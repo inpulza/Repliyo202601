@@ -132,11 +132,22 @@ interface PrivateRepliesTabProps {
   brandId: string;
   enabled: boolean;
   template: string;
+  autoPrivateReplyEnabled: boolean;
+  autoPrivateReplyDelayMinutes: number;
+  autoPrivateReplyUseAi: boolean;
   onEnabledChange: (v: boolean) => void;
   onTemplateChange: (v: string) => void;
+  onAutoPrivateReplyEnabledChange: (v: boolean) => void;
+  onAutoPrivateReplyDelayMinutesChange: (v: number) => void;
+  onAutoPrivateReplyUseAiChange: (v: boolean) => void;
 }
 
-function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemplateChange }: PrivateRepliesTabProps) {
+function PrivateRepliesTab({
+  brandId, enabled, template,
+  autoPrivateReplyEnabled, autoPrivateReplyDelayMinutes, autoPrivateReplyUseAi,
+  onEnabledChange, onTemplateChange,
+  onAutoPrivateReplyEnabledChange, onAutoPrivateReplyDelayMinutesChange, onAutoPrivateReplyUseAiChange
+}: PrivateRepliesTabProps) {
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showToken, setShowToken] = useState(false);
@@ -567,9 +578,110 @@ function PrivateRepliesTab({ brandId, enabled, template, onEnabledChange, onTemp
           <Alert className="border-amber-200 bg-amber-50">
             <Info className="h-3.5 w-3.5 text-amber-600" />
             <AlertDescription className="text-xs text-amber-800">
-              El agente puede editar el mensaje en el Inbox antes de enviarlo. Nunca se envía automáticamente.
+              En modo <strong>manual</strong>, el agente edita el mensaje en el Inbox antes de enviarlo. Activa el modo automático (abajo) para enviarlo sin intervención.
             </AlertDescription>
           </Alert>
+        </CardContent>
+      </Card>
+
+      {/* Card 3b: Auto Private Reply */}
+      <Card className="border border-border shadow-none">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base font-semibold">
+            <Zap className="h-4 w-4 text-violet-500" />
+            Respuesta Privada Automática
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Envía automáticamente un mensaje privado de Messenger a cada persona que comente en tus publicaciones de Facebook. Solo funciona para Facebook (no Instagram).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Activar modo automático</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Solo para comentarios de Facebook Pages</p>
+            </div>
+            <Switch
+              checked={autoPrivateReplyEnabled}
+              onCheckedChange={onAutoPrivateReplyEnabledChange}
+              data-testid="switch-auto-private-reply-enabled"
+            />
+          </div>
+
+          {autoPrivateReplyEnabled && (
+            <div className="space-y-4 pt-2 border-t border-border">
+              {/* Delay */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">Delay antes de enviar</Label>
+                <p className="text-xs text-muted-foreground">Espera este tiempo tras recibir el comentario antes de enviar el mensaje privado. Un pequeño delay hace la respuesta más natural.</p>
+                <div className="flex flex-wrap gap-2">
+                  {[0, 1, 2, 5, 10, 15, 30].map((mins) => (
+                    <button
+                      key={mins}
+                      type="button"
+                      onClick={() => onAutoPrivateReplyDelayMinutesChange(mins)}
+                      data-testid={`button-delay-${mins}`}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
+                        autoPrivateReplyDelayMinutes === mins
+                          ? 'bg-violet-600 text-white border-violet-600'
+                          : 'bg-background text-muted-foreground border-border hover:border-violet-400'
+                      }`}
+                    >
+                      {mins === 0 ? 'Inmediato' : `${mins} min`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Use AI toggle */}
+              <div className="space-y-3">
+                <Label className="text-xs font-medium">Tipo de mensaje</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onAutoPrivateReplyUseAiChange(false)}
+                    data-testid="button-reply-type-template"
+                    className={`flex flex-col items-start gap-1 p-3 rounded-lg border text-left transition-colors ${
+                      !autoPrivateReplyUseAi
+                        ? 'bg-violet-50 border-violet-400 text-violet-900'
+                        : 'bg-background border-border text-muted-foreground hover:border-violet-300'
+                    }`}
+                  >
+                    <span className="text-sm font-medium">📋 Template fijo</span>
+                    <span className="text-xs">Usa el template configurado arriba. Rápido y predecible.</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onAutoPrivateReplyUseAiChange(true)}
+                    data-testid="button-reply-type-ai"
+                    className={`flex flex-col items-start gap-1 p-3 rounded-lg border text-left transition-colors ${
+                      autoPrivateReplyUseAi
+                        ? 'bg-violet-50 border-violet-400 text-violet-900'
+                        : 'bg-background border-border text-muted-foreground hover:border-violet-300'
+                    }`}
+                  >
+                    <span className="text-sm font-medium">✨ Generado por IA</span>
+                    <span className="text-xs">El agente genera un mensaje personalizado para cada comentario.</span>
+                  </button>
+                </div>
+                {autoPrivateReplyUseAi && (
+                  <Alert className="border-blue-200 bg-blue-50">
+                    <Info className="h-3.5 w-3.5 text-blue-600" />
+                    <AlertDescription className="text-xs text-blue-800">
+                      El agente usará tu prompt del sistema y el contexto del post para generar un mensaje único por cada comentarista. Si falla, se enviará el template como respaldo.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+
+              <Alert className="border-amber-200 bg-amber-50">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                <AlertDescription className="text-xs text-amber-800">
+                  <strong>Solo 1 private reply por comentario</strong> — el sistema verifica automáticamente antes de enviar para no duplicar mensajes. Recuerda que el comentario debe tener menos de 7 días.
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -800,6 +912,9 @@ export function AIAgentConfig() {
     isActive: true,
     privateReplyEnabled: false,
     privateReplyTemplate: 'Hola {{first_name}} 👋 He visto tu comentario y quería contactarte en privado. ¿En qué podemos ayudarte?',
+    autoPrivateReplyEnabled: false,
+    autoPrivateReplyDelayMinutes: 0,
+    autoPrivateReplyUseAi: false,
   });
 
   const { data: agent, isLoading: isLoadingAgent } = useQuery({
@@ -994,6 +1109,9 @@ export function AIAgentConfig() {
         isActive: agent.isActive ?? true,
         privateReplyEnabled: agent.privateReplyEnabled ?? false,
         privateReplyTemplate: agent.privateReplyTemplate || 'Hola {{first_name}} 👋 He visto tu comentario y quería contactarte en privado. ¿En qué podemos ayudarte?',
+        autoPrivateReplyEnabled: agent.autoPrivateReplyEnabled ?? false,
+        autoPrivateReplyDelayMinutes: agent.autoPrivateReplyDelayMinutes ?? 0,
+        autoPrivateReplyUseAi: agent.autoPrivateReplyUseAi ?? false,
       });
     }
   }, [agent]);
@@ -2573,8 +2691,14 @@ export function AIAgentConfig() {
                   brandId={activeClient.id}
                   enabled={formData.privateReplyEnabled ?? false}
                   template={formData.privateReplyTemplate ?? ''}
+                  autoPrivateReplyEnabled={formData.autoPrivateReplyEnabled ?? false}
+                  autoPrivateReplyDelayMinutes={formData.autoPrivateReplyDelayMinutes ?? 0}
+                  autoPrivateReplyUseAi={formData.autoPrivateReplyUseAi ?? false}
                   onEnabledChange={(v) => handleFormChange({ privateReplyEnabled: v })}
                   onTemplateChange={(v) => handleFormChange({ privateReplyTemplate: v })}
+                  onAutoPrivateReplyEnabledChange={(v) => handleFormChange({ autoPrivateReplyEnabled: v })}
+                  onAutoPrivateReplyDelayMinutesChange={(v) => handleFormChange({ autoPrivateReplyDelayMinutes: v })}
+                  onAutoPrivateReplyUseAiChange={(v) => handleFormChange({ autoPrivateReplyUseAi: v })}
                 />
               )}
             </TabsContent>

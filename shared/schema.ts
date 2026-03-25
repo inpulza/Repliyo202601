@@ -198,6 +198,10 @@ export const aiAgents = pgTable("ai_agents", {
   // Private Replies (Meta API)
   privateReplyEnabled: boolean("private_reply_enabled").notNull().default(false),
   privateReplyTemplate: text("private_reply_template"),
+  // Auto Private Reply — Facebook automatic mode
+  autoPrivateReplyEnabled: boolean("auto_private_reply_enabled").notNull().default(false),
+  autoPrivateReplyDelayMinutes: integer("auto_private_reply_delay_minutes").notNull().default(0),
+  autoPrivateReplyUseAi: boolean("auto_private_reply_use_ai").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

@@ -588,6 +588,149 @@ function formatUsername(author: string, platform: string): string {
   return author;
 }
 
+/**
+ * Enriquece el contexto del post con todos los datos disponibles para el LLM.
+ *
+ * Objetivos:
+ * 1. Detectar tipo de contenido (Reel, Video, Imagen, Publicación) desde permalink + platform
+ * 2. Limpiar la caption: eliminar bloques de hashtags al final, conservar TODO el contenido real
+ * 3. Proporcionar el permalink como referencia adicional
+ * 4. Para DMs: incluir contexto del post si existe, mejorar fallback si no
+ * 5. Agregar instrucción sobre cómo referenciar el post de forma natural (no robótica)
+ */
+export function enrichPostContext(
+  socialPost: SocialPost | null | undefined,
+  platform: string,
+  messageType: string
+): string {
+  const isDm = messageType === 'conversation' || messageType === 'dm';
+  const normalizedPlatform = (platform || '').toLowerCase().trim();
+
+  if (!socialPost) {
+    if (isDm) {
+      return 'Mensaje directo privado. El usuario te contacta directamente sin referencia a un post específico.';
+    }
+    return '[Publicación sin información disponible — responde basándote en el mensaje del usuario]';
+  }
+
+  // ── PASO 1: Detectar tipo de contenido ──────────────────────────────────
+  const permalink = socialPost.permalink || '';
+  let contentType = '';
+
+  if (normalizedPlatform === 'tiktok') {
+    contentType = 'Video de TikTok';
+  } else if (normalizedPlatform === 'youtube') {
+    contentType = 'Video de YouTube';
+  } else if (normalizedPlatform === 'instagram') {
+    if (permalink.includes('/reel/') || permalink.includes('/reels/')) {
+      contentType = 'Reel de Instagram';
+    } else if (permalink.includes('/p/')) {
+      contentType = 'Publicación de Instagram';
+    } else if (socialPost.thumbnailUrl) {
+      contentType = 'Contenido visual de Instagram';
+    } else {
+      contentType = 'Publicación de Instagram';
+    }
+  } else if (normalizedPlatform === 'facebook') {
+    if (permalink.includes('/videos/') || permalink.includes('/video/')) {
+      contentType = 'Video de Facebook';
+    } else if (permalink.includes('/reel') || permalink.includes('reels')) {
+      contentType = 'Reel de Facebook';
+    } else if (permalink.includes('/photo') || permalink.includes('/photos/')) {
+      contentType = 'Foto de Facebook';
+    } else {
+      contentType = 'Publicación de Facebook';
+    }
+  } else if (normalizedPlatform === 'twitter' || normalizedPlatform === 'x') {
+    contentType = 'Tweet';
+  } else if (normalizedPlatform === 'linkedin') {
+    contentType = 'Publicación de LinkedIn';
+  } else if (normalizedPlatform === 'google-business') {
+    contentType = 'Reseña en Google Business';
+  } else {
+    const label = normalizedPlatform.charAt(0).toUpperCase() + normalizedPlatform.slice(1);
+    contentType = `Publicación de ${label}`;
+  }
+
+  // ── PASO 2: Limpiar y enriquecer la caption ──────────────────────────────
+  let cleanCaption = '';
+
+  if (socialPost.caption) {
+    const rawCaption = socialPost.caption.trim();
+    const lines = rawCaption.split('\n');
+
+    // Identificar bloque de hashtags al final y eliminarlo
+    // Un bloque de hashtags es una secuencia de líneas al final que contienen SOLO hashtags/emojis/espacios
+    let lastContentLineIndex = lines.length - 1;
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const line = lines[i].trim();
+      if (line === '') {
+        lastContentLineIndex = i - 1;
+        continue;
+      }
+      // Si la línea tiene PRINCIPALMENTE hashtags (más del 60% de palabras son hashtags)
+      const words = line.split(/\s+/).filter(w => w.length > 0);
+      const hashtagWords = words.filter(w => w.startsWith('#'));
+      const isHashtagDominatedLine = words.length > 0 && hashtagWords.length / words.length >= 0.6;
+      if (isHashtagDominatedLine) {
+        lastContentLineIndex = i - 1;
+      } else {
+        break;
+      }
+    }
+
+    // Tomar líneas de contenido real
+    const contentLines = lines
+      .slice(0, lastContentLineIndex + 1)
+      .filter(l => l.trim().length > 0);
+
+    if (contentLines.length > 0) {
+      cleanCaption = contentLines.join('\n').trim();
+    } else {
+      // Si todo era hashtags, limpiar la caption directamente
+      cleanCaption = rawCaption.replace(/#\w+/g, '').replace(/\s+/g, ' ').trim();
+    }
+
+    // Limitar a 1500 caracteres máximo (suficiente para contexto rico sin sobrecargar el prompt)
+    if (cleanCaption.length > 1500) {
+      const truncated = cleanCaption.substring(0, 1500);
+      const lastNewline = truncated.lastIndexOf('\n');
+      const lastPeriod = truncated.lastIndexOf('.');
+      const cutPoint = Math.max(lastNewline, lastPeriod);
+      cleanCaption = cutPoint > 1000
+        ? cleanCaption.substring(0, cutPoint + 1) + ' [...]'
+        : truncated + ' [...]';
+    }
+  }
+
+  // ── PASO 3: Construir el contexto enriquecido ────────────────────────────
+  const parts: string[] = [];
+
+  parts.push(`TIPO DE CONTENIDO: ${contentType}`);
+
+  if (cleanCaption) {
+    parts.push(`TEXTO DEL POST:\n${cleanCaption}`);
+  } else {
+    parts.push('TEXTO DEL POST: [Sin texto — post solo visual]');
+  }
+
+  if (permalink) {
+    parts.push(`URL DEL POST: ${permalink}`);
+  }
+
+  if (isDm && socialPost) {
+    parts.push(`NOTA: Este es un mensaje directo privado. El usuario probablemente interactuó con el ${contentType.toLowerCase()} antes de escribir.`);
+  }
+
+  parts.push(
+    `INSTRUCCIÓN PARA REFERENCIAR: Conecta tu respuesta con el tema de este ${contentType.toLowerCase()} ` +
+    `de forma natural y conversacional. NO uses frases robóticas como "vi tu comentario en el post sobre..." ` +
+    `o "en relación a tu publicación...". Simplemente responde como lo haría una persona real que conoce el contenido.`
+  );
+
+  return parts.join('\n\n');
+}
+
 function buildVariableContext(
   message: Message,
   conversation?: Conversation,
@@ -600,15 +743,8 @@ function buildVariableContext(
   const platform = (message.platform || 'default').toLowerCase().trim();
   const username = formatUsername(message.author || 'Usuario', platform);
   const comment = message.content || '';
-  
-  let postContext = '';
-  if (socialPost?.caption) {
-    postContext = socialPost.caption;
-  } else if (message.type === 'conversation' && !socialPost) {
-    postContext = 'Este es un mensaje directo privado.';
-  } else if (message.type === 'comment' && !socialPost?.caption) {
-    postContext = '[Comentario en publicación - caption no disponible. Responde basándote solo en el mensaje del usuario]';
-  }
+
+  const postContext = enrichPostContext(socialPost, platform, message.type || 'comment');
   
   const businessName = brand?.name || 'la marca';
   const limit = dynamicLimit || 2000;
@@ -816,6 +952,13 @@ ${userSummary.summary}
     currentMessageContent = message.content || '[El cliente envió una imagen]';
   } else if ((message as any).mediaType === 'video') {
     currentMessageContent = message.content || '[El cliente envió un video]';
+  }
+
+  // Contexto del post enriquecido (siempre incluir cuando existe post asociado)
+  if (socialPost) {
+    userPromptParts.push(`--- CONTEXTO DEL POST ---
+${variableContext.postContext}
+--- FIN CONTEXTO POST ---`);
   }
 
   userPromptParts.push(situationCard);
@@ -1206,7 +1349,7 @@ export function composeReminderPrompt(context: ReminderPromptContext): ReminderP
   const inboundMessages = conversationHistory.filter(m => m.direction === 'inbound');
   const lastInboundMessage = inboundMessages.length > 0 ? inboundMessages[inboundMessages.length - 1] : null;
   const comment = lastInboundMessage?.content || '';
-  const postContext = socialPost?.caption || '';
+  const postContext = enrichPostContext(socialPost, platform, messageType);
 
   // Calcular variables adicionales de auto-reply para backward compatibility
   const conversationDepth = conversationHistory.length;
@@ -1288,11 +1431,11 @@ ${userSummary.summary}
 --- FIN DEL RESUMEN ---`);
   }
 
-  // Contexto del post (para comentarios)
-  if (socialPost?.caption && !isDm) {
+  // Contexto del post (para comentarios y DMs con post asociado)
+  if (socialPost) {
     userParts.push(`
---- CONTEXTO DEL POST COMENTADO ---
-${socialPost.caption.substring(0, 500)}${socialPost.caption.length > 500 ? '...' : ''}
+--- CONTEXTO DEL POST ---
+${postContext}
 --- FIN CONTEXTO POST ---`);
   }
 
