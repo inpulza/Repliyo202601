@@ -11,7 +11,7 @@ import { thankYouDetector } from "./thankYouDetector";
 import { sentimentAnalysisService } from "./SentimentAnalysisService";
 import { log } from "../app";
 import { sendPrivateReply, interpolateTemplate } from "./metaService";
-import { enrichPostContext } from "./llm/prompt-composer";
+import { enrichPostContext, enrichPostContextForTemplate } from "./llm/prompt-composer";
 
 interface BrandSyncResult {
   newBrands: string[];
@@ -949,16 +949,11 @@ class SyncService {
         return;
       }
 
-      // Idempotency: check if a private reply was already sent for this comment
-      if (conversation?.id) {
-        const convMessages = await storage.getMessagesByConversation(conversation.id);
-        const alreadySent = convMessages.some(
-          (m: any) => m.internalOrigin === 'meta_private_reply' && m.parentMessageId === comment.id
-        );
-        if (alreadySent) {
-          log(`${logPrefix} Private reply already sent for comment ${comment.id} — skipping`, "sync");
-          return;
-        }
+      // Idempotency: check if a private reply was already sent for this comment (global search)
+      const alreadySent = await storage.hasPrivateReplyForComment(brandId, comment.id);
+      if (alreadySent) {
+        log(`${logPrefix} Private reply already sent for comment ${comment.id} — skipping`, "sync");
+        return;
       }
 
       // Get Facebook page connection (meta_page_connections has no 'platform' column —
@@ -990,16 +985,11 @@ class SyncService {
         await new Promise(resolve => setTimeout(resolve, delayMs));
       }
 
-      // Re-check idempotency after delay
-      if (conversation?.id) {
-        const convMessages = await storage.getMessagesByConversation(conversation.id);
-        const alreadySent = convMessages.some(
-          (m: any) => m.internalOrigin === 'meta_private_reply' && m.parentMessageId === comment.id
-        );
-        if (alreadySent) {
-          log(`${logPrefix} Private reply sent during delay window for comment ${comment.id} — skipping`, "sync");
-          return;
-        }
+      // Re-check idempotency after delay (global search)
+      const alreadySentAfterDelay = await storage.hasPrivateReplyForComment(brandId, comment.id);
+      if (alreadySentAfterDelay) {
+        log(`${logPrefix} Private reply sent during delay window for comment ${comment.id} — skipping`, "sync");
+        return;
       }
 
       // Build reply text
@@ -1037,7 +1027,7 @@ class SyncService {
           let postContext = '';
           if (conversation?.socialPostId) {
             const post = await storage.getSocialPost(conversation.socialPostId);
-            postContext = enrichPostContext(post, 'facebook', 'comment');
+            postContext = enrichPostContextForTemplate(post, 'facebook', 'comment');
           }
           replyText = interpolateTemplate(agent.privateReplyTemplate, {
             username: comment.author || '',
@@ -1046,7 +1036,6 @@ class SyncService {
           });
         }
       } else {
-        // Template-based private reply
         if (!agent.privateReplyTemplate) {
           log(`${logPrefix} No private reply template configured — skipping`, "sync");
           return;
@@ -1054,7 +1043,7 @@ class SyncService {
         let postContext = '';
         if (conversation?.socialPostId) {
           const post = await storage.getSocialPost(conversation.socialPostId);
-          postContext = enrichPostContext(post, 'facebook', 'comment');
+          postContext = enrichPostContextForTemplate(post, 'facebook', 'comment');
         }
         replyText = interpolateTemplate(agent.privateReplyTemplate, {
           username: comment.author || '',
@@ -1075,13 +1064,40 @@ class SyncService {
         return;
       }
 
-      // Save outbound message for audit trail
+      // Save outbound message in a DM conversation (not in the comment thread)
       const brand = await storage.getBrand(brandId);
+      let dmConversationId = comment.conversationId;
+
+      try {
+        const customerName = comment.author || 'Unknown';
+        const dmCustomerId = result.recipientId || customerName;
+
+        let dmConv = await storage.getConversationByKey(brandId, 'facebook', dmCustomerId, null, null);
+        if (!dmConv && result.recipientId) {
+          dmConv = await storage.getConversationByKey(brandId, 'facebook', customerName, null, null);
+        }
+        if (!dmConv) {
+          dmConv = await storage.createConversation({
+            brandId,
+            platform: 'facebook',
+            type: 'dm',
+            customerId: dmCustomerId,
+            customerName: customerName,
+            lastMessageAt: new Date(),
+            lastMessagePreview: replyText.trim().slice(0, 100),
+            status: 'new',
+          });
+        }
+        dmConversationId = dmConv.id;
+      } catch (convErr: any) {
+        log(`${logPrefix} Could not create DM conversation: ${convErr.message} — using comment conversation`, "sync");
+      }
+
       await storage.createMessage({
         brandId,
-        conversationId: comment.conversationId,
+        conversationId: dmConversationId,
         platform: 'facebook',
-        type: 'comment',
+        type: 'dm',
         direction: 'outbound',
         author: brand?.name || 'Repliyo',
         content: replyText.trim(),
@@ -1092,6 +1108,13 @@ class SyncService {
         source: 'repliyo',
         internalOrigin: 'meta_private_reply',
       });
+
+      if (dmConversationId) {
+        await storage.updateConversation(dmConversationId, {
+          lastMessageAt: new Date(),
+          lastMessagePreview: replyText.trim().slice(0, 100),
+        });
+      }
 
       log(`${logPrefix} ✅ Auto private reply sent for comment ${comment.id} (commentId=${commentId})`, "sync");
     } catch (err: any) {

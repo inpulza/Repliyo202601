@@ -378,6 +378,17 @@ export function Inbox() {
   });
   const privateReplyEnabled = !!(agentConfig?.privateReplyEnabled);
 
+  const { data: privateReplyStatusData } = useQuery({
+    queryKey: ['privateReplyStatus', activeConversation?.id],
+    queryFn: () => activeConversation?.id ? api.inbox.getPrivateReplyStatus(activeConversation.id) : Promise.resolve({ sentCommentIds: [] }),
+    enabled: !!activeConversation?.id && privateReplyEnabled,
+    staleTime: 30000,
+  });
+  const privateReplySentIds = React.useMemo(
+    () => new Set(privateReplyStatusData?.sentCommentIds || []),
+    [privateReplyStatusData]
+  );
+
   // CRM Contact Query - fetch contact when DM conversation is selected
   const { data: crmContactData, isLoading: isLoadingCrmContact } = useQuery({
     queryKey: ['crmContact', activeClientId, activeConversation?.platform, activeConversation?.customerId],
@@ -2383,6 +2394,7 @@ export function Inbox() {
                         onStartReply={handleStartReply}
                         onPrivateReply={handlePrivateReply}
                         privateReplyEnabled={privateReplyEnabled}
+                        privateReplySentIds={privateReplySentIds}
                         onGenerateDraft={handleGenerateDraft}
                         generatingDraftIds={generatingDraftIds}
                         editingDraftId={editingDraftId}

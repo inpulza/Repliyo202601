@@ -6,6 +6,7 @@ const META_API_BASE = `https://graph.facebook.com/${META_API_VERSION}`;
 export interface PrivateReplyResult {
   success: boolean;
   messageId?: string;
+  recipientId?: string;
   error?: string;
   errorCode?: number;
   tokenExpired?: boolean;
@@ -75,13 +76,15 @@ export async function sendPrivateReply(
         userFriendlyError = "El comentario tiene más de 7 días o ya se envió una respuesta privada antes. Facebook solo permite Private Replies dentro de los primeros 7 días.";
       } else if (errMsg?.includes("admin") || errMsg?.includes("page owner")) {
         userFriendlyError = "No se puede enviar un Private Reply al administrador de la página (no puedes responderte a ti mismo).";
+      } else if (errMsg?.toLowerCase().includes("cant reply to this activity") || errMsg?.toLowerCase().includes("cannot reply to this")) {
+        userFriendlyError = "Este usuario no puede recibir respuestas privadas en esta actividad. Posibles causas: el comentario ya recibió una respuesta privada anteriormente, el usuario tiene mensajes desactivados, o Facebook no permite Private Replies en este tipo de contenido.";
       }
 
       return { success: false, error: userFriendlyError, errorCode: errCode };
     }
 
     log(`${logPrefix} Private reply sent successfully. recipient_id: ${data.recipient_id}, message_id: ${data.message_id}`, "sync");
-    return { success: true, messageId: data.message_id };
+    return { success: true, messageId: data.message_id, recipientId: data.recipient_id };
   } catch (err: any) {
     log(`${logPrefix} Exception: ${err.message}`, "sync");
     return { success: false, error: err.message };

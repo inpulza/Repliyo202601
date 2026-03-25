@@ -112,7 +112,7 @@ const filterByBrand = (brandIdParamName?: string) => {
 
 import sentimentAlertsRouter from './routes/sentimentAlerts.routes';
 import { sendPrivateReply, sendInstagramPrivateReply, interpolateTemplate, checkPagePermissions } from "./services/metaService";
-import { enrichPostContext } from "./services/llm/prompt-composer";
+import { enrichPostContext, enrichPostContextForTemplate } from "./services/llm/prompt-composer";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use(sentimentAlertsRouter);
@@ -4787,12 +4787,60 @@ Sitemap: ${SITE_URL}/sitemap.xml
         });
       }
 
-      // Save outbound message in DB
+      // Find or create a DM conversation for this customer so the private reply
+      // appears in the DM section (not in the comment thread)
+      let dmConversationId = message.conversationId;
+      const customerName = message.author || 'Unknown';
+      const customerAvatar = (typeof message.rawData === 'object' && message.rawData !== null)
+        ? (message.rawData as any).properties?.avatar || (message.rawData as any).avatar || ''
+        : '';
+
+      try {
+        const recipientId = result.messageId ? (result as any).recipientId || '' : '';
+        const dmCustomerId = recipientId || customerName;
+
+        let dmConv = await storage.getConversationByKey(
+          brand.id,
+          'facebook',
+          dmCustomerId,
+          null,
+          null
+        );
+
+        if (!dmConv && recipientId) {
+          dmConv = await storage.getConversationByKey(
+            brand.id,
+            'facebook',
+            customerName,
+            null,
+            null
+          );
+        }
+
+        if (!dmConv) {
+          dmConv = await storage.createConversation({
+            brandId: brand.id,
+            platform: 'facebook',
+            type: 'dm',
+            customerId: dmCustomerId || customerName,
+            customerName: customerName,
+            customerAvatar: customerAvatar,
+            lastMessageAt: new Date(),
+            lastMessagePreview: text.trim().slice(0, 100),
+            status: 'new',
+          });
+        }
+
+        dmConversationId = dmConv.id;
+      } catch (convErr: any) {
+        console.log(`[PrivateReply] Could not create DM conversation: ${convErr.message} — using comment conversation`, "express");
+      }
+
       const outbound = await storage.createMessage({
         brandId: brand.id,
-        conversationId: message.conversationId,
+        conversationId: dmConversationId,
         platform: message.platform,
-        type: 'comment',
+        type: 'dm',
         direction: 'outbound',
         author: brand.name,
         content: text.trim(),
@@ -4804,9 +4852,8 @@ Sitemap: ${SITE_URL}/sitemap.xml
         internalOrigin: 'meta_private_reply',
       });
 
-      // Update conversation last message
-      if (message.conversationId) {
-        await storage.updateConversation(message.conversationId, {
+      if (dmConversationId) {
+        await storage.updateConversation(dmConversationId, {
           lastMessageAt: new Date(),
           lastMessagePreview: text.trim().slice(0, 100),
         });
@@ -4831,13 +4878,12 @@ Sitemap: ${SITE_URL}/sitemap.xml
       const agent = await storage.getAiAgentByBrand(message.brandId);
       if (!agent?.privateReplyTemplate) return res.json({ text: '' });
 
-      // Get post context enriquecido if available
       let postContext = '';
       if (message.conversationId) {
         const conv = await storage.getConversation(message.conversationId);
         if (conv?.socialPostId) {
           const post = await storage.getSocialPost(conv.socialPostId);
-          postContext = enrichPostContext(post, message.platform || conv.platform || '', message.type || 'comment');
+          postContext = enrichPostContextForTemplate(post, message.platform || conv.platform || '', message.type || 'comment');
         }
       }
 
@@ -4850,6 +4896,32 @@ Sitemap: ${SITE_URL}/sitemap.xml
       res.json({ text: interpolated });
     } catch (err: any) {
       res.status(500).json({ error: "Failed to get template", details: err.message });
+    }
+  });
+
+  // GET /api/inbox/private-reply/status — check which comment IDs already have private replies
+  app.get("/api/inbox/private-reply/status", requireAuth, async (req, res) => {
+    try {
+      const { conversationId } = req.query as { conversationId: string };
+      if (!conversationId) return res.json({ sentCommentIds: [] });
+
+      const conv = await storage.getConversation(conversationId);
+      if (!conv) return res.json({ sentCommentIds: [] });
+
+      const convMessages = await storage.getMessagesByConversation(conversationId);
+      const commentIds = convMessages
+        .filter((m: any) => m.type === 'comment' && m.direction === 'inbound')
+        .map((m: any) => m.id);
+
+      const sentCommentIds: string[] = [];
+      for (const commentId of commentIds) {
+        const hasPR = await storage.hasPrivateReplyForComment(conv.brandId, commentId);
+        if (hasPR) sentCommentIds.push(commentId);
+      }
+
+      res.json({ sentCommentIds });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to check private reply status", details: err.message });
     }
   });
 

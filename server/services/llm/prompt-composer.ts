@@ -731,6 +731,62 @@ export function enrichPostContext(
   return parts.join('\n\n');
 }
 
+export function enrichPostContextForTemplate(
+  socialPost: SocialPost | null | undefined,
+  platform: string,
+  messageType: string
+): string {
+  if (!socialPost) return '';
+
+  const normalizedPlatform = (platform || '').toLowerCase().trim();
+  const permalink = socialPost.permalink || '';
+
+  let contentType = '';
+  if (normalizedPlatform === 'tiktok') contentType = 'tu video de TikTok';
+  else if (normalizedPlatform === 'youtube') contentType = 'tu video de YouTube';
+  else if (normalizedPlatform === 'instagram') {
+    if (permalink.includes('/reel/') || permalink.includes('/reels/')) contentType = 'tu Reel de Instagram';
+    else contentType = 'tu publicación de Instagram';
+  } else if (normalizedPlatform === 'facebook') {
+    if (permalink.includes('/videos/') || permalink.includes('/video/')) contentType = 'tu video de Facebook';
+    else if (permalink.includes('/reel') || permalink.includes('reels')) contentType = 'tu Reel de Facebook';
+    else contentType = 'tu publicación de Facebook';
+  } else {
+    const label = normalizedPlatform.charAt(0).toUpperCase() + normalizedPlatform.slice(1);
+    contentType = `tu publicación de ${label}`;
+  }
+
+  let cleanCaption = '';
+  if (socialPost.caption) {
+    const rawCaption = socialPost.caption.trim();
+    const lines = rawCaption.split('\n');
+    let lastContentLineIndex = lines.length - 1;
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const line = lines[i].trim();
+      if (line === '') { lastContentLineIndex = i - 1; continue; }
+      const words = line.split(/\s+/).filter(w => w.length > 0);
+      const hashtagWords = words.filter(w => w.startsWith('#'));
+      if (words.length > 0 && hashtagWords.length / words.length >= 0.6) {
+        lastContentLineIndex = i - 1;
+      } else break;
+    }
+    const contentLines = lines.slice(0, lastContentLineIndex + 1).filter(l => l.trim().length > 0);
+    if (contentLines.length > 0) {
+      cleanCaption = contentLines.join(' ').trim();
+    } else {
+      cleanCaption = rawCaption.replace(/#\w+/g, '').replace(/\s+/g, ' ').trim();
+    }
+    if (cleanCaption.length > 120) {
+      const truncated = cleanCaption.substring(0, 120);
+      const lastSpace = truncated.lastIndexOf(' ');
+      cleanCaption = (lastSpace > 80 ? cleanCaption.substring(0, lastSpace) : truncated) + '...';
+    }
+  }
+
+  if (cleanCaption) return `${contentType} sobre ${cleanCaption}`;
+  return contentType;
+}
+
 function buildVariableContext(
   message: Message,
   conversation?: Conversation,

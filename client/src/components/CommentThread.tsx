@@ -115,6 +115,7 @@ interface CommentThreadProps {
   onUnreadSeen?: (messageId: string) => void;
   onPrivateReply?: (message: Message) => void;
   privateReplyEnabled?: boolean;
+  privateReplySentIds?: Set<string>;
 }
 
 const MAX_DEPTH = 4;
@@ -941,6 +942,7 @@ interface ThreadNodeProps {
   authorReminderCounts: Map<string, number>;
   onPrivateReply?: (message: Message) => void;
   privateReplyEnabled?: boolean;
+  privateReplySentIds?: Set<string>;
 }
 
 function ThreadNode({
@@ -981,11 +983,12 @@ function ThreadNode({
   authorReminderCounts,
   onPrivateReply,
   privateReplyEnabled,
+  privateReplySentIds,
 }: ThreadNodeProps) {
   const isReply = depth > 0;
   const hasChildren = node.children.length > 0;
   const canNest = depth < MAX_DEPTH;
-  const hasPrivateReplySent = node.children.some(c => c.message.internalOrigin === 'meta_private_reply');
+  const hasPrivateReplySent = privateReplySentIds?.has(node.message.id) || node.children.some(c => c.message.internalOrigin === 'meta_private_reply');
   
   // Collapsible state: check if this node is expanded (default is collapsed)
   const isExpanded = expandedIds.has(node.message.id);
@@ -1160,6 +1163,7 @@ function ThreadNode({
                   authorReminderCounts={authorReminderCounts}
                   onPrivateReply={onPrivateReply}
                   privateReplyEnabled={privateReplyEnabled}
+                  privateReplySentIds={privateReplySentIds}
                 />
               ))}
             </div>
@@ -1207,6 +1211,7 @@ export function CommentThread({
   onUnreadSeen,
   onPrivateReply,
   privateReplyEnabled,
+  privateReplySentIds,
 }: CommentThreadProps) {
   const tree = React.useMemo(() => buildMessageTree(messages), [messages]);
   
@@ -1367,6 +1372,7 @@ export function CommentThread({
               authorReminderCounts={reminderStats.authorReminderCounts}
               onPrivateReply={onPrivateReply}
               privateReplyEnabled={privateReplyEnabled}
+              privateReplySentIds={privateReplySentIds}
             />
         </div>
       ))}

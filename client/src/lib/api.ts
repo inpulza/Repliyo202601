@@ -892,5 +892,13 @@ export const api = {
       if (!res.ok) throw new Error('Failed to get template');
       return res.json();
     },
+
+    getPrivateReplyStatus: async (conversationId: string): Promise<{ sentCommentIds: string[] }> => {
+      const res = await fetch(`${API_BASE}/inbox/private-reply/status?conversationId=${conversationId}`, {
+        credentials: 'include',
+      });
+      if (!res.ok) return { sentCommentIds: [] };
+      return res.json();
+    },
   },
 };

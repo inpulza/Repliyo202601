@@ -90,6 +90,7 @@ export interface IStorage {
   getMessages(brandId?: string): Promise<Message[]>;
   getMessagesByConversation(conversationId: string): Promise<Message[]>;
   getMessage(id: string): Promise<Message | undefined>;
+  hasPrivateReplyForComment(brandId: string, parentMessageId: string): Promise<boolean>;
   getMessageByMetricoolId(metricoolId: string, brandId: string): Promise<Message | undefined>;
   messageExistsGlobally(metricoolId: string): Promise<boolean>;
   getMessagesWithPendingTranscription(brandId: string, limit?: number): Promise<Message[]>;
@@ -898,6 +899,20 @@ export class DatabaseStorage implements IStorage {
   async getMessage(id: string): Promise<Message | undefined> {
     const [message] = await db.select().from(messages).where(eq(messages.id, id));
     return message || undefined;
+  }
+
+  async hasPrivateReplyForComment(brandId: string, parentMessageId: string): Promise<boolean> {
+    const [result] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(messages)
+      .where(
+        and(
+          eq(messages.brandId, brandId),
+          eq(messages.parentMessageId, parentMessageId),
+          eq(messages.internalOrigin, 'meta_private_reply')
+        )
+      );
+    return (result?.count || 0) > 0;
   }
 
   async getMessageByMetricoolId(metricoolId: string, brandId: string): Promise<Message | undefined> {
