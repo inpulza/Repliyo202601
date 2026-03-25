@@ -491,9 +491,15 @@ class SyncService {
 
     for (const comment of inboxData.comments) {
       try {
-        const platform = this.normalizePlatform(comment.provider);
+        const rawPlatform = this.normalizePlatform(comment.provider);
         const postExternalId = comment.postId || comment.rawData?.root?.element?.id || null;
         const postPermalink = comment.postUrl || comment.rawData?.root?.element?.link || null;
+
+        // Metricool may tag Instagram comments as 'facebook' when the Instagram account is
+        // linked to a Facebook Page. Override based on the post URL when available.
+        const platform = (rawPlatform === 'facebook' && postPermalink && postPermalink.includes('instagram.com'))
+          ? 'instagram'
+          : rawPlatform;
         
         // Extract post caption: title + description for YouTube, or just text for other platforms
         const postTitle = comment.rawData?.root?.element?.text || null;
