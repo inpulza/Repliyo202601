@@ -1020,7 +1020,7 @@ class SyncService {
             const post = await storage.getSocialPost(conversation.socialPostId);
             postContext = enrichPostContext(post, 'facebook', 'comment');
           }
-          const privateReplyInstructions = agent.autoPrivateReplyPrompt || `Eres un asistente que responde a comentarios de Facebook con mensajes privados de Messenger.\nREGLAS OBLIGATORIAS:\n1. SIEMPRE inicia el mensaje con "Hola [nombre]" seguido de una referencia al contenido donde comentó.\n2. Usa la información del contexto del post para identificar el tipo de contenido y su tema.\n3. Después de la referencia al post, responde al comentario de forma cálida y útil.\n4. Máximo 3-4 oraciones en total.`;
+          const privateReplyInstructions = agent.autoPrivateReplyPrompt || `## Rol\nGeneras el PRIMER mensaje privado (DM) que se envía automáticamente a un usuario que comentó en un post de Facebook/Instagram.\n\n## Estructura (en este orden)\n1. Saludo → "Hola [nombre]"\n2. Referencia al post → menciona brevemente el tipo de contenido y su tema\n3. Conexión con el comentario → responde a lo que dijo\n4. Cierre → invita a continuar la conversación\n\n## Constraints\n- Máximo 3-4 oraciones\n- Tono cálido, cercano y profesional\n- NUNCA uses un saludo genérico sin referencia al post\n- NUNCA repitas el título completo del post textualmente — parafrasea\n- Máximo 1-2 emojis\n- Este es un PRIMER contacto: no asumas familiaridad`;
           const resolvedInstructions = privateReplyInstructions
             .replace(/\{\{username\}\}/g, comment.author || '')
             .replace(/\{\{comment\}\}/g, comment.content || '')
