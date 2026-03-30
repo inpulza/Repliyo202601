@@ -832,19 +832,28 @@ export class DatabaseStorage implements IStorage {
     );
     
     if (existing) {
-      // Only update unreadCount if we should increment (new inbound message)
+      const newTimestamp = insertConversation.lastMessageAt ? new Date(insertConversation.lastMessageAt) : null;
+      const existingTimestamp = existing.lastMessageAt ? new Date(existing.lastMessageAt) : null;
+      const isMoreRecent = newTimestamp && (!existingTimestamp || newTimestamp > existingTimestamp);
+
       const updates: any = {
-        lastMessageAt: insertConversation.lastMessageAt,
-        lastMessagePreview: insertConversation.lastMessagePreview,
         customerName: insertConversation.customerName || existing.customerName,
         customerAvatar: insertConversation.customerAvatar || existing.customerAvatar,
       };
-      
+
+      if (isMoreRecent) {
+        updates.lastMessageAt = newTimestamp;
+        updates.lastMessagePreview = insertConversation.lastMessagePreview;
+      }
+
       if (shouldIncrementUnread) {
         updates.unreadCount = (existing.unreadCount || 0) + 1;
         console.log(`[Storage] INCREMENT unread for conv ${existing.id} (${existing.customerName}): ${existing.unreadCount || 0} -> ${updates.unreadCount}`);
+        if (existing.status === 'closed') {
+          updates.status = 'open';
+          console.log(`[Storage] REOPEN conv ${existing.id} (${existing.customerName}): new inbound message arrived`);
+        }
       }
-      // If shouldIncrementUnread is false, we DON'T touch unreadCount at all
       
       const updated = await this.updateConversation(existing.id, updates);
       return updated!;
