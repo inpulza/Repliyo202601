@@ -1,6 +1,24 @@
 import { storage } from "../../storage";
 import { log } from "../../app";
 
+function normalizePhoneNumber(phone: string): string | null {
+  const cleanDigits = phone.replace(/[^0-9]/g, '');
+
+  if (cleanDigits.length < 7 || cleanDigits.length > 15) {
+    return null;
+  }
+
+  if (cleanDigits.length === 10) {
+    return `+1${cleanDigits}`;
+  }
+
+  if (cleanDigits.length === 11 && cleanDigits.startsWith('1')) {
+    return `+${cleanDigits}`;
+  }
+
+  return `+${cleanDigits}`;
+}
+
 export interface CrmFunctionCall {
   function: string;
   params: Record<string, any>;
@@ -89,7 +107,17 @@ async function executeSingleFunction(
       
       for (const [key, value] of Object.entries(fn.params)) {
         if (allowedFields.includes(key) && value) {
-          updates[key] = value;
+          if (key === 'phone' && typeof value === 'string') {
+            const normalized = normalizePhoneNumber(value);
+            if (normalized) {
+              updates[key] = normalized;
+              log(`[CRM-Functions] Phone normalized: "${value}" → "${normalized}"`, "crm");
+            } else {
+              log(`[CRM-Functions] Phone rejected (invalid format): "${value}"`, "crm");
+            }
+          } else {
+            updates[key] = value;
+          }
         }
       }
       

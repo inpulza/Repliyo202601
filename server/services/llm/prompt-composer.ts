@@ -1091,6 +1091,11 @@ function buildSystemPromptV53(context: VariableContext, brand?: Brand, useJsonMo
     
     PRIORIDADES: email, teléfono, intereses, ubicación, presupuesto
     REGLA: Solo extrae datos mencionados explícitamente por el cliente
+    
+    NORMALIZACIÓN DE TELÉFONO:
+    Cuando extraigas un número de teléfono para crm_actions, normalízalo al formato +1XXXXXXXXXX antes de enviarlo.
+    Ejemplos: "832-286-6974" → "+18322866974", "(305) 884 4110" → "+13058844110", "8322866974" → "+18322866974".
+    Si el número ya tiene +1, solo elimina espacios, guiones y paréntesis.
   </crm_extraction>
 
   <safety_lock>
