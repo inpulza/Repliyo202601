@@ -324,6 +324,7 @@ export function CRM() {
   const [lastMergedId, setLastMergedId] = useState<string | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<CrmContact | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [filterPlatform, setFilterPlatform] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterLifecycle, setFilterLifecycle] = useState<string>('all');
@@ -700,14 +701,19 @@ export function CRM() {
           
           {activeTab === 'contacts' && (
             <div className="bg-gray-50 rounded-lg border border-gray-100 p-3 mt-1">
-              <div className="flex items-center justify-between mb-2.5">
-                <div className="flex items-center gap-1.5">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setFiltersOpen(!filtersOpen)}
+                  className="flex items-center gap-1.5 sm:cursor-default"
+                  data-testid="button-toggle-filters"
+                >
                   <Filter className="h-3.5 w-3.5 text-gray-400" />
                   <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Filtros</span>
                   {hasActiveContactFilters && (
                     <span className="bg-indigo-100 text-indigo-700 text-[10px] font-medium px-1.5 py-0.5 rounded-full">Activos</span>
                   )}
-                </div>
+                  <ChevronRight className={cn("h-3.5 w-3.5 text-gray-400 transition-transform sm:hidden", filtersOpen && "rotate-90")} />
+                </button>
                 <div className="flex items-center gap-1.5">
                   {hasActiveContactFilters && (
                     <Button 
@@ -734,7 +740,7 @@ export function CRM() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-end gap-2">
+              <div className={cn("flex flex-wrap items-end gap-2 mt-2.5", !filtersOpen && "hidden sm:flex")}>
                 <div className="space-y-1 w-[calc(50%-4px)] sm:w-auto sm:min-w-[120px] sm:flex-1">
                   <label className="text-[11px] font-medium text-gray-500 pl-0.5">Plataforma</label>
                   <Select value={filterPlatform} onValueChange={setFilterPlatform}>

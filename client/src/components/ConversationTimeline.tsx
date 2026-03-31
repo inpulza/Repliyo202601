@@ -24,6 +24,7 @@ interface ConversationTimelineProps {
   contactId?: string;
   maxEvents?: number;
   showSummary?: boolean;
+  journeyApiUrl?: string;
 }
 
 const getEventIcon = (type: TimelineEventType) => {
@@ -119,7 +120,8 @@ export function ConversationTimeline({
   conversationId, 
   contactId,
   maxEvents = 15,
-  showSummary = true
+  showSummary = true,
+  journeyApiUrl,
 }: ConversationTimelineProps) {
   const conversationQuery = useQuery({
     queryKey: ['conversation-timeline', conversationId],
@@ -129,8 +131,15 @@ export function ConversationTimeline({
   });
 
   const contactQuery = useQuery({
-    queryKey: ['contact-journey', contactId],
-    queryFn: () => api.crm.getContactJourney(contactId!),
+    queryKey: ['contact-journey', contactId, journeyApiUrl],
+    queryFn: async () => {
+      if (journeyApiUrl) {
+        const res = await fetch(journeyApiUrl);
+        if (!res.ok) throw new Error('Failed to fetch journey');
+        return res.json();
+      }
+      return api.crm.getContactJourney(contactId!);
+    },
     enabled: !!contactId,
     staleTime: 30000,
   });

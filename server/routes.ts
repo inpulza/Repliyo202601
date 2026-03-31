@@ -5230,6 +5230,93 @@ Sitemap: ${SITE_URL}/sitemap.xml
     }
   });
 
+  app.get("/api/public/contacts/:token/detail/:contactId", async (req, res) => {
+    try {
+      const tokenRecord = await storage.getPublicAccessTokenByToken(req.params.token);
+      if (!tokenRecord) {
+        return res.status(404).json({ error: "Invalid or expired link" });
+      }
+
+      const contact = await storage.getCrmContact(req.params.contactId);
+      if (!contact || contact.brandId !== tokenRecord.brandId) {
+        return res.status(404).json({ error: "Contact not found" });
+      }
+
+      const channels = await storage.getCrmContactChannels(contact.id);
+
+      res.json({
+        id: contact.id,
+        displayName: contact.displayName,
+        firstName: contact.firstName,
+        lastName: contact.lastName,
+        phone: contact.phone,
+        email: contact.email,
+        status: contact.status,
+        lifecycleStage: contact.lifecycleStage,
+        city: contact.city,
+        country: contact.country,
+        totalMessages: contact.totalMessages,
+        conversationCount: contact.conversationCount,
+        lastInteractionAt: contact.lastInteractionAt,
+        firstInteractionAt: contact.firstInteractionAt,
+        customFields: contact.customFields,
+        channels,
+      });
+    } catch (error: any) {
+      console.error('[PublicAccess] Error getting contact detail:', error);
+      res.status(500).json({ error: "Failed to get contact detail" });
+    }
+  });
+
+  app.get("/api/public/contacts/:token/detail/:contactId/timeline", async (req, res) => {
+    try {
+      const tokenRecord = await storage.getPublicAccessTokenByToken(req.params.token);
+      if (!tokenRecord) {
+        return res.status(404).json({ error: "Invalid or expired link" });
+      }
+
+      const contact = await storage.getCrmContact(req.params.contactId);
+      if (!contact || contact.brandId !== tokenRecord.brandId) {
+        return res.status(404).json({ error: "Contact not found" });
+      }
+
+      const rawLimit = parseInt(req.query.limit as string);
+      const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 200) : 100;
+      const messages = await storage.getCrmContactTimeline(req.params.contactId, { limit });
+
+      res.json({
+        messages,
+        totalMessages: messages.length,
+      });
+    } catch (error: any) {
+      console.error('[PublicAccess] Error getting contact timeline:', error);
+      res.status(500).json({ error: "Failed to get timeline" });
+    }
+  });
+
+  app.get("/api/public/contacts/:token/detail/:contactId/journey", async (req, res) => {
+    try {
+      const tokenRecord = await storage.getPublicAccessTokenByToken(req.params.token);
+      if (!tokenRecord) {
+        return res.status(404).json({ error: "Invalid or expired link" });
+      }
+
+      const contact = await storage.getCrmContact(req.params.contactId);
+      if (!contact || contact.brandId !== tokenRecord.brandId) {
+        return res.status(404).json({ error: "Contact not found" });
+      }
+
+      const timeline = await storage.getContactTimeline(req.params.contactId);
+      if (!timeline) {
+        return res.status(404).json({ error: "Contact not found" });
+      }
+      res.json({ success: true, timeline });
+    } catch (error: any) {
+      console.error('[PublicAccess] Error getting contact journey:', error);
+      res.status(500).json({ error: "Failed to get journey" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   websocketService.initialize(httpServer);
