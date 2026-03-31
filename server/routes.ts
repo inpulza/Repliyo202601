@@ -1,6 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage, type CrmContactFilterOptions } from "./storage";
 import { insertBrandSchema, insertUserSchema, insertMessageSchema, updateMessageSchema, updateConversationSchema, insertSocialAccountSchema, updateReminderRulesSchema, insertLeadSchema, insertMetaPageConnectionSchema, type User } from "@shared/schema";
 import { hashPassword, verifyPassword, sanitizeUser, sanitizeBrand, type AuthenticatedUser } from "./auth";
 import { MetricoolService } from "./services/metricool";
@@ -3163,10 +3163,17 @@ Sitemap: ${SITE_URL}/sitemap.xml
         return res.status(403).json({ error: "Access denied" });
       }
 
-      const options = {
+      const options: CrmContactFilterOptions = {
         status: req.query.status as string | undefined,
+        lifecycleStage: req.query.lifecycleStage as string | undefined,
         limit: req.query.limit ? parseInt(req.query.limit as string) : 100,
         offset: req.query.offset ? parseInt(req.query.offset as string) : 0,
+        firstInteractionFrom: req.query.firstInteractionFrom as string | undefined,
+        firstInteractionTo: req.query.firstInteractionTo as string | undefined,
+        lastInteractionFrom: req.query.lastInteractionFrom as string | undefined,
+        lastInteractionTo: req.query.lastInteractionTo as string | undefined,
+        platform: req.query.platform as string | undefined,
+        hasPhone: req.query.hasPhone === 'true' ? true : req.query.hasPhone === 'false' ? false : undefined,
       };
 
       const contacts = await storage.getCrmContacts(brandId, options);
@@ -3187,6 +3194,78 @@ Sitemap: ${SITE_URL}/sitemap.xml
     } catch (error: any) {
       console.error('[CRM] Error getting contacts:', error);
       res.status(500).json({ error: "Failed to get contacts", details: error.message });
+    }
+  });
+
+  // GET /api/crm/contacts/export - Export contacts as CSV
+  app.get("/api/crm/contacts/export", requireAuth, async (req, res) => {
+    try {
+      const brandId = req.query.brandId as string || req.user?.brandId;
+      
+      if (!brandId) {
+        return res.status(400).json({ error: "brandId is required" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const options: CrmContactFilterOptions = {
+        status: req.query.status as string | undefined,
+        lifecycleStage: req.query.lifecycleStage as string | undefined,
+        limit: 50000,
+        offset: 0,
+        firstInteractionFrom: req.query.firstInteractionFrom as string | undefined,
+        firstInteractionTo: req.query.firstInteractionTo as string | undefined,
+        lastInteractionFrom: req.query.lastInteractionFrom as string | undefined,
+        lastInteractionTo: req.query.lastInteractionTo as string | undefined,
+        platform: req.query.platform as string | undefined,
+        hasPhone: req.query.hasPhone === 'true' ? true : req.query.hasPhone === 'false' ? false : undefined,
+      };
+
+      const contacts = await storage.getCrmContacts(brandId, options);
+
+      const contactsWithChannels = await Promise.all(
+        contacts.map(async (contact) => {
+          const channels = await storage.getCrmContactChannels(contact.id);
+          return { ...contact, platforms: channels.map(c => c.platform) };
+        })
+      );
+
+      const escapeCsv = (val: string | null | undefined) => {
+        if (val == null) return '';
+        let str = String(val);
+        if (/^[=+\-@\t\r]/.test(str)) {
+          str = "'" + str;
+        }
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return '"' + str.replace(/"/g, '""') + '"';
+        }
+        return str;
+      };
+
+      const headers = ['Nombre', 'Email', 'Teléfono', 'Ciudad', 'País', 'Status', 'Etapa', 'Plataformas', 'Primera interacción', 'Última interacción'];
+      const rows = contactsWithChannels.map(c => [
+        escapeCsv(c.displayName || [c.firstName, c.lastName].filter(Boolean).join(' ') || ''),
+        escapeCsv(c.email),
+        escapeCsv(c.phone),
+        escapeCsv(c.city),
+        escapeCsv(c.country),
+        escapeCsv(c.status),
+        escapeCsv(c.lifecycleStage),
+        escapeCsv(c.platforms.join(', ')),
+        escapeCsv(c.firstInteractionAt ? new Date(c.firstInteractionAt).toISOString() : ''),
+        escapeCsv(c.lastInteractionAt ? new Date(c.lastInteractionAt).toISOString() : ''),
+      ].join(','));
+
+      const csv = [headers.join(','), ...rows].join('\n');
+
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="contactos_crm_${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send('\uFEFF' + csv);
+    } catch (error: any) {
+      console.error('[CRM] Error exporting contacts:', error);
+      res.status(500).json({ error: "Failed to export contacts", details: error.message });
     }
   });
 

@@ -23,7 +23,9 @@ import {
   Undo2,
   ArrowRight,
   Trash2,
-  History
+  History,
+  Download,
+  Calendar
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -206,6 +208,10 @@ export function CRM() {
   const [filterLimboPlatform, setFilterLimboPlatform] = useState<string>('all');
   const [filterDuplicatesPlatform, setFilterDuplicatesPlatform] = useState<string>('all');
   const [filterDuplicatesMatchType, setFilterDuplicatesMatchType] = useState<string>('all');
+  const [filterHasPhone, setFilterHasPhone] = useState<string>('all');
+  const [filterDateType, setFilterDateType] = useState<string>('last');
+  const [filterDateFrom, setFilterDateFrom] = useState<string>('');
+  const [filterDateTo, setFilterDateTo] = useState<string>('');
   
   const [newContact, setNewContact] = useState({
     displayName: '',
@@ -215,10 +221,29 @@ export function CRM() {
     country: '',
   });
 
+  const buildFilterParams = () => {
+    const params = new URLSearchParams();
+    params.set('brandId', activeClientId || '');
+    if (filterStatus !== 'all') params.set('status', filterStatus);
+    if (filterLifecycle !== 'all') params.set('lifecycleStage', filterLifecycle);
+    if (filterPlatform !== 'all') params.set('platform', filterPlatform);
+    if (filterHasPhone === 'yes') params.set('hasPhone', 'true');
+    else if (filterHasPhone === 'no') params.set('hasPhone', 'false');
+    if (filterDateFrom) {
+      if (filterDateType === 'first') params.set('firstInteractionFrom', filterDateFrom);
+      else params.set('lastInteractionFrom', filterDateFrom);
+    }
+    if (filterDateTo) {
+      if (filterDateType === 'first') params.set('firstInteractionTo', filterDateTo);
+      else params.set('lastInteractionTo', filterDateTo);
+    }
+    return params.toString();
+  };
+
   const { data: contactsData, isLoading: contactsLoading } = useQuery({
-    queryKey: ['/api/crm/contacts', activeClientId],
+    queryKey: ['/api/crm/contacts', activeClientId, filterStatus, filterLifecycle, filterPlatform, filterHasPhone, filterDateType, filterDateFrom, filterDateTo],
     queryFn: async () => {
-      const res = await fetch(`/api/crm/contacts?brandId=${activeClientId}`);
+      const res = await fetch(`/api/crm/contacts?${buildFilterParams()}`);
       if (!res.ok) throw new Error('Failed to fetch contacts');
       return res.json();
     },
@@ -408,17 +433,10 @@ export function CRM() {
       c.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.phone?.includes(searchQuery);
     
-    const matchesPlatform = filterPlatform === 'all' || 
-      c.platforms?.some(p => p.toLowerCase() === filterPlatform.toLowerCase());
-    
-    const matchesStatus = filterStatus === 'all' || c.status === filterStatus;
-    
-    const matchesLifecycle = filterLifecycle === 'all' || c.lifecycleStage === filterLifecycle;
-    
-    return matchesSearch && matchesPlatform && matchesStatus && matchesLifecycle;
+    return matchesSearch;
   });
   
-  const hasActiveContactFilters = filterPlatform !== 'all' || filterStatus !== 'all' || filterLifecycle !== 'all';
+  const hasActiveContactFilters = filterPlatform !== 'all' || filterStatus !== 'all' || filterLifecycle !== 'all' || filterHasPhone !== 'all' || filterDateFrom !== '' || filterDateTo !== '';
   const hasActiveLimboFilters = filterLimboPlatform !== 'all';
   const hasActiveDuplicateFilters = filterDuplicatesPlatform !== 'all' || filterDuplicatesMatchType !== 'all';
   
@@ -426,6 +444,21 @@ export function CRM() {
     setFilterPlatform('all');
     setFilterStatus('all');
     setFilterLifecycle('all');
+    setFilterHasPhone('all');
+    setFilterDateFrom('');
+    setFilterDateTo('');
+    setFilterDateType('last');
+  };
+
+  const handleDownloadCsv = () => {
+    const params = buildFilterParams();
+    const url = `/api/crm/contacts/export?${params}`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
   
   const clearLimboFilters = () => {
@@ -539,58 +572,116 @@ export function CRM() {
           
           {/* Filters - scrollable row on mobile */}
           {activeTab === 'contacts' && (
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-              <Select value={filterPlatform} onValueChange={setFilterPlatform}>
-                <SelectTrigger className="h-8 w-28 sm:w-32 text-xs bg-white border-gray-200 shadow-none shrink-0">
-                  <SelectValue placeholder="Plataforma" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="instagram">Instagram</SelectItem>
-                  <SelectItem value="facebook">Facebook</SelectItem>
-                  <SelectItem value="tiktok">TikTok</SelectItem>
-                  <SelectItem value="youtube">YouTube</SelectItem>
-                  <SelectItem value="twitter">Twitter</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="h-8 w-24 sm:w-28 text-xs bg-white border-gray-200 shadow-none shrink-0">
-                  <SelectValue placeholder="Estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="new">Nuevo</SelectItem>
-                  <SelectItem value="lead">Lead</SelectItem>
-                  <SelectItem value="active">Activo</SelectItem>
-                  <SelectItem value="inactive">Inactivo</SelectItem>
-                  <SelectItem value="archived">Archivado</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Select value={filterLifecycle} onValueChange={setFilterLifecycle}>
-                <SelectTrigger className="h-8 w-24 sm:w-28 text-xs bg-white border-gray-200 shadow-none shrink-0">
-                  <SelectValue placeholder="Etapa" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="new">Nuevo</SelectItem>
-                  <SelectItem value="lead">Lead</SelectItem>
-                  <SelectItem value="customer">Cliente</SelectItem>
-                  <SelectItem value="vip">VIP</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              {hasActiveContactFilters && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={clearContactFilters}
-                  className="h-8 px-2 text-xs text-gray-500 shrink-0"
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                <Select value={filterPlatform} onValueChange={setFilterPlatform}>
+                  <SelectTrigger className="h-8 w-28 sm:w-32 text-xs bg-white border-gray-200 shadow-none shrink-0" data-testid="select-filter-platform">
+                    <SelectValue placeholder="Plataforma" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    <SelectItem value="instagram">Instagram</SelectItem>
+                    <SelectItem value="facebook">Facebook</SelectItem>
+                    <SelectItem value="tiktok">TikTok</SelectItem>
+                    <SelectItem value="youtube">YouTube</SelectItem>
+                    <SelectItem value="twitter">Twitter</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="h-8 w-24 sm:w-28 text-xs bg-white border-gray-200 shadow-none shrink-0" data-testid="select-filter-status">
+                    <SelectValue placeholder="Estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="new">Nuevo</SelectItem>
+                    <SelectItem value="lead">Lead</SelectItem>
+                    <SelectItem value="active">Activo</SelectItem>
+                    <SelectItem value="inactive">Inactivo</SelectItem>
+                    <SelectItem value="archived">Archivado</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Select value={filterLifecycle} onValueChange={setFilterLifecycle}>
+                  <SelectTrigger className="h-8 w-24 sm:w-28 text-xs bg-white border-gray-200 shadow-none shrink-0" data-testid="select-filter-lifecycle">
+                    <SelectValue placeholder="Etapa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    <SelectItem value="new">Nuevo</SelectItem>
+                    <SelectItem value="lead">Lead</SelectItem>
+                    <SelectItem value="customer">Cliente</SelectItem>
+                    <SelectItem value="vip">VIP</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={filterHasPhone} onValueChange={setFilterHasPhone}>
+                  <SelectTrigger className="h-8 w-28 sm:w-32 text-xs bg-white border-gray-200 shadow-none shrink-0" data-testid="select-filter-phone">
+                    <SelectValue placeholder="Teléfono" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="yes">Con teléfono</SelectItem>
+                    <SelectItem value="no">Sin teléfono</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                {hasActiveContactFilters && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={clearContactFilters}
+                    className="h-8 px-2 text-xs text-gray-500 shrink-0"
+                    data-testid="button-clear-filters"
+                  >
+                    <X className="h-3 w-3 mr-1" />
+                    Limpiar
+                  </Button>
+                )}
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownloadCsv}
+                  className="h-8 px-2 sm:px-3 text-xs bg-white border-gray-200 shadow-none shrink-0 ml-auto"
+                  data-testid="button-download-csv"
                 >
-                  <X className="h-3 w-3" />
+                  <Download className="h-3.5 w-3.5 sm:mr-1" />
+                  <span className="hidden sm:inline">Descargar CSV</span>
                 </Button>
-              )}
+              </div>
+
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Calendar className="h-3.5 w-3.5 text-gray-400" />
+                  <Select value={filterDateType} onValueChange={setFilterDateType}>
+                    <SelectTrigger className="h-7 w-32 text-xs bg-white border-gray-200 shadow-none" data-testid="select-filter-date-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="last">Última interacción</SelectItem>
+                      <SelectItem value="first">Primera interacción</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <input
+                  type="date"
+                  value={filterDateFrom}
+                  onChange={(e) => setFilterDateFrom(e.target.value)}
+                  className="h-7 px-2 text-xs border border-gray-200 rounded-md bg-white shrink-0"
+                  placeholder="Desde"
+                  data-testid="input-date-from"
+                />
+                <span className="text-xs text-gray-400 shrink-0">a</span>
+                <input
+                  type="date"
+                  value={filterDateTo}
+                  onChange={(e) => setFilterDateTo(e.target.value)}
+                  className="h-7 px-2 text-xs border border-gray-200 rounded-md bg-white shrink-0"
+                  placeholder="Hasta"
+                  data-testid="input-date-to"
+                />
+              </div>
             </div>
           )}
           
