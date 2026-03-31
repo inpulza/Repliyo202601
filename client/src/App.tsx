@@ -26,6 +26,7 @@ const CrisisAlerts = lazy(() => import("@/pages/CrisisAlerts").then(m => ({ defa
 const LandingPage = lazy(() => import("@/components/landing/LandingPage").then(m => ({ default: m.LandingPage })));
 const GetStarted = lazy(() => import("@/pages/GetStarted").then(m => ({ default: m.GetStarted })));
 const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy"));
+const PublicContacts = lazy(() => import("@/pages/PublicContacts").then(m => ({ default: m.PublicContacts })));
 
 function PageLoader() {
   return (
@@ -99,6 +100,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/privacy">{() => <Suspense fallback={<PageLoader />}><PrivacyPolicy /></Suspense>}</Route>
       <Route path="/get-started">{() => <Suspense fallback={<PageLoader />}><GetStarted /></Suspense>}</Route>
+      <Route path="/public/contacts/:token">{() => <Suspense fallback={<PageLoader />}><PublicContacts /></Suspense>}</Route>
       <Route path="/register">{() => <LegacyRedirect newPath="/login" />}</Route>
       
       {/* Legacy URL redirects (for old bookmarks) */}

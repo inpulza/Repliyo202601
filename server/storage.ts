@@ -25,7 +25,8 @@ import {
   type ReminderEvent, type InsertReminderEvent, type ReminderStatus,
   type ConversationTimeline, type TimelineEvent,
   leads, type Lead, type InsertLead,
-  metaPageConnections, type MetaPageConnection, type InsertMetaPageConnection, type UpdateMetaPageConnection
+  metaPageConnections, type MetaPageConnection, type InsertMetaPageConnection, type UpdateMetaPageConnection,
+  publicAccessTokens, type PublicAccessToken, type InsertPublicAccessToken
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, isNull, isNotNull, gte, lte, sql, inArray, notInArray } from "drizzle-orm";
@@ -53,6 +54,7 @@ export interface CrmContactFilterOptions {
   lastInteractionTo?: string;
   platform?: string;
   hasPhone?: boolean;
+  search?: string;
 }
 
 export interface IStorage {
@@ -377,6 +379,13 @@ export interface IStorage {
   upsertMetaPageConnection(data: InsertMetaPageConnection): Promise<MetaPageConnection>;
   updateMetaPageConnection(id: string, data: UpdateMetaPageConnection): Promise<MetaPageConnection | undefined>;
   deleteMetaPageConnection(id: string): Promise<void>;
+
+  // Public Access Tokens (Sales rep links)
+  createPublicAccessToken(data: InsertPublicAccessToken): Promise<PublicAccessToken>;
+  getActivePublicAccessToken(brandId: string): Promise<PublicAccessToken | undefined>;
+  getPublicAccessTokenById(id: string): Promise<PublicAccessToken | undefined>;
+  getPublicAccessTokenByToken(token: string): Promise<PublicAccessToken | undefined>;
+  revokePublicAccessToken(id: string): Promise<PublicAccessToken | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2400,6 +2409,19 @@ export class DatabaseStorage implements IStorage {
         sql`${crmContacts.id} IN (
           SELECT contact_id FROM crm_contact_channels 
           WHERE platform = ${options.platform}
+        )`
+      );
+    }
+
+    if (options?.search) {
+      const searchTerm = `%${options.search.toLowerCase()}%`;
+      conditions.push(
+        sql`(
+          LOWER(${crmContacts.displayName}) LIKE ${searchTerm} OR
+          LOWER(${crmContacts.firstName}) LIKE ${searchTerm} OR
+          LOWER(${crmContacts.lastName}) LIKE ${searchTerm} OR
+          LOWER(${crmContacts.email}) LIKE ${searchTerm} OR
+          ${crmContacts.phone} LIKE ${searchTerm}
         )`
       );
     }
@@ -4537,6 +4559,50 @@ export class DatabaseStorage implements IStorage {
 
   async deleteMetaPageConnection(id: string): Promise<void> {
     await db.delete(metaPageConnections).where(eq(metaPageConnections.id, id));
+  }
+
+  async createPublicAccessToken(data: InsertPublicAccessToken): Promise<PublicAccessToken> {
+    return await db.transaction(async (tx) => {
+      await tx
+        .update(publicAccessTokens)
+        .set({ isActive: false, revokedAt: new Date() })
+        .where(and(eq(publicAccessTokens.brandId, data.brandId), eq(publicAccessTokens.isActive, true)));
+      const [token] = await tx.insert(publicAccessTokens).values(data).returning();
+      return token;
+    });
+  }
+
+  async getActivePublicAccessToken(brandId: string): Promise<PublicAccessToken | undefined> {
+    const [token] = await db
+      .select()
+      .from(publicAccessTokens)
+      .where(and(eq(publicAccessTokens.brandId, brandId), eq(publicAccessTokens.isActive, true)));
+    return token;
+  }
+
+  async getPublicAccessTokenById(id: string): Promise<PublicAccessToken | undefined> {
+    const [row] = await db
+      .select()
+      .from(publicAccessTokens)
+      .where(eq(publicAccessTokens.id, id));
+    return row;
+  }
+
+  async getPublicAccessTokenByToken(token: string): Promise<PublicAccessToken | undefined> {
+    const [row] = await db
+      .select()
+      .from(publicAccessTokens)
+      .where(and(eq(publicAccessTokens.token, token), eq(publicAccessTokens.isActive, true)));
+    return row;
+  }
+
+  async revokePublicAccessToken(id: string): Promise<PublicAccessToken | undefined> {
+    const [row] = await db
+      .update(publicAccessTokens)
+      .set({ isActive: false, revokedAt: new Date() })
+      .where(eq(publicAccessTokens.id, id))
+      .returning();
+    return row;
   }
 }
 

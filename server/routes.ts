@@ -5011,6 +5011,225 @@ Sitemap: ${SITE_URL}/sitemap.xml
     }
   });
 
+  // ===== Public Access Tokens (Sales Rep Links) =====
+
+  app.post("/api/public-access-tokens", requireAuth, async (req, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: "Only admins can generate public access tokens" });
+      }
+      const { brandId } = req.body;
+      if (!brandId) {
+        return res.status(400).json({ error: "brandId is required" });
+      }
+      const token = crypto.randomBytes(32).toString('hex');
+      const result = await storage.createPublicAccessToken({
+        brandId,
+        token,
+        createdBy: req.user.id,
+        isActive: true,
+      });
+      res.json(result);
+    } catch (error: any) {
+      console.error('[PublicAccess] Error creating token:', error);
+      res.status(500).json({ error: "Failed to create token", details: error.message });
+    }
+  });
+
+  app.get("/api/public-access-tokens/:brandId", requireAuth, async (req, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: "Only admins can view public access tokens" });
+      }
+      const token = await storage.getActivePublicAccessToken(req.params.brandId);
+      res.json({ token: token || null });
+    } catch (error: any) {
+      console.error('[PublicAccess] Error getting token:', error);
+      res.status(500).json({ error: "Failed to get token", details: error.message });
+    }
+  });
+
+  app.delete("/api/public-access-tokens/:id", requireAuth, async (req, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: "Only admins can revoke public access tokens" });
+      }
+      const tokenRecord = await storage.getPublicAccessTokenById(req.params.id);
+      if (!tokenRecord) {
+        return res.status(404).json({ error: "Token not found" });
+      }
+      if (req.user?.brandId && req.user.brandId !== tokenRecord.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      const result = await storage.revokePublicAccessToken(req.params.id);
+      if (!result) {
+        return res.status(404).json({ error: "Token not found" });
+      }
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('[PublicAccess] Error revoking token:', error);
+      res.status(500).json({ error: "Failed to revoke token" });
+    }
+  });
+
+  app.get("/api/public/contacts/:token", async (req, res) => {
+    try {
+      const tokenRecord = await storage.getPublicAccessTokenByToken(req.params.token);
+      if (!tokenRecord) {
+        return res.status(404).json({ error: "Invalid or expired link" });
+      }
+
+      const brand = await storage.getBrand(tokenRecord.brandId);
+      if (!brand) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+
+      const rawLimit = parseInt(req.query.limit as string);
+      const rawOffset = parseInt(req.query.offset as string);
+      const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 100) : 100;
+      const offset = Number.isFinite(rawOffset) && rawOffset >= 0 ? rawOffset : 0;
+
+      const validStatuses = ['new', 'lead', 'active', 'inactive', 'archived'];
+      const validPlatforms = ['instagram', 'facebook', 'tiktok', 'youtube', 'twitter', 'linkedin'];
+      const status = validStatuses.includes(req.query.status as string) ? (req.query.status as string) : undefined;
+      const platform = validPlatforms.includes(req.query.platform as string) ? (req.query.platform as string) : undefined;
+      const search = typeof req.query.search === 'string' && req.query.search.trim() ? req.query.search.trim().slice(0, 100) : undefined;
+
+      const validLifecycleStages = ['new', 'lead', 'customer', 'vip'];
+      const lifecycleStage = validLifecycleStages.includes(req.query.lifecycleStage as string) ? (req.query.lifecycleStage as string) : undefined;
+
+      const hasPhone = req.query.hasPhone === 'true' ? true : req.query.hasPhone === 'false' ? false : undefined;
+
+      const options: CrmContactFilterOptions = {
+        status,
+        platform,
+        search,
+        lifecycleStage,
+        hasPhone,
+        firstInteractionFrom: typeof req.query.firstInteractionFrom === 'string' ? req.query.firstInteractionFrom : undefined,
+        firstInteractionTo: typeof req.query.firstInteractionTo === 'string' ? req.query.firstInteractionTo : undefined,
+        lastInteractionFrom: typeof req.query.lastInteractionFrom === 'string' ? req.query.lastInteractionFrom : undefined,
+        lastInteractionTo: typeof req.query.lastInteractionTo === 'string' ? req.query.lastInteractionTo : undefined,
+        limit: limit + 1,
+        offset,
+      };
+
+      const contacts = await storage.getCrmContacts(tokenRecord.brandId, options);
+      const hasMore = contacts.length > limit;
+      const pageContacts = hasMore ? contacts.slice(0, limit) : contacts;
+
+      const contactsWithChannels = await Promise.all(
+        pageContacts.map(async (contact) => {
+          const channels = await storage.getCrmContactChannels(contact.id);
+          return {
+            id: contact.id,
+            displayName: contact.displayName,
+            firstName: contact.firstName,
+            lastName: contact.lastName,
+            phone: contact.phone,
+            email: contact.email,
+            status: contact.status,
+            lifecycleStage: contact.lifecycleStage,
+            city: contact.city,
+            country: contact.country,
+            totalMessages: contact.totalMessages,
+            lastInteractionAt: contact.lastInteractionAt,
+            firstInteractionAt: contact.firstInteractionAt,
+            channelCount: channels.length,
+            platforms: channels.map(c => c.platform),
+          };
+        })
+      );
+
+      res.json({
+        brandName: brand.name,
+        contacts: contactsWithChannels,
+        hasMore,
+        offset,
+        limit,
+      });
+    } catch (error: any) {
+      console.error('[PublicAccess] Error getting public contacts:', error);
+      res.status(500).json({ error: "Failed to get contacts" });
+    }
+  });
+
+  app.get("/api/public/contacts/:token/export", async (req, res) => {
+    try {
+      const tokenRecord = await storage.getPublicAccessTokenByToken(req.params.token);
+      if (!tokenRecord) {
+        return res.status(404).json({ error: "Invalid or expired link" });
+      }
+
+      const brand = await storage.getBrand(tokenRecord.brandId);
+      if (!brand) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+
+      const validStatuses = ['new', 'lead', 'active', 'inactive', 'archived'];
+      const validPlatforms = ['instagram', 'facebook', 'tiktok', 'youtube', 'twitter', 'linkedin'];
+      const validLifecycleStages = ['new', 'lead', 'customer', 'vip'];
+
+      const options: CrmContactFilterOptions = {
+        status: validStatuses.includes(req.query.status as string) ? (req.query.status as string) : undefined,
+        platform: validPlatforms.includes(req.query.platform as string) ? (req.query.platform as string) : undefined,
+        lifecycleStage: validLifecycleStages.includes(req.query.lifecycleStage as string) ? (req.query.lifecycleStage as string) : undefined,
+        hasPhone: req.query.hasPhone === 'true' ? true : req.query.hasPhone === 'false' ? false : undefined,
+        search: typeof req.query.search === 'string' && req.query.search.trim() ? req.query.search.trim().slice(0, 100) : undefined,
+        firstInteractionFrom: typeof req.query.firstInteractionFrom === 'string' ? req.query.firstInteractionFrom : undefined,
+        firstInteractionTo: typeof req.query.firstInteractionTo === 'string' ? req.query.firstInteractionTo : undefined,
+        lastInteractionFrom: typeof req.query.lastInteractionFrom === 'string' ? req.query.lastInteractionFrom : undefined,
+        lastInteractionTo: typeof req.query.lastInteractionTo === 'string' ? req.query.lastInteractionTo : undefined,
+        limit: 50000,
+        offset: 0,
+      };
+
+      const contacts = await storage.getCrmContacts(tokenRecord.brandId, options);
+
+      const contactsWithChannels = await Promise.all(
+        contacts.map(async (contact) => {
+          const channels = await storage.getCrmContactChannels(contact.id);
+          return { ...contact, platforms: channels.map(c => c.platform) };
+        })
+      );
+
+      const escapeCsv = (val: string | null | undefined) => {
+        if (val == null) return '';
+        let str = String(val);
+        if (/^[=+\-@\t\r]/.test(str)) {
+          str = "'" + str;
+        }
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return '"' + str.replace(/"/g, '""') + '"';
+        }
+        return str;
+      };
+
+      const headers = ['Nombre', 'Email', 'Teléfono', 'Ciudad', 'País', 'Status', 'Etapa', 'Plataformas', 'Primera interacción', 'Última interacción'];
+      const rows = contactsWithChannels.map(c => [
+        escapeCsv(c.displayName || [c.firstName, c.lastName].filter(Boolean).join(' ') || ''),
+        escapeCsv(c.email),
+        escapeCsv(c.phone),
+        escapeCsv(c.city),
+        escapeCsv(c.country),
+        escapeCsv(c.status),
+        escapeCsv(c.lifecycleStage),
+        escapeCsv(c.platforms.join(', ')),
+        escapeCsv(c.firstInteractionAt ? new Date(c.firstInteractionAt).toISOString() : ''),
+        escapeCsv(c.lastInteractionAt ? new Date(c.lastInteractionAt).toISOString() : ''),
+      ].join(','));
+
+      const csv = [headers.join(','), ...rows].join('\n');
+
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="contactos_${brand.name}_${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send('\uFEFF' + csv);
+    } catch (error: any) {
+      console.error('[PublicAccess] Error exporting contacts:', error);
+      res.status(500).json({ error: "Failed to export contacts" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   websocketService.initialize(httpServer);

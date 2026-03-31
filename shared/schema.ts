@@ -1273,3 +1273,22 @@ export const insertLeadSchema = createInsertSchema(leads).omit({
 
 export type InsertLead = z.infer<typeof insertLeadSchema>;
 export type Lead = typeof leads.$inferSelect;
+
+export const publicAccessTokens = pgTable("public_access_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brandId: varchar("brand_id").notNull().references(() => brands.id, { onDelete: 'cascade' }),
+  token: varchar("token").notNull().unique(),
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  revokedAt: timestamp("revoked_at"),
+});
+
+export const insertPublicAccessTokenSchema = createInsertSchema(publicAccessTokens).omit({
+  id: true,
+  createdAt: true,
+  revokedAt: true,
+});
+
+export type InsertPublicAccessToken = z.infer<typeof insertPublicAccessTokenSchema>;
+export type PublicAccessToken = typeof publicAccessTokens.$inferSelect;
