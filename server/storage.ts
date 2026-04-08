@@ -106,6 +106,7 @@ export interface IStorage {
   getMessagesByConversation(conversationId: string): Promise<Message[]>;
   getMessage(id: string): Promise<Message | undefined>;
   hasPrivateReplyForComment(brandId: string, parentMessageId: string): Promise<boolean>;
+  hasRecentOutboundInConversation(conversationId: string, withinMs: number): Promise<boolean>;
   getMessageByMetricoolId(metricoolId: string, brandId: string): Promise<Message | undefined>;
   messageExistsGlobally(metricoolId: string): Promise<boolean>;
   getMessagesWithPendingTranscription(brandId: string, limit?: number): Promise<Message[]>;
@@ -946,6 +947,21 @@ export class DatabaseStorage implements IStorage {
     return (result?.count || 0) > 0;
   }
 
+  async hasRecentOutboundInConversation(conversationId: string, withinMs: number): Promise<boolean> {
+    const cutoff = new Date(Date.now() - withinMs);
+    const [result] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(messages)
+      .where(
+        and(
+          eq(messages.conversationId, conversationId),
+          eq(messages.direction, 'outbound'),
+          gte(messages.timestamp, cutoff)
+        )
+      );
+    return (result?.count || 0) > 0;
+  }
+
   async getMessageByMetricoolId(metricoolId: string, brandId: string): Promise<Message | undefined> {
     const [message] = await db
       .select()
@@ -1148,11 +1164,17 @@ export class DatabaseStorage implements IStorage {
       return diffA - diffB;
     });
     
+    let closestCandidate: { pending: Message; timeDiff: number; pendingNormalized: string } | null = null;
+
     for (const pending of sortedPending) {
       const pendingNormalized = normalizeContent(pending.content);
       const pendingTime = new Date(pending.timestamp).getTime();
       const timeDiff = Math.abs(syncedTime - pendingTime);
       
+      if (!closestCandidate || timeDiff < closestCandidate.timeDiff) {
+        closestCandidate = { pending, timeDiff, pendingNormalized };
+      }
+
       // Content must be similar and within time tolerance
       if (pendingNormalized === syncedNormalized && timeDiff < TIME_TOLERANCE_MS) {
         console.log(`[Storage] Found brand-wide match for reconciliation: pending ${pending.id} matches synced content (timeDiff: ${Math.round(timeDiff/1000)}s)`);
@@ -1182,6 +1204,29 @@ export class DatabaseStorage implements IStorage {
         console.log(`[Storage] Found Facebook-style match: synced message contains pending content (timeDiff: ${Math.round(timeDiff/1000)}s)`);
         return pending;
       }
+    }
+
+    // FALLBACK: If content-based matching failed but there's a pending outbound in the same
+    // conversation within a tight time window, match by proximity alone.
+    // This catches cases where the platform alters the text (e.g., TikTok reformatting).
+    const FALLBACK_TIME_TOLERANCE_MS = 5 * 60 * 1000; // 5 minutes
+    if (syncedMessage.conversationId) {
+      for (const pending of sortedPending) {
+        if (pending.conversationId !== syncedMessage.conversationId) continue;
+        const pendingTime = new Date(pending.timestamp).getTime();
+        const timeDiff = Math.abs(syncedTime - pendingTime);
+        if (timeDiff < FALLBACK_TIME_TOLERANCE_MS) {
+          console.log(`[Storage] Found FALLBACK match (same conversation + close timestamp): pending ${pending.id} (timeDiff: ${Math.round(timeDiff/1000)}s)`);
+          return pending;
+        }
+      }
+    }
+
+    if (closestCandidate && pendingMessages.length > 0) {
+      console.log(`[Storage] RECONCILIATION MISS: ${pendingMessages.length} pending candidate(s) but none matched.`);
+      console.log(`[Storage]   Synced content (normalized): "${syncedNormalized.substring(0, 80)}"`);
+      console.log(`[Storage]   Closest candidate ${closestCandidate.pending.id}: "${closestCandidate.pendingNormalized.substring(0, 80)}" (timeDiff: ${Math.round(closestCandidate.timeDiff/1000)}s, tolerance: ${Math.round(TIME_TOLERANCE_MS/1000)}s)`);
+      console.log(`[Storage]   ConversationId match: synced=${syncedMessage.conversationId}, closest=${closestCandidate.pending.conversationId}`);
     }
 
     return undefined;

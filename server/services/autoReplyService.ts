@@ -404,7 +404,12 @@ class AutoReplyService {
           break;
         }
 
-        // Save each chunk as a separate message
+        const isCommentReply = message.type !== 'conversation';
+        const mentionWasUsed = isCommentReply && agent.autoMentionEnabled && chunk.partIndex === 1 && message.author;
+        const savedContent = mentionWasUsed
+          ? `@${message.author.replace('@', '')} ${chunk.content}`
+          : chunk.content;
+
         const replyMessage = await storage.createMessage({
           brandId: brand.id,
           conversationId: conversation.id,
@@ -413,7 +418,7 @@ class AutoReplyService {
           direction: "outbound",
           author: brand.name,
           authorAvatar: brand.avatar,
-          content: chunk.content,
+          content: savedContent,
           timestamp: new Date(),
           status: "read",
           source: "repliyo_auto",

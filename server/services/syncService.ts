@@ -494,6 +494,8 @@ class SyncService {
       }
     }
 
+    const autoReplyTriggeredThisCycle = new Set<string>();
+
     for (const comment of inboxData.comments) {
       try {
         const platform = this.normalizePlatform(comment.provider);
@@ -698,7 +700,14 @@ class SyncService {
             conversationId: conversationRecord.id,
           });
 
-          this.triggerAutoReply(brandId, savedComment, conversationRecord);
+          const hasRecentReply = autoReplyTriggeredThisCycle.has(conversationRecord.id) ||
+            await storage.hasRecentOutboundInConversation(conversationRecord.id, 10 * 60 * 1000);
+          if (hasRecentReply) {
+            log(`[SyncService] Skipping auto-reply for comment ${comment.id}: conversation ${conversationRecord.id} already has a recent outbound reply`, "sync");
+          } else {
+            autoReplyTriggeredThisCycle.add(conversationRecord.id);
+            this.triggerAutoReply(brandId, savedComment, conversationRecord);
+          }
         }
 
         // AUTO PRIVATE REPLY — Facebook only, runs for ALL non-brand comments (not just new ones)
@@ -807,7 +816,14 @@ class SyncService {
                 conversationId: conversationRecord.id,
               });
               
-              this.triggerAutoReply(brandId, savedReply, conversationRecord);
+              const hasRecentReplyNested = autoReplyTriggeredThisCycle.has(conversationRecord.id) ||
+                await storage.hasRecentOutboundInConversation(conversationRecord.id, 10 * 60 * 1000);
+              if (hasRecentReplyNested) {
+                log(`[SyncService] Skipping auto-reply for nested reply ${reply.id}: conversation ${conversationRecord.id} already has a recent outbound reply`, "sync");
+              } else {
+                autoReplyTriggeredThisCycle.add(conversationRecord.id);
+                this.triggerAutoReply(brandId, savedReply, conversationRecord);
+              }
             }
             
             // CRM Traffic Controller: Route nested reply to limbo or existing contact
