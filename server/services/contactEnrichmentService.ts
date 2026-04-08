@@ -1,11 +1,12 @@
 import { storage } from "../storage";
 import { log } from "../app";
+import { findPhoneNumbersInText, parsePhoneNumber } from 'libphonenumber-js';
 
 interface EnrichmentResult {
   phone: string | null;
   email: string | null;
   extractedFields: Record<string, string>;
-  method: 'regex' | 'none';
+  method: 'regex' | 'libphonenumber' | 'none';
 }
 
 interface EnrichmentStats {
@@ -32,11 +33,13 @@ const FACEBOOK_SYSTEM_MESSAGE_PATTERNS = [
 ];
 
 class ContactEnrichmentService {
-  private phonePatterns = [
+  private fallbackPhonePatterns = [
     /\+\d{1,3}[\s.-]?\(?\d{1,4}\)?[\s.-]?\d{1,4}[\s.-]?\d{1,9}/g,
     /\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g,
-    /\b(?:tel|phone|cel|móvil|movil|whatsapp|wsp|wa)[\s.:]*(\+?\d[\d\s.-]{7,})/gi,
+    /\b(?:tel|phone|cel|móvil|movil|whatsapp|wsp|wa|número|numero)[\s.:]*(\+?\d[\d\s.-]{7,})/gi,
   ];
+
+  private nonPhoneContextPattern = /[#]\s*$|(?:ref|referencia|pedido|factura|orden|order|id|código|codigo|code|zip)\s*:?\s*$/i;
 
   private emailPattern = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
 
@@ -52,6 +55,74 @@ class ContactEnrichmentService {
 
   private stripEmailAddresses(text: string): string {
     return text.replace(this.emailPattern, ' ');
+  }
+
+  private hasNonPhoneContext(text: string, matchStart: number): boolean {
+    if (matchStart <= 0) return false;
+    const preceding = text.substring(Math.max(0, matchStart - 20), matchStart);
+    return this.nonPhoneContextPattern.test(preceding);
+  }
+
+  private extractPhoneWithLibrary(text: string): string | null {
+    const found = findPhoneNumbersInText(text, 'US');
+    for (const result of found) {
+      const phoneNumber = result.number;
+      if (this.hasNonPhoneContext(text, result.startsAt)) {
+        log(`[Enrichment] Phone candidate skipped (non-phone context): "${phoneNumber.number}"`, "crm");
+        continue;
+      }
+      if (phoneNumber.isValid()) {
+        log(`[Enrichment] Phone extracted via libphonenumber: "${phoneNumber.number}" (country: ${phoneNumber.country})`, "crm");
+        return phoneNumber.number;
+      }
+      if (phoneNumber.isPossible()) {
+        log(`[Enrichment] Phone extracted via libphonenumber (possible but unvalidated): "${phoneNumber.number}"`, "crm");
+        return phoneNumber.number;
+      }
+    }
+    return null;
+  }
+
+  private extractPhoneWithFallbackRegex(text: string): string | null {
+    for (const pattern of this.fallbackPhonePatterns) {
+      pattern.lastIndex = 0;
+      const matches = text.match(pattern);
+      if (matches && matches.length > 0) {
+        const rawMatch = matches[0];
+        const matchIndex = text.indexOf(rawMatch);
+        if (matchIndex > 0) {
+          const preceding = text.substring(Math.max(0, matchIndex - 20), matchIndex);
+          if (this.nonPhoneContextPattern.test(preceding)) continue;
+        }
+        const digits = rawMatch.replace(/[^\d+]/g, '');
+
+        if (digits.length < 7 || digits.length > 15) continue;
+
+        try {
+          const parsed = parsePhoneNumber(digits.startsWith('+') ? digits : digits, 'US');
+          if (parsed.isValid()) {
+            log(`[Enrichment] Phone validated via fallback+libphonenumber: "${parsed.number}" (country: ${parsed.country})`, "crm");
+            return parsed.number;
+          }
+        } catch (e: any) {
+          log(`[Enrichment] Fallback phone parse failed for "${digits}": ${e.message}`, "crm");
+        }
+
+        let phone = digits;
+        if (!phone.startsWith('+') && phone.length === 10) {
+          phone = '+1' + phone;
+        }
+        if (!phone.startsWith('+') && phone.length === 11 && phone.startsWith('1')) {
+          phone = '+' + phone;
+        }
+        if (!phone.startsWith('+')) {
+          phone = '+' + phone;
+        }
+        log(`[Enrichment] Phone extracted via fallback regex (basic normalization): "${phone}"`, "crm");
+        return phone;
+      }
+    }
+    return null;
   }
 
   extractDataFromText(text: string): EnrichmentResult {
@@ -77,23 +148,15 @@ class ContactEnrichmentService {
 
     const textForPhone = this.stripEmailAddresses(this.stripUrls(text));
 
-    for (const pattern of this.phonePatterns) {
-      pattern.lastIndex = 0;
-      const matches = textForPhone.match(pattern);
-      if (matches && matches.length > 0) {
-        let phone = matches[0].replace(/[^\d+]/g, '');
-        
-        if (phone.length >= 7 && phone.length <= 15) {
-          if (!phone.startsWith('+') && phone.length === 10) {
-            phone = '+1' + phone;
-          }
-          if (!phone.startsWith('+') && phone.length === 11 && phone.startsWith('1')) {
-            phone = '+' + phone;
-          }
-          result.phone = phone;
-          result.method = 'regex';
-          break;
-        }
+    const libraryPhone = this.extractPhoneWithLibrary(textForPhone);
+    if (libraryPhone) {
+      result.phone = libraryPhone;
+      result.method = 'libphonenumber';
+    } else {
+      const fallbackPhone = this.extractPhoneWithFallbackRegex(textForPhone);
+      if (fallbackPhone) {
+        result.phone = fallbackPhone;
+        result.method = 'regex';
       }
     }
 
