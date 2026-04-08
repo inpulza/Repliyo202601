@@ -13,17 +13,46 @@ interface EnrichmentStats {
   phonesFound: number;
   emailsFound: number;
   contactsUpdated: number;
+  skippedSystemMessages: number;
 }
+
+const FACEBOOK_SYSTEM_MESSAGE_PATTERNS = [
+  /facebook created this chat because/i,
+  /facebook creó este chat porque/i,
+  /o facebook criou essa conversa porque/i,
+  /replied to your automated welcome message/i,
+  /respondió a tu mensaje de bienvenida automático/i,
+  /see comment\(https?:\/\//i,
+  /ver comentario\(https?:\/\//i,
+  /ver comentário\(https?:\/\//i,
+  /You have \d+ days before this chat disappears/i,
+  /El chat desaparecerá en \d+ días/i,
+  /To change or remove this greeting, visit Messaging settings/i,
+  /Auto-label added:/i,
+];
 
 class ContactEnrichmentService {
   private phonePatterns = [
     /\+\d{1,3}[\s.-]?\(?\d{1,4}\)?[\s.-]?\d{1,4}[\s.-]?\d{1,9}/g,
     /\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g,
-    /\b\d{10,15}\b/g,
     /\b(?:tel|phone|cel|móvil|movil|whatsapp|wsp|wa)[\s.:]*(\+?\d[\d\s.-]{7,})/gi,
   ];
 
   private emailPattern = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+
+  private urlPattern = /https?:\/\/[^\s)]+/gi;
+
+  isSystemMessage(text: string): boolean {
+    return FACEBOOK_SYSTEM_MESSAGE_PATTERNS.some(pattern => pattern.test(text));
+  }
+
+  private stripUrls(text: string): string {
+    return text.replace(this.urlPattern, ' ');
+  }
+
+  private stripEmailAddresses(text: string): string {
+    return text.replace(this.emailPattern, ' ');
+  }
 
   extractDataFromText(text: string): EnrichmentResult {
     const result: EnrichmentResult = {
@@ -35,20 +64,31 @@ class ContactEnrichmentService {
 
     if (!text || text.length < 5) return result;
 
+    if (this.isSystemMessage(text)) {
+      log(`[Enrichment] Skipping system message: "${text.substring(0, 80)}..."`, "crm");
+      return result;
+    }
+
     const emails = text.match(this.emailPattern);
     if (emails && emails.length > 0) {
       result.email = emails[0].toLowerCase();
       result.method = 'regex';
     }
 
+    const textForPhone = this.stripEmailAddresses(this.stripUrls(text));
+
     for (const pattern of this.phonePatterns) {
-      const matches = text.match(pattern);
+      pattern.lastIndex = 0;
+      const matches = textForPhone.match(pattern);
       if (matches && matches.length > 0) {
         let phone = matches[0].replace(/[^\d+]/g, '');
         
         if (phone.length >= 7 && phone.length <= 15) {
           if (!phone.startsWith('+') && phone.length === 10) {
             phone = '+1' + phone;
+          }
+          if (!phone.startsWith('+') && phone.length === 11 && phone.startsWith('1')) {
+            phone = '+' + phone;
           }
           result.phone = phone;
           result.method = 'regex';
@@ -120,6 +160,7 @@ class ContactEnrichmentService {
       phonesFound: 0,
       emailsFound: 0,
       contactsUpdated: 0,
+      skippedSystemMessages: 0,
     };
 
     log(`[Enrichment] Starting backfill for brand ${brandId}, limit=${limit}`, "crm");
@@ -147,6 +188,11 @@ class ContactEnrichmentService {
           if (stats.messagesProcessed >= limit) break;
           if (msg.direction !== 'inbound') continue;
 
+          if (this.isSystemMessage(msg.content)) {
+            stats.skippedSystemMessages++;
+            continue;
+          }
+
           stats.messagesProcessed++;
           const extraction = this.extractDataFromText(msg.content);
 
@@ -168,7 +214,7 @@ class ContactEnrichmentService {
         }
       }
 
-      log(`[Enrichment] Backfill complete: ${stats.messagesProcessed} messages, ${stats.phonesFound} phones, ${stats.emailsFound} emails, ${stats.contactsUpdated} contacts updated`, "crm");
+      log(`[Enrichment] Backfill complete: ${stats.messagesProcessed} messages, ${stats.phonesFound} phones, ${stats.emailsFound} emails, ${stats.contactsUpdated} contacts updated, ${stats.skippedSystemMessages} system messages skipped`, "crm");
       return stats;
     } catch (error) {
       log(`[Enrichment] Backfill error: ${error}`, "crm");

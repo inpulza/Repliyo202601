@@ -412,7 +412,8 @@ class SyncService {
               });
               
               // Contact Enrichment: Extract phone/email from message content (independent of auto-reply)
-              if (crmResult.contactId && content) {
+              // SKIP system messages (e.g. "Facebook created this chat because...")
+              if (crmResult.contactId && content && !contactEnrichmentService.isSystemMessage(content)) {
                 void contactEnrichmentService.processInboundMessage(
                   crmResult.contactId,
                   content,
@@ -425,6 +426,8 @@ class SyncService {
                   content,
                   brandId
                 ).catch(err => log(`[SyncService] LLM Enrichment error: ${err.message}`, "sync"));
+              } else if (crmResult.contactId && content && contactEnrichmentService.isSystemMessage(content)) {
+                log(`[SyncService] Skipping enrichment for system message: "${content.substring(0, 60)}..."`, "sync");
               }
             } catch (crmError: any) {
               log(`[SyncService] CRM routing error for DM: ${crmError.message}`, "sync");
