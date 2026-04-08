@@ -1,0 +1,146 @@
+Show less
+42 minutes ago
+
+Show less
+
+Analyzing phone number extraction logic (4 seconds)
+Entiendo perfectamente la gravedad del problema. Los números de teléfono que se almacenan en el CRM no corresponden con los que las personas realmente proporcionan en las conversaciones. Voy a hacer una investigación profunda del sistema de extracción de contactos para identificar exactamente dónde está el fallo.
+
+Déjame explorar el código a fondo.
+
+
+6 actions
+Ya tengo una visión clara del sistema. Ahora necesito profundizar en los archivos clave para encontrar el error exacto. Déjame revisar el código de extracción en detalle.
+
+
+3 actions
+Ahora necesito ver exactamente cómo se invocan estos servicios durante la sincronización — especialmente qué mensajes se pasan al extractor.
+
+
+3 actions
+Necesito ver exactamente qué contenido se le pasa al enriquecimiento — si incluye mensajes salientes/auto-replies.
+
+
+7 actions
+Necesito entender cómo los mensajes de private reply podrían terminar siendo procesados. Déjame revisar la detección de dirección y las plantillas.
+
+
+4 actions
+Ahora déjame revisar cómo se ve el contenido raw de los mensajes de Metricool y si hay URLs o datos con números que podrían contaminar la extracción.
+
+
+4 actions
+Déjame verificar un punto más crucial — cómo el servicio de auto-reply procesa y actualiza datos de contacto vía las CRM functions del LLM.
+
+
+3 actions
+Ya tengo un diagnóstico completo. Déjame verificar una cosa más — cómo se ve el contenido de los auto-replies y si contienen URLs.
+
+
+4 actions
+Déjame consultar la base de datos para ver ejemplos concretos de teléfonos almacenados incorrectamente en los contactos de Solidaridad Sin Fronteras.
+
+
+8 actions
+Veo algunos números sospechosos. Déjame verificar las conversaciones de contactos con teléfonos que parecen incorrectos.
+
+
+7 actions
+¡ENCONTRÉ EL PROBLEMA! Mira este mensaje de la conversación de Elianis Leyva — marcado como inbound (del cliente):
+
+"Facebook created this chat because Elianis Leyva commented on your post... 
+See comment(https://facebook.com/story.php?...&id=100063745503440&comment_id=2310383216119922...)"
+
+El teléfono almacenado es +11000637455. Esos dígitos vienen de id=100063745503440 en la URL. La regex lo captura como un teléfono válido.
+
+Déjame verificar más contactos sospechosos para confirmar el patrón.
+
+
+15 actions
+Excelente, ahora tengo evidencia concreta del problema. Hay al menos 10 mensajes del sistema de Facebook (como "Facebook created this chat because...") que contienen URLs con IDs numéricos largos, y están marcados como inbound (del cliente). La regex los captura como teléfonos.
+
+Déjame verificar un caso más y luego te presento el diagnóstico completo.
+
+
+3 actions
+Ahora tengo evidencia irrefutable del problema. Mira esto:
+
+Elianis Leyva y Yudit Riego — ambas tienen el mismo teléfono +11000637455, que es en realidad el ID de la página de Facebook de SSF (100063745503440) extraído de la URL del mensaje del sistema de Facebook.
+Aquí está mi diagnóstico completo:
+
+Diagnóstico del problema
+3 causas raíz encontradas:
+
+Mensajes del sistema de Facebook marcados como "inbound" — Cuando Facebook crea una conversación por un private reply, envía un mensaje como "Facebook created this chat because X commented on your post..." con una URL que contiene IDs numéricos largos (ej: id=100063745503440). Metricool trae estos mensajes como si fueran del cliente, y el sistema los procesa para extracción de teléfonos.
+
+No se filtran URLs antes de extraer teléfonos — El servicio de enriquecimiento aplica regex directamente al texto completo del mensaje, incluyendo URLs que contienen secuencias de 10-15 dígitos (IDs de Facebook, IDs de comentarios, etc.).
+
+El patrón regex \b\d{10,15}\b es demasiado amplio — Captura cualquier secuencia de 10-15 dígitos, sin importar si es un teléfono real o un ID numérico de Facebook.
+
+Ahora voy a implementar la corrección. Los cambios serán:
+
+Filtrar mensajes del sistema de Facebook antes del enriquecimiento
+Eliminar URLs del texto antes de buscar teléfonos
+Mejorar los patrones regex para ser más precisos
+
+Opened server/services/contactEnrichmentService.ts
+Ahora voy a implementar los fixes. Son 3 cambios principales:
+
+
+2 actions
+Ahora necesito agregar la misma protección en el syncService.ts para que los mensajes del sistema de Facebook ni siquiera lleguen al enriquecimiento:
+
+
+2 actions
+Ahora voy a verificar que el código compile correctamente y reiniciar la aplicación:
+
+
+2 actions
+Los errores son solo de dependencias externas (node_modules), no de nuestro código. Déjame reiniciar la aplicación para aplicar los cambios.
+
+
+Restarted Start application
+La app se reinició correctamente. Ahora necesito limpiar los teléfonos incorrectos que ya están almacenados en la base de datos. Déjame identificar cuáles son los contactos afectados y limpiar los teléfonos falsos.
+
+
+2 actions
+Ahora déjame limpiar esos teléfonos falsos y verificar si hay más contactos que podrían tener números derivados de URLs de Facebook. Voy a buscar patrones sospechosos en los teléfonos almacenados.
+
+
+3 actions
+Déjame limpiar los dos contactos con el teléfono falso directamente:
+
+
+2 actions
+Ahora déjame ejecutar la revisión de código para asegurarme de que todo esté correcto:
+
+
+3 actions
+La revisión de código pasó correctamente. Déjame ahora actualizar el archivo de documentación del proyecto con los cambios realizados:
+
+
+3 actions
+Perfecto. Aquí te presento un resumen completo de la investigación y la corrección:
+
+Resumen de lo encontrado
+El problema exacto
+Los mensajes del sistema de Facebook como:
+
+"Facebook created this chat because Elianis Leyva commented on your post... See comment(https://facebook.com/story.php?...&**id=100063745503440**&comment_id=2310383216119922...)"
+
+Eran marcados como mensajes del cliente (inbound), y la URL dentro contenía el ID de la página de Facebook de SSF (100063745503440). La regex de extracción capturaba los primeros 10 dígitos (1000637455) como un número de teléfono y lo normalizaba a +11000637455.
+
+Evidencia: Encontré que tanto Elianis Leyva como Yudit Riego tenían exactamente el mismo teléfono falso +11000637455 — ambas tenían esos mensajes del sistema de Facebook.
+
+Correcciones aplicadas
+Detección de mensajes del sistema — Se agregó una función isSystemMessage() que identifica mensajes de Facebook en 3 idiomas (inglés, español, portugués) como "Facebook created this chat because...", "Auto-label added:", etc.
+
+Eliminación de URLs antes de la extracción — Ahora se eliminan todas las URLs del texto antes de buscar teléfonos, para que los dígitos dentro de links nunca se capturen como números.
+
+Se eliminó el patrón regex demasiado amplio — El patrón \b\d{10,15}\b que capturaba cualquier secuencia de 10-15 dígitos fue removido. Solo se mantienen los patrones que buscan formatos de teléfono reales.
+
+Protección doble — Tanto el procesamiento en tiempo real (en syncService.ts) como el backfill están protegidos contra estos mensajes.
+
+Limpieza de datos — Se limpiaron los 2 contactos que tenían el teléfono falso +11000637455.
+
+¿Quieres que corra un backfill para re-extraer los teléfonos correctos de los contactos que ahora tienen los datos limpios?
