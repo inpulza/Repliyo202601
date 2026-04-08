@@ -119,6 +119,18 @@ Para publicar la app y desbloquear `pages_messaging` para todos los usuarios (no
 - App "Repliyo Inbox-IG" (Instagram sin Facebook Login, App ID: 1127262189526061) — NO usar para production, tiene conflictos con Business Manager ownership
 - App principal "Repliyo Inbox" — esta es la que hay que publicar
 
+### Performance Investigation (Apr-2026)
+A thorough investigation of application freezing (20-30s freeze affecting entire browser) identified 6 root causes:
+1. **Query Invalidation Cascade (CRITICAL):** WebSocket events trigger 6+ simultaneous `invalidateQueries` calls in Inbox.tsx (21 total calls in file). During sync cycles, dozens of messages arrive, each triggering the cascade. Fix: debounce invalidations.
+2. **Monolithic Components:** Inbox.tsx (3,215 lines), LandingPage.tsx (4,191 lines), AIAgentConfig.tsx (3,170 lines) cause full reconciliation on any state change. LandingPage has 56 setInterval/setTimeout calls for animations.
+3. **Monolithic NexusContext:** Single context with 20+ properties causes all consumers to re-render on any change.
+4. **Aggressive Polling:** 8+ queries with `refetchInterval` (30s-5min) plus `refetchOnWindowFocus: true` triggers all queries when returning to tab.
+5. **Backend Sync Load:** SyncService processes all brands sequentially every 2 minutes, sending WebSocket notifications per message (amplifies #1).
+6. **Auth Check on Visibility:** `checkAuth` in AuthContext.tsx fires on `pageshow`/`visibilitychange` events.
+
+**Already mitigated:** `staleTime: 30000` is set globally in queryClient.ts.
+**Refactoring plan:** 3 phases documented in `docs/audits/performance-freeze-investigation-2026-04.md` — from low-risk/high-impact (debounce, reduce polling) to structural changes (context splitting, component extraction, sync optimization).
+
 ## External Dependencies
 - **Metricool:** Used for syncing social media direct messages and comments.
 - **OpenAI / Gemini:** Large Language Model (LLM) providers for generating responses, summaries, and executing CRM functions.
