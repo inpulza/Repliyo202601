@@ -1222,11 +1222,16 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    if (closestCandidate && pendingMessages.length > 0) {
+    if (pendingMessages.length > 0) {
       console.log(`[Storage] RECONCILIATION MISS: ${pendingMessages.length} pending candidate(s) but none matched.`);
       console.log(`[Storage]   Synced content (normalized): "${syncedNormalized.substring(0, 80)}"`);
-      console.log(`[Storage]   Closest candidate ${closestCandidate.pending.id}: "${closestCandidate.pendingNormalized.substring(0, 80)}" (timeDiff: ${Math.round(closestCandidate.timeDiff/1000)}s, tolerance: ${Math.round(TIME_TOLERANCE_MS/1000)}s)`);
-      console.log(`[Storage]   ConversationId match: synced=${syncedMessage.conversationId}, closest=${closestCandidate.pending.conversationId}`);
+      console.log(`[Storage]   Synced conversationId: ${syncedMessage.conversationId}, timestamp: ${syncedMessage.timestamp}`);
+      for (const pending of sortedPending.slice(0, 5)) {
+        const pNorm = normalizeContent(pending.content);
+        const pTimeDiff = Math.abs(new Date(pending.timestamp).getTime() - syncedTime);
+        const convMatch = pending.conversationId === syncedMessage.conversationId ? 'YES' : 'NO';
+        console.log(`[Storage]   Candidate ${pending.id}: "${pNorm.substring(0, 60)}" | timeDiff: ${Math.round(pTimeDiff/1000)}s | convMatch: ${convMatch} | source: ${pending.source}`);
+      }
     }
 
     return undefined;
