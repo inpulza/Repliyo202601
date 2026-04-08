@@ -1,0 +1,39 @@
+=== AUDITORÍA DE TELÉFONOS — SOLIDARIDAD SIN FRONTERAS ===
+
+Brand: solidaridadsinfronteras (1e13d4a8-a10d-49f8-82da-e941148e3598)
+
+Contactos con teléfono almacenado: 48
+Conversaciones DM totales: 198
+
+Contactos sin conversaciones DM encontradas: 0
+Contactos DM auditados (con conversaciones): 48
+
+=== CLASIFICACIÓN ===
+
+Teléfonos correctos: 47
+Teléfonos falsos (de URL/sistema): 0
+Indeterminados: 1
+
+--- De los afectados (0): ---
+  Tenían teléfono real en conversación: 0
+  NO tenían teléfono real: 0
+
+======================================================================
+REPORTE FINAL — AUDITORÍA DE TELÉFONOS SSF
+======================================================================
+
+1. Total contactos DM auditados en SSF: 48
+   (0 contactos con teléfono no tenían conversaciones DM vinculadas)
+2. Contactos afectados (teléfono falso/de URL): 0
+3. Afectados que SÍ tenían teléfono real en conversación: 0
+4. Afectados que NO tenían teléfono real en conversación: 0
+5. Corregidos con re-extracción (teléfono real recuperado): 0
+6. Quedaron sin teléfono después de limpieza: 0
+
+7. Lista detallada de contactos afectados:
+
+  (No se encontraron contactos con teléfonos falsos)
+
+======================================================================
+AUDITORÍA COMPLETADA
+======================================================================
