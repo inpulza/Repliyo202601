@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { Inbox, LayoutDashboard, Settings, BarChart3, Bot, Users, MoreHorizontal, Command, User } from 'lucide-react';
+import { Inbox, LayoutDashboard, Settings, BarChart3, Bot, Users, MoreHorizontal, Command, User, UserCog } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
 import {
   Sheet,
   SheetContent,
@@ -12,6 +13,7 @@ import {
 export function BottomNav() {
   const [location, setLocation] = useLocation();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const { user } = useAuth();
 
   const mainNavItems = [
     { href: '/app/overview', icon: BarChart3, label: 'Overview' },
@@ -25,6 +27,7 @@ export function BottomNav() {
     { href: '/app/integrations', icon: Command, label: 'Integrations' },
     { href: '/app/ai-metrics', icon: Bot, label: 'IA Metrics' },
     { href: '/app/profile', icon: User, label: 'Profile' },
+    ...(user?.role === 'admin' ? [{ href: '/app/users', icon: UserCog, label: 'Usuarios' }] : []),
   ];
 
   const isMoreActive = moreNavItems.some(item => location === item.href);

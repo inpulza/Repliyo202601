@@ -924,7 +924,36 @@ Sitemap: ${SITE_URL}/sitemap.xml
         return res.status(403).json({ error: "Only admins can create users" });
       }
 
-      const { password, ...validatedData } = insertUserSchema.parse(req.body);
+      const createSchema = z.object({
+        name: z.string().min(1),
+        email: z.string().email(),
+        password: z.string().min(6),
+        role: z.enum(['admin', 'client']).default('client'),
+        brandId: z.string().nullable().optional(),
+        status: z.enum(['active', 'suspended', 'pending']).default('active'),
+      });
+
+      const { password, ...validatedData } = createSchema.parse(req.body);
+
+      if (validatedData.role === 'client' && !validatedData.brandId) {
+        return res.status(400).json({ error: "Client users must be assigned to a brand" });
+      }
+
+      if (validatedData.brandId) {
+        const brand = await storage.getBrand(validatedData.brandId);
+        if (!brand) {
+          return res.status(400).json({ error: "Brand not found" });
+        }
+        if (brand.status === 'archived') {
+          return res.status(400).json({ error: "Cannot assign user to an archived brand" });
+        }
+      }
+
+      const existingUser = await storage.getUserByEmail(validatedData.email);
+      if (existingUser) {
+        return res.status(409).json({ error: "Email already in use" });
+      }
+
       const hashedPassword = await hashPassword(password);
       
       const user = await storage.createUser({
@@ -934,7 +963,124 @@ Sitemap: ${SITE_URL}/sitemap.xml
       
       res.status(201).json(sanitizeUser(user));
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
       res.status(400).json({ error: "Invalid user data" });
+    }
+  });
+
+  app.patch("/api/users/:id", requireAuth, async (req, res) => {
+    try {
+      if (req.user!.role !== 'admin') {
+        return res.status(403).json({ error: "Only admins can update users" });
+      }
+
+      const updateSchema = z.object({
+        name: z.string().min(1).optional(),
+        email: z.string().email().optional(),
+        role: z.enum(['admin', 'client']).optional(),
+        brandId: z.string().nullable().optional(),
+        status: z.enum(['active', 'suspended', 'pending']).optional(),
+      });
+
+      const updates = updateSchema.parse(req.body);
+
+      if (updates.email) {
+        const existingUser = await storage.getUserByEmail(updates.email);
+        if (existingUser && existingUser.id !== req.params.id) {
+          return res.status(409).json({ error: "Email already in use" });
+        }
+      }
+
+      if (req.params.id === req.user!.id && updates.role && updates.role !== 'admin') {
+        return res.status(400).json({ error: "Cannot demote yourself" });
+      }
+
+      if (req.params.id === req.user!.id && updates.status === 'suspended') {
+        return res.status(400).json({ error: "Cannot suspend yourself" });
+      }
+
+      const existingUser = await storage.getUser(req.params.id);
+      if (!existingUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const effectiveRole = updates.role ?? existingUser.role;
+      const effectiveBrandId = updates.brandId !== undefined ? updates.brandId : existingUser.brandId;
+
+      if (effectiveRole === 'client' && !effectiveBrandId) {
+        return res.status(400).json({ error: "Client users must be assigned to a brand" });
+      }
+
+      if (effectiveBrandId) {
+        const brand = await storage.getBrand(effectiveBrandId);
+        if (!brand) {
+          return res.status(400).json({ error: "Brand not found" });
+        }
+        if (brand.status === 'archived') {
+          return res.status(400).json({ error: "Cannot assign user to an archived brand" });
+        }
+      }
+
+      const user = await storage.updateUser(req.params.id, updates);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      res.json(sanitizeUser(user));
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update user" });
+    }
+  });
+
+  app.post("/api/users/:id/reset-password", requireAuth, async (req, res) => {
+    try {
+      if (req.user!.role !== 'admin') {
+        return res.status(403).json({ error: "Only admins can reset passwords" });
+      }
+
+      const { newPassword } = z.object({
+        newPassword: z.string().min(6),
+      }).parse(req.body);
+
+      const user = await storage.getUser(req.params.id);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const hashed = await hashPassword(newPassword);
+      await storage.updateUserPassword(req.params.id, hashed);
+      res.json({ success: true });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Password must be at least 6 characters" });
+      }
+      res.status(500).json({ error: "Failed to reset password" });
+    }
+  });
+
+  app.delete("/api/users/:id", requireAuth, async (req, res) => {
+    try {
+      if (req.user!.role !== 'admin') {
+        return res.status(403).json({ error: "Only admins can delete users" });
+      }
+
+      if (req.params.id === req.user!.id) {
+        return res.status(400).json({ error: "Cannot delete yourself" });
+      }
+
+      const user = await storage.getUser(req.params.id);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      await storage.deleteUser(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete user" });
     }
   });
 

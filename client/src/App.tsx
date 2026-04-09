@@ -23,6 +23,7 @@ const IntegrationsPage = lazy(() => import("@/pages/Integrations").then(m => ({ 
 const ProfileSettings = lazy(() => import("@/pages/ProfileSettings").then(m => ({ default: m.ProfileSettings })));
 const CRM = lazy(() => import("@/pages/CRM").then(m => ({ default: m.CRM })));
 const CrisisAlerts = lazy(() => import("@/pages/CrisisAlerts").then(m => ({ default: m.CrisisAlerts })));
+const UserManagement = lazy(() => import("@/pages/UserManagement").then(m => ({ default: m.UserManagement })));
 const LandingPage = lazy(() => import("@/components/landing/LandingPage").then(m => ({ default: m.LandingPage })));
 const GetStarted = lazy(() => import("@/pages/GetStarted").then(m => ({ default: m.GetStarted })));
 const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy"));
@@ -174,6 +175,13 @@ function Router() {
         {() => (
           <DashboardLayout>
             <Suspense fallback={<PageLoader />}><Inbox /></Suspense>
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/app/users">
+        {() => (
+          <DashboardLayout>
+            <Suspense fallback={<PageLoader />}><UserManagement /></Suspense>
           </DashboardLayout>
         )}
       </Route>

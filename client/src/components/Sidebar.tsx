@@ -18,7 +18,8 @@ import {
   ChevronRight,
   Menu,
   Users,
-  ShieldAlert
+  ShieldAlert,
+  UserCog,
 } from 'lucide-react';
 import { NotificationCenter } from './NotificationCenter';
 import {
@@ -72,6 +73,7 @@ export function Sidebar() {
     { href: "/app/integrations", icon: Command, label: "Integrations" },
     { href: "/app/settings", icon: Settings, label: "Agent Settings" },
     { href: "/app/ai-metrics", icon: Bot, label: "IA Metrics" },
+    ...(user?.role === 'admin' ? [{ href: "/app/users", icon: UserCog, label: "Usuarios" }] : []),
   ];
 
   return (

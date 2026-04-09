@@ -75,6 +75,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<InsertUser>): Promise<User | undefined>;
   updateUserPassword(id: string, hashedPassword: string): Promise<void>;
+  deleteUser(id: string): Promise<void>;
   activateUser(id: string): Promise<User | undefined>;
   
   createVerificationCode(userId: string, codeHash: string, expiresAt: Date): Promise<{ id: string }>;
@@ -497,6 +498,10 @@ export class DatabaseStorage implements IStorage {
       .update(users)
       .set({ password: hashedPassword })
       .where(eq(users.id, id));
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
   }
 
   async activateUser(id: string): Promise<User | undefined> {
