@@ -1432,9 +1432,7 @@ export function AIAgentConfig() {
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                     <div className="space-y-2">
-                      <div className="flex items-center min-h-[24px]">
-                        <Label className="text-sm leading-none">Proveedor</Label>
-                      </div>
+                      <Label className="text-sm">Proveedor</Label>
                       <Select
                         value={formData.provider}
                         onValueChange={(value) => {
@@ -1455,17 +1453,17 @@ export function AIAgentConfig() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <div className="flex items-center min-h-[24px] gap-1.5">
-                        <Label className="text-sm leading-none">Modelo</Label>
+                      <div className="relative inline-flex items-center">
+                        <Label className="text-sm">Modelo</Label>
                         <button
                           type="button"
                           data-testid="button-refresh-models"
                           onClick={refreshModels}
                           disabled={isLoadingModels}
-                          className="inline-flex items-center justify-center h-4 w-4 text-muted-foreground hover:text-foreground disabled:opacity-50"
+                          className="absolute -right-5 inline-flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-50"
                           title="Recargar modelos"
                         >
-                          <RotateCcw className={`h-3 w-3 shrink-0 ${isLoadingModels ? 'animate-spin' : ''}`} />
+                          <RotateCcw className={`h-3 w-3 ${isLoadingModels ? 'animate-spin' : ''}`} />
                         </button>
                       </div>
                       <Select
