@@ -40,27 +40,56 @@ import { FaFacebook, FaInstagram, FaTwitter, FaTiktok, FaLinkedin, FaYoutube, Fa
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-const MODELS = {
-  openai: [
-    { value: 'gpt-5.1', label: 'GPT-5.1 (Más potente)', tier: 'premium' },
-    { value: 'gpt-5', label: 'GPT-5', tier: 'premium' },
-    { value: 'gpt-5-mini', label: 'GPT-5 Mini', tier: 'standard' },
-    { value: 'gpt-5-nano', label: 'GPT-5 Nano (Económico)', tier: 'economy' },
-    { value: 'gpt-4.1', label: 'GPT-4.1', tier: 'standard' },
-    { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini', tier: 'economy' },
-    { value: 'gpt-4.1-nano', label: 'GPT-4.1 Nano (Muy económico)', tier: 'economy' },
-    { value: 'gpt-4o', label: 'GPT-4o', tier: 'standard' },
-    { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Rápido)', tier: 'economy' },
-    { value: 'o4-mini', label: 'O4 Mini (Razonamiento)', tier: 'standard' },
-    { value: 'o3', label: 'O3 (Razonamiento avanzado)', tier: 'premium' },
-    { value: 'o3-mini', label: 'O3 Mini (Razonamiento)', tier: 'standard' },
-  ],
-  gemini: [
-    { value: 'gemini-3-pro-preview', label: 'Gemini 3 Pro (Más potente)', tier: 'premium' },
-    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (Razonamiento)', tier: 'standard' },
-    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Rápido)', tier: 'economy' },
-  ],
-};
+interface ModelOption {
+  value: string;
+  label: string;
+  tier: string;
+}
+
+function useAIModels(provider: string) {
+  const [models, setModels] = useState<ModelOption[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const abortRef = React.useRef<AbortController | null>(null);
+  const providerRef = React.useRef(provider);
+  providerRef.current = provider;
+
+  const fetchModels = React.useCallback(async (forceRefresh = false) => {
+    const currentProvider = providerRef.current;
+    if (!currentProvider) return;
+
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    setIsLoading(true);
+    try {
+      const url = `/api/ai-models/${currentProvider}${forceRefresh ? '?refresh=true' : ''}`;
+      const res = await fetch(url, { credentials: 'include', signal: controller.signal });
+      if (!res.ok) throw new Error('Failed to fetch models');
+      const data = await res.json();
+      if (!controller.signal.aborted) {
+        setModels(data.models || []);
+      }
+    } catch (error: any) {
+      if (error?.name !== 'AbortError') {
+        console.error('Error fetching AI models:', error);
+      }
+    } finally {
+      if (!controller.signal.aborted) {
+        setIsLoading(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchModels();
+    return () => {
+      if (abortRef.current) abortRef.current.abort();
+    };
+  }, [provider]);
+
+  return { models, isLoading, refresh: () => fetchModels(true) };
+}
 
 const TRANSCRIPTION_PROVIDERS = [
   { value: 'gemini', label: 'Gemini', description: 'Usa el modelo Gemini configurado para transcribir audio', requiresOwnKey: false },
@@ -1000,6 +1029,19 @@ export function AIAgentConfig() {
     autoPrivateReplyPrompt: DEFAULT_PRIVATE_REPLY_PROMPT,
   });
 
+  const { models: availableModels, isLoading: isLoadingModels, refresh: refreshModels } = useAIModels(formData.provider || 'openai');
+
+  useEffect(() => {
+    if (availableModels.length > 0) {
+      setFormData(prev => {
+        if (!prev.model || !availableModels.some(m => m.value === prev.model)) {
+          return { ...prev, model: availableModels[0].value };
+        }
+        return prev;
+      });
+    }
+  }, [availableModels]);
+
   const { data: agent, isLoading: isLoadingAgent } = useQuery({
     queryKey: ['aiAgent', activeClient?.id],
     queryFn: () => api.aiAgent.get(activeClient!.id),
@@ -1394,11 +1436,10 @@ export function AIAgentConfig() {
                       <Select
                         value={formData.provider}
                         onValueChange={(value) => {
-                          const models = MODELS[value as keyof typeof MODELS];
                           setFormData({ 
                             ...formData, 
                             provider: value,
-                            model: models[0].value
+                            model: ''
                           });
                         }}
                       >
@@ -1412,16 +1453,28 @@ export function AIAgentConfig() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-sm">Modelo</Label>
+                      <div className="flex items-center gap-1.5">
+                        <Label className="text-sm">Modelo</Label>
+                        <button
+                          type="button"
+                          data-testid="button-refresh-models"
+                          onClick={refreshModels}
+                          disabled={isLoadingModels}
+                          className="inline-flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-50"
+                          title="Recargar modelos"
+                        >
+                          <RotateCcw className={`h-3 w-3 ${isLoadingModels ? 'animate-spin' : ''}`} />
+                        </button>
+                      </div>
                       <Select
                         value={formData.model}
                         onValueChange={(value) => setFormData({ ...formData, model: value })}
                       >
                         <SelectTrigger data-testid="select-model" className="shadow-none">
-                          <SelectValue />
+                          <SelectValue placeholder={isLoadingModels ? 'Cargando modelos...' : 'Selecciona un modelo'} />
                         </SelectTrigger>
-                        <SelectContent>
-                          {MODELS[formData.provider as keyof typeof MODELS]?.map((model) => (
+                        <SelectContent className="max-h-60 overflow-y-auto">
+                          {availableModels.map((model) => (
                             <SelectItem key={model.value} value={model.value}>
                               {model.label}
                             </SelectItem>

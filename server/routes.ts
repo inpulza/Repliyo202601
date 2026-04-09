@@ -1686,6 +1686,26 @@ Sitemap: ${SITE_URL}/sitemap.xml
     }
   });
 
+  // ========== AI MODELS DISCOVERY ==========
+
+  app.get("/api/ai-models/:provider", requireAuth, async (req, res) => {
+    try {
+      const { provider } = req.params;
+      if (provider !== 'openai' && provider !== 'gemini') {
+        return res.status(400).json({ error: "Provider must be 'openai' or 'gemini'" });
+      }
+
+      const forceRefresh = req.query.refresh === 'true';
+      const { getModelsForProvider } = await import("./services/llm/model-discovery");
+      const models = await getModelsForProvider(provider, forceRefresh);
+      res.json({ models });
+    } catch (error) {
+      console.error('[Routes] Error fetching AI models:', error);
+      const { getFallbackModels } = await import("./services/llm/model-discovery");
+      res.json({ models: getFallbackModels(req.params.provider) });
+    }
+  });
+
   // ========== AI AGENT ENDPOINTS ==========
   
   // GET /api/ai-agent/:brandId - Obtener configuración del agente

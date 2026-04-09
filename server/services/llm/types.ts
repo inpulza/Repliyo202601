@@ -263,18 +263,17 @@ export function splitMessageForDelivery(text: string, hardLimit: number): Messag
 }
 
 export const OPENAI_MODELS = [
-  "gpt-5",
-  "gpt-4o",
-  "gpt-4o-mini",
-  "gpt-4-turbo",
+  "gpt-5.1", "gpt-5", "gpt-5-mini", "gpt-5-nano",
+  "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano",
+  "gpt-4o", "gpt-4o-mini",
+  "o4-mini", "o3", "o3-mini",
 ] as const;
 
 export const GEMINI_MODELS = [
-  "gemini-2.5-flash",
-  "gemini-2.5-pro",
-  "gemini-1.5-flash",
-  "gemini-1.5-pro",
+  "gemini-3-pro-preview",
+  "gemini-2.5-pro", "gemini-2.5-flash",
+  "gemini-2.0-flash",
 ] as const;
 
-export type OpenAIModel = typeof OPENAI_MODELS[number];
-export type GeminiModel = typeof GEMINI_MODELS[number];
+export type OpenAIModel = string;
+export type GeminiModel = string;
