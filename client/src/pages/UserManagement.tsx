@@ -351,7 +351,7 @@ export function UserManagement() {
 
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
-  const UserFormContent = ({ isCreate }: { isCreate: boolean }) => (
+  const renderFormContent = (isCreate: boolean) => (
     <div className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="form-name">Nombre</Label>
@@ -559,7 +559,7 @@ export function UserManagement() {
               <SheetTitle>Crear Usuario</SheetTitle>
             </SheetHeader>
             <div className="mt-4 overflow-y-auto flex-1">
-              <UserFormContent isCreate />
+              {renderFormContent(true)}
               <div className="mt-6 flex gap-3">
                 <Button variant="outline" className="flex-1" onClick={() => setIsCreateOpen(false)} data-testid="button-cancel-create">Cancelar</Button>
                 <Button className="flex-1" onClick={handleCreate} disabled={isSaving} data-testid="button-submit-create">
@@ -577,7 +577,7 @@ export function UserManagement() {
               <SheetTitle>Editar Usuario</SheetTitle>
             </SheetHeader>
             <div className="mt-4 overflow-y-auto flex-1">
-              <UserFormContent isCreate={false} />
+              {renderFormContent(false)}
               <div className="mt-6 flex gap-3">
                 <Button variant="outline" className="flex-1" onClick={() => setIsEditOpen(false)} data-testid="button-cancel-edit">Cancelar</Button>
                 <Button className="flex-1" onClick={handleUpdate} disabled={isSaving} data-testid="button-submit-edit">
@@ -781,7 +781,7 @@ export function UserManagement() {
               Crea una cuenta de acceso para un cliente o administrador
             </DialogDescription>
           </DialogHeader>
-          <UserFormContent isCreate />
+          {renderFormContent(true)}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateOpen(false)} data-testid="button-cancel-create">Cancelar</Button>
             <Button onClick={handleCreate} disabled={isSaving} data-testid="button-submit-create">
@@ -800,7 +800,7 @@ export function UserManagement() {
               Modifica los datos de {selectedUser?.name}
             </DialogDescription>
           </DialogHeader>
-          <UserFormContent isCreate={false} />
+          {renderFormContent(false)}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditOpen(false)} data-testid="button-cancel-edit">Cancelar</Button>
             <Button onClick={handleUpdate} disabled={isSaving} data-testid="button-submit-edit">
