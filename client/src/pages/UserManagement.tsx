@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
@@ -107,21 +107,10 @@ export function UserManagement() {
   const [newPassword, setNewPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
 
-  useEffect(() => {
-    if (user && user.role !== 'admin') {
-      setLocation('/app/inbox');
-    }
-  }, [user, setLocation]);
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
 
-  if (user?.role !== 'admin') {
-    return (
-      <div className="flex h-full w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
-      </div>
-    );
-  }
-
-  const fetchData = useCallback(async () => {
+  const fetchData = useRef(async () => {
     setIsLoading(true);
     try {
       const [usersRes, brandsRes] = await Promise.all([
@@ -131,15 +120,31 @@ export function UserManagement() {
       if (usersRes.ok) setUsers(await usersRes.json());
       if (brandsRes.ok) setBrands((await brandsRes.json()).filter((b: Brand) => b.status !== 'archived'));
     } catch {
-      toast({ title: 'Error', description: 'No se pudieron cargar los datos', variant: 'destructive' });
+      toastRef.current({ title: 'Error', description: 'No se pudieron cargar los datos', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  });
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (user && user.role !== 'admin') {
+      setLocation('/app/inbox');
+    }
+  }, [user, setLocation]);
+
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      fetchData.current();
+    }
+  }, [user]);
+
+  if (user?.role !== 'admin') {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+      </div>
+    );
+  }
 
   const resetForm = () => {
     setFormName('');
@@ -208,7 +213,7 @@ export function UserManagement() {
       }
       toast({ title: 'Usuario creado', description: `Se creó la cuenta para ${formEmail}` });
       setIsCreateOpen(false);
-      fetchData();
+      fetchData.current();
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
@@ -238,7 +243,7 @@ export function UserManagement() {
       }
       toast({ title: 'Usuario actualizado', description: `Se actualizó la cuenta de ${formEmail}` });
       setIsEditOpen(false);
-      fetchData();
+      fetchData.current();
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
@@ -287,7 +292,7 @@ export function UserManagement() {
       }
       toast({ title: 'Usuario eliminado', description: `Se eliminó la cuenta de ${selectedUser.email}` });
       setIsDeleteConfirmOpen(false);
-      fetchData();
+      fetchData.current();
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
@@ -312,7 +317,7 @@ export function UserManagement() {
         title: newStatus === 'suspended' ? 'Usuario suspendido' : 'Usuario activado',
         description: `${u.name} fue ${newStatus === 'suspended' ? 'suspendido' : 'activado'}`,
       });
-      fetchData();
+      fetchData.current();
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     }
