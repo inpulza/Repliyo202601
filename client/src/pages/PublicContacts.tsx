@@ -75,6 +75,7 @@ interface TimelineMessage {
 interface PublicContactsResponse {
   brandName: string;
   contacts: PublicContact[];
+  totalCount: number;
   hasMore: boolean;
   offset: number;
   limit: number;
@@ -210,6 +211,7 @@ export function PublicContacts() {
   const contacts: PublicContact[] = data?.contacts || [];
   const brandName: string = data?.brandName || '';
   const hasMore: boolean = data?.hasMore || false;
+  const totalCount: number = data?.totalCount || 0;
 
   const filteredContacts = useMemo(() => {
     if (!debouncedSearch) return contacts;
@@ -637,9 +639,14 @@ export function PublicContacts() {
       </div>
 
       <div className="px-4 sm:px-6 py-2.5 border-t bg-gray-50 flex items-center justify-between">
-        <span className="text-xs text-gray-500" data-testid="text-contact-count">
-          {filteredContacts.length === 0 ? 'Sin resultados' : `${filteredContacts.length} contacto${filteredContacts.length !== 1 ? 's' : ''}`}
-          {page > 0 && ` — Página ${page + 1}`}
+        <span className="text-sm text-gray-600" data-testid="text-contact-count">
+          {filteredContacts.length === 0 ? 'Sin resultados' : (
+            <>
+              <span className="font-medium">{page * PAGE_SIZE + 1}–{page * PAGE_SIZE + filteredContacts.length}</span>
+              {' de '}
+              <span className="font-medium">{totalCount.toLocaleString()}</span>
+            </>
+          )}
         </span>
         <div className="flex items-center gap-1.5">
           <Button

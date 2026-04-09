@@ -221,6 +221,7 @@ export interface IStorage {
   
   // CRM Module - Contacts
   getCrmContacts(brandId: string, options?: CrmContactFilterOptions): Promise<CrmContact[]>;
+  countCrmContacts(brandId: string, options?: CrmContactFilterOptions): Promise<number>;
   getCrmContact(id: string): Promise<CrmContact | undefined>;
   getCrmContactByEmail(brandId: string, email: string): Promise<CrmContact | undefined>;
   getCrmContactByPhone(brandId: string, phone: string): Promise<CrmContact | undefined>;
@@ -2488,6 +2489,65 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(crmContacts.lastInteractionAt))
       .limit(options?.limit || 100)
       .offset(options?.offset || 0);
+  }
+
+  async countCrmContacts(brandId: string, options?: CrmContactFilterOptions): Promise<number> {
+    const conditions = [eq(crmContacts.brandId, brandId)];
+
+    if (options?.status) {
+      conditions.push(eq(crmContacts.status, options.status));
+    }
+    if (options?.lifecycleStage) {
+      conditions.push(eq(crmContacts.lifecycleStage, options.lifecycleStage));
+    }
+    if (options?.firstInteractionFrom) {
+      conditions.push(gte(crmContacts.firstInteractionAt, new Date(options.firstInteractionFrom)));
+    }
+    if (options?.firstInteractionTo) {
+      const endOfDay = new Date(options.firstInteractionTo);
+      endOfDay.setHours(23, 59, 59, 999);
+      conditions.push(lte(crmContacts.firstInteractionAt, endOfDay));
+    }
+    if (options?.lastInteractionFrom) {
+      conditions.push(gte(crmContacts.lastInteractionAt, new Date(options.lastInteractionFrom)));
+    }
+    if (options?.lastInteractionTo) {
+      const endOfDay = new Date(options.lastInteractionTo);
+      endOfDay.setHours(23, 59, 59, 999);
+      conditions.push(lte(crmContacts.lastInteractionAt, endOfDay));
+    }
+    if (options?.hasPhone === true) {
+      conditions.push(isNotNull(crmContacts.phone));
+      conditions.push(sql`${crmContacts.phone} != ''`);
+    } else if (options?.hasPhone === false) {
+      conditions.push(or(isNull(crmContacts.phone), sql`${crmContacts.phone} = ''`)!);
+    }
+    if (options?.platform) {
+      conditions.push(
+        sql`${crmContacts.id} IN (
+          SELECT contact_id FROM crm_contact_channels 
+          WHERE platform = ${options.platform}
+        )`
+      );
+    }
+    if (options?.search) {
+      const searchTerm = `%${options.search.toLowerCase()}%`;
+      conditions.push(
+        sql`(
+          LOWER(${crmContacts.displayName}) LIKE ${searchTerm} OR
+          LOWER(${crmContacts.firstName}) LIKE ${searchTerm} OR
+          LOWER(${crmContacts.lastName}) LIKE ${searchTerm} OR
+          LOWER(${crmContacts.email}) LIKE ${searchTerm} OR
+          ${crmContacts.phone} LIKE ${searchTerm}
+        )`
+      );
+    }
+
+    const [result] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(crmContacts)
+      .where(and(...conditions));
+    return Number(result?.count ?? 0);
   }
 
   async getCrmContact(id: string): Promise<CrmContact | undefined> {

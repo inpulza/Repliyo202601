@@ -5291,7 +5291,14 @@ Sitemap: ${SITE_URL}/sitemap.xml
         offset,
       };
 
-      const contacts = await storage.getCrmContacts(tokenRecord.brandId, options);
+      const countOptions: CrmContactFilterOptions = { ...options };
+      delete countOptions.limit;
+      delete countOptions.offset;
+
+      const [contacts, totalCount] = await Promise.all([
+        storage.getCrmContacts(tokenRecord.brandId, options),
+        storage.countCrmContacts(tokenRecord.brandId, countOptions),
+      ]);
       const hasMore = contacts.length > limit;
       const pageContacts = hasMore ? contacts.slice(0, limit) : contacts;
 
@@ -5321,6 +5328,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
       res.json({
         brandName: brand.name,
         contacts: contactsWithChannels,
+        totalCount,
         hasMore,
         offset,
         limit,
