@@ -720,6 +720,17 @@ Sitemap: ${SITE_URL}/sitemap.xml
         return res.status(404).json({ error: "Brand not found in Metricool" });
       }
 
+      const brandUpdates: Record<string, any> = {};
+      if (matchingBrand.name && matchingBrand.name !== 'Unknown Brand' && matchingBrand.name !== brand.name) {
+        brandUpdates.name = matchingBrand.name;
+      }
+      if (matchingBrand.avatar && matchingBrand.avatar !== brand.avatar) {
+        brandUpdates.avatar = matchingBrand.avatar;
+      }
+      if (Object.keys(brandUpdates).length > 0) {
+        await storage.updateBrand(brandId, brandUpdates);
+      }
+
       const detectedProviders = matchingBrand.detectedProviders || [];
       const existingAccounts = await storage.getSocialAccountsByBrand(brandId);
       const existingProviderMap = new Map(existingAccounts.map(a => [a.provider, a]));

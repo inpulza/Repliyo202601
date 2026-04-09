@@ -192,7 +192,15 @@ class SyncService {
         try {
           await storage.updateSocialAccountAvatar(brandId, conv.provider, brandAvatarUrl);
         } catch (e) {
-          // Silently ignore avatar update errors
+          // Silently ignore social account avatar update errors
+        }
+        try {
+          const currentBrand = await storage.getBrand(brandId);
+          if (currentBrand && !currentBrand.avatar) {
+            await storage.updateBrand(brandId, { avatar: brandAvatarUrl });
+          }
+        } catch (e) {
+          // Silently ignore brand avatar update errors
         }
       }
 
