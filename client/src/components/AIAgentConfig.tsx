@@ -1431,8 +1431,10 @@ export function AIAgentConfig() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
-                    <div className="space-y-2">
-                      <Label className="text-sm">Proveedor</Label>
+                    <div className="flex flex-col gap-2">
+                      <div className="h-5 flex items-center">
+                        <Label className="text-sm">Proveedor</Label>
+                      </div>
                       <Select
                         value={formData.provider}
                         onValueChange={(value) => {
@@ -1452,35 +1454,35 @@ export function AIAgentConfig() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm">Modelo</Label>
-                      <div className="flex items-center gap-1.5">
-                        <Select
-                          value={formData.model}
-                          onValueChange={(value) => setFormData({ ...formData, model: value })}
-                        >
-                          <SelectTrigger data-testid="select-model" className="shadow-none flex-1">
-                            <SelectValue placeholder={isLoadingModels ? 'Cargando modelos...' : 'Selecciona un modelo'} />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-60 overflow-y-auto">
-                            {availableModels.map((model) => (
-                              <SelectItem key={model.value} value={model.value}>
-                                {model.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                    <div className="flex flex-col gap-2">
+                      <div className="h-5 flex items-center gap-1.5">
+                        <Label className="text-sm">Modelo</Label>
                         <button
                           type="button"
                           data-testid="button-refresh-models"
                           onClick={refreshModels}
                           disabled={isLoadingModels}
-                          className="inline-flex items-center justify-center h-9 w-9 shrink-0 rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-muted/50 disabled:opacity-50 transition-colors"
+                          className="inline-flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-50"
                           title="Recargar modelos"
                         >
-                          <RotateCcw className={`h-3.5 w-3.5 ${isLoadingModels ? 'animate-spin' : ''}`} />
+                          <RotateCcw className={`h-3 w-3 ${isLoadingModels ? 'animate-spin' : ''}`} />
                         </button>
                       </div>
+                      <Select
+                        value={formData.model}
+                        onValueChange={(value) => setFormData({ ...formData, model: value })}
+                      >
+                        <SelectTrigger data-testid="select-model" className="shadow-none">
+                          <SelectValue placeholder={isLoadingModels ? 'Cargando modelos...' : 'Selecciona un modelo'} />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60 overflow-y-auto">
+                          {availableModels.map((model) => (
+                            <SelectItem key={model.value} value={model.value}>
+                              {model.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
