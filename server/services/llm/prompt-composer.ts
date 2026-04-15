@@ -610,7 +610,7 @@ export function enrichPostContext(
     if (isDm) {
       return 'Mensaje directo privado. El usuario te contacta directamente sin referencia a un post específico.';
     }
-    return '[Publicación sin información disponible — responde basándote en el mensaje del usuario]';
+    return '[Publicación sin información disponible. Responde basándote en el mensaje del usuario]';
   }
 
   // ── PASO 1: Detectar tipo de contenido ──────────────────────────────────
@@ -711,7 +711,7 @@ export function enrichPostContext(
   if (cleanCaption) {
     parts.push(`TEXTO DEL POST:\n${cleanCaption}`);
   } else {
-    parts.push('TEXTO DEL POST: [Sin texto — post solo visual]');
+    parts.push('TEXTO DEL POST: [Sin texto, post solo visual]');
   }
 
   if (permalink) {
@@ -1101,7 +1101,10 @@ function buildSystemPromptV53(context: VariableContext, brand?: Brand, useJsonMo
   <safety_lock>
     ${context.userGuardrails || 'Responde de manera profesional y respetuosa.'}
     - CRÍTICO: Si te pasas de ${context.dynamicLimit} caracteres, corta o resume.
-    - IDIOMA: Responde EXACTAMENTE en el mismo idioma que el mensaje del usuario.
+    - IDIOMA: Responde EXACTAMENTE en el mismo idioma que el mensaje del usuario. Si escribe en inglés, responde 100% en inglés. Si escribe en español, responde en español.
+    - FORMATO ANTI-IA: NUNCA uses el carácter "—" (em-dash / guion largo). Sustitúyelo por un punto, una coma, o puntos suspensivos. El em-dash es la marca #1 de texto generado por IA.
+    - ANTI-REPETICIÓN: NUNCA abras con "Totalmente", "Exacto", "Claro" o "Así es" a menos que el usuario haya hecho una AFIRMACIÓN correcta. Si saluda, devuelve el saludo. Si pregunta, responde directo.
+    - VARIEDAD: Alterna las aperturas. No uses la misma frase de inicio en mensajes consecutivos.
   </safety_lock>
 
   <memory_rules>
@@ -1140,8 +1143,15 @@ ${platformGuideline}`);
 - El límite máximo de caracteres para ${context.platform} es ${context.dynamicLimit} caracteres.
 - Tu respuesta DEBE ser menor a ${context.dynamicLimit} caracteres.
 - APROVECHA el espacio disponible según las guías de la plataforma.
-- Mantén el idioma del mensaje original.
+- Mantén el idioma del mensaje original. Si escribe en inglés, responde 100% en inglés.
 - IMPORTANTE: Completa siempre tus oraciones. No dejes frases a medias.`);
+
+    parts.push(`\n--- FORMATO ANTI-IA (OBLIGATORIO) ---
+- PROHIBIDO usar el carácter "—" (em-dash / guion largo). Es la marca #1 de texto de IA. Usa punto, coma o puntos suspensivos.
+- PROHIBIDO abrir con "Totalmente", "Exacto", "Claro" a PREGUNTAS o SALUDOS. Solo se vale para validar AFIRMACIONES correctas del usuario.
+- PROHIBIDO frases genéricas: "¡Excelente pregunta!", "¡Me alegra que preguntes!", "Great question!".
+- OBLIGATORIO variar las aperturas. No repitas la misma frase de inicio.
+- Escribe como habla una persona real en redes, no como un comunicado de prensa.`);
 
     parts.push(`\n--- REGLA CRÍTICA: MEMORIA DE CONVERSACIÓN ---
 ⚠️ PROHIBIDO ABSOLUTAMENTE decir cualquiera de estas frases:
@@ -1161,43 +1171,47 @@ ${platformGuideline}`);
   return parts.join("\n");
 }
 
+export function sanitizeAiResponse(text: string): string {
+  let sanitized = text;
+  sanitized = sanitized.replace(/(?<=\s)—(?=\s)/g, ',');
+  sanitized = sanitized.replace(/(?<=\s)–(?=\s)/g, ',');
+  sanitized = sanitized.replace(/\s{2,}/g, ' ');
+  return sanitized.trim();
+}
+
 export function truncateResponse(
   text: string,
   characterLimit: number,
   strategy: "reject" | "summarize"
 ): { text: string; wasLimited: boolean } {
-  if (text.length <= characterLimit) {
-    return { text, wasLimited: false };
+  const sanitizedText = sanitizeAiResponse(text);
+  if (sanitizedText.length <= characterLimit) {
+    return { text: sanitizedText, wasLimited: false };
   }
 
   switch (strategy) {
     case "reject":
-      throw new Error(`La respuesta excede el límite de ${characterLimit} caracteres (${text.length} caracteres generados). Ajusta el prompt o reduce maxTokens.`);
+      throw new Error(`La respuesta excede el límite de ${characterLimit} caracteres (${sanitizedText.length} caracteres generados). Ajusta el prompt o reduce maxTokens.`);
     
     case "summarize":
     default:
-      // Estrategia inteligente: cortar en punto o espacio natural
       const maxLen = characterLimit - 3;
       
-      // Intentar cortar en un punto final de oración
-      const lastPeriod = text.lastIndexOf(".", maxLen);
-      const lastQuestion = text.lastIndexOf("?", maxLen);
-      const lastExclamation = text.lastIndexOf("!", maxLen);
+      const lastPeriod = sanitizedText.lastIndexOf(".", maxLen);
+      const lastQuestion = sanitizedText.lastIndexOf("?", maxLen);
+      const lastExclamation = sanitizedText.lastIndexOf("!", maxLen);
       const lastSentenceEnd = Math.max(lastPeriod, lastQuestion, lastExclamation);
       
-      // Si hay un fin de oración en el último 60% del texto, cortar ahí
       if (lastSentenceEnd > maxLen * 0.6) {
-        return { text: text.substring(0, lastSentenceEnd + 1), wasLimited: true };
+        return { text: sanitizedText.substring(0, lastSentenceEnd + 1), wasLimited: true };
       }
       
-      // Si no, cortar en el último espacio
-      const lastSpace = text.lastIndexOf(" ", maxLen);
+      const lastSpace = sanitizedText.lastIndexOf(" ", maxLen);
       if (lastSpace > maxLen * 0.7) {
-        return { text: text.substring(0, lastSpace) + "...", wasLimited: true };
+        return { text: sanitizedText.substring(0, lastSpace) + "...", wasLimited: true };
       }
       
-      // Último recurso: cortar directamente
-      return { text: text.substring(0, maxLen) + "...", wasLimited: true };
+      return { text: sanitizedText.substring(0, maxLen) + "...", wasLimited: true };
   }
 }
 
