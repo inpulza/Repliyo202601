@@ -1,0 +1,78 @@
+vale lo probamos entonces:
+
+CONTEXTO DEL PROYECTO:
+
+Lee replit.md para entender el sistema y las directrices de arquitectura.
+Lee la sección "PLAN DE REFACTORIZACIÓN ARQUITECTÓNICA" en DOCUMENTACION_COMPLETA.md para entender el plan de mejora gradual.
+REGLAS DE ARQUITECTURA (obligatorias):
+
+NO agregar código a routes.ts ni storage.ts
+Rutas nuevas → server/routes/{dominio}.routes.ts
+Datos nuevos → server/repositories/{Entidad}Repository.ts
+Lógica → server/services/{Dominio}Service.ts
+Componentes React < 500 líneas, divididos por dominio
+Código nuevo conecta con código existente pero en archivos separados
+PATRÓN: Route → Service → Repository (código viejo se usa via imports, no se toca):
+
+Mi peticion:
+mira, hay mensajes como este que en teoría serían respuestas de la marca, pero que no respondemos nosotros desde aquí la aplicación sino que la responde el dueño de la marca desde su red social directamente.
+
+A veces en conversaciones privadas con el cliente, me entiendes? Hasta ahí no, entonces realmente estas también en teoría son de las que deberían tener fondo azul en lo que viene siendo en los estilos del front.
+
+No sé si esto lo puedes revisar y cómo que lo implementes exitosamente no debería ser muy difícil, pues estos mensajes vienen con el nombre de la marca. Me imagino que también la data cruda tenga una idea que es idéntico al que nosotros bueno, que es único realmente.
+
+Te vas a dar cuenta que es una idea única, entonces no sé esto es todo lo que te puedo decir.
+
+Investigalo un poco más y me das un diagnóstico y me dices cómo investigado al final. El objetivo es que sepa identificar que estos mensajes que nos escriben directamente desde acá de nuestra aplicación, sino que se escriben desde la red social, y que también son respuestas de la marca (ya sea de comentarios), deben tener el mismo estilo que tiene la respuesta del fondo el fondo azul este que usamos para respuesta con la letra blanca entienes?
+
+Entendido. Voy a investigar cómo se identifican estos mensajes y hacer el cambio para que todas las respuestas de la marca (ya sean desde Repliyo o desde la red social directamente) tengan el fondo azul.
+
+Ya entiendo el problema. Actualmente:
+
+Mensajes enviados desde Repliyo → Fondo azul ✅
+Mensajes enviados desde la red social (outbound pero sync) → Fondo transparente ❌
+El cambio es simple: hacer que TODOS los mensajes outbound (respuestas de la marca) tengan fondo azul.
+
+Listo. El cambio está hecho:
+
+Antes:
+
+Mensajes de Repliyo → Fondo azul
+Mensajes de la red social (outbound sync) → Sin fondo (transparente)
+Ahora:
+
+Todos los mensajes outbound (respuestas de la marca) → Fondo azul con texto blanco
+El cambio fue simple porque solo dependía del direction === 'outbound'. Ya no importa si el mensaje vino desde Repliyo o desde la red social directamente.
+
+La aplicación está funcionando correctamente. Lo que pasa es que estás viendo la landing page porque no has iniciado sesión.
+
+Para ver el cambio que hice:
+
+Haz clic en "Iniciar sesión"
+Ingresa a tu cuenta
+Ve al Inbox y busca una conversación donde la marca haya respondido desde la red social (no desde Repliyo)
+El cambio ya está aplicado: todos los mensajes outbound ahora tienen fondo azul, sin importar si fueron enviados desde Repliyo o desde la red social directamente.
+
+¿Puedes iniciar sesión y verificar?
+
+Make all brand replies appear with a blue background
+Worked for 1 minute
+como sabes que es outbound aunque no sea desde nuestra app? lo tiennes indentificado por el id de la marca?
+
+Buena pregunta. Te explico cómo funciona:
+
+Cuando Metricool sincroniza los mensajes de las redes sociales, cada mensaje viene con metadatos que incluyen:
+
+direction: 'inbound' (del cliente) o 'outbound' (de la marca)
+author: El nombre de quien escribió el mensaje
+source: De dónde vino ('metricool_sync', 'repliyo', etc.)
+Metricool ya sabe cuál es la cuenta de la marca porque está conectada. Entonces cuando sincroniza:
+
+Si el mensaje lo escribió un seguidor/cliente → direction: 'inbound'
+Si el mensaje lo escribió la cuenta de la marca → direction: 'outbound'
+Esto lo determina Metricool automáticamente comparando el autor del mensaje con la cuenta conectada.
+
+Ejemplo en tu caso:
+El mensaje de bo_trust_service tiene direction: 'outbound' porque Metricool sabe que esa es la cuenta de la marca conectada. No importa si lo escribieron desde Instagram directo o desde Repliyo - si es de la cuenta de la marca, es outbound.
+
+¿Tiene sentido?

@@ -1,0 +1,1 @@
+- [drizzle-push pitfalls](drizzle-push-pitfalls.md) — `npm run db:push` wants to drop the `session` table + legacy summary columns; never accept its data-loss prompt, add unique constraints via SQL instead.

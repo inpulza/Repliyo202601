@@ -7,6 +7,12 @@ export interface DynamicVariable {
 
 export const DYNAMIC_VARIABLES: DynamicVariable[] = [
   {
+    key: 'first_name',
+    placeholder: '{{first_name}}',
+    description: 'Primer nombre detectado del usuario (extraído del username o nombre de display)',
+    example: 'Jordan',
+  },
+  {
     key: 'interaction_mode',
     placeholder: '{{interaction_mode}}',
     description: 'Tipo de interacción: "reply" (respuesta normal) o "reminder" (follow-up automático)',
@@ -71,6 +77,33 @@ export const DYNAMIC_VARIABLES: DynamicVariable[] = [
     placeholder: '{{relationship_status}}',
     description: 'Estado de la relación: "new" (nuevo), "active" (activo), "reengagement" (retomando)',
     example: 'active',
+  },
+];
+
+export const PRIVATE_REPLY_VARIABLES: DynamicVariable[] = [
+  {
+    key: 'username',
+    placeholder: '{{username}}',
+    description: 'Nombre completo del usuario que comentó',
+    example: 'Melva Vidal',
+  },
+  {
+    key: 'first_name',
+    placeholder: '{{first_name}}',
+    description: 'Primer nombre del usuario',
+    example: 'Melva',
+  },
+  {
+    key: 'comment',
+    placeholder: '{{comment}}',
+    description: 'Texto del comentario que dejó el usuario',
+    example: 'Me interesa, más info por favor',
+  },
+  {
+    key: 'post_context',
+    placeholder: '{{post_context}}',
+    description: 'Información del post/reel/video donde comentó (tipo de contenido, tema, caption)',
+    example: 'Reel de Facebook sobre automatización con IA para negocios',
   },
 ];
 

@@ -588,6 +588,197 @@ function formatUsername(author: string, platform: string): string {
   return author;
 }
 
+/**
+ * Enriquece el contexto del post con todos los datos disponibles para el LLM.
+ *
+ * Objetivos:
+ * 1. Detectar tipo de contenido (Reel, Video, Imagen, Publicación) desde permalink + platform
+ * 2. Limpiar la caption: eliminar bloques de hashtags al final, conservar TODO el contenido real
+ * 3. Proporcionar el permalink como referencia adicional
+ * 4. Para DMs: incluir contexto del post si existe, mejorar fallback si no
+ * 5. Agregar instrucción sobre cómo referenciar el post de forma natural (no robótica)
+ */
+export function enrichPostContext(
+  socialPost: SocialPost | null | undefined,
+  platform: string,
+  messageType: string
+): string {
+  const isDm = messageType === 'conversation' || messageType === 'dm';
+  const normalizedPlatform = (platform || '').toLowerCase().trim();
+
+  if (!socialPost) {
+    if (isDm) {
+      return 'Mensaje directo privado. El usuario te contacta directamente sin referencia a un post específico.';
+    }
+    return '[Publicación sin información disponible. Responde basándote en el mensaje del usuario]';
+  }
+
+  // ── PASO 1: Detectar tipo de contenido ──────────────────────────────────
+  const permalink = socialPost.permalink || '';
+  let contentType = '';
+
+  if (normalizedPlatform === 'tiktok') {
+    contentType = 'Video de TikTok';
+  } else if (normalizedPlatform === 'youtube') {
+    contentType = 'Video de YouTube';
+  } else if (normalizedPlatform === 'instagram') {
+    if (permalink.includes('/reel/') || permalink.includes('/reels/')) {
+      contentType = 'Reel de Instagram';
+    } else if (permalink.includes('/p/')) {
+      contentType = 'Publicación de Instagram';
+    } else if (socialPost.thumbnailUrl) {
+      contentType = 'Contenido visual de Instagram';
+    } else {
+      contentType = 'Publicación de Instagram';
+    }
+  } else if (normalizedPlatform === 'facebook') {
+    if (permalink.includes('/videos/') || permalink.includes('/video/')) {
+      contentType = 'Video de Facebook';
+    } else if (permalink.includes('/reel') || permalink.includes('reels')) {
+      contentType = 'Reel de Facebook';
+    } else if (permalink.includes('/photo') || permalink.includes('/photos/')) {
+      contentType = 'Foto de Facebook';
+    } else {
+      contentType = 'Publicación de Facebook';
+    }
+  } else if (normalizedPlatform === 'twitter' || normalizedPlatform === 'x') {
+    contentType = 'Tweet';
+  } else if (normalizedPlatform === 'linkedin') {
+    contentType = 'Publicación de LinkedIn';
+  } else if (normalizedPlatform === 'google-business') {
+    contentType = 'Reseña en Google Business';
+  } else {
+    const label = normalizedPlatform.charAt(0).toUpperCase() + normalizedPlatform.slice(1);
+    contentType = `Publicación de ${label}`;
+  }
+
+  // ── PASO 2: Limpiar y enriquecer la caption ──────────────────────────────
+  let cleanCaption = '';
+
+  if (socialPost.caption) {
+    const rawCaption = socialPost.caption.trim();
+    const lines = rawCaption.split('\n');
+
+    // Identificar bloque de hashtags al final y eliminarlo
+    // Un bloque de hashtags es una secuencia de líneas al final que contienen SOLO hashtags/emojis/espacios
+    let lastContentLineIndex = lines.length - 1;
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const line = lines[i].trim();
+      if (line === '') {
+        lastContentLineIndex = i - 1;
+        continue;
+      }
+      // Si la línea tiene PRINCIPALMENTE hashtags (más del 60% de palabras son hashtags)
+      const words = line.split(/\s+/).filter(w => w.length > 0);
+      const hashtagWords = words.filter(w => w.startsWith('#'));
+      const isHashtagDominatedLine = words.length > 0 && hashtagWords.length / words.length >= 0.6;
+      if (isHashtagDominatedLine) {
+        lastContentLineIndex = i - 1;
+      } else {
+        break;
+      }
+    }
+
+    // Tomar líneas de contenido real
+    const contentLines = lines
+      .slice(0, lastContentLineIndex + 1)
+      .filter(l => l.trim().length > 0);
+
+    if (contentLines.length > 0) {
+      cleanCaption = contentLines.join('\n').trim();
+    } else {
+      // Si todo era hashtags, limpiar la caption directamente
+      cleanCaption = rawCaption.replace(/#\w+/g, '').replace(/\s+/g, ' ').trim();
+    }
+
+    // Limitar a 1500 caracteres máximo (suficiente para contexto rico sin sobrecargar el prompt)
+    if (cleanCaption.length > 1500) {
+      const truncated = cleanCaption.substring(0, 1500);
+      const lastNewline = truncated.lastIndexOf('\n');
+      const lastPeriod = truncated.lastIndexOf('.');
+      const cutPoint = Math.max(lastNewline, lastPeriod);
+      cleanCaption = cutPoint > 1000
+        ? cleanCaption.substring(0, cutPoint + 1) + ' [...]'
+        : truncated + ' [...]';
+    }
+  }
+
+  // ── PASO 3: Construir el contexto enriquecido ────────────────────────────
+  const parts: string[] = [];
+
+  parts.push(`TIPO DE CONTENIDO: ${contentType}`);
+
+  if (cleanCaption) {
+    parts.push(`TEXTO DEL POST:\n${cleanCaption}`);
+  } else {
+    parts.push('TEXTO DEL POST: [Sin texto, post solo visual]');
+  }
+
+  if (permalink) {
+    parts.push(`URL DEL POST: ${permalink}`);
+  }
+
+  if (isDm && socialPost) {
+    parts.push(`NOTA: Este es un mensaje directo privado. El usuario probablemente interactuó con el ${contentType.toLowerCase()} antes de escribir.`);
+  }
+
+  parts.push(
+    `INSTRUCCIÓN PARA REFERENCIAR: Conecta tu respuesta con el tema de este ${contentType.toLowerCase()} ` +
+    `de forma natural y conversacional. NO uses frases robóticas como "vi tu comentario en el post sobre..." ` +
+    `o "en relación a tu publicación...". Simplemente responde como lo haría una persona real que conoce el contenido.`
+  );
+
+  return parts.join('\n\n');
+}
+
+export function enrichPostContextForTemplate(
+  socialPost: SocialPost | null | undefined,
+  platform: string,
+  messageType: string
+): string {
+  if (!socialPost) return '';
+
+  const normalizedPlatform = (platform || '').toLowerCase().trim();
+  const permalink = socialPost.permalink || '';
+
+  let contentType = '';
+  if (normalizedPlatform === 'tiktok') contentType = 'nuestro video de TikTok';
+  else if (normalizedPlatform === 'youtube') contentType = 'nuestro video de YouTube';
+  else if (normalizedPlatform === 'instagram') {
+    if (permalink.includes('/reel/') || permalink.includes('/reels/')) contentType = 'nuestro Reel de Instagram';
+    else contentType = 'nuestra publicación de Instagram';
+  } else if (normalizedPlatform === 'facebook') {
+    if (permalink.includes('/videos/') || permalink.includes('/video/')) contentType = 'nuestro video de Facebook';
+    else if (permalink.includes('/reel') || permalink.includes('reels')) contentType = 'nuestro Reel de Facebook';
+    else contentType = 'nuestra publicación de Facebook';
+  } else {
+    const label = normalizedPlatform.charAt(0).toUpperCase() + normalizedPlatform.slice(1);
+    contentType = `nuestra publicación de ${label}`;
+  }
+
+  let topicSummary = '';
+  if (socialPost.caption) {
+    const rawCaption = socialPost.caption.trim();
+    const lines = rawCaption.split('\n');
+    const firstLine = lines[0]?.trim() || '';
+    let cleaned = firstLine
+      .replace(/#\w+/g, '')
+      .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}\u{20E3}\u{E0020}-\u{E007F}]/gu, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (cleaned.length > 60) {
+      const lastSpace = cleaned.substring(0, 60).lastIndexOf(' ');
+      cleaned = (lastSpace > 30 ? cleaned.substring(0, lastSpace) : cleaned.substring(0, 60)).trim();
+    }
+    if (cleaned.length > 0) {
+      topicSummary = cleaned;
+    }
+  }
+
+  if (topicSummary) return `${contentType} sobre "${topicSummary}"`;
+  return contentType;
+}
+
 function buildVariableContext(
   message: Message,
   conversation?: Conversation,
@@ -600,15 +791,8 @@ function buildVariableContext(
   const platform = (message.platform || 'default').toLowerCase().trim();
   const username = formatUsername(message.author || 'Usuario', platform);
   const comment = message.content || '';
-  
-  let postContext = '';
-  if (socialPost?.caption) {
-    postContext = socialPost.caption;
-  } else if (message.type === 'conversation' && !socialPost) {
-    postContext = 'Este es un mensaje directo privado.';
-  } else if (message.type === 'comment' && !socialPost?.caption) {
-    postContext = '[Comentario en publicación - caption no disponible. Responde basándote solo en el mensaje del usuario]';
-  }
+
+  const postContext = enrichPostContext(socialPost, platform, message.type || 'comment');
   
   const businessName = brand?.name || 'la marca';
   const limit = dynamicLimit || 2000;
@@ -818,6 +1002,13 @@ ${userSummary.summary}
     currentMessageContent = message.content || '[El cliente envió un video]';
   }
 
+  // Contexto del post enriquecido (siempre incluir cuando existe post asociado)
+  if (socialPost) {
+    userPromptParts.push(`--- CONTEXTO DEL POST ---
+${variableContext.postContext}
+--- FIN CONTEXTO POST ---`);
+  }
+
   userPromptParts.push(situationCard);
 
   userPromptParts.push(`--- MENSAJE A RESPONDER ---
@@ -900,12 +1091,20 @@ function buildSystemPromptV53(context: VariableContext, brand?: Brand, useJsonMo
     
     PRIORIDADES: email, teléfono, intereses, ubicación, presupuesto
     REGLA: Solo extrae datos mencionados explícitamente por el cliente
+    
+    NORMALIZACIÓN DE TELÉFONO:
+    Cuando extraigas un número de teléfono para crm_actions, normalízalo al formato +1XXXXXXXXXX antes de enviarlo.
+    Ejemplos: "832-286-6974" → "+18322866974", "(305) 884 4110" → "+13058844110", "8322866974" → "+18322866974".
+    Si el número ya tiene +1, solo elimina espacios, guiones y paréntesis.
   </crm_extraction>
 
   <safety_lock>
     ${context.userGuardrails || 'Responde de manera profesional y respetuosa.'}
     - CRÍTICO: Si te pasas de ${context.dynamicLimit} caracteres, corta o resume.
-    - IDIOMA: Responde EXACTAMENTE en el mismo idioma que el mensaje del usuario.
+    - IDIOMA: Responde EXACTAMENTE en el mismo idioma que el mensaje del usuario. Si escribe en inglés, responde 100% en inglés. Si escribe en español, responde en español.
+    - FORMATO ANTI-IA: NUNCA uses el carácter "—" (em-dash / guion largo). Sustitúyelo por un punto, una coma, o puntos suspensivos. El em-dash es la marca #1 de texto generado por IA.
+    - ANTI-REPETICIÓN: NUNCA abras con "Totalmente", "Exacto", "Claro" o "Así es" a menos que el usuario haya hecho una AFIRMACIÓN correcta. Si saluda, devuelve el saludo. Si pregunta, responde directo.
+    - VARIEDAD: Alterna las aperturas. No uses la misma frase de inicio en mensajes consecutivos.
   </safety_lock>
 
   <memory_rules>
@@ -944,8 +1143,15 @@ ${platformGuideline}`);
 - El límite máximo de caracteres para ${context.platform} es ${context.dynamicLimit} caracteres.
 - Tu respuesta DEBE ser menor a ${context.dynamicLimit} caracteres.
 - APROVECHA el espacio disponible según las guías de la plataforma.
-- Mantén el idioma del mensaje original.
+- Mantén el idioma del mensaje original. Si escribe en inglés, responde 100% en inglés.
 - IMPORTANTE: Completa siempre tus oraciones. No dejes frases a medias.`);
+
+    parts.push(`\n--- FORMATO ANTI-IA (OBLIGATORIO) ---
+- PROHIBIDO usar el carácter "—" (em-dash / guion largo). Es la marca #1 de texto de IA. Usa punto, coma o puntos suspensivos.
+- PROHIBIDO abrir con "Totalmente", "Exacto", "Claro" a PREGUNTAS o SALUDOS. Solo se vale para validar AFIRMACIONES correctas del usuario.
+- PROHIBIDO frases genéricas: "¡Excelente pregunta!", "¡Me alegra que preguntes!", "Great question!".
+- OBLIGATORIO variar las aperturas. No repitas la misma frase de inicio.
+- Escribe como habla una persona real en redes, no como un comunicado de prensa.`);
 
     parts.push(`\n--- REGLA CRÍTICA: MEMORIA DE CONVERSACIÓN ---
 ⚠️ PROHIBIDO ABSOLUTAMENTE decir cualquiera de estas frases:
@@ -965,43 +1171,47 @@ ${platformGuideline}`);
   return parts.join("\n");
 }
 
+export function sanitizeAiResponse(text: string): string {
+  let sanitized = text;
+  sanitized = sanitized.replace(/(?<=\s)—(?=\s)/g, ',');
+  sanitized = sanitized.replace(/(?<=\s)–(?=\s)/g, ',');
+  sanitized = sanitized.replace(/\s{2,}/g, ' ');
+  return sanitized.trim();
+}
+
 export function truncateResponse(
   text: string,
   characterLimit: number,
   strategy: "reject" | "summarize"
 ): { text: string; wasLimited: boolean } {
-  if (text.length <= characterLimit) {
-    return { text, wasLimited: false };
+  const sanitizedText = sanitizeAiResponse(text);
+  if (sanitizedText.length <= characterLimit) {
+    return { text: sanitizedText, wasLimited: false };
   }
 
   switch (strategy) {
     case "reject":
-      throw new Error(`La respuesta excede el límite de ${characterLimit} caracteres (${text.length} caracteres generados). Ajusta el prompt o reduce maxTokens.`);
+      throw new Error(`La respuesta excede el límite de ${characterLimit} caracteres (${sanitizedText.length} caracteres generados). Ajusta el prompt o reduce maxTokens.`);
     
     case "summarize":
     default:
-      // Estrategia inteligente: cortar en punto o espacio natural
       const maxLen = characterLimit - 3;
       
-      // Intentar cortar en un punto final de oración
-      const lastPeriod = text.lastIndexOf(".", maxLen);
-      const lastQuestion = text.lastIndexOf("?", maxLen);
-      const lastExclamation = text.lastIndexOf("!", maxLen);
+      const lastPeriod = sanitizedText.lastIndexOf(".", maxLen);
+      const lastQuestion = sanitizedText.lastIndexOf("?", maxLen);
+      const lastExclamation = sanitizedText.lastIndexOf("!", maxLen);
       const lastSentenceEnd = Math.max(lastPeriod, lastQuestion, lastExclamation);
       
-      // Si hay un fin de oración en el último 60% del texto, cortar ahí
       if (lastSentenceEnd > maxLen * 0.6) {
-        return { text: text.substring(0, lastSentenceEnd + 1), wasLimited: true };
+        return { text: sanitizedText.substring(0, lastSentenceEnd + 1), wasLimited: true };
       }
       
-      // Si no, cortar en el último espacio
-      const lastSpace = text.lastIndexOf(" ", maxLen);
+      const lastSpace = sanitizedText.lastIndexOf(" ", maxLen);
       if (lastSpace > maxLen * 0.7) {
-        return { text: text.substring(0, lastSpace) + "...", wasLimited: true };
+        return { text: sanitizedText.substring(0, lastSpace) + "...", wasLimited: true };
       }
       
-      // Último recurso: cortar directamente
-      return { text: text.substring(0, maxLen) + "...", wasLimited: true };
+      return { text: sanitizedText.substring(0, maxLen) + "...", wasLimited: true };
   }
 }
 
@@ -1129,6 +1339,58 @@ function replaceReminderVariables(
   return result;
 }
 
+/**
+ * Detecta el idioma predominante de la conversación basándose en los mensajes inbound del cliente.
+ * Usa heurísticas simples de palabras comunes para detectar español, inglés y portugués.
+ * 
+ * @returns 'es' | 'en' | 'pt' | 'other'
+ */
+function detectConversationLanguage(conversationHistory: Message[]): 'es' | 'en' | 'pt' | 'other' {
+  const inboundMessages = conversationHistory.filter(m => m.direction === 'inbound' && m.content);
+  if (inboundMessages.length === 0) return 'es';
+
+  const combinedText = inboundMessages
+    .map(m => m.content || '')
+    .join(' ')
+    .toLowerCase();
+
+  if (combinedText.length < 3) return 'es';
+
+  const englishWords = ['the', 'is', 'are', 'was', 'were', 'have', 'has', 'had', 'will', 'would', 'could', 'should', 'can', 'do', 'does', 'did', 'not', 'but', 'and', 'or', 'for', 'with', 'this', 'that', 'what', 'how', 'much', 'many', 'about', 'your', 'you', 'my', 'please', 'thank', 'thanks', 'hello', 'help', 'need', 'want', 'looking', 'interested', 'information', 'price', 'cost', 'available', 'where', 'when', 'who', 'which', 'more', 'some', 'any', 'also', 'just', 'know', 'like', 'good', 'great', 'nice', 'yes', 'sure', 'okay', 'really', 'very', 'much', 'here', 'there'];
+  const spanishWords = ['el', 'la', 'los', 'las', 'es', 'son', 'fue', 'era', 'tiene', 'hay', 'para', 'por', 'con', 'que', 'del', 'una', 'como', 'más', 'pero', 'este', 'esta', 'eso', 'hola', 'gracias', 'buenas', 'buenos', 'quiero', 'necesito', 'puede', 'puedo', 'dónde', 'cuándo', 'cuánto', 'precio', 'información', 'disponible', 'interesado', 'interesada', 'también', 'bien', 'favor', 'ayuda', 'tengo', 'estoy', 'soy', 'muy', 'aquí', 'ahí', 'algo', 'todo', 'nada', 'donde', 'cuando', 'cuanto'];
+  const portugueseWords = ['o', 'os', 'uma', 'umas', 'é', 'são', 'foi', 'tem', 'há', 'para', 'por', 'com', 'que', 'como', 'mais', 'mas', 'este', 'esta', 'isso', 'olá', 'obrigado', 'obrigada', 'bom', 'boa', 'quero', 'preciso', 'pode', 'posso', 'onde', 'quando', 'quanto', 'preço', 'informação', 'disponível', 'interessado', 'interessada', 'também', 'bem', 'ajuda', 'tenho', 'estou', 'sou', 'muito', 'aqui', 'ali', 'algo', 'tudo', 'nada', 'você', 'vocês', 'não', 'sim'];
+
+  const words = combinedText.split(/\s+/);
+
+  let enScore = 0;
+  let esScore = 0;
+  let ptScore = 0;
+
+  for (const word of words) {
+    const clean = word.replace(/[^a-záéíóúñüàâãçê]/gi, '');
+    if (clean.length < 2) continue;
+    if (englishWords.includes(clean)) enScore++;
+    if (spanishWords.includes(clean)) esScore++;
+    if (portugueseWords.includes(clean)) ptScore++;
+  }
+
+  // Check for strong language markers
+  if (/[áéíóúñ¿¡]/.test(combinedText)) esScore += 3;
+  if (/[ãõçâê]/.test(combinedText)) ptScore += 5;
+  if (/\b(you|your|i'm|don't|can't|won't|isn't|aren't|didn't|doesn't|wouldn't|couldn't|shouldn't|i've|i'll|we're|they're|it's)\b/i.test(combinedText)) enScore += 5;
+  if (/\b(você|não|sim|obrigad[oa])\b/i.test(combinedText)) ptScore += 5;
+
+  const maxScore = Math.max(enScore, esScore, ptScore);
+
+  if (maxScore === 0) return 'es';
+  if (ptScore === maxScore && ptScore > esScore) return 'pt';
+  if (enScore === maxScore && enScore > esScore) return 'en';
+  if (esScore >= maxScore) return 'es';
+  if (maxScore > 0 && esScore === 0 && enScore === 0 && ptScore === 0) return 'other';
+
+  return 'es';
+}
+
 export function composeReminderPrompt(context: ReminderPromptContext): ReminderPromptResult {
   const { 
     agent, 
@@ -1154,7 +1416,7 @@ export function composeReminderPrompt(context: ReminderPromptContext): ReminderP
   const inboundMessages = conversationHistory.filter(m => m.direction === 'inbound');
   const lastInboundMessage = inboundMessages.length > 0 ? inboundMessages[inboundMessages.length - 1] : null;
   const comment = lastInboundMessage?.content || '';
-  const postContext = socialPost?.caption || '';
+  const postContext = enrichPostContext(socialPost, platform, messageType);
 
   // Calcular variables adicionales de auto-reply para backward compatibility
   const conversationDepth = conversationHistory.length;
@@ -1236,11 +1498,11 @@ ${userSummary.summary}
 --- FIN DEL RESUMEN ---`);
   }
 
-  // Contexto del post (para comentarios)
-  if (socialPost?.caption && !isDm) {
+  // Contexto del post (para comentarios y DMs con post asociado)
+  if (socialPost) {
     userParts.push(`
---- CONTEXTO DEL POST COMENTADO ---
-${socialPost.caption.substring(0, 500)}${socialPost.caption.length > 500 ? '...' : ''}
+--- CONTEXTO DEL POST ---
+${postContext}
 --- FIN CONTEXTO POST ---`);
   }
 
@@ -1288,6 +1550,16 @@ ${crmLines.join('\n')}
   const platformGuidelines = PLATFORM_LENGTH_GUIDELINES[platform.toLowerCase()] || PLATFORM_LENGTH_GUIDELINES.default;
   const lengthInstruction = `\n\n**LÍMITE DE CARACTERES (${platform.toUpperCase()}):** ${platformGuidelines.style}`;
   
+  // Detectar idioma de la conversación basándose en los mensajes del cliente
+  const detectedLanguage = detectConversationLanguage(conversationHistory);
+  const languageInstruction = detectedLanguage === 'en'
+    ? `\n\n**CRITICAL - LANGUAGE RULE:** The customer wrote in ENGLISH. You MUST respond in ENGLISH. Do NOT respond in Spanish. The examples below are just for reference of the structure; translate and adapt them to English.`
+    : detectedLanguage === 'pt'
+    ? `\n\n**CRÍTICO - REGLA DE IDIOMA:** El cliente escribió en PORTUGUÉS. DEBES responder en PORTUGUÉS. NO respondas en español. Los ejemplos abajo son solo referencia de estructura; tradúcelos y adáptalos al portugués.`
+    : detectedLanguage === 'other'
+    ? `\n\n**CRÍTICO - REGLA DE IDIOMA:** Responde EXACTAMENTE en el mismo idioma que usó el cliente en sus mensajes. Detecta el idioma del historial de conversación y úsalo. Los ejemplos abajo son solo referencia de estructura; adáptalos al idioma del cliente.`
+    : '';
+  
   // Encontrar la última respuesta del agente para referencia
   const outboundMessages = conversationHistory.filter(m => m.direction === 'outbound');
   const lastAgentMessage = outboundMessages.length > 0 ? outboundMessages[outboundMessages.length - 1] : null;
@@ -1296,23 +1568,28 @@ ${crmLines.join('\n')}
   userParts.push(`
 --- TAREA: MENSAJE DE FOLLOW-UP ---
 **ESTO ES UN RECORDATORIO/FOLLOW-UP, NO UNA NUEVA RESPUESTA.**
+${languageInstruction}
 
 Tu objetivo es generar un mensaje BREVE que:
 1. **Pregunte si el cliente pudo realizar la acción** que le sugeriste anteriormente (ej: contactar por WhatsApp, visitar el local, revisar información)
 2. **NO repitas la información original** - el cliente ya la recibió
 3. **Ofrece ayuda adicional** si la necesita
 
+**REGLA DE IDIOMA:** Responde SIEMPRE en el mismo idioma que el cliente usó en la conversación. Si el cliente escribió en inglés, responde en inglés. Si escribió en español, responde en español. Analiza el historial para determinar el idioma.
+
 ${lastAgentMessage ? `Tu último mensaje al cliente fue: "${actionFromLastMessage}${actionFromLastMessage.length >= 100 ? '...' : ''}"` : ''}
 
-**EJEMPLOS DE BUEN FOLLOW-UP:**
-- "Hola ${firstName || 'cliente'}! ¿Pudiste contactarnos por WhatsApp? Estamos aquí si tienes alguna pregunta 😊"
-- "Hey ${firstName || ''}! Solo quería saber si pudiste revisar la información. ¿Necesitas ayuda con algo más?"
-- "Hola! ¿Todo bien? ¿Pudiste comunicarte con nosotros? Aquí estamos para ayudarte"
+**EJEMPLOS DE BUEN FOLLOW-UP (adapta al idioma del cliente):**
+- ES: "Hola ${firstName || 'cliente'}! ¿Pudiste contactarnos por WhatsApp? Estamos aquí si tienes alguna pregunta 😊"
+- EN: "Hi ${firstName || 'there'}! Were you able to reach us on WhatsApp? We're here if you have any questions 😊"
+- ES: "Hey ${firstName || ''}! Solo quería saber si pudiste revisar la información. ¿Necesitas ayuda con algo más?"
+- EN: "Hey ${firstName || ''}! Just wanted to check if you were able to review the information. Need any help?"
 
 **EJEMPLOS DE MAL FOLLOW-UP (NO HACER):**
 - Repetir la misma respuesta anterior
 - Volver a dar toda la información de contacto
 - Responder como si fuera un mensaje nuevo
+- Responder en un idioma diferente al del cliente
 
 ${hasContext ? 'Usa el historial para entender qué acción sugeriste y pregunta específicamente por ella.' : 'No hay historial disponible, genera un mensaje amable preguntando si necesita ayuda.'}
 ${firstName ? `\nUsa el nombre "${firstName}" para personalizar.` : ''}${mentionInstruction}${lengthInstruction}
@@ -1326,6 +1603,7 @@ Responde SOLO con el mensaje de follow-up, sin explicaciones.`);
 Tipo: ${isDm ? 'DM' : 'Comentario'}
 Reminder: #${reminderNumber}/${maxReminders}
 Historial: ${conversationHistory.length} mensajes
+Idioma detectado: ${detectedLanguage}
 UserSummary: ${userSummary ? 'Sí' : 'No'}
 SocialPost: ${socialPost?.caption ? 'Sí' : 'No'}
 CRM Profile: ${crmProfile ? 'Sí' : 'No'}

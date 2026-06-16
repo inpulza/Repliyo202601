@@ -1,0 +1,109 @@
+Use cases
+Customize
+Customize use case
+Customize use case settings and permissions to make your app work the way you want it to.
+Use case switcher
+​
+Messenger from Meta
+​
+Permissions and features
+API Calls
+​
+Status
+Action
+Business Asset User Profile Access
+The Business Asset User Profile Access feature allows your app to read the User Fields for users engaging with your business assets such as id, ids_for_business, name, and picture.
+…
+Full Description
+Found in 6 use cases
+ads_management
+The ads_management permission allows your app to both read and manage the Ads account it owns, or has been granted access to, by the Ad account owner.
+…
+Full Description
+Found in 5 use cases
+0
+Ready for testing
+business_management
+The business_management permission allows your app to read and write with the Business Manager API.
+…
+Full Description
+Found in 7 use cases
+0
+Ready for testing
+email
+The email permission allows your app to read a person's primary email address.
+…
+Full Description
+Found in 7 use cases
+instagram_basic
+The instagram_basic permission allows your app to read an Instagram account profile's info and media.
+…
+Full Description
+Found in 2 use cases
+0
+Ready for testing
+instagram_manage_messages
+The instagram_manage_messages permission allows business users to read and respond to Instagram Direct messages.
+…
+Full Description
+Found in 2 use cases
+0
+Ready for testing
+marketing_messages_messenger
+The marketing_messages_messenger permission allows an app to create, manage, and send paid marketing messages on Messenger and to view the performance of these marketing messages campaigns on behalf of the app user using their authorized Ad Accounts.
+…
+Full Description
+pages_manage_metadata
+The pages_manage_metadata permission allows your app to subscribe and receive webhooks about activity on the Page, and to update settings on the Page.
+…
+Full Description
+Found in 3 use cases
+0
+Ready for testing
+pages_messaging
+The pages_messaging permission allows your app to manage and access Page conversations and calling in Messenger.
+…
+Full Description
+0
+Ready for testing
+pages_read_engagement
+The pages_read_engagement permission allows your app to read content (posts, photos, videos, events) posted by the Page, read followers data (including name, PSID), and profile picture, and read metadata and other insights about the Page.
+…
+Full Description
+Found in 6 use cases
+0
+Ready for testing
+pages_show_list
+The pages_show_list permission allows your app to access the list of Pages a person manages.
+…
+Full Description
+Found in 6 use cases
+0
+Ready for testing
+pages_user_gender
+The pages_user_gender permission allows your app to access a user's gender through the Page your app is connected to.
+…
+Full Description
+pages_user_locale
+The pages_user_locale permission allows your app to access a user's locale through the Page your app is connected to.
+…
+Full Description
+pages_user_timezone
+The pages_user_timezone permission grants your app access to a user's time zone through the Page your app is connected to.
+…
+Full Description
+pages_utility_messaging
+The pages_utility_messaging permission allows an app to access a Page's utility messaging templates.
+…
+Full Description
+paid_marketing_messages
+The paid_marketing_messages permission allows an app to create, manage, and send paid marketing messages on Messenger and to view the performance of these marketing messages campaigns on behalf of the app user.
+…
+Full Description
+public_profile
+The public_profile permission allows an app to read the Default Public Profile Fields on the User node. This permission is automatically granted to all apps.
+…
+Full Description
+Found in 7 use cases
+0
+Ready for testing

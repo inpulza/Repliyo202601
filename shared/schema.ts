@@ -119,7 +119,12 @@ export const conversations = pgTable("conversations", {
   reminderCount: integer("reminder_count").default(0),
   lastReminderAt: timestamp("last_reminder_at"),
   reminderStatus: text("reminder_status").default('none'), // 'none' | 'scheduled' | 'sent' | 'max_reached' | 'opted_out'
-});
+}, (table) => ({
+  brandIdx: index("conversations_brand_idx").on(table.brandId),
+  statusIdx: index("conversations_status_idx").on(table.status),
+  lastMessageAtIdx: index("conversations_last_message_at_idx").on(table.lastMessageAt),
+  brandStatusIdx: index("conversations_brand_status_idx").on(table.brandId, table.status),
+}));
 
 export const messages = pgTable("messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -158,7 +163,12 @@ export const messages = pgTable("messages", {
   mediaUrl: text("media_url"),
   mediaTranscription: text("media_transcription"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  brandIdx: index("messages_brand_idx").on(table.brandId),
+  conversationIdx: index("messages_conversation_idx").on(table.conversationId),
+  timestampIdx: index("messages_timestamp_idx").on(table.timestamp),
+  brandTimestampIdx: index("messages_brand_timestamp_idx").on(table.brandId, table.timestamp),
+}));
 
 export const aiAgents = pgTable("ai_agents", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -185,6 +195,14 @@ export const aiAgents = pgTable("ai_agents", {
   dmReplyMode: text("dm_reply_mode").notNull().default('batch'), // 'auto' | 'first_only' | 'batch'
   cooldownPerConversation: boolean("cooldown_per_conversation").notNull().default(true),
   autoMentionEnabled: boolean("auto_mention_enabled").notNull().default(false),
+  // Private Replies (Meta API)
+  privateReplyEnabled: boolean("private_reply_enabled").notNull().default(false),
+  privateReplyTemplate: text("private_reply_template"),
+  // Auto Private Reply — Facebook automatic mode
+  autoPrivateReplyEnabled: boolean("auto_private_reply_enabled").notNull().default(false),
+  autoPrivateReplyDelayMinutes: integer("auto_private_reply_delay_minutes").notNull().default(0),
+  autoPrivateReplyUseAi: boolean("auto_private_reply_use_ai").notNull().default(false),
+  autoPrivateReplyPrompt: text("auto_private_reply_prompt"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -1117,3 +1135,160 @@ export interface ConversationTimeline {
     detectedIntent?: string;
   };
 }
+
+// ============================================
+// GESTIÓN DE CRISIS / SENTIMENT ALERTS
+// ============================================
+
+export const sentimentSeverityEnum = z.enum(['P1', 'P2', 'P3', 'P4']);
+export type SentimentSeverity = z.infer<typeof sentimentSeverityEnum>;
+
+export const sentimentValueEnum = z.enum(['critical', 'negative', 'neutral', 'positive']);
+export type SentimentValue = z.infer<typeof sentimentValueEnum>;
+
+export const alertStatusEnum = z.enum(['new', 'acknowledged', 'in_progress', 'resolved', 'dismissed']);
+export type AlertStatus = z.infer<typeof alertStatusEnum>;
+
+export const crisisCategoryEnum = z.enum([
+  'legal_threat',
+  'safety_concern',
+  'service_failure',
+  'reputation_damage',
+  'customer_churn',
+  'misinformation',
+  'regulatory_risk',
+  'general_complaint',
+  'other',
+]);
+export type CrisisCategory = z.infer<typeof crisisCategoryEnum>;
+
+export const sentimentAlerts = pgTable("sentiment_alerts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brandId: varchar("brand_id").notNull().references(() => brands.id, { onDelete: 'cascade' }),
+  messageId: varchar("message_id").notNull().references(() => messages.id, { onDelete: 'cascade' }),
+  conversationId: varchar("conversation_id").references(() => conversations.id, { onDelete: 'cascade' }),
+
+  severity: text("severity").notNull(),
+  sentiment: text("sentiment").notNull(),
+  category: text("category").notNull(),
+  reason: text("reason"),
+  confidence: real("confidence"),
+
+  status: text("status").notNull().default('new'),
+  acknowledgedBy: varchar("acknowledged_by"),
+  acknowledgedAt: timestamp("acknowledged_at"),
+  resolvedAt: timestamp("resolved_at"),
+  resolvedBy: varchar("resolved_by"),
+  notes: text("notes"),
+
+  platform: text("platform"),
+  messageAuthor: text("message_author"),
+  messagePreview: text("message_preview"),
+  messageTimestamp: timestamp("message_timestamp"),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  brandIdx: index("sentiment_alerts_brand_idx").on(table.brandId),
+  severityIdx: index("sentiment_alerts_severity_idx").on(table.severity),
+  statusIdx: index("sentiment_alerts_status_idx").on(table.status),
+  brandSeverityIdx: index("sentiment_alerts_brand_severity_idx").on(table.brandId, table.severity),
+  messageIdx: index("sentiment_alerts_message_idx").on(table.messageId),
+}));
+
+export const sentimentAlertsRelations = relations(sentimentAlerts, ({ one }) => ({
+  brand: one(brands, { fields: [sentimentAlerts.brandId], references: [brands.id] }),
+  message: one(messages, { fields: [sentimentAlerts.messageId], references: [messages.id] }),
+  conversation: one(conversations, { fields: [sentimentAlerts.conversationId], references: [conversations.id] }),
+}));
+
+export const insertSentimentAlertSchema = createInsertSchema(sentimentAlerts).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const selectSentimentAlertSchema = createSelectSchema(sentimentAlerts);
+
+export const updateSentimentAlertSchema = insertSentimentAlertSchema.partial();
+
+export type InsertSentimentAlert = z.infer<typeof insertSentimentAlertSchema>;
+export type SentimentAlert = typeof sentimentAlerts.$inferSelect;
+export type UpdateSentimentAlert = z.infer<typeof updateSentimentAlertSchema>;
+
+export const metaPageConnections = pgTable("meta_page_connections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brandId: varchar("brand_id").notNull().references(() => brands.id, { onDelete: 'cascade' }),
+  pageId: text("page_id").notNull(),
+  pageName: text("page_name").notNull(),
+  pageAccessToken: text("page_access_token").notNull(),
+  igUserId: text("ig_user_id"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueBrandPage: unique().on(table.brandId, table.pageId),
+}));
+
+export const metaPageConnectionsRelations = relations(metaPageConnections, ({ one }) => ({
+  brand: one(brands, { fields: [metaPageConnections.brandId], references: [brands.id] }),
+}));
+
+export const insertMetaPageConnectionSchema = createInsertSchema(metaPageConnections).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateMetaPageConnectionSchema = insertMetaPageConnectionSchema.partial();
+
+export type InsertMetaPageConnection = z.infer<typeof insertMetaPageConnectionSchema>;
+export type MetaPageConnection = typeof metaPageConnections.$inferSelect;
+export type UpdateMetaPageConnection = z.infer<typeof updateMetaPageConnectionSchema>;
+
+export const leads = pgTable("leads", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  role: text("role"),
+  companyName: text("company_name"),
+  industry: text("industry"),
+  teamSize: text("team_size"),
+  country: text("country"),
+  platforms: text("platforms").array(),
+  monthlyVolume: text("monthly_volume"),
+  brandCount: text("brand_count"),
+  goals: text("goals").array(),
+  painPoint: text("pain_point"),
+  currentTools: text("current_tools"),
+  source: text("source").default('website'),
+  status: text("status").notNull().default('new'),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertLeadSchema = createInsertSchema(leads).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+});
+
+export type InsertLead = z.infer<typeof insertLeadSchema>;
+export type Lead = typeof leads.$inferSelect;
+
+export const publicAccessTokens = pgTable("public_access_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brandId: varchar("brand_id").notNull().references(() => brands.id, { onDelete: 'cascade' }),
+  token: varchar("token").notNull().unique(),
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  revokedAt: timestamp("revoked_at"),
+});
+
+export const insertPublicAccessTokenSchema = createInsertSchema(publicAccessTokens).omit({
+  id: true,
+  createdAt: true,
+  revokedAt: true,
+});
+
+export type InsertPublicAccessToken = z.infer<typeof insertPublicAccessTokenSchema>;
+export type PublicAccessToken = typeof publicAccessTokens.$inferSelect;

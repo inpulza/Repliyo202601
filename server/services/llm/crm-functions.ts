@@ -1,5 +1,40 @@
 import { storage } from "../../storage";
 import { log } from "../../app";
+import { parsePhoneNumber } from 'libphonenumber-js';
+
+function normalizePhoneNumber(phone: string): string | null {
+  const cleanDigits = phone.replace(/[^0-9+]/g, '');
+
+  if (cleanDigits.replace(/\D/g, '').length < 7 || cleanDigits.replace(/\D/g, '').length > 15) {
+    return null;
+  }
+
+  try {
+    const parsed = parsePhoneNumber(cleanDigits.startsWith('+') ? cleanDigits : cleanDigits, 'US');
+    if (parsed.isValid()) {
+      log(`[CRM-Functions] Phone validated via libphonenumber: "${phone}" → "${parsed.number}" (country: ${parsed.country})`, "crm");
+      return parsed.number;
+    }
+  } catch (e: any) {
+    log(`[CRM-Functions] Phone parse attempt failed for "${phone}": ${e.message}`, "crm");
+  }
+
+  const digitsOnly = phone.replace(/[^0-9]/g, '');
+  if (digitsOnly.length < 7 || digitsOnly.length > 15) {
+    return null;
+  }
+
+  if (digitsOnly.length === 10) {
+    return `+1${digitsOnly}`;
+  }
+
+  if (digitsOnly.length === 11 && digitsOnly.startsWith('1')) {
+    return `+${digitsOnly}`;
+  }
+
+  log(`[CRM-Functions] Phone normalized via fallback: "${phone}" → "+${digitsOnly}"`, "crm");
+  return `+${digitsOnly}`;
+}
 
 export interface CrmFunctionCall {
   function: string;
@@ -89,7 +124,17 @@ async function executeSingleFunction(
       
       for (const [key, value] of Object.entries(fn.params)) {
         if (allowedFields.includes(key) && value) {
-          updates[key] = value;
+          if (key === 'phone' && typeof value === 'string') {
+            const normalized = normalizePhoneNumber(value);
+            if (normalized) {
+              updates[key] = normalized;
+              log(`[CRM-Functions] Phone normalized: "${value}" → "${normalized}"`, "crm");
+            } else {
+              log(`[CRM-Functions] Phone rejected (invalid format): "${value}"`, "crm");
+            }
+          } else {
+            updates[key] = value;
+          }
         }
       }
       

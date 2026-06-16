@@ -23,7 +23,9 @@ import {
   Undo2,
   ArrowRight,
   Trash2,
-  History
+  History,
+  Download,
+  Calendar
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,6 +63,8 @@ import { cn } from "@/lib/utils";
 import { FaInstagram, FaFacebook, FaTiktok, FaYoutube, FaTwitter, FaLinkedin } from 'react-icons/fa';
 import { ConversationTimeline } from '@/components/ConversationTimeline';
 import { ExtractedDataSection } from '@/components/ExtractedDataSection';
+import { useAuth } from '@/context/AuthContext';
+import { Link2, Copy, RefreshCw, XCircle, Check } from 'lucide-react';
 
 interface CrmContact {
   id: string;
@@ -182,8 +186,128 @@ interface TimelineMessage {
   conversationType: string;
 }
 
+function PublicLinkManager({ brandId }: { brandId: string }) {
+  const queryClient = useQueryClient();
+  const [copied, setCopied] = useState(false);
+
+  const { data: tokenData, isLoading } = useQuery({
+    queryKey: ['public-access-token', brandId],
+    queryFn: async () => {
+      const res = await fetch(`/api/public-access-tokens/${brandId}`);
+      if (!res.ok) throw new Error('Failed to fetch token');
+      return res.json();
+    },
+    enabled: !!brandId,
+  });
+
+  const generateMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch('/api/public-access-tokens', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brandId }),
+      });
+      if (!res.ok) throw new Error('Failed to generate token');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['public-access-token', brandId] });
+      toast.success('Link generado correctamente');
+    },
+    onError: () => toast.error('Error al generar el link'),
+  });
+
+  const revokeMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/public-access-tokens/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to revoke');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['public-access-token', brandId] });
+      toast.success('Link revocado');
+    },
+    onError: () => toast.error('Error al revocar el link'),
+  });
+
+  const activeToken = tokenData?.token;
+  const publicUrl = activeToken ? `${window.location.origin}/public/contacts/${activeToken.token}` : '';
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(publicUrl);
+    setCopied(true);
+    toast.success('Link copiado al portapapeles');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  if (isLoading) return null;
+
+  return (
+    <div className="border rounded-lg p-3 bg-gray-50" data-testid="public-link-section">
+      <div className="flex items-center gap-2 mb-2">
+        <Link2 className="h-4 w-4 text-indigo-500" />
+        <span className="text-sm font-medium text-gray-700">Link de acceso para vendedores</span>
+      </div>
+      {activeToken ? (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="text-xs text-gray-500 truncate bg-white border rounded px-2 py-1.5 font-mono" data-testid="text-public-link">
+              {publicUrl}
+            </div>
+            <span className="text-[10px] text-gray-400 mt-1 block">
+              Creado {format(new Date(activeToken.createdAt), "d MMM yyyy, HH:mm", { locale: es })}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={handleCopy} data-testid="button-copy-link">
+              {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-7 px-2 text-xs" 
+              onClick={() => generateMutation.mutate()}
+              disabled={generateMutation.isPending}
+              data-testid="button-regenerate-link"
+            >
+              <RefreshCw className={cn("h-3.5 w-3.5", generateMutation.isPending && "animate-spin")} />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50" 
+              onClick={() => revokeMutation.mutate(activeToken.id)}
+              disabled={revokeMutation.isPending}
+              data-testid="button-revoke-link"
+            >
+              <XCircle className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="h-8 text-xs"
+          onClick={() => generateMutation.mutate()}
+          disabled={generateMutation.isPending}
+          data-testid="button-generate-link"
+        >
+          {generateMutation.isPending ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+          ) : (
+            <Link2 className="h-3.5 w-3.5 mr-1.5" />
+          )}
+          Generar link de acceso
+        </Button>
+      )}
+    </div>
+  );
+}
+
 export function CRM() {
   const { activeClientId } = useNexus();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
@@ -200,12 +324,17 @@ export function CRM() {
   const [lastMergedId, setLastMergedId] = useState<string | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<CrmContact | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [filterPlatform, setFilterPlatform] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterLifecycle, setFilterLifecycle] = useState<string>('all');
   const [filterLimboPlatform, setFilterLimboPlatform] = useState<string>('all');
   const [filterDuplicatesPlatform, setFilterDuplicatesPlatform] = useState<string>('all');
   const [filterDuplicatesMatchType, setFilterDuplicatesMatchType] = useState<string>('all');
+  const [filterHasPhone, setFilterHasPhone] = useState<string>('all');
+  const [filterDateType, setFilterDateType] = useState<string>('last');
+  const [filterDateFrom, setFilterDateFrom] = useState<string>('');
+  const [filterDateTo, setFilterDateTo] = useState<string>('');
   
   const [newContact, setNewContact] = useState({
     displayName: '',
@@ -215,10 +344,29 @@ export function CRM() {
     country: '',
   });
 
+  const buildFilterParams = () => {
+    const params = new URLSearchParams();
+    params.set('brandId', activeClientId || '');
+    if (filterStatus !== 'all') params.set('status', filterStatus);
+    if (filterLifecycle !== 'all') params.set('lifecycleStage', filterLifecycle);
+    if (filterPlatform !== 'all') params.set('platform', filterPlatform);
+    if (filterHasPhone === 'yes') params.set('hasPhone', 'true');
+    else if (filterHasPhone === 'no') params.set('hasPhone', 'false');
+    if (filterDateFrom) {
+      if (filterDateType === 'first') params.set('firstInteractionFrom', filterDateFrom);
+      else params.set('lastInteractionFrom', filterDateFrom);
+    }
+    if (filterDateTo) {
+      if (filterDateType === 'first') params.set('firstInteractionTo', filterDateTo);
+      else params.set('lastInteractionTo', filterDateTo);
+    }
+    return params.toString();
+  };
+
   const { data: contactsData, isLoading: contactsLoading } = useQuery({
-    queryKey: ['/api/crm/contacts', activeClientId],
+    queryKey: ['/api/crm/contacts', activeClientId, filterStatus, filterLifecycle, filterPlatform, filterHasPhone, filterDateType, filterDateFrom, filterDateTo],
     queryFn: async () => {
-      const res = await fetch(`/api/crm/contacts?brandId=${activeClientId}`);
+      const res = await fetch(`/api/crm/contacts?${buildFilterParams()}`);
       if (!res.ok) throw new Error('Failed to fetch contacts');
       return res.json();
     },
@@ -408,17 +556,10 @@ export function CRM() {
       c.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.phone?.includes(searchQuery);
     
-    const matchesPlatform = filterPlatform === 'all' || 
-      c.platforms?.some(p => p.toLowerCase() === filterPlatform.toLowerCase());
-    
-    const matchesStatus = filterStatus === 'all' || c.status === filterStatus;
-    
-    const matchesLifecycle = filterLifecycle === 'all' || c.lifecycleStage === filterLifecycle;
-    
-    return matchesSearch && matchesPlatform && matchesStatus && matchesLifecycle;
+    return matchesSearch;
   });
   
-  const hasActiveContactFilters = filterPlatform !== 'all' || filterStatus !== 'all' || filterLifecycle !== 'all';
+  const hasActiveContactFilters = filterPlatform !== 'all' || filterStatus !== 'all' || filterLifecycle !== 'all' || filterHasPhone !== 'all' || filterDateFrom !== '' || filterDateTo !== '';
   const hasActiveLimboFilters = filterLimboPlatform !== 'all';
   const hasActiveDuplicateFilters = filterDuplicatesPlatform !== 'all' || filterDuplicatesMatchType !== 'all';
   
@@ -426,6 +567,21 @@ export function CRM() {
     setFilterPlatform('all');
     setFilterStatus('all');
     setFilterLifecycle('all');
+    setFilterHasPhone('all');
+    setFilterDateFrom('');
+    setFilterDateTo('');
+    setFilterDateType('last');
+  };
+
+  const handleDownloadCsv = () => {
+    const params = buildFilterParams();
+    const url = `/api/crm/contacts/export?${params}`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
   
   const clearLimboFilters = () => {
@@ -474,6 +630,12 @@ export function CRM() {
             <span className="hidden sm:inline">Nuevo contacto</span>
           </Button>
         </div>
+
+        {user?.role === 'admin' && activeClientId && (
+          <div className="mb-3 sm:mb-4">
+            <PublicLinkManager brandId={activeClientId} />
+          </div>
+        )}
         
         {/* Tabs + Search - Responsive */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
@@ -537,129 +699,247 @@ export function CRM() {
             />
           </div>
           
-          {/* Filters - scrollable row on mobile */}
           {activeTab === 'contacts' && (
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-              <Select value={filterPlatform} onValueChange={setFilterPlatform}>
-                <SelectTrigger className="h-8 w-28 sm:w-32 text-xs bg-white border-gray-200 shadow-none shrink-0">
-                  <SelectValue placeholder="Plataforma" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="instagram">Instagram</SelectItem>
-                  <SelectItem value="facebook">Facebook</SelectItem>
-                  <SelectItem value="tiktok">TikTok</SelectItem>
-                  <SelectItem value="youtube">YouTube</SelectItem>
-                  <SelectItem value="twitter">Twitter</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="h-8 w-24 sm:w-28 text-xs bg-white border-gray-200 shadow-none shrink-0">
-                  <SelectValue placeholder="Estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="new">Nuevo</SelectItem>
-                  <SelectItem value="lead">Lead</SelectItem>
-                  <SelectItem value="active">Activo</SelectItem>
-                  <SelectItem value="inactive">Inactivo</SelectItem>
-                  <SelectItem value="archived">Archivado</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Select value={filterLifecycle} onValueChange={setFilterLifecycle}>
-                <SelectTrigger className="h-8 w-24 sm:w-28 text-xs bg-white border-gray-200 shadow-none shrink-0">
-                  <SelectValue placeholder="Etapa" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="new">Nuevo</SelectItem>
-                  <SelectItem value="lead">Lead</SelectItem>
-                  <SelectItem value="customer">Cliente</SelectItem>
-                  <SelectItem value="vip">VIP</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              {hasActiveContactFilters && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={clearContactFilters}
-                  className="h-8 px-2 text-xs text-gray-500 shrink-0"
+            <div className="bg-gray-50 rounded-lg border border-gray-100 p-3 mt-1">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setFiltersOpen(!filtersOpen)}
+                  className="flex items-center gap-1.5 sm:cursor-default"
+                  data-testid="button-toggle-filters"
                 >
-                  <X className="h-3 w-3" />
-                </Button>
-              )}
+                  <Filter className="h-3.5 w-3.5 text-gray-400" />
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Filtros</span>
+                  {hasActiveContactFilters && (
+                    <span className="bg-indigo-100 text-indigo-700 text-[10px] font-medium px-1.5 py-0.5 rounded-full">Activos</span>
+                  )}
+                  <ChevronRight className={cn("h-3.5 w-3.5 text-gray-400 transition-transform sm:hidden", filtersOpen && "rotate-90")} />
+                </button>
+                <div className="flex items-center gap-1.5">
+                  {hasActiveContactFilters && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={clearContactFilters}
+                      className="h-7 px-2 text-xs text-gray-500 hover:text-gray-700"
+                      data-testid="button-clear-filters"
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      Limpiar
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadCsv}
+                    className="h-7 px-2.5 text-xs bg-white border-gray-200 shadow-none"
+                    data-testid="button-download-csv"
+                  >
+                    <Download className="h-3.5 w-3.5 mr-1.5" />
+                    CSV
+                  </Button>
+                </div>
+              </div>
+
+              <div className={cn("flex flex-wrap items-end gap-2 mt-2.5", !filtersOpen && "hidden sm:flex")}>
+                <div className="space-y-1 w-[calc(50%-4px)] sm:w-auto sm:min-w-[120px] sm:flex-1">
+                  <label className="text-[11px] font-medium text-gray-500 pl-0.5">Plataforma</label>
+                  <Select value={filterPlatform} onValueChange={setFilterPlatform}>
+                    <SelectTrigger className="h-8 w-full text-xs bg-white border-gray-200 shadow-none" data-testid="select-filter-platform">
+                      <SelectValue placeholder="Todas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      <SelectItem value="instagram">Instagram</SelectItem>
+                      <SelectItem value="facebook">Facebook</SelectItem>
+                      <SelectItem value="tiktok">TikTok</SelectItem>
+                      <SelectItem value="youtube">YouTube</SelectItem>
+                      <SelectItem value="twitter">Twitter</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1 w-[calc(50%-4px)] sm:w-auto sm:min-w-[110px] sm:flex-1">
+                  <label className="text-[11px] font-medium text-gray-500 pl-0.5">Estado</label>
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger className="h-8 w-full text-xs bg-white border-gray-200 shadow-none" data-testid="select-filter-status">
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="new">Nuevo</SelectItem>
+                      <SelectItem value="lead">Lead</SelectItem>
+                      <SelectItem value="active">Activo</SelectItem>
+                      <SelectItem value="inactive">Inactivo</SelectItem>
+                      <SelectItem value="archived">Archivado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1 w-[calc(50%-4px)] sm:w-auto sm:min-w-[100px] sm:flex-1">
+                  <label className="text-[11px] font-medium text-gray-500 pl-0.5">Etapa</label>
+                  <Select value={filterLifecycle} onValueChange={setFilterLifecycle}>
+                    <SelectTrigger className="h-8 w-full text-xs bg-white border-gray-200 shadow-none" data-testid="select-filter-lifecycle">
+                      <SelectValue placeholder="Todas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      <SelectItem value="new">Nuevo</SelectItem>
+                      <SelectItem value="lead">Lead</SelectItem>
+                      <SelectItem value="customer">Cliente</SelectItem>
+                      <SelectItem value="vip">VIP</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1 w-[calc(50%-4px)] sm:w-auto sm:min-w-[110px] sm:flex-1">
+                  <label className="text-[11px] font-medium text-gray-500 pl-0.5">Teléfono</label>
+                  <Select value={filterHasPhone} onValueChange={setFilterHasPhone}>
+                    <SelectTrigger className="h-8 w-full text-xs bg-white border-gray-200 shadow-none" data-testid="select-filter-phone">
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="yes">Con teléfono</SelectItem>
+                      <SelectItem value="no">Sin teléfono</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="hidden sm:block w-px h-8 bg-gray-200 shrink-0" />
+
+                <div className="space-y-1 w-full sm:w-auto sm:min-w-[150px] sm:flex-1">
+                  <label className="text-[11px] font-medium text-gray-500 pl-0.5 flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    Rango de fecha
+                  </label>
+                  <Select value={filterDateType} onValueChange={setFilterDateType}>
+                    <SelectTrigger className="h-8 w-full text-xs bg-white border-gray-200 shadow-none" data-testid="select-filter-date-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="last">Última interacción</SelectItem>
+                      <SelectItem value="first">Primera interacción</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-end gap-1.5 w-full sm:w-auto">
+                  <div className="space-y-1 flex-1 sm:flex-none">
+                    <label className="text-[11px] font-medium text-gray-500 pl-0.5">Desde</label>
+                    <input
+                      type="date"
+                      value={filterDateFrom}
+                      onChange={(e) => setFilterDateFrom(e.target.value)}
+                      className="h-8 px-2 text-xs border border-gray-200 rounded-md bg-white w-full sm:w-[130px]"
+                      data-testid="input-date-from"
+                    />
+                  </div>
+                  <span className="text-xs text-gray-400 pb-1.5">—</span>
+                  <div className="space-y-1 flex-1 sm:flex-none">
+                    <label className="text-[11px] font-medium text-gray-500 pl-0.5">Hasta</label>
+                    <input
+                      type="date"
+                      value={filterDateTo}
+                      onChange={(e) => setFilterDateTo(e.target.value)}
+                      className="h-8 px-2 text-xs border border-gray-200 rounded-md bg-white w-full sm:w-[130px]"
+                      data-testid="input-date-to"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           )}
           
           {activeTab === 'limbo' && (
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-              <Select value={filterLimboPlatform} onValueChange={setFilterLimboPlatform}>
-                <SelectTrigger className="h-8 w-28 sm:w-32 text-xs bg-white border-gray-200 shadow-none shrink-0">
-                  <SelectValue placeholder="Plataforma" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="instagram">Instagram</SelectItem>
-                  <SelectItem value="facebook">Facebook</SelectItem>
-                  <SelectItem value="tiktok">TikTok</SelectItem>
-                  <SelectItem value="youtube">YouTube</SelectItem>
-                  <SelectItem value="linkedin">LinkedIn</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              {hasActiveLimboFilters && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={clearLimboFilters}
-                  className="h-8 px-2 text-xs text-gray-500 shrink-0"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              )}
+            <div className="bg-gray-50 rounded-lg border border-gray-100 p-3 mt-1">
+              <div className="flex items-center justify-between mb-2.5">
+                <div className="flex items-center gap-1.5">
+                  <Filter className="h-3.5 w-3.5 text-gray-400" />
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Filtros</span>
+                </div>
+                {hasActiveLimboFilters && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={clearLimboFilters}
+                    className="h-7 px-2 text-xs text-gray-500 hover:text-gray-700"
+                  >
+                    <X className="h-3 w-3 mr-1" />
+                    Limpiar
+                  </Button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-medium text-gray-500 pl-0.5">Plataforma</label>
+                  <Select value={filterLimboPlatform} onValueChange={setFilterLimboPlatform}>
+                    <SelectTrigger className="h-8 w-full text-xs bg-white border-gray-200 shadow-none">
+                      <SelectValue placeholder="Todas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      <SelectItem value="instagram">Instagram</SelectItem>
+                      <SelectItem value="facebook">Facebook</SelectItem>
+                      <SelectItem value="tiktok">TikTok</SelectItem>
+                      <SelectItem value="youtube">YouTube</SelectItem>
+                      <SelectItem value="linkedin">LinkedIn</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
           )}
           
           {activeTab === 'duplicates' && (
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-              <Select value={filterDuplicatesPlatform} onValueChange={setFilterDuplicatesPlatform}>
-                <SelectTrigger className="h-8 w-28 sm:w-32 text-xs bg-white border-gray-200 shadow-none shrink-0">
-                  <SelectValue placeholder="Plataforma" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="instagram">Instagram</SelectItem>
-                  <SelectItem value="facebook">Facebook</SelectItem>
-                  <SelectItem value="tiktok">TikTok</SelectItem>
-                  <SelectItem value="youtube">YouTube</SelectItem>
-                  <SelectItem value="linkedin">LinkedIn</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Select value={filterDuplicatesMatchType} onValueChange={setFilterDuplicatesMatchType}>
-                <SelectTrigger className="h-8 w-24 sm:w-32 text-xs bg-white border-gray-200 shadow-none shrink-0">
-                  <SelectValue placeholder="Tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="email">Email</SelectItem>
-                  <SelectItem value="phone">Teléfono</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              {hasActiveDuplicateFilters && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={clearDuplicateFilters}
-                  className="h-8 px-2 text-xs text-gray-500 shrink-0"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              )}
+            <div className="bg-gray-50 rounded-lg border border-gray-100 p-3 mt-1">
+              <div className="flex items-center justify-between mb-2.5">
+                <div className="flex items-center gap-1.5">
+                  <Filter className="h-3.5 w-3.5 text-gray-400" />
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Filtros</span>
+                </div>
+                {hasActiveDuplicateFilters && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={clearDuplicateFilters}
+                    className="h-7 px-2 text-xs text-gray-500 hover:text-gray-700"
+                  >
+                    <X className="h-3 w-3 mr-1" />
+                    Limpiar
+                  </Button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-medium text-gray-500 pl-0.5">Plataforma</label>
+                  <Select value={filterDuplicatesPlatform} onValueChange={setFilterDuplicatesPlatform}>
+                    <SelectTrigger className="h-8 w-full text-xs bg-white border-gray-200 shadow-none">
+                      <SelectValue placeholder="Todas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      <SelectItem value="instagram">Instagram</SelectItem>
+                      <SelectItem value="facebook">Facebook</SelectItem>
+                      <SelectItem value="tiktok">TikTok</SelectItem>
+                      <SelectItem value="youtube">YouTube</SelectItem>
+                      <SelectItem value="linkedin">LinkedIn</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-medium text-gray-500 pl-0.5">Tipo de coincidencia</label>
+                  <Select value={filterDuplicatesMatchType} onValueChange={setFilterDuplicatesMatchType}>
+                    <SelectTrigger className="h-8 w-full text-xs bg-white border-gray-200 shadow-none">
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="email">Email</SelectItem>
+                      <SelectItem value="phone">Teléfono</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
           )}
         </div>

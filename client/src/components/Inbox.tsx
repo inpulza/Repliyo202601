@@ -16,6 +16,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   Search,
   Flame,
@@ -59,6 +66,9 @@ import {
   Bell,
   PanelRightOpen,
   PanelRightClose,
+  FileText,
+  ShieldAlert,
+  Mail,
 } from 'lucide-react';
 import { FaInstagram, FaFacebook, FaLinkedin, FaTiktok, FaYoutube, FaWhatsapp } from 'react-icons/fa';
 import { GoogleBusinessIcon } from './GoogleBusinessIcon';
@@ -89,6 +99,7 @@ import repliyoLogo from '@/assets/repliyo-logo.jpg';
 import { toast } from '@/hooks/use-toast';
 import { CommentThread } from './CommentThread';
 import { useBulkDraftQueue } from '@/hooks/useBulkDraftQueue';
+import { useBulkSendQueue } from '@/hooks/useBulkSendQueue';
 import { BulkDraftActionBar } from './BulkDraftActionBar';
 
 
@@ -101,20 +112,23 @@ import { BulkDraftActionBar } from './BulkDraftActionBar';
 //   - manualBubble: mensajes enviados manualmente desde Repliyo (outbound, internalOrigin=manual)
 //   - draftBubble: borradores de IA pendientes de enviar
 const getPlatformStyles = (platform: Platform) => {
-    // Estilos unificados sin fondos para look minimalista
-    // Todos los comentarios sin fondo (transparente), solo texto sobre fondo gris
+    // IMPORTANTE: NO CAMBIAR ESTOS ESTILOS SIN CONSULTAR
+    // - userBubble: mensajes del cliente/seguidor (inbound) → transparente
+    // - ownerBubble/aiBubble/manualBubble: respuestas de la marca (outbound) → FONDO AZUL
+    // Esto aplica tanto a mensajes enviados desde Repliyo como desde la red social directamente.
+    // El sistema identifica los mensajes outbound por el ID del dueño de la cuenta.
     const baseStyles = {
         container: "bg-[#EEF2F6]",
         userBubble: "bg-transparent text-gray-900",
-        ownerBubble: "bg-transparent text-gray-900",
-        aiBubble: "bg-transparent text-gray-900",
-        manualBubble: "bg-transparent text-gray-900",
+        ownerBubble: "bg-indigo-600 text-white",
+        aiBubble: "bg-indigo-600 text-white",
+        manualBubble: "bg-indigo-600 text-white",
         draftBubble: "bg-transparent text-gray-900",
         draftCard: { bg: "bg-transparent", border: "border-l-gray-300", accent: "text-gray-600", iconBg: "from-gray-400 to-gray-500" },
         badge: "bg-gray-100 text-gray-700 border-gray-200",
         commentBadge: "text-gray-500",
         bubble: "bg-transparent text-gray-900",
-        replyBubble: "bg-transparent text-gray-900"
+        replyBubble: "bg-indigo-600 text-white"
     };
     
     // Colores de badge/accent por plataforma (solo para badges, no fondos)
@@ -188,10 +202,14 @@ export function Inbox() {
   useWebSocket({
     brandId: activeClientId || undefined,
     onNewMessage: () => {
-      // Use correct cache keys that match NexusContext queries
       queryClient.invalidateQueries({ queryKey: ['messages', activeClientId] });
       queryClient.invalidateQueries({ queryKey: ['conversations', activeClientId] });
       queryClient.invalidateQueries({ queryKey: ['conversationMessages'] });
+    },
+    onCrisisAlert: () => {
+      queryClient.invalidateQueries({ queryKey: ['crisisAlertsByConversation'] });
+      queryClient.invalidateQueries({ queryKey: ['sentiment-alerts'] });
+      queryClient.invalidateQueries({ queryKey: ['sentiment-alerts-stats'] });
     },
     showToasts: true,
   });
@@ -211,27 +229,66 @@ export function Inbox() {
   // Bulk Draft Selection State
   const [selectionEnabled, setSelectionEnabled] = useState(false);
   const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set());
+
+  // Private Reply state
+  const [isPrivateReplyMode, setIsPrivateReplyMode] = useState(false);
+  const [privateReplyTargetMessage, setPrivateReplyTargetMessage] = useState<Message | null>(null);
   
   // Unread message tracking - captures IDs of unread messages when opening a conversation
   const [unreadMessageIds, setUnreadMessageIds] = useState<Set<string>>(new Set());
   // Track the unreadCount at the moment the conversation was opened
   const [capturedUnreadCount, setCapturedUnreadCount] = useState<number>(0);
 
+  // Track message IDs that were just bulk-generated so we can re-select them after data refresh
+  const bulkGeneratedIdsRef = React.useRef<string[]>([]);
+
   // Bulk Draft Queue Hook
   const bulkDraftQueue = useBulkDraftQueue({
     brandId: activeClientId || '',
     maxConcurrency: 3,
     onComplete: (results) => {
-      // Clear selection after successful completion
+      queryClient.invalidateQueries({ queryKey: ['conversationMessages'] });
+      if (bulkGeneratedIdsRef.current.length > 0) {
+        const generatedIds = new Set(bulkGeneratedIdsRef.current);
+        setSelectedMessageIds(generatedIds);
+        bulkGeneratedIdsRef.current = [];
+      }
+    },
+    onMessageComplete: (messageId, success) => {
+      if (success) {
+        bulkGeneratedIdsRef.current.push(messageId);
+        setSelectedMessageIds(prev => {
+          const next = new Set(prev);
+          next.delete(messageId);
+          return next;
+        });
+      }
+    },
+  });
+
+  // Bulk Send Queue Hook
+  const bulkSendQueue = useBulkSendQueue({
+    brandId: activeClientId || '',
+    maxConcurrency: 2,
+    onComplete: (results) => {
       if (results.errorCount === 0) {
         setSelectedMessageIds(new Set());
         setSelectionEnabled(false);
       }
-      // Refresh data
       queryClient.invalidateQueries({ queryKey: ['conversationMessages'] });
+      refreshFeed();
     },
     onMessageComplete: (messageId, success) => {
       if (success) {
+        setLocalDraftOverrides(prev => {
+          const next = new Map(prev);
+          next.set(messageId, {
+            aiSuggestedReply: null,
+            aiReplyStatus: 'sent',
+            draftWasEdited: false,
+          });
+          return next;
+        });
         setSelectedMessageIds(prev => {
           const next = new Set(prev);
           next.delete(messageId);
@@ -288,11 +345,6 @@ export function Inbox() {
     });
   };
 
-  const handleBulkGenerate = () => {
-    if (selectedMessageIds.size === 0) return;
-    bulkDraftQueue.enqueueMany(Array.from(selectedMessageIds));
-  };
-
   const handleClearSelection = () => {
     setSelectedMessageIds(new Set());
   };
@@ -317,6 +369,26 @@ export function Inbox() {
     enabled: !!activeClientId,
   });
 
+  // AI Agent config query - for private reply feature
+  const { data: agentConfig } = useQuery({
+    queryKey: ['aiAgent', activeClientId],
+    queryFn: () => activeClientId ? api.aiAgent.get(activeClientId) : Promise.resolve(null),
+    enabled: !!activeClientId,
+    staleTime: 60000,
+  });
+  const privateReplyEnabled = !!(agentConfig?.privateReplyEnabled);
+
+  const { data: privateReplyStatusData } = useQuery({
+    queryKey: ['privateReplyStatus', activeConversation?.id],
+    queryFn: () => activeConversation?.id ? api.inbox.getPrivateReplyStatus(activeConversation.id) : Promise.resolve({ sentCommentIds: [] }),
+    enabled: !!activeConversation?.id && privateReplyEnabled,
+    staleTime: 30000,
+  });
+  const privateReplySentIds = React.useMemo(
+    () => new Set(privateReplyStatusData?.sentCommentIds || []),
+    [privateReplyStatusData]
+  );
+
   // CRM Contact Query - fetch contact when DM conversation is selected
   const { data: crmContactData, isLoading: isLoadingCrmContact } = useQuery({
     queryKey: ['crmContact', activeClientId, activeConversation?.platform, activeConversation?.customerId],
@@ -333,6 +405,11 @@ export function Inbox() {
   const [isUpdatingSyncPause, setIsUpdatingSyncPause] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  
+  // Conversation summary modal state
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
+  const [conversationSummary, setConversationSummary] = useState<string | null>(null);
 
   const handleGenerateSummary = async () => {
     if (!activeConversation || isGeneratingSummary) return;
@@ -355,6 +432,39 @@ export function Inbox() {
     } finally {
       setIsGeneratingSummary(false);
     }
+  };
+
+  // Handle summarize conversation for the modal
+  const handleSummarizeConversation = async () => {
+    if (!activeConversation || isSummarizing) return;
+    
+    setIsSummarizing(true);
+    setConversationSummary(null);
+    setSummaryDialogOpen(true);
+    
+    try {
+      const result = await api.lifecycle.generateSummary(activeConversation.id);
+      if (result && result.success && result.summary) {
+        // result.summary is an object { summary, sentiment, intent, resolution }
+        // Extract the text summary string
+        const summaryText = typeof result.summary === 'string' 
+          ? result.summary 
+          : result.summary.summary;
+        setConversationSummary(summaryText || "Resumen generado sin texto");
+      } else {
+        throw new Error(result?.message || "No se recibió resumen válido");
+      }
+    } catch (error: any) {
+      setIsSummarizing(false);
+      setSummaryDialogOpen(false);
+      toast({
+        title: "Error al resumir",
+        description: error.message || "No se pudo generar el resumen",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsSummarizing(false);
   };
 
   const handleUpdateConversationStatus = async (newStatus: ConversationStatus) => {
@@ -465,6 +575,7 @@ export function Inbox() {
   const [threadFilterNoReply, setThreadFilterNoReply] = useState(false);
   const [threadFilterWithDraft, setThreadFilterWithDraft] = useState(false);
   const [threadFilterWithReminder, setThreadFilterWithReminder] = useState(false);
+  const [threadFilterWithCrisis, setThreadFilterWithCrisis] = useState(false);
   const [location, setLocation] = useLocation();
 
   // Handler for platform filter clicks - activates unread filter if platform has unread messages
@@ -564,6 +675,15 @@ export function Inbox() {
     enabled: !!activeClientId,
   });
 
+  const { data: crisisAlertsByConversation = {} } = useQuery<Record<string, { severity: string; sentiment: string; category: string; status: string }>>({
+    queryKey: ['crisisAlertsByConversation', activeClientId],
+    queryFn: () => activeClientId ? api.sentimentAlerts.getByConversation(activeClientId) : Promise.resolve({}),
+    enabled: !!activeClientId,
+    refetchInterval: 60000,
+  });
+
+  const crisisConversationCount = Object.keys(crisisAlertsByConversation).length;
+
   const normalizeProviderToPlatform = (provider: string): string => {
     const mapping: Record<string, string> = {
       'tiktokbusiness': 'tiktok',
@@ -588,6 +708,10 @@ export function Inbox() {
       if (focusedConversationId) {
         return c.id === focusedConversationId;
       }
+      // Fire Mode: bypass all other filters, show ONLY conversations with crisis alerts
+      if (fireMode) {
+        return !!crisisAlertsByConversation[c.id];
+      }
       // Normal filters
       if (showOnlyUnread && (c.unreadCount || 0) === 0) return false;
       if (platformFilter !== 'all' && c.platform !== platformFilter) return false;
@@ -606,11 +730,21 @@ export function Inbox() {
       }
       return true;
     })
-    .sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
+    .sort((a, b) => {
+      if (fireMode) {
+        const sevRank: Record<string, number> = { P1: 1, P2: 2, P3: 3, P4: 4 };
+        const aAlert = crisisAlertsByConversation[a.id];
+        const bAlert = crisisAlertsByConversation[b.id];
+        if (aAlert && bAlert && aAlert.severity !== bAlert.severity) {
+          return (sevRank[aAlert.severity] || 99) - (sevRank[bAlert.severity] || 99);
+        }
+      }
+      return new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime();
+    });
 
   // Calculate Stats for Header (from conversations)
   const totalUnread = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
-  const criticalCount = 0;
+  const criticalCount = crisisConversationCount;
   const opportunityCount = 0;
   const pendingCount = totalUnread;
 
@@ -686,6 +820,9 @@ export function Inbox() {
     });
   }, [activeConversationMessages, localDraftOverrides]);
 
+  // Note: selectableMessages, selectedWithDraft, selectedWithoutDraft, and bulk handlers
+  // are defined after threadFilterStats below (they depend on threadFilterStats.noReplyIds)
+
   // Derive active draft message (outbound with drafting/pending status) and last inbound message
   const activeDraftMessage = React.useMemo(() => {
     return threadMessages.find(m => 
@@ -705,15 +842,17 @@ export function Inbox() {
 
   // Compute thread filter statistics
   const threadFilterStats = React.useMemo(() => {
-    if (!threadMessages.length) return { noReplyCount: 0, withDraftCount: 0, withReminderCount: 0, noReplyIds: new Set<string>(), withDraftIds: new Set<string>(), withReminderIds: new Set<string>() };
+    if (!threadMessages.length) return { noReplyCount: 0, withDraftCount: 0, withReminderCount: 0, withCrisisCount: 0, noReplyIds: new Set<string>(), withDraftIds: new Set<string>(), withReminderIds: new Set<string>(), withCrisisIds: new Set<string>() };
     
     const noReplyIds = new Set<string>();
     const withDraftIds = new Set<string>();
     const withReminderIds = new Set<string>();
+    const withCrisisIds = new Set<string>();
     
     // Separate counters for display (count unique items, not expanded IDs)
     let draftCount = 0;
     let reminderCount = 0;
+    let crisisCount = 0;
     
     // Build parent-child map for quick lookup
     const childrenByParent = new Map<string, typeof threadMessages>();
@@ -775,19 +914,73 @@ export function Inbox() {
       }
     });
     
+    const crisisRootIds = new Set<string>();
+    threadMessages.forEach(m => {
+      if (m.direction === 'inbound' && m.urgency && (m.urgency === 'P1' || m.urgency === 'P2')) {
+        withCrisisIds.add(m.id);
+        const rootId = getRootId(m.id);
+        if (rootId !== m.id) withCrisisIds.add(rootId);
+        crisisRootIds.add(rootId);
+      }
+    });
+    crisisCount = crisisRootIds.size;
+
     return {
       noReplyCount: noReplyIds.size,
       withDraftCount: draftCount,
       withReminderCount: reminderCount,
+      withCrisisCount: crisisCount,
       noReplyIds,
       withDraftIds,
       withReminderIds,
+      withCrisisIds,
     };
   }, [threadMessages]);
 
+  // Selectable messages for bulk operations: only inbound messages that need action
+  // Uses threadFilterStats.noReplyIds (proven logic) + draft-ready messages
+  const selectableMessages = React.useMemo(() => {
+    if (!threadMessages.length) return [];
+    return threadMessages.filter(m => {
+      if (m.direction !== 'inbound') return false;
+      const hasDraftReady = m.aiSuggestedReply && m.aiReplyStatus === 'drafted';
+      if (hasDraftReady) return true;
+      return threadFilterStats.noReplyIds.has(m.id);
+    });
+  }, [threadMessages, threadFilterStats.noReplyIds]);
+
+  const selectableMessageIdSet = React.useMemo(() => {
+    return new Set(selectableMessages.map(m => m.id));
+  }, [selectableMessages]);
+
+  const selectedWithDraft = React.useMemo(() => {
+    return selectableMessages.filter(m => selectedMessageIds.has(m.id) && m.aiSuggestedReply && m.aiReplyStatus === 'drafted');
+  }, [selectableMessages, selectedMessageIds]);
+
+  const selectedWithoutDraft = React.useMemo(() => {
+    return selectableMessages.filter(m => selectedMessageIds.has(m.id) && !m.aiSuggestedReply && m.aiReplyStatus !== 'drafted');
+  }, [selectableMessages, selectedMessageIds]);
+
+  const handleBulkGenerate = () => {
+    const ids = selectedWithoutDraft.map(m => m.id);
+    if (ids.length === 0) return;
+    bulkDraftQueue.enqueueMany(ids);
+  };
+
+  const handleBulkSend = () => {
+    const ids = selectedWithDraft.map(m => m.id);
+    if (ids.length === 0) return;
+    bulkSendQueue.enqueueMany(ids);
+  };
+
+  const handleSelectAll = () => {
+    const allIds = new Set(selectableMessages.map(m => m.id));
+    setSelectedMessageIds(allIds);
+  };
+
   // Apply thread filters to get filtered messages
   const filteredThreadMessages = React.useMemo(() => {
-    const anyFilterActive = threadFilterNoReply || threadFilterWithDraft || threadFilterWithReminder;
+    const anyFilterActive = threadFilterNoReply || threadFilterWithDraft || threadFilterWithReminder || threadFilterWithCrisis;
     if (!anyFilterActive) return threadMessages;
     
     // Build set of message IDs to show
@@ -825,9 +1018,12 @@ export function Inbox() {
     if (threadFilterWithReminder) {
       threadFilterStats.withReminderIds.forEach(id => addThreadBranch(id));
     }
+    if (threadFilterWithCrisis) {
+      threadFilterStats.withCrisisIds.forEach(id => addThreadBranch(id));
+    }
     
     return threadMessages.filter(m => visibleIds.has(m.id));
-  }, [threadMessages, threadFilterNoReply, threadFilterWithDraft, threadFilterWithReminder, threadFilterStats]);
+  }, [threadMessages, threadFilterNoReply, threadFilterWithDraft, threadFilterWithReminder, threadFilterWithCrisis, threadFilterStats]);
 
   // Auto-select first conversation (Desktop Only)
   useEffect(() => {
@@ -845,6 +1041,7 @@ export function Inbox() {
     setThreadFilterNoReply(false);
     setThreadFilterWithDraft(false);
     setThreadFilterWithReminder(false);
+    setThreadFilterWithCrisis(false);
   }, [activeConversation?.id]);
 
   const handleSyncData = async () => {
@@ -871,10 +1068,87 @@ export function Inbox() {
   const handleCancelReply = () => {
     setReplyToMessage(null);
     setReplyText("");
+    setIsPrivateReplyMode(false);
+    setPrivateReplyTargetMessage(null);
+  };
+
+  const handlePrivateReply = async (message: Message) => {
+    if (!activeClientId) return;
+    try {
+      const { text } = await api.inbox.getPrivateReplyTemplate(activeClientId, message.id);
+      setReplyText(text || '');
+    } catch {
+      setReplyText('');
+    }
+    setPrivateReplyTargetMessage(message);
+    setIsPrivateReplyMode(true);
+    setReplyToMessage(message);
+  };
+
+  const handleSendPrivateReply = async () => {
+    console.log('[PrivateReply] handleSendPrivateReply called', { replyTextLen: replyText.trim().length, isSendingReply, hasTarget: !!privateReplyTargetMessage, targetId: privateReplyTargetMessage?.id });
+    if (!replyText.trim() || isSendingReply || !privateReplyTargetMessage) {
+      console.log('[PrivateReply] BLOCKED by guard', { emptyText: !replyText.trim(), isSendingReply, noTarget: !privateReplyTargetMessage });
+      return;
+    }
+    setIsSendingReply(true);
+    try {
+      await api.inbox.sendPrivateReply(privateReplyTargetMessage.id, replyText.trim());
+      toast({
+        title: "Respuesta privada enviada",
+        description: "El usuario recibirá tu mensaje en privado por DM.",
+      });
+      handleCancelReply();
+      await refreshFeed();
+      if (activeConversation) {
+        queryClient.invalidateQueries({ queryKey: ['conversationMessages', activeConversation.id] });
+      }
+    } catch (error: any) {
+      if (error.tokenExpired) {
+        toast({
+          title: "Token expirado",
+          description: "El token de acceso a Facebook venció. Ve a Configuración → Private Replies y reconecta la página con un token actualizado.",
+          variant: "destructive",
+          duration: 8000,
+        });
+      } else {
+        toast({
+          title: "Error al enviar respuesta privada",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsSendingReply(false);
+    }
   };
 
   const handleSendReply = async () => {
-    if (!replyToMessage || !replyText.trim() || isSendingReply) return;
+    if (isPrivateReplyMode) {
+      return handleSendPrivateReply();
+    }
+    if (!replyText.trim() || isSendingReply || !activeConversation) return;
+    
+    // For DMs without replyToMessage, use the last message in the conversation
+    let targetMessageId: string | null = replyToMessage?.id || null;
+    
+    if (!targetMessageId && activeConversation.type === 'dm') {
+      if (activeConversationMessages?.length) {
+        const lastInbound = activeConversationMessages.filter(m => m.direction === 'inbound').slice(-1)[0];
+        const lastMessage = activeConversationMessages.slice(-1)[0];
+        targetMessageId = lastInbound?.id || lastMessage?.id || null;
+      }
+    }
+    
+    // Can't send without a target message
+    if (!targetMessageId) {
+      toast({
+        title: "Sin mensajes",
+        description: "No hay mensajes en esta conversación para responder",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsSendingReply(true);
     try {
@@ -883,9 +1157,9 @@ export function Inbox() {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          messageId: replyToMessage.id,
+          messageId: targetMessageId,
           text: replyText.trim(),
-          includeMention: true,
+          includeMention: activeConversation.type !== 'dm', // No mention for DMs
         }),
       });
       
@@ -894,7 +1168,13 @@ export function Inbox() {
         throw new Error(errorData.error || 'Failed to send reply');
       }
       
-      handleCancelReply();
+      // Only cancel reply if we were replying to a specific message (comments)
+      if (replyToMessage) {
+        handleCancelReply();
+      } else {
+        // For DMs, just clear the text
+        setReplyText("");
+      }
       await refreshFeed();
       if (activeConversation) {
         queryClient.invalidateQueries({ queryKey: ['conversationMessages', activeConversation.id] });
@@ -908,21 +1188,51 @@ export function Inbox() {
   };
 
   const getReplyCharacterLimit = () => {
-    if (!replyToMessage) return 2200;
-    return getCharacterLimit(
-      (replyToMessage.platform || 'instagram') as Platform, 
-      (replyToMessage.type || 'comment') as MessageType
-    );
+    if (replyToMessage) {
+      return getCharacterLimit(
+        (replyToMessage.platform || 'instagram') as Platform, 
+        (replyToMessage.type || 'comment') as MessageType
+      );
+    }
+    // For DMs without replyToMessage, use conversation data
+    if (activeConversation) {
+      return getCharacterLimit(
+        (activeConversation.platform || 'instagram') as Platform, 
+        activeConversation.type === 'dm' ? 'dm' : (activeConversation.type as MessageType)
+      );
+    }
+    return 2200;
   };
 
   const handleGenerateAIReply = async () => {
-    if (!replyToMessage || !activeClientId || !activeConversation || isGeneratingAI) return;
+    if (!activeClientId || !activeConversation || isGeneratingAI) return;
+    
+    // For DMs without replyToMessage, use the last inbound message or the last message in the conversation
+    let targetMessageId: string | null = replyToMessage?.id || null;
+    
+    if (!targetMessageId && activeConversation.type === 'dm') {
+      if (activeConversationMessages?.length) {
+        const lastInbound = activeConversationMessages.filter(m => m.direction === 'inbound').slice(-1)[0];
+        const lastMessage = activeConversationMessages.slice(-1)[0];
+        targetMessageId = lastInbound?.id || lastMessage?.id || null;
+      }
+    }
+    
+    // For AI generation, we need a real message ID to analyze
+    if (!targetMessageId) {
+      toast({
+        title: "Sin contexto",
+        description: "No hay mensajes en la conversación para generar una respuesta",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsGeneratingAI(true);
     try {
       const result = await api.aiAgent.generateReply(
         activeClientId, 
-        replyToMessage.id,
+        targetMessageId,
         activeConversation.id
       );
       
@@ -1359,7 +1669,7 @@ export function Inbox() {
                 />
             </div>
             
-            <div className={cn("flex items-center gap-2 shrink-0 px-3 py-1.5 rounded-md transition-colors", fireMode ? "bg-white" : "bg-white")} title="Fire Mode: Show High & Medium Urgency">
+            <div className={cn("flex items-center gap-2 shrink-0 px-3 py-1.5 rounded-md transition-colors", fireMode ? "bg-red-50 ring-1 ring-red-200" : "bg-white")} title="Fire Mode: Show Crisis Alerts (P1/P2)" data-testid="fire-mode-toggle">
                 <Switch 
                     id="fire-mode" 
                     checked={fireMode} 
@@ -1368,6 +1678,11 @@ export function Inbox() {
                 />
                 <Label htmlFor="fire-mode" className={cn("text-xs font-bold cursor-pointer select-none flex items-center gap-1", fireMode ? "text-red-600" : "text-gray-500")}>
                     <Flame className={cn("h-3.5 w-3.5", fireMode && "fill-red-500")} />
+                    {crisisConversationCount > 0 && (
+                      <span className={cn("text-[10px] font-bold min-w-[16px] h-4 flex items-center justify-center rounded-full px-1", fireMode ? "bg-red-500 text-white" : "bg-red-100 text-red-600")} data-testid="text-crisis-count">
+                        {crisisConversationCount}
+                      </span>
+                    )}
                 </Label>
             </div>
           </div>
@@ -1530,7 +1845,15 @@ export function Inbox() {
                 </div>
               ) : filteredConversations.length === 0 ? (
                  <div className="p-8 text-center text-muted-foreground text-sm">
-                    No conversations match your filters.
+                    {fireMode ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <Flame className="h-8 w-8 text-gray-300" />
+                        <p className="font-medium text-gray-500">No hay alertas de crisis activas</p>
+                        <p className="text-xs text-gray-400">No se detectaron mensajes P1/P2 sin resolver</p>
+                      </div>
+                    ) : (
+                      "No conversations match your filters."
+                    )}
                  </div>
               ) : (
                 filteredConversations.map((conv, index) => (
@@ -1543,6 +1866,7 @@ export function Inbox() {
                       isSelected={activeConversation?.id === conv.id} 
                       onClick={() => setActiveConversation(conv)}
                       isHighlighted={highlightedConversationId === conv.id}
+                      crisisAlert={crisisAlertsByConversation[conv.id]}
                     />
                   </React.Fragment>
                 ))
@@ -1812,9 +2136,17 @@ export function Inbox() {
                 {threadMessages.length > 1 && (
                   <motion.button
                     onClick={() => {
-                      setSelectionEnabled(!selectionEnabled);
-                      if (selectionEnabled) {
+                      const newEnabled = !selectionEnabled;
+                      setSelectionEnabled(newEnabled);
+                      if (!newEnabled) {
                         setSelectedMessageIds(new Set());
+                      } else {
+                        const draftReadyIds = new Set(
+                          threadMessages
+                            .filter(m => m.direction === 'inbound' && m.aiSuggestedReply && m.aiReplyStatus === 'drafted')
+                            .map(m => m.id)
+                        );
+                        setSelectedMessageIds(draftReadyIds);
                       }
                     }}
                     onPointerEnter={() => setIsBulkButtonHovered(true)}
@@ -1843,7 +2175,7 @@ export function Inbox() {
                           transition={{ duration: 0.15 }}
                           className="text-[10px] font-medium whitespace-nowrap pl-3 pr-1"
                         >
-                          {selectionEnabled ? "Cancelar" : "Generar borradores"}
+                          {selectionEnabled ? "Cancelar" : "Selección múltiple"}
                         </motion.span>
                       )}
                     </AnimatePresence>
@@ -1986,15 +2318,70 @@ export function Inbox() {
                                 </span>
                               )}
                             </motion.button>
+                            
+                            <motion.button
+                              onClick={() => setThreadFilterWithCrisis(!threadFilterWithCrisis)}
+                              disabled={threadFilterStats.withCrisisCount === 0}
+                              className={cn(
+                                "inline-flex items-center gap-1.5 py-1.5 px-2 rounded-full text-[11px] font-medium",
+                                threadFilterWithCrisis 
+                                  ? "text-red-700 bg-red-100" 
+                                  : "text-gray-500 hover:text-gray-700",
+                                threadFilterStats.withCrisisCount === 0 && "opacity-40 cursor-not-allowed"
+                              )}
+                              whileHover="hover"
+                              animate={threadFilterWithCrisis ? "active" : "idle"}
+                              data-testid="filter-with-crisis"
+                            >
+                              <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
+                              <motion.span
+                                className="overflow-hidden whitespace-nowrap text-[11px]"
+                                variants={{
+                                  idle: { width: 0, opacity: 0 },
+                                  hover: { width: "auto", opacity: 1 },
+                                  active: { width: "auto", opacity: 1 }
+                                }}
+                                transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                              >
+                                Con alerta
+                              </motion.span>
+                              {threadFilterStats.withCrisisCount > 0 && (
+                                <span className={cn(
+                                  "px-1.5 py-0.5 rounded-full text-[10px] shrink-0",
+                                  threadFilterWithCrisis ? "bg-red-200" : "bg-gray-200"
+                                )}>
+                                  {threadFilterStats.withCrisisCount}
+                                </span>
+                              )}
+                            </motion.button>
                           </div>
                           
-                          {/* Message count label */}
-                          <div className="flex items-center justify-center">
+                          {/* Message count label + Send All Drafts shortcut */}
+                          <div className="flex items-center justify-center gap-2">
                             <span className="text-[10px] font-medium text-gray-400">
                               Thread · {filteredThreadMessages.length === threadMessages.length 
                                 ? `${threadMessages.length} messages` 
                                 : `${filteredThreadMessages.length} de ${threadMessages.length} messages`}
                             </span>
+                            {threadFilterWithDraft && threadFilterStats.withDraftCount > 0 && (
+                              <button
+                                onClick={() => {
+                                  const draftReadyIds = threadMessages
+                                    .filter(m => m.direction === 'inbound' && m.aiSuggestedReply && m.aiReplyStatus === 'drafted')
+                                    .map(m => m.id);
+                                  if (draftReadyIds.length === 0) return;
+                                  setSelectionEnabled(true);
+                                  setSelectedMessageIds(new Set(draftReadyIds));
+                                  bulkSendQueue.enqueueMany(draftReadyIds);
+                                }}
+                                disabled={bulkSendQueue.isProcessing}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium bg-green-500 text-white hover:bg-green-600 transition-colors disabled:opacity-50"
+                                data-testid="button-send-all-drafts"
+                              >
+                                <Send className="h-3 w-3" />
+                                Enviar todos ({threadFilterStats.withDraftCount})
+                              </button>
+                            )}
                           </div>
                         </div>
                       )}
@@ -2003,7 +2390,11 @@ export function Inbox() {
                       <CommentThread
                         messages={filteredThreadMessages}
                         platformStyles={getPlatformStyles((activeConversation.platform || 'instagram') as Platform)}
+                        isDM={activeConversation?.type === 'dm'}
                         onStartReply={handleStartReply}
+                        onPrivateReply={handlePrivateReply}
+                        privateReplyEnabled={privateReplyEnabled}
+                        privateReplySentIds={privateReplySentIds}
                         onGenerateDraft={handleGenerateDraft}
                         generatingDraftIds={generatingDraftIds}
                         editingDraftId={editingDraftId}
@@ -2022,8 +2413,9 @@ export function Inbox() {
                         SentimentIndicator={SentimentIndicator}
                         selectionEnabled={selectionEnabled}
                         selectedMessageIds={selectedMessageIds}
+                        selectableMessageIds={selectableMessageIdSet}
                         onToggleSelection={handleToggleSelection}
-                        bulkQueueStatusById={bulkDraftQueue.statusById}
+                        bulkQueueStatusById={(() => { const m = new Map(Array.from(bulkDraftQueue.statusById)); Array.from(bulkSendQueue.statusById).forEach(([k, v]) => m.set(k, v)); return m; })()}
                         unreadMessageIds={unreadMessageIds}
                         onUnreadSeen={handleUnreadSeen}
                       />
@@ -2070,57 +2462,95 @@ export function Inbox() {
             {/* Bulk Draft Action Bar */}
             <BulkDraftActionBar
               selectedCount={selectedMessageIds.size}
+              selectableCount={selectableMessages.length}
+              sendableCount={selectedWithDraft.length}
               isProcessing={bulkDraftQueue.isProcessing}
+              isSending={bulkSendQueue.isProcessing}
               progress={bulkDraftQueue.progress}
+              sendProgress={bulkSendQueue.progress}
               completedCount={bulkDraftQueue.completedCount}
+              sendCompletedCount={bulkSendQueue.completedCount}
               totalCount={bulkDraftQueue.totalCount}
+              sendTotalCount={bulkSendQueue.totalCount}
               errorCount={bulkDraftQueue.errorCount}
+              sendErrorCount={bulkSendQueue.errorCount}
               onGenerate={handleBulkGenerate}
+              onSend={handleBulkSend}
+              onSelectAll={handleSelectAll}
               onClearSelection={handleClearSelection}
               onCancel={bulkDraftQueue.cancel}
+              onCancelSend={bulkSendQueue.cancel}
             />
 
-            {/* Floating Reply Input Box */}
+            {/* Floating Reply Input Box - Always visible for DMs, on-demand for comments */}
             <AnimatePresence>
-              {replyToMessage && (
+              {(activeConversation?.type === 'dm' || replyToMessage) && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 20 }}
-                  className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4"
+                  className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-20"
                 >
-                  {/* Quoted Message Preview */}
-                  <div className="mb-3 flex items-start gap-2">
-                    <div className="flex-1 bg-gray-50 rounded-lg p-3 border border-gray-200">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-semibold text-gray-700">
-                          Respondiendo a {replyToMessage.author}
-                        </span>
-                        <PlatformIcon 
-                          platform={(replyToMessage.platform || 'instagram') as Platform} 
-                          className="h-3 w-3" 
-                        />
+                  {/* Private Reply Header */}
+                  {isPrivateReplyMode && replyToMessage && (
+                    <div className="mb-3 flex items-start gap-2">
+                      <div className="flex-1 bg-blue-50 rounded-lg p-3 border border-blue-200">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Mail className="h-3.5 w-3.5 text-blue-600" />
+                          <span className="text-xs font-semibold text-blue-700">
+                            Enviando como Respuesta Privada
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-blue-500 line-clamp-2">
+                          Comentario de {replyToMessage.author}: {replyToMessage.content}
+                        </p>
                       </div>
-                      <p className="text-xs text-gray-500 line-clamp-2">
-                        {replyToMessage.content}
-                      </p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                        onClick={handleCancelReply}
+                        data-testid="button-cancel-private-reply"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
-                      onClick={handleCancelReply}
-                      data-testid="button-cancel-reply"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  )}
+
+                  {/* Quoted Message Preview - Only show for comments when replyToMessage is set and NOT in private reply mode */}
+                  {replyToMessage && activeConversation?.type !== 'dm' && !isPrivateReplyMode && (
+                    <div className="mb-3 flex items-start gap-2">
+                      <div className="flex-1 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-semibold text-gray-700">
+                            Respondiendo a {replyToMessage.author}
+                          </span>
+                          <PlatformIcon 
+                            platform={(replyToMessage.platform || 'instagram') as Platform} 
+                            className="h-3 w-3" 
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500 line-clamp-2">
+                          {replyToMessage.content}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                        onClick={handleCancelReply}
+                        data-testid="button-cancel-reply"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
 
                   {/* Reply Input */}
                   <div className="flex gap-3">
                     <div className="flex-1 flex flex-col gap-1">
                       <Textarea
-                        placeholder="Escribe tu respuesta..."
+                        placeholder={activeConversation?.type === 'dm' ? "Escribe un mensaje..." : "Escribe tu respuesta..."}
                         value={replyText}
                         onChange={(e) => setReplyText(e.target.value)}
                         className="flex-1 min-h-[60px] max-h-[120px] resize-none text-sm"
@@ -2132,43 +2562,74 @@ export function Inbox() {
                         }}
                       />
                       <div className="flex items-center justify-between">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleGenerateAIReply}
-                          disabled={isGeneratingAI || !activeClientId}
-                          className="h-6 text-[10px] font-medium text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 px-2"
-                          data-testid="button-generate-ai-reply"
-                        >
-                          {isGeneratingAI ? (
-                            <>
-                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                              Generando...
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="h-3 w-3 mr-1" />
-                              Generar con IA
-                            </>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleGenerateAIReply}
+                            disabled={isGeneratingAI || !activeClientId}
+                            className="h-6 text-[10px] font-medium text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 px-2"
+                            data-testid="button-generate-ai-reply"
+                          >
+                            {isGeneratingAI ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                Generando...
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="h-3 w-3 mr-1" />
+                                Generar con IA
+                              </>
+                            )}
+                          </Button>
+                          {activeConversation?.type === 'dm' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleSummarizeConversation}
+                              disabled={isSummarizing || !activeClientId}
+                              className="h-6 text-[10px] font-medium text-gray-500 hover:text-purple-600 hover:bg-purple-50 px-2"
+                              data-testid="button-summarize-conversation"
+                            >
+                              {isSummarizing ? (
+                                <>
+                                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                  Resumiendo...
+                                </>
+                              ) : (
+                                <>
+                                  <FileText className="h-3 w-3 mr-1" />
+                                  Resumir
+                                </>
+                              )}
+                            </Button>
                           )}
-                        </Button>
+                        </div>
                         <span className="text-[10px] text-gray-400">Ctrl+Enter</span>
                       </div>
                     </div>
                     <div className="flex flex-col gap-1">
                       <Button
                         onClick={handleSendReply}
-                        disabled={!replyText.trim() || isSendingReply || replyText.length > getReplyCharacterLimit()}
+                        disabled={!replyText.trim() || isSendingReply || (!isPrivateReplyMode && replyText.length > getReplyCharacterLimit())}
                         className={cn(
                           "h-10 px-4",
-                          replyText.length > getReplyCharacterLimit() 
-                            ? "bg-red-100 text-red-500 hover:bg-red-100" 
+                          !isPrivateReplyMode && replyText.length > getReplyCharacterLimit()
+                            ? "bg-red-100 text-red-500 hover:bg-red-100"
+                            : isPrivateReplyMode
+                            ? "bg-blue-600 hover:bg-blue-700"
                             : "bg-indigo-600 hover:bg-indigo-700"
                         )}
                         data-testid="button-send-reply"
                       >
                         {isSendingReply ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : isPrivateReplyMode ? (
+                          <>
+                            <Mail className="h-4 w-4 mr-1" />
+                            Enviar PR
+                          </>
                         ) : (
                           <>
                             <Send className="h-4 w-4 mr-1" />
@@ -2218,6 +2679,36 @@ export function Inbox() {
             queryClient.invalidateQueries({ queryKey: ['crmContact'] });
           }}
       />
+
+      {/* Conversation Summary Dialog */}
+      <Dialog open={summaryDialogOpen} onOpenChange={setSummaryDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-purple-600" />
+              Resumen de Conversación
+            </DialogTitle>
+            <DialogDescription>
+              Resumen generado por IA de la conversación actual
+            </DialogDescription>
+          </DialogHeader>
+          
+          {isSummarizing ? (
+            <div className="flex flex-col items-center justify-center py-8 gap-3">
+              <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+              <p className="text-sm text-gray-500">Generando resumen...</p>
+            </div>
+          ) : conversationSummary ? (
+            <div className="bg-gray-50 rounded-lg p-4 border">
+              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{conversationSummary}</p>
+            </div>
+          ) : (
+            <div className="text-center py-6 text-gray-500">
+              <p className="text-sm">No se pudo generar el resumen.</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

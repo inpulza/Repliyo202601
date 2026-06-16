@@ -1,0 +1,610 @@
+Contactos(100)
+Pendientes(100)
+
+Dup.
+
+Filtros
+CSV
+Plataforma
+Todas
+Estado
+Todos
+Etapa
+Todas
+Teléfono
+Todos
+Rango de fecha
+
+Última interacción
+Desde
+mm/dd/yyyy
+—
+Hasta
+mm/dd/yyyy
+Nombre	Teléfono	Canales	Estado	Etapa	Mensajes	Última actividad	
+D
+douglixibetcarolina
+
+douglisolivares26@gmail.com
+
++17862033903	
+lead	new	4	hace 1 minuto	
+M
+Mandy Arab
+
+—	
+lead	new	0	hace 22 minutos	
+E
+eleinth24
+
+Eleinth24@gmail.com
+
++17865423312	
+qualified	new	2	hace alrededor de 3 horas	
+L
+lizjorivera
+
+Luzmaria177@hotmail.com
+
++13057999597	
+qualified	new	9	hace alrededor de 5 horas	
+M
+mercedesmir
+
+ermys12@yahoo.com
+
++13053189431	
+lead	new	1	hace alrededor de 5 horas	
+S
+samoflo1
+
+samoflo@hotmail.com
+
++527223132621	
+qualified	new	10	hace alrededor de 5 horas	
+A
+ani.martinezn
+
+anita.sofi@hotmail.com
+
++18166566815	
+qualified	new	5	hace alrededor de 5 horas	
+D
+dra.esquivell
+
+Esquivelluisana27@gmail.com
+
++17866375882	
+qualified	new	3	hace alrededor de 5 horas	
+K
+katezerpa10
+
+hdieguez@ssfhelp.org
+
++17864106482	
+lead	new	14	hace alrededor de 5 horas	
+S
+soniia_giraldo
+
+soniagiraldocuartas@gmail.com
+
++13469174006	
+lead	new	4	hace alrededor de 5 horas	
+K
+karymaytte
+
+k26maytte@gmail.com
+
++593998638744	
+qualified	new	11	hace alrededor de 5 horas	
+D
+dra_masi
+
++573003163492	
+lead	new	2	hace alrededor de 5 horas	
+M
+maydelyn77
+
+—	
+lead	new	1	hace alrededor de 5 horas	
+D
+drayujoiva
+
+draydoreste2023@gmail.com
+
++19804514090	
+qualified	new	12	hace alrededor de 5 horas	
+M
+montyfontenele
+
+fonteneli.valeria@gmail.com
+
+—	
+qualified	new	3	hace alrededor de 17 horas	
+Y
+yudelis_reyes
+
+—	
+lead	new	0	hace 1 día	
+N
+n3yyl0v3
+
+bkgx777@gmail.com
+
++12723328452	
+lead	new	8	hace 1 día	
+A
+ale.leonp
+
+ale.leonpaniagua@gmail.com
+
++14422367907	
+qualified	new	10	hace 1 día	
+F
+freyadr2017
+
+—	
+lead	new	2	hace 2 días	
+E
+egembassydc
+
+—	
+lead	new	0	hace 2 días	
+D
+drjuliocesaralfonso
+
+—	
+lead	new	16	hace 2 días	
+A
+Aurora Margarita Torrez Herrera
+
++12564366398	
+lead	new	6	hace 2 días	
+M
+marcepalma9807
+
+—	
+lead	new	0	hace 3 días	
+M
+Mercedes Roca
+
+—	
+lead	new	2	hace 3 días	
+M
+Maria Dolores Fuentes
+
+—	
+lead	new	0	hace 3 días	
+M
+mercy.pediatra
+
+mercy.hr.1962@gmail.com
+
++1 239 302 0937	
+lead	new	24	hace 3 días	
+C
+cruzverdeinternacional
+
+—	
+lead	new	5	hace 3 días	
+T
+taimyalfonsosanchez
+
+—	
+lead	new	17	hace 3 días	
+B
+betsabeclls
+
+betsyclls@icloud.com
+
++17965615528	
+qualified	new	5	hace 3 días	
+S
+sofia_w236
+
+mariaalejandracorreaherrera@gmail.com
+
++14698064177	
+qualified	new	1	hace 3 días	
+T
+terechiri
+
+—	
+lead	new	15	hace 4 días	
+I
+ismaelbehaine
+
+isbv68@hotmail.com
+
++573015803503	
+qualified	new	0	hace 5 días	
+A
+aldo.i.alvarez
+
+—	
+lead	new	0	hace 5 días	
+G
+geraldinem_
+
+—	
+lead	new	0	hace 5 días	
+B
+betty151998
+
+lopezbetic@gmail.com
+
++18324255219	
+qualified	new	3	hace 6 días	
+D
+Darina Martinez
+
+—	
+lead	new	1	hace 6 días	
+A
+angelasayago123
+
+—	
+lead	new	1	hace 6 días	
+R
+rosaura_bc
+
+rgbc98@hotmail.com
+
++528661354716	
+lead	new	3	hace 6 días	
+9
+97_nely
+
+puertoannelis97@gmail.com
+
++15355238067	
+qualified	new	0	hace 7 días	
+V
+Verito Santillán
+
+veronicasantillan898@gmail.com
+
++13473100239	
+qualified	new	6	hace 7 días	
+J
+jrav1970
+
+—	
+lead	new	2	hace 7 días	
+F
+fabiolarosendo7
+
+fabuchitadiaz@gmail.com
+
++13522150890	
+qualified	new	5	hace 7 días	
+N
+nuriaramosmartinez
+
+nuriaramos938@gmail.com
+
++13059544665	
+qualified	new	3	hace 7 días	
+N
+nowhere0319
+
+emargarita19@hotmail.com
+
++18135621649	
+qualified	new	9	hace 7 días	
+D
+dra.gloriagonzalez
+
++582125778192	
+lead	new	3	hace 7 días	
+M
+mafebles9
+
+marlys_ballet@yahoo.com.br
+
++5512997617060	
+qualified	new	7	hace 7 días	
+O
+Onel Rodriguez Garcia
+
+onel2205@hotmail.com
+
+786 979 2469	
+qualified	new	3	hace 7 días	
+Y
+Yasel Alvarez Jorge
+
+—	
+lead	new	3	hace 7 días	
+T
+Tom Burttschell
+
+—	
+lead	new	1	hace 7 días	
+D
+dralexcoba
+
+—	
+lead	new	0	hace 7 días	
+M
+miclinyamarys
+
+—	
+lead	new	1	hace 8 días	
+J
+jessromero7
+
+jessica_romero91@outlook.com
+
+—	
+lead	new	7	hace 8 días	
+M
+Maribella Lopez
+
+—	
+lead	new	1	hace 8 días	
+D
+Dana Renfro
+
+—	
+lead	new	3	hace 8 días	
+M
+manuelamajano
+
+Mariamanuelamajano@gmail.com
+
++17867907301	
+qualified	new	3	hace 8 días	
+M
+melbicaro
+
+—	
+lead	new	1	hace 8 días	
+E
+Edward Seymore
+
+—	
+lead	new	7	hace 8 días	
+J
+jm115033
+
+jmcm0606@gmail.com
+
++573162826852	
+qualified	new	12	hace 8 días	
+G
+Gisela Maricel Iribarren
+
+iribarrengisela@gmail.com
+
++19545295372	
+qualified	new	8	hace 8 días	
+C
+Cinthya Hugo Ochoa
+
++19737662019	
+lead	new	2	hace 8 días	
+I
+iribarrengisela
+
+—	
+lead	new	1	hace 8 días	
+S
+Shannon Fullford
+
+—	
+lead	new	0	hace 8 días	
+F
+fvra28
+
++13059301304	
+qualified	new	2	hace 8 días	
+K
+Karla Anton
+
+—	
+lead	new	1	hace 8 días	
+A
+Ana Quiceno
+
+—	
+lead	new	2	hace 8 días	
+F
+fa_av1
+
+faties10122@gmail.com
+
++16823776430	
+qualified	new	9	hace 8 días	
+L
+Loly Leo Loren
+
+loidys12@gmail.com
+
++17867597606	
+qualified	new	16	hace 8 días	
+M
+Mina Mendez
+
+Guillemendez10@gmail.com
+
++17024290667	
+qualified	new	3	hace 8 días	
+Y
+yessy_lisseth
+
+—	
+lead	new	0	hace 8 días	
+A
+Andrew F Lienemann
+
+—	
+lead	new	2	hace 8 días	
+M
+Mario Fleury
+
++13057993254	
+qualified	new	6	hace 8 días	
+A
+Augustin Loza
+
+—	
+lead	new	0	hace 9 días	
+Y
+Yessy Liss Martinez
+
++17208256986	
+lead	new	2	hace 9 días	
+C
+cbebe345
+
+—	
+lead	new	0	hace 9 días	
+M
+mayeacosta05
+
+—	
+lead	new	0	hace 9 días	
+A
+arleemoral
+
+—	
+lead	new	0	hace 9 días	
+Y
+yilenispupo
+
+—	
+lead	new	1	hace 9 días	
+N
+Niriam Rodriguez
+
+—	
+lead	new	2	hace 9 días	
+L
+luzmav1608
+
+—	
+lead	new	8	hace 9 días	
+M
+Melissa Noemi
+
++18483665159	
+lead	new	1	hace 9 días	
+N
+nanas_1203
+
+—	
+lead	new	1	hace 9 días	
+S
+saymor77
+
+—	
+lead	new	0	hace 9 días	
+F
+felpashop
+
+—	
+lead	new	0	hace 9 días	
+L
+Lisdeilis Castellanos Callol
+
+—	
+lead	new	0	hace 9 días	
+G
+Gertrudis Valdes Dihigo
+
+—	
+lead	new	0	hace 9 días	
+R
+Rodriguez Angie
+
+angelica_pico@hotmail.com
+
++17187911926	
+qualified	new	1	hace 9 días	
+C
+Claudia Diaz
+
+—	
+lead	new	13	hace 9 días	
+M
+mechy9504
+
+cabrerarodilmaria@gmail.com
+
++17864617974	
+lead	new	3	hace 9 días	
+M
+Maryenis Felipe Sanchez
+
+sanchezfelipe8012@gmail.com
+
+726 500 7937	
+qualified	new	4	hace 9 días	
+O
+omavega_m
+
+drvegamna@gmail.com
+
++50379449008	
+qualified	new	1	hace 9 días	
+M
+María Del Carmen Pérez
+
+bereniceroslaes1981@gmail.com
+
++19566201348	
+lead	new	10	hace 9 días	
+Y
+Yolanda AR Coreas
+
+yolandacoreasa21@gmail.com
+
+6265581762	
+qualified	new	6	hace 9 días	
+L
+Leydis San Jurjo
+
+sanjurjoleydis@gmail.com
+
+—	
+lead	new	3	hace 9 días	
+A
+Anmary Rodríguez
+
+mr7363763@gmail.com
+
+3124158706	
+qualified	new	5	hace 9 días	
+M
+MI Carito
+
+—	
+lead	new	1	hace 9 días	
+E
+Edgar Andres Acuña Villarroel
+
+—	
+lead	new	3	hace 9 días	
+E
+Elianis Leyva
+
+—	
+lead	new	2	hace 9 días	
+D
+Diosnelys Fonseca
+
+—	
+lead	new	7	hace 9 días	
+Y
+Yodania Perez
+
+perezyodania@gmail.com
+
+5619758783	
+qualified	new	10	hace 9 días	
+J
+Jhona Diaz
+
+—	
+lead	new	1	hace 9 días	

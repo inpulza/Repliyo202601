@@ -598,7 +598,7 @@ export const api = {
       return res.json();
     },
 
-    generateSummary: async (conversationId: string): Promise<{ summary: string; sentiment: string; intent: string; resolution: string }> => {
+    generateSummary: async (conversationId: string): Promise<{ success: boolean; summary: { summary: string; sentiment: string; intent: string; resolution: string } | null; message: string }> => {
       const res = await fetch(`${API_BASE}/conversations/${conversationId}/generate-summary`, {
         method: 'POST',
       });
@@ -806,6 +806,99 @@ export const api = {
       }
       const data = await res.json();
       return data.failures || [];
+    },
+  },
+
+  sentimentAlerts: {
+    getByBrand: async (brandId: string, options?: {
+      severity?: string[];
+      status?: string[];
+      limit?: number;
+      offset?: number;
+    }): Promise<{ alerts: any[]; count: number }> => {
+      const params = new URLSearchParams();
+      if (options?.severity?.length) params.set('severity', options.severity.join(','));
+      if (options?.status?.length) params.set('status', options.status.join(','));
+      if (options?.limit) params.set('limit', String(options.limit));
+      if (options?.offset) params.set('offset', String(options.offset));
+      const res = await fetch(`${API_BASE}/brands/${brandId}/sentiment-alerts?${params}`);
+      if (!res.ok) throw new Error('Failed to fetch sentiment alerts');
+      return res.json();
+    },
+
+    getStats: async (brandId: string): Promise<{
+      total: number;
+      byStatus: Record<string, number>;
+      bySeverity: Record<string, number>;
+      byCategory: Record<string, number>;
+    }> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/sentiment-alerts/stats`);
+      if (!res.ok) throw new Error('Failed to fetch alert stats');
+      return res.json();
+    },
+
+    getActiveCount: async (brandId: string): Promise<number> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/sentiment-alerts/count`);
+      if (!res.ok) throw new Error('Failed to fetch active count');
+      const data = await res.json();
+      return data.count;
+    },
+
+    getByConversation: async (brandId: string): Promise<Record<string, { severity: string; sentiment: string; category: string; status: string }>> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/sentiment-alerts/by-conversation`);
+      if (!res.ok) throw new Error('Failed to fetch alerts by conversation');
+      const data = await res.json();
+      return data.conversations;
+    },
+
+    updateStatus: async (brandId: string, alertId: string, status: string, notes?: string): Promise<any> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/sentiment-alerts/${alertId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, notes }),
+      });
+      if (!res.ok) throw new Error('Failed to update alert status');
+      return res.json();
+    },
+
+    getById: async (brandId: string, alertId: string): Promise<any> => {
+      const res = await fetch(`${API_BASE}/brands/${brandId}/sentiment-alerts/${alertId}`);
+      if (!res.ok) throw new Error('Failed to fetch alert');
+      return res.json();
+    },
+  },
+
+  inbox: {
+    sendPrivateReply: async (messageId: string, text: string): Promise<{ success: boolean; messageId?: string }> => {
+      const res = await fetch(`${API_BASE}/inbox/private-reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ messageId, text }),
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        const err: any = new Error(errorData.error || 'Failed to send private reply');
+        err.tokenExpired = errorData.tokenExpired || false;
+        throw err;
+      }
+      return res.json();
+    },
+
+    getPrivateReplyTemplate: async (brandId: string, messageId: string): Promise<{ text: string }> => {
+      const res = await fetch(`${API_BASE}/inbox/private-reply/template?brandId=${brandId}&messageId=${messageId}`, {
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to get template');
+      return res.json();
+    },
+
+    getPrivateReplyStatus: async (conversationId: string): Promise<{ sentCommentIds: string[] }> => {
+      const res = await fetch(`${API_BASE}/inbox/private-reply/status?conversationId=${conversationId}`, {
+        credentials: 'include',
+      });
+      if (!res.ok) return { sentCommentIds: [] };
+      return res.json();
     },
   },
 };

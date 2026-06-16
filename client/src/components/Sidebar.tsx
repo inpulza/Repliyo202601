@@ -17,7 +17,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
-  Users
+  Users,
+  ShieldAlert,
+  UserCog,
 } from 'lucide-react';
 import { NotificationCenter } from './NotificationCenter';
 import {
@@ -37,7 +39,6 @@ import {
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Link, useLocation } from 'wouter';
 import { BrandImportWizard } from './BrandImportWizard';
 import { useToast } from '@/hooks/use-toast';
@@ -67,10 +68,12 @@ export function Sidebar() {
     { href: "/app/overview", icon: BarChart3, label: "Overview" },
     { href: "/app/inbox", icon: Inbox, label: "Smart Inbox" },
     { href: "/app/crm", icon: Users, label: "CRM" },
+    { href: "/app/crisis-alerts", icon: ShieldAlert, label: "Crisis Alerts" },
     { href: "/app/connections", icon: LayoutDashboard, label: "Connections" },
     { href: "/app/integrations", icon: Command, label: "Integrations" },
     { href: "/app/settings", icon: Settings, label: "Agent Settings" },
     { href: "/app/ai-metrics", icon: Bot, label: "IA Metrics" },
+    ...(user?.role === 'admin' ? [{ href: "/app/users", icon: UserCog, label: "Usuarios" }] : []),
   ];
 
   return (
@@ -171,7 +174,7 @@ export function Sidebar() {
             <DropdownMenuContent className="w-56 bg-white border-gray-200 text-gray-700" align="start">
               <DropdownMenuLabel className="text-xs text-gray-500 uppercase tracking-wider">Cambiar Marca</DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-gray-100" />
-              <ScrollArea className="max-h-[200px]">
+              <div className="max-h-[200px] overflow-y-auto">
               {activeClients.map((client) => (
                 <DropdownMenuItem 
                   key={client.id}
@@ -188,7 +191,7 @@ export function Sidebar() {
                   )}
                 </DropdownMenuItem>
               ))}
-              </ScrollArea>
+              </div>
               <DropdownMenuSeparator className="bg-gray-100" />
               <DropdownMenuItem 
                 className="gap-2 cursor-pointer text-indigo-600 hover:text-indigo-700 focus:text-indigo-700 focus:bg-indigo-50"

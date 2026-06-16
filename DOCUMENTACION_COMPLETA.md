@@ -7923,247 +7923,6 @@ Futuro:   C1-C4 (Multi-agente si se valida necesidad)
 ```
 
 ---
-
-## PLAN DE MEJORAS TÉCNICAS - Enero 2026
-
-> **NOTA:** Esta sección fue consolidada desde `Documentacion_Completa.md` (archivo eliminado).
-
-### Resumen Ejecutivo
-
-Este documento contiene el plan de mejora técnica para el proyecto Repliyo (Social Media Inbox Management System), organizado en 4 fases principales con subfases y tareas específicas.
-
-### Diagnóstico Actual (Enero 2026)
-
-| Área | Puntuación | Estado |
-|------|------------|--------|
-| Componentes | 7/10 | UI reutilizable, pero componentes principales con lógica mezclada |
-| Arquitectura | 8.5/10 | Híbrido layered/ports-adapters apropiado para SaaS |
-| Testing | 4/10 | No existe, pero es recuperable gracias a la arquitectura |
-
-### Justificación del Orden de Fases
-
-**¿Por qué Componentes → Arquitectura → Testing?**
-
-Aunque normalmente Testing-first reduce riesgos, en este proyecto el tamaño extremo y el estado entrelazado de componentes como Inbox (2,389 líneas) y CRMContextPanel hacen que los refactors de componentes sean **prerrequisito** para tener tests confiables. Si intentamos testear primero, los tests serían frágiles y cambiarían constantemente.
-
----
-
-### FASE 1: COMPONENTES (Plan de Mejora)
-**Objetivo:** Separar lógica de presentación, mejorar reutilización y preparar para testing
-**Riesgo actual:** Componentes pesados dificultan mantenimiento y testing
-**Duración estimada:** 2-3 semanas
-
-#### Subfase 1.1: Auditoría y Mapeo de Componentes Críticos
-
-**Objetivo:** Entender qué lógica hay en cada componente antes de mover código
-
-| Tarea | Descripción | Criterio de Éxito |
-|-------|-------------|-------------------|
-| 1.1.1 | Inventariar todos los `useState` y `useEffect` en Inbox.tsx | Lista completa de 25+ estados documentada |
-| 1.1.2 | Identificar dependencias entre estados (cuáles se afectan mutuamente) | Diagrama de dependencias |
-| 1.1.3 | Mapear props contracts entre Inbox → subcomponentes | Documentar tipos esperados |
-| 1.1.4 | Repetir auditoría para CRMContextPanel.tsx | Mismo entregable |
-| 1.1.5 | Identificar lógica duplicada entre componentes | Lista de candidatos a hooks |
-
-#### Subfase 1.2: Extracción de Lógica a Hooks y Servicios
-
-**Objetivo:** Mover orquestación de datos fuera de componentes hacia hooks reutilizables
-
-| Tarea | Descripción | Criterio de Éxito |
-|-------|-------------|-------------------|
-| 1.2.1 | Crear `useConversationState` - manejo de conversación activa | Hook funcional sin romper UI |
-| 1.2.2 | Crear `useDraftManagement` - lógica de borradores IA | Separar de Inbox.tsx |
-| 1.2.3 | Crear `useMessageSync` - sincronización y WebSocket | Reutilizable en otros componentes |
-| 1.2.4 | Crear `useCRMPanel` - lógica del panel CRM | Separar de CRMContextPanel |
-| 1.2.5 | Refactorizar NexusContext para exponer menos estado raw | Interfaz más limpia |
-| 1.2.6 | Validar que la UI funciona igual después de cada extracción | Tests manuales pasan |
-
-#### Subfase 1.3: Estabilización de Interfaces de Usuario
-
-**Objetivo:** Preparar componentes para testing automatizado
-
-| Tarea | Descripción | Criterio de Éxito |
-|-------|-------------|-------------------|
-| 1.3.1 | Auditar `data-testid` existentes, documentar patrón | Convención establecida |
-| 1.3.2 | Agregar `data-testid` faltantes en elementos interactivos | 100% cobertura en Inbox |
-| 1.3.3 | Agregar `data-testid` en elementos de datos dinámicos | 100% cobertura en CRM Panel |
-| 1.3.4 | Verificar accesibilidad básica (ARIA labels críticos) | Principales controles accesibles |
-
-#### Subfase 1.4: Guardrails y Observabilidad
-
-**Objetivo:** Proteger refactors con feature flags y monitoreo
-
-| Tarea | Descripción | Criterio de Éxito |
-|-------|-------------|-------------------|
-| 1.4.1 | Implementar sistema simple de feature flags | Toggle para nuevos hooks |
-| 1.4.2 | Agregar logging en hooks críticos | Errores visibles en consola |
-| 1.4.3 | Crear checklist de validación pre-deploy | Documento de QA |
-
----
-
-### FASE 2: ARQUITECTURA (Plan de Mejora)
-**Objetivo:** Modularizar backend para mantenibilidad y testability
-**Riesgo actual:** storage.ts y routes.ts son archivos muy grandes
-**Duración estimada:** 2-3 semanas
-
-#### Subfase 2.1: Modularización de Storage
-
-**Objetivo:** Dividir storage.ts (4,310 líneas) en adaptadores por dominio
-
-| Tarea | Descripción | Criterio de Éxito |
-|-------|-------------|-------------------|
-| 2.1.1 | Crear `storage/brandAdapter.ts` - métodos de brands | Migrar 10-15 métodos |
-| 2.1.2 | Crear `storage/conversationAdapter.ts` | Migrar métodos de conversations |
-| 2.1.3 | Crear `storage/messageAdapter.ts` | Migrar métodos de messages |
-| 2.1.4 | Crear `storage/crmAdapter.ts` | Migrar métodos CRM (contacts, channels, limbo) |
-| 2.1.5 | Crear `storage/reminderAdapter.ts` | Migrar métodos de reminders |
-| 2.1.6 | Crear `storage/aiAdapter.ts` | Migrar métodos de AI agents y audit |
-| 2.1.7 | Mantener `storage.ts` como facade que re-exporta | Compatibilidad hacia atrás |
-| 2.1.8 | Extraer helpers comunes (paginación, errores) | `storage/helpers.ts` |
-
-#### Subfase 2.2: Codificación de Workflows Cross-Service
-
-**Objetivo:** Formalizar flujos complejos (sync → CRM → reminders) en orquestadores
-
-| Tarea | Descripción | Criterio de Éxito |
-|-------|-------------|-------------------|
-| 2.2.1 | Documentar flujo sync → CRM routing → reminder scheduling | Diagrama de secuencia |
-| 2.2.2 | Crear `orchestrators/inboundMessageOrchestrator.ts` | Centralizar flujo de mensaje entrante |
-| 2.2.3 | Definir interfaces claras entre servicios | Contratos TypeScript |
-| 2.2.4 | Implementar circuit breaker para APIs externas (Metricool) | Resiliencia mejorada |
-
-#### Subfase 2.3: Reorganización de Routes
-
-**Objetivo:** Dividir routes.ts (4,172 líneas) y mejorar validación
-
-| Tarea | Descripción | Criterio de Éxito |
-|-------|-------------|-------------------|
-| 2.3.1 | Crear `routes/authRoutes.ts` | Migrar rutas de autenticación |
-| 2.3.2 | Crear `routes/brandRoutes.ts` | Migrar rutas de brands |
-| 2.3.3 | Crear `routes/conversationRoutes.ts` | Migrar rutas de inbox |
-| 2.3.4 | Crear `routes/crmRoutes.ts` | Migrar rutas CRM |
-| 2.3.5 | Crear `routes/reminderRoutes.ts` | Migrar rutas de reminders |
-| 2.3.6 | Estandarizar validación Zod en middleware | Reducir código repetitivo |
-| 2.3.7 | Mantener `routes.ts` como registro central | Compatibilidad |
-
----
-
-### FASE 3: TESTING (Plan de Mejora)
-**Objetivo:** Establecer suite de tests para prevenir regresiones
-**Riesgo actual:** Cambios pueden romper funcionalidad sin detectarlo
-**Duración estimada:** 2-3 semanas
-
-#### Subfase 3.1: Configuración de Infraestructura de Testing
-
-**Objetivo:** Preparar herramientas y base de datos de pruebas
-
-| Tarea | Descripción | Criterio de Éxito |
-|-------|-------------|-------------------|
-| 3.1.1 | Elegir framework: Vitest (recomendado) o Jest | Decisión documentada |
-| 3.1.2 | Configurar `vitest.config.ts` | Tests ejecutan sin errores |
-| 3.1.3 | Configurar base de datos PostgreSQL de pruebas | Conexión funcional |
-| 3.1.4 | Crear fixtures/seeds para datos de prueba | Brands, users, conversations de prueba |
-| 3.1.5 | Configurar mocks para APIs externas (Metricool, OpenAI) | Mocks funcionales |
-| 3.1.6 | Configurar coverage reports | Reporte generado |
-
-#### Subfase 3.2: Tests Unitarios de Servicios Críticos
-
-**Objetivo:** Cubrir lógica de negocio más riesgosa
-
-| Tarea | Descripción | Prioridad |
-|-------|-------------|-----------|
-| 3.2.1 | Tests para storage adapters (CRUD básico) | ALTA |
-| 3.2.2 | Tests para `crmTrafficController` (routing lógica) | ALTA |
-| 3.2.3 | Tests para `reminderService` (scheduling, eligibility) | ALTA |
-| 3.2.4 | Tests para `syncService` (manejo de errores, cooldowns) | ALTA |
-| 3.2.5 | Tests para `thankYouDetector` (detección de cierre) | MEDIA |
-| 3.2.6 | Tests para `conversationLifecycleService` | MEDIA |
-| 3.2.7 | Tests para helpers de schema (getEffectiveChannelSettings) | BAJA |
-
-#### Subfase 3.3: Tests de Integración y Regresión
-
-**Objetivo:** Validar flujos end-to-end críticos
-
-| Tarea | Descripción | Prioridad |
-|-------|-------------|-----------|
-| 3.3.1 | Test de integración: autenticación (login/logout/session) | ALTA |
-| 3.3.2 | Test de integración: fetch de inbox (conversations + messages) | ALTA |
-| 3.3.3 | Test de integración: ciclo de vida de reminder | ALTA |
-| 3.3.4 | Test de integración: CRM contact creation con channel | MEDIA |
-| 3.3.5 | Test de integración: merge de contactos | MEDIA |
-| 3.3.6 | Configurar CI para ejecutar tests en cada push | ALTA |
-| 3.3.7 | Establecer umbral mínimo de coverage (ej: 40% inicial) | MEDIA |
-
----
-
-### Matriz de Dependencias entre Fases (Plan de Mejoras)
-
-```
-FASE 1 (Componentes)
-    │
-    ├─► Subfase 1.2 depende de Subfase 1.1
-    │
-    └─► Subfase 1.3 puede ejecutarse en paralelo con 1.2
-    
-FASE 2 (Arquitectura)
-    │
-    ├─► Puede comenzar después de Subfase 1.2
-    │
-    └─► Subfase 2.2 depende de Subfase 2.1
-    
-FASE 3 (Testing)
-    │
-    ├─► Subfase 3.1 puede comenzar en paralelo con Fase 2
-    │
-    └─► Subfases 3.2 y 3.3 dependen de Fases 1 y 2 completadas
-
-FASE 4 (Autenticación Social) ← NUEVA
-    │
-    ├─► Puede comenzar INDEPENDIENTE de Fases 1-3
-    │
-    ├─► Subfase 4.2 depende de Subfase 4.1
-    │
-    ├─► Subfase 4.3 depende de Subfase 4.2
-    │
-    ├─► Subfase 4.4 puede ejecutarse en paralelo con 4.3
-    │
-    ├─► Subfase 4.5 depende de Subfases 4.3 y 4.4
-    │
-    └─► Subfase 4.7 (Testing) depende de todas las anteriores
-```
-
----
-
-### Estimación de Esfuerzo Total (Plan de Mejoras)
-
-| Fase | Subfases | Tareas | Duración Estimada |
-|------|----------|--------|-------------------|
-| Fase 1: Componentes | 4 | 18 | 2-3 semanas |
-| Fase 2: Arquitectura | 3 | 19 | 2-3 semanas |
-| Fase 3: Testing | 3 | 17 | 2-3 semanas |
-| Fase 4: Autenticación Social | 7 | 44 | 1-2 semanas |
-| **TOTAL** | **17** | **98** | **7-11 semanas** |
-
----
-
-### Principios de Implementación (Plan de Mejoras)
-
-1. **No romper producción:** Cada cambio debe ser backwards-compatible
-2. **Commits pequeños:** Una tarea = un commit verificable
-3. **Feature flags:** Usar toggles para activar/desactivar refactors
-4. **Validación continua:** Probar manualmente después de cada subfase
-5. **Documentar decisiones:** Actualizar este documento con cambios
-
----
-
-### Notas Importantes (Plan de Mejoras)
-
-- **storage.ts mantiene compatibilidad:** Al modularizar, storage.ts se convierte en "facade" que re-exporta, evitando romper imports existentes
-- **routes.ts mantiene registro central:** Similar al storage, routes.ts registra las rutas modulares
-- **Testing gradual:** Comenzar con 40% coverage y aumentar progresivamente
-- **Priorizar servicios críticos:** sync, CRM routing, reminders son los más riesgosos
-
----
 ## Cambios Implementados
 
 ### 8 Enero 2026 - Fix: Auto-Reply para Comentarios Anidados en Hilos
@@ -8947,5 +8706,2078 @@ export function requireAuthHybrid(req: Request, res: Response, next: NextFunctio
 
 ---
 
-*Documento creado: Enero 2026*
-*Última actualización: 10 Enero 2026 - Fase 4 revisada con notas de compatibilidad, riesgos, orden de ejecución y recomendaciones del agente*
+## PLAN DE REFACTORIZACIÓN ARQUITECTÓNICA - Enero 2026
+
+---
+
+### 🌳 PRINCIPIO RECTOR: Patrón "Strangler Fig" (Higuera Estranguladora)
+
+> **REGLA DE ORO**: La aplicación SIEMPRE debe funcionar. En cualquier momento del proceso, si detienes el trabajo, la app debe arrancar y todas las funcionalidades deben operar correctamente.
+
+#### ¿Qué es el patrón Strangler Fig?
+
+Es una técnica de refactorización inspirada en cómo la higuera estranguladora crece alrededor de un árbol viejo:
+
+```
+ANTES:                    DURANTE:                   DESPUÉS:
+┌─────────────┐          ┌─────────────┐            ┌─────────────┐
+│  CÓDIGO     │          │ ┌─────────┐ │            │   CÓDIGO    │
+│  VIEJO      │    →     │ │ NUEVO   │ │     →      │   NUEVO     │
+│  (funciona) │          │ │ (crece) │ │            │  (funciona) │
+│             │          │ └─────────┘ │            │             │
+└─────────────┘          └─────────────┘            └─────────────┘
+                         Código viejo sigue
+                         funcionando mientras
+                         el nuevo crece
+```
+
+**Cómo aplicamos esto:**
+
+| Paso | Acción | Resultado |
+|------|--------|-----------|
+| 1 | Crear el nuevo archivo/componente | El viejo sigue funcionando |
+| 2 | Copiar código del viejo al nuevo | Ambos existen, el viejo sigue activo |
+| 3 | Hacer que el sistema use el nuevo | Verificar que todo funciona |
+| 4 | Eliminar el código viejo (solo cuando el nuevo está probado) | Limpieza final |
+
+**Lo que NUNCA hacemos:**
+- ❌ Borrar código antes de tener el reemplazo funcionando
+- ❌ Cambiar muchos archivos a la vez
+- ❌ Continuar si hay errores
+- ❌ Asumir que funciona sin probar
+
+**Lo que SIEMPRE hacemos:**
+- ✅ Cambios pequeños e incrementales
+- ✅ Verificar después de cada cambio
+- ✅ Mantener ambas versiones hasta confirmar que la nueva funciona
+- ✅ Si algo falla, revertir inmediatamente
+
+---
+
+### 📋 MENSAJE DE INICIO (KICKOFF MESSAGE)
+
+> **Usa este mensaje cada vez que inicies una nueva conversación** para continuar el trabajo de refactorización:
+
+```
+# Contexto del Proyecto
+
+Estoy trabajando en la refactorización arquitectónica del proyecto Repliyo (Sistema de Gestión de Inbox Social Media con Metricool).
+
+## Qué necesito que hagas:
+
+1. **Lee el archivo DOCUMENTACION_COMPLETA.md**, específicamente la sección "PLAN DE REFACTORIZACIÓN ARQUITECTÓNICA"
+
+2. **Revisa el estado actual de las tareas:**
+   - ✅ = Completado
+   - ⬜ = Pendiente
+   - 🟨 = En progreso
+   - 🔴 = Bloqueado
+
+3. **Continúa desde la primera tarea ⬜ pendiente** de la fase activa
+
+## Reglas CRÍTICAS:
+
+- **Sigue el patrón Strangler Fig**: (ver PRINCIPIO RECTOR: Patrón "Strangler Fig" (Higuera Estranguladora) La app SIEMPRE debe funcionar después de cada cambio
+- **Máximo 1 archivo por tarea**: No hagas cambios masivos
+- **Verifica después de cada tarea**: Reinicia la app, prueba que funciona
+- **Marca el progreso inmediatamente**: Actualiza el estado en el documento
+- **Si algo falla, PARA y reporta**: No intentes arreglar múltiples cosas a la vez
+
+## Archivos importantes:
+
+- `DOCUMENTACION_COMPLETA.md` - Plan de refactorización y estado actual
+- `docs/audits/` - Auditorías de código realizadas
+- `server/routes.ts` - Archivo principal de rutas (162 KB, a dividir)
+- `server/storage.ts` - Archivo principal de storage (162 KB, a dividir)
+
+## Antes de empezar:
+
+1. Dime qué fase está activa actualmente
+2. Dime cuál es la siguiente tarea pendiente
+3. Pregúntame si tengo alguna preferencia o instrucción adicional
+
+¡Gracias!
+```
+
+---
+
+### REGLAS DE UI QUE NO DEBEN CAMBIAR (CRÍTICO)
+
+| Elemento | Regla | Motivo |
+|----------|-------|--------|
+| Mensajes outbound (respuestas de marca) | **Fondo azul (#0291FA o bg-indigo-600)** | Distinguir visualmente respuestas de la marca vs mensajes del cliente |
+| Mensajes inbound (del cliente) | Fondo blanco/transparente | Claridad visual |
+| Esto aplica a: | ownerBubble, aiBubble, manualBubble, replyBubble | Consistencia en toda la app |
+
+> El sistema identifica los mensajes outbound por el campo `direction === 'outbound'` que viene de Metricool.
+
+---
+
+### Diagnóstico Detallado: Problemas Identificados
+
+> **📁 Documentos de Auditoría Generados:**
+> - `docs/audits/INBOX_HOOKS_AUDIT.md` - Inventario completo de 63 hooks, dependencias y recomendaciones de refactor para Inbox.tsx
+> - `docs/audits/INBOX_CONTRACTS.md` - Contratos de props entre Inbox.tsx y sus subcomponentes (CommentThread recibe 25 props, 14 relacionadas a drafts)
+> - `docs/audits/CRMCONTEXTPANEL_AUDIT.md` - Auditoría de CRMContextPanel.tsx (10 hooks, bajo prioridad de refactor)
+> - `docs/audits/DUPLICATED_LOGIC.md` - Análisis de lógica duplicada: 14 props draft-related, 4 categorías de refactor
+
+#### 🔴 Problema 1: Archivos Monolíticos (God Objects)
+
+| Archivo | Tamaño | Responsabilidades Mezcladas |
+|---------|--------|----------------------------|
+| `server/routes.ts` | 162 KB (~100 endpoints) | Autenticación, validación, lógica de negocio, sincronización, websockets, orquestación |
+| `server/storage.ts` | 162 KB | CRUD de todas las entidades, lógica de elegibilidad, transiciones de estado, queries complejas |
+
+**Impacto**: Viola SRP (Single Responsibility Principle), dificulta testing, mantenimiento y onboarding de nuevos desarrolladores.
+
+#### 🔴 Problema 2: Ausencia de Capas Arquitectónicas
+
+**Estructura Actual (Plana):**
+```
+Frontend (React) → Routes (API) → Storage (DB)
+```
+
+**Estructura Recomendada (Por Capas):**
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    PRESENTACIÓN (Frontend)                   │
+├─────────────────────────────────────────────────────────────┤
+│                     CONTROLLERS (Routes)                     │
+├─────────────────────────────────────────────────────────────┤
+│              USE CASES / APPLICATION SERVICES                │
+├─────────────────────────────────────────────────────────────┤
+│                   DOMAIN (Entities + Rules)                  │
+├─────────────────────────────────────────────────────────────┤
+│       INFRASTRUCTURE (Repositories, Adapters, APIs)         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 🔴 Problema 3: Componentes React Gigantes
+
+| Componente | Tamaño | Responsabilidades Mezcladas |
+|------------|--------|----------------------------|
+| `LandingPage.tsx` | 165 KB | UI, animaciones, datos, lógica de presentación |
+| `Inbox.tsx` | 124 KB | Threading, fetching, estados, presentación, acciones |
+| `AIAgentConfig.tsx` | 117 KB | 6 tabs, validación, lógica de negocio AI, formularios |
+| `CRM.tsx` | 87 KB | Vista, filtros, acciones, modales, lógica de merge |
+
+**Impacto**: Componentes no reutilizables, difíciles de testear, alta probabilidad de bugs por efectos secundarios.
+
+#### 🔴 Problema 4: Lógica de Negocio en Frontend
+
+Reglas de negocio críticas ejecutándose en cliente (inseguro, no reutilizable):
+- Threading/agrupación de mensajes
+- Heurísticas de merge de contactos CRM
+- Validación de configuración AI
+- Cálculos de elegibilidad
+
+#### 🔴 Problema 5: Servicios Acoplados
+
+Los servicios en `server/services/` tienen dependencias directas sin abstracción:
+- Acceso directo a `storage` global
+- Llamadas directas a adaptadores Metricool
+- Side-effects de WebSocket mezclados con lógica
+
+**Impacto**: Imposible hacer testing con mocks, cambiar implementaciones, o entender el grafo de dependencias.
+
+#### 🔴 Problema 6: Sin Abstracciones de Dominio
+
+| Abstracción Faltante | Consecuencia |
+|---------------------|--------------|
+| DTOs (Data Transfer Objects) | Records de DB fluyen directamente a la UI sin transformación |
+| Value Objects | No hay validación de invariantes de negocio |
+| Entities | No hay modelado explícito de reglas de dominio |
+| Repository Interfaces | Storage mezcla acceso a datos con lógica |
+
+---
+
+### Plan de Refactorización por Fases
+
+---
+
+### 🛡️ REGLAS DE SEGURIDAD PARA EVITAR PÉRDIDA DE CONTEXTO
+
+> **Lección aprendida**: En intentos anteriores, el agente perdió contexto cuando las subtareas tenían demasiados cambios. Estas reglas previenen ese problema.
+
+| Regla | Descripción |
+|-------|-------------|
+| **Máximo 1 archivo por tarea** | Cada tarea debe modificar solo 1 archivo principal. Si necesita tocar más, dividir en subtareas. |
+| **Verificar ANTES de continuar** | Después de cada tarea, reiniciar la aplicación y verificar que funciona. NO continuar si hay errores. |
+| **Guardar checkpoint después de cada subtarea** | El agente debe confirmar que el checkpoint se guardó antes de pasar a la siguiente. |
+| **Tareas atómicas** | Cada tarea debe poder revertirse sin afectar otras. Si falla, solo se pierde esa tarea. |
+| **Límite de 50 líneas por cambio** | Si un cambio requiere mover más de 50 líneas, dividirlo en partes más pequeñas. |
+| **Marcar progreso inmediatamente** | Actualizar el estado en esta documentación al completar cada tarea, no al final de la fase. |
+| **VERIFICAR con grep después de editar** | Después de cada edit, usar `grep` para confirmar que el cambio se aplicó. NO asumir que funcionó. |
+| **NO decir "listo" sin prueba** | Nunca confirmar que algo está hecho sin verificar con herramientas. Los falsos positivos rompen aplicaciones. |
+
+---
+
+### 🔄 PUNTOS DE CORTE SEGUROS (Cambio de Conversación)
+
+> **Propósito**: Cuando la ventana de contexto del agente está muy saturada, es mejor iniciar una nueva conversación. Estos son los puntos donde es **seguro** hacerlo.
+
+| Punto de Corte | Después de... | Verificación antes de cerrar | Qué decirle al nuevo agente |
+|----------------|---------------|------------------------------|----------------------------|
+| 🟢 **Corte 1** | Fase 0 completa | Tests de humo pasan, app arranca | "Continúa con Fase 1 (División de Routes). Lee DOCUMENTACION_COMPLETA.md sección Plan de Refactorización." |
+| 🟢 **Corte 2** | Fases 1+2 completas | Routes divididas, Storage dividido, app funciona | "Continúa con Fase 3 (Capa de Servicios). Las Fases 1 y 2 están ✅." |
+| 🟢 **Corte 3** | Fase 3 completa | Servicios funcionando, rutas usan servicios | "Continúa con Fase 4 (Frontend) o Fase 5 (Abstracciones)." |
+| 🟢 **Corte 4** | Fase 4 completa | Componentes React refactorizados, UI funciona igual | "Continúa con Fase 5 si no está hecha, o Fase 6 (Testing Final)." |
+| 🟢 **Corte 5** | Fases 5+6 completas | Tests pasan, documentación actualizada | "Refactorización completa. Verificar todo funciona." |
+
+#### ⚠️ Reglas para cambiar de conversación
+
+1. **NUNCA cambiar en medio de una fase** - Solo al completar fases enteras.
+2. **Verificar que TODO funciona** - App arranca, funcionalidades probadas.
+3. **Actualizar estados en este documento** - Marcar tareas completadas con ✅.
+4. **Incluir resumen para el siguiente agente** - Al final de la conversación, pedir al agente que escriba un resumen de lo hecho.
+
+#### 📝 Plantilla para el nuevo agente
+
+> **Ver sección "📋 MENSAJE DE INICIO (KICKOFF MESSAGE)" más arriba** para el mensaje completo que debes usar al iniciar una nueva conversación.
+
+#### ❌ Cuándo NO cambiar de conversación
+
+| Situación | Por qué NO cambiar |
+|-----------|-------------------|
+| En medio de extraer un archivo | El nuevo agente no sabrá qué ya se movió |
+| Con errores sin resolver | El nuevo agente heredará el problema sin contexto |
+| Sin actualizar el documento | El nuevo agente no sabrá qué está hecho |
+| Antes de verificar que todo funciona | Podrías estar pasando un sistema roto |
+
+---
+
+### Leyenda de Estados
+
+| Estado | Símbolo | Significado |
+|--------|---------|-------------|
+| Pendiente | ⬜ | No iniciado |
+| En progreso | 🟨 | Trabajando actualmente |
+| Completado | ✅ | Terminado y verificado |
+| Bloqueado | 🔴 | Requiere resolver dependencia primero |
+
+---
+
+### Resumen de Fases
+
+| Fase | Nombre | Riesgo | Duración | Dependencias | Estado |
+|------|--------|--------|----------|--------------|--------|
+| 0 | Preparación y Seguridad | 🟢 Bajo | 1-2 días | Ninguna | ⬜ |
+| 1 | División de Routes | 🟡 Medio | 3-5 días | Fase 0 | ⬜ |
+| 2 | División de Storage | 🟡 Medio | 3-5 días | Ninguna (paralelo con Fase 1) | ⬜ |
+| 3 | Capa de Servicios | 🟡 Medio | 5-7 días | Fases 1 y 2 | ⬜ |
+| 4 | Frontend Componentes | 🟡 Medio | 5-7 días | Ninguna (paralelo con 1-3) | ⬜ |
+| 5 | Abstracciones | 🟢 Bajo | 2-3 días | Fase 3 | ⬜ |
+| 6 | Testing Final | 🟢 Bajo | 2-3 días | Fases 1-5 | ⬜ |
+| **7** | **Optimización Base de Datos** | 🟡 Medio | 3-5 días | Ninguna (paralelo con 1-4) | ⬜ |
+
+---
+
+## FASE 0: Preparación y Seguridad 🟢
+
+**Objetivo**: Establecer bases para refactorización segura sin tocar código de producción.
+
+### 0.1 Documentación del Estado Actual
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 0.1.1 | Crear diagrama de arquitectura actual (Mermaid en docs/) | Archivo existe y es legible | ⬜ | Usar Mermaid para que sea versionable |
+| 0.1.2 | Documentar endpoints de routes.ts | Lista completa en docs/ENDPOINTS.md | ⬜ | Incluir método HTTP y ruta |
+| 0.1.3 | Mapear dependencias entre servicios | Diagrama en docs/SERVICES_MAP.md | ⬜ | Quién llama a quién |
+| 0.1.4 | Identificar 10 rutas más usadas | Lista priorizada documentada | ⬜ | Basarse en logs o intuición |
+| 0.1.5 | Documentar flujo de sincronización Metricool | Diagrama de secuencia | ⬜ | Paso a paso |
+| 0.1.6 | Documentar flujo de auto-reply AI | Diagrama de secuencia | ⬜ | Desde mensaje hasta respuesta |
+| 0.1.7 | Documentar flujo de recordatorios | Diagrama de secuencia | ⬜ | Desde programación hasta envío |
+| 0.1.8 | Documentar flujo de CRM | Diagrama de secuencia | ⬜ | Merge, enrichment |
+
+### 0.2 Infraestructura de Testing
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 0.2.1 | Configurar Vitest para backend | `npm run test` ejecuta sin errores | ⬜ | Preferir Vitest sobre Jest |
+| 0.2.2 | Test de humo: app arranca | Test pasa, servidor responde en / | ⬜ | Más importante que tests específicos |
+| 0.2.3 | Test de login/logout | Endpoints retornan 200/401 correctamente | ⬜ | Crítico antes de tocar auth |
+| 0.2.4 | Test de sincronización básica | Mock de Metricool, verificar storage | ⬜ | Puede ser test de integración |
+| 0.2.5 | Configurar coverage report | `npm run test:coverage` genera reporte | ⬜ | Meta inicial: 20% |
+
+### 0.3 Estrategia de Rollback
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 0.3.1 | Verificar checkpoints de Replit funcionan | Crear checkpoint, modificar archivo, restaurar | ⬜ | Probar antes de empezar |
+| 0.3.2 | Documentar proceso de rollback | Instrucciones en docs/ROLLBACK.md | ⬜ | Paso a paso para emergencias |
+
+---
+
+## FASE 1: División de Routes por Contexto 🟡
+
+**Objetivo**: Separar routes.ts monolítico en módulos por dominio.  
+**Estrategia**: Extraer endpoints a archivos separados SIN cambiar lógica interna.
+
+### 1.1 Crear Estructura Base
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 1.1.1 | Crear directorio server/routes/ | Carpeta existe | ⬜ | Solo crear carpeta |
+| 1.1.2 | Crear server/routes/index.ts vacío | Archivo existe con export default | ⬜ | Estructura básica |
+
+### 1.2 Extraer Rutas de Autenticación
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 1.2.1 | Crear auth.routes.ts con endpoints de auth | Archivo existe, sin errores de sintaxis | ⬜ | /register, /login, /logout, /user |
+| 1.2.2 | Actualizar routes.ts para importar auth | App arranca sin errores | ⬜ | Verificar en navegador |
+| 1.2.3 | Probar login y logout manualmente | Funciona igual que antes | ⬜ | Prueba real en UI |
+
+### 1.3 Extraer Rutas de Brands
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 1.3.1 | Crear brands.routes.ts | Archivo existe, sin errores | ⬜ | Todos los endpoints de marcas |
+| 1.3.2 | Actualizar imports en routes.ts | App arranca sin errores | ⬜ | |
+| 1.3.3 | Verificar gestión de marcas | Crear/editar marca funciona | ⬜ | Prueba en UI |
+
+### 1.4 Extraer Rutas de Inbox
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 1.4.1 | Crear inbox.routes.ts | Archivo existe, sin errores | ⬜ | Mensajes, threads, replies |
+| 1.4.2 | Actualizar imports | App arranca | ⬜ | |
+| 1.4.3 | Verificar inbox completo | Ver mensajes, enviar reply | ⬜ | Probar flujo completo |
+
+### 1.5 Extraer Rutas de CRM
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 1.5.1 | Crear crm.routes.ts | Archivo existe, sin errores | ⬜ | Contactos, merge, enrichment |
+| 1.5.2 | Actualizar imports | App arranca | ⬜ | |
+| 1.5.3 | Verificar CRM | Ver contactos, hacer merge | ⬜ | |
+
+### 1.6 Extraer Rutas de AI Agents
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 1.6.1 | Crear ai-agents.routes.ts | Archivo existe, sin errores | ⬜ | Config, generate-reply, playground |
+| 1.6.2 | Actualizar imports | App arranca | ⬜ | |
+| 1.6.3 | Verificar configuración AI | Guardar config, generar respuesta | ⬜ | |
+
+### 1.7 Extraer Rutas de Recordatorios
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 1.7.1 | Crear reminders.routes.ts | Archivo existe, sin errores | ⬜ | |
+| 1.7.2 | Actualizar imports | App arranca | ⬜ | |
+| 1.7.3 | Verificar recordatorios | Ver lista de recordatorios | ⬜ | |
+
+### 1.8 Extraer Rutas de Notificaciones
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 1.8.1 | Crear notifications.routes.ts | Archivo existe, sin errores | ⬜ | |
+| 1.8.2 | Actualizar imports | App arranca | ⬜ | |
+| 1.8.3 | Verificar notificaciones | Panel de notificaciones funciona | ⬜ | |
+
+### 1.9 Extraer Rutas de Sincronización
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 1.9.1 | Crear sync.routes.ts | Archivo existe, sin errores | ⬜ | Endpoints de Metricool |
+| 1.9.2 | Actualizar imports | App arranca | ⬜ | |
+| 1.9.3 | Verificar sincronización | Sync manual funciona | ⬜ | |
+
+### 1.10 Limpieza Final
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 1.10.1 | Verificar routes.ts solo tiene imports | Archivo pequeño, solo router principal | ⬜ | |
+| 1.10.2 | Eliminar código duplicado | Sin código repetido | ⬜ | |
+| 1.10.3 | Ejecutar todos los tests | 100% pasan | ⬜ | |
+
+---
+
+## FASE 2: División de Storage en Repositorios 🟡
+
+**Objetivo**: Separar storage.ts monolítico en repositorios por entidad.  
+**Puede ejecutarse en paralelo con Fase 1.**
+
+### 2.1 Crear Estructura Base
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 2.1.1 | Crear directorio server/repositories/ | Carpeta existe | ⬜ | |
+| 2.1.2 | Crear index.ts con exports | Archivo existe | ⬜ | |
+
+### 2.2 Extraer UserRepository
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 2.2.1 | Crear UserRepository.ts | Archivo existe | ⬜ | getUser, getUserByEmail, createUser, updateUser |
+| 2.2.2 | Actualizar referencias en auth | App arranca | ⬜ | |
+| 2.2.3 | Verificar login/registro | Funciona en UI | ⬜ | |
+
+### 2.3 Extraer BrandRepository
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 2.3.1 | Crear BrandRepository.ts | Archivo existe | ⬜ | |
+| 2.3.2 | Actualizar referencias | App arranca | ⬜ | |
+| 2.3.3 | Verificar marcas | CRUD funciona | ⬜ | |
+
+### 2.4 Extraer MessageRepository
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 2.4.1 | Crear MessageRepository.ts | Archivo existe | ⬜ | |
+| 2.4.2 | Actualizar referencias | App arranca | ⬜ | |
+| 2.4.3 | Verificar inbox | Mensajes cargan | ⬜ | |
+
+### 2.5 Extraer ConversationRepository
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 2.5.1 | Crear ConversationRepository.ts | Archivo existe | ⬜ | |
+| 2.5.2 | Actualizar referencias | App arranca | ⬜ | |
+| 2.5.3 | Verificar threading | Threads se muestran bien | ⬜ | |
+
+### 2.6 Extraer ContactRepository
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 2.6.1 | Crear ContactRepository.ts | Archivo existe | ⬜ | |
+| 2.6.2 | Actualizar referencias | App arranca | ⬜ | |
+| 2.6.3 | Verificar CRM | Contactos cargan | ⬜ | |
+
+### 2.7 Extraer AIAgentRepository
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 2.7.1 | Crear AIAgentRepository.ts | Archivo existe | ⬜ | |
+| 2.7.2 | Actualizar referencias | App arranca | ⬜ | |
+| 2.7.3 | Verificar config AI | Configuración carga | ⬜ | |
+
+### 2.8 Extraer ReminderRepository
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 2.8.1 | Crear ReminderRepository.ts | Archivo existe | ⬜ | |
+| 2.8.2 | Actualizar referencias | App arranca | ⬜ | |
+| 2.8.3 | Verificar recordatorios | Lista carga | ⬜ | |
+
+### 2.9 Extraer NotificationRepository
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 2.9.1 | Crear NotificationRepository.ts | Archivo existe | ⬜ | |
+| 2.9.2 | Actualizar referencias | App arranca | ⬜ | |
+| 2.9.3 | Verificar notificaciones | Panel funciona | ⬜ | |
+
+### 2.10 Limpieza Final
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 2.10.1 | Storage.ts solo tiene exports | Archivo pequeño | ⬜ | |
+| 2.10.2 | Ejecutar todos los tests | 100% pasan | ⬜ | |
+
+---
+
+## FASE 3: Capa de Servicios/Use Cases 🟡
+
+**Objetivo**: Extraer lógica de negocio de rutas a servicios dedicados.  
+**Dependencias**: Fase 1 y Fase 2 completadas.
+
+### 3.1 Estructura de Servicios
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 3.1.1 | Decidir si crear server/services/usecases/ o usar existente | Decisión documentada | ⬜ | |
+| 3.1.2 | Definir patrón de inyección de dependencias | Documentado en ARCHITECTURE.md | ⬜ | |
+
+### 3.2 Servicio de Inbox
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 3.2.1 | Crear InboxService.ts básico | Archivo existe | ⬜ | |
+| 3.2.2 | Mover lógica de threading | App arranca | ⬜ | |
+| 3.2.3 | Mover lógica de send-reply | App arranca | ⬜ | |
+| 3.2.4 | Actualizar inbox.routes.ts | Rutas usan servicio | ⬜ | |
+| 3.2.5 | Verificar inbox completo | Todo funciona en UI | ⬜ | |
+
+### 3.3 Servicio de CRM
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 3.3.1 | Crear CRMService.ts | Archivo existe | ⬜ | |
+| 3.3.2 | Mover lógica de merge | App arranca | ⬜ | |
+| 3.3.3 | Mover lógica de enrichment | App arranca | ⬜ | |
+| 3.3.4 | Verificar CRM | Merge funciona | ⬜ | |
+
+### 3.4 Servicio de AI Agents
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 3.4.1 | Crear o consolidar AIAgentService.ts | Archivo existe | ⬜ | |
+| 3.4.2 | Mover lógica de configuración | App arranca | ⬜ | |
+| 3.4.3 | Mover lógica de generate-reply | App arranca | ⬜ | |
+| 3.4.4 | Verificar AI | Generar respuesta funciona | ⬜ | |
+
+### 3.5 Refactorizar Servicios Existentes
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 3.5.1 | autoReplyService: eliminar dependencias globales | App arranca | ⬜ | |
+| 3.5.2 | syncService: inyectar dependencias | App arranca | ⬜ | |
+| 3.5.3 | reminderService: inyectar dependencias | App arranca | ⬜ | |
+| 3.5.4 | Verificar todos los servicios | Auto-reply, sync, reminders funcionan | ⬜ | |
+
+### 3.6 Optimización de Rendimiento de Servicios 🔴 (NUEVA - Identificada 20 Ene 2026)
+
+> **Origen**: Análisis profundo de rendimiento identificó estos problemas críticos que no estaban en el plan original.
+
+#### 3.6.1 Cachear Configuración de Agentes IA
+
+**Problema Identificado**: Cada mensaje entrante ejecuta `storage.getAiAgentByBrand()` ANTES de llamar al LLM, causando queries innecesarias a la BD.
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 3.6.1.1 | Crear AIAgentConfigCache (Map en memoria) | Archivo existe | ⬜ | TTL 5 minutos |
+| 3.6.1.2 | Modificar autoReplyService para usar cache | App arranca | ⬜ | Primero cache, luego BD |
+| 3.6.1.3 | Invalidar cache al actualizar agente | Update invalida cache | ⬜ | En PUT /ai-agents/:id |
+| 3.6.1.4 | Verificar que auto-reply sigue funcionando | Respuestas IA funcionan | ⬜ | |
+
+**Impacto**: Elimina ~80% de queries a la BD en el hot path de auto-reply.
+
+#### 3.6.2 Sync Paralelo de Marcas
+
+**Problema Identificado**: `syncService.syncAllBrands()` procesa marcas **secuencialmente** con 2s de delay. Con 60 marcas, el sync tarda 2+ minutos y se atrasa permanentemente.
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 3.6.2.1 | Refactorizar sync para usar Promise pool | App arranca | ⬜ | Concurrencia: 5 marcas simultáneas |
+| 3.6.2.2 | Implementar tracking de duración de ciclo | Logs muestran duración | ⬜ | Para auto-ajustar intervalo |
+| 3.6.2.3 | Auto-ajustar intervalo según duración | Intervalo dinámico | ⬜ | Si ciclo > 2min, no iniciar nuevo |
+| 3.6.2.4 | Verificar sync con múltiples marcas | Sync no se atrasa | ⬜ | |
+
+**Impacto**: Permite escalar a 50+ marcas sin que el sync se quede atrás.
+
+---
+
+## FASE 4: Refactorización Frontend 🟡
+
+**Objetivo**: Descomponer componentes React gigantes.  
+**Puede ejecutarse en paralelo con Fases 1-3.**
+
+> 📁 **Documentos de referencia para esta fase:**
+> - `docs/audits/INBOX_HOOKS_AUDIT.md` - 63 hooks inventariados, dependencias y recomendaciones
+> - `docs/audits/INBOX_CONTRACTS.md` - Contratos de props entre componentes
+> - `docs/audits/CRMCONTEXTPANEL_AUDIT.md` - Auditoría de CRMContextPanel
+> - `docs/audits/DUPLICATED_LOGIC.md` - Lógica duplicada a consolidar
+
+### 4.1 Refactorizar Inbox.tsx (124 KB)
+
+| ID | Tarea | Verificación | Estado | Referencia |
+|----|-------|--------------|--------|------------|
+| 4.1.1 | Extraer InboxSidebar.tsx | Componente funciona aislado | ⬜ | `INBOX_HOOKS_AUDIT.md` |
+| 4.1.2 | Extraer ConversationView.tsx | Componente funciona | ⬜ | `INBOX_CONTRACTS.md` |
+| 4.1.3 | Extraer MessageComposer.tsx | Componente funciona | ⬜ | `DUPLICATED_LOGIC.md` (14 props draft) |
+| 4.1.4 | Extraer ThreadHeader.tsx | Componente funciona | ⬜ | `INBOX_CONTRACTS.md` |
+| 4.1.5 | Extraer useInboxData hook | Hook funciona | ⬜ | `INBOX_HOOKS_AUDIT.md` (sección hooks) |
+| 4.1.6 | Extraer useThreadActions hook | Hook funciona | ⬜ | `INBOX_HOOKS_AUDIT.md` |
+| 4.1.7 | Actualizar Inbox.tsx como container | Inbox funciona completo | ⬜ | Todos los anteriores |
+
+### 4.2 Refactorizar AIAgentConfig.tsx (117 KB)
+
+| ID | Tarea | Verificación | Estado | Referencia |
+|----|-------|--------------|--------|------------|
+| 4.2.1 | Extraer GeneralSettingsTab.tsx | Tab funciona | ⬜ | - |
+| 4.2.2 | Extraer PersonalityTab.tsx | Tab funciona | ⬜ | - |
+| 4.2.3 | Extraer ChannelSettingsTab.tsx | Tab funciona | ⬜ | - |
+| 4.2.4 | Extraer OrchestrationTab.tsx | Tab funciona | ⬜ | - |
+| 4.2.5 | Extraer ContextTab.tsx | Tab funciona | ⬜ | - |
+| 4.2.6 | Extraer PlaygroundTab.tsx | Tab funciona | ⬜ | - |
+| 4.2.7 | Extraer useAIAgentConfig hook | Hook funciona | ⬜ | - |
+| 4.2.8 | Actualizar AIAgentConfig.tsx | Config completa funciona | ⬜ | - |
+
+### 4.3 Refactorizar CRM.tsx (87 KB)
+
+| ID | Tarea | Verificación | Estado | Referencia |
+|----|-------|--------------|--------|------------|
+| 4.3.1 | Extraer ContactList.tsx | Componente funciona | ⬜ | `CRMCONTEXTPANEL_AUDIT.md` |
+| 4.3.2 | Extraer ContactDetail.tsx | Componente funciona | ⬜ | `CRMCONTEXTPANEL_AUDIT.md` |
+| 4.3.3 | Extraer ContactFilters.tsx | Componente funciona | ⬜ | - |
+| 4.3.4 | Extraer MergeContactModal.tsx | Modal funciona | ⬜ | `DUPLICATED_LOGIC.md` |
+| 4.3.5 | Extraer useCRMData hook | Hook funciona | ⬜ | `CRMCONTEXTPANEL_AUDIT.md` |
+| 4.3.6 | Actualizar CRM.tsx | CRM completo funciona | ⬜ | |
+
+### 4.4 Refactorizar LandingPage.tsx (165 KB)
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 4.4.1 | Extraer HeroSection.tsx | Sección se ve igual | ⬜ | |
+| 4.4.2 | Extraer FeaturesSection.tsx | Sección se ve igual | ⬜ | |
+| 4.4.3 | Extraer TestimonialsSection.tsx | Sección se ve igual | ⬜ | |
+| 4.4.4 | Extraer PricingSection.tsx | Sección se ve igual | ⬜ | |
+| 4.4.5 | Extraer CTASection.tsx | Sección se ve igual | ⬜ | |
+| 4.4.6 | Actualizar LandingPage.tsx | Landing completa se ve igual | ⬜ | |
+
+### 4.5 Mover Lógica al Backend
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 4.5.1 | Identificar lógica de threading en frontend | Lista documentada | ⬜ | |
+| 4.5.2 | Crear endpoint que retorne threads procesados | Endpoint responde | ⬜ | |
+| 4.5.3 | Actualizar frontend para usar endpoint | Inbox funciona | ⬜ | |
+| 4.5.4 | Mover lógica de merge CRM a backend | CRM funciona | ⬜ | |
+
+### 4.6 Optimizar NexusContext 🟡 (NUEVA - Identificada 20 Ene 2026)
+
+> **Origen**: Análisis profundo de rendimiento identificó este problema que no estaba en el plan original.
+
+**Problema Identificado**: `NexusContext.tsx` reconstruye su estado completo cada vez que llega un mensaje nuevo, causando re-renders en cascada en TODOS los componentes que lo consumen (Inbox, CRM, etc.).
+
+**Impacto**: El inbox puede sentirse "trabado" cuando hay mucha actividad porque cada mensaje nuevo re-renderiza toda la aplicación.
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 4.6.1 | Analizar qué partes del contexto cambian frecuentemente | Análisis documentado | ⬜ | messages vs config |
+| 4.6.2 | Dividir NexusContext en contextos más pequeños | Contextos separados funcionan | ⬜ | MessagesContext, ConfigContext |
+| 4.6.3 | Memoizar valores del contexto con useMemo | Re-renders reducidos | ⬜ | Verificar con React DevTools |
+| 4.6.4 | Alternativa: Migrar a Zustand con selectores | Selectores funcionan | ⬜ | Solo re-render lo necesario |
+| 4.6.5 | Verificar rendimiento en Inbox con mucha actividad | UI fluida | ⬜ | Probar con múltiples mensajes |
+
+**Solución Recomendada**: 
+- Opción A (menos invasiva): Dividir en `MessagesProvider` + `ConfigProvider` + `UIStateProvider`
+- Opción B (más robusta): Migrar a Zustand con selectores granulares
+
+---
+
+## FASE 5: Abstracciones y Adapters 🟢
+
+**Objetivo**: Crear interfaces para dependencias externas.  
+**Dependencias**: Fase 3 completada.
+
+### 5.1 Crear Interfaces
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 5.1.1 | Crear server/adapters/interfaces/ | Carpeta existe | ⬜ | |
+| 5.1.2 | Crear IEmailAdapter.ts | Interfaz definida | ⬜ | |
+| 5.1.3 | Crear ILLMAdapter.ts | Interfaz definida | ⬜ | Consolidar con llm/ existente |
+| 5.1.4 | Crear IMetricoolAdapter.ts | Interfaz definida | ⬜ | |
+
+### 5.2 Implementar Adapters
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 5.2.1 | ResendEmailAdapter implementa IEmailAdapter | Emails funcionan | ⬜ | |
+| 5.2.2 | gemini-adapter implementa ILLMAdapter | Gemini funciona | ⬜ | |
+| 5.2.3 | openai-adapter implementa ILLMAdapter | OpenAI funciona | ⬜ | |
+| 5.2.4 | MetricoolAdapter implementa IMetricoolAdapter | Sync funciona | ⬜ | |
+
+### 5.3 Inyección de Dependencias
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 5.3.1 | Crear factory simple para inyección | Factory funciona | ⬜ | |
+| 5.3.2 | Servicios reciben adapters por inyección | Todo funciona | ⬜ | |
+
+---
+
+## FASE 6: Testing y Documentación Final 🟢
+
+**Objetivo**: Asegurar calidad y documentar la nueva arquitectura.  
+**Dependencias**: Fases 1-5 completadas.
+
+### 6.1 Tests de Integración
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 6.1.1 | Tests para cada módulo de rutas | Tests pasan | ⬜ | |
+| 6.1.2 | Tests para cada repositorio | Tests pasan | ⬜ | |
+| 6.1.3 | Tests para servicios principales | Tests pasan | ⬜ | |
+| 6.1.4 | Cobertura mínima 60% en código nuevo | Reporte lo confirma | ⬜ | |
+
+### 6.2 Tests E2E
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 6.2.1 | Test E2E: Login → Inbox → Reply | Test pasa | ⬜ | |
+| 6.2.2 | Test E2E: Config AI → Auto-reply | Test pasa | ⬜ | |
+| 6.2.3 | Test E2E: CRM → Merge contacts | Test pasa | ⬜ | |
+
+### 6.3 Documentación
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 6.3.1 | Actualizar diagrama de arquitectura | Refleja nueva estructura | ⬜ | |
+| 6.3.2 | Documentar estructura de carpetas final | Actualizado en docs/ | ⬜ | |
+| 6.3.3 | Crear guía de contribución | Archivo existe | ⬜ | |
+| 6.3.4 | Documentar convenciones de código | Archivo existe | ⬜ | |
+
+---
+
+### Estructura de Carpetas Objetivo (Post-Refactorización)
+
+```
+server/
+├── routes/                      # Capa de presentación HTTP
+│   ├── index.ts
+│   ├── auth.routes.ts
+│   ├── brands.routes.ts
+│   ├── inbox.routes.ts
+│   ├── crm.routes.ts
+│   ├── ai-agents.routes.ts
+│   ├── reminders.routes.ts
+│   ├── notifications.routes.ts
+│   └── sync.routes.ts
+├── services/                    # Capa de aplicación / casos de uso
+│   ├── InboxService.ts
+│   ├── CRMService.ts
+│   ├── AIAgentService.ts
+│   ├── autoReplyService.ts      # Existente, refactorizado
+│   ├── syncService.ts           # Existente, refactorizado
+│   ├── reminderService.ts       # Existente, refactorizado
+│   └── llm/                     # Existente
+│       ├── types.ts
+│       ├── factory.ts
+│       ├── gemini-adapter.ts
+│       ├── openai-adapter.ts
+│       └── prompt-composer.ts
+├── repositories/                # Capa de acceso a datos
+│   ├── index.ts
+│   ├── UserRepository.ts
+│   ├── BrandRepository.ts
+│   ├── MessageRepository.ts
+│   ├── ConversationRepository.ts
+│   ├── ContactRepository.ts
+│   ├── AIAgentRepository.ts
+│   ├── ReminderRepository.ts
+│   └── NotificationRepository.ts
+├── adapters/                    # Capa de infraestructura externa
+│   ├── interfaces/
+│   │   ├── IEmailAdapter.ts
+│   │   ├── ILLMAdapter.ts
+│   │   ├── IMetricoolAdapter.ts
+│   │   └── IWebSocketAdapter.ts
+│   ├── ResendEmailAdapter.ts
+│   └── MetricoolAdapter.ts
+├── middleware/                  # Existente
+│   └── rateLimiter.ts
+├── app.ts
+├── db.ts
+└── index.ts
+
+shared/
+├── schema.ts                    # Existente
+├── dynamicVariables.ts          # Existente
+├── dtos/                        # NUEVO
+│   ├── requests/
+│   │   ├── CreateMessageDTO.ts
+│   │   ├── UpdateContactDTO.ts
+│   │   └── ConfigureAgentDTO.ts
+│   └── responses/
+│       ├── MessageResponseDTO.ts
+│       ├── ConversationResponseDTO.ts
+│       └── ContactResponseDTO.ts
+└── models/
+    └── auth.ts                  # Existente
+
+client/src/
+├── components/
+│   ├── inbox/                   # NUEVO - componentes de Inbox
+│   │   ├── InboxSidebar.tsx
+│   │   ├── ConversationView.tsx
+│   │   ├── MessageComposer.tsx
+│   │   └── ThreadHeader.tsx
+│   ├── ai-config/               # NUEVO - componentes de AI Config
+│   │   ├── GeneralSettingsTab.tsx
+│   │   ├── PersonalityTab.tsx
+│   │   ├── ChannelSettingsTab.tsx
+│   │   ├── OrchestrationTab.tsx
+│   │   ├── ContextTab.tsx
+│   │   └── PlaygroundTab.tsx
+│   ├── crm/                     # NUEVO - componentes de CRM
+│   │   ├── ContactList.tsx
+│   │   ├── ContactDetail.tsx
+│   │   ├── ContactFilters.tsx
+│   │   └── MergeContactModal.tsx
+│   ├── landing/                 # Existente, refactorizado
+│   │   ├── HeroSection.tsx
+│   │   ├── FeaturesSection.tsx
+│   │   ├── TestimonialsSection.tsx
+│   │   └── ...
+│   └── ui/                      # Existente
+├── hooks/                       # NUEVO - hooks extraídos
+│   ├── useInboxData.ts
+│   ├── useThreadActions.ts
+│   ├── useAIAgentConfig.ts
+│   ├── useCRMData.ts
+│   └── useCRMActions.ts
+├── pages/                       # Existente, simplificado
+│   ├── Inbox.tsx                # Ahora es container
+│   ├── AIAgentConfig.tsx        # Ahora es container
+│   ├── CRM.tsx                  # Ahora es container
+│   └── ...
+└── lib/                         # Existente
+```
+
+---
+
+### Matriz de Dependencias entre Fases
+
+| Fase | Depende de | Puede ejecutarse con |
+|------|-----------|---------------------|
+| Fase 0 | - | Desarrollo normal |
+| Fase 1 | Fase 0 | Fase 2, Fase 4, Fase 7 |
+| Fase 2 | - | Fase 1, Fase 4, Fase 7 |
+| Fase 3 | Fase 1, Fase 2 | Fase 4, Fase 7 |
+| Fase 4 | - | Fase 1, Fase 2, Fase 3, Fase 7 |
+| Fase 5 | Fase 3 | Fase 4 |
+| Fase 6 | Fase 1-5 | - |
+| **Fase 7** | - (7.1-7.2), Fase 2 (7.3) | Fase 1, Fase 2, Fase 3, Fase 4 |
+
+**Ejecución Paralela Recomendada:**
+```
+Tiempo →
+───────────────────────────────────────────────────────────────────
+Fase 7.1│████│  ← PRIMERO: Índices críticos (impacto inmediato)
+Fase 0  │    │████████│
+Fase 1  │            │████████████████│
+Fase 2  │            │████████████████│
+Fase 7.3│                            │████████│  ← Después de Fase 2
+Fase 4  │            │████████████████████████████│
+Fase 3  │                            │████████████████│
+Fase 5  │                                            │████████│
+Fase 6  │                                                    │████│
+───────────────────────────────────────────────────────────────────
+```
+
+---
+
+### Métricas de Éxito
+
+| Métrica | Valor Actual | Objetivo Post-Refactorización |
+|---------|--------------|------------------------------|
+| Tamaño máximo archivo backend | 162 KB | < 20 KB |
+| Tamaño máximo componente React | 165 KB | < 15 KB |
+| Archivos con > 1000 líneas | 5+ | 0 |
+| Cobertura de tests | ~0% | > 60% |
+| Tiempo de onboarding nuevo dev | Alto | Medio |
+| Facilidad de agregar feature | Baja | Alta |
+| **Query inbox (10K mensajes)** | ~500-1000ms | < 200ms |
+| **Query inbox (100K mensajes)** | ~3-5s | < 500ms |
+| **Errores timeout DB** | Desconocido | 0 |
+
+---
+
+### Notas de Implementación
+
+1. **NO refactorizar código que no se va a tocar**: Si un endpoint o componente funciona y no necesita cambios, dejarlo.
+
+2. **Refactorizar al tocar**: Cuando se modifique cualquier código, aplicar las mejoras de la fase correspondiente.
+
+3. **Features nuevos con arquitectura nueva**: Todo código nuevo debe seguir la arquitectura objetivo.
+
+4. **Rollback disponible**: En cualquier momento se puede volver a checkpoint anterior si algo falla.
+
+5. **Comunicación**: Antes de empezar cada fase, revisar impacto y comunicar plan.
+
+---
+
+### Registro de Progreso
+
+| Fecha | Fase | Tarea | Estado | Notas |
+|-------|------|-------|--------|-------|
+| 16 Ene 2026 | - | Documento creado | ✅ | Diagnóstico inicial completado |
+| - | - | - | - | - |
+
+---
+
+*Sección creada: 16 Enero 2026*
+*Última actualización: 20 Enero 2026*
+
+---
+
+## FASE 7: Optimización de Base de Datos 🟡 (Nueva - 20 Enero 2026)
+
+**Objetivo**: Optimizar rendimiento de la base de datos para soportar crecimiento de marcas y volumen de datos.  
+**Puede ejecutarse en paralelo con Fases 1-4.** Prioridad recomendada: ALTA para 7.1 y 7.2 (índices críticos).
+
+---
+
+### 📊 Diagnóstico Completo de Base de Datos
+
+#### Arquitectura Actual
+
+La base de datos está estructurada jerárquicamente con **18+ tablas principales**:
+
+```
+BRANDS (marcas) ──────────────────────────────────
+   ├── users (usuarios de cada marca)
+   ├── social_accounts (redes sociales conectadas)
+   ├── social_posts (publicaciones)
+   ├── conversations (conversaciones)
+   │      └── messages (mensajes)
+   ├── ai_agents (agentes IA)
+   │      └── ai_agent_audit_log (historial de IA)
+   ├── crm_contacts (contactos CRM)
+   │      └── crm_contact_channels (canales del contacto)
+   ├── reminder_rules / reminder_events (seguimientos)
+   └── notifications (notificaciones)
+```
+
+#### Puntos Fuertes Actuales
+
+| Aspecto | Estado | Detalle |
+|---------|--------|---------|
+| Aislamiento multi-marca | ✅ Bueno | Cada tabla tiene `brandId` para filtrar por marca |
+| Cascade deletes | ✅ Implementado | Al eliminar marca, se borran datos relacionados |
+| Transacciones | ✅ Usadas | Para operaciones atómicas (ej: merge contacts) |
+| Caché frontend | ✅ React Query | 30 segundos de staleTime en hooks |
+| Unique constraints | ✅ Definidos | En tablas críticas (social_accounts, messages) |
+
+#### Puntos de Riesgo Identificados
+
+| Problema | Impacto | Tabla Afectada | Prioridad |
+|----------|---------|----------------|-----------|
+| **Sin índice en `messages.brandId`** | 🔴 Alto | messages | P0 |
+| **Sin índice en `conversations.brandId`** | 🔴 Alto | conversations | P0 |
+| **Consultas complejas sin optimizar** | 🟡 Medio | getInboxThreads (múltiples SELECTs) | P1 |
+| **Sin paginación** en algunas consultas | 🟡 Medio | messages, conversations | P1 |
+| **Pool de conexiones básico** | 🟡 Medio | server/db.ts | P2 |
+| **Sin caché de servidor** | 🟡 Medio | Consultas frecuentes | P2 |
+
+#### Índices Actuales vs Faltantes
+
+**✅ Índices YA DEFINIDOS:**
+```typescript
+// crm_contacts
+emailIdx: index("crm_contacts_email_idx").on(table.email)
+phoneIdx: index("crm_contacts_phone_idx").on(table.phone)
+brandIdx: index("crm_contacts_brand_idx").on(table.brandId)
+statusIdx: index("crm_contacts_status_idx").on(table.status)
+
+// crm_contact_channels
+contactIdx: index("crm_contact_channels_contact_idx").on(table.contactId)
+uniquePlatformExternal: unique().on(table.platform, table.externalId)
+
+// reminder_events
+brandIdx, conversationIdx, contactIdx, statusIdx, scheduledAtIdx
+
+// messages
+metricoolId: text("metricool_id").unique() // Solo este
+```
+
+**❌ Índices FALTANTES (Críticos):**
+```typescript
+// messages - FALTA (tabla más grande)
+brandIdx: index("messages_brand_idx").on(table.brandId)
+conversationIdx: index("messages_conversation_idx").on(table.conversationId)
+timestampIdx: index("messages_timestamp_idx").on(table.timestamp)
+
+// conversations - FALTA
+brandIdx: index("conversations_brand_idx").on(table.brandId)
+statusIdx: index("conversations_status_idx").on(table.status)
+lastMessageAtIdx: index("conversations_last_message_at_idx").on(table.lastMessageAt)
+
+// social_posts - FALTA
+brandIdx: index("social_posts_brand_idx").on(table.brandId)
+
+// notifications - FALTA
+userIdx: index("notifications_user_idx").on(table.userId)
+brandIdx: index("notifications_brand_idx").on(table.brandId)
+```
+
+#### Patrones de Consulta Problemáticos
+
+**Problema 1: getInboxThreads hace múltiples SELECTs**
+```typescript
+// Archivo: server/storage.ts, líneas 644-739
+// Patrón actual (ineficiente):
+1. SELECT todas las conversaciones para brandId
+2. SELECT conteo de mensajes por conversación  
+3. SELECT mensajes no leídos por conversación
+4. Luego agrupa en JavaScript
+
+// Patrón recomendado (eficiente):
+// Un solo SELECT con JOINs y agregaciones SQL
+```
+
+**Problema 2: Sin paginación en queries de inbox**
+```typescript
+// Actual:
+const allConversations = await db.select().from(conversations).where(eq(conversations.brandId, brandId));
+
+// Recomendado:
+const paginatedConversations = await db.select().from(conversations)
+  .where(eq(conversations.brandId, brandId))
+  .limit(pageSize)
+  .offset((page - 1) * pageSize);
+```
+
+#### Estimaciones de Rendimiento
+
+| Escenario | Mensajes Totales | Velocidad Esperada |
+|-----------|------------------|-------------------|
+| 1 marca, 1K mensajes | 1,000 | ⚡ Rápida (<100ms) |
+| 10 marcas, 10K mensajes cada una | 100,000 | 🟢 Aceptable (<500ms) |
+| 50 marcas, 20K mensajes cada una | 1,000,000 | 🟡 Lenta (1-3s sin índices) |
+| 100+ marcas, 50K+ mensajes cada una | 5,000,000+ | 🔴 Problemas (>5s sin índices) |
+
+---
+
+### 7.1 Índices Críticos (PRIORIDAD P0) 🔴
+
+**Objetivo**: Agregar índices faltantes en tablas más consultadas.  
+**Impacto**: Mejora inmediata de 10-100x en queries de inbox.
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 7.1.1 | Agregar índice `messages.brandId` | Migración ejecutada sin error | ✅ | Crítico para filtrar por marca |
+| 7.1.2 | Agregar índice `messages.conversationId` | Migración ejecutada | ✅ | Crítico para threading |
+| 7.1.3 | Agregar índice `messages.timestamp` | Migración ejecutada | ✅ | Para ordenamiento |
+| 7.1.4 | Agregar índice `conversations.brandId` | Migración ejecutada | ✅ | Crítico |
+| 7.1.5 | Agregar índice `conversations.status` | Migración ejecutada | ✅ | Para filtros |
+| 7.1.6 | Agregar índice `conversations.lastMessageAt` | Migración ejecutada | ✅ | Para ordenamiento |
+| 7.1.7 | Verificar rendimiento post-índices | Query de inbox < 200ms | ✅ | Mejora 47-92% confirmada |
+
+**Relación con otras fases:** Puede ejecutarse independientemente. Recomendado ANTES de Fase 2 (División de Storage).
+
+**✅ FASE 7.1 COMPLETADA - 20 Enero 2026**
+
+### 7.2 Índices Secundarios (PRIORIDAD P1) 🟡
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 7.2.1 | Agregar índice `social_posts.brandId` | Migración ejecutada | ⬜ | |
+| 7.2.2 | Agregar índice `notifications.userId` | Migración ejecutada | ⬜ | |
+| 7.2.3 | Agregar índice `notifications.brandId` | Migración ejecutada | ⬜ | |
+| 7.2.4 | Agregar índice `ai_agent_audit_log.agentId` | Migración ejecutada | ⬜ | Para analytics |
+| 7.2.5 | Agregar índice compuesto `messages(brandId, timestamp)` | Migración ejecutada | ✅ | Ya incluido en 7.1 |
+
+### 7.3 Optimización de Consultas (PRIORIDAD P1) 🟡
+
+**Dependencias:** Mejor ejecutar después de Fase 2 (cuando Storage esté dividido en repositorios).
+
+| ID | Tarea | Verificación | Estado | Ref. Fase |
+|----|-------|--------------|--------|-----------|
+| 7.3.1 | Refactorizar `getInboxThreads` a un solo JOIN | Query funciona, < 300ms | ⬜ | Fase 2.5 |
+| 7.3.2 | Implementar paginación en `getMessages` | Endpoint acepta page/limit | ⬜ | Fase 2.4 |
+| 7.3.3 | Implementar paginación en `getConversations` | Endpoint acepta page/limit | ⬜ | Fase 2.5 |
+| 7.3.4 | Optimizar `getPendingCommentsForBatchProcessing` | Query < 500ms | ⬜ | - |
+| 7.3.5 | Agregar EXPLAIN ANALYZE a queries lentas | Resultados documentados | ⬜ | Fase 0.1 |
+
+### 7.4 Pool de Conexiones (PRIORIDAD P2) 🟢
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 7.4.1 | Configurar límites del pool en Neon | Pool configurado en db.ts | ⬜ | max: 10-20 conexiones |
+| 7.4.2 | Agregar timeouts de conexión | Timeouts configurados | ⬜ | connectionTimeoutMillis: 10000 |
+| 7.4.3 | Agregar monitoring de conexiones activas | Logs muestran pool status | ⬜ | Para debugging |
+
+### 7.5 Vistas Materializadas para Dashboards (PRIORIDAD P2) 🟢
+
+**Objetivo**: Optimizar los dashboards existentes (AI Metrics, Overview) con vistas materializadas para acelerar queries de agregación.  
+**Nota:** Implementar cuando los dashboards se vuelvan lentos con alto volumen de datos.
+
+#### ¿Qué son las Vistas Materializadas?
+- **Vista normal**: Query que se ejecuta cada vez (siempre datos frescos, pero lento)
+- **Vista materializada**: Resultado pre-calculado y almacenado (rápido, pero datos pueden estar "stale")
+- **Trade-off**: Velocidad vs frescura de datos
+
+#### Dashboards Existentes que se Beneficiarían:
+
+| Dashboard | Query Actual | Vista Materializada Propuesta |
+|-----------|--------------|------------------------------|
+| **AI Metrics** | Suma tokens, costos por período desde `ai_agent_audit_log` | `mv_ai_daily_stats` - Agregaciones diarias |
+| **Overview** | Contadores de mensajes, conversaciones por marca | `mv_brand_daily_stats` - Métricas diarias |
+| **Reminders** | `getReminderStats` - Query compleja | `mv_reminder_stats` - Estadísticas pre-calculadas |
+
+#### Tareas
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 7.5.1 | Medir tiempo actual de carga de AI Metrics | Tiempo documentado | ⬜ | Baseline para comparar |
+| 7.5.2 | Medir tiempo actual de carga de Overview | Tiempo documentado | ⬜ | Baseline para comparar |
+| 7.5.3 | Crear vista materializada `mv_ai_daily_stats` | Vista creada | ⬜ | Ver código abajo |
+| 7.5.4 | Crear vista materializada `mv_brand_daily_stats` | Vista creada | ⬜ | Ver código abajo |
+| 7.5.5 | Implementar job de refresh (cada 15-60 min) | Job funcionando | ⬜ | Usar cron o scheduler |
+| 7.5.6 | Actualizar endpoints para usar vistas | Endpoints usan vistas | ⬜ | Fallback a query directa |
+| 7.5.7 | Medir mejora de rendimiento | Reducción >50% en tiempo de carga | ⬜ | Comparar con baseline |
+
+#### Código de Implementación (SQL)
+
+```sql
+-- Vista Materializada: Métricas diarias de IA por marca
+CREATE MATERIALIZED VIEW mv_ai_daily_stats AS
+SELECT 
+  a.brand_id,
+  DATE(al.created_at) as date,
+  COUNT(*) as total_requests,
+  COUNT(CASE WHEN al.status = 'success' THEN 1 END) as successful,
+  COUNT(CASE WHEN al.status = 'error' THEN 1 END) as failed,
+  SUM(COALESCE(al.prompt_tokens, 0)) as total_prompt_tokens,
+  SUM(COALESCE(al.completion_tokens, 0)) as total_completion_tokens,
+  SUM(COALESCE(al.total_cost_usd, 0)) as total_cost_usd,
+  al.provider,
+  al.model
+FROM ai_agent_audit_log al
+JOIN ai_agents a ON al.agent_id = a.id
+GROUP BY a.brand_id, DATE(al.created_at), al.provider, al.model;
+
+-- Índice para búsquedas rápidas
+CREATE UNIQUE INDEX ON mv_ai_daily_stats (brand_id, date, provider, model);
+
+-- Vista Materializada: Métricas diarias de mensajes por marca
+CREATE MATERIALIZED VIEW mv_brand_daily_stats AS
+SELECT 
+  brand_id,
+  DATE(timestamp) as date,
+  COUNT(*) as total_messages,
+  COUNT(CASE WHEN direction = 'inbound' THEN 1 END) as inbound_count,
+  COUNT(CASE WHEN direction = 'outbound' THEN 1 END) as outbound_count,
+  COUNT(CASE WHEN status = 'unread' THEN 1 END) as unread_count,
+  COUNT(DISTINCT conversation_id) as active_conversations,
+  platform,
+  type
+FROM messages
+GROUP BY brand_id, DATE(timestamp), platform, type;
+
+-- Índice para búsquedas rápidas
+CREATE UNIQUE INDEX ON mv_brand_daily_stats (brand_id, date, platform, type);
+
+-- Refresh (ejecutar cada 15-60 minutos)
+REFRESH MATERIALIZED VIEW CONCURRENTLY mv_ai_daily_stats;
+REFRESH MATERIALIZED VIEW CONCURRENTLY mv_brand_daily_stats;
+```
+
+#### Estrategia de Refresh
+
+| Opción | Frecuencia | Impacto | Recomendado Para |
+|--------|------------|---------|------------------|
+| **Cada 15 min** | Alto | Bajo (CONCURRENTLY no bloquea) | Dashboards en tiempo casi-real |
+| **Cada hora** | Medio | Muy bajo | Reportes que toleran 1h de retraso |
+| **Manual** | Bajo | Ninguno | Reportes mensuales/semanales |
+
+#### Cuándo NO usar Vistas Materializadas
+
+- ❌ Datos que DEBEN estar siempre actualizados (ej: inbox, CRM)
+- ❌ Tablas pequeñas donde el query directo es rápido
+- ❌ Queries simples que ya usan índices eficientemente
+
+### 7.6 Caché de Servidor con Redis (PRIORIDAD P3 - Futuro) 🟢
+
+**Nota:** Implementar solo cuando el volumen lo justifique (50+ marcas activas, >100K mensajes).
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 7.6.1 | Evaluar necesidad de Redis | Decisión documentada | ⬜ | Basado en métricas reales |
+| 7.6.2 | Cachear configuración de agentes IA | Cache funciona | ⬜ | TTL: 5 minutos |
+| 7.6.3 | Cachear lista de marcas por usuario | Cache funciona | ⬜ | TTL: 1 minuto |
+| 7.6.4 | Invalidación de cache en updates | Cache se invalida correctamente | ⬜ | |
+
+### 7.7 Índices Avanzados BRIN (PRIORIDAD P3 - Futuro) 🟢
+
+**Objetivo**: Cuando las tablas superen millones de registros, considerar índices BRIN para columnas de timestamp.  
+**Ventaja**: 100-1000x más pequeños que B-Tree, ideales para datos ordenados temporalmente.
+
+| ID | Tarea | Verificación | Estado | Notas |
+|----|-------|--------------|--------|-------|
+| 7.7.1 | Evaluar tamaño de tabla `messages` | >5M registros = considerar BRIN | ⬜ | |
+| 7.7.2 | Crear índice BRIN en `messages.timestamp` | Índice creado | ⬜ | Solo si >5M registros |
+| 7.7.3 | Crear índice BRIN en `ai_agent_audit_log.created_at` | Índice creado | ⬜ | Para queries de rango de fechas |
+| 7.7.4 | Comparar rendimiento BRIN vs B-Tree | Resultados documentados | ⬜ | |
+
+```sql
+-- Ejemplo: Índice BRIN para tablas muy grandes con datos temporales
+CREATE INDEX messages_timestamp_brin ON messages USING brin (timestamp);
+-- Mucho más pequeño que B-Tree, ideal para queries de rango de fechas
+```
+
+---
+
+### 7.6 Implementación de Índices (Código)
+
+**Archivo a modificar:** `shared/schema.ts`
+
+```typescript
+// AGREGAR al final de la definición de messages:
+export const messages = pgTable("messages", {
+  // ... campos existentes ...
+}, (table) => ({
+  brandIdx: index("messages_brand_idx").on(table.brandId),
+  conversationIdx: index("messages_conversation_idx").on(table.conversationId),
+  timestampIdx: index("messages_timestamp_idx").on(table.timestamp),
+  brandTimestampIdx: index("messages_brand_timestamp_idx").on(table.brandId, table.timestamp),
+}));
+
+// AGREGAR al final de la definición de conversations:
+export const conversations = pgTable("conversations", {
+  // ... campos existentes ...
+}, (table) => ({
+  brandIdx: index("conversations_brand_idx").on(table.brandId),
+  statusIdx: index("conversations_status_idx").on(table.status),
+  lastMessageAtIdx: index("conversations_last_message_at_idx").on(table.lastMessageAt),
+  brandStatusIdx: index("conversations_brand_status_idx").on(table.brandId, table.status),
+}));
+
+// AGREGAR al final de la definición de social_posts:
+export const socialPosts = pgTable("social_posts", {
+  // ... campos existentes ...
+}, (table) => ({
+  uniqueBrandPlatformPost: unique().on(table.brandId, table.platform, table.externalId),
+  brandIdx: index("social_posts_brand_idx").on(table.brandId),
+}));
+
+// AGREGAR al final de la definición de notifications:
+export const notifications = pgTable("notifications", {
+  // ... campos existentes ...
+}, (table) => ({
+  userIdx: index("notifications_user_idx").on(table.userId),
+  brandIdx: index("notifications_brand_idx").on(table.brandId),
+  createdAtIdx: index("notifications_created_at_idx").on(table.createdAt),
+}));
+```
+
+**Después de modificar schema.ts:**
+```bash
+npm run db:push  # Aplica cambios a la base de datos
+```
+
+---
+
+### Matriz de Prioridades Fase 7
+
+| Subfase | Prioridad | Impacto | Esfuerzo | Dependencias |
+|---------|-----------|---------|----------|--------------|
+| 7.1 Índices Críticos | 🔴 P0 | Alto | Bajo (1 día) | **Ninguna** ✅ |
+| 7.2 Índices Secundarios | 🟡 P1 | Medio | Bajo (1 día) | 7.1 (opcional) |
+| 7.3 Optimización Queries | 🟡 P1 | Alto | Medio (3-5 días) | Fase 2 (recomendado) |
+| 7.4 Pool Conexiones | 🟢 P2 | Medio | Bajo (1 día) | Ninguna |
+| 7.5 Vistas Materializadas | 🟢 P2 | Medio-Alto | Medio (2-3 días) | 7.1 |
+| 7.6 Caché Redis | 🟢 P3 | Medio | Alto (5+ días) | 7.3, 7.5 |
+| 7.7 Índices BRIN | 🟢 P3 | Bajo-Medio | Bajo (1 día) | >5M registros |
+
+#### ⚠️ CONFIRMACIÓN: Fase 7.1 es INDEPENDIENTE
+
+**Sí, la Fase 7.1 se puede ejecutar SOLA sin afectar ninguna otra fase:**
+
+| Pregunta | Respuesta |
+|----------|-----------|
+| ¿Depende de otras fases? | ❌ No depende de ninguna |
+| ¿Bloquea otras fases? | ❌ No bloquea ninguna |
+| ¿Puede romper la aplicación? | ❌ No, solo AGREGA índices |
+| ¿Es reversible? | ✅ Sí, con `DROP INDEX` |
+| ¿Afecta datos existentes? | ❌ No, solo los indexa |
+| ¿Requiere downtime? | ❌ No, la app sigue funcionando |
+
+---
+
+### Métricas de Éxito Fase 7
+
+| Métrica | Valor Actual (Estimado) | Objetivo Post-Optimización |
+|---------|------------------------|---------------------------|
+| Query inbox (10K mensajes) | ~500-1000ms | < 200ms |
+| Query inbox (100K mensajes) | ~3-5s | < 500ms |
+| Query inbox (1M mensajes) | No viable | < 1s |
+| Conexiones DB simultáneas | Sin límite | Máx 20 controladas |
+| Errores de timeout DB | Desconocido | 0 |
+
+---
+
+### Integración con Plan de Refactorización Existente
+
+| Fase Existente | Relación con Fase 7 |
+|----------------|---------------------|
+| Fase 0 (Preparación) | 7.3.5 (EXPLAIN ANALYZE) puede integrarse en 0.1 |
+| Fase 1 (División Routes) | Sin dependencias directas |
+| Fase 2 (División Storage) | 7.3.1-7.3.3 se benefician de repositorios separados |
+| Fase 3 (Servicios) | Servicios pueden usar queries optimizadas |
+| Fase 4 (Frontend) | Frontend se beneficia de respuestas más rápidas |
+| Fase 5 (Abstracciones) | Pool de conexiones puede ser un adapter |
+| Fase 6 (Testing) | Agregar tests de performance para queries |
+
+**Ejecución Recomendada:**
+```
+Tiempo →
+─────────────────────────────────────────────────────────────
+Fase 7.1 │████│ ← PRIMERO (índices críticos, 1 día)
+Fase 0   │    │████████│
+Fase 1   │            │████████████████│
+Fase 2   │            │████████████████│
+Fase 7.3 │                            │████████│ ← Después de Fase 2
+Fase 7.4 │████│ ← Puede hacerse en paralelo
+─────────────────────────────────────────────────────────────
+```
+
+---
+
+### Registro de Progreso Fase 7
+
+| Fecha | Subfase | Tarea | Estado | Notas |
+|-------|---------|-------|--------|-------|
+| 20 Ene 2026 | - | Diagnóstico completado | ✅ | Identificados índices faltantes |
+| 20 Ene 2026 | 7.1 | Índices críticos implementados | ✅ | 8 índices nuevos creados |
+
+#### Fase 7.1 Completada - Detalles
+
+**Fecha:** 20 Enero 2026
+
+**Índices Creados:**
+```
+conversations_brand_idx          (brand_id)
+conversations_status_idx         (status)
+conversations_last_message_at_idx (last_message_at)
+conversations_brand_status_idx   (brand_id, status)
+messages_brand_idx               (brand_id)
+messages_conversation_idx        (conversation_id)
+messages_timestamp_idx           (timestamp)
+messages_brand_timestamp_idx     (brand_id, timestamp)
+```
+
+**Métricas de Rendimiento:**
+
+| Query | Antes (Seq Scan) | Después (Index Scan) | Mejora |
+|-------|------------------|---------------------|--------|
+| `messages WHERE brand_id` | 3.260 ms | 1.727 ms | **47%** |
+| `conversations WHERE brand_id` | 0.749 ms | 0.062 ms | **92%** |
+| `messages WHERE conversation_id` | 4.767 ms | 0.381 ms | **92%** |
+
+**Nota:** Con el dataset actual de 10,221 mensajes y 1,051 conversaciones, las mejoras parecen modestas en milisegundos. Sin embargo, lo crucial es el cambio de **Seq Scan** (escaneo secuencial) a **Index Scan**. Cuando la tabla crezca a 100K o 1M de registros, estas mejoras serán de **10-100x** en rendimiento.
+
+**Estado de Tareas 7.1:**
+- [x] 7.1.1 Índice `messages.brandId`
+- [x] 7.1.2 Índice `messages.conversationId`
+- [x] 7.1.3 Índice `messages.timestamp`
+- [x] 7.1.4 Índice `conversations.brandId`
+- [x] 7.1.5 Índice `conversations.status`
+- [x] 7.1.6 Índice `conversations.lastMessageAt`
+- [x] 7.1.7 Verificación rendimiento post-índices
+
+---
+
+## Guía Educativa: Bases de Datos y Rendimiento
+
+*Esta sección explica los conceptos detrás de las optimizaciones de la Fase 7 para referencia futura.*
+
+### OLTP vs OLAP: Los Dos Tipos de Aplicaciones
+
+| Característica | **OLTP** (Transaccional) | **OLAP** (Analítico) |
+|----------------|--------------------------|----------------------|
+| **Significa** | Online Transaction Processing | Online Analytical Processing |
+| **Propósito** | Operaciones del día a día | Análisis de datos históricos |
+| **Operaciones típicas** | Leer/escribir registros individuales | Sumar, promediar, agrupar millones de registros |
+| **Usuarios** | Empleados, clientes, sistemas | Analistas, gerentes, reportes |
+| **Velocidad requerida** | Milisegundos | Segundos a minutos |
+
+#### Ejemplos de Aplicaciones OLTP (como Repliyo)
+
+- **Inbox de Repliyo**: "Dame los mensajes de la conversación X"
+- **Un banco**: "Transfiere $100 de cuenta A a cuenta B"
+- **Amazon checkout**: "Procesa este pedido del cliente"
+- **WhatsApp**: "Envía este mensaje y márcalo como entregado"
+
+**Características:**
+- Muchas operaciones pequeñas y rápidas
+- Leer/escribir 1-100 registros a la vez
+- Miles de usuarios simultáneos
+- Cada operación debe ser instantánea
+
+#### Ejemplos de Aplicaciones OLAP
+
+- **Dashboard de ventas**: "¿Cuánto vendimos este año por región?"
+- **Netflix**: "¿Qué géneros ven más los usuarios de 25-35 años?"
+- **Tu AI Metrics dashboard**: "¿Cuántos tokens gastamos en los últimos 30 días?"
+
+**Características:**
+- Pocas operaciones pero muy pesadas
+- Leer/agregar millones de registros
+- Pocos usuarios (analistas)
+- Puede tardar segundos o minutos
+
+#### ¿Qué Tipo es Repliyo?
+
+| Operación en Repliyo | Tipo | Por qué |
+|---------------------|------|---------|
+| Cargar inbox | OLTP | Muestra ~50 conversaciones recientes |
+| Abrir conversación | OLTP | Carga ~20 mensajes de un hilo |
+| Enviar respuesta | OLTP | Guarda 1 mensaje |
+| Sincronizar Metricool | OLTP | Procesa mensajes uno por uno |
+| **Dashboard AI Metrics** | **OLAP** | Suma tokens de miles de registros |
+| **Dashboard Overview** | **OLAP** | Cuenta mensajes por período |
+
+**Repliyo es 90% OLTP** (transaccional) con algunos dashboards que son OLAP.
+
+---
+
+### Seq Scan vs Index Scan: Cómo Busca la Base de Datos
+
+#### Seq Scan (Sequential Scan) - El Problema
+
+Imagina una biblioteca con 10,000 libros tirados en el piso sin ningún orden. Cada vez que alguien te pide "busca los libros de la marca X", tienes que revisar **los 10,000 libros uno por uno** hasta encontrar los correctos.
+
+```
+📚📚📚📚📚📚📚📚📚📚📚📚📚📚📚📚📚📚 → Revisa TODO → 📗 Encontrado!
+(10,000 libros revisados)
+```
+
+#### Index Scan - La Solución
+
+Agregamos **índices** - como crear estantes organizados en la biblioteca:
+- Un estante para "libros por marca"
+- Un estante para "libros por fecha"
+- Un estante para "libros por conversación"
+
+```
+📇 Índice dice: "Está en posición 847"
+                                   ↓
+📚📚📚📚📚📚📚📚📚📚📚📚📚📚📚📚📚📚
+                                   📗 ¡Directo!
+(1 búsqueda en el índice)
+```
+
+#### Impacto en Escalabilidad
+
+| Mensajes | Sin índices (Seq Scan) | Con índices (Index Scan) |
+|----------|------------------------|--------------------------|
+| 10,000 | 5 ms | 0.4 ms |
+| 100,000 | ~50 ms | ~0.5 ms |
+| 1,000,000 | ~500 ms (lento) | ~1 ms |
+| 10,000,000 | ~5 segundos (inaceptable) | ~5 ms |
+
+---
+
+### ¿Dónde Se Refleja en Repliyo?
+
+#### 1. Cuando Cambias de Marca (ej: de Crishair a Fortress Wellness)
+
+```sql
+SELECT * FROM conversations WHERE brand_id = 'fortress-id' ORDER BY last_message_at
+```
+
+| Antes (Seq Scan) | Ahora (Index Scan) |
+|------------------|-------------------|
+| Revisa las 1,051 conversaciones | Usa el índice `conversations_brand_idx` |
+| 0.75 ms | **0.06 ms** |
+
+**Dónde lo notas:** Cuando haces clic en el selector de marca arriba a la izquierda, el inbox se recarga más rápido.
+
+#### 2. Cuando Abres una Conversación (haces clic en un thread)
+
+```sql
+SELECT * FROM messages WHERE conversation_id = 'conv-123' ORDER BY timestamp
+```
+
+| Antes (Seq Scan) | Ahora (Index Scan) |
+|------------------|-------------------|
+| Revisa los 10,221 mensajes | Usa el índice `messages_conversation_idx` |
+| 4.77 ms | **0.38 ms** |
+
+**Dónde lo notas:** Al hacer clic en cualquier conversación del inbox, los mensajes aparecen más rápido.
+
+#### 3. Cuando Filtras por Estado (ej: "Nuevos", "Abiertos", "Pendientes")
+
+```sql
+SELECT * FROM conversations WHERE brand_id = 'x' AND status = 'new'
+```
+
+| Antes | Ahora |
+|-------|-------|
+| Revisa todas las conversaciones | Usa el índice compuesto `conversations_brand_status_idx` |
+
+**Dónde lo notas:** Los chips de filtro en el inbox (New, Open, Pending, etc.) responden más rápido.
+
+#### 4. Cuando el Sync de Metricool Procesa Mensajes
+
+Cada vez que llega un mensaje nuevo, el sistema busca:
+```sql
+SELECT * FROM messages WHERE brand_id = 'x' ORDER BY timestamp DESC
+```
+
+| Antes | Ahora |
+|-------|-------|
+| Escanea todos los mensajes | Usa `messages_brand_timestamp_idx` |
+
+**Dónde lo notas:** La sincronización con Metricool es más eficiente.
+
+---
+
+### ¿Por Qué los Índices Afectan Según el Tipo de App?
+
+| Tipo de App | Mejor Tipo de Índice | Por qué |
+|-------------|---------------------|---------|
+| **OLTP** (Repliyo inbox) | **B-Tree** (los que pusimos) | Rápidos para buscar registros específicos |
+| **OLAP** (AI Metrics dashboard) | **Vistas Materializadas** (Fase 7.5) | Pre-calculan agregaciones pesadas |
+
+**Resumen:**
+> **OLTP** = "¿Cuál es el mensaje #12345?" → Necesita índices B-Tree ✅ (ya los tienes)
+> 
+> **OLAP** = "¿Cuántos mensajes hubo este mes?" → Necesita vistas materializadas 📊 (Fase 7.5)
+
+---
+
+### Los 8 Índices Creados en Fase 7.1
+
+| Tabla | Índice | Columnas | Uso Principal |
+|-------|--------|----------|---------------|
+| conversations | `conversations_brand_idx` | brand_id | Filtrar por marca |
+| conversations | `conversations_status_idx` | status | Filtrar por estado |
+| conversations | `conversations_last_message_at_idx` | last_message_at | Ordenar por fecha |
+| conversations | `conversations_brand_status_idx` | brand_id + status | Filtro combinado |
+| messages | `messages_brand_idx` | brand_id | Filtrar por marca |
+| messages | `messages_conversation_idx` | conversation_id | Cargar threads |
+| messages | `messages_timestamp_idx` | timestamp | Ordenar por fecha |
+| messages | `messages_brand_timestamp_idx` | brand_id + timestamp | Sync y ordenamiento |
+
+---
+
+### Próximos Pasos de Optimización
+
+| Fase | Descripción | Cuándo Hacerlo |
+|------|-------------|----------------|
+| **7.2** | Índices secundarios (social_posts, notifications) | Cuando esas tablas crezcan |
+| **7.3** | Optimización de queries complejas | Después de dividir storage.ts |
+| **7.5** | Vistas materializadas para dashboards | Cuando AI Metrics se vuelva lento |
+| **7.7** | Índices BRIN para tablas muy grandes | Cuando tengas >5M mensajes |
+
+---
+
+*Sección educativa creada: 20 Enero 2026*
+*Última actualización: 20 Enero 2026*
+
+---
+
+## Fix Critico: Problema de Carga Inicial del Inbox - 20 Enero 2026
+
+### Problema Reportado
+Cuando el usuario inicia sesion y la aplicacion carga la cuenta por defecto (ej: "Fortress Wellness Center"), el inbox se queda vacio con el mensaje "No conversations match your filters". El usuario tiene que:
+- Cambiar manualmente a otra cuenta y volver, O
+- Recargar la pagina completa
+
+### Diagnostico Completo
+
+#### 1. Race Condition en Inicializacion (CONFIRMADO)
+**Archivo:** `client/src/context/NexusContext.tsx`
+
+**Problema:**
+- El `activeClientId` se lee de localStorage inmediatamente al cargar (lineas 50-56)
+- La query de conversaciones se dispara con `enabled: !!activeClientId` (lineas 84-88)
+- PERO la query de clientes tiene `enabled: isAuthenticated && !isAuthLoading` (lineas 74-78)
+
+**Resultado:** Las queries de `conversations` y `messages` pueden dispararse ANTES de que:
+1. La autenticacion este confirmada
+2. La lista de clientes este cargada
+3. El `activeClientId` sea validado contra clientes existentes
+
+#### 2. Reconexiones Constantes de WebSocket (CONFIRMADO)
+**Archivo:** `client/src/hooks/useWebSocket.ts`
+
+**Problema:**
+- El callback `connect` depende de `brandId`, `userId`, callbacks (`onNewMessage`, etc.), y `toast`
+- Cada vez que alguna dependencia cambia, `connect` se recrea
+- El `useEffect` depende de `connect` y `disconnect`
+- Esto causa un ciclo de desconexion/reconexion cada vez que cambia el contexto
+
+#### 3. Validacion de activeClientId Tardia
+**Archivo:** `client/src/context/NexusContext.tsx`
+
+**Problema:**
+El `activeClientId` de localStorage puede contener un ID de cliente que:
+- Ya no existe
+- Fue archivado
+- Pertenece a otra cuenta
+
+La validacion ocurre en un `useEffect` que se ejecuta DESPUES de que las queries ya se dispararon.
+
+---
+
+### Plan de Implementacion
+
+## FASE 1: Preparacion y Logging (SIN CAMBIOS FUNCIONALES)
+**Objetivo:** Agregar logging para entender mejor el flujo sin modificar comportamiento
+
+### Subfase 1.1: Agregar logging de inicializacion
+**Archivo:** `client/src/context/NexusContext.tsx`
+- [ ] Agregar console.log cuando se lee activeClientId de localStorage
+- [ ] Agregar console.log cuando se disparan las queries de conversaciones/mensajes
+- [ ] Agregar console.log cuando se completa la carga de clientes
+
+### Subfase 1.2: Agregar logging de WebSocket
+**Archivo:** `client/src/hooks/useWebSocket.ts`
+- [ ] Agregar console.log cuando se recrea el callback connect
+- [ ] Agregar console.log con motivo de desconexion
+
+### Verificacion Fase 1:
+- [ ] Ejecutar aplicacion y verificar logs en consola
+- [ ] Reproducir el problema del inbox vacio
+- [ ] Capturar secuencia de eventos en logs
+- [ ] Confirmar que no hay errores nuevos
+
+---
+
+## FASE 2: Corregir Race Condition en NexusContext
+**Objetivo:** Asegurar que queries solo se disparen cuando todo este listo
+
+### Subfase 2.1: Gate de autenticacion en queries
+**Archivo:** `client/src/context/NexusContext.tsx`
+- [ ] Modificar query de `conversations` para incluir `isAuthenticated && !isAuthLoading`
+- [ ] Modificar query de `messages` para incluir `isAuthenticated && !isAuthLoading`
+- [ ] Agregar condicion de que `clients.length > 0` o `!isLoadingClients`
+
+### Subfase 2.2: Validar activeClientId antes de usar
+**Archivo:** `client/src/context/NexusContext.tsx`
+- [ ] Crear variable `validatedActiveClientId` que solo tenga valor cuando:
+  - isAuthenticated === true
+  - isAuthLoading === false
+  - isLoadingClients === false
+  - El ID existe en la lista de activeClients
+- [ ] Usar `validatedActiveClientId` en lugar de `activeClientId` para las queries
+
+### Verificacion Fase 2:
+- [ ] Iniciar sesion desde cero (sin localStorage)
+- [ ] Verificar que conversaciones cargan correctamente
+- [ ] Iniciar sesion con cuenta guardada en localStorage
+- [ ] Verificar que conversaciones cargan correctamente
+- [ ] Cambiar entre cuentas y verificar que funciona
+- [ ] Revisar consola por errores
+
+---
+
+## FASE 3: Estabilizar WebSocket
+**Objetivo:** Evitar reconexiones innecesarias
+
+### Subfase 3.1: Separar conexion de suscripcion
+**Archivo:** `client/src/hooks/useWebSocket.ts`
+- [ ] Mover logica de `subscribe` fuera del callback `connect`
+- [ ] Crear funcion `sendSubscribe` separada
+- [ ] El `connect` solo debe manejar conexion basica
+
+### Subfase 3.2: Memoizar callbacks correctamente
+**Archivo:** `client/src/hooks/useWebSocket.ts`
+- [ ] Usar refs para callbacks (`onNewMessage`, etc.) en lugar de dependencias
+- [ ] Reducir dependencias del useCallback `connect`
+- [ ] Manejar cambio de brandId en useEffect separado
+
+### Verificacion Fase 3:
+- [ ] Verificar que WebSocket se conecta UNA vez al cargar
+- [ ] Cambiar de cuenta y verificar que solo se envia mensaje de subscribe (no reconexion)
+- [ ] Revisar logs del servidor por conexiones/desconexiones
+- [ ] Verificar que notificaciones en tiempo real funcionan
+
+---
+
+## FASE 4: Testing Manual Completo
+**Objetivo:** Verificar que todos los flujos funcionan correctamente
+
+### Subfase 4.1: Flujo de login fresco
+- [ ] Cerrar sesion
+- [ ] Limpiar localStorage
+- [ ] Iniciar sesion
+- [ ] Verificar que inbox carga con la primera cuenta
+
+### Subfase 4.2: Flujo de login con cuenta guardada
+- [ ] Guardar cuenta especifica en localStorage
+- [ ] Refrescar pagina
+- [ ] Verificar que inbox carga con esa cuenta
+
+### Subfase 4.3: Flujo de cambio de cuenta
+- [ ] Cambiar a otra cuenta
+- [ ] Verificar que inbox se actualiza
+- [ ] Cambiar de vuelta a cuenta original
+- [ ] Verificar que inbox se actualiza
+
+### Subfase 4.4: Flujo de notificaciones en tiempo real
+- [ ] Abrir inbox
+- [ ] (Desde otra fuente) Enviar mensaje a la cuenta activa
+- [ ] Verificar que aparece notificacion
+- [ ] Verificar que conversacion se actualiza
+
+---
+
+### Archivos a Modificar
+
+| Archivo | Cambios | Riesgo |
+|---------|---------|--------|
+| `client/src/context/NexusContext.tsx` | Agregar gates de autenticacion a queries | Medio - afecta carga de datos global |
+| `client/src/hooks/useWebSocket.ts` | Refactorizar manejo de dependencias | Bajo - cambio aislado |
+| `client/src/components/Inbox.tsx` | Posiblemente actualizar uso de WebSocket | Bajo |
+
+### Rollback Plan
+Si algo falla en cualquier fase:
+1. Usar el sistema de checkpoints de Replit para volver a estado anterior
+2. O revertir cambios manualmente en archivos especificos
+
+### Registro de Progreso
+
+| Fecha | Fase | Subtarea | Estado | Notas |
+|-------|------|----------|--------|-------|
+| 20 Ene 2026 | 0 | Diagnostico inicial | COMPLETADO | Race condition y WebSocket confirmados |
+| 20 Ene 2026 | 0 | Plan documentado | COMPLETADO | Este documento |
+| 20 Ene 2026 | 1.1 | Logging NexusContext | COMPLETADO | Logging de diagnostico agregado |
+| 20 Ene 2026 | 1.2 | Logging WebSocket | COMPLETADO | Logging de diagnostico agregado |
+| 20 Ene 2026 | 2.1 | Gate queries | COMPLETADO | Queries ahora esperan autenticacion completa |
+| 20 Ene 2026 | 2.2 | Validar activeClientId | COMPLETADO | validatedActiveClientId creado y en uso |
+| 20 Ene 2026 | 3.1 | Separar conexion/suscripcion | COMPLETADO | sendSubscribe() separado de connect() |
+| 20 Ene 2026 | 3.2 | Memoizar callbacks | COMPLETADO | Refs para todos los callbacks evitan reconexiones |
+| 20 Ene 2026 | - | Revision Arquitecto | COMPLETADO | Aprobado sin cambios requeridos |
+| - | 4.x | Testing manual | PENDIENTE | Requiere prueba del usuario |
+
+---
+
+*Seccion creada: 20 Enero 2026*
+*Estado: Implementacion completada - Esperando verificacion del usuario*
+
+---
+
+## Mejoras al Inbox Reply Bar - 20 Enero 2026
+
+### Cambios Implementados
+
+#### 1. Barra de Respuesta Siempre Visible para DMs
+**Archivos modificados:** `client/src/components/Inbox.tsx`
+
+**Problema:** Los usuarios tenían que hacer clic en "Reply" para poder escribir una respuesta en conversaciones de DM.
+
+**Solución:** La barra de respuesta ahora se muestra automáticamente cuando se selecciona una conversación de tipo DM, sin necesidad de hacer clic en ningún botón.
+
+**Lógica de fallback para el mensaje objetivo:**
+1. Si hay un `replyToMessage` seleccionado → usar ese
+2. Si no, buscar el último mensaje inbound (del cliente)
+3. Si no hay inbound, usar el último mensaje (cualquier dirección)
+4. Si no hay mensajes, mostrar toast de error
+
+```typescript
+// Inbox.tsx - handleSendReply
+let targetMessageId: string | null = replyToMessage?.id || null;
+
+if (!targetMessageId && activeConversation.type === 'dm') {
+  if (activeConversationMessages?.length) {
+    const lastInbound = activeConversationMessages.filter(m => m.direction === 'inbound').slice(-1)[0];
+    const lastMessage = activeConversationMessages.slice(-1)[0];
+    targetMessageId = lastInbound?.id || lastMessage?.id || null;
+  }
+}
+```
+
+#### 2. Botón "Resumir" para Generar Resumen de Conversación
+**Archivos modificados:** `client/src/components/Inbox.tsx`, `client/src/lib/api.ts`
+
+**Funcionalidad:** Nuevo botón junto a "Generar con IA" que permite generar un resumen ejecutivo de la conversación actual usando IA.
+
+**Ubicación:** Solo visible en conversaciones de tipo DM.
+
+**Flujo:**
+1. Usuario hace clic en "Resumir"
+2. Se abre un modal con indicador de carga
+3. Se llama a `POST /api/conversations/:id/generate-summary`
+4. El endpoint devuelve un objeto `{ success, summary: { summary, sentiment, intent, resolution }, message }`
+5. El frontend extrae `summary.summary` (el texto del resumen) y lo muestra en el modal
+6. Si hay error, se cierra el modal y se muestra un toast
+
+**Endpoint utilizado:**
+```typescript
+// POST /api/conversations/:id/generate-summary
+// Respuesta:
+{
+  success: boolean;
+  summary: {
+    summary: string;      // Texto del resumen (2-3 oraciones)
+    sentiment: string;    // positive | neutral | negative
+    intent: string;       // Qué pidió el cliente
+    resolution: string;   // Cómo se resolvió
+  } | null;
+  message: string;
+}
+```
+
+**Componentes de estado agregados:**
+```typescript
+const [isSummarizing, setIsSummarizing] = useState(false);
+const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
+const [conversationSummary, setConversationSummary] = useState<string | null>(null);
+```
+
+**Bug corregido:** El endpoint devuelve `summary` como un objeto, no un string. El frontend ahora extrae correctamente `result.summary.summary` para obtener el texto.
+
+#### 3. Ocultar Botón "Reply" Individual en DMs
+**Archivos modificados:** `client/src/components/CommentThread.tsx`, `client/src/components/Inbox.tsx`
+
+**Problema:** El botón "Reply" en mensajes individuales dentro de DMs no funcionaba porque la API de Metricool no soporta responder a un mensaje específico dentro de un hilo de DM.
+
+**Solución:** Se agregó prop `isDM` que se propaga a través de los componentes:
+- `CommentThread` → `ThreadNode` → `SingleMessage`
+
+El botón "Reply" ahora solo se muestra cuando `!isDM`.
+
+```typescript
+// CommentThreadProps
+isDM?: boolean; // Hide individual reply buttons for DMs
+
+// SingleMessage render
+{!isDM && (
+  <button onClick={() => onStartReply(msg)}>Reply</button>
+)}
+```
+
+**En comentarios:** El botón "Reply" sigue visible porque ahí sí tiene sentido responder a comentarios específicos.
+
+#### 4. Corrección de Z-Index del Avatar
+**Archivos modificados:** `client/src/components/CommentThread.tsx`
+
+**Problema:** El avatar fallback en hilos de comentarios tenía `z-10`, lo que causaba que se superpusiera sobre la caja de texto de respuesta.
+
+**Solución:** Se removió la clase `z-10` del avatar. La barra de respuesta tiene `z-20`, por lo que siempre queda por encima.
+
+### Archivos Modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `client/src/components/Inbox.tsx` | Barra siempre visible para DMs, botón "Resumir", lógica de fallback |
+| `client/src/components/CommentThread.tsx` | Prop `isDM`, ocultar botón Reply en DMs, z-index del avatar |
+| `client/src/lib/api.ts` | Tipo correcto para `generateSummary` response |
+
+### Limitaciones Conocidas
+
+1. **Responder a mensaje específico en DMs:** No soportado por la API de Metricool. `replyToConversation` solo acepta `conversationId`, `recipient` y `text` - no hay parámetro para `messageId` específico.
+
+2. **DMs sin mensajes:** Si una conversación de DM no tiene mensajes, no se puede enviar respuesta ni generar respuesta con IA (se muestra toast de error).
+
+3. **Resumen modifica datos:** El botón "Resumir" llama al endpoint que persiste el resumen en la base de datos (no es solo preview).
+
+---
+
+*Sección creada: 20 Enero 2026*
+*Estado: Completado*
+
+---
+
+## Crisis Management & Sentiment Analysis System (18-Feb-2026)
+
+### Descripción General
+Sistema automático de análisis de sentimiento y gestión de crisis que clasifica todos los mensajes inbound (DMs y comentarios) usando LLM, generando alertas para mensajes críticos (P1/P2) y proporcionando un dashboard dedicado para triage en tiempo real.
+
+### Arquitectura
+
+#### Backend
+| Archivo | Responsabilidad |
+|---------|----------------|
+| `server/services/SentimentAnalysisService.ts` | Clasificación LLM de sentimiento/severidad/categoría |
+| `server/repositories/SentimentAlertRepository.ts` | CRUD para tabla `sentiment_alerts` |
+| `server/routes/sentimentAlerts.routes.ts` | API REST para gestión de alertas |
+| `shared/schema.ts` | Tabla `sentiment_alerts` + tipos + enums |
+
+#### Frontend
+| Archivo | Responsabilidad |
+|---------|----------------|
+| `client/src/pages/CrisisAlerts.tsx` | Dashboard de Crisis Alerts con filtros y acciones |
+| `client/src/lib/api.ts` | Métodos cliente para API de alertas |
+
+### Modelo de Datos
+
+```sql
+sentiment_alerts (
+  id UUID PK DEFAULT gen_random_uuid(),
+  brand_id UUID NOT NULL,
+  message_id INTEGER NOT NULL,
+  conversation_id INTEGER,
+  platform TEXT,
+  customer_name TEXT,
+  message_text TEXT NOT NULL,
+  sentiment TEXT NOT NULL,
+  severity TEXT NOT NULL,
+  category TEXT NOT NULL,
+  confidence REAL,
+  ai_summary TEXT,
+  suggested_action TEXT,
+  status TEXT DEFAULT 'new',
+  acknowledged_by UUID,
+  acknowledged_at TIMESTAMP,
+  resolved_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW()
+)
+```
+
+### Clasificación de Severidad
+- **P1 (Crítico):** Amenazas legales, seguridad, IRS/regulatorio, daño masivo a reputación
+- **P2 (Alto):** Fallo de servicio severo, riesgo de churn alto, desinformación viral
+- **P3 (Medio):** Quejas generales, insatisfacción moderada
+- **P4 (Bajo):** Feedback negativo menor, sugerencias
+
+### Categorías de Crisis
+`legal_threat`, `safety_concern`, `service_failure`, `reputation_damage`, `customer_churn`, `misinformation`, `regulatory_risk`, `general_complaint`, `other`
+
+### Integración con syncService
+- Patrón "fire-and-forget" async para no bloquear el sync de mensajes
+- Pre-clasificación: análisis ANTES del auto-reply para prevenir respuestas inapropiadas del bot
+- Actualiza campos `messages.sentiment` y `messages.urgency` en cada mensaje
+- Crea alertas en `sentiment_alerts` solo para P1/P2
+
+### WebSocket
+- Evento `crisis_alert` emitido en tiempo real para alertas P1/P2
+
+### API Endpoints
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/brands/:brandId/sentiment-alerts` | Listar alertas con filtros (severity, status, limit, offset) |
+| GET | `/api/brands/:brandId/sentiment-alerts/stats` | Estadísticas por severidad y status |
+| GET | `/api/brands/:brandId/sentiment-alerts/count` | Conteo de alertas activas P1/P2 |
+| GET | `/api/brands/:brandId/sentiment-alerts/by-conversation` | Mapa de conversaciones con alertas activas P1/P2 (para Fire Mode) |
+| GET | `/api/brands/:brandId/sentiment-alerts/:id` | Obtener alerta individual |
+| PATCH | `/api/brands/:brandId/sentiment-alerts/:id/status` | Actualizar status (acknowledge/in_progress/resolve/dismiss) |
+
+### Frontend - Crisis Alerts Dashboard (`/app/crisis-alerts`)
+- **Estadísticas:** Cards con conteo por severidad (P1-P4) y status (nuevas/resueltas)
+- **Filtros:** Toggle por severidad y status
+- **Lista de alertas:** Cards con severidad, categoría, status, preview del mensaje, acciones
+- **Acciones:** Acknowledge, In Progress, Resolve, Dismiss, Ver conversación
+
+### Fire Mode - Integración con Inbox (18-Feb-2026)
+El toggle "Fire Mode" (icono de llama) en el Inbox filtra conversaciones para mostrar solo aquellas con alertas de crisis activas (P1/P2).
+
+- **Query:** `useQuery` con `refetchInterval: 60000` al endpoint `by-conversation`
+- **Filtro:** Cuando Fire Mode está activo, `filteredConversations` solo muestra conversaciones con alertas P1/P2
+- **Ordenamiento:** En Fire Mode, P1 se muestra antes que P2
+- **Badge visual:** `ConversationCard` muestra badge de severidad (P1 rojo, P2 naranja) con icono `AlertTriangle`
+- **Contador:** El toggle muestra el número de conversaciones con alertas activas
+- **Seguridad:** Endpoint protegido por `requireAuth` + `validateBrandAccess`
+
+### Fire Mode - Bypass de filtros (18-Feb-2026)
+Cuando Fire Mode está activo, **bypasea todos los demás filtros** (no leídos, plataforma, tipo, búsqueda) para mostrar TODAS las conversaciones con alertas de crisis activas. Esto garantiza que ninguna conversación crítica se oculte por filtros activos.
+
+### Indicadores de Severidad en Mensajes Individuales (18-Feb-2026)
+Los mensajes inbound con urgencia P1 o P2 muestran un badge visual junto al timestamp:
+- **P1:** Badge rojo con icono `ShieldAlert` y texto "P1"
+- **P2:** Badge naranja con icono `ShieldAlert` y texto "P2"
+- Ubicación: junto a los badges de reminders en la línea de metadatos del mensaje
+- Solo visible en mensajes `inbound` con campo `urgency` = P1 o P2
+
+### Filtro "Con alerta" en Comment Threads (18-Feb-2026)
+Nuevo chip de filtro en la barra de filtros del hilo de comentarios:
+- **Nombre:** "Con alerta" (icono `ShieldAlert`, color rojo)
+- **Funcionalidad:** Filtra mensajes del hilo para mostrar solo los que tienen alertas P1/P2
+- **Estadísticas:** Muestra contador de mensajes con alertas en el hilo actual
+- **Ubicación:** Junto a los filtros existentes (Sin respuesta, Con borrador, Con recordatorio)
+- **Estado:** `threadFilterWithCrisis` en el componente Inbox
+- **Reset:** Se resetea al cambiar de conversación
+
+*Sección creada: 18 Febrero 2026*
+*Estado: Completado*
+
+---
+
+## Private Replies vía Facebook Messenger Platform (25-Mar-2026)
+
+### Descripción
+Funcionalidad que permite enviar mensajes privados (DM) a usuarios que comentan en publicaciones de Facebook (posts, Reels, videos) directamente desde el inbox de Repliyo, usando la API de Meta.
+
+### Flujo completo de Private Reply
+
+1. El agente selecciona un comentario de Facebook en el inbox
+2. Hace clic en el botón "Respuesta privada" y escribe el mensaje
+3. El sistema extrae el comment ID real del comentario (ver formato de IDs más abajo)
+4. Se llama a `POST /{page-id}/messages` con el comment ID como destinatario
+5. El usuario recibe un DM en su Messenger desde la página de Facebook
+
+### Formato de IDs — Problema y solución
+
+**Problema:** Metricool almacena los IDs de comentarios en formato compuesto:
+```
+{postId}_{commentId}   →   ejemplo: 122200652672575116_884686284607817
+```
+
+**Lo que Facebook necesita:** Solo el ID del comentario (la parte después del `_`):
+```
+884686284607817
+```
+
+**Solución implementada** (en `server/routes.ts`):
+```typescript
+// Prioridad 1: extraer comment_id del permalink guardado en rawData
+const permalinkMatch = (rawData?.root?.properties?.permalink || rawData?.properties?.permalink || '')
+  .match(/comment_id=(\d+)/);
+
+// Prioridad 2 (fallback): tomar la parte después del último "_"
+const commentId = permalinkMatch
+  ? permalinkMatch[1]
+  : (rawCommentId.includes('_') ? rawCommentId.split('_').pop() : rawCommentId);
+```
+
+### Endpoint de la API — Por qué cambiamos
+
+| | Endpoint | Estado |
+|---|---|---|
+| Antiguo | `POST /{comment-id}/private_replies` | Obsoleto — no funciona para Reels/vídeos |
+| Actual | `POST /{page-id}/messages` | Moderno — funciona para todo tipo de publicación |
+
+**Endpoint actual** (`server/services/metaService.ts`):
+```typescript
+POST https://graph.facebook.com/v19.0/{pageId}/messages
+Authorization: Bearer {pageAccessToken}
+Content-Type: application/json
+
+{
+  "recipient": { "comment_id": "884686284607817" },
+  "message": { "text": "Tu mensaje aquí" },
+  "messaging_type": "RESPONSE"
+}
+```
+
+**Respuesta exitosa de Facebook:**
+```json
+{ "recipient_id": "USER_PSID", "message_id": "mid.xxxx" }
+```
+
+### Flujo de tokens
+
+```
+Token de usuario corto (2h)
+  → Intercambio con APP_ID + APP_SECRET
+  → Token de usuario largo (60 días)
+  → GET /me/accounts
+  → Page Access Token (PERMANENTE, expires_at = 0)
+  → Almacenado en tabla meta_page_connections
+```
+
+Solo el Page Access Token se usa para llamadas a la API. Se obtiene automáticamente al conectar la página.
+
+### Permisos necesarios (Meta App)
+
+| Permiso | Descripción |
+|---|---|
+| `pages_messaging` | Enviar mensajes desde la página |
+| `pages_read_engagement` | Leer comentarios |
+| `pages_manage_metadata` | Gestionar configuración de página |
+
+### Restricciones de Facebook
+
+- **Ventana de 7 días:** Solo se puede enviar Private Reply dentro de los 7 días posteriores al comentario original
+- **Una sola respuesta:** Facebook solo permite un Private Reply por comentario
+- **No puedes responderte a ti mismo:** No se puede enviar un Private Reply al administrador de la página
+
+### Marca configurada para pruebas
+
+| Campo | Valor |
+|---|---|
+| Marca | Jordan Inpulza |
+| Page ID | `468497419676631` |
+| Brand ID | `9328112e-feed-40c8-b6a3-a69ec99303a8` |
+| Token ENV | `META_JORDAN_INPULZA_USER_TOKEN` |
+
+### Archivos involucrados
+
+| Archivo | Responsabilidad |
+|---|---|
+| `server/services/metaService.ts` | Función `sendPrivateReply()` — llama a la API de Meta |
+| `server/routes.ts` | Ruta `POST /api/messages/:id/private-reply` — extrae comment ID y coordina el envío |
+| `client/src/components/AIAgentConfig.tsx` | UI para conectar/gestionar páginas de Facebook |
+| `client/src/components/Inbox.tsx` | Botón de respuesta privada y toast de resultado |
+| `shared/schema.ts` | Tabla `meta_page_connections` (pageId, pageAccessToken, isActive, etc.) |
+
+### Errores conocidos y sus significados
+
+| Código | Significado | Acción |
+|---|---|---|
+| 190 | Token expirado o sesión inválida | Reconectar la página con token actualizado |
+| 200 / 10 | Permiso denegado — falta `pages_messaging` | Agregar permiso en Meta Developers |
+| 100 / 33 | Comentario no encontrado | Verificar que el comment ID sea correcto y pertenezca a Facebook (no Instagram) |
+| 100 + "outside of" | Ventana de 7 días expirada o ya se envió una respuesta privada | No se puede reenviar |
+
+*Sección creada: 25 Marzo 2026*

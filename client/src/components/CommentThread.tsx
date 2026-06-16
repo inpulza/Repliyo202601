@@ -16,7 +16,9 @@ import {
   Check, 
   Loader2,
   Video,
-  Bell
+  Bell,
+  ShieldAlert,
+  Mail
 } from 'lucide-react';
 import { Platform, MessageType, Sentiment } from '@/lib/types';
 import { isRepliyoMessage, isAutoReply, isReminderMessage } from '@/lib/mockData';
@@ -86,6 +88,7 @@ interface CommentThreadProps {
     badge: string;
     commentBadge: string;
   };
+  isDM?: boolean; // Hide individual reply buttons for DMs since API doesn't support replying to specific messages
   onStartReply: (message: Message) => void;
   onGenerateDraft: (messageId: string) => void;
   generatingDraftIds: Set<string>;
@@ -105,10 +108,14 @@ interface CommentThreadProps {
   SentimentIndicator: React.ComponentType<{ sentiment: Sentiment }>;
   selectionEnabled?: boolean;
   selectedMessageIds?: Set<string>;
+  selectableMessageIds?: Set<string>;
   onToggleSelection?: (messageId: string) => void;
   bulkQueueStatusById?: Map<string, DraftStatus>;
   unreadMessageIds?: Set<string>;
   onUnreadSeen?: (messageId: string) => void;
+  onPrivateReply?: (message: Message) => void;
+  privateReplyEnabled?: boolean;
+  privateReplySentIds?: Set<string>;
 }
 
 const MAX_DEPTH = 4;
@@ -160,6 +167,7 @@ interface SingleMessageProps {
   onUnreadSeen?: (messageId: string) => void;
   rootTimestamp?: Date;
   platformStyles: CommentThreadProps['platformStyles'];
+  isDM?: boolean;
   onStartReply: CommentThreadProps['onStartReply'];
   onGenerateDraft: CommentThreadProps['onGenerateDraft'];
   generatingDraftIds: Set<string>;
@@ -178,6 +186,7 @@ interface SingleMessageProps {
   SentimentIndicator: CommentThreadProps['SentimentIndicator'];
   selectionEnabled?: boolean;
   isSelected?: boolean;
+  selectableMessageIds?: Set<string>;
   onToggleSelection?: (messageId: string) => void;
   bulkStatus?: DraftStatus;
   hasChildren?: boolean;
@@ -187,6 +196,9 @@ interface SingleMessageProps {
   canNest?: boolean;
   threadReminderCount?: number;
   authorReminderCount?: number;
+  onPrivateReply?: (message: Message) => void;
+  privateReplyEnabled?: boolean;
+  hasPrivateReplySent?: boolean;
 }
 
 function SingleMessage({
@@ -198,6 +210,7 @@ function SingleMessage({
   onUnreadSeen,
   rootTimestamp,
   platformStyles,
+  isDM = false,
   onStartReply,
   onGenerateDraft,
   generatingDraftIds,
@@ -216,6 +229,7 @@ function SingleMessage({
   SentimentIndicator,
   selectionEnabled = false,
   isSelected = false,
+  selectableMessageIds,
   onToggleSelection,
   bulkStatus,
   hasChildren = false,
@@ -225,6 +239,9 @@ function SingleMessage({
   canNest = true,
   threadReminderCount = 0,
   authorReminderCount = 0,
+  onPrivateReply,
+  privateReplyEnabled = false,
+  hasPrivateReplySent = false,
 }: SingleMessageProps) {
   const isOutbound = msg.direction === 'outbound';
   const isOwner = isOutbound;
@@ -234,8 +251,8 @@ function SingleMessage({
 
   const avatarSize = isReply ? AVATAR_SIZE_REPLY : AVATAR_SIZE_ROOT;
 
-  // Can this message be selected for bulk draft generation?
-  const isSelectable = selectionEnabled && msg.direction === 'inbound' && !msg.aiSuggestedReply && msg.aiReplyStatus !== 'drafted';
+  // Can this message be selected for bulk draft generation or bulk send?
+  const isSelectable = selectionEnabled && msg.direction === 'inbound' && (!selectableMessageIds || selectableMessageIds.has(msg.id));
 
   // Auto-scroll to this message when highlighted (from notification deep-link)
   const messageRef = React.useRef<HTMLDivElement>(null);
@@ -327,13 +344,23 @@ function SingleMessage({
             ) : bulkStatus === 'error' ? (
               <AlertCircle className="h-4 w-4 text-red-500" />
             ) : (
-              <input
-                type="checkbox"
-                checked={isSelected}
-                onChange={() => onToggleSelection?.(msg.id)}
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                data-testid={`checkbox-select-${msg.id}`}
-              />
+              <div className="flex flex-col items-center gap-0.5">
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={() => onToggleSelection?.(msg.id)}
+                  className={cn(
+                    "h-4 w-4 rounded cursor-pointer focus:ring-indigo-500",
+                    msg.aiSuggestedReply && msg.aiReplyStatus === 'drafted'
+                      ? "border-green-400 text-green-600 focus:ring-green-500"
+                      : "border-gray-300 text-indigo-600"
+                  )}
+                  data-testid={`checkbox-select-${msg.id}`}
+                />
+                {msg.aiSuggestedReply && msg.aiReplyStatus === 'drafted' && (
+                  <div className="h-1.5 w-1.5 rounded-full bg-green-500" title="Borrador listo para enviar" />
+                )}
+              </div>
             )
           ) : (
             <div className="h-4 w-4" />
@@ -344,7 +371,7 @@ function SingleMessage({
       {/* Message Content - Always uses flex layout, width unchanged */}
       <div className="flex gap-3 flex-1">
       <Avatar className={cn(
-        "mt-1 flex-shrink-0 relative z-10 ring-[3px] ring-white",
+        "mt-1 flex-shrink-0 relative ring-[3px] ring-white z-[1]",
         isReply ? "h-6 w-6" : "h-8 w-8"
       )}>
         <AvatarImage 
@@ -409,6 +436,19 @@ function SingleMessage({
               <span className="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full text-[9px] font-medium min-w-[18px] text-center">{threadReminderCount}</span>
             </span>
           )}
+          {msg.direction === 'inbound' && msg.urgency && (msg.urgency === 'P1' || msg.urgency === 'P2') && (
+            <span 
+              className={cn(
+                "flex items-center gap-1 text-[10px] font-bold ml-2 px-1.5 py-0.5 rounded-full",
+                msg.urgency === 'P1' ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"
+              )}
+              title={`Alerta ${msg.urgency}: ${msg.sentiment || 'crisis'}`}
+              data-testid={`badge-crisis-${msg.id}`}
+            >
+              <ShieldAlert className="h-3 w-3" />
+              {msg.urgency}
+            </span>
+          )}
         </div>
         
         <div className={cn(
@@ -417,9 +457,10 @@ function SingleMessage({
             if (msg.direction === 'inbound') {
               return "bg-white text-gray-900 px-4 py-2 rounded-2xl rounded-tl-md w-fit max-w-[85%] md:max-w-[70%]";
             }
-            // Todos los outbound (respuestas de la marca) tienen fondo azul
-            // Ya sea enviados desde Repliyo o desde la red social directamente
-            return "bg-[#0291FA] text-white px-4 py-2 rounded-2xl rounded-tr-md w-fit max-w-[85%] md:max-w-[70%]";
+            // IMPORTANTE: Todos los mensajes outbound (de la marca) deben tener fondo azul
+            // Esto incluye: respuestas de IA, enviadas desde Repliyo, Y enviadas desde la red social directamente
+            // El piquito (rounded-tl-md) apunta hacia la izquierda donde está el avatar
+            return "bg-[#0291FA] text-white px-4 py-2 rounded-2xl rounded-tl-md w-fit max-w-[85%] md:max-w-[70%]";
           })()
         )}>
           {(msg as any).mediaType === 'audio' && (msg as any).mediaUrl && (
@@ -432,7 +473,7 @@ function SingleMessage({
             </div>
           )}
           
-          {(msg as any).mediaType === 'image' && (msg as any).mediaUrl && (
+          {(msg as any).mediaType === 'image' && (msg as any).mediaUrl && msg.content !== '[Sticker]' && (
             <div className="mb-2">
               <img 
                 src={(msg as any).mediaUrl} 
@@ -461,7 +502,25 @@ function SingleMessage({
             </div>
           )}
           
-          {msg.content && !['[Mensaje de audio]', '[Imagen]', '[Video]', '[Archivo adjunto]'].includes(msg.content) && (
+          {msg.content === '[Sticker]' && (msg as any).mediaUrl ? (
+            <div className="my-1">
+              <img 
+                src={(msg as any).mediaUrl} 
+                alt="Sticker"
+                className="max-w-[120px] max-h-[120px] rounded-lg"
+                loading="lazy"
+                data-testid={`sticker-${msg.id}`}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const fallback = document.createElement('span');
+                  fallback.textContent = '🎭 Sticker';
+                  fallback.className = 'text-sm italic opacity-70';
+                  target.parentElement?.appendChild(fallback);
+                }}
+              />
+            </div>
+          ) : msg.content && !['[Mensaje de audio]', '[Imagen]', '[Video]', '[Archivo adjunto]'].includes(msg.content) && (
             <span>{msg.content}</span>
           )}
           
@@ -480,6 +539,13 @@ function SingleMessage({
               <span className="text-[9px] text-white/60">
                 {(msg.content || '').length}/{getCharacterLimit((msg.platform || 'instagram') as Platform, (msg.type || 'comment') as MessageType)}
               </span>
+            </div>
+          )}
+
+          {msg.internalOrigin === 'meta_private_reply' && (
+            <div className="mt-2 pt-2 border-t border-blue-400/40 flex items-center gap-1.5 text-[10px] font-medium text-blue-200">
+              <Mail className="h-3 w-3" />
+              <span>📨 Resp. privada enviada</span>
             </div>
           )}
         </div>
@@ -511,27 +577,50 @@ function SingleMessage({
               </button>
             )}
             
-            {/* Reply button */}
-            <button
-              onClick={() => onStartReply(msg)}
-              data-testid={`button-reply-${msg.id}`}
-              title="Reply to this message"
-              className="flex items-center gap-1 text-gray-400 hover:text-indigo-600 transition-colors"
-            >
-              <svg 
-                className="h-4 w-4" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
+            {/* Reply button - hidden for DMs since API doesn't support replying to specific messages */}
+            {!isDM && (
+              <button
+                onClick={() => onStartReply(msg)}
+                data-testid={`button-reply-${msg.id}`}
+                title="Reply to this message"
+                className="flex items-center gap-1 text-gray-400 hover:text-indigo-600 transition-colors"
               >
-                <path d="M3 10h10a5 5 0 0 1 5 5v6" />
-                <path d="M7 6l-4 4 4 4" />
-              </svg>
-              <span className="text-[10px] font-medium">Reply</span>
-            </button>
+                <svg 
+                  className="h-4 w-4" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                >
+                  <path d="M3 10h10a5 5 0 0 1 5 5v6" />
+                  <path d="M7 6l-4 4 4 4" />
+                </svg>
+                <span className="text-[10px] font-medium">Reply</span>
+              </button>
+            )}
+
+            {/* Private Reply button - for inbound Facebook and Instagram comments when private reply is enabled */}
+            {!isDM && privateReplyEnabled && !isOwner && (msg.platform?.toLowerCase() === 'facebook' || msg.platform?.toLowerCase() === 'instagram') && !msg.parentMessageId && (
+              <button
+                onClick={() => onPrivateReply?.(msg)}
+                disabled={hasPrivateReplySent}
+                data-testid={`button-private-reply-${msg.id}`}
+                title={hasPrivateReplySent ? "Respuesta privada ya enviada" : "Enviar respuesta privada por DM"}
+                className={cn(
+                  "flex items-center gap-1 transition-colors",
+                  hasPrivateReplySent
+                    ? "text-gray-300 cursor-not-allowed"
+                    : "text-gray-400 hover:text-blue-600"
+                )}
+              >
+                <Mail className="h-3.5 w-3.5" />
+                <span className="text-[10px] font-medium">
+                  {hasPrivateReplySent ? "PR enviada" : "Resp. Privada"}
+                </span>
+              </button>
+            )}
             
             {/* Generate Draft button */}
             {!msg.aiSuggestedReply && msg.aiReplyStatus !== 'drafted' && !generatingDraftIds.has(msg.id) && (
@@ -840,6 +929,7 @@ interface ThreadNodeProps {
   parentMessageHeight?: number; // Height of parent's message bubble for connector calculation
   rootTimestamp: Date;
   platformStyles: CommentThreadProps['platformStyles'];
+  isDM?: boolean;
   onStartReply: CommentThreadProps['onStartReply'];
   onGenerateDraft: CommentThreadProps['onGenerateDraft'];
   generatingDraftIds: Set<string>;
@@ -859,16 +949,18 @@ interface ThreadNodeProps {
   highlightedMessageId?: string | null;
   selectionEnabled?: boolean;
   selectedMessageIds?: Set<string>;
+  selectableMessageIds?: Set<string>;
   onToggleSelection?: (messageId: string) => void;
   bulkQueueStatusById?: Map<string, DraftStatus>;
   unreadMessageIds?: Set<string>;
   onUnreadSeen?: (messageId: string) => void;
-  // Collapsible threaded comments props
   expandedIds: Set<string>;
   onToggleExpand: (messageId: string) => void;
-  // Reminder stats
   threadReminderCounts: Map<string, number>;
   authorReminderCounts: Map<string, number>;
+  onPrivateReply?: (message: Message) => void;
+  privateReplyEnabled?: boolean;
+  privateReplySentIds?: Set<string>;
 }
 
 function ThreadNode({
@@ -878,6 +970,7 @@ function ThreadNode({
   parentMessageHeight = 0,
   rootTimestamp,
   platformStyles,
+  isDM = false,
   onStartReply,
   onGenerateDraft,
   generatingDraftIds,
@@ -897,6 +990,7 @@ function ThreadNode({
   highlightedMessageId,
   selectionEnabled,
   selectedMessageIds,
+  selectableMessageIds,
   onToggleSelection,
   bulkQueueStatusById,
   unreadMessageIds,
@@ -905,10 +999,14 @@ function ThreadNode({
   onToggleExpand,
   threadReminderCounts,
   authorReminderCounts,
+  onPrivateReply,
+  privateReplyEnabled,
+  privateReplySentIds,
 }: ThreadNodeProps) {
   const isReply = depth > 0;
   const hasChildren = node.children.length > 0;
   const canNest = depth < MAX_DEPTH;
+  const hasPrivateReplySent = privateReplySentIds?.has(node.message.id) || node.children.some(c => c.message.internalOrigin === 'meta_private_reply');
   
   // Collapsible state: check if this node is expanded (default is collapsed)
   const isExpanded = expandedIds.has(node.message.id);
@@ -1000,6 +1098,7 @@ function ThreadNode({
           onUnreadSeen={onUnreadSeen}
           rootTimestamp={rootTimestamp}
           platformStyles={platformStyles}
+          isDM={isDM}
           onStartReply={onStartReply}
           onGenerateDraft={onGenerateDraft}
           generatingDraftIds={generatingDraftIds}
@@ -1018,6 +1117,7 @@ function ThreadNode({
           SentimentIndicator={SentimentIndicator}
           selectionEnabled={selectionEnabled}
           isSelected={selectedMessageIds?.has(node.message.id)}
+          selectableMessageIds={selectableMessageIds}
           onToggleSelection={onToggleSelection}
           bulkStatus={bulkQueueStatusById?.get(node.message.id)}
           hasChildren={hasChildren}
@@ -1027,6 +1127,9 @@ function ThreadNode({
           canNest={canNest}
           threadReminderCount={depth === 0 ? threadReminderCounts.get(node.message.id) || 0 : 0}
           authorReminderCount={node.message.author ? authorReminderCounts.get(node.message.author.toLowerCase()) || 0 : 0}
+          onPrivateReply={onPrivateReply}
+          privateReplyEnabled={privateReplyEnabled}
+          hasPrivateReplySent={hasPrivateReplySent}
         />
       </div>
 
@@ -1047,6 +1150,7 @@ function ThreadNode({
                   parentMessageHeight={myMessageHeight}
                   rootTimestamp={rootTimestamp}
                   platformStyles={platformStyles}
+                  isDM={isDM}
                   onStartReply={onStartReply}
                   onGenerateDraft={onGenerateDraft}
                   generatingDraftIds={generatingDraftIds}
@@ -1066,6 +1170,7 @@ function ThreadNode({
                   SentimentIndicator={SentimentIndicator}
                   selectionEnabled={selectionEnabled}
                   selectedMessageIds={selectedMessageIds}
+                  selectableMessageIds={selectableMessageIds}
                   onToggleSelection={onToggleSelection}
                   bulkQueueStatusById={bulkQueueStatusById}
                   unreadMessageIds={unreadMessageIds}
@@ -1074,6 +1179,9 @@ function ThreadNode({
                   onToggleExpand={onToggleExpand}
                   threadReminderCounts={threadReminderCounts}
                   authorReminderCounts={authorReminderCounts}
+                  onPrivateReply={onPrivateReply}
+                  privateReplyEnabled={privateReplyEnabled}
+                  privateReplySentIds={privateReplySentIds}
                 />
               ))}
             </div>
@@ -1094,6 +1202,7 @@ function ThreadNode({
 export function CommentThread({
   messages,
   platformStyles,
+  isDM = false,
   onStartReply,
   onGenerateDraft,
   generatingDraftIds,
@@ -1113,10 +1222,14 @@ export function CommentThread({
   SentimentIndicator,
   selectionEnabled,
   selectedMessageIds,
+  selectableMessageIds,
   onToggleSelection,
   bulkQueueStatusById,
   unreadMessageIds,
   onUnreadSeen,
+  onPrivateReply,
+  privateReplyEnabled,
+  privateReplySentIds,
 }: CommentThreadProps) {
   const tree = React.useMemo(() => buildMessageTree(messages), [messages]);
   
@@ -1246,6 +1359,7 @@ export function CommentThread({
               isLastChild={index === tree.length - 1}
               rootTimestamp={new Date(rootNode.message.timestamp)}
               platformStyles={platformStyles}
+              isDM={isDM}
               onStartReply={onStartReply}
               onGenerateDraft={onGenerateDraft}
               generatingDraftIds={generatingDraftIds}
@@ -1265,6 +1379,7 @@ export function CommentThread({
               SentimentIndicator={SentimentIndicator}
               selectionEnabled={selectionEnabled}
               selectedMessageIds={selectedMessageIds}
+              selectableMessageIds={selectableMessageIds}
               onToggleSelection={onToggleSelection}
               bulkQueueStatusById={bulkQueueStatusById}
               unreadMessageIds={unreadMessageIds}
@@ -1273,6 +1388,9 @@ export function CommentThread({
               onToggleExpand={handleToggleExpand}
               threadReminderCounts={reminderStats.threadReminderCounts}
               authorReminderCounts={reminderStats.authorReminderCounts}
+              onPrivateReply={onPrivateReply}
+              privateReplyEnabled={privateReplyEnabled}
+              privateReplySentIds={privateReplySentIds}
             />
         </div>
       ))}

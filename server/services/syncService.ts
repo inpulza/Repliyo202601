@@ -8,7 +8,10 @@ import { contactEnrichmentService } from "./contactEnrichmentService";
 import { llmEnrichmentService } from "./llmEnrichmentService";
 import { conversationLifecycleService } from "./conversationLifecycleService";
 import { thankYouDetector } from "./thankYouDetector";
+import { sentimentAnalysisService } from "./SentimentAnalysisService";
 import { log } from "../app";
+import { sendPrivateReply, interpolateTemplate } from "./metaService";
+import { enrichPostContext, enrichPostContextForTemplate } from "./llm/prompt-composer";
 
 interface BrandSyncResult {
   newBrands: string[];
@@ -189,7 +192,15 @@ class SyncService {
         try {
           await storage.updateSocialAccountAvatar(brandId, conv.provider, brandAvatarUrl);
         } catch (e) {
-          // Silently ignore avatar update errors
+          // Silently ignore social account avatar update errors
+        }
+        try {
+          const currentBrand = await storage.getBrand(brandId);
+          if (currentBrand && !currentBrand.avatar) {
+            await storage.updateBrand(brandId, { avatar: brandAvatarUrl });
+          }
+        } catch (e) {
+          // Silently ignore brand avatar update errors
         }
       }
 
@@ -409,7 +420,8 @@ class SyncService {
               });
               
               // Contact Enrichment: Extract phone/email from message content (independent of auto-reply)
-              if (crmResult.contactId && content) {
+              // SKIP system messages (e.g. "Facebook created this chat because...")
+              if (crmResult.contactId && content && !contactEnrichmentService.isSystemMessage(content)) {
                 void contactEnrichmentService.processInboundMessage(
                   crmResult.contactId,
                   content,
@@ -422,6 +434,8 @@ class SyncService {
                   content,
                   brandId
                 ).catch(err => log(`[SyncService] LLM Enrichment error: ${err.message}`, "sync"));
+              } else if (crmResult.contactId && content && contactEnrichmentService.isSystemMessage(content)) {
+                log(`[SyncService] Skipping enrichment for system message: "${content.substring(0, 60)}..."`, "sync");
               }
             } catch (crmError: any) {
               log(`[SyncService] CRM routing error for DM: ${crmError.message}`, "sync");
@@ -430,6 +444,17 @@ class SyncService {
           
           if (isReallyNew && isInbound) {
             newInboundCount++; // Increment counter for truly new inbound messages
+            
+            // SENTIMENT ANALYSIS: Classify message sentiment and detect crisis (async, fire-and-forget)
+            void sentimentAnalysisService.processInboundMessage(
+              savedMessage.id,
+              content,
+              brandId,
+              conversationRecord.id,
+              platform,
+              author,
+              new Date(msg.timestamp)
+            ).catch(err => log(`[SyncService] Sentiment analysis error: ${err.message}`, "sync"));
             
             // LIFECYCLE INTEGRATION: Record customer message and handle status transitions
             void conversationLifecycleService.recordCustomerMessage(conversationRecord.id)
@@ -476,6 +501,8 @@ class SyncService {
         }
       }
     }
+
+    const autoReplyTriggeredThisCycle = new Set<string>();
 
     for (const comment of inboxData.comments) {
       try {
@@ -567,6 +594,23 @@ class SyncService {
         // Determine direction based on whether it's from brand
         const commentDirection = isCommentFromBrand ? 'outbound' : 'inbound';
 
+        let commentMediaUrl: string | null = (comment as any).commentMediaUrl || comment.rawData?.root?.mediaUrl || null;
+        let commentMediaType: string | null = null;
+        let commentContent = comment.content;
+
+        if (commentMediaUrl) {
+          commentMediaType = this.detectMediaType(commentMediaUrl);
+          if (!commentMediaType && (commentMediaUrl.includes('giphy.com') || commentMediaUrl.includes('fbcdn') || commentMediaUrl.includes('external-'))) {
+            commentMediaType = 'image';
+          }
+        }
+
+        if ((!commentContent || commentContent.trim() === '') && commentMediaUrl) {
+          commentContent = '[Sticker]';
+        }
+
+        const previewText = commentContent === '[Sticker]' ? '🎭 Sticker' : commentContent.substring(0, 100);
+
         const conversationRecord = await storage.upsertConversation({
           brandId,
           socialPostId,
@@ -576,9 +620,9 @@ class SyncService {
           customerName,
           customerAvatar,
           lastMessageAt: new Date(comment.timestamp),
-          lastMessagePreview: comment.content.substring(0, 100),
+          lastMessagePreview: previewText,
           status: 'open',
-        }, isNewComment && !isCommentFromBrand); // Only increment unread if NEW inbound comment (not from brand)
+        }, isNewComment && !isCommentFromBrand);
 
         const savedComment = await storage.upsertMessage({
           brandId,
@@ -590,13 +634,15 @@ class SyncService {
           source: 'metricool_sync' as const,
           author: comment.author,
           authorAvatar: comment.authorAvatar || null,
-          content: comment.content,
+          content: commentContent,
           timestamp: new Date(comment.timestamp),
           status: isCommentFromBrand ? "read" as const : "unread" as const,
           sourceUrl: comment.postUrl || null,
           rawData: comment.rawData || comment,
           threadId: postExternalId,
           parentMessageId: null,
+          mediaUrl: commentMediaUrl,
+          mediaType: commentMediaType,
           urgency: null,
           intent: null,
           sentiment: null,
@@ -634,6 +680,17 @@ class SyncService {
         if (isReallyNew && !isCommentFromBrand) {
           newInboundCount++; // Increment counter for truly new inbound comments
           
+          // SENTIMENT ANALYSIS: Classify comment sentiment and detect crisis (async, fire-and-forget)
+          void sentimentAnalysisService.processInboundMessage(
+            savedComment.id,
+            commentContent,
+            brandId,
+            conversationRecord.id,
+            platform,
+            comment.author,
+            new Date(comment.timestamp)
+          ).catch(err => log(`[SyncService] Comment sentiment analysis error: ${err.message}`, "sync"));
+          
           // Track first inbound author for Smart Digest notifications
           if (!firstInboundAuthor) {
             firstInboundAuthor = comment.author;
@@ -646,12 +703,31 @@ class SyncService {
             id: savedComment.id,
             platform,
             author: comment.author,
-            content: comment.content.substring(0, 100),
+            content: previewText,
             type: 'comment',
             conversationId: conversationRecord.id,
           });
 
-          this.triggerAutoReply(brandId, savedComment, conversationRecord);
+          const hasRecentReply = autoReplyTriggeredThisCycle.has(conversationRecord.id) ||
+            await storage.hasRecentOutboundInConversation(conversationRecord.id, 10 * 60 * 1000);
+          if (hasRecentReply) {
+            log(`[SyncService] Skipping auto-reply for comment ${comment.id}: conversation ${conversationRecord.id} already has a recent outbound reply`, "sync");
+          } else {
+            autoReplyTriggeredThisCycle.add(conversationRecord.id);
+            this.triggerAutoReply(brandId, savedComment, conversationRecord);
+          }
+        }
+
+        // AUTO PRIVATE REPLY — Facebook only, runs for ALL non-brand comments (not just new ones)
+        // The function has built-in idempotency: checks if a private reply was already sent before acting.
+        // This ensures comments that arrived before the feature was enabled still get a reply.
+        if (platform === 'facebook' && !isCommentFromBrand) {
+          void this.triggerAutoPrivateReply(
+            brandId,
+            savedComment,
+            conversationRecord,
+            comment.rawData
+          ).catch((err: Error) => log(`[SyncService] AutoPrivateReply error: ${err.message}`, "sync"));
         }
 
         const nestedReplies = (comment.replies && comment.replies.length > 0) ? comment.replies : (comment.rawData?.root?.comments || []);
@@ -663,8 +739,20 @@ class SyncService {
             
             const replyAuthor = replyAuthorParticipant?.name || `Unknown Reply Author`;
             const replyAvatar = replyAuthorParticipant?.imageProfileUrl || null;
-            const replyContent = reply.text || '';
+            let replyContent = reply.text || '';
             const replyTimestamp = reply.creationDate || comment.timestamp;
+
+            let replyMediaUrl: string | null = reply.mediaUrl || null;
+            let replyMediaType: string | null = null;
+            if (replyMediaUrl) {
+              replyMediaType = this.detectMediaType(replyMediaUrl);
+              if (!replyMediaType && (replyMediaUrl.includes('giphy.com') || replyMediaUrl.includes('fbcdn') || replyMediaUrl.includes('external-'))) {
+                replyMediaType = 'image';
+              }
+            }
+            if ((!replyContent || replyContent.trim() === '') && replyMediaUrl) {
+              replyContent = '[Sticker]';
+            }
             
             // Detect if reply is from brand's own account
             let isReplyFromBrand = false;
@@ -708,6 +796,8 @@ class SyncService {
               rawData: reply,
               threadId: postExternalId,
               parentMessageId: savedComment.id,
+              mediaUrl: replyMediaUrl,
+              mediaType: replyMediaType,
               urgency: null,
               intent: null,
               sentiment: null,
@@ -734,7 +824,14 @@ class SyncService {
                 conversationId: conversationRecord.id,
               });
               
-              this.triggerAutoReply(brandId, savedReply, conversationRecord);
+              const hasRecentReplyNested = autoReplyTriggeredThisCycle.has(conversationRecord.id) ||
+                await storage.hasRecentOutboundInConversation(conversationRecord.id, 10 * 60 * 1000);
+              if (hasRecentReplyNested) {
+                log(`[SyncService] Skipping auto-reply for nested reply ${reply.id}: conversation ${conversationRecord.id} already has a recent outbound reply`, "sync");
+              } else {
+                autoReplyTriggeredThisCycle.add(conversationRecord.id);
+                this.triggerAutoReply(brandId, savedReply, conversationRecord);
+              }
             }
             
             // CRM Traffic Controller: Route nested reply to limbo or existing contact
@@ -885,6 +982,251 @@ class SyncService {
     }).catch(error => {
       log(`[SyncService] Error fetching brand for auto-reply: ${error.message}`, "sync");
     });
+  }
+
+  /**
+   * Auto Private Reply: If the AI agent has autoPrivateReplyEnabled=true and this is a Facebook comment,
+   * send a Facebook Messenger private reply after the configured delay.
+   * Idempotency: only sends once per comment (checks existing meta_private_reply messages).
+   */
+  private async triggerAutoPrivateReply(
+    brandId: string,
+    comment: any,
+    conversation: any,
+    rawData: any
+  ): Promise<void> {
+    const logPrefix = '[AutoPrivateReply]';
+    try {
+      const agent = await storage.getAiAgentByBrand(brandId);
+      if (!agent?.autoPrivateReplyEnabled) {
+        return;
+      }
+
+      // Time filter: only process comments from the last 24 hours to avoid spamming old comments
+      const commentAge = Date.now() - new Date(comment.timestamp || comment.createdAt).getTime();
+      const MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+      if (commentAge > MAX_AGE_MS) {
+        return;
+      }
+
+      // Idempotency: check if a private reply was already sent for this comment (global search)
+      const alreadySent = await storage.hasPrivateReplyForComment(brandId, comment.id);
+      if (alreadySent) {
+        log(`${logPrefix} Private reply already sent for comment ${comment.id} — skipping`, "sync");
+        return;
+      }
+
+      // Get Facebook page connection (meta_page_connections has no 'platform' column —
+      // each row covers both Facebook and Instagram via pageId + igUserId)
+      const pageConnections = await storage.getMetaPageConnections(brandId);
+      const activePage = pageConnections.find((p: any) => p.isActive && p.pageId);
+      if (!activePage) {
+        log(`${logPrefix} No active Facebook page connection for brand ${brandId} — skipping`, "sync");
+        return;
+      }
+
+      // Extract the real Facebook comment ID (same logic as routes.ts private reply endpoint)
+      const rawCommentId = rawData?.id || rawData?.root?.id || comment.metricoolId;
+      if (!rawCommentId) {
+        log(`${logPrefix} Could not determine commentId for comment ${comment.id} — skipping`, "sync");
+        return;
+      }
+      // Prefer extracting from compound POSTID_COMMENTID format; permalink comment_id is unreliable
+      // (some permalinks have comment_id=POSTID instead of the actual comment ID)
+      const extractedFromCompound = rawCommentId.includes('_') ? rawCommentId.split('_').pop() : null;
+      const permalinkMatch = (rawData?.root?.properties?.permalink || rawData?.properties?.permalink || '')
+        .match(/comment_id=(\d+)/);
+      let commentId: string;
+      if (extractedFromCompound) {
+        commentId = extractedFromCompound;
+      } else if (permalinkMatch) {
+        commentId = permalinkMatch[1];
+      } else {
+        commentId = rawCommentId;
+      }
+
+      log(`${logPrefix} Will send auto private reply for commentId ${commentId} with delay=${agent.autoPrivateReplyDelayMinutes ?? 0}min`, "sync");
+
+      // Apply delay if configured
+      const delayMs = ((agent.autoPrivateReplyDelayMinutes ?? 0) * 60 * 1000);
+      if (delayMs > 0) {
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+
+      // Re-check idempotency after delay (global search)
+      const alreadySentAfterDelay = await storage.hasPrivateReplyForComment(brandId, comment.id);
+      if (alreadySentAfterDelay) {
+        log(`${logPrefix} Private reply sent during delay window for comment ${comment.id} — skipping`, "sync");
+        return;
+      }
+
+      // Build reply text
+      let replyText: string;
+      if (agent.autoPrivateReplyUseAi) {
+        // AI-generated private reply
+        try {
+          const { createLLMProvider } = await import("./llm/factory");
+          if (!agent.systemPrompt) {
+            log(`${logPrefix} AI mode requires systemPrompt — falling back to template`, "sync");
+            throw new Error("missing_config");
+          }
+          const secrets = {
+            openaiApiKey: process.env.OPENAI_API_KEY,
+            geminiApiKey: process.env.GEMINI_API_KEY,
+          };
+          const llm = createLLMProvider(agent, secrets);
+          let postContext = '';
+          if (conversation?.socialPostId) {
+            const post = await storage.getSocialPost(conversation.socialPostId);
+            postContext = enrichPostContext(post, 'facebook', 'comment');
+          }
+          const privateReplyInstructions = agent.autoPrivateReplyPrompt || `## Rol\nGeneras el PRIMER mensaje privado (DM) que se envía automáticamente a un usuario que comentó en un post de Facebook/Instagram.\n\n## Estructura (en este orden)\n1. Saludo → "Hola [nombre]"\n2. Referencia al post → menciona brevemente el tipo de contenido y su tema\n3. Conexión con el comentario → responde a lo que dijo\n4. Cierre → invita a continuar la conversación\n\n## Constraints\n- Máximo 3-4 oraciones\n- Tono cálido, cercano y profesional\n- NUNCA uses un saludo genérico sin referencia al post\n- NUNCA repitas el título completo del post textualmente — parafrasea\n- Máximo 1-2 emojis\n- Este es un PRIMER contacto: no asumas familiaridad`;
+          const resolvedInstructions = privateReplyInstructions
+            .replace(/\{\{username\}\}/g, comment.author || '')
+            .replace(/\{\{comment\}\}/g, comment.content || '')
+            .replace(/\{\{post_context\}\}/g, postContext || '');
+          const systemPrompt = `${agent.systemPrompt}\n\n${resolvedInstructions}`;
+          const userPrompt = `El usuario "${comment.author}" comentó:\n"${comment.content}"\n\n${postContext ? `Contexto del post donde comentó:\n${postContext}\n\n` : ''}Escribe un mensaje privado de Messenger respondiendo al comentario.`;
+          const result = await llm.generateRawCompletion(systemPrompt, userPrompt, { maxTokens: 300, temperature: 0.7 });
+          replyText = result.text?.trim() || '';
+          if (!replyText) throw new Error("empty_response");
+          log(`${logPrefix} AI-generated reply: "${replyText.substring(0, 80)}..."`, "sync");
+        } catch (err: any) {
+          log(`${logPrefix} AI generation failed (${err.message}) — falling back to template`, "sync");
+          if (!agent.privateReplyTemplate) {
+            log(`${logPrefix} No template fallback available — aborting`, "sync");
+            return;
+          }
+          let postContext = '';
+          if (conversation?.socialPostId) {
+            const post = await storage.getSocialPost(conversation.socialPostId);
+            postContext = enrichPostContextForTemplate(post, 'facebook', 'comment');
+          }
+          replyText = interpolateTemplate(agent.privateReplyTemplate, {
+            username: comment.author || '',
+            comment: comment.content || '',
+            postContext,
+          });
+        }
+      } else {
+        if (!agent.privateReplyTemplate) {
+          log(`${logPrefix} No private reply template configured — skipping`, "sync");
+          return;
+        }
+        let postContext = '';
+        if (conversation?.socialPostId) {
+          const post = await storage.getSocialPost(conversation.socialPostId);
+          postContext = enrichPostContextForTemplate(post, 'facebook', 'comment');
+        }
+        replyText = interpolateTemplate(agent.privateReplyTemplate, {
+          username: comment.author || '',
+          comment: comment.content || '',
+          postContext,
+        });
+      }
+
+      if (!replyText?.trim()) {
+        log(`${logPrefix} Empty reply text — skipping`, "sync");
+        return;
+      }
+
+      // Send private reply via Facebook Messenger API
+      const result = await sendPrivateReply(commentId, replyText.trim(), activePage.pageAccessToken, activePage.pageId);
+      if (!result.success) {
+        log(`${logPrefix} Facebook API error: ${result.error}`, "sync");
+        return;
+      }
+
+      // Save outbound message in a DM conversation (not in the comment thread)
+      // Strategy: find ANY existing facebook DM conversation for this user by customerId OR customerName
+      // This avoids creating duplicate DM conversations when the sync uses a different ID than the FB API returns.
+      const brand = await storage.getBrand(brandId);
+      let dmConversationId = comment.conversationId;
+
+      try {
+        const customerName = comment.author || 'Unknown';
+        const dmCustomerId = result.recipientId || customerName;
+
+        // Search by multiple identifiers to find the existing DM conversation
+        // Priority: recipientId (PSID) → comment author name → original customerId from comment's conversation
+        let dmConv: any = null;
+
+        // 1. Try recipientId (the PSID returned by Facebook API)
+        if (result.recipientId) {
+          dmConv = await storage.getConversationByKey(brandId, 'facebook', result.recipientId, null, null);
+        }
+
+        // 2. Try customer name (how Metricool sync often stores it)
+        if (!dmConv) {
+          dmConv = await storage.getConversationByKey(brandId, 'facebook', customerName, null, null);
+        }
+
+        // 3. Try the comment author's external ID (from the comment conversation)
+        if (!dmConv) {
+          const commentConv = await storage.getConversation(comment.conversationId);
+          if (commentConv?.customerId && commentConv.customerId !== customerName) {
+            dmConv = await storage.getConversationByKey(brandId, 'facebook', commentConv.customerId, null, null);
+          }
+        }
+
+        // 4. Broad search: find any DM conversation matching by customer name (case-insensitive)
+        if (!dmConv) {
+          const allDmConvs = await storage.getConversationsByBrand(brandId);
+          dmConv = allDmConvs.find(c => 
+            c.platform === 'facebook' && 
+            c.type === 'dm' && 
+            c.customerName?.toLowerCase() === customerName.toLowerCase()
+          );
+        }
+
+        if (!dmConv) {
+          dmConv = await storage.createConversation({
+            brandId,
+            platform: 'facebook',
+            type: 'dm',
+            customerId: dmCustomerId,
+            customerName: customerName,
+            lastMessageAt: new Date(),
+            lastMessagePreview: replyText.trim().slice(0, 100),
+            status: 'new',
+          });
+          log(`${logPrefix} Created new DM conversation ${dmConv.id} for ${customerName}`, "sync");
+        } else {
+          log(`${logPrefix} Found existing DM conversation ${dmConv.id} for ${customerName}`, "sync");
+        }
+
+        dmConversationId = dmConv.id;
+      } catch (convErr: any) {
+        log(`${logPrefix} Could not find/create DM conversation: ${convErr.message} — using comment conversation`, "sync");
+      }
+
+      await storage.createMessage({
+        brandId,
+        conversationId: dmConversationId,
+        platform: 'facebook',
+        type: 'dm',
+        direction: 'outbound',
+        author: brand?.name || 'Repliyo',
+        content: replyText.trim(),
+        timestamp: new Date(),
+        status: 'sent',
+        parentMessageId: comment.id,
+        metricoolId: result.messageId || null,
+        source: 'repliyo',
+        internalOrigin: 'meta_private_reply',
+      });
+
+      if (dmConversationId) {
+        await storage.updateConversation(dmConversationId, {
+          lastMessageAt: new Date(),
+          lastMessagePreview: replyText.trim().slice(0, 100),
+        });
+      }
+
+      log(`${logPrefix} ✅ Auto private reply sent for comment ${comment.id} (commentId=${commentId})`, "sync");
+    } catch (err: any) {
+      log(`${logPrefix} Unhandled error: ${err.message}`, "sync");
+    }
   }
 
   getStatus(): {

@@ -1,6 +1,7 @@
 import { useToast } from "@/hooks/use-toast"
 import {
   Toast,
+  ToastClose,
   ToastDescription,
   ToastProvider,
   ToastTitle,
@@ -15,16 +16,16 @@ export function Toaster() {
       {toasts.map(function ({ id, title, description, action, ...props }) {
         return (
           <Toast key={id} {...props}>
-            <div className="flex items-center gap-2 text-sm whitespace-nowrap">
+            <div className="flex-1 min-w-0">
               {title && <ToastTitle>{title}</ToastTitle>}
               {description && (
-                <>
-                  {title && <span className="text-white/50">·</span>}
-                  <ToastDescription>{description}</ToastDescription>
-                </>
+                <ToastDescription className={title ? "mt-1" : ""}>
+                  {description}
+                </ToastDescription>
               )}
             </div>
             {action}
+            <ToastClose />
           </Toast>
         )
       })}

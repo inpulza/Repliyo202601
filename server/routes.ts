@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { insertBrandSchema, insertUserSchema, insertMessageSchema, updateMessageSchema, updateConversationSchema, insertSocialAccountSchema, updateReminderRulesSchema, type User } from "@shared/schema";
+import { storage, type CrmContactFilterOptions } from "./storage";
+import { insertBrandSchema, insertUserSchema, insertMessageSchema, updateMessageSchema, updateConversationSchema, insertSocialAccountSchema, updateReminderRulesSchema, insertLeadSchema, insertMetaPageConnectionSchema, type User } from "@shared/schema";
 import { hashPassword, verifyPassword, sanitizeUser, sanitizeBrand, type AuthenticatedUser } from "./auth";
 import { MetricoolService } from "./services/metricool";
 import { syncService } from "./services/syncService";
@@ -11,7 +11,7 @@ import { authRateLimiter, syncRateLimiter, aiRateLimiter, sendMessageRateLimiter
 import { authStorage } from "./replit_integrations/auth";
 import { z } from "zod";
 import crypto from "crypto";
-import { sendVerificationEmail, sendWelcomeEmail } from "./services/emailService";
+import { sendVerificationEmail, sendWelcomeEmail, sendLeadNotification, sendLeadConfirmation } from "./services/emailService";
 
 // Extend Express Request to include our user type (compatible with Passport)
 declare global {
@@ -110,14 +110,83 @@ const filterByBrand = (brandIdParamName?: string) => {
   };
 };
 
+import sentimentAlertsRouter from './routes/sentimentAlerts.routes';
+import { sendPrivateReply, sendInstagramPrivateReply, interpolateTemplate, checkPagePermissions } from "./services/metaService";
+import { enrichPostContext, enrichPostContextForTemplate } from "./services/llm/prompt-composer";
+
 export async function registerRoutes(app: Express): Promise<Server> {
-  
+  app.use(sentimentAlertsRouter);
+
+  const SITE_URL = "https://repliyo.com";
+
+  app.get("/sitemap.xml", (_req, res) => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>${SITE_URL}/</loc>
+    <xhtml:link rel="alternate" hreflang="es" href="${SITE_URL}/" />
+    <xhtml:link rel="alternate" hreflang="en" href="${SITE_URL}/?lang=en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="${SITE_URL}/" />
+  </url>
+  <url>
+    <loc>${SITE_URL}/?lang=en</loc>
+    <xhtml:link rel="alternate" hreflang="es" href="${SITE_URL}/" />
+    <xhtml:link rel="alternate" hreflang="en" href="${SITE_URL}/?lang=en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="${SITE_URL}/" />
+  </url>
+  <url>
+    <loc>${SITE_URL}/get-started</loc>
+  </url>
+</urlset>`;
+
+    res.header("Content-Type", "application/xml");
+    res.send(xml);
+  });
+
+  app.get("/robots.txt", (_req, res) => {
+    const robotsTxt = `User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /api/
+
+Sitemap: ${SITE_URL}/sitemap.xml
+`;
+    res.header("Content-Type", "text/plain");
+    res.send(robotsTxt);
+  });
+
   const registerSchema = z.object({
     email: z.string().email(),
     password: z.string().min(6),
     name: z.string().min(1),
     role: z.enum(['admin', 'client']).default('client'),
     brandId: z.string().nullable().optional(),
+  });
+
+  app.post("/api/leads", async (req, res) => {
+    try {
+      const data = insertLeadSchema.parse(req.body);
+      const lead = await storage.createLead(data);
+
+      sendLeadNotification(lead).catch(err =>
+        console.error('[Routes] Failed to send lead notification email:', err)
+      );
+
+      if (lead.email) {
+        sendLeadConfirmation(lead.email, lead.name).catch(err =>
+          console.error('[Routes] Failed to send lead confirmation email:', err)
+        );
+      }
+
+      res.status(201).json({ id: lead.id, message: "Lead submitted successfully" });
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      console.error('[Routes] Lead creation error:', error);
+      res.status(500).json({ error: "Failed to submit form" });
+    }
   });
 
   const loginSchema = z.object({
@@ -180,6 +249,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   app.post("/api/auth/public-register", authRateLimiter, async (req, res) => {
+    return res.status(403).json({ error: "El registro público está deshabilitado. Contáctanos por WhatsApp para solicitar acceso." });
     try {
       const { email, password, name } = publicRegisterSchema.parse(req.body);
 
@@ -280,16 +350,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       sendWelcomeEmail(user.email, user.name).catch(console.error);
 
-      req.session.userId = userId;
-      req.session.save((err) => {
-        if (err) {
-          console.error('[Auth] Session save error after verification:', err);
+      req.session.regenerate((regenerateErr) => {
+        if (regenerateErr) {
+          console.error('[Auth] Session regenerate error after verification:', regenerateErr);
+          return res.status(500).json({ error: "Error al crear la sesión" });
         }
-        console.log(`[Auth] Email verified - userId: ${userId}`);
-        res.json({ 
-          success: true,
-          user: sanitizeUser(activatedUser!),
-          message: "¡Cuenta verificada exitosamente!"
+        req.session.userId = userId;
+        req.session.save((err) => {
+          if (err) {
+            console.error('[Auth] Session save error after verification:', err);
+            return res.status(500).json({ error: "Error al guardar la sesión" });
+          }
+          console.log(`[Auth] Email verified - userId: ${userId}`);
+          res.json({ 
+            success: true,
+            user: sanitizeUser(activatedUser!),
+            message: "¡Cuenta verificada exitosamente!"
+          });
         });
       });
     } catch (error: any) {
@@ -389,16 +466,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      req.session.userId = user.id;
-      
-      // Force session save before responding
-      req.session.save((err) => {
-        if (err) {
-          console.error('[Auth] Session save error:', err);
+      req.session.regenerate((regenerateErr) => {
+        if (regenerateErr) {
+          console.error('[Auth] Session regenerate error:', regenerateErr);
           return res.status(500).json({ error: "Failed to create session" });
         }
-        console.log(`[Auth] Login successful - userId: ${user.id}, sessionID: ${req.sessionID}`);
-        res.json(sanitizeUser(user));
+        
+        req.session.userId = user.id;
+        req.session.save((err) => {
+          if (err) {
+            console.error('[Auth] Session save error:', err);
+            return res.status(500).json({ error: "Failed to create session" });
+          }
+          console.log(`[Auth] Login successful - userId: ${user.id}`);
+          res.json(sanitizeUser(user));
+        });
       });
     } catch (error) {
       res.status(400).json({ error: "Invalid login data" });
@@ -415,6 +497,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/auth/me", requireAuth, (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
     res.json(req.user);
   });
 
@@ -635,6 +720,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Brand not found in Metricool" });
       }
 
+      const brandUpdates: Record<string, any> = {};
+      if (matchingBrand.name && matchingBrand.name !== 'Unknown Brand' && matchingBrand.name !== brand.name) {
+        brandUpdates.name = matchingBrand.name;
+      }
+      if (matchingBrand.avatar && matchingBrand.avatar !== brand.avatar) {
+        brandUpdates.avatar = matchingBrand.avatar;
+      }
+      if (Object.keys(brandUpdates).length > 0) {
+        await storage.updateBrand(brandId, brandUpdates);
+      }
+
       const detectedProviders = matchingBrand.detectedProviders || [];
       const existingAccounts = await storage.getSocialAccountsByBrand(brandId);
       const existingProviderMap = new Map(existingAccounts.map(a => [a.provider, a]));
@@ -839,7 +935,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Only admins can create users" });
       }
 
-      const { password, ...validatedData } = insertUserSchema.parse(req.body);
+      const createSchema = z.object({
+        name: z.string().min(1),
+        email: z.string().email(),
+        password: z.string().min(6),
+        role: z.enum(['admin', 'client']).default('client'),
+        brandId: z.string().nullable().optional(),
+        status: z.enum(['active', 'suspended', 'pending']).default('active'),
+      });
+
+      const { password, ...validatedData } = createSchema.parse(req.body);
+
+      if (validatedData.role === 'client' && !validatedData.brandId) {
+        return res.status(400).json({ error: "Client users must be assigned to a brand" });
+      }
+
+      if (validatedData.brandId) {
+        const brand = await storage.getBrand(validatedData.brandId);
+        if (!brand) {
+          return res.status(400).json({ error: "Brand not found" });
+        }
+        if (brand.status === 'archived') {
+          return res.status(400).json({ error: "Cannot assign user to an archived brand" });
+        }
+      }
+
+      const existingUser = await storage.getUserByEmail(validatedData.email);
+      if (existingUser) {
+        return res.status(409).json({ error: "Email already in use" });
+      }
+
       const hashedPassword = await hashPassword(password);
       
       const user = await storage.createUser({
@@ -849,7 +974,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json(sanitizeUser(user));
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
       res.status(400).json({ error: "Invalid user data" });
+    }
+  });
+
+  app.patch("/api/users/:id", requireAuth, async (req, res) => {
+    try {
+      if (req.user!.role !== 'admin') {
+        return res.status(403).json({ error: "Only admins can update users" });
+      }
+
+      const updateSchema = z.object({
+        name: z.string().min(1).optional(),
+        email: z.string().email().optional(),
+        role: z.enum(['admin', 'client']).optional(),
+        brandId: z.string().nullable().optional(),
+        status: z.enum(['active', 'suspended', 'pending']).optional(),
+      });
+
+      const updates = updateSchema.parse(req.body);
+
+      if (updates.email) {
+        const existingUser = await storage.getUserByEmail(updates.email);
+        if (existingUser && existingUser.id !== req.params.id) {
+          return res.status(409).json({ error: "Email already in use" });
+        }
+      }
+
+      if (req.params.id === req.user!.id && updates.role && updates.role !== 'admin') {
+        return res.status(400).json({ error: "Cannot demote yourself" });
+      }
+
+      if (req.params.id === req.user!.id && updates.status === 'suspended') {
+        return res.status(400).json({ error: "Cannot suspend yourself" });
+      }
+
+      const existingUser = await storage.getUser(req.params.id);
+      if (!existingUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const effectiveRole = updates.role ?? existingUser.role;
+      const effectiveBrandId = updates.brandId !== undefined ? updates.brandId : existingUser.brandId;
+
+      if (effectiveRole === 'client' && !effectiveBrandId) {
+        return res.status(400).json({ error: "Client users must be assigned to a brand" });
+      }
+
+      if (effectiveBrandId) {
+        const brand = await storage.getBrand(effectiveBrandId);
+        if (!brand) {
+          return res.status(400).json({ error: "Brand not found" });
+        }
+        if (brand.status === 'archived') {
+          return res.status(400).json({ error: "Cannot assign user to an archived brand" });
+        }
+      }
+
+      const user = await storage.updateUser(req.params.id, updates);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      res.json(sanitizeUser(user));
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update user" });
+    }
+  });
+
+  app.post("/api/users/:id/reset-password", requireAuth, async (req, res) => {
+    try {
+      if (req.user!.role !== 'admin') {
+        return res.status(403).json({ error: "Only admins can reset passwords" });
+      }
+
+      const { newPassword } = z.object({
+        newPassword: z.string().min(6),
+      }).parse(req.body);
+
+      const user = await storage.getUser(req.params.id);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const hashed = await hashPassword(newPassword);
+      await storage.updateUserPassword(req.params.id, hashed);
+      res.json({ success: true });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Password must be at least 6 characters" });
+      }
+      res.status(500).json({ error: "Failed to reset password" });
+    }
+  });
+
+  app.delete("/api/users/:id", requireAuth, async (req, res) => {
+    try {
+      if (req.user!.role !== 'admin') {
+        return res.status(403).json({ error: "Only admins can delete users" });
+      }
+
+      if (req.params.id === req.user!.id) {
+        return res.status(400).json({ error: "Cannot delete yourself" });
+      }
+
+      const user = await storage.getUser(req.params.id);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      await storage.deleteUser(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete user" });
     }
   });
 
@@ -1598,6 +1840,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ========== AI MODELS DISCOVERY ==========
+
+  app.get("/api/ai-models/:provider", requireAuth, async (req, res) => {
+    try {
+      const { provider } = req.params;
+      if (provider !== 'openai' && provider !== 'gemini') {
+        return res.status(400).json({ error: "Provider must be 'openai' or 'gemini'" });
+      }
+
+      const forceRefresh = req.query.refresh === 'true';
+      const { getModelsForProvider } = await import("./services/llm/model-discovery");
+      const models = await getModelsForProvider(provider, forceRefresh);
+      res.json({ models });
+    } catch (error) {
+      console.error('[Routes] Error fetching AI models:', error);
+      const { getFallbackModels } = await import("./services/llm/model-discovery");
+      res.json({ models: getFallbackModels(req.params.provider) });
     }
   });
 
@@ -3078,10 +3340,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Access denied" });
       }
 
-      const options = {
+      const options: CrmContactFilterOptions = {
         status: req.query.status as string | undefined,
+        lifecycleStage: req.query.lifecycleStage as string | undefined,
         limit: req.query.limit ? parseInt(req.query.limit as string) : 100,
         offset: req.query.offset ? parseInt(req.query.offset as string) : 0,
+        firstInteractionFrom: req.query.firstInteractionFrom as string | undefined,
+        firstInteractionTo: req.query.firstInteractionTo as string | undefined,
+        lastInteractionFrom: req.query.lastInteractionFrom as string | undefined,
+        lastInteractionTo: req.query.lastInteractionTo as string | undefined,
+        platform: req.query.platform as string | undefined,
+        hasPhone: req.query.hasPhone === 'true' ? true : req.query.hasPhone === 'false' ? false : undefined,
       };
 
       const contacts = await storage.getCrmContacts(brandId, options);
@@ -3102,6 +3371,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('[CRM] Error getting contacts:', error);
       res.status(500).json({ error: "Failed to get contacts", details: error.message });
+    }
+  });
+
+  // GET /api/crm/contacts/export - Export contacts as CSV
+  app.get("/api/crm/contacts/export", requireAuth, async (req, res) => {
+    try {
+      const brandId = req.query.brandId as string || req.user?.brandId;
+      
+      if (!brandId) {
+        return res.status(400).json({ error: "brandId is required" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const options: CrmContactFilterOptions = {
+        status: req.query.status as string | undefined,
+        lifecycleStage: req.query.lifecycleStage as string | undefined,
+        limit: 50000,
+        offset: 0,
+        firstInteractionFrom: req.query.firstInteractionFrom as string | undefined,
+        firstInteractionTo: req.query.firstInteractionTo as string | undefined,
+        lastInteractionFrom: req.query.lastInteractionFrom as string | undefined,
+        lastInteractionTo: req.query.lastInteractionTo as string | undefined,
+        platform: req.query.platform as string | undefined,
+        hasPhone: req.query.hasPhone === 'true' ? true : req.query.hasPhone === 'false' ? false : undefined,
+      };
+
+      const contacts = await storage.getCrmContacts(brandId, options);
+
+      const contactsWithChannels = await Promise.all(
+        contacts.map(async (contact) => {
+          const channels = await storage.getCrmContactChannels(contact.id);
+          return { ...contact, platforms: channels.map(c => c.platform) };
+        })
+      );
+
+      const escapeCsv = (val: string | null | undefined) => {
+        if (val == null) return '';
+        let str = String(val);
+        if (/^[=+\-@\t\r]/.test(str)) {
+          str = "'" + str;
+        }
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return '"' + str.replace(/"/g, '""') + '"';
+        }
+        return str;
+      };
+
+      const headers = ['Nombre', 'Email', 'Teléfono', 'Ciudad', 'País', 'Status', 'Etapa', 'Plataformas', 'Primera interacción', 'Última interacción'];
+      const rows = contactsWithChannels.map(c => [
+        escapeCsv(c.displayName || [c.firstName, c.lastName].filter(Boolean).join(' ') || ''),
+        escapeCsv(c.email),
+        escapeCsv(c.phone),
+        escapeCsv(c.city),
+        escapeCsv(c.country),
+        escapeCsv(c.status),
+        escapeCsv(c.lifecycleStage),
+        escapeCsv(c.platforms.join(', ')),
+        escapeCsv(c.firstInteractionAt ? new Date(c.firstInteractionAt).toISOString() : ''),
+        escapeCsv(c.lastInteractionAt ? new Date(c.lastInteractionAt).toISOString() : ''),
+      ].join(','));
+
+      const csv = [headers.join(','), ...rows].join('\n');
+
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="contactos_crm_${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send('\uFEFF' + csv);
+    } catch (error: any) {
+      console.error('[CRM] Error exporting contacts:', error);
+      res.status(500).json({ error: "Failed to export contacts", details: error.message });
     }
   });
 
@@ -4393,6 +4734,771 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('[Analytics] Get failure reasons error:', error);
       res.status(500).json({ error: "Failed to get failure reasons", details: error.message });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Meta Page Connections (Private Replies)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // GET /api/brands/:brandId/meta-pages — list all page connections for a brand
+  app.get("/api/brands/:brandId/meta-pages", requireAuth, filterByBrand('brandId'), async (req, res) => {
+    try {
+      const pages = await storage.getMetaPageConnections(req.params.brandId);
+      const safePaged = pages.map(p => ({
+        ...p,
+        pageAccessToken: p.pageAccessToken ? `••••${p.pageAccessToken.slice(-4)}` : '',
+      }));
+      res.json({ success: true, pages: safePaged });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to get Meta page connections", details: err.message });
+    }
+  });
+
+  // POST /api/brands/:brandId/meta-pages — add or update a page connection
+  app.post("/api/brands/:brandId/meta-pages", requireAuth, filterByBrand('brandId'), async (req, res) => {
+    try {
+      const parsed = insertMetaPageConnectionSchema.safeParse({ ...req.body, brandId: req.params.brandId });
+      if (!parsed.success) return res.status(400).json({ error: "Invalid data", details: parsed.error.flatten() });
+      const page = await storage.upsertMetaPageConnection(parsed.data);
+      res.json({ success: true, page: { ...page, pageAccessToken: `••••${page.pageAccessToken.slice(-4)}` } });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to save Meta page connection", details: err.message });
+    }
+  });
+
+  // PATCH /api/brands/:brandId/meta-pages/:id — toggle isActive or update fields
+  app.patch("/api/brands/:brandId/meta-pages/:id", requireAuth, filterByBrand('brandId'), async (req, res) => {
+    try {
+      const { isActive, pageName } = req.body;
+      const page = await storage.updateMetaPageConnection(req.params.id, { isActive, pageName });
+      if (!page) return res.status(404).json({ error: "Page connection not found" });
+      res.json({ success: true, page: { ...page, pageAccessToken: `••••${page.pageAccessToken.slice(-4)}` } });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to update Meta page connection", details: err.message });
+    }
+  });
+
+  // DELETE /api/brands/:brandId/meta-pages/:id — remove a page connection
+  app.delete("/api/brands/:brandId/meta-pages/:id", requireAuth, filterByBrand('brandId'), async (req, res) => {
+    try {
+      await storage.deleteMetaPageConnection(req.params.id);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to delete Meta page connection", details: err.message });
+    }
+  });
+
+  // GET /api/brands/:brandId/meta-pages/:id/check-permissions — verify a page token has needed permissions
+  app.get("/api/brands/:brandId/meta-pages/:id/check-permissions", requireAuth, filterByBrand('brandId'), async (req, res) => {
+    try {
+      const pages = await storage.getMetaPageConnections(req.params.brandId);
+      const page = pages.find(p => p.id === req.params.id);
+      if (!page) return res.status(404).json({ error: "Page not found" });
+      const result = await checkPagePermissions(page.pageAccessToken, page.pageId);
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to check permissions", details: err.message });
+    }
+  });
+
+  // GET /api/brands/:brandId/meta-pages/available-from-env — scan env for META_*_USER_TOKEN secrets
+  app.get("/api/brands/:brandId/meta-pages/available-from-env", requireAuth, filterByBrand('brandId'), async (req, res) => {
+    try {
+      const available: { varName: string; tokenPreview: string }[] = [];
+      for (const [key, value] of Object.entries(process.env)) {
+        if (key.startsWith('META_') && key.endsWith('_USER_TOKEN') && value) {
+          available.push({ varName: key, tokenPreview: `••••${value.slice(-4)}` });
+        }
+      }
+      res.json({ available });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to scan env", details: err.message });
+    }
+  });
+
+  // POST /api/brands/:brandId/meta-pages/auto-connect — read token from env, fetch page info, save
+  app.post("/api/brands/:brandId/meta-pages/auto-connect", requireAuth, filterByBrand('brandId'), async (req, res) => {
+    try {
+      const { varName } = req.body as { varName: string };
+      if (!varName || !varName.startsWith('META_') || !varName.endsWith('_USER_TOKEN')) {
+        return res.status(400).json({ error: "Invalid varName" });
+      }
+      let token = process.env[varName];
+      if (!token) return res.status(404).json({ error: `Secret ${varName} no encontrado. Reinicia el servidor después de agregar el secret.` });
+
+      console.log(`[MetaAutoConnect] Using token from ${varName} (last 4: ...${token.slice(-4)})`, "express");
+
+      // If META_APP_ID and META_APP_SECRET are available, exchange short-lived token for long-lived one.
+      const appId = process.env.META_APP_ID;
+      const appSecret = process.env.META_APP_SECRET;
+      if (appId && appSecret) {
+        try {
+          const exchangeUrl = `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${token}`;
+          const exchangeRes = await fetch(exchangeUrl);
+          const exchangeData = await exchangeRes.json() as { access_token?: string; error?: { message: string; code?: number } };
+          if (exchangeData.access_token) {
+            token = exchangeData.access_token;
+            console.log("[MetaAutoConnect] Successfully exchanged for long-lived token", "express");
+          } else {
+            console.log(`[MetaAutoConnect] Token exchange failed (non-fatal): ${JSON.stringify(exchangeData.error)}`, "express");
+          }
+        } catch (exchangeErr: any) {
+          console.log(`[MetaAutoConnect] Token exchange exception (non-fatal): ${exchangeErr.message}`, "express");
+        }
+      }
+
+      // Try /me/accounts first — works if token is a User Access Token (most common case)
+      const accountsRes = await fetch(`https://graph.facebook.com/me/accounts?fields=id,name,access_token&access_token=${token}`);
+      const accountsData = await accountsRes.json() as { data?: Array<{id: string; name: string; access_token: string}>; error?: { message: string; code?: number } };
+      console.log(`[MetaAutoConnect] /me/accounts response: ${JSON.stringify({ hasData: !!accountsData.data, count: accountsData.data?.length, error: accountsData.error })}`, "express");
+
+      let pageId: string;
+      let pageName: string;
+      let pageAccessToken: string;
+
+      if (!accountsData.error && accountsData.data && accountsData.data.length > 0) {
+        // It's a User Token — use the first page's actual Page Access Token
+        const firstPage = accountsData.data[0];
+        pageId = firstPage.id;
+        pageName = firstPage.name;
+        pageAccessToken = firstPage.access_token;
+        console.log(`[MetaAutoConnect] Found page via User Token: ${pageName} (${pageId})`, "express");
+
+        // Return all available pages if more than one, so frontend can show a picker
+        if (accountsData.data.length > 1) {
+          return res.json({
+            success: false,
+            requiresSelection: true,
+            pages: accountsData.data.map(p => ({ pageId: p.id, pageName: p.name, pageAccessToken: `••••${p.access_token.slice(-4)}`, _token: p.access_token })),
+            message: `Se encontraron ${accountsData.data.length} páginas. Selecciona cuál conectar.`,
+          });
+        }
+      } else {
+        // Might already be a Page Access Token — try /me directly
+        const meRes = await fetch(`https://graph.facebook.com/me?fields=id,name&access_token=${token}`);
+        const meData = await meRes.json() as { id?: string; name?: string; error?: { message: string; code?: number } };
+        console.log(`[MetaAutoConnect] /me response: ${JSON.stringify({ id: meData.id, name: meData.name, error: meData.error })}`, "express");
+
+        if (meData.error || !meData.id) {
+          const errCode = meData.error?.code || accountsData.error?.code;
+          const errMsg = meData.error?.message || accountsData.error?.message || "Token inválido o sin permisos suficientes";
+          let userMsg = errMsg;
+          if (errCode === 190) {
+            userMsg = `El token ha expirado. Genera un nuevo User Token en Meta Graph API Explorer (https://developers.facebook.com/tools/explorer), asegúrate de que tenga los permisos pages_show_list y pages_messaging, y actualiza el secret ${varName} con el nuevo valor.`;
+          } else if (errCode === 200 || errMsg.includes('permission')) {
+            userMsg = `El token no tiene los permisos necesarios (pages_show_list, pages_messaging). Asegúrate de agregarlos en Graph API Explorer antes de generar el token.`;
+          }
+          return res.status(400).json({ error: userMsg, errorCode: errCode });
+        }
+        pageId = meData.id;
+        pageName = meData.name || meData.id;
+        pageAccessToken = token;
+        console.log(`[MetaAutoConnect] Found page via Page Token: ${pageName} (${pageId})`, "express");
+      }
+
+      // Auto-fetch Instagram Business Account ID for this page (if any)
+      let igUserId: string | undefined;
+      try {
+        const igRes = await fetch(`https://graph.facebook.com/${pageId}?fields=instagram_business_account&access_token=${pageAccessToken}`);
+        const igData = await igRes.json() as any;
+        if (igData?.instagram_business_account?.id) {
+          igUserId = igData.instagram_business_account.id;
+          console.log(`[MetaAutoConnect] Found Instagram Business Account ID: ${igUserId}`, "express");
+        } else {
+          console.log(`[MetaAutoConnect] No Instagram Business Account linked to page ${pageId}`, "express");
+        }
+      } catch (igErr: any) {
+        console.log(`[MetaAutoConnect] Could not fetch Instagram Business Account ID: ${igErr.message}`, "express");
+      }
+
+      const page = await storage.upsertMetaPageConnection({
+        brandId: req.params.brandId,
+        pageId,
+        pageName,
+        pageAccessToken,
+        ...(igUserId ? { igUserId } : {}),
+        isActive: true,
+      });
+
+      // Check if the stored page token is permanent (expires_at = 0)
+      let tokenExpiresAt: number | undefined;
+      let tokenDaysLeft: number | null | undefined;
+      let tokenIsPermanent: boolean | undefined;
+      try {
+        const debugUrl = `https://graph.facebook.com/debug_token?input_token=${pageAccessToken}&access_token=${pageAccessToken}`;
+        const debugRes = await fetch(debugUrl);
+        const debugData = await debugRes.json() as any;
+        if (debugData?.data?.expires_at !== undefined) {
+          tokenExpiresAt = debugData.data.expires_at;
+          if (tokenExpiresAt === 0) {
+            tokenIsPermanent = true;
+            tokenDaysLeft = null;
+          } else {
+            tokenIsPermanent = false;
+            const msLeft = (tokenExpiresAt! * 1000) - Date.now();
+            tokenDaysLeft = Math.ceil(msLeft / 86400000);
+          }
+          console.log(`[MetaAutoConnect] Token debug: expires_at=${tokenExpiresAt}, isPermanent=${tokenIsPermanent}, daysLeft=${tokenDaysLeft}`, "express");
+        }
+      } catch (debugErr: any) {
+        console.log(`[MetaAutoConnect] debug_token check failed (non-fatal): ${debugErr.message}`, "express");
+      }
+
+      res.json({
+        success: true,
+        page: { ...page, pageAccessToken: `••••${page.pageAccessToken.slice(-4)}` },
+        tokenInfo: {
+          isPermanent: tokenIsPermanent,
+          daysUntilExpiry: tokenDaysLeft,
+          expiresAt: tokenExpiresAt,
+        },
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: "Error al conectar página", details: err.message });
+    }
+  });
+
+  // POST /api/inbox/private-reply — send a private reply via Meta API
+  app.post("/api/inbox/private-reply", requireAuth, async (req, res) => {
+    try {
+      const { messageId, text } = req.body;
+      console.log(`[PrivateReply] REQUEST RECEIVED — messageId: ${messageId}, text length: ${text?.length}`, "express");
+      if (!messageId || !text?.trim()) {
+        return res.status(400).json({ error: "messageId and text are required" });
+      }
+
+      const message = await storage.getMessage(messageId);
+      console.log(`[PrivateReply] Message found: ${!!message}, platform: ${message?.platform}, type: ${message?.type}`, "express");
+      if (!message) return res.status(404).json({ error: "Message not found" });
+      const platform = message.platform?.toLowerCase();
+      if (platform !== 'facebook' && platform !== 'instagram') {
+        console.log(`[PrivateReply] BLOCKED: platform is '${message.platform}', not facebook or instagram`, "express");
+        return res.status(400).json({ error: `Private replies solo funcionan para comentarios de Facebook o Instagram (esta es ${message.platform})` });
+      }
+      if (message.type !== 'comment') {
+        console.log(`[PrivateReply] BLOCKED: type is '${message.type}', not comment`, "express");
+        return res.status(400).json({ error: `Private replies only work for comments (this is ${message.type})` });
+      }
+
+      const user = req.user as AuthenticatedUser;
+      const brand = await storage.getBrand(message.brandId);
+      console.log(`[PrivateReply] Brand found: ${brand?.name}, brandId: ${message.brandId}`, "express");
+      if (!brand) return res.status(404).json({ error: "Brand not found" });
+
+      // Check private reply is enabled for this brand
+      const agent = await storage.getAiAgentByBrand(brand.id);
+      console.log(`[PrivateReply] Agent privateReplyEnabled: ${agent?.privateReplyEnabled}`, "express");
+      if (!agent?.privateReplyEnabled) {
+        return res.status(403).json({ error: "Private replies are not enabled for this brand. Enable it in AI Agent settings." });
+      }
+
+      // Get the page access token — find active page for this brand
+      const pages = await storage.getMetaPageConnections(brand.id);
+      const activePage = pages.find(p => p.isActive);
+      if (!activePage) {
+        return res.status(400).json({ error: "No active Facebook page connection found. Configure one in Private Replies settings." });
+      }
+
+      // Extract the comment ID from rawData
+      const rawData = typeof message.rawData === 'string' ? JSON.parse(message.rawData) : message.rawData;
+      const rawCommentId = rawData?.id || rawData?.root?.id || message.metricoolId;
+      console.log(`[PrivateReply] Message platform: ${message.platform}, type: ${message.type}, metricoolId: ${message.metricoolId}`, "sync");
+      console.log(`[PrivateReply] Raw commentId from DB: ${rawCommentId}`, "sync");
+      if (!rawCommentId) {
+        return res.status(400).json({ error: "Cannot determine comment ID for private reply" });
+      }
+
+      // Metricool stores comment IDs in compound format "POSTID_COMMENTID" (e.g. "122200652672575116_884686284607817")
+      // Facebook's Private Replies API needs just the real comment ID (e.g. "884686284607817")
+      // Extract from compound ID by splitting on underscore; permalink comment_id is unreliable
+      // (some permalinks have comment_id=POSTID instead of the actual comment ID)
+      const extractedFromCompound = rawCommentId.includes('_') ? rawCommentId.split('_').pop() : null;
+      const permalinkMatch = (rawData?.root?.properties?.permalink || rawData?.properties?.permalink || '')
+        .match(/comment_id=(\d+)/);
+      let commentId: string;
+      if (extractedFromCompound) {
+        commentId = extractedFromCompound;
+      } else if (permalinkMatch) {
+        commentId = permalinkMatch[1];
+      } else {
+        commentId = rawCommentId;
+      }
+      console.log(`[PrivateReply] Resolved real commentId: ${commentId} (from raw: ${rawCommentId})`, "sync");
+
+      console.log(`[PrivateReply] Attempting private reply for commentId: ${commentId}, platform: ${platform}`, "sync");
+
+      // Route to the correct API based on platform
+      let result;
+      if (platform === 'instagram') {
+        if (!activePage.igUserId) {
+          return res.status(400).json({ error: "Esta página no tiene un Instagram Business Account ID configurado. Contacta al administrador para que lo agregue en la configuración." });
+        }
+        console.log(`[PrivateReply] Using Instagram API: igUserId=${activePage.igUserId}`, "sync");
+        result = await sendInstagramPrivateReply(activePage.igUserId, commentId, text.trim(), activePage.pageAccessToken);
+      } else {
+        // Facebook — use Messenger Platform Send API (works for posts, Reels, videos)
+        console.log(`[PrivateReply] Using Facebook Messenger API: pageId=${activePage.pageId}`, "sync");
+        result = await sendPrivateReply(commentId, text.trim(), activePage.pageAccessToken, activePage.pageId);
+      }
+
+      if (!result.success) {
+        return res.status(result.tokenExpired ? 401 : 500).json({
+          error: result.error || "Failed to send private reply",
+          errorCode: result.errorCode,
+          tokenExpired: result.tokenExpired || false,
+        });
+      }
+
+      // Find or create a DM conversation for this customer so the private reply
+      // appears in the DM section (not in the comment thread)
+      let dmConversationId = message.conversationId;
+      const customerName = message.author || 'Unknown';
+      const customerAvatar = (typeof message.rawData === 'object' && message.rawData !== null)
+        ? (message.rawData as any).properties?.avatar || (message.rawData as any).avatar || ''
+        : '';
+
+      try {
+        const recipientId = result.messageId ? (result as any).recipientId || '' : '';
+        const dmCustomerId = recipientId || customerName;
+
+        let dmConv = await storage.getConversationByKey(
+          brand.id,
+          'facebook',
+          dmCustomerId,
+          null,
+          null
+        );
+
+        if (!dmConv && recipientId) {
+          dmConv = await storage.getConversationByKey(
+            brand.id,
+            'facebook',
+            customerName,
+            null,
+            null
+          );
+        }
+
+        if (!dmConv) {
+          dmConv = await storage.createConversation({
+            brandId: brand.id,
+            platform: 'facebook',
+            type: 'dm',
+            customerId: dmCustomerId || customerName,
+            customerName: customerName,
+            customerAvatar: customerAvatar,
+            lastMessageAt: new Date(),
+            lastMessagePreview: text.trim().slice(0, 100),
+            status: 'new',
+          });
+        }
+
+        dmConversationId = dmConv.id;
+      } catch (convErr: any) {
+        console.log(`[PrivateReply] Could not create DM conversation: ${convErr.message} — using comment conversation`, "express");
+      }
+
+      const outbound = await storage.createMessage({
+        brandId: brand.id,
+        conversationId: dmConversationId,
+        platform: message.platform,
+        type: 'dm',
+        direction: 'outbound',
+        author: brand.name,
+        content: text.trim(),
+        timestamp: new Date(),
+        status: 'sent',
+        parentMessageId: message.id,
+        metricoolId: result.messageId || null,
+        source: 'repliyo',
+        internalOrigin: 'meta_private_reply',
+      });
+
+      if (dmConversationId) {
+        await storage.updateConversation(dmConversationId, {
+          lastMessageAt: new Date(),
+          lastMessagePreview: text.trim().slice(0, 100),
+        });
+      }
+
+      res.json({ success: true, message: outbound });
+    } catch (err: any) {
+      console.error('[PrivateReply] Error:', err);
+      res.status(500).json({ error: "Failed to send private reply", details: err.message });
+    }
+  });
+
+  // GET /api/inbox/private-reply/template — get interpolated template preview for a message
+  app.get("/api/inbox/private-reply/template", requireAuth, async (req, res) => {
+    try {
+      const { messageId } = req.query as { messageId: string };
+      if (!messageId) return res.status(400).json({ error: "messageId required" });
+
+      const message = await storage.getMessage(messageId);
+      if (!message) return res.status(404).json({ error: "Message not found" });
+
+      const agent = await storage.getAiAgentByBrand(message.brandId);
+      if (!agent?.privateReplyTemplate) return res.json({ text: '' });
+
+      let postContext = '';
+      if (message.conversationId) {
+        const conv = await storage.getConversation(message.conversationId);
+        if (conv?.socialPostId) {
+          const post = await storage.getSocialPost(conv.socialPostId);
+          postContext = enrichPostContextForTemplate(post, message.platform || conv.platform || '', message.type || 'comment');
+        }
+      }
+
+      const interpolated = interpolateTemplate(agent.privateReplyTemplate, {
+        username: message.author || '',
+        comment: message.content || '',
+        postContext,
+      });
+
+      res.json({ text: interpolated });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to get template", details: err.message });
+    }
+  });
+
+  // GET /api/inbox/private-reply/status — check which comment IDs already have private replies
+  app.get("/api/inbox/private-reply/status", requireAuth, async (req, res) => {
+    try {
+      const { conversationId } = req.query as { conversationId: string };
+      if (!conversationId) return res.json({ sentCommentIds: [] });
+
+      const conv = await storage.getConversation(conversationId);
+      if (!conv) return res.json({ sentCommentIds: [] });
+
+      const convMessages = await storage.getMessagesByConversation(conversationId);
+      const commentIds = convMessages
+        .filter((m: any) => m.type === 'comment' && m.direction === 'inbound')
+        .map((m: any) => m.id);
+
+      const sentCommentIds: string[] = [];
+      for (const commentId of commentIds) {
+        const hasPR = await storage.hasPrivateReplyForComment(conv.brandId, commentId);
+        if (hasPR) sentCommentIds.push(commentId);
+      }
+
+      res.json({ sentCommentIds });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to check private reply status", details: err.message });
+    }
+  });
+
+  // ===== Public Access Tokens (Sales Rep Links) =====
+
+  app.post("/api/public-access-tokens", requireAuth, async (req, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: "Only admins can generate public access tokens" });
+      }
+      const { brandId } = req.body;
+      if (!brandId) {
+        return res.status(400).json({ error: "brandId is required" });
+      }
+      const token = crypto.randomBytes(32).toString('hex');
+      const result = await storage.createPublicAccessToken({
+        brandId,
+        token,
+        createdBy: req.user.id,
+        isActive: true,
+      });
+      res.json(result);
+    } catch (error: any) {
+      console.error('[PublicAccess] Error creating token:', error);
+      res.status(500).json({ error: "Failed to create token", details: error.message });
+    }
+  });
+
+  app.get("/api/public-access-tokens/:brandId", requireAuth, async (req, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: "Only admins can view public access tokens" });
+      }
+      const token = await storage.getActivePublicAccessToken(req.params.brandId);
+      res.json({ token: token || null });
+    } catch (error: any) {
+      console.error('[PublicAccess] Error getting token:', error);
+      res.status(500).json({ error: "Failed to get token", details: error.message });
+    }
+  });
+
+  app.delete("/api/public-access-tokens/:id", requireAuth, async (req, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: "Only admins can revoke public access tokens" });
+      }
+      const tokenRecord = await storage.getPublicAccessTokenById(req.params.id);
+      if (!tokenRecord) {
+        return res.status(404).json({ error: "Token not found" });
+      }
+      if (req.user?.brandId && req.user.brandId !== tokenRecord.brandId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      const result = await storage.revokePublicAccessToken(req.params.id);
+      if (!result) {
+        return res.status(404).json({ error: "Token not found" });
+      }
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('[PublicAccess] Error revoking token:', error);
+      res.status(500).json({ error: "Failed to revoke token" });
+    }
+  });
+
+  app.get("/api/public/contacts/:token", async (req, res) => {
+    try {
+      const tokenRecord = await storage.getPublicAccessTokenByToken(req.params.token);
+      if (!tokenRecord) {
+        return res.status(404).json({ error: "Invalid or expired link" });
+      }
+
+      const brand = await storage.getBrand(tokenRecord.brandId);
+      if (!brand) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+
+      const rawLimit = parseInt(req.query.limit as string);
+      const rawOffset = parseInt(req.query.offset as string);
+      const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 100) : 100;
+      const offset = Number.isFinite(rawOffset) && rawOffset >= 0 ? rawOffset : 0;
+
+      const validStatuses = ['new', 'lead', 'active', 'inactive', 'archived'];
+      const validPlatforms = ['instagram', 'facebook', 'tiktok', 'youtube', 'twitter', 'linkedin'];
+      const status = validStatuses.includes(req.query.status as string) ? (req.query.status as string) : undefined;
+      const platform = validPlatforms.includes(req.query.platform as string) ? (req.query.platform as string) : undefined;
+      const search = typeof req.query.search === 'string' && req.query.search.trim() ? req.query.search.trim().slice(0, 100) : undefined;
+
+      const validLifecycleStages = ['new', 'lead', 'customer', 'vip'];
+      const lifecycleStage = validLifecycleStages.includes(req.query.lifecycleStage as string) ? (req.query.lifecycleStage as string) : undefined;
+
+      const hasPhone = req.query.hasPhone === 'true' ? true : req.query.hasPhone === 'false' ? false : undefined;
+
+      const options: CrmContactFilterOptions = {
+        status,
+        platform,
+        search,
+        lifecycleStage,
+        hasPhone,
+        firstInteractionFrom: typeof req.query.firstInteractionFrom === 'string' ? req.query.firstInteractionFrom : undefined,
+        firstInteractionTo: typeof req.query.firstInteractionTo === 'string' ? req.query.firstInteractionTo : undefined,
+        lastInteractionFrom: typeof req.query.lastInteractionFrom === 'string' ? req.query.lastInteractionFrom : undefined,
+        lastInteractionTo: typeof req.query.lastInteractionTo === 'string' ? req.query.lastInteractionTo : undefined,
+        limit: limit + 1,
+        offset,
+      };
+
+      const countOptions: CrmContactFilterOptions = { ...options };
+      delete countOptions.limit;
+      delete countOptions.offset;
+
+      const [contacts, totalCount] = await Promise.all([
+        storage.getCrmContacts(tokenRecord.brandId, options),
+        storage.countCrmContacts(tokenRecord.brandId, countOptions),
+      ]);
+      const hasMore = contacts.length > limit;
+      const pageContacts = hasMore ? contacts.slice(0, limit) : contacts;
+
+      const contactsWithChannels = await Promise.all(
+        pageContacts.map(async (contact) => {
+          const channels = await storage.getCrmContactChannels(contact.id);
+          return {
+            id: contact.id,
+            displayName: contact.displayName,
+            firstName: contact.firstName,
+            lastName: contact.lastName,
+            phone: contact.phone,
+            email: contact.email,
+            status: contact.status,
+            lifecycleStage: contact.lifecycleStage,
+            city: contact.city,
+            country: contact.country,
+            totalMessages: contact.totalMessages,
+            lastInteractionAt: contact.lastInteractionAt,
+            firstInteractionAt: contact.firstInteractionAt,
+            channelCount: channels.length,
+            platforms: channels.map(c => c.platform),
+          };
+        })
+      );
+
+      res.json({
+        brandName: brand.name,
+        contacts: contactsWithChannels,
+        totalCount,
+        hasMore,
+        offset,
+        limit,
+      });
+    } catch (error: any) {
+      console.error('[PublicAccess] Error getting public contacts:', error);
+      res.status(500).json({ error: "Failed to get contacts" });
+    }
+  });
+
+  app.get("/api/public/contacts/:token/export", async (req, res) => {
+    try {
+      const tokenRecord = await storage.getPublicAccessTokenByToken(req.params.token);
+      if (!tokenRecord) {
+        return res.status(404).json({ error: "Invalid or expired link" });
+      }
+
+      const brand = await storage.getBrand(tokenRecord.brandId);
+      if (!brand) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+
+      const validStatuses = ['new', 'lead', 'active', 'inactive', 'archived'];
+      const validPlatforms = ['instagram', 'facebook', 'tiktok', 'youtube', 'twitter', 'linkedin'];
+      const validLifecycleStages = ['new', 'lead', 'customer', 'vip'];
+
+      const options: CrmContactFilterOptions = {
+        status: validStatuses.includes(req.query.status as string) ? (req.query.status as string) : undefined,
+        platform: validPlatforms.includes(req.query.platform as string) ? (req.query.platform as string) : undefined,
+        lifecycleStage: validLifecycleStages.includes(req.query.lifecycleStage as string) ? (req.query.lifecycleStage as string) : undefined,
+        hasPhone: req.query.hasPhone === 'true' ? true : req.query.hasPhone === 'false' ? false : undefined,
+        search: typeof req.query.search === 'string' && req.query.search.trim() ? req.query.search.trim().slice(0, 100) : undefined,
+        firstInteractionFrom: typeof req.query.firstInteractionFrom === 'string' ? req.query.firstInteractionFrom : undefined,
+        firstInteractionTo: typeof req.query.firstInteractionTo === 'string' ? req.query.firstInteractionTo : undefined,
+        lastInteractionFrom: typeof req.query.lastInteractionFrom === 'string' ? req.query.lastInteractionFrom : undefined,
+        lastInteractionTo: typeof req.query.lastInteractionTo === 'string' ? req.query.lastInteractionTo : undefined,
+        limit: 50000,
+        offset: 0,
+      };
+
+      const contacts = await storage.getCrmContacts(tokenRecord.brandId, options);
+
+      const contactsWithChannels = await Promise.all(
+        contacts.map(async (contact) => {
+          const channels = await storage.getCrmContactChannels(contact.id);
+          return { ...contact, platforms: channels.map(c => c.platform) };
+        })
+      );
+
+      const escapeCsv = (val: string | null | undefined) => {
+        if (val == null) return '';
+        let str = String(val);
+        if (/^[=+\-@\t\r]/.test(str)) {
+          str = "'" + str;
+        }
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return '"' + str.replace(/"/g, '""') + '"';
+        }
+        return str;
+      };
+
+      const headers = ['Nombre', 'Email', 'Teléfono', 'Ciudad', 'País', 'Status', 'Etapa', 'Plataformas', 'Primera interacción', 'Última interacción'];
+      const rows = contactsWithChannels.map(c => [
+        escapeCsv(c.displayName || [c.firstName, c.lastName].filter(Boolean).join(' ') || ''),
+        escapeCsv(c.email),
+        escapeCsv(c.phone),
+        escapeCsv(c.city),
+        escapeCsv(c.country),
+        escapeCsv(c.status),
+        escapeCsv(c.lifecycleStage),
+        escapeCsv(c.platforms.join(', ')),
+        escapeCsv(c.firstInteractionAt ? new Date(c.firstInteractionAt).toISOString() : ''),
+        escapeCsv(c.lastInteractionAt ? new Date(c.lastInteractionAt).toISOString() : ''),
+      ].join(','));
+
+      const csv = [headers.join(','), ...rows].join('\n');
+
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="contactos_${brand.name}_${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send('\uFEFF' + csv);
+    } catch (error: any) {
+      console.error('[PublicAccess] Error exporting contacts:', error);
+      res.status(500).json({ error: "Failed to export contacts" });
+    }
+  });
+
+  app.get("/api/public/contacts/:token/detail/:contactId", async (req, res) => {
+    try {
+      const tokenRecord = await storage.getPublicAccessTokenByToken(req.params.token);
+      if (!tokenRecord) {
+        return res.status(404).json({ error: "Invalid or expired link" });
+      }
+
+      const contact = await storage.getCrmContact(req.params.contactId);
+      if (!contact || contact.brandId !== tokenRecord.brandId) {
+        return res.status(404).json({ error: "Contact not found" });
+      }
+
+      const channels = await storage.getCrmContactChannels(contact.id);
+
+      res.json({
+        id: contact.id,
+        displayName: contact.displayName,
+        firstName: contact.firstName,
+        lastName: contact.lastName,
+        phone: contact.phone,
+        email: contact.email,
+        status: contact.status,
+        lifecycleStage: contact.lifecycleStage,
+        city: contact.city,
+        country: contact.country,
+        totalMessages: contact.totalMessages,
+        conversationCount: contact.conversationCount,
+        lastInteractionAt: contact.lastInteractionAt,
+        firstInteractionAt: contact.firstInteractionAt,
+        customFields: contact.customFields,
+        channels,
+      });
+    } catch (error: any) {
+      console.error('[PublicAccess] Error getting contact detail:', error);
+      res.status(500).json({ error: "Failed to get contact detail" });
+    }
+  });
+
+  app.get("/api/public/contacts/:token/detail/:contactId/timeline", async (req, res) => {
+    try {
+      const tokenRecord = await storage.getPublicAccessTokenByToken(req.params.token);
+      if (!tokenRecord) {
+        return res.status(404).json({ error: "Invalid or expired link" });
+      }
+
+      const contact = await storage.getCrmContact(req.params.contactId);
+      if (!contact || contact.brandId !== tokenRecord.brandId) {
+        return res.status(404).json({ error: "Contact not found" });
+      }
+
+      const rawLimit = parseInt(req.query.limit as string);
+      const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 200) : 100;
+      const messages = await storage.getCrmContactTimeline(req.params.contactId, { limit });
+
+      res.json({
+        messages,
+        totalMessages: messages.length,
+      });
+    } catch (error: any) {
+      console.error('[PublicAccess] Error getting contact timeline:', error);
+      res.status(500).json({ error: "Failed to get timeline" });
+    }
+  });
+
+  app.get("/api/public/contacts/:token/detail/:contactId/journey", async (req, res) => {
+    try {
+      const tokenRecord = await storage.getPublicAccessTokenByToken(req.params.token);
+      if (!tokenRecord) {
+        return res.status(404).json({ error: "Invalid or expired link" });
+      }
+
+      const contact = await storage.getCrmContact(req.params.contactId);
+      if (!contact || contact.brandId !== tokenRecord.brandId) {
+        return res.status(404).json({ error: "Contact not found" });
+      }
+
+      const timeline = await storage.getContactTimeline(req.params.contactId);
+      if (!timeline) {
+        return res.status(404).json({ error: "Contact not found" });
+      }
+      res.json({ success: true, timeline });
+    } catch (error: any) {
+      console.error('[PublicAccess] Error getting contact journey:', error);
+      res.status(500).json({ error: "Failed to get journey" });
     }
   });
 

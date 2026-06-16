@@ -23,7 +23,10 @@ import {
   type ConversationStatus, type ClosedBy,
   type ReminderRules, type InsertReminderRules, type UpdateReminderRules,
   type ReminderEvent, type InsertReminderEvent, type ReminderStatus,
-  type ConversationTimeline, type TimelineEvent
+  type ConversationTimeline, type TimelineEvent,
+  leads, type Lead, type InsertLead,
+  metaPageConnections, type MetaPageConnection, type InsertMetaPageConnection, type UpdateMetaPageConnection,
+  publicAccessTokens, type PublicAccessToken, type InsertPublicAccessToken
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, isNull, isNotNull, gte, lte, sql, inArray, notInArray } from "drizzle-orm";
@@ -38,6 +41,20 @@ function transformRowToCamelCase<T>(row: Record<string, unknown>): T {
     result[snakeToCamel(key)] = row[key];
   }
   return result as T;
+}
+
+export interface CrmContactFilterOptions {
+  status?: string;
+  lifecycleStage?: string;
+  limit?: number;
+  offset?: number;
+  firstInteractionFrom?: string;
+  firstInteractionTo?: string;
+  lastInteractionFrom?: string;
+  lastInteractionTo?: string;
+  platform?: string;
+  hasPhone?: boolean;
+  search?: string;
 }
 
 export interface IStorage {
@@ -58,6 +75,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<InsertUser>): Promise<User | undefined>;
   updateUserPassword(id: string, hashedPassword: string): Promise<void>;
+  deleteUser(id: string): Promise<void>;
   activateUser(id: string): Promise<User | undefined>;
   
   createVerificationCode(userId: string, codeHash: string, expiresAt: Date): Promise<{ id: string }>;
@@ -88,6 +106,8 @@ export interface IStorage {
   getMessages(brandId?: string): Promise<Message[]>;
   getMessagesByConversation(conversationId: string): Promise<Message[]>;
   getMessage(id: string): Promise<Message | undefined>;
+  hasPrivateReplyForComment(brandId: string, parentMessageId: string): Promise<boolean>;
+  hasRecentOutboundInConversation(conversationId: string, withinMs: number): Promise<boolean>;
   getMessageByMetricoolId(metricoolId: string, brandId: string): Promise<Message | undefined>;
   messageExistsGlobally(metricoolId: string): Promise<boolean>;
   getMessagesWithPendingTranscription(brandId: string, limit?: number): Promise<Message[]>;
@@ -200,7 +220,8 @@ export interface IStorage {
   incrementTemplateUsage(id: string): Promise<PlaygroundTemplate | undefined>;
   
   // CRM Module - Contacts
-  getCrmContacts(brandId: string, options?: { status?: string; limit?: number; offset?: number }): Promise<CrmContact[]>;
+  getCrmContacts(brandId: string, options?: CrmContactFilterOptions): Promise<CrmContact[]>;
+  countCrmContacts(brandId: string, options?: CrmContactFilterOptions): Promise<number>;
   getCrmContact(id: string): Promise<CrmContact | undefined>;
   getCrmContactByEmail(brandId: string, email: string): Promise<CrmContact | undefined>;
   getCrmContactByPhone(brandId: string, phone: string): Promise<CrmContact | undefined>;
@@ -351,6 +372,23 @@ export interface IStorage {
   
   // Cross-Brand Account Detection (for preventing false inbound detection)
   getKnownBrandAccountNames(platform: string): Promise<Set<string>>;
+
+  // Leads
+  createLead(lead: InsertLead): Promise<Lead>;
+
+  // Meta Page Connections (Private Replies)
+  getMetaPageConnections(brandId: string): Promise<MetaPageConnection[]>;
+  getMetaPageConnectionByPageId(brandId: string, pageId: string): Promise<MetaPageConnection | undefined>;
+  upsertMetaPageConnection(data: InsertMetaPageConnection): Promise<MetaPageConnection>;
+  updateMetaPageConnection(id: string, data: UpdateMetaPageConnection): Promise<MetaPageConnection | undefined>;
+  deleteMetaPageConnection(id: string): Promise<void>;
+
+  // Public Access Tokens (Sales rep links)
+  createPublicAccessToken(data: InsertPublicAccessToken): Promise<PublicAccessToken>;
+  getActivePublicAccessToken(brandId: string): Promise<PublicAccessToken | undefined>;
+  getPublicAccessTokenById(id: string): Promise<PublicAccessToken | undefined>;
+  getPublicAccessTokenByToken(token: string): Promise<PublicAccessToken | undefined>;
+  revokePublicAccessToken(id: string): Promise<PublicAccessToken | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -461,6 +499,10 @@ export class DatabaseStorage implements IStorage {
       .update(users)
       .set({ password: hashedPassword })
       .where(eq(users.id, id));
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
   }
 
   async activateUser(id: string): Promise<User | undefined> {
@@ -819,19 +861,28 @@ export class DatabaseStorage implements IStorage {
     );
     
     if (existing) {
-      // Only update unreadCount if we should increment (new inbound message)
+      const newTimestamp = insertConversation.lastMessageAt ? new Date(insertConversation.lastMessageAt) : null;
+      const existingTimestamp = existing.lastMessageAt ? new Date(existing.lastMessageAt) : null;
+      const isMoreRecent = newTimestamp && (!existingTimestamp || newTimestamp > existingTimestamp);
+
       const updates: any = {
-        lastMessageAt: insertConversation.lastMessageAt,
-        lastMessagePreview: insertConversation.lastMessagePreview,
         customerName: insertConversation.customerName || existing.customerName,
         customerAvatar: insertConversation.customerAvatar || existing.customerAvatar,
       };
-      
+
+      if (isMoreRecent) {
+        updates.lastMessageAt = newTimestamp;
+        updates.lastMessagePreview = insertConversation.lastMessagePreview;
+      }
+
       if (shouldIncrementUnread) {
         updates.unreadCount = (existing.unreadCount || 0) + 1;
         console.log(`[Storage] INCREMENT unread for conv ${existing.id} (${existing.customerName}): ${existing.unreadCount || 0} -> ${updates.unreadCount}`);
+        if (existing.status === 'closed') {
+          updates.status = 'open';
+          console.log(`[Storage] REOPEN conv ${existing.id} (${existing.customerName}): new inbound message arrived`);
+        }
       }
-      // If shouldIncrementUnread is false, we DON'T touch unreadCount at all
       
       const updated = await this.updateConversation(existing.id, updates);
       return updated!;
@@ -886,6 +937,35 @@ export class DatabaseStorage implements IStorage {
   async getMessage(id: string): Promise<Message | undefined> {
     const [message] = await db.select().from(messages).where(eq(messages.id, id));
     return message || undefined;
+  }
+
+  async hasPrivateReplyForComment(brandId: string, parentMessageId: string): Promise<boolean> {
+    const [result] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(messages)
+      .where(
+        and(
+          eq(messages.brandId, brandId),
+          eq(messages.parentMessageId, parentMessageId),
+          eq(messages.internalOrigin, 'meta_private_reply')
+        )
+      );
+    return (result?.count || 0) > 0;
+  }
+
+  async hasRecentOutboundInConversation(conversationId: string, withinMs: number): Promise<boolean> {
+    const cutoff = new Date(Date.now() - withinMs);
+    const [result] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(messages)
+      .where(
+        and(
+          eq(messages.conversationId, conversationId),
+          eq(messages.direction, 'outbound'),
+          gte(messages.timestamp, cutoff)
+        )
+      );
+    return (result?.count || 0) > 0;
   }
 
   async getMessageByMetricoolId(metricoolId: string, brandId: string): Promise<Message | undefined> {
@@ -1090,11 +1170,17 @@ export class DatabaseStorage implements IStorage {
       return diffA - diffB;
     });
     
+    let closestCandidate: { pending: Message; timeDiff: number; pendingNormalized: string } | null = null;
+
     for (const pending of sortedPending) {
       const pendingNormalized = normalizeContent(pending.content);
       const pendingTime = new Date(pending.timestamp).getTime();
       const timeDiff = Math.abs(syncedTime - pendingTime);
       
+      if (!closestCandidate || timeDiff < closestCandidate.timeDiff) {
+        closestCandidate = { pending, timeDiff, pendingNormalized };
+      }
+
       // Content must be similar and within time tolerance
       if (pendingNormalized === syncedNormalized && timeDiff < TIME_TOLERANCE_MS) {
         console.log(`[Storage] Found brand-wide match for reconciliation: pending ${pending.id} matches synced content (timeDiff: ${Math.round(timeDiff/1000)}s)`);
@@ -1123,6 +1209,34 @@ export class DatabaseStorage implements IStorage {
       if (pendingFirst50.length >= 20 && syncedRaw.includes(pendingFirst50) && timeDiff < TIME_TOLERANCE_MS) {
         console.log(`[Storage] Found Facebook-style match: synced message contains pending content (timeDiff: ${Math.round(timeDiff/1000)}s)`);
         return pending;
+      }
+    }
+
+    // FALLBACK: If content-based matching failed but there's a pending outbound in the same
+    // conversation within a tight time window, match by proximity alone.
+    // This catches cases where the platform alters the text (e.g., TikTok reformatting).
+    const FALLBACK_TIME_TOLERANCE_MS = 5 * 60 * 1000; // 5 minutes
+    if (syncedMessage.conversationId) {
+      for (const pending of sortedPending) {
+        if (pending.conversationId !== syncedMessage.conversationId) continue;
+        const pendingTime = new Date(pending.timestamp).getTime();
+        const timeDiff = Math.abs(syncedTime - pendingTime);
+        if (timeDiff < FALLBACK_TIME_TOLERANCE_MS) {
+          console.log(`[Storage] Found FALLBACK match (same conversation + close timestamp): pending ${pending.id} (timeDiff: ${Math.round(timeDiff/1000)}s)`);
+          return pending;
+        }
+      }
+    }
+
+    if (pendingMessages.length > 0) {
+      console.log(`[Storage] RECONCILIATION MISS: ${pendingMessages.length} pending candidate(s) but none matched.`);
+      console.log(`[Storage]   Synced content (normalized): "${syncedNormalized.substring(0, 80)}"`);
+      console.log(`[Storage]   Synced conversationId: ${syncedMessage.conversationId}, timestamp: ${syncedMessage.timestamp}`);
+      for (const pending of sortedPending.slice(0, 5)) {
+        const pNorm = normalizeContent(pending.content);
+        const pTimeDiff = Math.abs(new Date(pending.timestamp).getTime() - syncedTime);
+        const convMatch = pending.conversationId === syncedMessage.conversationId ? 'YES' : 'NO';
+        console.log(`[Storage]   Candidate ${pending.id}: "${pNorm.substring(0, 60)}" | timeDiff: ${Math.round(pTimeDiff/1000)}s | convMatch: ${convMatch} | source: ${pending.source}`);
       }
     }
 
@@ -2311,11 +2425,61 @@ export class DatabaseStorage implements IStorage {
   // CRM MODULE - Contacts
   // ============================================
 
-  async getCrmContacts(brandId: string, options?: { status?: string; limit?: number; offset?: number }): Promise<CrmContact[]> {
+  async getCrmContacts(brandId: string, options?: CrmContactFilterOptions): Promise<CrmContact[]> {
     const conditions = [eq(crmContacts.brandId, brandId)];
     
     if (options?.status) {
       conditions.push(eq(crmContacts.status, options.status));
+    }
+    
+    if (options?.lifecycleStage) {
+      conditions.push(eq(crmContacts.lifecycleStage, options.lifecycleStage));
+    }
+    
+    if (options?.firstInteractionFrom) {
+      conditions.push(gte(crmContacts.firstInteractionAt, new Date(options.firstInteractionFrom)));
+    }
+    if (options?.firstInteractionTo) {
+      const endOfDay = new Date(options.firstInteractionTo);
+      endOfDay.setHours(23, 59, 59, 999);
+      conditions.push(lte(crmContacts.firstInteractionAt, endOfDay));
+    }
+    if (options?.lastInteractionFrom) {
+      conditions.push(gte(crmContacts.lastInteractionAt, new Date(options.lastInteractionFrom)));
+    }
+    if (options?.lastInteractionTo) {
+      const endOfDay = new Date(options.lastInteractionTo);
+      endOfDay.setHours(23, 59, 59, 999);
+      conditions.push(lte(crmContacts.lastInteractionAt, endOfDay));
+    }
+    
+    if (options?.hasPhone === true) {
+      conditions.push(isNotNull(crmContacts.phone));
+      conditions.push(sql`${crmContacts.phone} != ''`);
+    } else if (options?.hasPhone === false) {
+      conditions.push(or(isNull(crmContacts.phone), sql`${crmContacts.phone} = ''`)!);
+    }
+    
+    if (options?.platform) {
+      conditions.push(
+        sql`${crmContacts.id} IN (
+          SELECT contact_id FROM crm_contact_channels 
+          WHERE platform = ${options.platform}
+        )`
+      );
+    }
+
+    if (options?.search) {
+      const searchTerm = `%${options.search.toLowerCase()}%`;
+      conditions.push(
+        sql`(
+          LOWER(${crmContacts.displayName}) LIKE ${searchTerm} OR
+          LOWER(${crmContacts.firstName}) LIKE ${searchTerm} OR
+          LOWER(${crmContacts.lastName}) LIKE ${searchTerm} OR
+          LOWER(${crmContacts.email}) LIKE ${searchTerm} OR
+          ${crmContacts.phone} LIKE ${searchTerm}
+        )`
+      );
     }
     
     return await db
@@ -2325,6 +2489,65 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(crmContacts.lastInteractionAt))
       .limit(options?.limit || 100)
       .offset(options?.offset || 0);
+  }
+
+  async countCrmContacts(brandId: string, options?: CrmContactFilterOptions): Promise<number> {
+    const conditions = [eq(crmContacts.brandId, brandId)];
+
+    if (options?.status) {
+      conditions.push(eq(crmContacts.status, options.status));
+    }
+    if (options?.lifecycleStage) {
+      conditions.push(eq(crmContacts.lifecycleStage, options.lifecycleStage));
+    }
+    if (options?.firstInteractionFrom) {
+      conditions.push(gte(crmContacts.firstInteractionAt, new Date(options.firstInteractionFrom)));
+    }
+    if (options?.firstInteractionTo) {
+      const endOfDay = new Date(options.firstInteractionTo);
+      endOfDay.setHours(23, 59, 59, 999);
+      conditions.push(lte(crmContacts.firstInteractionAt, endOfDay));
+    }
+    if (options?.lastInteractionFrom) {
+      conditions.push(gte(crmContacts.lastInteractionAt, new Date(options.lastInteractionFrom)));
+    }
+    if (options?.lastInteractionTo) {
+      const endOfDay = new Date(options.lastInteractionTo);
+      endOfDay.setHours(23, 59, 59, 999);
+      conditions.push(lte(crmContacts.lastInteractionAt, endOfDay));
+    }
+    if (options?.hasPhone === true) {
+      conditions.push(isNotNull(crmContacts.phone));
+      conditions.push(sql`${crmContacts.phone} != ''`);
+    } else if (options?.hasPhone === false) {
+      conditions.push(or(isNull(crmContacts.phone), sql`${crmContacts.phone} = ''`)!);
+    }
+    if (options?.platform) {
+      conditions.push(
+        sql`${crmContacts.id} IN (
+          SELECT contact_id FROM crm_contact_channels 
+          WHERE platform = ${options.platform}
+        )`
+      );
+    }
+    if (options?.search) {
+      const searchTerm = `%${options.search.toLowerCase()}%`;
+      conditions.push(
+        sql`(
+          LOWER(${crmContacts.displayName}) LIKE ${searchTerm} OR
+          LOWER(${crmContacts.firstName}) LIKE ${searchTerm} OR
+          LOWER(${crmContacts.lastName}) LIKE ${searchTerm} OR
+          LOWER(${crmContacts.email}) LIKE ${searchTerm} OR
+          ${crmContacts.phone} LIKE ${searchTerm}
+        )`
+      );
+    }
+
+    const [result] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(crmContacts)
+      .where(and(...conditions));
+    return Number(result?.count ?? 0);
   }
 
   async getCrmContact(id: string): Promise<CrmContact | undefined> {
@@ -4400,6 +4623,101 @@ export class DatabaseStorage implements IStorage {
     }
     
     return accountNames;
+  }
+
+  async createLead(lead: InsertLead): Promise<Lead> {
+    const [newLead] = await db.insert(leads).values(lead).returning();
+    return newLead;
+  }
+
+  async getMetaPageConnections(brandId: string): Promise<MetaPageConnection[]> {
+    return await db
+      .select()
+      .from(metaPageConnections)
+      .where(eq(metaPageConnections.brandId, brandId))
+      .orderBy(desc(metaPageConnections.createdAt));
+  }
+
+  async getMetaPageConnectionByPageId(brandId: string, pageId: string): Promise<MetaPageConnection | undefined> {
+    const [row] = await db
+      .select()
+      .from(metaPageConnections)
+      .where(and(eq(metaPageConnections.brandId, brandId), eq(metaPageConnections.pageId, pageId)));
+    return row;
+  }
+
+  async upsertMetaPageConnection(data: InsertMetaPageConnection): Promise<MetaPageConnection> {
+    const [row] = await db
+      .insert(metaPageConnections)
+      .values({ ...data, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: [metaPageConnections.brandId, metaPageConnections.pageId],
+        set: {
+          pageName: data.pageName,
+          pageAccessToken: data.pageAccessToken,
+          isActive: data.isActive,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return row;
+  }
+
+  async updateMetaPageConnection(id: string, data: UpdateMetaPageConnection): Promise<MetaPageConnection | undefined> {
+    const [row] = await db
+      .update(metaPageConnections)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(metaPageConnections.id, id))
+      .returning();
+    return row;
+  }
+
+  async deleteMetaPageConnection(id: string): Promise<void> {
+    await db.delete(metaPageConnections).where(eq(metaPageConnections.id, id));
+  }
+
+  async createPublicAccessToken(data: InsertPublicAccessToken): Promise<PublicAccessToken> {
+    return await db.transaction(async (tx) => {
+      await tx
+        .update(publicAccessTokens)
+        .set({ isActive: false, revokedAt: new Date() })
+        .where(and(eq(publicAccessTokens.brandId, data.brandId), eq(publicAccessTokens.isActive, true)));
+      const [token] = await tx.insert(publicAccessTokens).values(data).returning();
+      return token;
+    });
+  }
+
+  async getActivePublicAccessToken(brandId: string): Promise<PublicAccessToken | undefined> {
+    const [token] = await db
+      .select()
+      .from(publicAccessTokens)
+      .where(and(eq(publicAccessTokens.brandId, brandId), eq(publicAccessTokens.isActive, true)));
+    return token;
+  }
+
+  async getPublicAccessTokenById(id: string): Promise<PublicAccessToken | undefined> {
+    const [row] = await db
+      .select()
+      .from(publicAccessTokens)
+      .where(eq(publicAccessTokens.id, id));
+    return row;
+  }
+
+  async getPublicAccessTokenByToken(token: string): Promise<PublicAccessToken | undefined> {
+    const [row] = await db
+      .select()
+      .from(publicAccessTokens)
+      .where(and(eq(publicAccessTokens.token, token), eq(publicAccessTokens.isActive, true)));
+    return row;
+  }
+
+  async revokePublicAccessToken(id: string): Promise<PublicAccessToken | undefined> {
+    const [row] = await db
+      .update(publicAccessTokens)
+      .set({ isActive: false, revokedAt: new Date() })
+      .where(eq(publicAccessTokens.id, id))
+      .returning();
+    return row;
   }
 }
 

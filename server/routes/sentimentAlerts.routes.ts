@@ -1,0 +1,187 @@
+import { Router } from 'express';
+import type { Request, Response, NextFunction } from 'express';
+import { z } from 'zod';
+import { SentimentAlertRepository } from '../repositories/SentimentAlertRepository';
+import { storage } from '../storage';
+import type { AuthenticatedUser } from '../auth';
+
+const validSeverities = ['P1', 'P2', 'P3', 'P4'] as const;
+const validStatuses = ['new', 'acknowledged', 'in_progress', 'resolved', 'dismissed'] as const;
+
+const alertListQuerySchema = z.object({
+  severity: z.string().optional().transform(val =>
+    val ? val.split(',').filter(s => validSeverities.includes(s as any)) : undefined
+  ),
+  status: z.string().optional().transform(val =>
+    val ? val.split(',').filter(s => validStatuses.includes(s as any)) : undefined
+  ),
+  limit: z.string().optional().transform(val => Math.min(parseInt(val || '50') || 50, 200)),
+  offset: z.string().optional().transform(val => Math.max(parseInt(val || '0') || 0, 0)),
+});
+
+const updateStatusBodySchema = z.object({
+  status: z.enum(validStatuses),
+  notes: z.string().max(2000).optional(),
+});
+
+const router = Router();
+
+const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
+  let user = null;
+
+  if (req.isAuthenticated && req.isAuthenticated() && req.user) {
+    user = req.user as AuthenticatedUser;
+  }
+
+  if (!user && (req.session as any)?.userId) {
+    const sessionUser = await storage.getUser((req.session as any).userId);
+    if (sessionUser) {
+      user = sessionUser as AuthenticatedUser;
+    }
+  }
+
+  if (!user) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+
+  (req as any).user = user;
+  next();
+};
+
+const validateBrandAccess = async (req: Request, res: Response, next: NextFunction) => {
+  const user = (req as any).user as AuthenticatedUser;
+  const brandId = req.params.brandId;
+
+  if (!brandId) {
+    return res.status(400).json({ error: "Brand ID is required" });
+  }
+
+  if (user.role !== 'admin') {
+    if (!user.brandId) {
+      return res.status(403).json({ error: "User not associated with any brand" });
+    }
+    if (brandId !== user.brandId) {
+      return res.status(403).json({ error: "Access denied to this brand" });
+    }
+  }
+
+  next();
+};
+
+router.get('/api/brands/:brandId/sentiment-alerts', requireAuth, validateBrandAccess, async (req: Request, res: Response) => {
+  try {
+    const { brandId } = req.params;
+    const parsed = alertListQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid query parameters', details: parsed.error.issues });
+    }
+    const { severity, status, limit, offset } = parsed.data;
+
+    const alerts = await SentimentAlertRepository.getByBrand(brandId, {
+      severity,
+      status,
+      limit,
+      offset,
+    });
+
+    res.json({ success: true, alerts, count: alerts.length });
+  } catch (error: any) {
+    console.error('[SentimentAlerts] List error:', error);
+    res.status(500).json({ error: 'Failed to fetch alerts', details: error.message });
+  }
+});
+
+router.get('/api/brands/:brandId/sentiment-alerts/stats', requireAuth, validateBrandAccess, async (req: Request, res: Response) => {
+  try {
+    const { brandId } = req.params;
+    const stats = await SentimentAlertRepository.getStatsByBrand(brandId);
+    res.json({ success: true, ...stats });
+  } catch (error: any) {
+    console.error('[SentimentAlerts] Stats error:', error);
+    res.status(500).json({ error: 'Failed to fetch stats', details: error.message });
+  }
+});
+
+router.get('/api/brands/:brandId/sentiment-alerts/count', requireAuth, validateBrandAccess, async (req: Request, res: Response) => {
+  try {
+    const { brandId } = req.params;
+    const count = await SentimentAlertRepository.getActiveAlertCount(brandId);
+    res.json({ success: true, count });
+  } catch (error: any) {
+    console.error('[SentimentAlerts] Count error:', error);
+    res.status(500).json({ error: 'Failed to fetch count', details: error.message });
+  }
+});
+
+router.get('/api/brands/:brandId/sentiment-alerts/by-conversation', requireAuth, validateBrandAccess, async (req: Request, res: Response) => {
+  try {
+    const { brandId } = req.params;
+    const alerts = await SentimentAlertRepository.getActiveAlertsByConversation(brandId);
+
+    const severityRank: Record<string, number> = { P1: 1, P2: 2, P3: 3, P4: 4 };
+    const byConversation: Record<string, { severity: string; sentiment: string; category: string; status: string }> = {};
+    for (const alert of alerts) {
+      const existing = byConversation[alert.conversationId];
+      if (!existing || (severityRank[alert.severity] || 99) < (severityRank[existing.severity] || 99)) {
+        byConversation[alert.conversationId] = {
+          severity: alert.severity,
+          sentiment: alert.sentiment,
+          category: alert.category,
+          status: alert.status,
+        };
+      }
+    }
+
+    res.json({ success: true, conversations: byConversation });
+  } catch (error: any) {
+    console.error('[SentimentAlerts] By-conversation error:', error);
+    res.status(500).json({ error: 'Failed to fetch alerts by conversation', details: error.message });
+  }
+});
+
+router.patch('/api/brands/:brandId/sentiment-alerts/:id/status', requireAuth, validateBrandAccess, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const user = (req as any).user;
+
+    const parsed = updateStatusBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request body', details: parsed.error.issues });
+    }
+    const { status, notes } = parsed.data;
+
+    const alert = await SentimentAlertRepository.getById(id);
+    if (!alert) {
+      return res.status(404).json({ error: 'Alert not found' });
+    }
+
+    if (alert.brandId !== req.params.brandId) {
+      return res.status(403).json({ error: 'Alert does not belong to this brand' });
+    }
+
+    const updated = await SentimentAlertRepository.updateStatus(id, status, user?.id, notes);
+    res.json({ success: true, alert: updated });
+  } catch (error: any) {
+    console.error('[SentimentAlerts] Update status error:', error);
+    res.status(500).json({ error: 'Failed to update alert', details: error.message });
+  }
+});
+
+router.get('/api/brands/:brandId/sentiment-alerts/:id', requireAuth, validateBrandAccess, async (req: Request, res: Response) => {
+  try {
+    const { id, brandId } = req.params;
+    const alert = await SentimentAlertRepository.getById(id);
+    if (!alert) {
+      return res.status(404).json({ error: 'Alert not found' });
+    }
+    if (alert.brandId !== brandId) {
+      return res.status(403).json({ error: 'Alert does not belong to this brand' });
+    }
+    res.json({ success: true, alert });
+  } catch (error: any) {
+    console.error('[SentimentAlerts] Get error:', error);
+    res.status(500).json({ error: 'Failed to fetch alert', details: error.message });
+  }
+});
+
+export default router;
