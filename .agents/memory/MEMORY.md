@@ -1,1 +1,2 @@
 - [Vite dev server kills backend](vite-dev-process-exit.md) — the Replit vite template's customLogger.error calls process.exit(1); any transient vite error takes down the whole backend.
+- [GitHub sync divergence](github-sync-divergence.md) — external repo + Replit auto-checkpoints cause ahead/behind divergence; agent can't run git writes, but can apply merged PR files via read-only `git show origin/main:path > path` + psql migration.
