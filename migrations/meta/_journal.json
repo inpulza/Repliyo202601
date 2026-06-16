@@ -57,6 +57,13 @@
       "when": 1774977964257,
       "tag": "0007_faithful_maverick",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1781622636543,
+      "tag": "0008_limbo_custom_fields",
+      "breakpoints": true
     }
   ]
 }

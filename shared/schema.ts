@@ -674,7 +674,7 @@ export const crmContacts = pgTable("crm_contacts", {
   source: text("source"),
   
   // Datos dinámicos extraídos por IA (JSONB flexible)
-  customFields: jsonb("custom_fields").default({}),
+  customFields: jsonb("custom_fields").$type<Record<string, any>>().default({}),
   
   // Enrutamiento inteligente
   lastUsedChannelId: varchar("last_used_channel_id"),
@@ -743,6 +743,7 @@ export const crmContactLimbo = pgTable("crm_contact_limbo", {
   interactionCount: integer("interaction_count").default(1),
   firstInteractionAt: timestamp("first_interaction_at").notNull(),
   lastInteractionAt: timestamp("last_interaction_at").notNull(),
+  customFields: jsonb("custom_fields").$type<Record<string, any>>().default({}),
   
   // Promoción a contacto oficial
   promotedToContactId: varchar("promoted_to_contact_id").references(() => crmContacts.id),
