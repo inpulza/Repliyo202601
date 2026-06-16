@@ -1171,7 +1171,7 @@ class SyncService {
 
         // 4. Broad search: find any DM conversation matching by customer name (case-insensitive)
         if (!dmConv) {
-          const allDmConvs = await storage.getConversationsByBrand(brandId);
+          const allDmConvs = await storage.getConversations(brandId);
           dmConv = allDmConvs.find(c => 
             c.platform === 'facebook' && 
             c.type === 'dm' && 
