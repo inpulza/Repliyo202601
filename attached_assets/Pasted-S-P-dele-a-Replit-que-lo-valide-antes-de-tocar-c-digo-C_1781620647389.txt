@@ -1,0 +1,17 @@
+Sí. Pídele a Replit que lo valide antes de tocar código. Copia esto:
+
+Replit, contexto rápido: estamos preparando la integración de WhatsApp/Zernio dentro de Repliyo, pero antes queremos evitar meter otro canal encima de un monolito que acaba de recibir un merge grande. Codex ya sincronizó `main` desde GitHub (`add388d`) y vio que el build pasa, pero `npm run check` está rojo, el `package-lock.json` trae URLs internas de Replit (`package-firewall.replit.local`) que rompen instalaciones fuera de Replit, y WhatsApp todavía aparece sobre todo en UI/mock/types, no como canal backend real. La idea NO es implementar WhatsApp todavía; primero queremos estabilizar el árbol y abrir el camino correcto: limpiar el lockfile, arreglar los TypeScript que pueden morder runtime, y después crear una capa de adapter/proveedor para que WhatsApp/Zernio entre como canal propio, sin pegarlo a `MetricoolService` ni hacer más grande `syncService.ts`.
+
+Valida por favor este diagnóstico y esta secuencia:
+
+1. `main` actual es `add388d` y representa el merge grande correcto.
+2. `npm run build` debe pasar.
+3. `npm run check` probablemente sigue fallando; confirma si es deuda conocida o errores nuevos peligrosos.
+4. Revisa si el `package-lock.json` con `package-firewall.replit.local` es normal en Replit pero problemático fuera de Replit, y si conviene regenerarlo/normalizarlo.
+5. Confirma si WhatsApp está realmente integrado en backend o solo presente en UI/mock/types.
+6. Valida la recomendación de no meter WhatsApp directo en `MetricoolService`/`syncService`, sino crear primero una interfaz tipo `ChannelProvider` / `MessageProviderAdapter`.
+7. Revisa específicamente los dos riesgos que Codex vio:
+   - `syncService.ts` llama `storage.getConversationsByBrand()`, pero en `storage.ts` existe `getConversations(brandId)`, no ese método.
+   - El código usa `customFields` en `crmContactLimbo`, pero el schema/migración de `crm_contact_limbo` no parece declarar `custom_fields`.
+
+La pregunta concreta: ¿estás de acuerdo con hacer primero PRs pequeños de estabilización (`lockfile` + TS/runtime mismatches) antes de empezar el PR de WhatsApp/Zernio como adapter nuevo?

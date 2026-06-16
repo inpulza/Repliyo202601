@@ -1,0 +1,35 @@
+Ya lo tengo actualizado y revisado por encima.
+
+En cristiano: el merge grande sí entró a GitHub. Repliyo ahora tiene mucho más producto dentro: CRM más fuerte, private replies de Facebook/Instagram, alertas de crisis/sentimiento, user management, landing nueva, docs y configs de agentes. Pero todavía no está listo para meter WhatsApp encima sin ordenar dos cosas.
+
+Lo verificado:
+
+- `main` quedó en `add388d`.
+- Delta desde mi baseline anterior: `450 files changed`, `66k+` líneas añadidas.
+- `npm run build` pasa.
+- `npm run check` falla con muchos errores TypeScript.
+- `package-lock.json` tiene URLs internas de Replit (`package-firewall.replit.local`), así que un `npm install` normal fuera de Replit falla. Yo pude instalar ignorando el lockfile, pero eso es una señal de higiene pendiente.
+- WhatsApp todavía no está integrado como backend real: aparece en UI/mock/types, pero `shared/socialProviderEnum` sigue sin `whatsapp`, y el envío/sync real sigue atado a Metricool/Meta/Facebook.
+
+Hallazgos importantes:
+
+1. **WhatsApp no debe ir directo al monolito actual todavía.**  
+   Primero hay que crear una capa limpia de provider/channel adapter. Si lo metemos a `syncService.ts` o `MetricoolService` como parche, vamos a hacer más grande el problema.
+
+2. **Hay deuda TypeScript real.**  
+   No bloquea el deploy porque el build transpila sin typecheck, pero sí tapa bugs. Ejemplo: `syncService` llama `storage.getConversationsByBrand()`, que no existe. Está dentro de un fallback, pero puede guardar private replies en el hilo equivocado.
+
+3. **Hay mismatch de schema CRM limbo.**  
+   El código usa `customFields` en `crmContactLimbo`, pero la tabla/schema no lo tiene. Eso puede romper rutas de CRM/contact enrichment cuando se ejerciten.
+
+4. **El lockfile quedó dependiente de Replit.**  
+   Replit puede funcionar, pero cualquier clone local/CI externo va a sufrir hasta limpiar eso.
+
+Mi recomendación de secuencia:
+
+1. PR pequeño: normalizar `package-lock` para que instale fuera de Replit.
+2. PR pequeño: arreglar los errores TypeScript más peligrosos, no todos los cosméticos.
+3. PR de arquitectura: crear interfaz `ChannelProvider` / `MessageProviderAdapter`.
+4. Luego sí: WhatsApp/Zernio como adapter nuevo, conectado primero en modo observer/manual approval, no auto-send.
+
+El Observer en Drive ya quedó consolidado en la carpeta nueva; eso está cerrado.
