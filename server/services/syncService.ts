@@ -1,5 +1,5 @@
 import { storage } from "../storage";
-import { MetricoolService, createMetricoolService } from "./metricool";
+import { createMetricoolChannelAdapter } from "./channels";
 import { websocketService } from "./websocketService";
 import { autoReplyService } from "./autoReplyService";
 import { transcriptionService } from "./transcriptionService";
@@ -158,12 +158,9 @@ class SyncService {
     
     log(`[SyncService] Brand ${brandName}: active providers - ${activeProviders.join(', ')}`, "sync");
 
-    const metricoolService = new MetricoolService({
-      userToken: token,
-      userId: userId
-    });
+    const channelAdapter = createMetricoolChannelAdapter(token, userId);
     
-    const inboxData = await metricoolService.getAllInboxData(blogId, activeProviders);
+    const inboxData = await channelAdapter.getAllInboxData(blogId, activeProviders);
 
     let savedCount = 0;
     let newInboundCount = 0; // Counter for truly NEW inbound messages (for notifications)
@@ -1272,8 +1269,8 @@ class SyncService {
     try {
       log("[SyncService] Starting brand availability check...", "sync");
 
-      const metricoolService = createMetricoolService();
-      const availableBrands = await metricoolService.getBrands();
+      const channelAdapter = createMetricoolChannelAdapter();
+      const availableBrands = await channelAdapter.getBrands();
       
       log(`[SyncService] Found ${availableBrands.length} brands available in Metricool`, "sync");
 
