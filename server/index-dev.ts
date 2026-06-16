@@ -27,8 +27,11 @@ export async function setupVite(app: Express, server: Server) {
     customLogger: {
       ...viteLogger,
       error: (msg, options) => {
+        // Log Vite errors (transform/HMR/optimize) but do NOT kill the
+        // backend process. Exiting here takes down the entire app (API +
+        // sync service) on any transient Vite error; the browser runtime
+        // error overlay already surfaces these to the developer.
         viteLogger.error(msg, options);
-        process.exit(1);
       },
     },
     server: serverOptions,
