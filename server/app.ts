@@ -33,7 +33,14 @@ app.use(sessionMiddleware);
 
 app.use((_req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  // Allow the Replit workspace preview (cross-origin iframe) to embed the app
+  // while still blocking arbitrary third-party framing (anti-clickjacking).
+  // frame-ancestors is the modern replacement for X-Frame-Options and supports
+  // multiple allowed origins, which X-Frame-Options: SAMEORIGIN cannot.
+  res.setHeader(
+    'Content-Security-Policy',
+    "frame-ancestors 'self' https://*.replit.dev https://*.replit.com https://*.repl.co https://replit.com"
+  );
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
