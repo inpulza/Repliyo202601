@@ -742,28 +742,35 @@ Sitemap: ${SITE_URL}/sitemap.xml
         ...((matchingBrand.detectedProviders || []) as DetectedProviderForRefresh[]),
       ];
 
-      try {
-        const whatsappAdapter = createChannelAdapter(ZERNIO_WHATSAPP_PROVIDER_ID);
-        const whatsappBrands = await whatsappAdapter.getBrands();
-        const whatsappBrand = whatsappBrands.find(b => b.blogId === brand.metricoolBlogId);
+      const zernioObserverBlogId = process.env.ZERNIO_WHATSAPP_BLOG_ID || "4074962";
+      const shouldDetectWhatsApp =
+        process.env.ZERNIO_OBSERVER_ENABLED === "1" &&
+        brand.metricoolBlogId === zernioObserverBlogId;
 
-        if (whatsappBrand) {
-          for (const detectedProvider of whatsappBrand.detectedProviders) {
-            const alreadyDetected = detectedProviders.some(
-              dp => dp.provider.toUpperCase() === detectedProvider.provider.toUpperCase()
-            );
+      if (shouldDetectWhatsApp) {
+        try {
+          const whatsappAdapter = createChannelAdapter(ZERNIO_WHATSAPP_PROVIDER_ID);
+          const whatsappBrands = await whatsappAdapter.getBrands();
+          const whatsappBrand = whatsappBrands.find(b => b.blogId === brand.metricoolBlogId);
 
-            if (!alreadyDetected) {
-              detectedProviders.push({
-                provider: detectedProvider.provider,
-                accountName: detectedProvider.accountName || null,
-                accountAvatar: null,
-              });
+          if (whatsappBrand) {
+            for (const detectedProvider of whatsappBrand.detectedProviders) {
+              const alreadyDetected = detectedProviders.some(
+                dp => dp.provider.toUpperCase() === detectedProvider.provider.toUpperCase()
+              );
+
+              if (!alreadyDetected) {
+                detectedProviders.push({
+                  provider: detectedProvider.provider,
+                  accountName: detectedProvider.accountName || null,
+                  accountAvatar: null,
+                });
+              }
             }
           }
+        } catch (error: any) {
+          console.log(`[SocialAccounts] Zernio WhatsApp refresh skipped for ${brand.name}: ${error.message}`);
         }
-      } catch (error: any) {
-        console.log(`[SocialAccounts] Zernio WhatsApp refresh skipped for ${brand.name}: ${error.message}`);
       }
 
       const existingAccounts = await storage.getSocialAccountsByBrand(brandId);

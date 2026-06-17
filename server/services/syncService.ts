@@ -19,6 +19,8 @@ import { log } from "../app";
 import { sendPrivateReply, interpolateTemplate } from "./metaService";
 import { enrichPostContext, enrichPostContextForTemplate } from "./llm/prompt-composer";
 
+const DEFAULT_ZERNIO_OBSERVER_BLOG_ID = "4074962";
+
 interface BrandSyncResult {
   newBrands: string[];
   disconnectedBrands: string[];
@@ -358,7 +360,7 @@ class SyncService {
           const isInbound = !isFromBrand;
           const whatsappScopeId = conv.rawData?.accountId || conv.rawData?.blogId || blogId;
           const metricoolId = platform === 'whatsapp'
-            ? `zernio_${whatsappScopeId}_${conv.id}_${msg.id || msg.timestamp}`
+            ? `zernio:${whatsappScopeId}:${conv.id}:${msg.id || msg.timestamp}`
             : `conv_${conv.id}_${msg.id || msg.timestamp}`;
 
           // Check if message already exists GLOBALLY (not just for this brand)
@@ -402,7 +404,7 @@ class SyncService {
             platform,
             type: "conversation" as const,
             direction: direction as 'inbound' | 'outbound',
-            source: platform === 'whatsapp' ? 'zernio_whatsapp_sync' as const : 'metricool_sync' as const,
+            source: platform === 'whatsapp' ? 'zernio_sync' as const : 'metricool_sync' as const,
             author,
             authorAvatar,
             content,
@@ -930,6 +932,10 @@ class SyncService {
     blogId: string,
     activeProviders: string[]
   ): Promise<ChannelInboxData> {
+    if (!this.isZernioObserverEnabledForBlog(blogId)) {
+      return { conversations: [], comments: [] };
+    }
+
     if (!this.isActiveProvider(activeProviders, WHATSAPP_SOCIAL_PROVIDER)) {
       return { conversations: [], comments: [] };
     }
@@ -954,6 +960,14 @@ class SyncService {
       conversations: sources.flatMap(source => source.conversations),
       comments: sources.flatMap(source => source.comments),
     };
+  }
+
+  private isZernioObserverEnabledForBlog(blogId: string): boolean {
+    return process.env.ZERNIO_OBSERVER_ENABLED === "1" && blogId === this.getZernioObserverBlogId();
+  }
+
+  private getZernioObserverBlogId(): string {
+    return process.env.ZERNIO_WHATSAPP_BLOG_ID || DEFAULT_ZERNIO_OBSERVER_BLOG_ID;
   }
 
   private isActiveProvider(activeProviders: string[], provider: string): boolean {
