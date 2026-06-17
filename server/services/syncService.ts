@@ -1,5 +1,5 @@
 import { storage } from "../storage";
-import { createMetricoolChannelAdapter } from "./channels";
+import { createDefaultChannelAdapter } from "./channels";
 import { websocketService } from "./websocketService";
 import { autoReplyService } from "./autoReplyService";
 import { transcriptionService } from "./transcriptionService";
@@ -158,7 +158,12 @@ class SyncService {
     
     log(`[SyncService] Brand ${brandName}: active providers - ${activeProviders.join(', ')}`, "sync");
 
-    const channelAdapter = createMetricoolChannelAdapter(token, userId);
+    const channelAdapter = createDefaultChannelAdapter({
+      credentials: {
+        userToken: token,
+        userId,
+      },
+    });
     
     const inboxData = await channelAdapter.getAllInboxData(blogId, activeProviders);
 
@@ -1269,7 +1274,7 @@ class SyncService {
     try {
       log("[SyncService] Starting brand availability check...", "sync");
 
-      const channelAdapter = createMetricoolChannelAdapter();
+      const channelAdapter = createDefaultChannelAdapter();
       const availableBrands = await channelAdapter.getBrands();
       
       log(`[SyncService] Found ${availableBrands.length} brands available in Metricool`, "sync");
