@@ -1,4 +1,4 @@
-import { storage } from "../storage";
+import { storage, wasMessageCreatedByUpsert } from "../storage";
 import {
   createChannelAdapter,
   createDefaultChannelAdapter,
@@ -432,7 +432,7 @@ class SyncService {
           
           // Check if this is truly a new message by verifying it belongs to THIS brand
           // (upsertMessage may return an existing message from another brand if it's a global duplicate)
-          const isReallyNew = isNewMessage && savedMessage.brandId === brandId;
+          const isReallyNew = this.isMessageNewForBrand(savedMessage, isNewMessage, brandId);
           
           // CRITICAL FIX: Increment unread counter ONLY AFTER verifying message belongs to this brand
           // This prevents cross-brand counter duplication when both accounts are connected
@@ -666,7 +666,7 @@ class SyncService {
           lastMessageAt: new Date(comment.timestamp),
           lastMessagePreview: previewText,
           status: 'open',
-        }, isNewComment && !isCommentFromBrand);
+        }, false);
 
         const savedComment = await storage.upsertMessage({
           brandId,
@@ -699,7 +699,7 @@ class SyncService {
         
         // Check if this is truly a new message by verifying it belongs to THIS brand
         // (upsertMessage may return an existing message from another brand if it's a global duplicate)
-        const isReallyNew = isNewComment && savedComment.brandId === brandId;
+        const isReallyNew = this.isMessageNewForBrand(savedComment, isNewComment, brandId);
         
         log(`[SyncService] Comment ${comment.id} from ${comment.author}: isNew=${isNewComment}, isReallyNew=${isReallyNew}, isFromBrand=${isCommentFromBrand}`, "sync");
         
@@ -723,6 +723,7 @@ class SyncService {
         // Only notify and trigger auto-reply for NEW INBOUND comments (not from brand)
         if (isReallyNew && !isCommentFromBrand) {
           newInboundCount++; // Increment counter for truly new inbound comments
+          await storage.incrementConversationUnread(conversationRecord.id);
           
           // SENTIMENT ANALYSIS: Classify comment sentiment and detect crisis (async, fire-and-forget)
           void sentimentAnalysisService.processInboundMessage(
@@ -815,14 +816,6 @@ class SyncService {
             const replyExistsGlobally = await storage.messageExistsGlobally(reply.id);
             const isNewReply = !replyExistsGlobally;
             
-            // Update conversation unread count only if this is a NEW inbound reply
-            if (isNewReply && !isReplyFromBrand) {
-              newInboundCount++; // Increment counter for truly new inbound replies
-              await storage.updateConversation(conversationRecord.id, {
-                unreadCount: (conversationRecord.unreadCount || 0) + 1,
-              });
-            }
-
             const savedReply = await storage.upsertMessage({
               brandId,
               conversationId: conversationRecord.id,
@@ -853,7 +846,12 @@ class SyncService {
             savedCount++;
             
             // Check if this nested reply is truly new for THIS brand (avoid cross-brand duplicates)
-            const isReplyReallyNew = isNewReply && savedReply.brandId === brandId;
+            const isReplyReallyNew = this.isMessageNewForBrand(savedReply, isNewReply, brandId);
+
+            if (isReplyReallyNew && !isReplyFromBrand) {
+              newInboundCount++; // Increment counter for truly new inbound replies
+              await storage.incrementConversationUnread(conversationRecord.id);
+            }
             
             // Trigger auto-reply for NEW INBOUND nested replies (same logic as parent comments)
             if (isReplyReallyNew && !isReplyFromBrand) {
@@ -960,6 +958,15 @@ class SyncService {
       conversations: sources.flatMap(source => source.conversations),
       comments: sources.flatMap(source => source.comments),
     };
+  }
+
+  private isMessageNewForBrand(
+    message: { brandId: string },
+    fallbackIsNew: boolean,
+    brandId: string
+  ): boolean {
+    const upsertCreated = wasMessageCreatedByUpsert(message as any);
+    return (upsertCreated ?? fallbackIsNew) && message.brandId === brandId;
   }
 
   private isZernioObserverEnabledForBlog(blogId: string): boolean {
