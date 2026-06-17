@@ -11,7 +11,7 @@
  * Variables opcionales:
  *   ZERNIO_API_BASE_URL              default: https://api.zernio.com/v1
  *   ZERNIO_PROBE_STATUS              default: open
- *   ZERNIO_PROBE_LIMIT               default: 1, max: 10
+ *   ZERNIO_PROBE_LIMIT               default: 5, max: 10
  *   ZERNIO_PROBE_CONVERSATION_ID     optional explicit conversation id for messages check
  */
 
@@ -35,7 +35,7 @@ async function main() {
   const accountId = process.env.ZERNIO_WHATSAPP_ACCOUNT_ID;
   const baseUrl = normalizeBaseUrl(process.env.ZERNIO_API_BASE_URL || DEFAULT_BASE_URL);
   const status = process.env.ZERNIO_PROBE_STATUS || "open";
-  const limit = clampNumber(Number(process.env.ZERNIO_PROBE_LIMIT || 1), 1, 10);
+  const limit = clampNumber(Number(process.env.ZERNIO_PROBE_LIMIT || 5), 1, 10);
   const explicitConversationId = process.env.ZERNIO_PROBE_CONVERSATION_ID;
 
   const steps: ProbeStep[] = [];
@@ -57,6 +57,7 @@ async function main() {
     account_id: accountId,
     status,
     limit,
+    sort_order: "desc",
   });
 
   if (!conversationsResult.ok) {
@@ -74,7 +75,11 @@ async function main() {
 
   if (firstConversationId) {
     const messagesPath = `/inbox/conversations/${encodeURIComponent(firstConversationId)}/messages`;
-    const messagesResult = await requestJson(baseUrl, messagesPath, apiToken, { limit: 1 });
+    const messagesResult = await requestJson(baseUrl, messagesPath, apiToken, {
+      account_id: accountId,
+      limit: 20,
+      sort_order: "asc",
+    });
 
     if (!messagesResult.ok) {
       failRequest("conversation messages", messagesResult, apiToken, accountId);

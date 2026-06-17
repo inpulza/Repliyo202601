@@ -32,6 +32,8 @@ type ZernioRequestMethod = "GET" | "POST";
 const DEFAULT_INPULZA_WHATSAPP_BLOG_ID = "4074962";
 const DEFAULT_MESSAGE_CONCURRENCY = 3;
 const MAX_MESSAGE_CONCURRENCY = 10;
+const DEFAULT_CONVERSATION_LIMIT = 50;
+const DEFAULT_MESSAGE_LIMIT = 20;
 
 type ResolvedZernioWhatsAppAccountConfig = Required<ZernioWhatsAppAccountConfig>;
 
@@ -144,16 +146,22 @@ export class ZernioWhatsAppChannelAdapter implements ChannelAdapter {
     const response = await this.request<any>("/inbox/conversations", "GET", {
       account_id: accountId,
       status: "open",
+      limit: DEFAULT_CONVERSATION_LIMIT,
+      sort_order: "desc",
     });
 
     return this.extractArray(response, ["conversations", "data", "items", "results"]);
   }
 
-  private async getConversationMessages(conversationId: string): Promise<any[]> {
+  private async getConversationMessages(accountId: string, conversationId: string): Promise<any[]> {
     const response = await this.request<any>(
       `/inbox/conversations/${encodeURIComponent(conversationId)}/messages`,
       "GET",
-      { limit: 20 }
+      {
+        account_id: accountId,
+        limit: DEFAULT_MESSAGE_LIMIT,
+        sort_order: "asc",
+      }
     );
 
     return this.extractArray(response, ["messages", "data", "items", "results"]);
@@ -199,7 +207,7 @@ export class ZernioWhatsAppChannelAdapter implements ChannelAdapter {
       conversation.avatar ||
       null;
 
-    const rawMessages = await this.getConversationMessages(conversationId);
+    const rawMessages = await this.getConversationMessages(account.accountId, conversationId);
     const messages = rawMessages.map((message) =>
       this.mapMessage(message, account, customerId, customerName, customerAvatar)
     );
