@@ -144,10 +144,10 @@ export class ZernioWhatsAppChannelAdapter implements ChannelAdapter {
 
   private async getOpenConversations(accountId: string): Promise<any[]> {
     const response = await this.request<any>("/inbox/conversations", "GET", {
-      account_id: accountId,
+      accountId,
       status: "active",
       limit: DEFAULT_CONVERSATION_LIMIT,
-      sort_order: "desc",
+      sortOrder: "desc",
     });
 
     return this.extractArray(response, ["conversations", "data", "items", "results"]);
@@ -160,7 +160,7 @@ export class ZernioWhatsAppChannelAdapter implements ChannelAdapter {
       {
         accountId,
         limit: DEFAULT_MESSAGE_LIMIT,
-        sort_order: "asc",
+        sortOrder: "asc",
       }
     );
 

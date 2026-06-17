@@ -54,10 +54,10 @@ async function main() {
 
   const conversationsPath = "/inbox/conversations";
   const conversationsResult = await requestJson(baseUrl, conversationsPath, apiToken, {
-    account_id: accountId,
+    accountId,
     status,
     limit,
-    sort_order: "desc",
+    sortOrder: "desc",
   });
 
   if (!conversationsResult.ok) {
@@ -78,7 +78,7 @@ async function main() {
     const messagesResult = await requestJson(baseUrl, messagesPath, apiToken, {
       accountId,
       limit: 20,
-      sort_order: "asc",
+      sortOrder: "asc",
     });
 
     if (!messagesResult.ok) {
