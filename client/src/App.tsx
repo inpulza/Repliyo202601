@@ -9,25 +9,59 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { NexusProvider } from "@/context/NexusContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { useEffect, lazy, Suspense } from "react";
+import { useEffect, lazy, Suspense, type ComponentType } from "react";
 
 import { Login } from "@/pages/Login";
 import { Loader2 } from "lucide-react";
 
-const Inbox = lazy(() => import("@/components/Inbox").then(m => ({ default: m.Inbox })));
-const Overview = lazy(() => import("@/pages/Overview").then(m => ({ default: m.Overview })));
-const AIAgentConfig = lazy(() => import("@/components/AIAgentConfig").then(m => ({ default: m.AIAgentConfig })));
-const AiMetrics = lazy(() => import("@/pages/AiMetrics").then(m => ({ default: m.AiMetrics })));
-const Connections = lazy(() => import("@/pages/Connections").then(m => ({ default: m.Connections })));
-const IntegrationsPage = lazy(() => import("@/pages/Integrations").then(m => ({ default: m.IntegrationsPage })));
-const ProfileSettings = lazy(() => import("@/pages/ProfileSettings").then(m => ({ default: m.ProfileSettings })));
-const CRM = lazy(() => import("@/pages/CRM").then(m => ({ default: m.CRM })));
-const CrisisAlerts = lazy(() => import("@/pages/CrisisAlerts").then(m => ({ default: m.CrisisAlerts })));
-const UserManagement = lazy(() => import("@/pages/UserManagement").then(m => ({ default: m.UserManagement })));
-const LandingPage = lazy(() => import("@/components/landing/LandingPage").then(m => ({ default: m.LandingPage })));
-const GetStarted = lazy(() => import("@/pages/GetStarted").then(m => ({ default: m.GetStarted })));
-const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy"));
-const PublicContacts = lazy(() => import("@/pages/PublicContacts").then(m => ({ default: m.PublicContacts })));
+// Wraps React.lazy with retry + one-time reload so a transient failure to fetch
+// a dynamically imported chunk (Vite dev restarts, network blips, a momentarily
+// frozen tab) recovers automatically instead of white-screening the whole app.
+function lazyWithRetry<T extends ComponentType<any>>(
+  factory: () => Promise<{ default: T }>
+) {
+  const STORAGE_KEY = "lazy-import-force-refreshed";
+  return lazy(async () => {
+    try {
+      const component = await factory();
+      window.sessionStorage.removeItem(STORAGE_KEY);
+      return component;
+    } catch (error) {
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
+        try {
+          const component = await factory();
+          window.sessionStorage.removeItem(STORAGE_KEY);
+          return component;
+        } catch {
+          // keep retrying
+        }
+      }
+      const alreadyRefreshed = window.sessionStorage.getItem(STORAGE_KEY) === "true";
+      if (!alreadyRefreshed) {
+        window.sessionStorage.setItem(STORAGE_KEY, "true");
+        window.location.reload();
+        return await new Promise<never>(() => {});
+      }
+      throw error;
+    }
+  });
+}
+
+const Inbox = lazyWithRetry(() => import("@/components/Inbox").then(m => ({ default: m.Inbox })));
+const Overview = lazyWithRetry(() => import("@/pages/Overview").then(m => ({ default: m.Overview })));
+const AIAgentConfig = lazyWithRetry(() => import("@/components/AIAgentConfig").then(m => ({ default: m.AIAgentConfig })));
+const AiMetrics = lazyWithRetry(() => import("@/pages/AiMetrics").then(m => ({ default: m.AiMetrics })));
+const Connections = lazyWithRetry(() => import("@/pages/Connections").then(m => ({ default: m.Connections })));
+const IntegrationsPage = lazyWithRetry(() => import("@/pages/Integrations").then(m => ({ default: m.IntegrationsPage })));
+const ProfileSettings = lazyWithRetry(() => import("@/pages/ProfileSettings").then(m => ({ default: m.ProfileSettings })));
+const CRM = lazyWithRetry(() => import("@/pages/CRM").then(m => ({ default: m.CRM })));
+const CrisisAlerts = lazyWithRetry(() => import("@/pages/CrisisAlerts").then(m => ({ default: m.CrisisAlerts })));
+const UserManagement = lazyWithRetry(() => import("@/pages/UserManagement").then(m => ({ default: m.UserManagement })));
+const LandingPage = lazyWithRetry(() => import("@/components/landing/LandingPage").then(m => ({ default: m.LandingPage })));
+const GetStarted = lazyWithRetry(() => import("@/pages/GetStarted").then(m => ({ default: m.GetStarted })));
+const PrivacyPolicy = lazyWithRetry(() => import("@/pages/PrivacyPolicy"));
+const PublicContacts = lazyWithRetry(() => import("@/pages/PublicContacts").then(m => ({ default: m.PublicContacts })));
 
 function PageLoader() {
   return (
