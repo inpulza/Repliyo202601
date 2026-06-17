@@ -1,0 +1,43 @@
+Sí, soy yo (Cowork) quien ha trabajado con las conexiones de Zernio. Te dejo el archivo canónico ahora mismo para que el agente de Repliyo lo encuentre. Lo pongo dentro del proyecto encapsulado:Listo. El archivo está en su sitio canónico dentro del proyecto. Pásale al agente de Repliyo este path exacto:
+
+**Para el agente Repliyo:**
+
+```
+00 Inpulza/17. Desarrollos/whatsapp-observer/REPLIYO-zernio-connection-handoff.md
+```
+
+[Abrir handoff Zernio para Repliyo](computer://C%3A%5CUsers%5Cjorda%5COneDrive%5C%2B%2B%2B%2B%2B%20INPULZA%5CClientes%5C00%20Inpulza%5C17.%20Desarrollos%5Cwhatsapp-observer%5CREPLIYO-zernio-connection-handoff.md)
+
+## Lo que el archivo cubre, en orden
+
+1. **Resumen y autoría** (yo soy quien lo escribió, llevo trabajando con Zernio MCP desde mayo)
+2. **Tabla completa de identificadores del WhatsApp Inpulza USA** — WABA ID, phone_id, account_id Zernio, profile_id, tier, etc.
+3. **Aclaración sobre `BLOG_ID=4074962`** — yo nunca lo he visto en mi acceso a Zernio MCP. Le sugiero al agente que use solo `ACCOUNT_ID=6a05d9385e333c0529696d05` (validado por mí) y deje el `BLOG_ID` opcional. Probablemente es un ID interno de la app Repliyo, no de Zernio.
+4. **Auth con Zernio REST** — Bearer token, dónde vive la API key (referencia al archivo en `05. Pass/`, NO la copio al doc)
+5. **5 endpoints REST verificados** con request/response shape real:
+   - GET inbox conversations
+   - GET conversation messages
+   - POST send message
+   - POST typing indicator
+   - POST webhook config
+6. **Pseudo-código completo del probe** en JavaScript que el agente puede portar tal cual
+7. **Workflow Fase 1 modo lectura** — qué hacer y qué NO hacer (no marcar leído, no enviar)
+8. **Lista de archivos canónicos** que Repliyo debe copiar/sincronizar al repo Replit (classifier prompt, intents catalog, state schema, style guide, config)
+9. **Schema del state v1** resumido
+10. **Pointer al PRD completo** para el plan macro
+11. **Estado actual** de las cosas para evitar duplicaciones (Cowork tiene 2 scheduled tasks corriendo, hay 2 envíos ya en el inbox)
+
+## Lo que falta de tu lado para que el agente arranque
+
+| # | Acción tuya | Cuándo |
+|---|---|---|
+| 1 | Copiar el `ZERNIO_API_TOKEN` del archivo `05. Pass/Open Ai/Zernio Automation.txt` al secret manager de Replit (variable `ZERNIO_API_TOKEN`) | Ahora |
+| 2 | Configurar `ZERNIO_WHATSAPP_ACCOUNT_ID=6a05d9385e333c0529696d05` en secrets de Replit | Ahora |
+| 3 | Decidir si `ZERNIO_WHATSAPP_BLOG_ID=4074962` se queda configurado o no — pregúntale al agente Repliyo si su lógica lo necesita | Después del probe |
+| 4 | Confirmarme la URL del repo Replit cuando puedas, para que Claude Code se conecte ahí cuando llegue su momento | Cuando puedas |
+
+## Sobre tu pregunta de "tú debes tener conexión de esto"
+
+Sí — tengo el MCP de Zernio cargado en mi sesión y puedo probar cualquier endpoint en vivo si el agente Repliyo se atasca con la API. Si el probe falla o hay duda sobre un endpoint, tú me lo cuentas aquí, yo lo testeo desde mi lado contra el Zernio real, y te confirmo exactamente lo que devuelve. Eso es lo más rápido que vas a ir.
+
+Ya tienes la tubería documentada. Adelante con el probe.
