@@ -22,6 +22,9 @@ The 2-min auto cycle processes 10 brands sequentially; brand `1e13d4a8` (solidar
 ## Read-only is enforced on 4 send paths
 auto-reply (skipped), follow-up reminders (skipped/cancelled), and the two manual reply API endpoints (return 400 for WhatsApp).
 
+## Checkpoint / where we left off (continuity anchor)
+Full status + findings + prioritized sprint plan live in `docs/zernio/WHATSAPP_OBSERVER_SPRINT_HANDOFF.md` (committed, canonical). Short version: observer **verified live in dev** (6 Inpulza convs imported, 0 Repliyo sends); **production still OFF** (`ZERNIO_OBSERVER_ENABLED` unset there). Agreed next order with Codex: (1) **P1 fix** — make `upsertMessage` idempotent (`onConflictDoNothing` on `metricool_id`) + split conversation vs message upsert, because a concurrent dup currently rolls back the whole tx and drops entire conversations; Codex owns this PR. (2) enable prod with monitoring **only after** P1, **with owner approval**. (3) per-brand scheduler, guards keyed on `source='zernio_sync'`, adapter pagination/archived, WhatsApp-activation UI. My role: review + pull Codex's merged PRs; do NOT touch prod `ZERNIO_OBSERVER_ENABLED` without green light.
+
 ## Caveat — guards key on `platform === 'whatsapp'`, not on source/origin
 **Why it matters:** the no-send guards (auto-reply skip, reminder skip, reply-endpoint block) all test `platform === 'whatsapp'`. If WhatsApp is ever connected via **Metricool** (WhatsApp Business) in the future, those messages would *also* be treated as read-only and silently blocked from sending.
 **How to apply:** acceptable today because no brand uses Metricool WhatsApp. If Metricool WhatsApp is ever enabled, switch the read-only guards to key on message `source` (e.g. `zernio_sync`) instead of platform name.
