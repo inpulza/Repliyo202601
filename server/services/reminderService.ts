@@ -125,9 +125,17 @@ export class ReminderService implements IReminderService {
           reminderNum // Pass specific reminder number
         );
 
-        console.log(`[ReminderService] Found ${eligibleConversations.length} conversations eligible for reminder #${reminderNum} (delay: ${delayHours}h)`);
+        const reminderEligibleConversations = eligibleConversations.filter(
+          conversation => !this.isReadOnlyObserverPlatform(conversation.platform)
+        );
+        const skippedReadOnly = eligibleConversations.length - reminderEligibleConversations.length;
 
-        const toProcess = eligibleConversations.slice(0, remainingQuota);
+        console.log(`[ReminderService] Found ${reminderEligibleConversations.length} conversations eligible for reminder #${reminderNum} (delay: ${delayHours}h)`);
+        if (skippedReadOnly > 0) {
+          console.log(`[ReminderService] Skipped ${skippedReadOnly} read-only observer conversation(s) for reminders`);
+        }
+
+        const toProcess = reminderEligibleConversations.slice(0, remainingQuota);
 
         for (const conversation of toProcess) {
           try {
@@ -160,6 +168,10 @@ export class ReminderService implements IReminderService {
     if (rules.applyToDms !== false) types.push('dm');
     if (rules.applyToComments) types.push('comment');
     return types;
+  }
+
+  private isReadOnlyObserverPlatform(platform: string | null | undefined): boolean {
+    return platform?.toLowerCase() === 'whatsapp';
   }
 
   private getDelayForReminderNumber(rules: ReminderRules, reminderNumber: number): number {
@@ -742,6 +754,13 @@ export class ReminderService implements IReminderService {
     if (conversation.reminderStatus === 'opted_out') {
       const error = 'Contact opted out';
       console.log(`[ReminderService] Conversation ${conversation.id} is opted out, cancelling reminder`);
+      await this.handleReminderFailure(reminder.id, conversation.id, error, 'cancelled', true);
+      return { success: false, error };
+    }
+
+    if (this.isReadOnlyObserverPlatform(conversation.platform)) {
+      const error = 'WhatsApp is connected in read-only observer mode';
+      console.log(`[ReminderService] Conversation ${conversation.id} is WhatsApp read-only, cancelling reminder`);
       await this.handleReminderFailure(reminder.id, conversation.id, error, 'cancelled', true);
       return { success: false, error };
     }

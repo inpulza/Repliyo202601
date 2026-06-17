@@ -1,5 +1,11 @@
 import { storage } from "../storage";
-import { createDefaultChannelAdapter } from "./channels";
+import {
+  createChannelAdapter,
+  createDefaultChannelAdapter,
+  ZERNIO_WHATSAPP_PROVIDER_ID,
+  WHATSAPP_SOCIAL_PROVIDER,
+  type ChannelInboxData,
+} from "./channels";
 import { websocketService } from "./websocketService";
 import { autoReplyService } from "./autoReplyService";
 import { transcriptionService } from "./transcriptionService";
@@ -12,6 +18,8 @@ import { sentimentAnalysisService } from "./SentimentAnalysisService";
 import { log } from "../app";
 import { sendPrivateReply, interpolateTemplate } from "./metaService";
 import { enrichPostContext, enrichPostContextForTemplate } from "./llm/prompt-composer";
+
+const DEFAULT_ZERNIO_OBSERVER_BLOG_ID = "4074962";
 
 interface BrandSyncResult {
   newBrands: string[];
@@ -165,7 +173,9 @@ class SyncService {
       },
     });
     
-    const inboxData = await channelAdapter.getAllInboxData(blogId, activeProviders);
+    const metricoolInboxData = await channelAdapter.getAllInboxData(blogId, activeProviders);
+    const whatsappInboxData = await this.getWhatsAppInboxData(brandName, blogId, activeProviders);
+    const inboxData = this.mergeInboxData(metricoolInboxData, whatsappInboxData);
 
     let savedCount = 0;
     let newInboundCount = 0; // Counter for truly NEW inbound messages (for notifications)
@@ -213,6 +223,8 @@ class SyncService {
           let content = msg.message || msg.text || '';
           let customerId = '';
           let isFromBrand = false;
+          let conversationCustomerName: string | null = null;
+          let conversationCustomerAvatar: string | null = null;
           
           let mediaType: string | null = null;
           let mediaUrl: string | null = null;
@@ -298,6 +310,8 @@ class SyncService {
             // Use customerParticipant name if available, not the current message author
             const customerName = customerParticipant?.name || author;
             const customerAvatar = customerParticipant?.imageProfileUrl || authorAvatar;
+            conversationCustomerName = customerName;
+            conversationCustomerAvatar = customerAvatar;
             
             // DEBUG: Log conversation key details for troubleshooting
             log(`[SyncService] DM Key Debug - brand: ${brandName}, threadId: ${conv.id}, customerId: ${customerId}, customerName: ${customerName}, fromBrand: ${isFromBrand}, participants: ${JSON.stringify(participants.map((p: any) => ({ id: p.id, name: p.name, self: p.self })))}`, "sync");
@@ -306,6 +320,28 @@ class SyncService {
             if (customerId === brandAccountId) {
               console.warn(`[SyncService] WARNING: customerId matches brandAccountId for conversation ${conv.id}. This may cause DM send failures. Brand: ${brandName}, participants:`, JSON.stringify(participants));
             }
+          } else if (conv.provider === WHATSAPP_SOCIAL_PROVIDER) {
+            const senderId = msg.from?.id || msg.sender?.id || '';
+            const fromParticipant = participants.find((p: any) => p.id === senderId);
+
+            author = msg.from?.name || msg.sender?.name || fromParticipant?.name || 'WhatsApp User';
+            authorAvatar = msg.from?.picture || msg.sender?.picture || fromParticipant?.imageProfileUrl || null;
+
+            isFromBrand = brandAccountId ? senderId === brandAccountId : fromParticipant?.self === true;
+
+            const customerParticipant =
+              participants.find((p: any) => p.self === false) ||
+              (brandAccountId ? participants.find((p: any) => p.id !== brandAccountId) : undefined) ||
+              (!isFromBrand ? fromParticipant : undefined);
+
+            customerId = customerParticipant?.id || (!isFromBrand ? senderId : author);
+            conversationCustomerName = customerParticipant?.name || (!isFromBrand ? author : 'WhatsApp User');
+            conversationCustomerAvatar =
+              customerParticipant?.imageProfileUrl ||
+              customerParticipant?.picture ||
+              (!isFromBrand ? authorAvatar : null);
+
+            log(`[SyncService] WhatsApp DM Key Debug - brand: ${brandName}, threadId: ${conv.id}, customerId: ${customerId}, customerName: ${conversationCustomerName}, fromBrand: ${isFromBrand}`, "sync");
           } else {
             author = msg.from?.name || msg.sender?.name || 'Unknown';
             authorAvatar = msg.from?.picture || msg.sender?.picture || null;
@@ -315,18 +351,17 @@ class SyncService {
           }
 
           // Variables for conversation customer identity (may differ from message author)
-          // For Instagram/LinkedIn/TikTok/Facebook: these are set from customerParticipant above
+          // For participant-based providers: these are set from customerParticipant above
           // For other platforms: fall back to author
-          const convCustomerName = (conv.provider === 'INSTAGRAM' || conv.provider === 'LINKEDIN' || conv.provider === 'TIKTOKBUSINESS' || conv.provider === 'FACEBOOK') 
-            ? (participants.find((p: any) => p.id === customerId)?.name || author)
-            : author;
-          const convCustomerAvatar = (conv.provider === 'INSTAGRAM' || conv.provider === 'LINKEDIN' || conv.provider === 'TIKTOKBUSINESS' || conv.provider === 'FACEBOOK')
-            ? (participants.find((p: any) => p.id === customerId)?.imageProfileUrl || authorAvatar)
-            : authorAvatar;
+          const convCustomerName = conversationCustomerName || author;
+          const convCustomerAvatar = conversationCustomerAvatar || authorAvatar;
 
           const direction = isFromBrand ? 'outbound' : 'inbound';
           const isInbound = !isFromBrand;
-          const metricoolId = `conv_${conv.id}_${msg.id || msg.timestamp}`;
+          const whatsappScopeId = conv.rawData?.accountId || conv.rawData?.blogId || blogId;
+          const metricoolId = platform === 'whatsapp'
+            ? `zernio:${whatsappScopeId}:${conv.id}:${msg.id || msg.timestamp}`
+            : `conv_${conv.id}_${msg.id || msg.timestamp}`;
 
           // Check if message already exists GLOBALLY (not just for this brand)
           // This prevents cross-brand counter duplication when both accounts are connected to Metricool
@@ -369,7 +404,7 @@ class SyncService {
             platform,
             type: "conversation" as const,
             direction: direction as 'inbound' | 'outbound',
-            source: 'metricool_sync' as const,
+            source: platform === 'whatsapp' ? 'zernio_sync' as const : 'metricool_sync' as const,
             author,
             authorAvatar,
             content,
@@ -476,8 +511,13 @@ class SyncService {
               }
             }
             
-            // DIAGNOSTIC: Log when we're about to trigger auto-reply for a NEW INBOUND DM
-            log(`[SyncService] ⚡ NEW_INBOUND_DM - msgId: ${savedMessage.id}, author: ${author}, convId: ${conversationRecord.id}, will call triggerAutoReply`, "sync");
+            const isReadOnlyObserverPlatform = platform === 'whatsapp';
+            if (isReadOnlyObserverPlatform) {
+              log(`[SyncService] WhatsApp observer imported inbound DM ${savedMessage.id}; auto-reply disabled for read-only mode`, "sync");
+            } else {
+              // DIAGNOSTIC: Log when we're about to trigger auto-reply for a NEW INBOUND DM
+              log(`[SyncService] ⚡ NEW_INBOUND_DM - msgId: ${savedMessage.id}, author: ${author}, convId: ${conversationRecord.id}, will call triggerAutoReply`, "sync");
+            }
             
             // Track first inbound author for Smart Digest notifications
             if (!firstInboundAuthor) {
@@ -496,7 +536,9 @@ class SyncService {
               conversationId: conversationRecord.id,
             });
 
-            this.triggerAutoReply(brandId, savedMessage, conversationRecord);
+            if (!isReadOnlyObserverPlatform) {
+              this.triggerAutoReply(brandId, savedMessage, conversationRecord);
+            }
           }
         } catch (error: any) {
           console.error(`Error upserting conversation message:`, error.message);
@@ -885,6 +927,57 @@ class SyncService {
     return savedCount;
   }
 
+  private async getWhatsAppInboxData(
+    brandName: string,
+    blogId: string,
+    activeProviders: string[]
+  ): Promise<ChannelInboxData> {
+    if (!this.isZernioObserverEnabledForBlog(blogId)) {
+      return { conversations: [], comments: [] };
+    }
+
+    if (!this.isActiveProvider(activeProviders, WHATSAPP_SOCIAL_PROVIDER)) {
+      return { conversations: [], comments: [] };
+    }
+
+    try {
+      const whatsappAdapter = createChannelAdapter(ZERNIO_WHATSAPP_PROVIDER_ID);
+      const inboxData = await whatsappAdapter.getAllInboxData(blogId, activeProviders);
+
+      if (inboxData.conversations.length > 0) {
+        log(`[SyncService] Brand ${brandName}: imported ${inboxData.conversations.length} WhatsApp conversations from Zernio`, "sync");
+      }
+
+      return inboxData;
+    } catch (error: any) {
+      log(`[SyncService] WhatsApp observer sync skipped for ${brandName}: ${error.message}`, "sync");
+      return { conversations: [], comments: [] };
+    }
+  }
+
+  private mergeInboxData(...sources: ChannelInboxData[]): ChannelInboxData {
+    return {
+      conversations: sources.flatMap(source => source.conversations),
+      comments: sources.flatMap(source => source.comments),
+    };
+  }
+
+  private isZernioObserverEnabledForBlog(blogId: string): boolean {
+    return process.env.ZERNIO_OBSERVER_ENABLED === "1" && blogId === this.getZernioObserverBlogId();
+  }
+
+  private getZernioObserverBlogId(): string {
+    return process.env.ZERNIO_WHATSAPP_BLOG_ID || DEFAULT_ZERNIO_OBSERVER_BLOG_ID;
+  }
+
+  private isActiveProvider(activeProviders: string[], provider: string): boolean {
+    return activeProviders.some(activeProvider => activeProvider.toUpperCase() === provider.toUpperCase());
+  }
+
+  private createSyncError(message: string, statusCode: number): Error & { statusCode: number } {
+    return Object.assign(new Error(message), { statusCode });
+  }
+
   private triggerPendingTranscriptions(brandId: string, brandName: string): void {
     transcriptionService.transcribePendingAudios(brandId, 3)
       .then(count => {
@@ -1259,6 +1352,37 @@ class SyncService {
   async triggerManualSync(): Promise<{ success: boolean; brandsSynced: number; errors: string[] }> {
     log("[SyncService] Manual sync triggered", "sync");
     return this.syncAllBrands();
+  }
+
+  async syncBrandById(brandId: string): Promise<{ brandName: string; savedCount: number }> {
+    const brand = await storage.getBrand(brandId);
+
+    if (!brand) {
+      throw this.createSyncError("Brand not found", 404);
+    }
+
+    if (!brand.metricoolToken || !brand.metricoolUserId || !brand.metricoolBlogId) {
+      throw this.createSyncError("Brand not properly configured with Metricool credentials", 400);
+    }
+
+    if (brand.syncPaused) {
+      throw this.createSyncError("Sincronizacion pausada para esta marca. Reanuda la sincronizacion para continuar.", 400);
+    }
+
+    if (this.isInCooldown(brand.id)) {
+      throw this.createSyncError("Brand is currently in sync cooldown", 429);
+    }
+
+    const savedCount = await this.syncBrand(
+      brand.id,
+      brand.name,
+      brand.metricoolToken,
+      brand.metricoolBlogId,
+      brand.metricoolUserId
+    );
+
+    this.lastSyncTime = new Date();
+    return { brandName: brand.name, savedCount };
   }
 
   async syncAvailableBrands(): Promise<BrandSyncResult> {

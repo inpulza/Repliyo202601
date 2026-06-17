@@ -181,7 +181,8 @@ export class ZernioWhatsAppChannelAdapter implements ChannelAdapter {
     );
 
     const customerId = this.toString(
-      conversation.contact?.id ||
+      conversation.participantId ||
+        conversation.contact?.id ||
         conversation.customer?.id ||
         conversation.participant?.id ||
         conversation.phone ||
@@ -191,7 +192,8 @@ export class ZernioWhatsAppChannelAdapter implements ChannelAdapter {
       conversationId
     );
     const customerName = this.toString(
-      conversation.contact?.name ||
+      conversation.participantName ||
+        conversation.contact?.name ||
         conversation.customer?.name ||
         conversation.participant?.name ||
         conversation.name ||
@@ -201,6 +203,7 @@ export class ZernioWhatsAppChannelAdapter implements ChannelAdapter {
       customerId
     );
     const customerAvatar =
+      conversation.participantPicture ||
       conversation.contact?.avatar ||
       conversation.customer?.avatar ||
       conversation.participant?.avatar ||
@@ -230,7 +233,8 @@ export class ZernioWhatsAppChannelAdapter implements ChannelAdapter {
       ],
       messages,
       lastUpdate: this.toString(
-        conversation.lastUpdate ||
+        conversation.updatedTime ||
+          conversation.lastUpdate ||
           conversation.updated_at ||
           conversation.updatedAt ||
           conversation.last_message_at ||
@@ -253,9 +257,15 @@ export class ZernioWhatsAppChannelAdapter implements ChannelAdapter {
     customerAvatar: string | null
   ): any {
     const isOutbound = this.isOutboundMessage(message);
+    const senderId = this.toString(message.senderId || message.sender_id);
+    const senderName = this.toString(message.senderName || message.sender_name);
     const sender = isOutbound
       ? { id: account.accountId, name: account.accountName }
-      : { id: customerId, name: customerName, picture: customerAvatar };
+      : {
+          id: senderId || customerId,
+          name: senderName || customerName,
+          picture: customerAvatar,
+        };
     const content = this.toString(
       message.message ||
         message.text ||
@@ -270,9 +280,9 @@ export class ZernioWhatsAppChannelAdapter implements ChannelAdapter {
       message: content,
       text: content,
       timestamp:
+        message.createdAt ||
         message.timestamp ||
         message.created_at ||
-        message.createdAt ||
         message.sent_at ||
         message.sentAt ||
         new Date().toISOString(),
@@ -333,6 +343,7 @@ export class ZernioWhatsAppChannelAdapter implements ChannelAdapter {
         message.fromMe ||
         message.is_from_business ||
         message.isFromBusiness ||
+        direction === "outgoing" ||
         direction === "outbound" ||
         direction === "sent" ||
         direction === "agent" ||
