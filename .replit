@@ -46,6 +46,7 @@ integrations = ["javascript_database:1.0.0", "javascript_log_in_with_replit:2.0.
 
 [userenv.shared]
 METRICOOL_USER_ID = "2603584"
+ZERNIO_WHATSAPP_BLOG_ID = "4074962"
 
 [postMerge]
 path = "scripts/post-merge.sh"
