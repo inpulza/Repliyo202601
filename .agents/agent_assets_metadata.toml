@@ -6,3 +6,9 @@ id = "58A3NaXFOEkQyNrdosT8r"
 uri = "file://.local/tasks/security-audit-findings.md"
 type = "text"
 title = "Diagnóstico de Vulnerabilidades Semgrep"
+
+[[outputs]]
+id = "TRJD-wHEK5F20r3Cq7jbo"
+uri = "file://docs/zernio/WHATSAPP_OBSERVER_SPRINT_HANDOFF.md"
+type = "text"
+title = "Handoff WhatsApp Observer — para CodeX"
