@@ -180,7 +180,6 @@ interface SyncStatus {
 
 export function Inbox() {
   const { 
-    messages, 
     conversations,
     activeConversation,
     activeConversationMessages,

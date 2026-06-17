@@ -21,10 +21,8 @@ interface NexusContextType {
   conversations: ConversationWithPost[];
   activeConversation: ConversationWithPost | null;
   activeConversationMessages: Message[];
-  messages: Message[];
   isLoadingClients: boolean;
   isLoadingConversations: boolean;
-  isLoadingMessages: boolean;
   isLoadingConversationMessages: boolean;
   setActiveClientId: (id: string) => void;
   setActiveConversation: (conversation: ConversationWithPost | null) => void;
@@ -122,17 +120,6 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
     queryKey: ['conversationMessages', activeConversation?.id],
     queryFn: () => activeConversation ? api.conversations.getMessages(activeConversation.id) : Promise.resolve([]),
     enabled: !!activeConversation?.id,
-  });
-
-  const { data: messages = [], isLoading: isLoadingMessages } = useQuery({
-    queryKey: ['messages', validatedActiveClientId],
-    queryFn: async () => {
-      console.log('[NexusContext] QUERY: Fetching messages for validatedClientId:', validatedActiveClientId);
-      const result = await api.messages.getAll(validatedActiveClientId || undefined);
-      console.log('[NexusContext] QUERY: Messages loaded:', result.length, 'messages');
-      return result;
-    },
-    enabled: !!validatedActiveClientId,
   });
 
   React.useEffect(() => {
@@ -370,10 +357,8 @@ export const NexusProvider = ({ children }: { children: ReactNode }) => {
       conversations,
       activeConversation,
       activeConversationMessages,
-      messages,
       isLoadingClients,
       isLoadingConversations,
-      isLoadingMessages,
       isLoadingConversationMessages,
       setActiveClientId: handleSetActiveClientId,
       setActiveConversation,
