@@ -11,12 +11,19 @@ import type {
 export const ZERNIO_WHATSAPP_PROVIDER_ID = "zernio-whatsapp";
 export const WHATSAPP_SOCIAL_PROVIDER = "WHATSAPP";
 
+export interface ZernioWhatsAppAccountConfig {
+  blogId: string;
+  accountId: string;
+  accountName?: string;
+}
+
 export interface ZernioWhatsAppConfig {
   apiToken?: string;
   accountId?: string;
   accountName?: string;
   baseUrl?: string;
   blogId?: string;
+  accounts?: ZernioWhatsAppAccountConfig[];
   messageConcurrency?: number;
 }
 
@@ -26,38 +33,43 @@ const DEFAULT_INPULZA_WHATSAPP_BLOG_ID = "4074962";
 const DEFAULT_MESSAGE_CONCURRENCY = 3;
 const MAX_MESSAGE_CONCURRENCY = 10;
 
+type ResolvedZernioWhatsAppAccountConfig = Required<ZernioWhatsAppAccountConfig>;
+
+interface ResolvedZernioWhatsAppConfig {
+  apiToken: string;
+  baseUrl: string;
+  accounts: ResolvedZernioWhatsAppAccountConfig[];
+  messageConcurrency: number;
+}
+
 export class ZernioWhatsAppChannelAdapter implements ChannelAdapter {
   readonly providerId = ZERNIO_WHATSAPP_PROVIDER_ID;
 
   private readonly apiToken: string;
-  private readonly accountId: string;
-  private readonly accountName: string;
   private readonly baseUrl: string;
-  private readonly blogId: string;
+  private readonly accounts: ResolvedZernioWhatsAppAccountConfig[];
+  private readonly accountsByBlogId: Map<string, ResolvedZernioWhatsAppAccountConfig>;
   private readonly messageConcurrency: number;
 
-  constructor(config: Required<ZernioWhatsAppConfig>) {
+  constructor(config: ResolvedZernioWhatsAppConfig) {
     this.apiToken = config.apiToken;
-    this.accountId = config.accountId;
-    this.accountName = config.accountName;
     this.baseUrl = config.baseUrl.replace(/\/$/, "");
-    this.blogId = config.blogId;
+    this.accounts = config.accounts;
+    this.accountsByBlogId = new Map(config.accounts.map((account) => [account.blogId, account]));
     this.messageConcurrency = this.clampMessageConcurrency(config.messageConcurrency);
   }
 
   async getBrands(): Promise<ChannelExternalBrand[]> {
-    return [
-      {
-        blogId: this.blogId,
-        name: this.accountName,
-        detectedProviders: [
-          {
-            provider: WHATSAPP_SOCIAL_PROVIDER,
-            accountName: this.accountName,
-          },
-        ],
-      },
-    ];
+    return this.accounts.map((account) => ({
+      blogId: account.blogId,
+      name: account.accountName,
+      detectedProviders: [
+        {
+          provider: WHATSAPP_SOCIAL_PROVIDER,
+          accountName: account.accountName,
+        },
+      ],
+    }));
   }
 
   async getAllInboxData(blogId: string, activeProviders?: string[]): Promise<ChannelInboxData> {
@@ -65,15 +77,16 @@ export class ZernioWhatsAppChannelAdapter implements ChannelAdapter {
       return { conversations: [], comments: [] };
     }
 
-    if (!this.isAllowedBlogId(blogId)) {
+    const account = this.getAccountForBlogId(blogId);
+    if (!account) {
       return { conversations: [], comments: [] };
     }
 
-    const rawConversations = await this.getOpenConversations(this.accountId);
+    const rawConversations = await this.getOpenConversations(account.accountId);
     const conversations = await this.mapWithConcurrency(
       rawConversations,
       this.messageConcurrency,
-      (conversation) => this.mapConversation(this.accountId, conversation)
+      (conversation) => this.mapConversation(account, conversation)
     );
 
     return {
@@ -90,10 +103,11 @@ export class ZernioWhatsAppChannelAdapter implements ChannelAdapter {
   }
 
   async replyToConversation(params: ReplyToConversationInput): Promise<MessageProviderResult> {
-    if (!this.isAllowedBlogId(params.blogId)) {
+    const account = this.getAccountForBlogId(params.blogId);
+    if (!account) {
       return {
         success: false,
-        error: `WhatsApp is configured only for blogId ${this.blogId}.`,
+        error: `WhatsApp is not configured for blogId ${params.blogId}.`,
       };
     }
 
@@ -102,7 +116,7 @@ export class ZernioWhatsAppChannelAdapter implements ChannelAdapter {
       "POST",
       undefined,
       {
-        account_id: this.accountId,
+        account_id: account.accountId,
         message: params.text,
       }
     );
@@ -114,7 +128,10 @@ export class ZernioWhatsAppChannelAdapter implements ChannelAdapter {
     };
   }
 
-  async sendTypingIndicator(conversationId: string, accountId: string = this.accountId): Promise<void> {
+  async sendTypingIndicator(
+    conversationId: string,
+    accountId: string = this.accounts[0].accountId
+  ): Promise<void> {
     await this.request(
       `/inbox/conversations/${encodeURIComponent(conversationId)}/typing`,
       "POST",
@@ -142,7 +159,10 @@ export class ZernioWhatsAppChannelAdapter implements ChannelAdapter {
     return this.extractArray(response, ["messages", "data", "items", "results"]);
   }
 
-  private async mapConversation(accountId: string, conversation: any): Promise<ChannelConversation> {
+  private async mapConversation(
+    account: ResolvedZernioWhatsAppAccountConfig,
+    conversation: any
+  ): Promise<ChannelConversation> {
     const conversationId = this.toString(
       conversation.id ||
         conversation.conversation_id ||
@@ -181,7 +201,7 @@ export class ZernioWhatsAppChannelAdapter implements ChannelAdapter {
 
     const rawMessages = await this.getConversationMessages(conversationId);
     const messages = rawMessages.map((message) =>
-      this.mapMessage(message, accountId, customerId, customerName, customerAvatar)
+      this.mapMessage(message, account, customerId, customerName, customerAvatar)
     );
 
     return {
@@ -189,8 +209,8 @@ export class ZernioWhatsAppChannelAdapter implements ChannelAdapter {
       provider: WHATSAPP_SOCIAL_PROVIDER,
       participants: [
         {
-          id: accountId,
-          name: this.accountName,
+          id: account.accountId,
+          name: account.accountName,
           self: true,
         },
         {
@@ -211,21 +231,22 @@ export class ZernioWhatsAppChannelAdapter implements ChannelAdapter {
       ),
       rawData: {
         ...conversation,
-        accountId,
+        accountId: account.accountId,
+        blogId: account.blogId,
       },
     };
   }
 
   private mapMessage(
     message: any,
-    accountId: string,
+    account: ResolvedZernioWhatsAppAccountConfig,
     customerId: string,
     customerName: string,
     customerAvatar: string | null
   ): any {
     const isOutbound = this.isOutboundMessage(message);
     const sender = isOutbound
-      ? { id: accountId, name: this.accountName }
+      ? { id: account.accountId, name: account.accountName }
       : { id: customerId, name: customerName, picture: customerAvatar };
     const content = this.toString(
       message.message ||
@@ -293,8 +314,8 @@ export class ZernioWhatsAppChannelAdapter implements ChannelAdapter {
     return activeProviders.some((provider) => provider.toUpperCase() === WHATSAPP_SOCIAL_PROVIDER);
   }
 
-  private isAllowedBlogId(blogId: string): boolean {
-    return blogId === this.blogId;
+  private getAccountForBlogId(blogId: string): ResolvedZernioWhatsAppAccountConfig | undefined {
+    return this.accountsByBlogId.get(blogId);
   }
 
   private isOutboundMessage(message: any): boolean {
@@ -396,21 +417,121 @@ export function createZernioWhatsAppChannelAdapter(
   config: ZernioWhatsAppConfig = {}
 ): ZernioWhatsAppChannelAdapter {
   const apiToken = config.apiToken || process.env.ZERNIO_API_TOKEN;
-  const accountId = config.accountId || process.env.ZERNIO_WHATSAPP_ACCOUNT_ID;
-  const blogId = config.blogId || process.env.ZERNIO_WHATSAPP_BLOG_ID || DEFAULT_INPULZA_WHATSAPP_BLOG_ID;
   const envMessageConcurrency = process.env.ZERNIO_WHATSAPP_MESSAGE_CONCURRENCY;
   const messageConcurrency = config.messageConcurrency ?? Number(envMessageConcurrency);
+  const accounts = resolveAccounts(config);
 
-  if (!apiToken || !accountId) {
-    throw new Error("Zernio WhatsApp credentials not configured. Set ZERNIO_API_TOKEN and ZERNIO_WHATSAPP_ACCOUNT_ID.");
+  if (!apiToken || accounts.length === 0) {
+    throw new Error(
+      "Zernio WhatsApp credentials not configured. Set ZERNIO_API_TOKEN and at least one WhatsApp account mapping."
+    );
   }
 
   return new ZernioWhatsAppChannelAdapter({
     apiToken,
-    accountId,
-    accountName: config.accountName || process.env.ZERNIO_WHATSAPP_ACCOUNT_NAME || "WhatsApp Business",
+    accounts,
     baseUrl: config.baseUrl || process.env.ZERNIO_API_BASE_URL || "https://api.zernio.com/v1",
-    blogId,
     messageConcurrency,
   });
+}
+
+function resolveAccounts(config: ZernioWhatsAppConfig): ResolvedZernioWhatsAppAccountConfig[] {
+  const configuredAccounts = config.accounts?.length
+    ? config.accounts
+    : parseAccountsJson(process.env.ZERNIO_WHATSAPP_ACCOUNTS_JSON);
+  const fallbackAccountName = config.accountName || process.env.ZERNIO_WHATSAPP_ACCOUNT_NAME;
+
+  if (configuredAccounts.length > 0) {
+    return ensureUniqueBlogIds(
+      configuredAccounts.map((account) => normalizeAccount(account, fallbackAccountName))
+    );
+  }
+
+  const accountId = config.accountId || process.env.ZERNIO_WHATSAPP_ACCOUNT_ID;
+  if (!accountId) {
+    return [];
+  }
+
+  return [
+    normalizeAccount(
+      {
+        accountId,
+        blogId: config.blogId || process.env.ZERNIO_WHATSAPP_BLOG_ID || DEFAULT_INPULZA_WHATSAPP_BLOG_ID,
+        accountName: fallbackAccountName,
+      },
+      fallbackAccountName
+    ),
+  ];
+}
+
+function ensureUniqueBlogIds(
+  accounts: ResolvedZernioWhatsAppAccountConfig[]
+): ResolvedZernioWhatsAppAccountConfig[] {
+  const seen = new Set<string>();
+
+  for (const account of accounts) {
+    if (seen.has(account.blogId)) {
+      throw new Error(`Duplicate Zernio WhatsApp account mapping for blogId ${account.blogId}.`);
+    }
+    seen.add(account.blogId);
+  }
+
+  return accounts;
+}
+
+function parseAccountsJson(value?: string): ZernioWhatsAppAccountConfig[] {
+  if (!value) {
+    return [];
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    throw new Error("Invalid ZERNIO_WHATSAPP_ACCOUNTS_JSON: expected a JSON array.");
+  }
+
+  if (!Array.isArray(parsed)) {
+    throw new Error("Invalid ZERNIO_WHATSAPP_ACCOUNTS_JSON: expected a JSON array.");
+  }
+
+  return parsed.map((item, index) => {
+    if (!item || typeof item !== "object") {
+      throw new Error(`Invalid ZERNIO_WHATSAPP_ACCOUNTS_JSON item at index ${index}.`);
+    }
+
+    const record = item as Record<string, unknown>;
+    return {
+      blogId: requiredString(record.blogId, `accounts[${index}].blogId`),
+      accountId: requiredString(record.accountId, `accounts[${index}].accountId`),
+      accountName: optionalString(record.accountName),
+    };
+  });
+}
+
+function normalizeAccount(
+  account: ZernioWhatsAppAccountConfig,
+  fallbackAccountName?: string
+): ResolvedZernioWhatsAppAccountConfig {
+  return {
+    blogId: account.blogId,
+    accountId: account.accountId,
+    accountName: account.accountName || fallbackAccountName || "WhatsApp Business",
+  };
+}
+
+function requiredString(value: unknown, label: string): string {
+  if (typeof value !== "string" || value.trim() === "") {
+    throw new Error(`Invalid Zernio WhatsApp account mapping: ${label} must be a non-empty string.`);
+  }
+
+  return value.trim();
+}
+
+function optionalString(value: unknown): string | undefined {
+  if (typeof value !== "string" || value.trim() === "") {
+    return undefined;
+  }
+
+  return value.trim();
 }
