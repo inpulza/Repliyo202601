@@ -31,6 +31,21 @@ import {
 import { db } from "./db";
 import { eq, desc, and, or, isNull, isNotNull, gte, lte, sql, inArray, notInArray } from "drizzle-orm";
 
+export type UpsertedMessage = Message & { upsertCreated?: boolean };
+
+function markMessageUpsertResult(message: Message, upsertCreated: boolean): UpsertedMessage {
+  Object.defineProperty(message, "upsertCreated", {
+    value: upsertCreated,
+    enumerable: false,
+    configurable: true,
+  });
+  return message as UpsertedMessage;
+}
+
+export function wasMessageCreatedByUpsert(message: Message): boolean | undefined {
+  return (message as UpsertedMessage).upsertCreated;
+}
+
 function snakeToCamel(str: string): string {
   return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
 }
@@ -112,7 +127,7 @@ export interface IStorage {
   messageExistsGlobally(metricoolId: string): Promise<boolean>;
   getMessagesWithPendingTranscription(brandId: string, limit?: number): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
-  upsertMessage(message: InsertMessage): Promise<Message>;
+  upsertMessage(message: InsertMessage): Promise<UpsertedMessage>;
   updateMessage(id: string, updates: UpdateMessage): Promise<Message | undefined>;
   deleteMessage(id: string): Promise<void>;
   
@@ -977,7 +992,16 @@ export class DatabaseStorage implements IStorage {
           eq(messages.metricoolId, metricoolId),
           eq(messages.brandId, brandId)
         )
-      );
+    );
+    return message || undefined;
+  }
+
+  private async getMessageByMetricoolIdGlobal(metricoolId: string): Promise<Message | undefined> {
+    const [message] = await db
+      .select()
+      .from(messages)
+      .where(eq(messages.metricoolId, metricoolId))
+      .limit(1);
     return message || undefined;
   }
 
@@ -1013,15 +1037,22 @@ export class DatabaseStorage implements IStorage {
     return message;
   }
 
-  async upsertMessage(insertMessage: InsertMessage): Promise<Message> {
+  async upsertMessage(insertMessage: InsertMessage): Promise<UpsertedMessage> {
     if (!insertMessage.metricoolId) {
-      return this.createMessage(insertMessage);
+      return markMessageUpsertResult(await this.createMessage(insertMessage), true);
     }
 
-    // First, check if this metricoolId already exists (standard upsert)
-    const existing = await this.getMessageByMetricoolId(insertMessage.metricoolId, insertMessage.brandId);
+    // First, check if this metricoolId already exists globally. metricool_id is a
+    // unique sync identity, so duplicates from another brand or another sync cycle
+    // should return the existing row instead of trying to insert and throwing.
+    const existing = await this.getMessageByMetricoolIdGlobal(insertMessage.metricoolId);
     
     if (existing) {
+      if (existing.brandId !== insertMessage.brandId) {
+        console.log(`[Storage] SKIPPING duplicate metricoolId ${insertMessage.metricoolId}: message already exists in brand ${existing.brandId} as ${existing.id}`);
+        return markMessageUpsertResult(existing, false);
+      }
+
       // PROTECTION PRIORITY 1: If existing message has internalOrigin set, ALWAYS preserve it
       // This is the immutable "birth certificate" of the message
       const hasInternalOrigin = existing.internalOrigin !== null && existing.internalOrigin !== undefined;
@@ -1040,7 +1071,7 @@ export class DatabaseStorage implements IStorage {
           authorAvatar: insertMessage.authorAvatar || existing.authorAvatar,
           // Keep direction, source, author, parentMessageId, and internalOrigin to preserve "Sent from Repliyo" indicator
         });
-        return updated!;
+        return markMessageUpsertResult(updated!, false);
       }
       
       // PROTECTION PRIORITY 3: Always preserve message status for existing messages
@@ -1052,7 +1083,7 @@ export class DatabaseStorage implements IStorage {
         ...insertMessage,
         status: preservedStatus, // Always keep the existing status
       });
-      return updated!;
+      return markMessageUpsertResult(updated!, false);
     }
 
     // RECONCILIATION LOGIC for messages sent from Repliyo
@@ -1073,12 +1104,8 @@ export class DatabaseStorage implements IStorage {
         console.log(`[Storage] Reconciling message: updating local outbound ${pendingOutboundSameBrand.id} with metricoolId ${insertMessage.metricoolId} (preserving internalOrigin: ${pendingOutboundSameBrand.internalOrigin})`);
         // NOTE: Only updating specific fields - Drizzle does partial updates, so internalOrigin, source, 
         // direction, and author are automatically preserved (not overwritten with null)
-        const updated = await this.updateMessage(pendingOutboundSameBrand.id, {
-          metricoolId: insertMessage.metricoolId,
-          rawData: insertMessage.rawData,
-          authorAvatar: insertMessage.authorAvatar || pendingOutboundSameBrand.authorAvatar,
-        });
-        return updated!;
+        const updated = await this.updateMessageMetricoolIdentity(pendingOutboundSameBrand.id, insertMessage, pendingOutboundSameBrand.authorAvatar);
+        return updated;
       }
       
       // GLOBAL CHECK: If not found in same brand, check ALL brands
@@ -1088,11 +1115,82 @@ export class DatabaseStorage implements IStorage {
         console.log(`[Storage] SKIPPING duplicate: message already exists in brand ${existingGlobal.brandId} as ${existingGlobal.id} (source: ${existingGlobal.source})`);
         // Return the existing message without creating a new one
         // We don't update the existing one because it belongs to a different brand
-        return existingGlobal;
+        return markMessageUpsertResult(existingGlobal, false);
       }
     }
 
-    return this.createMessage(insertMessage);
+    return this.createSyncedMessageIdempotently(insertMessage);
+  }
+
+  private async updateMessageMetricoolIdentity(
+    messageId: string,
+    insertMessage: InsertMessage,
+    existingAuthorAvatar: string | null
+  ): Promise<UpsertedMessage> {
+    try {
+      const updated = await this.updateMessage(messageId, {
+        metricoolId: insertMessage.metricoolId,
+        rawData: insertMessage.rawData,
+        authorAvatar: insertMessage.authorAvatar || existingAuthorAvatar,
+      });
+      return markMessageUpsertResult(updated!, false);
+    } catch (error: any) {
+      const existing = await this.resolveMetricoolIdConflict(insertMessage.metricoolId, error);
+      if (existing) return existing;
+      throw error;
+    }
+  }
+
+  private async createSyncedMessageIdempotently(insertMessage: InsertMessage): Promise<UpsertedMessage> {
+    if (!insertMessage.metricoolId) {
+      return markMessageUpsertResult(await this.createMessage(insertMessage), true);
+    }
+
+    const [message] = await db
+      .insert(messages)
+      .values(insertMessage)
+      .onConflictDoNothing({ target: messages.metricoolId })
+      .returning();
+
+    if (message) {
+      return markMessageUpsertResult(message, true);
+    }
+
+    const existing = await this.getMessageByMetricoolIdGlobal(insertMessage.metricoolId);
+    if (existing) {
+      console.log(`[Storage] SKIPPING duplicate metricoolId ${insertMessage.metricoolId}: concurrent sync already inserted ${existing.id}`);
+      return markMessageUpsertResult(existing, false);
+    }
+
+    throw new Error(`Failed to create or resolve message for metricoolId ${insertMessage.metricoolId}`);
+  }
+
+  private async resolveMetricoolIdConflict(metricoolId: string | null | undefined, error: any): Promise<UpsertedMessage | undefined> {
+    if (!metricoolId || !this.isMetricoolIdUniqueConflict(error)) {
+      return undefined;
+    }
+
+    const existing = await this.getMessageByMetricoolIdGlobal(metricoolId);
+    if (existing) {
+      console.log(`[Storage] SKIPPING duplicate metricoolId ${metricoolId}: concurrent sync already owns ${existing.id}`);
+    }
+    return existing ? markMessageUpsertResult(existing, false) : undefined;
+  }
+
+  private isMetricoolIdUniqueConflict(error: any): boolean {
+    const constraint = String(error?.constraint || "");
+    const detail = String(error?.detail || "");
+    const message = String(error?.message || "");
+
+    return (
+      error?.code === "23505" &&
+      (
+        constraint.includes("messages_metricool_id_unique") ||
+        detail.includes("metricool_id") ||
+        message.includes("messages_metricool_id_unique") ||
+        message.includes("metricool_id")
+      )
+    );
   }
 
   // Helper method to find a pending outbound message that matches an incoming synced message (BRAND-WIDE)
