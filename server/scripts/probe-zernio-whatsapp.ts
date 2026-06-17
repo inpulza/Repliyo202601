@@ -10,7 +10,7 @@
  *
  * Variables opcionales:
  *   ZERNIO_API_BASE_URL              default: https://api.zernio.com/v1
- *   ZERNIO_PROBE_STATUS              default: open
+ *   ZERNIO_PROBE_STATUS              default: active
  *   ZERNIO_PROBE_LIMIT               default: 5, max: 10
  *   ZERNIO_PROBE_CONVERSATION_ID     optional explicit conversation id for messages check
  */
@@ -34,7 +34,7 @@ async function main() {
   const apiToken = process.env.ZERNIO_API_TOKEN;
   const accountId = process.env.ZERNIO_WHATSAPP_ACCOUNT_ID;
   const baseUrl = normalizeBaseUrl(process.env.ZERNIO_API_BASE_URL || DEFAULT_BASE_URL);
-  const status = process.env.ZERNIO_PROBE_STATUS || "open";
+  const status = process.env.ZERNIO_PROBE_STATUS || "active";
   const limit = clampNumber(Number(process.env.ZERNIO_PROBE_LIMIT || 5), 1, 10);
   const explicitConversationId = process.env.ZERNIO_PROBE_CONVERSATION_ID;
 
@@ -76,7 +76,7 @@ async function main() {
   if (firstConversationId) {
     const messagesPath = `/inbox/conversations/${encodeURIComponent(firstConversationId)}/messages`;
     const messagesResult = await requestJson(baseUrl, messagesPath, apiToken, {
-      account_id: accountId,
+      accountId,
       limit: 20,
       sort_order: "asc",
     });
@@ -93,7 +93,7 @@ async function main() {
   } else {
     steps.push({
       name: "GET /inbox/conversations/{id}/messages",
-      detail: "skipped: no open conversation and no ZERNIO_PROBE_CONVERSATION_ID provided",
+      detail: "skipped: no matching conversation and no ZERNIO_PROBE_CONVERSATION_ID provided",
     });
   }
 
