@@ -2,3 +2,4 @@
 - [Vite event-loop starvation](vite-eventloop-starvation.md) — "Failed to fetch dynamically imported module" crashes can be a slow/heavy Express endpoint blocking Vite's middleware (same Node process), not a stale chunk.
 - [GitHub sync divergence](github-sync-divergence.md) — external repo + Replit auto-checkpoints cause ahead/behind divergence; agent can't run git writes, but can apply merged PR files via read-only `git show origin/main:path > path` + psql migration.
 - [Zernio API conventions](zernio-api-conventions.md) — Inbox params are camelCase (accountId/sortOrder), status=active|archived, observer-safe vs unsafe endpoints; full docs registered in docs/zernio/.
+- [Zernio WhatsApp observer](zernio-whatsapp-observer.md) — read-only WhatsApp sync gated by ZERNIO_OBSERVER_ENABLED=1 + blogId; no-send guards key on platform==='whatsapp' (caveat if Metricool WhatsApp ever added).
