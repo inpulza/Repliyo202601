@@ -4,6 +4,7 @@ import { storage, type CrmContactFilterOptions } from "./storage";
 import { insertBrandSchema, insertUserSchema, insertMessageSchema, updateMessageSchema, updateConversationSchema, insertSocialAccountSchema, updateReminderRulesSchema, insertLeadSchema, insertMetaPageConnectionSchema, type User } from "@shared/schema";
 import { hashPassword, verifyPassword, sanitizeUser, sanitizeBrand, type AuthenticatedUser } from "./auth";
 import { MetricoolService } from "./services/metricool";
+import { createChannelAdapter, ZERNIO_WHATSAPP_PROVIDER_ID } from "./services/channels";
 import { syncService } from "./services/syncService";
 import { websocketService } from "./services/websocketService";
 import { triggerSummaryUpdateAsync, checkAndUpdateSummary } from "./services/summaryService";
@@ -731,15 +732,48 @@ Sitemap: ${SITE_URL}/sitemap.xml
         await storage.updateBrand(brandId, brandUpdates);
       }
 
-      const detectedProviders = matchingBrand.detectedProviders || [];
+      type DetectedProviderForRefresh = {
+        provider: string;
+        accountName?: string | null;
+        accountAvatar?: string | null;
+      };
+
+      const detectedProviders: DetectedProviderForRefresh[] = [
+        ...((matchingBrand.detectedProviders || []) as DetectedProviderForRefresh[]),
+      ];
+
+      try {
+        const whatsappAdapter = createChannelAdapter(ZERNIO_WHATSAPP_PROVIDER_ID);
+        const whatsappBrands = await whatsappAdapter.getBrands();
+        const whatsappBrand = whatsappBrands.find(b => b.blogId === brand.metricoolBlogId);
+
+        if (whatsappBrand) {
+          for (const detectedProvider of whatsappBrand.detectedProviders) {
+            const alreadyDetected = detectedProviders.some(
+              dp => dp.provider.toUpperCase() === detectedProvider.provider.toUpperCase()
+            );
+
+            if (!alreadyDetected) {
+              detectedProviders.push({
+                provider: detectedProvider.provider,
+                accountName: detectedProvider.accountName || null,
+                accountAvatar: null,
+              });
+            }
+          }
+        }
+      } catch (error: any) {
+        console.log(`[SocialAccounts] Zernio WhatsApp refresh skipped for ${brand.name}: ${error.message}`);
+      }
+
       const existingAccounts = await storage.getSocialAccountsByBrand(brandId);
-      const existingProviderMap = new Map(existingAccounts.map(a => [a.provider, a]));
+      const existingProviderMap = new Map(existingAccounts.map(a => [a.provider.toUpperCase(), a]));
 
       let newCount = 0;
       let updatedCount = 0;
 
       for (const dp of detectedProviders) {
-        const existing = existingProviderMap.get(dp.provider);
+        const existing = existingProviderMap.get(dp.provider.toUpperCase());
         if (!existing) {
           await storage.upsertSocialAccount({
             brandId: brand.id,
@@ -1317,6 +1351,12 @@ Sitemap: ${SITE_URL}/sitemap.xml
       if (!brand) {
         return res.status(404).json({ error: "Brand not found" });
       }
+
+      if (message.platform?.toLowerCase() === 'whatsapp') {
+        return res.status(400).json({
+          error: "WhatsApp is currently connected in read-only observer mode. Sending from Repliyo will be enabled in a later phase.",
+        });
+      }
       
       const userToken = process.env.METRICOOL_USER_TOKEN;
       const userId = process.env.METRICOOL_USER_ID;
@@ -1639,172 +1679,18 @@ Sitemap: ${SITE_URL}/sitemap.xml
         return res.status(403).json({ error: "Access denied to this brand" });
       }
 
-      const brand = await storage.getBrand(brandId);
-      if (!brand) {
-        return res.status(404).json({ error: "Brand not found" });
-      }
-
-      if (!brand.metricoolToken || !brand.metricoolUserId || !brand.metricoolBlogId) {
-        return res.status(400).json({ error: "Brand not properly configured with Metricool credentials" });
-      }
-
-      if (brand.syncPaused) {
-        return res.status(400).json({ error: "Sincronización pausada para esta marca. Reanuda la sincronización para continuar." });
-      }
-
-      console.log(`🔄 Starting sync for brand: ${brand.name} (${brand.metricoolBlogId})`);
-
-      const metricool = new MetricoolService({
-        userToken: brand.metricoolToken,
-        userId: brand.metricoolUserId,
-      });
-
-      const { conversations, comments } = await metricool.getAllInboxData(brand.metricoolBlogId);
-
-      let conversationsCount = 0;
-      let commentsCount = 0;
-
-      for (const conv of conversations) {
-        if (!conv.messages || conv.messages.length === 0) continue;
-
-        for (const msg of conv.messages) {
-          try {
-            let author = 'Unknown';
-            let authorAvatar = null;
-            let content = msg.message || msg.text || '';
-            let timestamp = msg.created_time || msg.publicationDateTime || msg.timestamp || Date.now();
-            
-            // Detect message direction: outbound = from brand, inbound = from customer
-            // 'self' contains the brand's account ID in Metricool conversations
-            const rawConv = conv.rawData as any;
-            const selfId = rawConv?.self;
-            const fromId = msg.from;
-            const isOutbound = selfId && fromId === selfId;
-
-            // Instagram, LinkedIn, and TikTok use participants array
-            if (conv.provider === 'INSTAGRAM' || conv.provider === 'LINKEDIN' || conv.provider === 'TIKTOKBUSINESS') {
-              const participants = conv.participants || [];
-              const fromParticipant = participants.find((p: any) => p.id === fromId);
-              
-              // For outbound messages, use the brand name as author
-              if (isOutbound) {
-                author = brand.name;
-                authorAvatar = null; // Brand avatar will be handled by UI
-              } else {
-                author = fromParticipant?.name || `Unknown ${conv.provider} User`;
-                authorAvatar = fromParticipant?.imageProfileUrl || null;
-              }
-            } else {
-              // Generic fallback for other providers
-              if (isOutbound) {
-                author = brand.name;
-                authorAvatar = null;
-              } else {
-                author = msg.from?.name || msg.sender?.name || 'Unknown';
-                authorAvatar = msg.from?.picture || msg.sender?.picture || null;
-              }
-            }
-
-            await storage.upsertMessage({
-              brandId: brand.id,
-              metricoolId: `conv_${conv.id}_${msg.id || msg.timestamp}`,
-              platform: normalizePlatform(conv.provider),
-              type: 'conversation',
-              author,
-              authorAvatar,
-              content,
-              timestamp: new Date(timestamp),
-              status: 'unread',
-              rawData: { conversation: conv, message: msg },
-              threadId: conv.id,
-              parentMessageId: null,
-              direction: isOutbound ? 'outbound' : 'inbound',
-              source: 'metricool_sync',
-            });
-            conversationsCount++;
-          } catch (error: any) {
-            console.error(`Error upserting conversation message:`, error.message);
-          }
-        }
-      }
-
-      for (const comment of comments) {
-        try {
-          // Extract threadId from post ID for grouping comments on the same post
-          const threadId = comment.postId || comment.rawData?.root?.element?.id || null;
-          
-          // Upsert the main comment
-          const savedComment = await storage.upsertMessage({
-            brandId: brand.id,
-            metricoolId: comment.id,
-            platform: normalizePlatform(comment.provider),
-            type: 'comment',
-            author: comment.author,
-            authorAvatar: comment.authorAvatar || null,
-            content: comment.content,
-            timestamp: new Date(comment.timestamp),
-            status: 'unread',
-            sourceUrl: comment.postUrl || null,
-            rawData: comment.rawData || comment,
-            threadId: threadId,
-            parentMessageId: null,
-          });
-          commentsCount++;
-
-          // Process nested replies (comments array in rawData)
-          const nestedReplies = comment.replies || comment.rawData?.root?.comments || [];
-          for (const reply of nestedReplies) {
-            try {
-              // Find author info for the reply from participants
-              const replyOwnerId = reply.owner;
-              const participants = comment.rawData?.participants || [];
-              const replyAuthorParticipant = participants.find((p: any) => p.id === replyOwnerId);
-              
-              const replyAuthor = replyAuthorParticipant?.name || `Unknown Reply Author`;
-              const replyAvatar = replyAuthorParticipant?.imageProfileUrl || null;
-              const replyContent = reply.text || '';
-              const replyTimestamp = reply.creationDate || comment.timestamp;
-
-              await storage.upsertMessage({
-                brandId: brand.id,
-                metricoolId: reply.id,
-                platform: normalizePlatform(comment.provider),
-                type: 'comment',
-                author: replyAuthor,
-                authorAvatar: replyAvatar,
-                content: replyContent,
-                timestamp: new Date(replyTimestamp),
-                status: 'unread',
-                sourceUrl: reply.properties?.permalink || comment.postUrl || null,
-                rawData: reply,
-                threadId: threadId,
-                parentMessageId: savedComment.id,
-              });
-              commentsCount++;
-              console.log(`   ↳ Saved nested reply from ${replyAuthor}`);
-            } catch (replyError: any) {
-              console.error(`Error upserting reply:`, replyError.message);
-            }
-          }
-        } catch (error: any) {
-          console.error(`Error upserting comment:`, error.message);
-        }
-      }
-
-      console.log(`✅ Sync completed: ${conversationsCount} conversation messages, ${commentsCount} comments`);
-
-      res.json({
+      const syncResult = await syncService.syncBrandById(brandId);
+      return res.json({
         success: true,
         stats: {
-          conversationsProcessed: conversations.length,
-          conversationMessages: conversationsCount,
-          commentsProcessed: comments.length,
-          totalMessages: conversationsCount + commentsCount,
+          messagesSynced: syncResult.savedCount,
+          totalMessages: syncResult.savedCount,
         },
       });
+
     } catch (error: any) {
       console.error('Error syncing brand:', error);
-      res.status(500).json({ error: `Sync failed: ${error.message}` });
+      res.status(error.statusCode || 500).json({ error: `Sync failed: ${error.message}` });
     }
   });
 
@@ -2691,6 +2577,12 @@ Sitemap: ${SITE_URL}/sitemap.xml
       const brand = await storage.getBrand(brandId);
       if (!brand || !brand.metricoolBlogId || !brand.metricoolToken || !brand.metricoolUserId) {
         return res.status(400).json({ error: "Brand not configured with Metricool" });
+      }
+
+      if (message.platform?.toLowerCase() === 'whatsapp') {
+        return res.status(400).json({
+          error: "WhatsApp is currently connected in read-only observer mode. Sending from Repliyo will be enabled in a later phase.",
+        });
       }
       
       // Get the AI agent for audit logging
