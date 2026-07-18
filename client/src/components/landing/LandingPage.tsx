@@ -1679,7 +1679,7 @@ function HeroSection() {
   const textY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [0, 100]);
   const mockupY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [0, -20]);
   const mockupScale = useTransform(scrollYProgress, [0, 0.5], prefersReducedMotion ? [1, 1] : [1, 0.98]);
-  const opacity = useTransform(scrollYProgress, [0, 0.4], [1, 0]);
+  const opacity = useTransform(scrollYProgress, [0, 0.4], prefersReducedMotion ? [1, 1] : [1, 0]);
 
   return (
     <section ref={containerRef} className="hero-section relative min-h-[140vh] md:min-h-[150vh] overflow-visible">
@@ -1687,7 +1687,7 @@ function HeroSection() {
         <div className="absolute inset-0 bg-radial-gradient" />
         <div className="absolute inset-0 bg-grid-pattern opacity-30" />
         
-        <Parallax speed={-10} className="absolute inset-0 pointer-events-none">
+        <Parallax speed={prefersReducedMotion ? 0 : -10} className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-blue-500/5 blur-3xl" />
           <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] rounded-full bg-orange-500/5 blur-3xl" />
         </Parallax>
@@ -1700,19 +1700,19 @@ function HeroSection() {
               <span className="block text-white whitespace-nowrap">
                 <motion.span 
                   className="inline"
-                  initial={{ opacity: 0, y: 60, filter: 'blur(10px)' }}
+                  initial={prefersReducedMotion ? false : { opacity: 0, y: 60, filter: 'blur(10px)' }}
                   animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                  transition={{ duration: 0.7, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
                 >
                   {t.hero.titlePart1}{' '}
                 </motion.span>
                 <motion.span 
                   className="inline-block relative"
-                  initial={{ opacity: 0, x: -80, filter: 'blur(20px)' }}
+                  initial={prefersReducedMotion ? false : { opacity: 0, x: -80, filter: 'blur(20px)' }}
                   animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                  transition={{ 
-                    duration: 0.35,
-                    delay: 0.7,
+                  transition={prefersReducedMotion ? { duration: 0 } : {
+                    duration: 0.3,
+                    delay: 0.1,
                     type: "spring",
                     stiffness: 400,
                     damping: 28
@@ -1721,10 +1721,10 @@ function HeroSection() {
                   {t.hero.titlePart2}
                   <motion.span
                     className="absolute -top-1 left-[calc(100%-0.25rem)] text-[var(--landing-primary)]"
-                    initial={{ opacity: 0, scale: 0 }}
+                    initial={prefersReducedMotion ? false : { opacity: 0, scale: 0 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{
-                      delay: 1.1,
+                    transition={prefersReducedMotion ? { duration: 0 } : {
+                      delay: 0.35,
                       duration: 0.25,
                       type: "spring",
                       stiffness: 500,
@@ -1737,33 +1737,33 @@ function HeroSection() {
               </span>
               <motion.span 
                 className="block text-white/60 relative"
-                initial={{ opacity: 0, y: 40, filter: 'blur(8px)' }}
+                initial={prefersReducedMotion ? false : { opacity: 0, y: 40, filter: 'blur(8px)' }}
                 animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                transition={{ duration: 0.6, delay: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+                transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.4, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
               >
                 {/* Left stacked social icons */}
                 <span className="hero-floating-icons-left hidden md:inline-flex">
                   <motion.span 
                     className="hero-floating-icon"
-                    initial={{ opacity: 0, scale: 0, x: 20 }}
+                    initial={prefersReducedMotion ? false : { opacity: 0, scale: 0, x: 20 }}
                     animate={{ opacity: 1, scale: 1, x: 0 }}
-                    transition={{ delay: 1.0, duration: 0.4, type: 'spring' }}
+                    transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.3, duration: 0.3, type: 'spring' }}
                   >
                     <FaInstagram className="w-5 h-5 lg:w-6 lg:h-6" style={{ color: '#E1306C' }} />
                   </motion.span>
                   <motion.span 
                     className="hero-floating-icon"
-                    initial={{ opacity: 0, scale: 0, x: 20 }}
+                    initial={prefersReducedMotion ? false : { opacity: 0, scale: 0, x: 20 }}
                     animate={{ opacity: 1, scale: 1, x: 0 }}
-                    transition={{ delay: 1.15, duration: 0.4, type: 'spring' }}
+                    transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.4, duration: 0.3, type: 'spring' }}
                   >
                     <FaTiktok className="w-5 h-5 lg:w-6 lg:h-6" style={{ color: '#000000' }} />
                   </motion.span>
                   <motion.span 
                     className="hero-floating-icon"
-                    initial={{ opacity: 0, scale: 0, x: 20 }}
+                    initial={prefersReducedMotion ? false : { opacity: 0, scale: 0, x: 20 }}
                     animate={{ opacity: 1, scale: 1, x: 0 }}
-                    transition={{ delay: 1.3, duration: 0.4, type: 'spring' }}
+                    transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.5, duration: 0.3, type: 'spring' }}
                   >
                     <FaFacebook className="w-5 h-5 lg:w-6 lg:h-6" style={{ color: '#1877F2' }} />
                   </motion.span>
@@ -1775,25 +1775,25 @@ function HeroSection() {
                 <span className="hero-floating-icons-right hidden md:inline-flex">
                   <motion.span 
                     className="hero-floating-icon"
-                    initial={{ opacity: 0, scale: 0, x: -20 }}
+                    initial={prefersReducedMotion ? false : { opacity: 0, scale: 0, x: -20 }}
                     animate={{ opacity: 1, scale: 1, x: 0 }}
-                    transition={{ delay: 1.1, duration: 0.4, type: 'spring' }}
+                    transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.3, duration: 0.3, type: 'spring' }}
                   >
                     <FaYoutube className="w-5 h-5 lg:w-6 lg:h-6" style={{ color: '#FF0000' }} />
                   </motion.span>
                   <motion.span 
                     className="hero-floating-icon"
-                    initial={{ opacity: 0, scale: 0, x: -20 }}
+                    initial={prefersReducedMotion ? false : { opacity: 0, scale: 0, x: -20 }}
                     animate={{ opacity: 1, scale: 1, x: 0 }}
-                    transition={{ delay: 1.25, duration: 0.4, type: 'spring' }}
+                    transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.4, duration: 0.3, type: 'spring' }}
                   >
                     <FaLinkedin className="w-5 h-5 lg:w-6 lg:h-6" style={{ color: '#0A66C2' }} />
                   </motion.span>
                   <motion.span 
                     className="hero-floating-icon"
-                    initial={{ opacity: 0, scale: 0, x: -20 }}
+                    initial={prefersReducedMotion ? false : { opacity: 0, scale: 0, x: -20 }}
                     animate={{ opacity: 1, scale: 1, x: 0 }}
-                    transition={{ delay: 1.4, duration: 0.4, type: 'spring' }}
+                    transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.5, duration: 0.3, type: 'spring' }}
                   >
                     <GoogleBusinessIcon className="w-5 h-5 lg:w-6 lg:h-6" style={{ color: '#4285F4' }} />
                   </motion.span>
@@ -1804,55 +1804,55 @@ function HeroSection() {
             {/* Mobile floating social icons - below H1 */}
             <motion.div 
               className="hero-floating-icons-mobile flex md:hidden justify-center mt-4"
-              initial={{ opacity: 0, y: 20 }}
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8, duration: 0.5 }}
+              transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.15, duration: 0.35 }}
             >
               <motion.span 
                 className="hero-floating-icon-mobile"
-                initial={{ opacity: 0, scale: 0 }}
+                initial={prefersReducedMotion ? false : { opacity: 0, scale: 0 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 1.0, duration: 0.4, type: 'spring' }}
+                transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.25, duration: 0.3, type: 'spring' }}
               >
                 <FaInstagram className="w-4 h-4" style={{ color: '#E1306C' }} />
               </motion.span>
               <motion.span 
                 className="hero-floating-icon-mobile"
-                initial={{ opacity: 0, scale: 0 }}
+                initial={prefersReducedMotion ? false : { opacity: 0, scale: 0 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 1.1, duration: 0.4, type: 'spring' }}
+                transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.3, duration: 0.3, type: 'spring' }}
               >
                 <FaTiktok className="w-4 h-4" style={{ color: '#000000' }} />
               </motion.span>
               <motion.span 
                 className="hero-floating-icon-mobile"
-                initial={{ opacity: 0, scale: 0 }}
+                initial={prefersReducedMotion ? false : { opacity: 0, scale: 0 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 1.2, duration: 0.4, type: 'spring' }}
+                transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.35, duration: 0.3, type: 'spring' }}
               >
                 <FaFacebook className="w-4 h-4" style={{ color: '#1877F2' }} />
               </motion.span>
               <motion.span 
                 className="hero-floating-icon-mobile"
-                initial={{ opacity: 0, scale: 0 }}
+                initial={prefersReducedMotion ? false : { opacity: 0, scale: 0 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 1.3, duration: 0.4, type: 'spring' }}
+                transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.4, duration: 0.3, type: 'spring' }}
               >
                 <FaYoutube className="w-4 h-4" style={{ color: '#FF0000' }} />
               </motion.span>
               <motion.span 
                 className="hero-floating-icon-mobile"
-                initial={{ opacity: 0, scale: 0 }}
+                initial={prefersReducedMotion ? false : { opacity: 0, scale: 0 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 1.4, duration: 0.4, type: 'spring' }}
+                transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.45, duration: 0.3, type: 'spring' }}
               >
                 <FaLinkedin className="w-4 h-4" style={{ color: '#0A66C2' }} />
               </motion.span>
               <motion.span 
                 className="hero-floating-icon-mobile"
-                initial={{ opacity: 0, scale: 0 }}
+                initial={prefersReducedMotion ? false : { opacity: 0, scale: 0 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 1.5, duration: 0.4, type: 'spring' }}
+                transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.5, duration: 0.3, type: 'spring' }}
               >
                 <GoogleBusinessIcon className="w-4 h-4" style={{ color: '#4285F4' }} />
               </motion.span>
@@ -1860,18 +1860,18 @@ function HeroSection() {
           </div>
 
           <motion.p 
-            initial={{ opacity: 0, y: 20 }}
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.2, duration: 0.6 }}
+            transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.15, duration: 0.35 }}
             className="hero-description text-xl md:text-2xl lg:text-3xl text-white/50 max-w-3xl mx-auto mb-10 leading-relaxed"
           >
             {t.hero.description}
           </motion.p>
 
           <motion.div 
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ delay: 1.5, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             className="flex items-center justify-center"
           >
             <GlowButton href="/get-started">
@@ -1885,9 +1885,9 @@ function HeroSection() {
           className="relative z-20 w-full max-w-7xl mx-auto px-6"
         >
           <motion.div
-            initial={{ opacity: 0, y: 60 }}
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 60 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.25, duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
           >
             <div className="desktop-mockup-wrapper">
               <InboxMockup />
@@ -4149,62 +4149,8 @@ function Footer() {
 }
 
 export function LandingPage() {
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1200);
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
     <ParallaxProvider>
-      <AnimatePresence>
-        {loading && (
-          <motion.div
-            key="splash"
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5, ease: 'easeInOut' }}
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#050505]"
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.85 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
-              className="flex flex-col items-center gap-6"
-            >
-              <img
-                src={repliyoLogo128}
-                srcSet={`${repliyoLogo128} 128w, ${repliyoLogo256} 256w`}
-                sizes="64px"
-                alt="Repliyo"
-                className="h-16 w-auto object-contain"
-                width={128}
-                height={128}
-                fetchPriority="high"
-                decoding="async"
-              />
-              <motion.div
-                className="flex gap-1.5"
-                initial="hidden"
-                animate="visible"
-                variants={{ visible: { transition: { staggerChildren: 0.15 } } }}
-              >
-                {[0, 1, 2].map((i) => (
-                  <motion.div
-                    key={i}
-                    className="w-1.5 h-1.5 rounded-full bg-white/30"
-                    variants={{
-                      hidden: { opacity: 0.2, y: 0 },
-                      visible: { opacity: [0.2, 1, 0.2], y: [0, -4, 0], transition: { duration: 0.8, repeat: Infinity, delay: i * 0.15 } }
-                    }}
-                  />
-                ))}
-              </motion.div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
       <div className="landing-page theme-light" data-testid="landing-page">
         <Header />
         <main>

@@ -71,6 +71,18 @@ function PageLoader() {
   );
 }
 
+function LandingPageLoader() {
+  return (
+    <div
+      className="flex h-screen w-full items-center justify-center bg-white"
+      role="status"
+      aria-label="Loading Repliyo"
+    >
+      <Loader2 className="h-8 w-8 animate-spin text-[#0291FA] motion-reduce:animate-none" />
+    </div>
+  );
+}
+
 function AppRedirect() {
   const { isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
@@ -100,20 +112,12 @@ function HomeRoute() {
     }
   }, [isLoading, isAuthenticated, setLocation]);
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-[#050505]">
-        <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
-      </div>
-    );
-  }
-
-  if (isAuthenticated) {
-    return null;
+  if (!isLoading && isAuthenticated) {
+    return <LandingPageLoader />;
   }
 
   return (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense fallback={<LandingPageLoader />}>
       <LandingPage />
     </Suspense>
   );
