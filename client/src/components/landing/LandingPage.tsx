@@ -5,39 +5,26 @@ import { GlowButton } from './GlowButton';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
 import { useLanguage } from '../../context/LanguageContext';
-import avatarMaria from '@assets/generated_images/maria_customer_avatar_headshot.png';
-import avatarCarlos from '@assets/generated_images/carlos_customer_avatar_headshot.png';
-import testimonialMelva from '../../assets/testimonial-melva-optimized.jpg';
-import avatarAna from '@assets/generated_images/ana_customer_avatar_headshot.png';
-import testimonialXLHomes from '../../assets/testimonial-xlhomes-optimized.jpg';
-import avatarDiego from '@assets/generated_images/hispanic_man_gym_selfie.png';
-import avatarLaura from '@assets/generated_images/latina_woman_with_dog.png';
-import agentAna from '@assets/generated_images/ana_agent_headshot_portrait.png';
-import agentLuis from '@assets/generated_images/luis_agent_headshot_portrait.png';
-import agentSara from '@assets/generated_images/sara_agent_headshot_portrait.png';
-import agentCarlos from '@assets/generated_images/carlos_agent_headshot_portrait.png';
-import agentMaria from '@assets/generated_images/maria_agent_headshot_portrait.png';
-import icon3dClock from '@assets/generated_images/modern_flat_clock_icon.png';
-import icon3dX from '@assets/generated_images/modern_flat_x_mark_icon.png';
-import icon3dMessage from '@assets/generated_images/modern_flat_chat_bubble_icon.png';
-import icon3dLightning from '@assets/generated_images/modern_flat_lightning_bolt_icon.png';
-import icon3dInbox from '@assets/generated_images/modern_flat_inbox_icon.png';
-import icon3dSparkles from '@assets/generated_images/modern_flat_sparkles_icon.png';
-import icon3dBell from '@assets/generated_images/modern_flat_bell_icon.png';
-import icon3dUsers from '@assets/generated_images/modern_flat_users_group_icon.png';
+import avatarMaria from '../../assets/landing/optimized/customer-maria-192.webp?no-inline';
+import avatarCarlos from '../../assets/landing/optimized/customer-carlos-192.webp?no-inline';
+import avatarAna from '../../assets/landing/optimized/customer-ana-192.webp?no-inline';
+import avatarDiego from '../../assets/landing/optimized/customer-diego-192.webp?no-inline';
+import avatarLaura from '../../assets/landing/optimized/customer-laura-192.webp?no-inline';
+import agentAna from '../../assets/landing/optimized/agent-ana-96.webp?no-inline';
+import agentLuis from '../../assets/landing/optimized/agent-luis-96.webp?no-inline';
+import agentSara from '../../assets/landing/optimized/agent-sara-96.webp?no-inline';
+import agentCarlos from '../../assets/landing/optimized/agent-carlos-96.webp?no-inline';
+import agentMaria from '../../assets/landing/optimized/agent-maria-96.webp?no-inline';
+import testimonialBettys96 from '../../assets/landing/optimized/testimonial-bettys-96.webp?no-inline';
+import testimonialBettys192 from '../../assets/landing/optimized/testimonial-bettys-192.webp?no-inline';
+import testimonialMelva96 from '../../assets/landing/optimized/testimonial-melva-96.webp?no-inline';
+import testimonialMelva192 from '../../assets/landing/optimized/testimonial-melva-192.webp?no-inline';
+import testimonialXLHomes96 from '../../assets/landing/optimized/testimonial-xlhomes-96.webp?no-inline';
+import testimonialXLHomes192 from '../../assets/landing/optimized/testimonial-xlhomes-192.webp?no-inline';
+import repliyoLogo128 from '../../assets/landing/optimized/repliyo-logo-128.webp?no-inline';
+import repliyoLogo256 from '../../assets/landing/optimized/repliyo-logo-256.webp?no-inline';
 import flagES from '@assets/flags/es.png';
 import flagGB from '@assets/flags/gb.png';
-import timelineSendIcon from '@assets/generated_images/square_purple_send_icon.png';
-import timelineCheckIcon from '@assets/generated_images/square_green_check_icon.png';
-import timelineBellIcon from '@assets/generated_images/square_orange_bell_icon.png';
-import timelineChatIcon from '@assets/generated_images/square_blue_chat_icon.png';
-import stepsBgPurple from '@assets/generated_images/purple_gradient_grain_background.png';
-import stepsBgBlue from '@assets/generated_images/blue_gradient_grain_background.png';
-import stepsBgGreen from '@assets/generated_images/green_gradient_grain_background.png';
-import stepsBgVibrant from '@assets/generated_images/vibrant_blue_violet_gradient.png';
-import stepsBgLight from '@assets/generated_images/teal_cyan_bottom_to_top_gradient.png';
-import testimonialBettys from '../../assets/testimonial-bettys.jpg';
-import repliyoLogo from '../../assets/repliyo-logo.jpg';
 import { ParallaxProvider, useParallax, Parallax } from 'react-scroll-parallax';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -153,7 +140,7 @@ function Step2AIMockup() {
         transition={{ duration: 0.2 }}
       >
         <div className="msg-avatar">
-          <img src={avatarMaria} alt={t.mockups.inbox.crm.client} />
+          <img src={avatarMaria} alt={t.mockups.inbox.crm.client} width={192} height={192} decoding="async" />
         </div>
         <div className="msg-content">
           <span className="msg-name">{t.mockups.step2.customerName}</span>
@@ -184,7 +171,7 @@ function Step2AIMockup() {
         transition={{ duration: 0.2, delay: 0.1 }}
       >
         <div className="msg-avatar">
-          <img src={avatarMaria} alt={t.mockups.inbox.crm.client} />
+          <img src={avatarMaria} alt={t.mockups.inbox.crm.client} width={192} height={192} decoding="async" />
         </div>
         <div className="msg-content">
           <span className="msg-name">{t.mockups.step2.customerName}</span>
@@ -302,7 +289,7 @@ function FeatureInboxMockup() {
             transition={{ duration: 0.4, ease: 'easeOut' }}
           >
             <div className="inbox-avatar-wrap">
-              <img src={msg.avatar} alt={msg.name} className="inbox-avatar-img" />
+              <img src={msg.avatar} alt={msg.name} className="inbox-avatar-img" width={192} height={192} decoding="async" />
               <div className={`inbox-platform-badge ${msg.platform}`}>
                 <msg.Icon className="w-2.5 h-2.5 text-white" />
               </div>
@@ -381,7 +368,7 @@ function FeatureCRMMockup() {
       >
         <div className="crm-mini-header">
           <div className="crm-mini-avatar-v2">
-            <img src={avatarMaria} alt={t.mockups.inbox.crm.client} />
+            <img src={avatarMaria} alt={t.mockups.inbox.crm.client} width={192} height={192} decoding="async" />
           </div>
           <div className="crm-mini-info-v2">
             <span className="crm-mini-name-v2">{t.mockups.step2.customerName}</span>
@@ -604,7 +591,15 @@ function FeatureMultiAgentMockup() {
             }}
             transition={{ duration: 0.3 }}
           >
-            <img src={agent.avatar} alt={agent.name} className="agent-avatar-img" />
+            <img
+              src={agent.avatar}
+              alt={agent.name}
+              className="agent-avatar-img"
+              width={96}
+              height={96}
+              loading="lazy"
+              decoding="async"
+            />
             {activeAgent === idx && (
               <motion.div 
                 className="agent-typing-indicator"
@@ -891,7 +886,7 @@ function InboxMockup() {
                 onClick={() => setSelectedMsg(msg.id)}
               >
                 <div className="avatar-container">
-                  <img src={msg.avatarImg} alt={msg.user} className="avatar-img" />
+                  <img src={msg.avatarImg} alt={msg.user} className="avatar-img" width={192} height={192} decoding="async" />
                   <span className={`platform-indicator ${msg.platform}`}>
                     <PlatformIcon platform={msg.platform} />
                   </span>
@@ -911,7 +906,7 @@ function InboxMockup() {
           <div className="mockup-main-v2">
             <div className="chat-header-v2">
               <div className="chat-user-info">
-                <img src={avatarMaria} alt={inboxMessages[0].user} className="chat-avatar" />
+                <img src={avatarMaria} alt={inboxMessages[0].user} className="chat-avatar" width={192} height={192} decoding="async" />
                 <div className="chat-user-details">
                   <span className="chat-username">{inboxMessages[0].user}</span>
                   <span className="chat-platform">
@@ -944,7 +939,7 @@ function InboxMockup() {
                     className={`chat-bubble-v2 ${msg.type}`}
                   >
                     {msg.type === 'incoming' && (
-                      <img src={avatarMaria} alt={t.mockups.step2.customerName} className="bubble-avatar" />
+                      <img src={avatarMaria} alt={t.mockups.step2.customerName} className="bubble-avatar" width={192} height={192} decoding="async" />
                     )}
                     <div className="bubble-content">
                       {msg.isAI && (
@@ -1005,7 +1000,7 @@ function InboxMockup() {
               <span>{t.mockups.inbox.crm.client}</span>
             </div>
             <div className="crm-content">
-              <img src={avatarMaria} alt={inboxMessages[0].user} className="crm-avatar" />
+              <img src={avatarMaria} alt={inboxMessages[0].user} className="crm-avatar" width={192} height={192} decoding="async" />
               <div className="crm-name">{inboxMessages[0].user}</div>
               <div className="crm-email">maria.garcia@email.com</div>
               <div className="crm-stats-grid">
@@ -1050,7 +1045,7 @@ function InboxMockup() {
               </span>
             </div>
             <div className="bubble-user-row">
-              <img src={bubble.avatar} alt={bubble.user} className="bubble-avatar" />
+              <img src={bubble.avatar} alt={bubble.user} className="bubble-avatar" width={192} height={192} decoding="async" />
               <span className="bubble-user-name">{bubble.user}</span>
             </div>
             <div className="bubble-input-area">
@@ -1309,7 +1304,7 @@ function MobileInboxMockup() {
                   style={{ opacity: visibleInbox.includes(msg.id) || activeSlide !== 0 ? 1 : 0 }}
                 >
                   <div className="mobile-msg-avatar">
-                    <img src={msg.avatarImg} alt={msg.user} />
+                    <img src={msg.avatarImg} alt={msg.user} width={192} height={192} decoding="async" />
                     <span className={`mobile-platform-dot ${msg.platform}`}>
                       <PlatformIcon platform={msg.platform} />
                     </span>
@@ -1337,7 +1332,7 @@ function MobileInboxMockup() {
             transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
           >
             <div className="mobile-slide-header">
-              <img src={avatarMaria} alt={inboxMessages[0].user} className="mobile-chat-avatar" />
+              <img src={avatarMaria} alt={inboxMessages[0].user} className="mobile-chat-avatar" width={192} height={192} decoding="async" />
               <div className="mobile-chat-info">
                 <span className="mobile-chat-name">{inboxMessages[0].user}</span>
                 <span className="mobile-chat-platform">
@@ -1385,7 +1380,7 @@ function MobileInboxMockup() {
             </div>
             <div className="mobile-crm-content">
               <div className="mobile-crm-profile">
-                <img src={avatarMaria} alt={inboxMessages[0].user} className="mobile-crm-avatar" />
+                <img src={avatarMaria} alt={inboxMessages[0].user} className="mobile-crm-avatar" width={192} height={192} decoding="async" />
                 <div className="mobile-crm-name">{inboxMessages[0].user}</div>
                 <div className="mobile-crm-email">maria.garcia@email.com</div>
                 <div className="mobile-crm-tags">
@@ -1501,7 +1496,7 @@ function MobileInboxMockup() {
               </span>
             </div>
             <div className="mobile-bubble-user">
-              <img src={bubble.avatar} alt={bubble.user} className="mobile-bubble-avatar" />
+              <img src={bubble.avatar} alt={bubble.user} className="mobile-bubble-avatar" width={192} height={192} decoding="async" />
               <span className="mobile-bubble-name">{bubble.user}</span>
             </div>
             <div className="mobile-bubble-input">
@@ -1536,7 +1531,7 @@ function MobileInboxMockup() {
               </span>
             </div>
             <div className="mobile-bubble-user">
-              <img src={bubble.avatar} alt={bubble.user} className="mobile-bubble-avatar" />
+              <img src={bubble.avatar} alt={bubble.user} className="mobile-bubble-avatar" width={192} height={192} decoding="async" />
               <span className="mobile-bubble-name">{bubble.user}</span>
             </div>
             <div className="mobile-bubble-input">
@@ -1612,7 +1607,16 @@ function Header() {
     >
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         <a href="/" className="flex items-center" data-testid="link-logo">
-          <img src={repliyoLogo} alt="Repliyo" className="h-9 w-auto object-contain" />
+          <img
+            src={repliyoLogo128}
+            srcSet={`${repliyoLogo128} 128w, ${repliyoLogo256} 256w`}
+            sizes="36px"
+            alt="Repliyo"
+            className="h-9 w-auto object-contain"
+            width={128}
+            height={128}
+            decoding="async"
+          />
         </a>
         <nav className="hidden md:flex items-center gap-8">
           <a href="#features" onClick={(e) => scrollToSection(e, 'features')} className="nav-link" data-testid="link-nav-producto">{t.header.product}</a>
@@ -3262,7 +3266,7 @@ function AvatarWithStatus({ imageSrc, name, status, t }: { imageSrc: string; nam
   return (
     <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-3 shadow-2xl shadow-purple-500/20 border border-purple-200/50 flex items-center gap-3" style={{ width: 160 }}>
       <div className="relative">
-        <img src={imageSrc} alt="" className="w-10 h-10 rounded-full object-cover" />
+        <img src={imageSrc} alt="" className="w-10 h-10 rounded-full object-cover" width={192} height={192} decoding="async" />
         <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${status === 'online' ? 'bg-green-500' : 'bg-yellow-500'}`} />
       </div>
       <div>
@@ -3339,9 +3343,9 @@ function AvatarStack({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
   return (
     <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl shadow-cyan-500/20 border border-cyan-200/50" style={{ width: 150 }}>
       <div className="flex -space-x-3 mb-2">
-        <img src={avatarMaria} alt="" className="w-10 h-10 rounded-full border-2 border-white object-cover shrink-0" />
-        <img src={avatarCarlos} alt="" className="w-10 h-10 rounded-full border-2 border-white object-cover shrink-0" />
-        <img src={avatarAna} alt="" className="w-10 h-10 rounded-full border-2 border-white object-cover shrink-0" />
+        <img src={avatarMaria} alt="" className="w-10 h-10 rounded-full border-2 border-white object-cover shrink-0" width={192} height={192} decoding="async" />
+        <img src={avatarCarlos} alt="" className="w-10 h-10 rounded-full border-2 border-white object-cover shrink-0" width={192} height={192} decoding="async" />
+        <img src={avatarAna} alt="" className="w-10 h-10 rounded-full border-2 border-white object-cover shrink-0" width={192} height={192} decoding="async" />
         <div className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-full border-2 border-white bg-blue-500 flex items-center justify-center text-white text-xs font-bold shrink-0">+12</div>
       </div>
       <div className="text-xs text-gray-500">{t.floatingCards.activeTeam}</div>
@@ -3950,7 +3954,20 @@ function TestimonialSection() {
   const quoteY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [100, -100]);
   const quoteRotate = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [-5, 5]);
 
-  const testimonialImages = [testimonialBettys, testimonialMelva, testimonialXLHomes];
+  const testimonialImages = [
+    {
+      src: testimonialBettys96,
+      srcSet: `${testimonialBettys96} 96w, ${testimonialBettys192} 192w`,
+    },
+    {
+      src: testimonialMelva96,
+      srcSet: `${testimonialMelva96} 96w, ${testimonialMelva192} 192w`,
+    },
+    {
+      src: testimonialXLHomes96,
+      srcSet: `${testimonialXLHomes96} 96w, ${testimonialXLHomes192} 192w`,
+    },
+  ];
 
   useEffect(() => {
     if (prefersReducedMotion) return;
@@ -3998,9 +4015,15 @@ function TestimonialSection() {
 
               <div className="inline-flex items-center gap-5 p-5 pr-10 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
                 <img 
-                  src={testimonialImages[idx]} 
+                  src={testimonialImages[idx].src}
+                  srcSet={testimonialImages[idx].srcSet}
+                  sizes="(min-width: 768px) 96px, 80px"
                   alt={testimonial.name}
                   className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border-2 border-white/20"
+                  width={96}
+                  height={96}
+                  loading="lazy"
+                  decoding="async"
                 />
                 <div className="text-left">
                   <div className="font-semibold text-white text-xl md:text-2xl">{testimonial.name}</div>
@@ -4150,7 +4173,17 @@ export function LandingPage() {
               transition={{ duration: 0.4, ease: 'easeOut' }}
               className="flex flex-col items-center gap-6"
             >
-              <img src={repliyoLogo} alt="Repliyo" className="h-16 w-auto object-contain" />
+              <img
+                src={repliyoLogo128}
+                srcSet={`${repliyoLogo128} 128w, ${repliyoLogo256} 256w`}
+                sizes="64px"
+                alt="Repliyo"
+                className="h-16 w-auto object-contain"
+                width={128}
+                height={128}
+                fetchPriority="high"
+                decoding="async"
+              />
               <motion.div
                 className="flex gap-1.5"
                 initial="hidden"
