@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
-import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring, useMotionValue, AnimatePresence } from 'framer-motion';
+import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring, useMotionValue, AnimatePresence, MotionConfig } from 'framer-motion';
 import { ArrowRight, Play, Check, CheckCheck, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle, Globe, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { GlowButton } from './GlowButton';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
@@ -57,6 +57,7 @@ function useSafeScroll(options: { target?: React.RefObject<HTMLElement | null>; 
 }
 
 function Step1ConnectMockup() {
+  const prefersReducedMotion = useReducedMotion();
   const orbitIcons = [
     { Icon: FaInstagram, platform: 'instagram' },
     { Icon: FaTiktok, platform: 'tiktok' },
@@ -85,8 +86,8 @@ function Step1ConnectMockup() {
       
       <motion.div 
         className="orbit-ring-container"
-        animate={{ rotate: 360 }}
-        transition={{ repeat: Infinity, duration: 30, ease: 'linear' }}
+        animate={{ rotate: prefersReducedMotion ? 0 : 360 }}
+        transition={prefersReducedMotion ? { duration: 0 } : { repeat: Infinity, duration: 30, ease: 'linear' }}
       >
         <div className="orbit-ring-large" />
         
@@ -108,8 +109,8 @@ function Step1ConnectMockup() {
                 x, 
                 y 
               }}
-              animate={{ rotate: -360 }}
-              transition={{ repeat: Infinity, duration: 30, ease: 'linear' }}
+              animate={{ rotate: prefersReducedMotion ? 0 : -360 }}
+              transition={prefersReducedMotion ? { duration: 0 } : { repeat: Infinity, duration: 30, ease: 'linear' }}
             >
               <item.Icon className={`w-5 h-5 ${item.platform === 'tiktok' ? 'text-white' : ''}`} />
             </motion.div>
@@ -230,6 +231,7 @@ function Step3SendMockup() {
 function FeatureInboxMockup() {
   const [visibleItems, setVisibleItems] = useState<number[]>([]);
   const [cycle, setCycle] = useState(0);
+  const prefersReducedMotion = useReducedMotion();
   const { t } = useLanguage();
   
   const avatars = [avatarMaria, avatarCarlos, avatarAna, avatarDiego, avatarLaura, avatarAna];
@@ -250,6 +252,11 @@ function FeatureInboxMockup() {
   }));
   
   useEffect(() => {
+    if (prefersReducedMotion) {
+      setVisibleItems(messages.map((_, idx) => idx));
+      return;
+    }
+
     setVisibleItems([]);
     const timers: NodeJS.Timeout[] = [];
     
@@ -264,7 +271,7 @@ function FeatureInboxMockup() {
     }, 5000));
     
     return () => timers.forEach(clearTimeout);
-  }, [cycle]);
+  }, [cycle, messages.length, prefersReducedMotion]);
   
   return (
     <div className="feature-inbox-mockup">
@@ -311,25 +318,36 @@ function FeatureInboxMockup() {
 
 function FeatureAIMockup() {
   const [text, setText] = useState('');
+  const prefersReducedMotion = useReducedMotion();
   const { t } = useLanguage();
   const fullText = t.mockups.ai.typingText;
   
   useEffect(() => {
+    if (prefersReducedMotion) {
+      setText(fullText);
+      return;
+    }
+
     let charIndex = 0;
+    let resetTimer: NodeJS.Timeout | undefined;
     const textToType = fullText;
     const interval = setInterval(() => {
       if (charIndex < textToType.length) {
         setText(textToType.slice(0, charIndex + 1));
         charIndex++;
-      } else {
-        setTimeout(() => {
+      } else if (!resetTimer) {
+        resetTimer = setTimeout(() => {
           setText('');
           charIndex = 0;
+          resetTimer = undefined;
         }, 1500);
       }
     }, 60);
-    return () => clearInterval(interval);
-  }, [fullText]);
+    return () => {
+      clearInterval(interval);
+      if (resetTimer) clearTimeout(resetTimer);
+    };
+  }, [fullText, prefersReducedMotion]);
   
   return (
     <div className="feature-ai-mockup">
@@ -347,9 +365,15 @@ function FeatureAIMockup() {
 function FeatureCRMMockup() {
   const [showDetails, setShowDetails] = useState(false);
   const [cycle, setCycle] = useState(0);
+  const prefersReducedMotion = useReducedMotion();
   const { t } = useLanguage();
   
   useEffect(() => {
+    if (prefersReducedMotion) {
+      setShowDetails(true);
+      return;
+    }
+
     const timers: NodeJS.Timeout[] = [];
     setShowDetails(false);
     
@@ -357,7 +381,7 @@ function FeatureCRMMockup() {
     timers.push(setTimeout(() => setCycle(c => c + 1), 4000));
     
     return () => timers.forEach(clearTimeout);
-  }, [cycle]);
+  }, [cycle, prefersReducedMotion]);
   
   return (
     <div className="feature-crm-mockup">
@@ -404,14 +428,20 @@ function FeatureCRMMockup() {
 
 function FeatureReminderMockup() {
   const [phase, setPhase] = useState(0);
+  const prefersReducedMotion = useReducedMotion();
   const { t } = useLanguage();
   
   useEffect(() => {
+    if (prefersReducedMotion) {
+      setPhase(3);
+      return;
+    }
+
     const interval = setInterval(() => {
       setPhase(p => (p + 1) % 4);
     }, 1200);
     return () => clearInterval(interval);
-  }, []);
+  }, [prefersReducedMotion]);
   
   return (
     <div className="feature-reminder-mockup">
@@ -449,11 +479,17 @@ function FeatureReminderMockup() {
 function FeatureCommentsMockup() {
   const [phase, setPhase] = useState(0);
   const [cycle, setCycle] = useState(0);
+  const prefersReducedMotion = useReducedMotion();
   const { t } = useLanguage();
   
   const comments = t.mockups.comments;
   
   useEffect(() => {
+    if (prefersReducedMotion) {
+      setPhase(6);
+      return;
+    }
+
     setPhase(0);
     const timers: NodeJS.Timeout[] = [];
     
@@ -466,7 +502,7 @@ function FeatureCommentsMockup() {
     timers.push(setTimeout(() => setCycle(c => c + 1), 6000));
     
     return () => timers.forEach(clearTimeout);
-  }, [cycle]);
+  }, [cycle, prefersReducedMotion]);
   
   return (
     <div className="feature-comments-mockup-v2">
@@ -506,6 +542,7 @@ function FeatureCommentsMockup() {
 
 function FeatureAnalyticsMockup() {
   const bars = [40, 65, 45, 80, 60, 90, 75];
+  const prefersReducedMotion = useReducedMotion();
   const { t } = useLanguage();
   
   return (
@@ -515,9 +552,9 @@ function FeatureAnalyticsMockup() {
           <motion.div
             key={idx}
             className="analytics-bar"
-            initial={{ height: 0 }}
+            initial={prefersReducedMotion ? false : { height: 0 }}
             animate={{ height: `${height}%` }}
-            transition={{ 
+            transition={prefersReducedMotion ? { duration: 0 } : {
               repeat: Infinity,
               repeatDelay: 3,
               duration: 0.6, 
@@ -540,6 +577,7 @@ function FeatureMultiAgentMockup() {
   const [activeAgent, setActiveAgent] = useState(0);
   const [cycle, setCycle] = useState(0);
   const [visibleAssignments, setVisibleAssignments] = useState<number[]>([]);
+  const prefersReducedMotion = useReducedMotion();
   const { t } = useLanguage();
   
   const agents = [
@@ -557,6 +595,12 @@ function FeatureMultiAgentMockup() {
   }));
   
   useEffect(() => {
+    if (prefersReducedMotion) {
+      setActiveAgent(0);
+      setVisibleAssignments(recentAssignments.map((_, idx) => idx));
+      return;
+    }
+
     const timers: NodeJS.Timeout[] = [];
     setVisibleAssignments([]);
     
@@ -573,7 +617,7 @@ function FeatureMultiAgentMockup() {
     timers.push(setTimeout(() => setCycle(c => c + 1), 300 + agents.length * 1000 + 500));
     
     return () => timers.forEach(clearTimeout);
-  }, [cycle]);
+  }, [cycle, prefersReducedMotion, recentAssignments.length]);
   
   return (
     <div className="feature-multiagent-mockup">
@@ -817,10 +861,10 @@ function InboxMockup() {
     if (chatContainerRef.current && chatPhase > 0) {
       chatContainerRef.current.scrollTo({
         top: chatContainerRef.current.scrollHeight,
-        behavior: 'smooth'
+        behavior: prefersReducedMotion ? 'auto' : 'smooth'
       });
     }
-  }, [chatPhase]);
+  }, [chatPhase, prefersReducedMotion]);
 
   const PlatformIcon = ({ platform }: { platform: string }) => {
     switch(platform) {
@@ -1587,7 +1631,7 @@ function Header() {
       
       window.scrollTo({
         top: offsetPosition,
-        behavior: 'smooth'
+        behavior: prefersReducedMotion ? 'auto' : 'smooth'
       });
     }
   };
@@ -3622,16 +3666,19 @@ function MetricSection() {
 
 function HowItWorksMobile() {
   const [activeStep, setActiveStep] = useState(0);
+  const prefersReducedMotion = useReducedMotion();
   const { t } = useLanguage();
   const stepMockups = [<Step1ConnectMockup />, <Step2AIMockup />, <Step3SendMockup />];
   const steps = t.howItWorks.steps;
 
   useEffect(() => {
+    if (prefersReducedMotion) return;
+
     const interval = setInterval(() => {
       setActiveStep((prev) => (prev + 1) % steps.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, [steps.length]);
+  }, [prefersReducedMotion, steps.length]);
 
   return (
     <section id="how" className="py-12 md:py-16 px-4 relative overflow-hidden mt-8 md:mt-12">
@@ -3671,7 +3718,7 @@ function HowItWorksMobile() {
                 opacity: activeStep === i ? 1 : 0,
                 pointerEvents: activeStep === i ? 'auto' : 'none'
               }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
+              transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.3, ease: "easeOut" }}
               className="absolute inset-0 p-6"
               style={{ position: i === 0 ? 'relative' : 'absolute' }}
             >
@@ -3693,7 +3740,7 @@ function HowItWorksMobile() {
             className="h-full bg-[var(--landing-primary)]"
             initial={{ width: "0%" }}
             animate={{ width: "100%" }}
-            transition={{ duration: 5, ease: "linear" }}
+            transition={prefersReducedMotion ? { duration: 0 } : { duration: 5, ease: "linear" }}
             key={activeStep}
           />
         </div>
@@ -3873,7 +3920,7 @@ function FeaturesSection() {
 
   return (
     <section id="features" ref={sectionRef} className="py-12 md:py-32 section-dark relative overflow-hidden">
-      <Parallax speed={-3} className="absolute inset-0 pointer-events-none">
+      <Parallax speed={prefersReducedMotion ? 0 : -3} className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-blue-500/5 blur-3xl" />
       </Parallax>
       <div className="max-w-7xl mx-auto px-6 relative z-10">
@@ -4150,21 +4197,23 @@ function Footer() {
 
 export function LandingPage() {
   return (
-    <ParallaxProvider>
-      <div className="landing-page theme-light" data-testid="landing-page">
-        <Header />
-        <main>
-          <HeroSection />
-          <MarqueeSection />
-          <ProblemSolutionSection />
-          <MetricSection />
-          <HowItWorksSection />
-          <FeaturesSection />
-          <TestimonialSection />
-          <CTASection />
-        </main>
-        <Footer />
-      </div>
-    </ParallaxProvider>
+    <MotionConfig reducedMotion="user">
+      <ParallaxProvider>
+        <div className="landing-page theme-light" data-testid="landing-page">
+          <Header />
+          <main>
+            <HeroSection />
+            <MarqueeSection />
+            <ProblemSolutionSection />
+            <MetricSection />
+            <HowItWorksSection />
+            <FeaturesSection />
+            <TestimonialSection />
+            <CTASection />
+          </main>
+          <Footer />
+        </div>
+      </ParallaxProvider>
+    </MotionConfig>
   );
 }
