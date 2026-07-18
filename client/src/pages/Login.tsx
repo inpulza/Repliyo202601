@@ -38,6 +38,18 @@ export function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handleChange = (event: MediaQueryListEvent) => setPrefersReducedMotion(event.matches);
+
+    setPrefersReducedMotion(mediaQuery.matches);
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
 
   useEffect(() => {
     if (!api) return;
@@ -89,7 +101,7 @@ export function Login() {
   const slides = carouselSlides;
 
   return (
-    <div className="min-h-screen flex">
+    <div className="login-page min-h-screen flex">
       {/* Left Panel - Login Form */}
       <div className="w-full lg:w-1/2 bg-gray-50 flex flex-col justify-center px-8 sm:px-16 lg:px-24 py-12">
         <div className="max-w-md w-full mx-auto">
@@ -274,7 +286,7 @@ export function Login() {
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin motion-reduce:animate-none" />
                   Signing in...
                 </>
               ) : (
@@ -294,7 +306,7 @@ export function Login() {
           <Carousel
             setApi={setApi}
             opts={{ loop: true }}
-            plugins={[
+            plugins={prefersReducedMotion ? [] : [
               Autoplay({
                 delay: 5000,
                 stopOnInteraction: false,
@@ -346,6 +358,13 @@ export function Login() {
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.8; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .login-page .animate-float,
+          .login-page .animate-pulse-slow,
+          .login-page .animate-pulse {
+            animation: none !important;
+          }
         }
       `}</style>
     </div>
