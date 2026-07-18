@@ -4,6 +4,7 @@ export const en = {
     howItWorks: 'How it works',
     testimonials: 'Testimonials',
     login: 'Sign in',
+    languageSwitch: 'Switch to Spanish',
   },
   hero: {
     titlePart1: 'Respond in',
@@ -26,6 +27,7 @@ export const en = {
     solutionDescription: 'Instant AI-powered replies that maintain your tone of voice.',
     problemWords: ['exhausting', 'inefficient', 'costly', 'tedious', 'unsustainable', 'slow', 'unprofitable'],
     solutionWords: ['sells for you', 'responds instantly', 'saves you time', 'closes sales alone', 'never rests', 'converts leads'],
+    aiLabel: 'AI',
     notifications: {
       unreadMessages: '+82 unread messages',
       unreadMessagesLabel: 'unread messages',
@@ -55,9 +57,17 @@ export const en = {
       conv2Name: 'Carlos Lopez', 
       conv2Preview: 'How much is shipping?',
       conv2Time: 'now',
+      conv3Name: 'Ana Ruiz',
+      conv3Preview: 'Do you have size XL available?',
+      conv3Time: '5m',
       aiDraftText: 'Hi Carlos! Shipping is free on orders over $50. Can I help with anything else?',
       aiGenerating: 'AI generating...',
       clickToSend: 'Click to send',
+      status: 'Status',
+      before: 'Before',
+      now: 'Now',
+      average: 'avg',
+      faster: 'Faster',
     },
   },
   metrics: {
@@ -105,6 +115,7 @@ export const en = {
     label: 'How it works',
     title: 'From chaos to control in',
     titleHighlight: '3 steps',
+    stepLabel: 'Step',
     steps: [
       {
         number: '01',
@@ -128,6 +139,8 @@ export const en = {
     title: 'Everything you need to',
     titleHighlight: 'scale',
     description: 'Tools designed for teams handling hundreds of conversations daily.',
+    previousSlide: 'Previous slide',
+    nextSlide: 'Next slide',
     items: [
       { title: 'Unified inbox', description: 'All your conversations from Instagram, TikTok and Facebook in one place.' },
       { title: 'Multi-agent', description: 'Multiple team members collaborating in real time.' },
@@ -175,8 +188,9 @@ export const en = {
       Legal: ['Privacy', 'Terms', 'Cookies', 'GDPR'],
     },
     copyright: '© 2026 Repliyo Inc.',
-    privacy: 'Privacy',
+    privacy: 'Privacy policy',
     terms: 'Terms',
+    contact: 'Contact us',
   },
   mockups: {
     step2: {
@@ -185,6 +199,7 @@ export const en = {
       aiGenerating: 'AI generating response...',
       aiDraft: 'AI Draft',
       aiResponse: 'Hi! The price is $299 with free shipping. Would you like to order?',
+      customerReply: 'Perfect, thanks!',
     },
     step3: {
       sendResponse: 'Send response',
@@ -199,6 +214,23 @@ export const en = {
     inbox: {
       newCount: 'new',
       now: 'Now',
+      mobile: {
+        extraMessages: [
+          { user: 'Pedro Sánchez', message: 'Do you ship to the Canary Islands?', time: '15m' },
+          { user: 'Laura Martín', message: 'Do you have a PDF catalog?', time: '20m' },
+        ],
+        contactTimes: ['4 hours ago', '9 hours ago', '13 hours ago', '16 hours ago', '17 hours ago'],
+        responseAbbr: 'Resp.',
+        aiChat: 'AI Chat',
+        contacts: 'Contacts',
+        pending: 'Pending',
+        duplicates: 'Dup.',
+        search: 'Search...',
+        messagesAbbr: 'msgs',
+        aiResponseFallback: 'Hi! Yes, we have the blue dress...',
+        bubbleMessages: ['Do you ship nationwide?', 'What are your business hours?'],
+        slideLabel: 'Slide',
+      },
       messages: [
         { name: 'Maria G.', preview: 'Do you have size M?', time: 'Now' },
         { name: 'Carlos R.', preview: 'Saw your video!', time: '2m' },
