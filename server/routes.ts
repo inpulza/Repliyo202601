@@ -126,14 +126,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>${SITE_URL}/</loc>
-    <xhtml:link rel="alternate" hreflang="es" href="${SITE_URL}/" />
-    <xhtml:link rel="alternate" hreflang="en" href="${SITE_URL}/?lang=en" />
+    <xhtml:link rel="alternate" hreflang="en" href="${SITE_URL}/" />
+    <xhtml:link rel="alternate" hreflang="es" href="${SITE_URL}/?lang=es" />
     <xhtml:link rel="alternate" hreflang="x-default" href="${SITE_URL}/" />
   </url>
   <url>
-    <loc>${SITE_URL}/?lang=en</loc>
-    <xhtml:link rel="alternate" hreflang="es" href="${SITE_URL}/" />
-    <xhtml:link rel="alternate" hreflang="en" href="${SITE_URL}/?lang=en" />
+    <loc>${SITE_URL}/?lang=es</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="${SITE_URL}/" />
+    <xhtml:link rel="alternate" hreflang="es" href="${SITE_URL}/?lang=es" />
     <xhtml:link rel="alternate" hreflang="x-default" href="${SITE_URL}/" />
   </url>
   <url>
