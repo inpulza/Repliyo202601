@@ -8,8 +8,7 @@ import NotFound from "@/pages/not-found";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { NexusProvider } from "@/context/NexusContext";
 import { LanguageProvider } from "@/context/LanguageContext";
-import { DashboardLayout } from "@/components/DashboardLayout";
-import { useEffect, lazy, Suspense, type ComponentType } from "react";
+import { useEffect, lazy, Suspense, type ComponentType, type ReactNode } from "react";
 
 import { Login } from "@/pages/Login";
 import { Loader2 } from "lucide-react";
@@ -48,16 +47,38 @@ function lazyWithRetry<T extends ComponentType<any>>(
   });
 }
 
-const Inbox = lazyWithRetry(() => import("@/components/Inbox").then(m => ({ default: m.Inbox })));
-const Overview = lazyWithRetry(() => import("@/pages/Overview").then(m => ({ default: m.Overview })));
-const AIAgentConfig = lazyWithRetry(() => import("@/components/AIAgentConfig").then(m => ({ default: m.AIAgentConfig })));
-const AiMetrics = lazyWithRetry(() => import("@/pages/AiMetrics").then(m => ({ default: m.AiMetrics })));
-const Connections = lazyWithRetry(() => import("@/pages/Connections").then(m => ({ default: m.Connections })));
-const IntegrationsPage = lazyWithRetry(() => import("@/pages/Integrations").then(m => ({ default: m.IntegrationsPage })));
-const ProfileSettings = lazyWithRetry(() => import("@/pages/ProfileSettings").then(m => ({ default: m.ProfileSettings })));
-const CRM = lazyWithRetry(() => import("@/pages/CRM").then(m => ({ default: m.CRM })));
-const CrisisAlerts = lazyWithRetry(() => import("@/pages/CrisisAlerts").then(m => ({ default: m.CrisisAlerts })));
-const UserManagement = lazyWithRetry(() => import("@/pages/UserManagement").then(m => ({ default: m.UserManagement })));
+function lazyDashboardRoute(
+  factory: () => Promise<{ default: ComponentType }>
+) {
+  return lazyWithRetry(async () => {
+    const [{ DashboardLayout }, pageModule] = await Promise.all([
+      import("@/components/DashboardLayout"),
+      factory(),
+    ]);
+    const Page = pageModule.default;
+
+    return {
+      default: function DashboardRoute() {
+        return (
+          <DashboardLayout>
+            <Page />
+          </DashboardLayout>
+        );
+      },
+    };
+  });
+}
+
+const Inbox = lazyDashboardRoute(() => import("@/components/Inbox").then(m => ({ default: m.Inbox })));
+const Overview = lazyDashboardRoute(() => import("@/pages/Overview").then(m => ({ default: m.Overview })));
+const AIAgentConfig = lazyDashboardRoute(() => import("@/components/AIAgentConfig").then(m => ({ default: m.AIAgentConfig })));
+const AiMetrics = lazyDashboardRoute(() => import("@/pages/AiMetrics").then(m => ({ default: m.AiMetrics })));
+const Connections = lazyDashboardRoute(() => import("@/pages/Connections").then(m => ({ default: m.Connections })));
+const IntegrationsPage = lazyDashboardRoute(() => import("@/pages/Integrations").then(m => ({ default: m.IntegrationsPage })));
+const ProfileSettings = lazyDashboardRoute(() => import("@/pages/ProfileSettings").then(m => ({ default: m.ProfileSettings })));
+const CRM = lazyDashboardRoute(() => import("@/pages/CRM").then(m => ({ default: m.CRM })));
+const CrisisAlerts = lazyDashboardRoute(() => import("@/pages/CrisisAlerts").then(m => ({ default: m.CrisisAlerts })));
+const UserManagement = lazyDashboardRoute(() => import("@/pages/UserManagement").then(m => ({ default: m.UserManagement })));
 const LandingPage = lazyWithRetry(() => import("@/components/landing/LandingPage").then(m => ({ default: m.LandingPage })));
 const GetStarted = lazyWithRetry(() => import("@/pages/GetStarted").then(m => ({ default: m.GetStarted })));
 const PrivacyPolicy = lazyWithRetry(() => import("@/pages/PrivacyPolicy"));
@@ -81,6 +102,27 @@ function LandingPageLoader() {
       <Loader2 className="h-8 w-8 animate-spin text-[#0291FA] motion-reduce:animate-none" />
     </div>
   );
+}
+
+function DashboardAuthGate({ children }: { children: ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      setLocation('/login');
+    }
+  }, [isLoading, isAuthenticated, setLocation]);
+
+  if (isLoading) {
+    return <PageLoader />;
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  return <>{children}</>;
 }
 
 function AppRedirect() {
@@ -155,72 +197,72 @@ function Router() {
       {/* Authenticated routes under /app */}
       <Route path="/app/connections">
         {() => (
-          <DashboardLayout>
+          <DashboardAuthGate>
             <Suspense fallback={<PageLoader />}><Connections /></Suspense>
-          </DashboardLayout>
+          </DashboardAuthGate>
         )}
       </Route>
       <Route path="/app/integrations">
         {() => (
-          <DashboardLayout>
+          <DashboardAuthGate>
             <Suspense fallback={<PageLoader />}><IntegrationsPage /></Suspense>
-          </DashboardLayout>
+          </DashboardAuthGate>
         )}
       </Route>
       <Route path="/app/overview">
         {() => (
-          <DashboardLayout>
+          <DashboardAuthGate>
             <Suspense fallback={<PageLoader />}><Overview /></Suspense>
-          </DashboardLayout>
+          </DashboardAuthGate>
         )}
       </Route>
       <Route path="/app/settings">
         {() => (
-          <DashboardLayout>
+          <DashboardAuthGate>
             <Suspense fallback={<PageLoader />}><AIAgentConfig /></Suspense>
-          </DashboardLayout>
+          </DashboardAuthGate>
         )}
       </Route>
       <Route path="/app/ai-metrics">
         {() => (
-          <DashboardLayout>
+          <DashboardAuthGate>
             <Suspense fallback={<PageLoader />}><AiMetrics /></Suspense>
-          </DashboardLayout>
+          </DashboardAuthGate>
         )}
       </Route>
       <Route path="/app/profile">
         {() => (
-          <DashboardLayout>
+          <DashboardAuthGate>
             <Suspense fallback={<PageLoader />}><ProfileSettings /></Suspense>
-          </DashboardLayout>
+          </DashboardAuthGate>
         )}
       </Route>
       <Route path="/app/crm">
         {() => (
-          <DashboardLayout>
+          <DashboardAuthGate>
             <Suspense fallback={<PageLoader />}><CRM /></Suspense>
-          </DashboardLayout>
+          </DashboardAuthGate>
         )}
       </Route>
       <Route path="/app/crisis-alerts">
         {() => (
-          <DashboardLayout>
+          <DashboardAuthGate>
             <Suspense fallback={<PageLoader />}><CrisisAlerts /></Suspense>
-          </DashboardLayout>
+          </DashboardAuthGate>
         )}
       </Route>
       <Route path="/app/inbox">
         {() => (
-          <DashboardLayout>
+          <DashboardAuthGate>
             <Suspense fallback={<PageLoader />}><Inbox /></Suspense>
-          </DashboardLayout>
+          </DashboardAuthGate>
         )}
       </Route>
       <Route path="/app/users">
         {() => (
-          <DashboardLayout>
+          <DashboardAuthGate>
             <Suspense fallback={<PageLoader />}><UserManagement /></Suspense>
-          </DashboardLayout>
+          </DashboardAuthGate>
         )}
       </Route>
       <Route path="/app">
