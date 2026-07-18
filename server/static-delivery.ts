@@ -3,45 +3,39 @@ import path from "node:path";
 
 import compression from "compression";
 import express, { type Express } from "express";
+import {
+  LANDING_METADATA,
+  LANDING_STRUCTURED_DESCRIPTIONS,
+} from "@shared/landingMetadata";
 
 const HASHED_ASSET_FILENAME = /-[A-Za-z0-9_-]{8}\.[^.]+$/;
 const REVALIDATE_CACHE_CONTROL = "no-cache";
 const IMMUTABLE_CACHE_CONTROL = "public, max-age=31536000, immutable";
+const ENGLISH_METADATA = LANDING_METADATA.en;
+const SPANISH_METADATA = LANDING_METADATA.es;
 
 const SPANISH_LANDING_REPLACEMENTS: Array<[string, string]> = [
   ['<html lang="en">', '<html lang="es">'],
+  [ENGLISH_METADATA.title, SPANISH_METADATA.title],
+  [ENGLISH_METADATA.description, SPANISH_METADATA.description],
   [
-    'Repliyo - Smart social media inbox',
-    'Repliyo - Inbox inteligente para redes sociales',
+    `<link rel="canonical" href="${ENGLISH_METADATA.canonicalUrl}" />`,
+    `<link rel="canonical" href="${SPANISH_METADATA.canonicalUrl}" />`,
   ],
   [
-    'Unify Instagram, TikTok and Facebook DMs and comments. Automate replies with AI, manage contacts in the built-in CRM and never miss a follow-up.',
-    'Unifica DMs y comentarios de Instagram, TikTok y Facebook. Automatiza respuestas con IA, gestiona contactos en el CRM integrado y no pierdas ningún seguimiento.',
+    `<meta property="og:url" content="${ENGLISH_METADATA.canonicalUrl}" />`,
+    `<meta property="og:url" content="${SPANISH_METADATA.canonicalUrl}" />`,
   ],
   [
-    '<link rel="canonical" href="https://repliyo.com/" />',
-    '<link rel="canonical" href="https://repliyo.com/?lang=es" />',
+    `<meta property="og:locale" content="${ENGLISH_METADATA.openGraphLocale}" />`,
+    `<meta property="og:locale" content="${SPANISH_METADATA.openGraphLocale}" />`,
   ],
   [
-    '<meta property="og:url" content="https://repliyo.com/" />',
-    '<meta property="og:url" content="https://repliyo.com/?lang=es" />',
+    `<meta property="og:locale:alternate" content="${ENGLISH_METADATA.openGraphLocaleAlternate}" />`,
+    `<meta property="og:locale:alternate" content="${SPANISH_METADATA.openGraphLocaleAlternate}" />`,
   ],
-  [
-    '<meta property="og:locale" content="en_US" />',
-    '<meta property="og:locale" content="es_ES" />',
-  ],
-  [
-    '<meta property="og:locale:alternate" content="es_ES" />',
-    '<meta property="og:locale:alternate" content="en_US" />',
-  ],
-  [
-    'Repliyo - Respond in seconds. Sell more with AI. Instagram, TikTok, Facebook, YouTube, LinkedIn, Google Business.',
-    'Repliyo - Responde en segundos. Vende más con IA. Instagram, TikTok, Facebook, YouTube, LinkedIn y Google Business.',
-  ],
-  [
-    'Smart social media inbox that unifies Instagram, TikTok and Facebook DMs and comments with AI-powered replies, an integrated CRM and intelligent follow-ups.',
-    'Inbox inteligente para redes sociales que unifica DMs y comentarios de Instagram, TikTok y Facebook con respuestas mediante IA, CRM integrado y seguimientos inteligentes.',
-  ],
+  [ENGLISH_METADATA.imageAlt, SPANISH_METADATA.imageAlt],
+  [LANDING_STRUCTURED_DESCRIPTIONS.en, LANDING_STRUCTURED_DESCRIPTIONS.es],
 ];
 
 export function createSpanishLandingHtml(defaultHtml: string) {

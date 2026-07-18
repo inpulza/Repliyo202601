@@ -4,6 +4,7 @@ import { ArrowRight, Play, Check, CheckCheck, X, Sparkles, Inbox, Users, Users2,
 import { GlowButton } from './GlowButton';
 import { FaInstagram, FaTiktok, FaFacebook, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { GoogleBusinessIcon } from '../GoogleBusinessIcon';
+import { LandingMetadataSync } from './LandingMetadataSync';
 import { useLanguage } from '../../context/LanguageContext';
 import avatarMaria from '../../assets/landing/optimized/customer-maria-192.webp?no-inline';
 import avatarCarlos from '../../assets/landing/optimized/customer-carlos-192.webp?no-inline';
@@ -4203,6 +4204,7 @@ export function LandingPage() {
     <MotionConfig reducedMotion="user">
       <ParallaxProvider>
         <div className="landing-page theme-light" data-testid="landing-page">
+          <LandingMetadataSync />
           <Header />
           <main>
             <HeroSection />

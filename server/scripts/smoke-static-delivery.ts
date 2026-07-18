@@ -5,6 +5,7 @@ import path from "node:path";
 import zlib from "node:zlib";
 
 import express from "express";
+import { LANDING_METADATA } from "@shared/landingMetadata";
 
 import {
   API_CACHE_CONTROL,
@@ -226,7 +227,8 @@ async function main() {
 
     const englishHtml = decodeBody(root).toString("utf8");
     assert.match(englishHtml, /<html lang="en">/);
-    assert.match(englishHtml, /Repliyo - Smart social media inbox/);
+    assert.ok(englishHtml.includes(LANDING_METADATA.en.title));
+    assert.ok(englishHtml.includes(LANDING_METADATA.en.description));
     assert.match(
       englishHtml,
       /<link rel="canonical" href="https:\/\/repliyo\.com\/" \/>/,
@@ -235,10 +237,8 @@ async function main() {
 
     const spanishHtml = decodeBody(spanishRoot).toString("utf8");
     assert.match(spanishHtml, /<html lang="es">/);
-    assert.match(
-      spanishHtml,
-      /Repliyo - Inbox inteligente para redes sociales/,
-    );
+    assert.ok(spanishHtml.includes(LANDING_METADATA.es.title));
+    assert.ok(spanishHtml.includes(LANDING_METADATA.es.description));
     assert.match(
       spanishHtml,
       /<link rel="canonical" href="https:\/\/repliyo\.com\/\?lang=es" \/>/,
