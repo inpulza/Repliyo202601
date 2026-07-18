@@ -4082,8 +4082,10 @@
 @media (prefers-reduced-motion: reduce) {
   .marquee-content,
   .animate-float,
-  .animate-pulse-glow {
-    animation: none;
+  .animate-pulse-glow,
+  .hero-floating-icon,
+  .hero-floating-icon-mobile {
+    animation: none !important;
   }
   
   .hover-lift:hover,
