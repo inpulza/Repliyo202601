@@ -138,6 +138,7 @@ async function main() {
       unhashedAsset,
       missingAsset,
       root,
+      spanishRoot,
       index,
       spaRoute,
       api,
@@ -149,6 +150,7 @@ async function main() {
         request(port, "/assets/static-delivery-probe.txt"),
         request(port, "/assets/missing-static.js"),
         request(port, "/"),
+        request(port, "/?lang=es"),
         request(port, "/index.html"),
         request(port, "/nonexistent-spa-route"),
         request(port, "/api/static-delivery-probe"),
@@ -212,7 +214,7 @@ async function main() {
     assert.match(missingAsset.headers["content-type"] ?? "", /^text\/plain/);
     assert.equal(decodeBody(missingAsset).toString("utf8"), "Not Found");
 
-    for (const htmlResponse of [root, index, spaRoute]) {
+    for (const htmlResponse of [root, spanishRoot, index, spaRoute]) {
       assert.equal(htmlResponse.statusCode, 200);
       assert.equal(htmlResponse.headers["cache-control"], "no-cache");
       assert.match(htmlResponse.headers.vary ?? "", /Accept-Encoding/i);
@@ -221,6 +223,31 @@ async function main() {
         /immutable/,
       );
     }
+
+    const englishHtml = decodeBody(root).toString("utf8");
+    assert.match(englishHtml, /<html lang="en">/);
+    assert.match(englishHtml, /Repliyo - Smart social media inbox/);
+    assert.match(
+      englishHtml,
+      /<link rel="canonical" href="https:\/\/repliyo\.com\/" \/>/,
+    );
+    assert.equal(root.headers["content-language"], "en");
+
+    const spanishHtml = decodeBody(spanishRoot).toString("utf8");
+    assert.match(spanishHtml, /<html lang="es">/);
+    assert.match(
+      spanishHtml,
+      /Repliyo - Inbox inteligente para redes sociales/,
+    );
+    assert.match(
+      spanishHtml,
+      /<link rel="canonical" href="https:\/\/repliyo\.com\/\?lang=es" \/>/,
+    );
+    assert.match(
+      spanishHtml,
+      /<meta property="og:locale" content="es_ES" \/>/,
+    );
+    assert.equal(spanishRoot.headers["content-language"], "es");
 
     const [revalidatedIndex, revalidatedSpaRoute] = await Promise.all([
       request(port, "/index.html", { "If-None-Match": index.headers.etag }),

@@ -18,18 +18,25 @@ const translations: Record<Language, Translations> = { es, en };
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('repliyo-lang');
-      if (saved === 'en' || saved === 'es') return saved;
       const urlParams = new URLSearchParams(window.location.search);
       const langParam = urlParams.get('lang');
       if (langParam === 'en' || langParam === 'es') return langParam;
+      const saved = localStorage.getItem('repliyo-lang');
+      if (saved === 'en' || saved === 'es') return saved;
     }
-    return 'es';
+    return 'en';
   });
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem('repliyo-lang', lang);
+    const url = new URL(window.location.href);
+    if (lang === 'es') {
+      url.searchParams.set('lang', 'es');
+    } else {
+      url.searchParams.delete('lang');
+    }
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
     document.documentElement.lang = lang;
   };
 
