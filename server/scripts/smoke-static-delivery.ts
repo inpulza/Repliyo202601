@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import zlib from "node:zlib";
 
 import express from "express";
 
@@ -19,8 +20,23 @@ const unhashedProbePath = path.join(assetsPath, "static-delivery-probe.txt");
 type ProbeResponse = {
   statusCode: number | undefined;
   headers: http.IncomingHttpHeaders;
-  body: string;
+  body: Buffer;
 };
+
+function decodeBody(response: ProbeResponse) {
+  switch (response.headers["content-encoding"]) {
+    case "gzip":
+      return zlib.gunzipSync(response.body);
+    case "br":
+      return zlib.brotliDecompressSync(response.body);
+    case undefined:
+      return response.body;
+    default:
+      throw new Error(
+        `Unsupported content encoding: ${response.headers["content-encoding"]}`,
+      );
+  }
+}
 
 function request(
   port: number,
@@ -42,12 +58,15 @@ function request(
           resolve({
             statusCode: res.statusCode,
             headers: res.headers,
-            body: Buffer.concat(chunks).toString("utf8"),
+            body: Buffer.concat(chunks),
           });
         });
       },
     );
 
+    req.setTimeout(10_000, () => {
+      req.destroy(new Error(`Timed out requesting ${requestPath}`));
+    });
     req.on("error", reject);
   });
 }
@@ -113,11 +132,22 @@ async function main() {
 
     server = http.createServer(app);
     const port = await listen(server);
-    const [javascript, css, unhashedAsset, root, index, spaRoute, api, missingApi] =
+    const [
+      javascript,
+      css,
+      unhashedAsset,
+      missingAsset,
+      root,
+      index,
+      spaRoute,
+      api,
+      missingApi,
+    ] =
       await Promise.all([
         request(port, `/assets/${hashedJavaScript.fileName}`),
         request(port, `/assets/${hashedCss.fileName}`),
         request(port, "/assets/static-delivery-probe.txt"),
+        request(port, "/assets/missing-static.js"),
         request(port, "/"),
         request(port, "/index.html"),
         request(port, "/nonexistent-spa-route"),
@@ -134,6 +164,14 @@ async function main() {
       assert.equal(asset.headers["content-encoding"], "gzip");
       assert.match(asset.headers.vary ?? "", /Accept-Encoding/i);
     }
+    assert.deepEqual(
+      decodeBody(javascript),
+      fs.readFileSync(path.join(assetsPath, hashedJavaScript.fileName)),
+    );
+    assert.deepEqual(
+      decodeBody(css),
+      fs.readFileSync(path.join(assetsPath, hashedCss.fileName)),
+    );
 
     const revalidatedAsset = await request(
       port,
@@ -155,10 +193,24 @@ async function main() {
     assert.equal(brotliAsset.statusCode, 200);
     assert.equal(brotliAsset.headers["content-encoding"], "br");
     assert.match(brotliAsset.headers.vary ?? "", /Accept-Encoding/i);
+    assert.deepEqual(
+      decodeBody(brotliAsset),
+      fs.readFileSync(path.join(assetsPath, hashedJavaScript.fileName)),
+    );
 
     assert.equal(unhashedAsset.statusCode, 200);
     assert.equal(unhashedAsset.headers["cache-control"], "no-cache");
     assert.equal(unhashedAsset.headers["content-encoding"], "gzip");
+    assert.equal(
+      decodeBody(unhashedAsset).toString("utf8"),
+      "static delivery probe\n".repeat(128),
+    );
+
+    assert.equal(missingAsset.statusCode, 404);
+    assert.equal(missingAsset.headers["cache-control"], "no-cache");
+    assert.equal(missingAsset.headers["content-encoding"], undefined);
+    assert.match(missingAsset.headers["content-type"] ?? "", /^text\/plain/);
+    assert.equal(decodeBody(missingAsset).toString("utf8"), "Not Found");
 
     for (const htmlResponse of [root, index, spaRoute]) {
       assert.equal(htmlResponse.statusCode, 200);
@@ -191,7 +243,10 @@ async function main() {
     assert.equal(missingApi.headers["cache-control"], API_CACHE_CONTROL);
     assert.equal(missingApi.headers["content-encoding"], undefined);
     assert.match(missingApi.headers["content-type"] ?? "", /^application\/json/);
-    assert.deepEqual(JSON.parse(missingApi.body), { message: "Not Found" });
+    assert.deepEqual(
+      JSON.parse(decodeBody(missingApi).toString("utf8")),
+      { message: "Not Found" },
+    );
 
     console.log(
       "Static delivery smoke passed: hashed JS/CSS are immutable and compressed, 304 responses vary safely, SPA HTML revalidates, and APIs are private/no-store.",

@@ -47,8 +47,15 @@ export function configureStaticDelivery(app: Express, distPath: string) {
     }),
   );
 
-  // Fall through to a revalidated index.html for client-side routes.
-  app.use("*", (_req, res) => {
+  // Serve the SPA fallback for client-side routes, but fail fast for assets.
+  app.use("*", (req, res) => {
+    if (req.originalUrl.startsWith("/assets/")) {
+      res.setHeader("Cache-Control", REVALIDATE_CACHE_CONTROL);
+      res.setHeader("Vary", "Accept-Encoding");
+      res.status(404).type("text/plain").send("Not Found");
+      return;
+    }
+
     // Preserve stricter policies set by earlier middleware (notably /api).
     if (!res.hasHeader("Cache-Control")) {
       res.setHeader("Cache-Control", REVALIDATE_CACHE_CONTROL);
