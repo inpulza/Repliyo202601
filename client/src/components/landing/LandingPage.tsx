@@ -176,7 +176,7 @@ function Step2AIMockup() {
         </div>
         <div className="msg-content">
           <span className="msg-name">{t.mockups.step2.customerName}</span>
-          <span className="msg-text">{t.mockups.step2.customerReply || "Perfect, thanks!"}</span>
+          <span className="msg-text">{t.mockups.step2.customerReply}</span>
         </div>
       </motion.div>
     </motion.div>
@@ -746,7 +746,7 @@ function InboxMockup() {
   const mockupRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   
   const inboxMessages = t.mockups.inbox.allMessages;
   const allMessages = [
@@ -855,7 +855,7 @@ function InboxMockup() {
       timers.forEach(clearTimeout);
       intervals.forEach(clearInterval);
     };
-  }, [prefersReducedMotion, animationCycle]);
+  }, [prefersReducedMotion, animationCycle, language]);
 
   useEffect(() => {
     if (chatContainerRef.current && chatPhase > 0) {
@@ -1112,7 +1112,7 @@ function MobileInboxMockup() {
   const [activeSlide, setActiveSlide] = useState(0);
   const [animationCycle, setAnimationCycle] = useState(0);
   const prefersReducedMotion = useReducedMotion();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   
   const inboxMessages = t.mockups.inbox.allMessages;
   const messages = [
@@ -1120,16 +1120,16 @@ function MobileInboxMockup() {
     { id: 2, user: inboxMessages[1].user, avatarImg: avatarCarlos, message: inboxMessages[1].message, platform: 'tiktok', time: inboxMessages[1].time },
     { id: 3, user: inboxMessages[2].user, avatarImg: avatarAna, message: inboxMessages[2].message, platform: 'facebook', time: inboxMessages[2].time },
     { id: 4, user: inboxMessages[3].user, avatarImg: avatarDiego, message: inboxMessages[3].message, platform: 'instagram', time: inboxMessages[3].time },
-    { id: 5, user: 'Pedro Sánchez', avatarImg: avatarCarlos, message: '¿Hacen envíos a Canarias?', platform: 'tiktok', time: '15m' },
-    { id: 6, user: 'Laura Martín', avatarImg: avatarLaura, message: '¿Tienen catálogo en PDF?', platform: 'facebook', time: '20m' },
+    { id: 5, ...t.mockups.inbox.mobile.extraMessages[0], avatarImg: avatarCarlos, platform: 'tiktok' },
+    { id: 6, ...t.mockups.inbox.mobile.extraMessages[1], avatarImg: avatarLaura, platform: 'facebook' },
   ];
   
   const crmContacts = [
-    { id: 1, name: 'Vanessa Vanessa', platform: 'facebook', status: 'lead', messages: 5, time: '4 horas' },
-    { id: 2, name: 'franciscoantonio', platform: 'instagram', status: 'lead', messages: 8, time: '9 horas' },
-    { id: 3, name: 'Ávila Yüsmaira', platform: 'facebook', status: 'lead', messages: 1, time: '13 horas' },
-    { id: 4, name: 'Yenifer Yeimelis', platform: 'facebook', status: 'lead', messages: 5, time: '16 horas' },
-    { id: 5, name: 'Javier Rivera', platform: 'facebook', status: 'lead', messages: 2, time: '17 horas' },
+    { id: 1, name: 'Vanessa Vanessa', platform: 'facebook', status: 'lead', messages: 5, time: t.mockups.inbox.mobile.contactTimes[0] },
+    { id: 2, name: 'franciscoantonio', platform: 'instagram', status: 'lead', messages: 8, time: t.mockups.inbox.mobile.contactTimes[1] },
+    { id: 3, name: 'Ávila Yüsmaira', platform: 'facebook', status: 'lead', messages: 1, time: t.mockups.inbox.mobile.contactTimes[2] },
+    { id: 4, name: 'Yenifer Yeimelis', platform: 'facebook', status: 'lead', messages: 5, time: t.mockups.inbox.mobile.contactTimes[3] },
+    { id: 5, name: 'Javier Rivera', platform: 'facebook', status: 'lead', messages: 2, time: t.mockups.inbox.mobile.contactTimes[4] },
   ];
   const [visibleCrmContacts, setVisibleCrmContacts] = useState<number[]>([]);
   
@@ -1145,13 +1145,13 @@ function MobileInboxMockup() {
   const [aiResponseText, setAiResponseText] = useState('');
   
   const conversationText = t.mockups.inbox.conversation[1]?.text;
-  const aiResponseMessage = conversationText ? conversationText.substring(0, 40) + '...' : '¡Hola! Sí, tenemos el vestido azul...';
+  const aiResponseMessage = conversationText ? conversationText.substring(0, 40) + '...' : t.mockups.inbox.mobile.aiResponseFallback;
   
   const mobileBubbles = [
     { id: 1, platform: 'instagram', user: 'Laura M.', avatar: avatarAna, message: t.mockups.inbox.allMessages[0].message.substring(0, 25) + '...', position: 'left', isAi: false },
     { id: 2, platform: 'tiktok', user: 'Pablo R.', avatar: avatarCarlos, message: t.mockups.inbox.allMessages[1].message.substring(0, 22) + '...', position: 'right', isAi: false },
-    { id: 3, platform: 'youtube', user: 'Miguel S.', avatar: avatarDiego, message: '¿Hacen envíos a toda España?', position: 'left', isAi: false },
-    { id: 4, platform: 'facebook', user: 'Carmen L.', avatar: avatarLaura, message: '¿Cuál es el horario de atención?', position: 'right', isAi: false },
+    { id: 3, platform: 'youtube', user: 'Miguel S.', avatar: avatarDiego, message: t.mockups.inbox.mobile.bubbleMessages[0], position: 'left', isAi: false },
+    { id: 4, platform: 'facebook', user: 'Carmen L.', avatar: avatarLaura, message: t.mockups.inbox.mobile.bubbleMessages[1], position: 'right', isAi: false },
   ];
 
   useEffect(() => {
@@ -1286,7 +1286,7 @@ function MobileInboxMockup() {
     }, 17000));
     
     return () => timers.forEach(clearTimeout);
-  }, [prefersReducedMotion, animationCycle]);
+  }, [prefersReducedMotion, animationCycle, language]);
 
   useEffect(() => {
     if (activeSlide === 1 && visibleChat === 0) {
@@ -1400,7 +1400,7 @@ function MobileInboxMockup() {
                   {msg.type === 'outgoing' && (
                     <div className="mobile-ai-badge">
                       <Sparkles className="w-3 h-3" />
-                      AI
+                      {t.problemSolution.aiLabel}
                     </div>
                   )}
                   <span>{msg.text}</span>
@@ -1443,7 +1443,7 @@ function MobileInboxMockup() {
                 </div>
                 <div className="mobile-crm-stat">
                   <span className="mobile-stat-number">2m</span>
-                  <span className="mobile-stat-label">Resp.</span>
+                  <span className="mobile-stat-label">{t.mockups.inbox.mobile.responseAbbr}</span>
                 </div>
               </div>
             </div>
@@ -1459,16 +1459,16 @@ function MobileInboxMockup() {
             transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
           >
             <div className="mobile-contacts-header">
-              <span className="mobile-contacts-title">Contactos</span>
+              <span className="mobile-contacts-title">{t.mockups.inbox.mobile.contacts}</span>
             </div>
             <div className="mobile-contacts-tabs">
-              <span className="mobile-tab active">Contactos (100)</span>
-              <span className="mobile-tab">Pendientes</span>
-              <span className="mobile-tab">Dup.</span>
+              <span className="mobile-tab active">{t.mockups.inbox.mobile.contacts} (100)</span>
+              <span className="mobile-tab">{t.mockups.inbox.mobile.pending}</span>
+              <span className="mobile-tab">{t.mockups.inbox.mobile.duplicates}</span>
             </div>
             <div className="mobile-contacts-search">
               <Search className="w-3.5 h-3.5" />
-              <span>Buscar...</span>
+              <span>{t.mockups.inbox.mobile.search}</span>
             </div>
             <div className="mobile-contacts-list">
               {crmContacts.map((contact) => (
@@ -1489,8 +1489,8 @@ function MobileInboxMockup() {
                     <div className="mobile-contact-name">{contact.name}</div>
                     <div className="mobile-contact-meta">
                       <span className="mobile-contact-badge">{contact.status}</span>
-                      <span className="mobile-contact-msgs">{contact.messages} msgs</span>
-                      <span className="mobile-contact-time">hace {contact.time}</span>
+                      <span className="mobile-contact-msgs">{contact.messages} {t.mockups.inbox.mobile.messagesAbbr}</span>
+                      <span className="mobile-contact-time">{contact.time}</span>
                     </div>
                   </div>
                   <div className={`mobile-contact-platform ${contact.platform}`}>
@@ -1507,8 +1507,11 @@ function MobileInboxMockup() {
           {[0, 1, 2, 3].map((idx) => (
             <button
               key={idx}
+              type="button"
               className={`mobile-dot ${activeSlide === idx ? 'active' : ''}`}
               onClick={() => handleDotClick(idx)}
+              aria-label={`${t.mockups.inbox.mobile.slideLabel} ${idx + 1}`}
+              aria-current={activeSlide === idx ? 'true' : undefined}
             />
           ))}
         </div>
@@ -1516,9 +1519,9 @@ function MobileInboxMockup() {
       
       <div className="mobile-slide-labels">
         <span className={activeSlide === 0 ? 'active' : ''}>{t.mockups.inbox.nav.inbox}</span>
-        <span className={activeSlide === 1 ? 'active' : ''}>AI Chat</span>
+        <span className={activeSlide === 1 ? 'active' : ''}>{t.mockups.inbox.mobile.aiChat}</span>
         <span className={activeSlide === 2 ? 'active' : ''}>{t.mockups.inbox.nav.crm}</span>
-        <span className={activeSlide === 3 ? 'active' : ''}>Contactos</span>
+        <span className={activeSlide === 3 ? 'active' : ''}>{t.mockups.inbox.mobile.contacts}</span>
       </div>
       
       {/* Floating Bubbles - Row 1 */}
@@ -1672,7 +1675,7 @@ function Header() {
             onClick={toggleLanguage}
             className="lang-ios-toggle"
             data-testid="button-language-toggle"
-            aria-label={language === 'es' ? 'Switch to English' : 'Cambiar a Español'}
+            aria-label={t.header.languageSwitch}
           >
             <div className="lang-ios-track">
               <div className="lang-ios-flags">
@@ -2481,7 +2484,7 @@ function SolutionMockup() {
               </div>
             </div>
             <div className="ai-response-preview">
-              <div className="ai-badge"><Sparkles className="w-3 h-3" /><span>AI</span></div>
+              <div className="ai-badge"><Sparkles className="w-3 h-3" /><span>{t.problemSolution.aiLabel}</span></div>
               <div className="response-lines"><div className="line" /><div className="line short" /></div>
               <button className="send-btn"><Send className="w-3 h-3" /></button>
             </div>
@@ -2611,7 +2614,7 @@ function SolutionMockup() {
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ delay: 0.75, duration: 0.4 }}
             >
-              <div className="ai-badge"><Sparkles className="w-3 h-3" /><span>IA</span></div>
+              <div className="ai-badge"><Sparkles className="w-3 h-3" /><span>{t.problemSolution.aiLabel}</span></div>
               <div className="response-lines">
                 <motion.div
                   className="line"
@@ -2743,11 +2746,11 @@ function SolutionMockupMobile() {
             <FaFacebook className="w-2.5 h-2.5" style={{ color: '#1877F2' }} />
           </div>
           <div className="solution-mobile-conv-content">
-            <div className="solution-mobile-conv-name-text">Ana Ruiz</div>
-            <div className="solution-mobile-conv-preview-text">¿Tienen talla XL disponible?</div>
+            <div className="solution-mobile-conv-name-text">{t.problemSolution.mockupMobile.conv3Name}</div>
+            <div className="solution-mobile-conv-preview-text">{t.problemSolution.mockupMobile.conv3Preview}</div>
           </div>
           <div className="solution-mobile-conv-meta">
-            <span className="solution-mobile-conv-time">5m</span>
+            <span className="solution-mobile-conv-time">{t.problemSolution.mockupMobile.conv3Time}</span>
             <div className="solution-mobile-conv-status"><MessageSquare className="w-3 h-3" /></div>
           </div>
         </div>
@@ -2787,7 +2790,7 @@ function SolutionMockupMobile() {
       </div>
       <div className="solution-mobile-ai-response">
         <div className="solution-mobile-ai-header">
-          <div className="solution-mobile-ai-badge"><Sparkles className="w-3 h-3" /><span>IA</span></div>
+          <div className="solution-mobile-ai-badge"><Sparkles className="w-3 h-3" /><span>{t.problemSolution.aiLabel}</span></div>
           <span className="solution-mobile-ai-status">{t.problemSolution.mockupMobile.aiGenerating}</span>
         </div>
         <div className="solution-mobile-ai-text">{t.problemSolution.mockupMobile.aiDraftText}</div>
@@ -2821,20 +2824,20 @@ function SolutionMockupMobile() {
         <div className="solution-mobile-crm-stats">
           <div className="solution-mobile-crm-stat">
             <span className="crm-stat-value">8</span>
-            <span className="crm-stat-label">Chats</span>
+            <span className="crm-stat-label">{t.mockups.inbox.crm.chats}</span>
           </div>
           <div className="solution-mobile-crm-stat">
             <span className="crm-stat-value">$1.2k</span>
-            <span className="crm-stat-label">Value</span>
+            <span className="crm-stat-label">{t.mockups.inbox.crm.value}</span>
           </div>
           <div className="solution-mobile-crm-stat">
             <span className="crm-stat-value">VIP</span>
-            <span className="crm-stat-label">Status</span>
+            <span className="crm-stat-label">{t.problemSolution.mockupMobile.status}</span>
           </div>
         </div>
         <div className="solution-mobile-crm-tags">
           <span className="crm-tag vip">VIP</span>
-          <span className="crm-tag">Recurring</span>
+          <span className="crm-tag">{t.mockups.inbox.crm.recurring}</span>
           <span className="crm-tag">Instagram</span>
         </div>
       </div>
@@ -2863,19 +2866,19 @@ function SolutionMockupMobile() {
         </div>
         <div className="solution-mobile-speed-comparison">
           <div className="speed-compare-item">
-            <span className="speed-compare-label">Before</span>
+            <span className="speed-compare-label">{t.problemSolution.mockupMobile.before}</span>
             <div className="speed-compare-bar old" style={{ width: '100%' }}></div>
-            <span className="speed-compare-value">4h avg</span>
+            <span className="speed-compare-value">4h {t.problemSolution.mockupMobile.average}</span>
           </div>
           <div className="speed-compare-item">
-            <span className="speed-compare-label">Now</span>
+            <span className="speed-compare-label">{t.problemSolution.mockupMobile.now}</span>
             <div className="speed-compare-bar new" style={{ width: '15%' }}></div>
-            <span className="speed-compare-value highlight">2m avg</span>
+            <span className="speed-compare-value highlight">2m {t.problemSolution.mockupMobile.average}</span>
           </div>
         </div>
         <div className="solution-mobile-speed-badge">
           <Zap className="w-4 h-4" />
-          <span>120x Faster</span>
+          <span>120x {t.problemSolution.mockupMobile.faster}</span>
         </div>
       </div>
     </motion.div>
@@ -3756,7 +3759,7 @@ function HowItWorksMobile() {
                 ? 'bg-[var(--landing-primary)] w-6' 
                 : 'bg-black/20 w-2'
             }`}
-            aria-label={`Step ${i + 1}`}
+            aria-label={`${t.howItWorks.stepLabel} ${i + 1}`}
           />
         ))}
       </div>
@@ -3968,7 +3971,7 @@ function FeaturesSection() {
               <button
                 onClick={prevSlide}
                 className="features-nav-arrow"
-                aria-label="Previous slide"
+                aria-label={t.features.previousSlide}
               >
                 <ChevronLeft className="w-6 h-6" />
               </button>
@@ -3976,7 +3979,7 @@ function FeaturesSection() {
               <button
                 onClick={nextSlide}
                 className="features-nav-arrow"
-                aria-label="Next slide"
+                aria-label={t.features.nextSlide}
               >
                 <ChevronRight className="w-6 h-6" />
               </button>
@@ -4173,7 +4176,7 @@ function Footer() {
                 className="hover:text-white transition-colors underline decoration-white/10 underline-offset-4"
                 data-testid="link-footer-privacy"
               >
-                Política de Privacidad
+                {t.footer.privacy}
               </a>
             </div>
             <a
@@ -4186,7 +4189,7 @@ function Footer() {
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
               </svg>
-              Contáctanos
+              {t.footer.contact}
             </a>
           </div>
         </div>

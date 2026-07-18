@@ -4,6 +4,7 @@ export const es = {
     howItWorks: 'Cómo funciona',
     testimonials: 'Testimonios',
     login: 'Iniciar sesión',
+    languageSwitch: 'Cambiar a inglés',
   },
   hero: {
     titlePart1: 'Responde en',
@@ -26,6 +27,7 @@ export const es = {
     solutionDescription: 'Respuestas instantáneas con IA que mantiene tu tono de voz.',
     problemWords: ['agotador', 'ineficiente', 'costoso', 'tedioso', 'insostenible', 'lento', 'poco rentable'],
     solutionWords: ['vende por ti', 'responde al instante', 'te ahorra tiempo', 'cierra ventas solo', 'nunca descansa', 'convierte leads'],
+    aiLabel: 'IA',
     notifications: {
       unreadMessages: '+82 mensajes sin leer',
       unreadMessagesLabel: 'mensajes sin leer',
@@ -55,9 +57,17 @@ export const es = {
       conv2Name: 'Carlos López', 
       conv2Preview: '¿Cuánto cuesta el envío?',
       conv2Time: 'ahora',
+      conv3Name: 'Ana Ruiz',
+      conv3Preview: '¿Tienen talla XL disponible?',
+      conv3Time: '5m',
       aiDraftText: '¡Hola Carlos! El envío es gratis en pedidos +50€. ¿Te ayudo con algo más?',
       aiGenerating: 'IA generando...',
       clickToSend: 'Clic para enviar',
+      status: 'Estado',
+      before: 'Antes',
+      now: 'Ahora',
+      average: 'prom.',
+      faster: 'más rápido',
     },
   },
   metrics: {
@@ -105,6 +115,7 @@ export const es = {
     label: 'Cómo funciona',
     title: 'De caos a control en',
     titleHighlight: '3 pasos',
+    stepLabel: 'Paso',
     steps: [
       {
         number: '01',
@@ -128,6 +139,8 @@ export const es = {
     title: 'Todo lo que necesitas para',
     titleHighlight: 'escalar',
     description: 'Herramientas diseñadas para equipos que manejan cientos de conversaciones al día.',
+    previousSlide: 'Diapositiva anterior',
+    nextSlide: 'Diapositiva siguiente',
     items: [
       { title: 'Inbox unificado', description: 'Todas tus conversaciones de Instagram, TikTok y Facebook en un solo lugar.' },
       { title: 'Multi-agente', description: 'Varios miembros del equipo colaborando en tiempo real.' },
@@ -175,8 +188,9 @@ export const es = {
       Legal: ['Privacidad', 'Términos', 'Cookies', 'GDPR'],
     },
     copyright: '© 2026 Repliyo Inc.',
-    privacy: 'Privacy',
+    privacy: 'Política de privacidad',
     terms: 'Terms',
+    contact: 'Contáctanos',
   },
   mockups: {
     step2: {
@@ -185,6 +199,7 @@ export const es = {
       aiGenerating: 'IA generando respuesta...',
       aiDraft: 'Borrador IA',
       aiResponse: '¡Hola! El precio es $299 con envío gratis. ¿Te gustaría ordenar?',
+      customerReply: '¡Perfecto, gracias!',
     },
     step3: {
       sendResponse: 'Enviar respuesta',
@@ -199,6 +214,23 @@ export const es = {
     inbox: {
       newCount: 'nuevos',
       now: 'Ahora',
+      mobile: {
+        extraMessages: [
+          { user: 'Pedro Sánchez', message: '¿Hacen envíos a Canarias?', time: '15m' },
+          { user: 'Laura Martín', message: '¿Tienen catálogo en PDF?', time: '20m' },
+        ],
+        contactTimes: ['hace 4 horas', 'hace 9 horas', 'hace 13 horas', 'hace 16 horas', 'hace 17 horas'],
+        responseAbbr: 'Resp.',
+        aiChat: 'Chat IA',
+        contacts: 'Contactos',
+        pending: 'Pendientes',
+        duplicates: 'Dup.',
+        search: 'Buscar...',
+        messagesAbbr: 'mens.',
+        aiResponseFallback: '¡Hola! Sí, tenemos el vestido azul...',
+        bubbleMessages: ['¿Hacen envíos a toda España?', '¿Cuál es el horario de atención?'],
+        slideLabel: 'Diapositiva',
+      },
       messages: [
         { name: 'María G.', preview: '¿Tienen talla M?', time: 'Ahora' },
         { name: 'Carlos R.', preview: 'Vi tu video!', time: '2m' },
