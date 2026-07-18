@@ -10,7 +10,6 @@ import { NexusProvider } from "@/context/NexusContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { useEffect, lazy, Suspense, type ComponentType, type ReactNode } from "react";
 
-import { Login } from "@/pages/Login";
 import { Loader2 } from "lucide-react";
 
 // Wraps React.lazy with retry + one-time reload so a transient failure to fetch
@@ -79,6 +78,7 @@ const ProfileSettings = lazyDashboardRoute(() => import("@/pages/ProfileSettings
 const CRM = lazyDashboardRoute(() => import("@/pages/CRM").then(m => ({ default: m.CRM })));
 const CrisisAlerts = lazyDashboardRoute(() => import("@/pages/CrisisAlerts").then(m => ({ default: m.CrisisAlerts })));
 const UserManagement = lazyDashboardRoute(() => import("@/pages/UserManagement").then(m => ({ default: m.UserManagement })));
+const Login = lazyWithRetry(() => import("@/pages/Login").then(m => ({ default: m.Login })));
 const LandingPage = lazyWithRetry(() => import("@/components/landing/LandingPage").then(m => ({ default: m.LandingPage })));
 const GetStarted = lazyWithRetry(() => import("@/pages/GetStarted").then(m => ({ default: m.GetStarted })));
 const PrivacyPolicy = lazyWithRetry(() => import("@/pages/PrivacyPolicy"));
@@ -86,8 +86,12 @@ const PublicContacts = lazyWithRetry(() => import("@/pages/PublicContacts").then
 
 function PageLoader() {
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-gray-50">
-      <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+    <div
+      className="flex h-screen w-full items-center justify-center bg-gray-50"
+      role="status"
+      aria-label="Loading Repliyo"
+    >
+      <Loader2 className="h-8 w-8 animate-spin text-indigo-500 motion-reduce:animate-none" />
     </div>
   );
 }
@@ -178,7 +182,7 @@ function Router() {
     <Switch>
       {/* Public routes */}
       <Route path="/" component={HomeRoute} />
-      <Route path="/login" component={Login} />
+      <Route path="/login">{() => <Suspense fallback={<PageLoader />}><Login /></Suspense>}</Route>
       <Route path="/privacy">{() => <Suspense fallback={<PageLoader />}><PrivacyPolicy /></Suspense>}</Route>
       <Route path="/get-started">{() => <Suspense fallback={<PageLoader />}><GetStarted /></Suspense>}</Route>
       <Route path="/public/contacts/:token">{() => <Suspense fallback={<PageLoader />}><PublicContacts /></Suspense>}</Route>
