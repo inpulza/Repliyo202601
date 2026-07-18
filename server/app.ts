@@ -1,6 +1,7 @@
 import { type Server } from "node:http";
 
 import express, { type Express, type Request, Response, NextFunction } from "express";
+import { handleUnknownApi, preventApiCaching } from "./cache-policy";
 import { registerRoutes } from "./routes";
 import { syncService } from "./services/syncService";
 import { lifecycleScheduler } from "./services/lifecycleScheduler";
@@ -28,6 +29,10 @@ declare module 'http' {
     rawBody: unknown
   }
 }
+
+// Dynamic and user-specific API responses must never be stored by browsers or
+// shared caches. Keep this ahead of sessions, auth and application routes.
+app.use("/api", preventApiCaching);
 
 app.use(sessionMiddleware);
 
@@ -94,6 +99,9 @@ export default async function runApp(
   registerAuthRoutes(app);
   
   const server = await registerRoutes(app);
+
+  // Do not let unknown API URLs fall through to the client-side SPA.
+  app.use("/api", handleUnknownApi);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
