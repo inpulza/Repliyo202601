@@ -1,12 +1,7 @@
 // Test CodeRabbit - Aplicación principal de Repliyo
 import { Switch, Route, useLocation } from "wouter";
-import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
-import { NexusProvider } from "@/context/NexusContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { useEffect, lazy, Suspense, type ComponentType, type ReactNode } from "react";
 
@@ -83,6 +78,11 @@ const LandingPage = lazyWithRetry(() => import("@/components/landing/LandingPage
 const GetStarted = lazyWithRetry(() => import("@/pages/GetStarted").then(m => ({ default: m.GetStarted })));
 const PrivacyPolicy = lazyWithRetry(() => import("@/pages/PrivacyPolicy"));
 const PublicContacts = lazyWithRetry(() => import("@/pages/PublicContacts").then(m => ({ default: m.PublicContacts })));
+const ApplicationProviders = lazyWithRetry(() =>
+  import("@/components/ApplicationProviders").then((m) => ({
+    default: m.ApplicationProviders,
+  })),
+);
 
 function PageLoader() {
   return (
@@ -99,11 +99,14 @@ function PageLoader() {
 function LandingPageLoader() {
   return (
     <div
-      className="flex h-screen w-full items-center justify-center bg-white"
+      className="initial-app-loader"
       role="status"
       aria-label="Loading Repliyo"
     >
-      <Loader2 className="h-8 w-8 animate-spin text-[#0291FA] motion-reduce:animate-none" />
+      <div className="initial-app-loader__content" aria-hidden="true">
+        <div className="initial-app-loader__mark">R</div>
+        <div className="initial-app-loader__bar" />
+      </div>
     </div>
   );
 }
@@ -279,19 +282,22 @@ function Router() {
 }
 
 function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
+  if (window.location.pathname === "/") {
+    return (
       <AuthProvider>
-        <NexusProvider>
-          <LanguageProvider>
-            <TooltipProvider>
-              <Router />
-              <Toaster />
-            </TooltipProvider>
-          </LanguageProvider>
-        </NexusProvider>
+        <LanguageProvider>
+          <Router />
+        </LanguageProvider>
       </AuthProvider>
-    </QueryClientProvider>
+    );
+  }
+
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <ApplicationProviders>
+        <Router />
+      </ApplicationProviders>
+    </Suspense>
   );
 }
 

@@ -22,8 +22,8 @@
   /* Typography Design System - Plus Jakarta Sans + Roboto for small text */
   --font-heading: 'Plus Jakarta Sans', 'Plus Jakarta Sans Fallback', sans-serif;
   --font-body: 'Plus Jakarta Sans', 'Plus Jakarta Sans Fallback', sans-serif;
-  --font-small: 'Roboto', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-small: 'Plus Jakarta Sans', 'Plus Jakarta Sans Fallback', sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   
   /* Font sizes - Desktop */
   --text-h1: clamp(3rem, 8vw, 5.5rem);      /* 48px - 88px */
@@ -711,6 +711,32 @@
 .hero-section {
   position: relative;
   z-index: 10;
+}
+
+.hero-mockup-stage {
+  max-width: clamp(1280px, 48vw, 1600px);
+}
+
+@media (min-width: 2560px) and (min-height: 1200px) {
+  .hero-sticky-container {
+    padding-top: 7rem;
+  }
+
+  .hero-text-content {
+    margin-bottom: 3rem;
+  }
+
+  .hero-mockup-stage {
+    min-height: 866px;
+  }
+
+  .hero-mockup-stage .desktop-mockup-wrapper {
+    width: 1100px;
+    max-width: 100%;
+    margin-inline: auto;
+    transform: scale(1.35);
+    transform-origin: top center;
+  }
 }
 
 /* Hero Floating Social Icons - Horizontal stacked like avatars */

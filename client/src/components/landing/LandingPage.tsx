@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
+import React, { startTransition, useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring, useMotionValue, AnimatePresence, MotionConfig } from 'framer-motion';
 import { ArrowRight, Play, Check, CheckCheck, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle, Globe, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { GlowButton } from './GlowButton';
@@ -34,6 +34,66 @@ import '../../styles/landing.css';
 import { LiquidBackground } from './LiquidBackground';
 
 gsap.registerPlugin(ScrollTrigger);
+
+type IdleCallbackWindow = Window & {
+  requestIdleCallback?: (
+    callback: () => void,
+    options?: { timeout: number },
+  ) => number;
+  cancelIdleCallback?: (handle: number) => void;
+};
+
+function useDeferredLandingContent() {
+  const [isReady, setIsReady] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const idleWindow = window as IdleCallbackWindow;
+    let idleHandle: number | undefined;
+    let fallbackTimer: number | undefined;
+
+    const revealContent = () => {
+      startTransition(() => setIsReady(true));
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          revealContent();
+        }
+      },
+      { rootMargin: '200px 0px' },
+    );
+
+    if (sentinelRef.current) {
+      observer.observe(sentinelRef.current);
+    }
+
+    const hadSlowStartup = performance.now() > 2500;
+
+    if (hadSlowStartup) {
+      fallbackTimer = window.setTimeout(revealContent, 12000);
+    } else if (idleWindow.requestIdleCallback) {
+      idleHandle = idleWindow.requestIdleCallback(revealContent, {
+        timeout: 1500,
+      });
+    } else {
+      fallbackTimer = window.setTimeout(revealContent, 400);
+    }
+
+    return () => {
+      observer.disconnect();
+      if (idleHandle !== undefined) {
+        idleWindow.cancelIdleCallback?.(idleHandle);
+      }
+      if (fallbackTimer !== undefined) {
+        window.clearTimeout(fallbackTimer);
+      }
+    };
+  }, []);
+
+  return { isReady, sentinelRef };
+}
 
 // Safe useScroll hook that handles hydration issues
 function useSafeScroll(options: { target?: React.RefObject<HTMLElement | null>; offset?: string[] } = {}) {
@@ -1930,7 +1990,7 @@ function HeroSection() {
         
         <motion.div 
           style={{ y: mockupY, scale: mockupScale }}
-          className="relative z-20 w-full max-w-7xl mx-auto px-6"
+          className="hero-mockup-stage relative z-20 w-full mx-auto px-6"
         >
           <motion.div
             initial={prefersReducedMotion ? false : { opacity: 0, y: 60 }}
@@ -4200,6 +4260,8 @@ function Footer() {
 }
 
 export function LandingPage() {
+  const { isReady: showDeferredContent, sentinelRef } = useDeferredLandingContent();
+
   return (
     <MotionConfig reducedMotion="user">
       <ParallaxProvider>
@@ -4208,15 +4270,22 @@ export function LandingPage() {
           <Header />
           <main>
             <HeroSection />
-            <MarqueeSection />
-            <ProblemSolutionSection />
-            <MetricSection />
-            <HowItWorksSection />
-            <FeaturesSection />
-            <TestimonialSection />
-            <CTASection />
+            {!showDeferredContent && (
+              <div ref={sentinelRef} className="h-px" aria-hidden="true" />
+            )}
+            {showDeferredContent && (
+              <>
+                <MarqueeSection />
+                <ProblemSolutionSection />
+                <MetricSection />
+                <HowItWorksSection />
+                <FeaturesSection />
+                <TestimonialSection />
+                <CTASection />
+              </>
+            )}
           </main>
-          <Footer />
+          {showDeferredContent && <Footer />}
         </div>
       </ParallaxProvider>
     </MotionConfig>
