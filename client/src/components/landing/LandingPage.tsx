@@ -72,7 +72,12 @@ function useDeferredLandingContent() {
     const hadSlowStartup = performance.now() > 2500;
 
     if (hadSlowStartup) {
-      fallbackTimer = window.setTimeout(revealContent, 12000);
+      if (document.readyState === 'complete') {
+        revealContent();
+      } else {
+        window.addEventListener('load', revealContent, { once: true });
+      }
+      fallbackTimer = window.setTimeout(revealContent, 4000);
     } else if (idleWindow.requestIdleCallback) {
       idleHandle = idleWindow.requestIdleCallback(revealContent, {
         timeout: 1500,
@@ -83,6 +88,7 @@ function useDeferredLandingContent() {
 
     return () => {
       observer.disconnect();
+      window.removeEventListener('load', revealContent);
       if (idleHandle !== undefined) {
         idleWindow.cancelIdleCallback?.(idleHandle);
       }
