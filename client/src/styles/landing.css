@@ -23,7 +23,7 @@
   --font-heading: 'Plus Jakarta Sans', 'Plus Jakarta Sans Fallback', sans-serif;
   --font-body: 'Plus Jakarta Sans', 'Plus Jakarta Sans Fallback', sans-serif;
   --font-small: 'Plus Jakarta Sans', 'Plus Jakarta Sans Fallback', sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-mono: ui-monospace, "SFMono-Regular", "Menlo", "Monaco", "Consolas", monospace;
   
   /* Font sizes - Desktop */
   --text-h1: clamp(3rem, 8vw, 5.5rem);      /* 48px - 88px */

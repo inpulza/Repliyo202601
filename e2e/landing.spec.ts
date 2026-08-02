@@ -58,6 +58,77 @@ async function openLanding(page: Page, path = "/") {
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 }
 
+async function stallDeferredLandingContent(page: Page) {
+  await page.addInitScript(() => {
+    class StalledIntersectionObserver implements IntersectionObserver {
+      readonly root = null;
+      readonly rootMargin = "0px";
+      readonly thresholds = [];
+
+      disconnect() {}
+      observe(_target: Element) {}
+      takeRecords(): IntersectionObserverEntry[] {
+        return [];
+      }
+      unobserve(_target: Element) {}
+    }
+
+    Object.defineProperty(window, "IntersectionObserver", {
+      configurable: true,
+      value: StalledIntersectionObserver,
+    });
+    Object.defineProperty(window, "requestIdleCallback", {
+      configurable: true,
+      value: () => 1,
+    });
+    Object.defineProperty(window, "cancelIdleCallback", {
+      configurable: true,
+      value: () => undefined,
+    });
+  });
+}
+
+async function mockPreviewWebSocket(page: Page) {
+  await page.addInitScript(() => {
+    class PreviewWebSocket {
+      static readonly CONNECTING = 0;
+      static readonly OPEN = 1;
+      static readonly CLOSING = 2;
+      static readonly CLOSED = 3;
+
+      readonly CONNECTING = 0;
+      readonly OPEN = 1;
+      readonly CLOSING = 2;
+      readonly CLOSED = 3;
+      readonly url: string;
+      readyState = PreviewWebSocket.CONNECTING;
+      onclose: ((event: CloseEvent) => void) | null = null;
+      onerror: ((event: Event) => void) | null = null;
+      onmessage: ((event: MessageEvent) => void) | null = null;
+      onopen: ((event: Event) => void) | null = null;
+
+      constructor(url: string | URL) {
+        this.url = String(url);
+      }
+
+      addEventListener() {}
+      close() {
+        this.readyState = PreviewWebSocket.CLOSED;
+      }
+      dispatchEvent() {
+        return true;
+      }
+      removeEventListener() {}
+      send() {}
+    }
+
+    Object.defineProperty(window, "WebSocket", {
+      configurable: true,
+      value: PreviewWebSocket,
+    });
+  });
+}
+
 async function expectLandingMetadata(
   page: Page,
   language: keyof typeof metadata,
@@ -180,6 +251,35 @@ test("slow startup still reveals the complete landing", async ({
   await expect(page.locator("footer")).toBeAttached();
 });
 
+test("early section navigation reveals and reaches deferred content", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, "The section navigation is desktop-only");
+  await stallDeferredLandingContent(page);
+  await openLanding(page);
+  await expect(page.locator("#features")).toHaveCount(0);
+
+  await page.getByTestId("link-nav-producto").click();
+
+  await expect(page.locator("#features")).toBeAttached();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+});
+
+test("a deferred section deep link is available during initial navigation", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, "The section navigation is desktop-only");
+  await stallDeferredLandingContent(page);
+
+  await openLanding(page, "/#features");
+
+  await expect(page.locator("#features")).toBeAttached();
+  await expect(page).toHaveURL(/#features$/);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+});
+
 test("reduced motion removes continuous landing animations", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await openLanding(page);
@@ -222,4 +322,60 @@ test("sign-in navigation loads application providers and settles correctly", asy
   await expect(
     page.getByRole("heading", { level: 1, name: "Privacy Policy" }),
   ).toBeVisible();
+});
+
+test("an authenticated root visit reloads into the complete dashboard provider tree", async ({
+  page,
+}) => {
+  const requests: { type: string; url: string }[] = [];
+  page.on("request", (request) =>
+    requests.push({ type: request.resourceType(), url: request.url() }),
+  );
+  await mockPreviewWebSocket(page);
+
+  await page.unroute("**/api/auth/me");
+  await page.route("**/api/auth/me", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: "e2e-user",
+        email: "e2e@example.com",
+        name: "E2E User",
+        role: "client",
+        brandId: null,
+        profileImageUrl: null,
+      }),
+    }),
+  );
+  await page.route("**/api/brands", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: "[]",
+    }),
+  );
+  await page.route("**/api/sync/status", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: "{}",
+    }),
+  );
+
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+
+  await expect(page).toHaveURL(/\/app\/inbox$/);
+  await expect(
+    page.getByRole("heading", { level: 2, name: "¡Bienvenido a Repliyo!" }),
+  ).toBeVisible();
+  expect(
+    requests.some(
+      (request) =>
+        request.type === "document" && request.url.endsWith("/app/inbox"),
+    ),
+  ).toBe(true);
+  expect(
+    requests.some((request) => request.url.includes("ApplicationProviders")),
+  ).toBe(true);
 });

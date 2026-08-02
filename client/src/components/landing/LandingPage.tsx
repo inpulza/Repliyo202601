@@ -1,4 +1,4 @@
-import React, { startTransition, useEffect, useRef, useState, useLayoutEffect } from 'react';
+import React, { startTransition, useCallback, useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring, useMotionValue, AnimatePresence, MotionConfig } from 'framer-motion';
 import { ArrowRight, Play, Check, CheckCheck, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle, Globe, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { GlowButton } from './GlowButton';
@@ -44,17 +44,21 @@ type IdleCallbackWindow = Window & {
 };
 
 function useDeferredLandingContent() {
-  const [isReady, setIsReady] = useState(false);
+  const [isReady, setIsReady] = useState(
+    () => typeof window !== 'undefined' && window.location.hash.length > 1,
+  );
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const revealContent = useCallback(() => {
+    startTransition(() => setIsReady(true));
+  }, []);
+  const revealContentImmediately = useCallback(() => {
+    setIsReady(true);
+  }, []);
 
   useEffect(() => {
     const idleWindow = window as IdleCallbackWindow;
     let idleHandle: number | undefined;
     let fallbackTimer: number | undefined;
-
-    const revealContent = () => {
-      startTransition(() => setIsReady(true));
-    };
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -96,9 +100,9 @@ function useDeferredLandingContent() {
         window.clearTimeout(fallbackTimer);
       }
     };
-  }, []);
+  }, [revealContent]);
 
-  return { isReady, sentinelRef };
+  return { isReady, revealContentImmediately, sentinelRef };
 }
 
 // Safe useScroll hook that handles hydration issues
@@ -1680,7 +1684,7 @@ function MobileInboxMockup() {
   );
 }
 
-function Header() {
+function Header({ revealDeferredContent }: { revealDeferredContent: () => void }) {
   const [scrolled, setScrolled] = useState(false);
   const prefersReducedMotion = useReducedMotion();
   const { language, setLanguage, t } = useLanguage();
@@ -1693,8 +1697,7 @@ function Header() {
 
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
     e.preventDefault();
-    const element = document.getElementById(sectionId);
-    if (element) {
+    const scrollToElement = (element: HTMLElement) => {
       const headerOffset = 100;
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = window.scrollY + elementPosition - headerOffset;
@@ -1703,7 +1706,21 @@ function Header() {
         top: offsetPosition,
         behavior: prefersReducedMotion ? 'auto' : 'smooth'
       });
+    };
+
+    const element = document.getElementById(sectionId);
+    if (element) {
+      scrollToElement(element);
+      return;
     }
+
+    revealDeferredContent();
+    window.requestAnimationFrame(() => {
+      const revealedElement = document.getElementById(sectionId);
+      if (revealedElement) {
+        scrollToElement(revealedElement);
+      }
+    });
   };
 
   const toggleLanguage = () => {
@@ -4266,14 +4283,41 @@ function Footer() {
 }
 
 export function LandingPage() {
-  const { isReady: showDeferredContent, sentinelRef } = useDeferredLandingContent();
+  const {
+    isReady: showDeferredContent,
+    revealContentImmediately,
+    sentinelRef,
+  } = useDeferredLandingContent();
+
+  useEffect(() => {
+    if (!showDeferredContent || window.location.hash.length <= 1) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      const sectionId = decodeURIComponent(window.location.hash.slice(1));
+      const element = document.getElementById(sectionId);
+      if (!element) {
+        return;
+      }
+
+      const headerOffset = 100;
+      const elementPosition = element.getBoundingClientRect().top;
+      window.scrollTo({
+        top: window.scrollY + elementPosition - headerOffset,
+        behavior: 'auto',
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [showDeferredContent]);
 
   return (
     <MotionConfig reducedMotion="user">
       <ParallaxProvider>
         <div className="landing-page theme-light" data-testid="landing-page">
           <LandingMetadataSync />
-          <Header />
+          <Header revealDeferredContent={revealContentImmediately} />
           <main>
             <HeroSection />
             {!showDeferredContent && (

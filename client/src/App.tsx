@@ -153,13 +153,12 @@ function AppRedirect() {
 
 function HomeRoute() {
   const { isAuthenticated, isLoading } = useAuth();
-  const [, setLocation] = useLocation();
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      setLocation('/app/inbox');
+      window.location.assign('/app/inbox');
     }
-  }, [isLoading, isAuthenticated, setLocation]);
+  }, [isLoading, isAuthenticated]);
 
   if (!isLoading && isAuthenticated) {
     return <LandingPageLoader />;
