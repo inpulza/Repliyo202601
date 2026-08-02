@@ -8,6 +8,8 @@
     "dev": "NODE_ENV=development tsx server/index-dev.ts",
     "build": "vite build && esbuild server/index-prod.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/index.js",
     "start": "NODE_ENV=production node dist/index.js",
+    "preview:e2e": "vite preview --host 127.0.0.1 --port 4178",
+    "test:e2e": "npm run build && playwright test",
     "check": "tsc",
     "optimize:landing-images": "tsx server/scripts/optimize-landing-images.ts",
     "check:landing-images": "tsx server/scripts/optimize-landing-images.ts --check",
@@ -109,6 +111,7 @@
     "zod-validation-error": "^3.4.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@replit/vite-plugin-cartographer": "^0.4.4",
     "@replit/vite-plugin-dev-banner": "^0.1.1",
     "@replit/vite-plugin-runtime-error-modal": "^0.0.3",
