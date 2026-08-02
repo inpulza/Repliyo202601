@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
+import React, { startTransition, useCallback, useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { motion, useInView, useScroll, useTransform, useReducedMotion, useSpring, useMotionValue, AnimatePresence, MotionConfig } from 'framer-motion';
 import { ArrowRight, Play, Check, CheckCheck, X, Sparkles, Inbox, Users, Users2, Bell, MessageSquare, BarChart2, Send, Zap, Clock, Heart, Instagram, Facebook, Music, AlertCircle, Globe, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { GlowButton } from './GlowButton';
@@ -34,6 +34,76 @@ import '../../styles/landing.css';
 import { LiquidBackground } from './LiquidBackground';
 
 gsap.registerPlugin(ScrollTrigger);
+
+type IdleCallbackWindow = Window & {
+  requestIdleCallback?: (
+    callback: () => void,
+    options?: { timeout: number },
+  ) => number;
+  cancelIdleCallback?: (handle: number) => void;
+};
+
+function useDeferredLandingContent() {
+  const [isReady, setIsReady] = useState(
+    () => typeof window !== 'undefined' && window.location.hash.length > 1,
+  );
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const revealContent = useCallback(() => {
+    startTransition(() => setIsReady(true));
+  }, []);
+  const revealContentImmediately = useCallback(() => {
+    setIsReady(true);
+  }, []);
+
+  useEffect(() => {
+    const idleWindow = window as IdleCallbackWindow;
+    let idleHandle: number | undefined;
+    let fallbackTimer: number | undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          revealContent();
+        }
+      },
+      { rootMargin: '200px 0px' },
+    );
+
+    if (sentinelRef.current) {
+      observer.observe(sentinelRef.current);
+    }
+
+    const hadSlowStartup = performance.now() > 2500;
+
+    if (hadSlowStartup) {
+      if (document.readyState === 'complete') {
+        revealContent();
+      } else {
+        window.addEventListener('load', revealContent, { once: true });
+      }
+      fallbackTimer = window.setTimeout(revealContent, 4000);
+    } else if (idleWindow.requestIdleCallback) {
+      idleHandle = idleWindow.requestIdleCallback(revealContent, {
+        timeout: 1500,
+      });
+    } else {
+      fallbackTimer = window.setTimeout(revealContent, 400);
+    }
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('load', revealContent);
+      if (idleHandle !== undefined) {
+        idleWindow.cancelIdleCallback?.(idleHandle);
+      }
+      if (fallbackTimer !== undefined) {
+        window.clearTimeout(fallbackTimer);
+      }
+    };
+  }, [revealContent]);
+
+  return { isReady, revealContentImmediately, sentinelRef };
+}
 
 // Safe useScroll hook that handles hydration issues
 function useSafeScroll(options: { target?: React.RefObject<HTMLElement | null>; offset?: string[] } = {}) {
@@ -1614,7 +1684,7 @@ function MobileInboxMockup() {
   );
 }
 
-function Header() {
+function Header({ revealDeferredContent }: { revealDeferredContent: () => void }) {
   const [scrolled, setScrolled] = useState(false);
   const prefersReducedMotion = useReducedMotion();
   const { language, setLanguage, t } = useLanguage();
@@ -1627,8 +1697,7 @@ function Header() {
 
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
     e.preventDefault();
-    const element = document.getElementById(sectionId);
-    if (element) {
+    const scrollToElement = (element: HTMLElement) => {
       const headerOffset = 100;
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = window.scrollY + elementPosition - headerOffset;
@@ -1637,7 +1706,21 @@ function Header() {
         top: offsetPosition,
         behavior: prefersReducedMotion ? 'auto' : 'smooth'
       });
+    };
+
+    const element = document.getElementById(sectionId);
+    if (element) {
+      scrollToElement(element);
+      return;
     }
+
+    revealDeferredContent();
+    window.requestAnimationFrame(() => {
+      const revealedElement = document.getElementById(sectionId);
+      if (revealedElement) {
+        scrollToElement(revealedElement);
+      }
+    });
   };
 
   const toggleLanguage = () => {
@@ -1930,7 +2013,7 @@ function HeroSection() {
         
         <motion.div 
           style={{ y: mockupY, scale: mockupScale }}
-          className="relative z-20 w-full max-w-7xl mx-auto px-6"
+          className="hero-mockup-stage relative z-20 w-full mx-auto px-6"
         >
           <motion.div
             initial={prefersReducedMotion ? false : { opacity: 0, y: 60 }}
@@ -4200,23 +4283,59 @@ function Footer() {
 }
 
 export function LandingPage() {
+  const {
+    isReady: showDeferredContent,
+    revealContentImmediately,
+    sentinelRef,
+  } = useDeferredLandingContent();
+
+  useEffect(() => {
+    if (!showDeferredContent || window.location.hash.length <= 1) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      const sectionId = decodeURIComponent(window.location.hash.slice(1));
+      const element = document.getElementById(sectionId);
+      if (!element) {
+        return;
+      }
+
+      const headerOffset = 100;
+      const elementPosition = element.getBoundingClientRect().top;
+      window.scrollTo({
+        top: window.scrollY + elementPosition - headerOffset,
+        behavior: 'auto',
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [showDeferredContent]);
+
   return (
     <MotionConfig reducedMotion="user">
       <ParallaxProvider>
         <div className="landing-page theme-light" data-testid="landing-page">
           <LandingMetadataSync />
-          <Header />
+          <Header revealDeferredContent={revealContentImmediately} />
           <main>
             <HeroSection />
-            <MarqueeSection />
-            <ProblemSolutionSection />
-            <MetricSection />
-            <HowItWorksSection />
-            <FeaturesSection />
-            <TestimonialSection />
-            <CTASection />
+            {!showDeferredContent && (
+              <div ref={sentinelRef} className="h-px" aria-hidden="true" />
+            )}
+            {showDeferredContent && (
+              <>
+                <MarqueeSection />
+                <ProblemSolutionSection />
+                <MetricSection />
+                <HowItWorksSection />
+                <FeaturesSection />
+                <TestimonialSection />
+                <CTASection />
+              </>
+            )}
           </main>
-          <Footer />
+          {showDeferredContent && <Footer />}
         </div>
       </ParallaxProvider>
     </MotionConfig>
