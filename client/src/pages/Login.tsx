@@ -318,7 +318,7 @@ export function Login() {
               {slides.map((SlideComponent, index) => (
                 <CarouselItem key={index}>
                   <div className="h-[520px] flex items-center justify-center">
-                    <SlideComponent />
+                    <SlideComponent language="en" />
                   </div>
                 </CarouselItem>
               ))}
