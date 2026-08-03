@@ -160,11 +160,12 @@ export class ZernioWhatsAppChannelAdapter implements ChannelAdapter {
       {
         accountId,
         limit: DEFAULT_MESSAGE_LIMIT,
-        sortOrder: "asc",
+        sortOrder: "desc",
       }
     );
 
-    return this.extractArray(response, ["messages", "data", "items", "results"]);
+    const messages = this.extractArray(response, ["messages", "data", "items", "results"]);
+    return messages.reverse();
   }
 
   private async mapConversation(

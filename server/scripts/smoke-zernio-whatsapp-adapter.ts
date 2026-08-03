@@ -43,21 +43,10 @@ globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) =>
 
   if (url.pathname.endsWith("/inbox/conversations/conv-live-1/messages")) {
     assert(url.searchParams.get("accountId") === accountId, "List messages must be scoped by accountId");
-    assert(url.searchParams.get("sortOrder") === "asc", "List messages must request chronological order");
+    assert(url.searchParams.get("sortOrder") === "desc", "List messages must request the latest message window");
 
     return jsonResponse({
       messages: [
-        {
-          id: "wamid-inbound-1",
-          conversationId: "conv-live-1",
-          accountId,
-          platform: "whatsapp",
-          message: "Hola",
-          senderId: "17864346163",
-          senderName: "Lead Example",
-          direction: "incoming",
-          createdAt: "2026-06-17T09:59:00.000Z",
-        },
         {
           id: "wamid-outbound-1",
           conversationId: "conv-live-1",
@@ -68,6 +57,17 @@ globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) =>
           senderName: "Inpulza USA",
           direction: "outgoing",
           createdAt: "2026-06-17T10:00:00.000Z",
+        },
+        {
+          id: "wamid-inbound-1",
+          conversationId: "conv-live-1",
+          accountId,
+          platform: "whatsapp",
+          message: "Hola",
+          senderId: "17864346163",
+          senderName: "Lead Example",
+          direction: "incoming",
+          createdAt: "2026-06-17T09:59:00.000Z",
         },
       ],
     });
@@ -108,8 +108,10 @@ async function main() {
   assert(conversation.participants[1].name === "Lead Example", "Customer participant name must use participantName");
 
   assert(conversation.messages.length === 2, "Expected inbound and outbound messages");
+  assert(conversation.messages[0].id === "wamid-inbound-1", "Latest message window must be restored to chronological order");
   assert(conversation.messages[0].from.id === "17864346163", "Inbound sender must be the customer");
   assert(conversation.messages[0].timestamp === "2026-06-17T09:59:00.000Z", "Inbound timestamp must use createdAt");
+  assert(conversation.messages[1].id === "wamid-outbound-1", "Newest message must remain last after mapping");
   assert(conversation.messages[1].from.id === accountId, "Outbound sender must be the WhatsApp account");
   assert(conversation.messages[1].timestamp === "2026-06-17T10:00:00.000Z", "Outbound timestamp must use createdAt");
 
