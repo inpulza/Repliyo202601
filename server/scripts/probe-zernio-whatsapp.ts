@@ -78,7 +78,7 @@ async function main() {
     const messagesResult = await requestJson(baseUrl, messagesPath, apiToken, {
       accountId,
       limit: 20,
-      sortOrder: "asc",
+      sortOrder: "desc",
     });
 
     if (!messagesResult.ok) {
