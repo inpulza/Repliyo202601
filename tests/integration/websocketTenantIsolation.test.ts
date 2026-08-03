@@ -28,13 +28,14 @@ describe("WebSocket tenant isolation", () => {
   it("scopes a client immediately and rejects a foreign subscription", async () => {
     const clientA = await connect("session-a");
 
-    server.service.notifyNewMessage("brand-b", { id: "foreign-before-subscribe" });
-    await expectNoMessage(clientA, (message) => message.brandId === "brand-b");
-
-    server.service.notifyNewMessage("brand-a", { id: "own-before-subscribe" });
-    await waitForMessage(
+    await expectNoMessageBeforeBarrier(
       clientA,
-      (message) => message.type === "new_message" && message.brandId === "brand-a",
+      (message) => (message.data as { id?: string } | undefined)?.id === "foreign-before-subscribe",
+      () => {
+        server.service.notifyNewMessage("brand-b", { id: "foreign-before-subscribe" });
+        server.service.notifyNewMessage("brand-a", { id: "own-before-subscribe" });
+      },
+      (message) => (message.data as { id?: string } | undefined)?.id === "own-before-subscribe",
     );
 
     clientA.socket.send(JSON.stringify({ type: "subscribe", brandId: "brand-b" }));
@@ -43,10 +44,14 @@ describe("WebSocket tenant isolation", () => {
       (message) => message.type === "error" && message.message === "Access denied to this brand",
     );
 
-    server.service.notifyNewMessage("brand-b", { id: "foreign-after-subscribe" });
-    await expectNoMessage(
+    await expectNoMessageBeforeBarrier(
       clientA,
       (message) => (message.data as { id?: string } | undefined)?.id === "foreign-after-subscribe",
+      () => {
+        server.service.notifyNewMessage("brand-b", { id: "foreign-after-subscribe" });
+        server.service.notifyNewMessage("brand-a", { id: "own-after-subscribe" });
+      },
+      (message) => (message.data as { id?: string } | undefined)?.id === "own-after-subscribe",
     );
 
     await closeProbe(clientA);
@@ -57,31 +62,44 @@ describe("WebSocket tenant isolation", () => {
     const clientB = await connect("session-b");
     const admin = await connect("session-admin");
 
+    const clientAStart = clientA.messages.length;
     server.service.notifySyncComplete("brand-b", { newMessages: 2, totalMessages: 5 });
+    server.service.notifyNewMessage("brand-a", { id: "client-a-sync-barrier" });
     await waitForMessage(clientB, (message) => message.type === "sync_complete" && message.brandId === "brand-b");
     await waitForMessage(admin, (message) => message.type === "sync_complete" && message.brandId === "brand-b");
-    await expectNoMessage(clientA, (message) => message.type === "sync_complete" && message.brandId === "brand-b");
+    await waitForMessage(
+      clientA,
+      (message) => (message.data as { id?: string } | undefined)?.id === "client-a-sync-barrier",
+    );
+    assert.equal(
+      clientA.messages.slice(clientAStart).some(
+        (message) => message.type === "sync_complete" && message.brandId === "brand-b",
+      ),
+      false,
+    );
 
     admin.socket.send(JSON.stringify({ type: "subscribe", brandId: "brand-a" }));
     await waitForMessage(admin, (message) => message.type === "subscribed" && message.brandId === "brand-a");
 
+    const adminStart = admin.messages.length;
     server.service.notifyAgentReply("brand-b", { id: "brand-b-reply" });
+    server.service.notifyAgentReply("brand-a", { id: "brand-a-reply" });
     await waitForMessage(
       clientB,
       (message) => (message.data as { id?: string } | undefined)?.id === "brand-b-reply",
     );
-    await expectNoMessage(
-      admin,
-      (message) => (message.data as { id?: string } | undefined)?.id === "brand-b-reply",
-    );
-
-    server.service.notifyAgentReply("brand-a", { id: "brand-a-reply" });
     await waitForMessage(
-      clientA,
+      admin,
       (message) => (message.data as { id?: string } | undefined)?.id === "brand-a-reply",
     );
+    assert.equal(
+      admin.messages.slice(adminStart).some(
+        (message) => (message.data as { id?: string } | undefined)?.id === "brand-b-reply",
+      ),
+      false,
+    );
     await waitForMessage(
-      admin,
+      clientA,
       (message) => (message.data as { id?: string } | undefined)?.id === "brand-a-reply",
     );
 
@@ -114,8 +132,35 @@ async function connect(sessionId: string): Promise<SocketProbe> {
     probe.messages.push(JSON.parse(data.toString()) as Record<string, unknown>);
   });
 
-  await waitForMessage(probe, (message) => message.type === "connected");
+  await waitForConnected(probe);
   return probe;
+}
+
+async function waitForConnected(probe: SocketProbe): Promise<void> {
+  if (probe.messages.some((message) => message.type === "connected")) return;
+
+  await new Promise<void>((resolve, reject) => {
+    const onMessage = (data: RawData) => {
+      const message = JSON.parse(data.toString()) as Record<string, unknown>;
+      if (message.type === "connected") finish();
+    };
+    const onClose = (code: number, reason: Buffer) => {
+      finish(new Error(`Socket closed before connect: ${code} ${reason.toString()}`));
+    };
+    const onError = (error: Error) => finish(error);
+    const finish = (error?: Error) => {
+      clearTimeout(timeout);
+      probe.socket.off("message", onMessage);
+      probe.socket.off("close", onClose);
+      probe.socket.off("error", onError);
+      error ? reject(error) : resolve();
+    };
+    const timeout = setTimeout(() => finish(new Error("Timed out waiting for WebSocket connection")), 1_500);
+
+    probe.socket.on("message", onMessage);
+    probe.socket.once("close", onClose);
+    probe.socket.once("error", onError);
+  });
 }
 
 async function waitForMessage(
@@ -145,13 +190,15 @@ async function waitForMessage(
   });
 }
 
-async function expectNoMessage(
+async function expectNoMessageBeforeBarrier(
   probe: SocketProbe,
   predicate: (message: Record<string, unknown>) => boolean,
-  durationMs = 120,
+  emitEvents: () => void,
+  barrierPredicate: (message: Record<string, unknown>) => boolean,
 ): Promise<void> {
   const startingIndex = probe.messages.length;
-  await new Promise((resolve) => setTimeout(resolve, durationMs));
+  emitEvents();
+  await waitForMessage(probe, barrierPredicate);
   assert.equal(probe.messages.slice(startingIndex).some(predicate), false);
 }
 

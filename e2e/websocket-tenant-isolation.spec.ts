@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import {
-  signedSessionCookie,
+  signedSessionValue,
   startWebSocketTestServer,
   type WebSocketTestServer,
 } from "../tests/helpers/websocketTestServer";
@@ -33,7 +33,7 @@ test.beforeEach(async ({ context, page }) => {
   });
   page.on("pageerror", (error) => errors.push(`pageerror: ${error.message}`));
 
-  const cookieValue = signedSessionCookie("session-a").slice("connect.sid=".length);
+  const cookieValue = signedSessionValue("session-a");
   await context.addCookies([
     {
       name: "connect.sid",
@@ -51,7 +51,11 @@ test.beforeEach(async ({ context, page }) => {
 });
 
 test.afterEach(async ({ page }) => {
-  await page.evaluate(() => window.__repliyoSocket?.close(1000, "Test complete"));
+  try {
+    await page.evaluate(() => window.__repliyoSocket?.close(1000, "Test complete"));
+  } catch {
+    // The page may already be closed; browser errors still need to be asserted.
+  }
   expect(pageErrors.get(page) ?? [], "unexpected browser errors").toEqual([]);
 });
 
@@ -69,23 +73,21 @@ test("the browser receives only its session brand before and after subscription"
   await expect.poll(() => hasBrowserMessage(page, "connected")).toBe(true);
 
   server.service.notifyNewMessage("brand-b", { id: "foreign-before-subscribe" });
-  await page.waitForTimeout(150);
-  expect(await hasBrowserDataId(page, "foreign-before-subscribe")).toBe(false);
-
   server.service.notifyNewMessage("brand-a", { id: "own-before-subscribe" });
   await expect.poll(() => hasBrowserDataId(page, "own-before-subscribe")).toBe(true);
+  expect(await hasBrowserDataId(page, "foreign-before-subscribe")).toBe(false);
 
   await page.evaluate(() => {
     window.__repliyoSocket?.send(JSON.stringify({ type: "subscribe", brandId: "brand-b" }));
   });
-  await expect.poll(() => hasBrowserMessage(page, "error")).toBe(true);
+  await expect
+    .poll(() => hasBrowserErrorMessage(page, "Access denied to this brand"))
+    .toBe(true);
 
   server.service.notifyNewMessage("brand-b", { id: "foreign-after-subscribe" });
-  await page.waitForTimeout(150);
-  expect(await hasBrowserDataId(page, "foreign-after-subscribe")).toBe(false);
-
   server.service.notifyNewMessage("brand-a", { id: "own-after-subscribe" });
   await expect.poll(() => hasBrowserDataId(page, "own-after-subscribe")).toBe(true);
+  expect(await hasBrowserDataId(page, "foreign-after-subscribe")).toBe(false);
 });
 
 async function hasBrowserMessage(page: Page, type: string): Promise<boolean> {
@@ -102,5 +104,14 @@ async function hasBrowserDataId(page: Page, id: string): Promise<boolean> {
       return data?.id === expectedId;
     }) ?? false,
     id,
+  );
+}
+
+async function hasBrowserErrorMessage(page: Page, text: string): Promise<boolean> {
+  return page.evaluate(
+    (expectedText) => window.__repliyoSocketMessages?.some(
+      (message) => message.type === "error" && message.message === expectedText,
+    ) ?? false,
+    text,
   );
 }

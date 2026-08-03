@@ -29,7 +29,7 @@ describe("session configuration", () => {
     assert.throws(() => resolveSessionSecret(env), /SESSION_SECRET/);
   });
 
-  it("returns the configured secret in every environment", () => {
+  it("returns the configured secret in production", () => {
     const env = {
       NODE_ENV: "production",
       SESSION_SECRET: "configured-test-secret",

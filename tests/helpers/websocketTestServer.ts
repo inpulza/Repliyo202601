@@ -26,12 +26,18 @@ export interface WebSocketTestServer {
   close(): Promise<void>;
 }
 
+export function signedSessionValue(
+  sessionId: string,
+  secret = TEST_SESSION_SECRET,
+): string {
+  return encodeURIComponent(`s:${signature.sign(sessionId, secret)}`);
+}
+
 export function signedSessionCookie(
   sessionId: string,
   secret = TEST_SESSION_SECRET,
 ): string {
-  const signedValue = `s:${signature.sign(sessionId, secret)}`;
-  return `connect.sid=${encodeURIComponent(signedValue)}`;
+  return `connect.sid=${signedSessionValue(sessionId, secret)}`;
 }
 
 export async function startWebSocketTestServer(): Promise<WebSocketTestServer> {

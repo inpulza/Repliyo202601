@@ -299,18 +299,30 @@ export class WebSocketService {
     return count;
   }
 
-  async shutdown(): Promise<void> {
+  async shutdown(gracePeriodMs = 1_000): Promise<void> {
     const wss = this.wss;
     if (!wss) return;
 
-    this.clients.forEach((client) => {
-      client.ws.close(1001, 'Server shutting down');
-    });
-    this.clients.clear();
-
     await new Promise<void>((resolve, reject) => {
-      wss.close((error) => (error ? reject(error) : resolve()));
+      let settled = false;
+      const finish = (error?: Error) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        error ? reject(error) : resolve();
+      };
+      const timeout = setTimeout(() => {
+        wss.clients.forEach((client) => client.terminate());
+        finish();
+      }, gracePeriodMs);
+
+      wss.close((error) => finish(error));
+      this.clients.forEach((client) => {
+        client.ws.close(1001, 'Server shutting down');
+      });
     });
+
+    this.clients.clear();
     this.wss = null;
   }
 }
