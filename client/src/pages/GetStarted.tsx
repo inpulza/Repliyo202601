@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Command, Loader2, ArrowRight, ArrowLeft, Check, User, Building2, Globe2, Target, MessageCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/context/LanguageContext';
+import { GET_STARTED_COPY, type GetStartedCopy } from '@/locales/getStarted';
+import { GetStartedMetadataSync } from '@/components/get-started/GetStartedMetadataSync';
 import {
   Carousel,
   CarouselContent,
@@ -26,52 +27,6 @@ import { Textarea } from "@/components/ui/textarea";
 
 const TOTAL_STEPS = 5;
 
-const INDUSTRIES = [
-  'Marketing Agency',
-  'E-commerce',
-  'Real Estate',
-  'Hospitality',
-  'Healthcare',
-  'Education',
-  'SaaS / Technology',
-  'Fitness & Wellness',
-  'Restaurants & Food',
-  'Professional Services',
-  'Retail',
-  'Other',
-];
-
-const TEAM_SIZES = ['1-5', '6-20', '21-50', '51-200', '200+'];
-
-const PLATFORMS = [
-  { id: 'instagram', label: 'Instagram' },
-  { id: 'facebook', label: 'Facebook' },
-  { id: 'tiktok', label: 'TikTok' },
-  { id: 'youtube', label: 'YouTube' },
-  { id: 'linkedin', label: 'LinkedIn' },
-  { id: 'google_business', label: 'Google Business' },
-  { id: 'whatsapp', label: 'WhatsApp Business' },
-];
-
-const VOLUME_RANGES = [
-  'Less than 50',
-  '50 - 200',
-  '200 - 500',
-  '500 - 1,000',
-  '1,000+',
-];
-
-const BRAND_COUNTS = ['1', '2-5', '6-10', '10+'];
-
-const GOALS = [
-  { id: 'unified_inbox', label: 'Unified inbox for all platforms' },
-  { id: 'ai_responses', label: 'AI-powered automatic responses' },
-  { id: 'crm', label: 'CRM & contact management' },
-  { id: 'crisis_alerts', label: 'Crisis & sentiment alerts' },
-  { id: 'analytics', label: 'Analytics & metrics' },
-  { id: 'team_collaboration', label: 'Team collaboration' },
-];
-
 interface FormData {
   name: string;
   email: string;
@@ -90,13 +45,12 @@ interface FormData {
 }
 
 const STEP_ICONS = [User, Building2, Globe2, Target, Check];
-const STEP_LABELS = ['About You', 'Your Business', 'Social Media', 'Your Goals', 'Confirm'];
 
-function StepIndicator({ currentStep }: { currentStep: number }) {
+function StepIndicator({ currentStep, copy }: { currentStep: number; copy: GetStartedCopy }) {
   return (
     <div className="mb-10" data-testid="step-indicator">
       <div className="flex items-center justify-between">
-        {STEP_LABELS.map((label, index) => {
+        {copy.stepLabels.map((label, index) => {
           const isActive = index === currentStep;
           const isCompleted = index < currentStep;
           const Icon = STEP_ICONS[index];
@@ -155,18 +109,18 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
   );
 }
 
-function Step1AboutYou({ data, onChange }: { data: FormData; onChange: (updates: Partial<FormData>) => void }) {
+function Step1AboutYou({ data, onChange, copy }: { data: FormData; onChange: (updates: Partial<FormData>) => void; copy: GetStartedCopy }) {
   return (
     <div className="space-y-5">
       <div className="text-center mb-6">
-        <h2 className="text-xl font-bold text-gray-900" data-testid="step-title">Tell us about yourself</h2>
-        <p className="text-sm text-gray-500 mt-1">We'll use this to personalize your experience</p>
+        <h1 className="text-xl font-bold text-gray-900" data-testid="step-title">{copy.about.title}</h1>
+        <p className="text-sm text-gray-500 mt-1">{copy.about.description}</p>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="name" className="text-gray-700">Full Name *</Label>
+        <Label htmlFor="name" className="text-gray-700">{copy.about.name}</Label>
         <Input
           id="name"
-          placeholder="John Smith"
+          placeholder={copy.about.namePlaceholder}
           value={data.name}
           onChange={(e) => onChange({ name: e.target.value })}
           required
@@ -175,11 +129,11 @@ function Step1AboutYou({ data, onChange }: { data: FormData; onChange: (updates:
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="lead-email" className="text-gray-700">Work Email *</Label>
+        <Label htmlFor="lead-email" className="text-gray-700">{copy.about.email}</Label>
         <Input
           id="lead-email"
           type="email"
-          placeholder="you@company.com"
+          placeholder={copy.about.emailPlaceholder}
           value={data.email}
           onChange={(e) => onChange({ email: e.target.value })}
           required
@@ -188,11 +142,11 @@ function Step1AboutYou({ data, onChange }: { data: FormData; onChange: (updates:
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="phone" className="text-gray-700">WhatsApp / Phone</Label>
+        <Label htmlFor="phone" className="text-gray-700">{copy.about.phone}</Label>
         <Input
           id="phone"
           type="tel"
-          placeholder="+1 (555) 000-0000"
+          placeholder={copy.about.phonePlaceholder}
           value={data.phone}
           onChange={(e) => onChange({ phone: e.target.value })}
           className="h-12 border-gray-300 focus-visible:ring-indigo-500"
@@ -200,18 +154,15 @@ function Step1AboutYou({ data, onChange }: { data: FormData; onChange: (updates:
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="role" className="text-gray-700">Your Role</Label>
+        <Label htmlFor="role" className="text-gray-700">{copy.about.role}</Label>
         <Select value={data.role} onValueChange={(v) => onChange({ role: v })}>
           <SelectTrigger className="h-12 border-gray-300" data-testid="select-lead-role">
-            <SelectValue placeholder="Select your role" />
+            <SelectValue placeholder={copy.about.rolePlaceholder} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="owner">Owner / Founder</SelectItem>
-            <SelectItem value="marketing_manager">Marketing Manager</SelectItem>
-            <SelectItem value="social_media_manager">Social Media Manager</SelectItem>
-            <SelectItem value="customer_support">Customer Support</SelectItem>
-            <SelectItem value="operations">Operations</SelectItem>
-            <SelectItem value="other">Other</SelectItem>
+            {copy.options.roles.map((role) => (
+              <SelectItem key={role.value} value={role.value}>{role.label}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -219,18 +170,18 @@ function Step1AboutYou({ data, onChange }: { data: FormData; onChange: (updates:
   );
 }
 
-function Step2Business({ data, onChange }: { data: FormData; onChange: (updates: Partial<FormData>) => void }) {
+function Step2Business({ data, onChange, copy }: { data: FormData; onChange: (updates: Partial<FormData>) => void; copy: GetStartedCopy }) {
   return (
     <div className="space-y-5">
       <div className="text-center mb-6">
-        <h2 className="text-xl font-bold text-gray-900" data-testid="step-title">About your business</h2>
-        <p className="text-sm text-gray-500 mt-1">Help us understand your company</p>
+        <h1 className="text-xl font-bold text-gray-900" data-testid="step-title">{copy.business.title}</h1>
+        <p className="text-sm text-gray-500 mt-1">{copy.business.description}</p>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="company" className="text-gray-700">Company Name</Label>
+        <Label htmlFor="company" className="text-gray-700">{copy.business.company}</Label>
         <Input
           id="company"
-          placeholder="Acme Inc."
+          placeholder={copy.business.companyPlaceholder}
           value={data.companyName}
           onChange={(e) => onChange({ companyName: e.target.value })}
           className="h-12 border-gray-300 focus-visible:ring-indigo-500"
@@ -238,36 +189,36 @@ function Step2Business({ data, onChange }: { data: FormData; onChange: (updates:
         />
       </div>
       <div className="space-y-2">
-        <Label className="text-gray-700">Industry *</Label>
+        <Label className="text-gray-700">{copy.business.industry}</Label>
         <Select value={data.industry} onValueChange={(v) => onChange({ industry: v })}>
           <SelectTrigger className="h-12 border-gray-300" data-testid="select-lead-industry">
-            <SelectValue placeholder="Select your industry" />
+            <SelectValue placeholder={copy.business.industryPlaceholder} />
           </SelectTrigger>
-          <SelectContent>
-            {INDUSTRIES.map((ind) => (
-              <SelectItem key={ind} value={ind}>{ind}</SelectItem>
+          <SelectContent className="max-h-64">
+            {copy.options.industries.map((industry) => (
+              <SelectItem key={industry.value} value={industry.value}>{industry.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
       <div className="space-y-2">
-        <Label className="text-gray-700">Team Size</Label>
+        <Label className="text-gray-700">{copy.business.teamSize}</Label>
         <Select value={data.teamSize} onValueChange={(v) => onChange({ teamSize: v })}>
           <SelectTrigger className="h-12 border-gray-300" data-testid="select-lead-team-size">
-            <SelectValue placeholder="How many people?" />
+            <SelectValue placeholder={copy.business.teamSizePlaceholder} />
           </SelectTrigger>
           <SelectContent>
-            {TEAM_SIZES.map((size) => (
-              <SelectItem key={size} value={size}>{size} people</SelectItem>
+            {copy.options.teamSizes.map((size) => (
+              <SelectItem key={size} value={size}>{size} {copy.business.people}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="country" className="text-gray-700">Country</Label>
+        <Label htmlFor="country" className="text-gray-700">{copy.business.country}</Label>
         <Input
           id="country"
-          placeholder="United States"
+          placeholder={copy.business.countryPlaceholder}
           value={data.country}
           onChange={(e) => onChange({ country: e.target.value })}
           className="h-12 border-gray-300 focus-visible:ring-indigo-500"
@@ -278,7 +229,7 @@ function Step2Business({ data, onChange }: { data: FormData; onChange: (updates:
   );
 }
 
-function Step3SocialMedia({ data, onChange }: { data: FormData; onChange: (updates: Partial<FormData>) => void }) {
+function Step3SocialMedia({ data, onChange, copy }: { data: FormData; onChange: (updates: Partial<FormData>) => void; copy: GetStartedCopy }) {
   const togglePlatform = (platformId: string) => {
     const current = data.platforms || [];
     const updated = current.includes(platformId)
@@ -290,19 +241,20 @@ function Step3SocialMedia({ data, onChange }: { data: FormData; onChange: (updat
   return (
     <div className="space-y-5">
       <div className="text-center mb-6">
-        <h2 className="text-xl font-bold text-gray-900" data-testid="step-title">Your social media presence</h2>
-        <p className="text-sm text-gray-500 mt-1">Which platforms do you manage?</p>
+        <h1 className="text-xl font-bold text-gray-900" data-testid="step-title">{copy.social.title}</h1>
+        <p className="text-sm text-gray-500 mt-1">{copy.social.description}</p>
       </div>
       <div className="space-y-3">
-        <Label className="text-gray-700">Platforms *</Label>
+        <Label className="text-gray-700">{copy.social.platforms}</Label>
         <div className="grid grid-cols-2 gap-2">
-          {PLATFORMS.map((platform) => {
+          {copy.options.platforms.map((platform) => {
             const isSelected = (data.platforms || []).includes(platform.id);
             return (
               <button
                 key={platform.id}
                 type="button"
                 onClick={() => togglePlatform(platform.id)}
+                aria-pressed={isSelected}
                 className={`flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-all text-left ${
                   isSelected
                     ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
@@ -320,27 +272,27 @@ function Step3SocialMedia({ data, onChange }: { data: FormData; onChange: (updat
         </div>
       </div>
       <div className="space-y-2">
-        <Label className="text-gray-700">Monthly inbound messages/comments</Label>
+        <Label className="text-gray-700">{copy.social.monthlyVolume}</Label>
         <Select value={data.monthlyVolume} onValueChange={(v) => onChange({ monthlyVolume: v })}>
           <SelectTrigger className="h-12 border-gray-300" data-testid="select-lead-volume">
-            <SelectValue placeholder="Approximate volume" />
+            <SelectValue placeholder={copy.social.monthlyVolumePlaceholder} />
           </SelectTrigger>
           <SelectContent>
-            {VOLUME_RANGES.map((range) => (
-              <SelectItem key={range} value={range}>{range}</SelectItem>
+            {copy.options.volumeRanges.map((range) => (
+              <SelectItem key={range.value} value={range.value}>{range.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
       <div className="space-y-2">
-        <Label className="text-gray-700">How many brand accounts do you manage?</Label>
+        <Label className="text-gray-700">{copy.social.brandCount}</Label>
         <Select value={data.brandCount} onValueChange={(v) => onChange({ brandCount: v })}>
           <SelectTrigger className="h-12 border-gray-300" data-testid="select-lead-brands">
-            <SelectValue placeholder="Number of brands" />
+            <SelectValue placeholder={copy.social.brandCountPlaceholder} />
           </SelectTrigger>
           <SelectContent>
-            {BRAND_COUNTS.map((count) => (
-              <SelectItem key={count} value={count}>{count} {count === '1' ? 'brand' : 'brands'}</SelectItem>
+            {copy.options.brandCounts.map((count) => (
+              <SelectItem key={count} value={count}>{count} {count === '1' ? copy.social.brandSingular : copy.social.brandPlural}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -349,7 +301,7 @@ function Step3SocialMedia({ data, onChange }: { data: FormData; onChange: (updat
   );
 }
 
-function Step4Goals({ data, onChange }: { data: FormData; onChange: (updates: Partial<FormData>) => void }) {
+function Step4Goals({ data, onChange, copy }: { data: FormData; onChange: (updates: Partial<FormData>) => void; copy: GetStartedCopy }) {
   const toggleGoal = (goalId: string) => {
     const current = data.goals || [];
     const updated = current.includes(goalId)
@@ -361,19 +313,20 @@ function Step4Goals({ data, onChange }: { data: FormData; onChange: (updates: Pa
   return (
     <div className="space-y-5">
       <div className="text-center mb-6">
-        <h2 className="text-xl font-bold text-gray-900" data-testid="step-title">What are you looking for?</h2>
-        <p className="text-sm text-gray-500 mt-1">Select all that apply</p>
+        <h1 className="text-xl font-bold text-gray-900" data-testid="step-title">{copy.goals.title}</h1>
+        <p className="text-sm text-gray-500 mt-1">{copy.goals.description}</p>
       </div>
       <div className="space-y-3">
-        <Label className="text-gray-700">Goals *</Label>
+        <Label className="text-gray-700">{copy.goals.goals}</Label>
         <div className="space-y-2">
-          {GOALS.map((goal) => {
+          {copy.options.goals.map((goal) => {
             const isSelected = (data.goals || []).includes(goal.id);
             return (
               <button
                 key={goal.id}
                 type="button"
                 onClick={() => toggleGoal(goal.id)}
+                aria-pressed={isSelected}
                 className={`flex items-center gap-3 w-full p-3 rounded-lg border text-sm font-medium transition-all text-left ${
                   isSelected
                     ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
@@ -391,10 +344,10 @@ function Step4Goals({ data, onChange }: { data: FormData; onChange: (updates: Pa
         </div>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="painPoint" className="text-gray-700">What's your biggest challenge right now?</Label>
+        <Label htmlFor="painPoint" className="text-gray-700">{copy.goals.painPoint}</Label>
         <Textarea
           id="painPoint"
-          placeholder="e.g., We can't keep up with messages across all platforms..."
+          placeholder={copy.goals.painPointPlaceholder}
           value={data.painPoint}
           onChange={(e) => onChange({ painPoint: e.target.value })}
           className="min-h-[80px] border-gray-300 focus-visible:ring-indigo-500 resize-none"
@@ -402,10 +355,10 @@ function Step4Goals({ data, onChange }: { data: FormData; onChange: (updates: Pa
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="currentTools" className="text-gray-700">Tools you currently use (optional)</Label>
+        <Label htmlFor="currentTools" className="text-gray-700">{copy.goals.currentTools}</Label>
         <Input
           id="currentTools"
-          placeholder="e.g., Hootsuite, Sprout Social, manual..."
+          placeholder={copy.goals.currentToolsPlaceholder}
           value={data.currentTools}
           onChange={(e) => onChange({ currentTools: e.target.value })}
           className="h-12 border-gray-300 focus-visible:ring-indigo-500"
@@ -416,9 +369,10 @@ function Step4Goals({ data, onChange }: { data: FormData; onChange: (updates: Pa
   );
 }
 
-function Step5Confirmation({ data }: { data: FormData }) {
-  const goalLabels = GOALS.filter(g => (data.goals || []).includes(g.id)).map(g => g.label);
-  const platformLabels = PLATFORMS.filter(p => (data.platforms || []).includes(p.id)).map(p => p.label);
+function Step5Confirmation({ data, copy }: { data: FormData; copy: GetStartedCopy }) {
+  const goalLabels = copy.options.goals.filter(g => (data.goals || []).includes(g.id)).map(g => g.label);
+  const platformLabels = copy.options.platforms.filter(p => (data.platforms || []).includes(p.id)).map(p => p.label);
+  const industryLabel = copy.options.industries.find(industry => industry.value === data.industry)?.label || data.industry;
 
   return (
     <div className="space-y-5">
@@ -426,52 +380,52 @@ function Step5Confirmation({ data }: { data: FormData }) {
         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <Check className="w-8 h-8 text-green-600" />
         </div>
-        <h2 className="text-xl font-bold text-gray-900" data-testid="step-title">Review & Submit</h2>
-        <p className="text-sm text-gray-500 mt-1">Please confirm your information</p>
+        <h1 className="text-xl font-bold text-gray-900" data-testid="step-title">{copy.review.title}</h1>
+        <p className="text-sm text-gray-500 mt-1">{copy.review.description}</p>
       </div>
 
       <div className="bg-gray-50 rounded-xl p-4 space-y-3 text-sm" data-testid="summary-block">
         <div className="flex justify-between">
-          <span className="text-gray-500">Name</span>
+          <span className="text-gray-500">{copy.review.name}</span>
           <span className="font-medium text-gray-900">{data.name}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-500">Email</span>
+          <span className="text-gray-500">{copy.review.email}</span>
           <span className="font-medium text-gray-900">{data.email}</span>
         </div>
         {data.phone && (
           <div className="flex justify-between">
-            <span className="text-gray-500">Phone</span>
+            <span className="text-gray-500">{copy.review.phone}</span>
             <span className="font-medium text-gray-900">{data.phone}</span>
           </div>
         )}
         {data.companyName && (
           <div className="flex justify-between">
-            <span className="text-gray-500">Company</span>
+            <span className="text-gray-500">{copy.review.company}</span>
             <span className="font-medium text-gray-900">{data.companyName}</span>
           </div>
         )}
         {data.industry && (
           <div className="flex justify-between">
-            <span className="text-gray-500">Industry</span>
-            <span className="font-medium text-gray-900">{data.industry}</span>
+            <span className="text-gray-500">{copy.review.industry}</span>
+            <span className="font-medium text-gray-900">{industryLabel}</span>
           </div>
         )}
         {data.teamSize && (
           <div className="flex justify-between">
-            <span className="text-gray-500">Team</span>
-            <span className="font-medium text-gray-900">{data.teamSize} people</span>
+            <span className="text-gray-500">{copy.review.team}</span>
+            <span className="font-medium text-gray-900">{data.teamSize} {copy.business.people}</span>
           </div>
         )}
         {platformLabels.length > 0 && (
           <div className="flex justify-between gap-4">
-            <span className="text-gray-500 shrink-0">Platforms</span>
+            <span className="text-gray-500 shrink-0">{copy.review.platforms}</span>
             <span className="font-medium text-gray-900 text-right">{platformLabels.join(', ')}</span>
           </div>
         )}
         {goalLabels.length > 0 && (
           <div className="flex justify-between gap-4">
-            <span className="text-gray-500 shrink-0">Goals</span>
+            <span className="text-gray-500 shrink-0">{copy.review.goals}</span>
             <span className="font-medium text-gray-900 text-right">{goalLabels.join(', ')}</span>
           </div>
         )}
@@ -480,17 +434,15 @@ function Step5Confirmation({ data }: { data: FormData }) {
   );
 }
 
-function SuccessState() {
-  const [, setLocation] = useLocation();
-
+function SuccessState({ copy }: { copy: GetStartedCopy }) {
   return (
     <div className="text-center py-8">
       <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
         <Check className="w-10 h-10 text-white" />
       </div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-3" data-testid="success-title">You're all set!</h2>
+      <h1 className="text-2xl font-bold text-gray-900 mb-3" data-testid="success-title">{copy.success.title}</h1>
       <p className="text-gray-500 mb-8 max-w-sm mx-auto">
-        Our team will reach out to you within 24-48 hours. In the meantime, feel free to contact us directly.
+        {copy.success.description}
       </p>
       <div className="flex flex-col gap-3">
         <a
@@ -501,15 +453,12 @@ function SuccessState() {
           data-testid="link-whatsapp-success"
         >
           <MessageCircle className="h-4 w-4" />
-          Chat on WhatsApp
+          {copy.success.whatsapp}
         </a>
-        <Button
-          variant="outline"
-          className="border-gray-300"
-          onClick={() => setLocation('/login')}
-          data-testid="button-back-to-login"
-        >
-          Back to Login
+        <Button asChild variant="outline" className="border-gray-300">
+          <a href="/login" data-testid="button-back-to-login">
+            {copy.success.login}
+          </a>
         </Button>
       </div>
     </div>
@@ -518,6 +467,9 @@ function SuccessState() {
 
 export function GetStarted() {
   const { toast } = useToast();
+  const { language, setLanguage } = useLanguage();
+  const copy = GET_STARTED_COPY[language];
+  const landingHref = language === 'es' ? '/?lang=es' : '/';
   const [step, setStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -555,29 +507,29 @@ export function GetStarted() {
     switch (step) {
       case 0:
         if (!formData.name.trim()) {
-          toast({ title: 'Name required', description: 'Please enter your full name', variant: 'destructive' });
+          toast({ title: copy.validation.nameTitle, description: copy.validation.nameDescription, variant: 'destructive' });
           return false;
         }
         if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-          toast({ title: 'Valid email required', description: 'Please enter a valid email address', variant: 'destructive' });
+          toast({ title: copy.validation.emailTitle, description: copy.validation.emailDescription, variant: 'destructive' });
           return false;
         }
         return true;
       case 1:
         if (!formData.industry) {
-          toast({ title: 'Industry required', description: 'Please select your industry', variant: 'destructive' });
+          toast({ title: copy.validation.industryTitle, description: copy.validation.industryDescription, variant: 'destructive' });
           return false;
         }
         return true;
       case 2:
         if (!formData.platforms || formData.platforms.length === 0) {
-          toast({ title: 'Platforms required', description: 'Please select at least one platform', variant: 'destructive' });
+          toast({ title: copy.validation.platformsTitle, description: copy.validation.platformsDescription, variant: 'destructive' });
           return false;
         }
         return true;
       case 3:
         if (!formData.goals || formData.goals.length === 0) {
-          toast({ title: 'Goals required', description: 'Please select at least one goal', variant: 'destructive' });
+          toast({ title: copy.validation.goalsTitle, description: copy.validation.goalsDescription, variant: 'destructive' });
           return false;
         }
         return true;
@@ -615,9 +567,10 @@ export function GetStarted() {
       }
 
       setIsSuccess(true);
-      toast({ title: 'Submitted!', description: 'We received your information successfully.' });
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message || 'Something went wrong. Please try again.', variant: 'destructive' });
+      toast({ title: copy.toast.successTitle, description: copy.toast.successDescription });
+    } catch (error) {
+      console.error('Failed to submit lead request', error);
+      toast({ title: copy.toast.errorTitle, description: copy.toast.errorDescription, variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
     }
@@ -627,13 +580,24 @@ export function GetStarted() {
 
   return (
     <div className="min-h-screen flex">
+      <GetStartedMetadataSync />
       <div className="w-full lg:w-1/2 bg-gray-50 flex flex-col justify-center px-8 sm:px-16 lg:px-24 py-12 overflow-y-auto">
         <div className="max-w-md w-full mx-auto">
-          <div className="flex items-center justify-center gap-3 mb-8">
-            <div className="h-10 w-10 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg">
-              <Command className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-gray-900">Repliyo</span>
+          <div className="flex items-center justify-between gap-4 mb-8">
+            <a href={landingHref} className="flex items-center gap-3" aria-label="Repliyo">
+              <div className="h-10 w-10 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Command className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-xl font-bold text-gray-900">Repliyo</span>
+            </a>
+            <button
+              type="button"
+              onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
+              className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 shadow-sm transition-colors hover:border-indigo-300 hover:text-indigo-700"
+              data-testid="button-get-started-language"
+            >
+              {copy.languageSwitch}
+            </button>
           </div>
 
           {isSuccess ? (
@@ -642,11 +606,11 @@ export function GetStarted() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             >
-              <SuccessState />
+              <SuccessState copy={copy} />
             </motion.div>
           ) : (
             <>
-              <StepIndicator currentStep={step} />
+              <StepIndicator currentStep={step} copy={copy} />
 
               <div className="min-h-[400px] overflow-hidden">
                 <AnimatePresence mode="wait">
@@ -657,11 +621,11 @@ export function GetStarted() {
                     exit={{ opacity: 0, x: -30 }}
                     transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
                   >
-                    {step === 0 && <Step1AboutYou data={formData} onChange={updateFormData} />}
-                    {step === 1 && <Step2Business data={formData} onChange={updateFormData} />}
-                    {step === 2 && <Step3SocialMedia data={formData} onChange={updateFormData} />}
-                    {step === 3 && <Step4Goals data={formData} onChange={updateFormData} />}
-                    {step === 4 && <Step5Confirmation data={formData} />}
+                    {step === 0 && <Step1AboutYou data={formData} onChange={updateFormData} copy={copy} />}
+                    {step === 1 && <Step2Business data={formData} onChange={updateFormData} copy={copy} />}
+                    {step === 2 && <Step3SocialMedia data={formData} onChange={updateFormData} copy={copy} />}
+                    {step === 3 && <Step4Goals data={formData} onChange={updateFormData} copy={copy} />}
+                    {step === 4 && <Step5Confirmation data={formData} copy={copy} />}
                   </motion.div>
                 </AnimatePresence>
               </div>
@@ -676,7 +640,7 @@ export function GetStarted() {
                     data-testid="button-back"
                   >
                     <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back
+                    {copy.navigation.back}
                   </Button>
                 ) : (
                   <a
@@ -684,7 +648,7 @@ export function GetStarted() {
                     className="text-sm text-gray-500 hover:text-gray-700 font-medium"
                     data-testid="link-back-login"
                   >
-                    Already have an account? Sign in
+                    {copy.navigation.signIn}
                   </a>
                 )}
 
@@ -695,7 +659,7 @@ export function GetStarted() {
                     className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white shadow-md"
                     data-testid="button-next"
                   >
-                    Next
+                    {copy.navigation.next}
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 ) : (
@@ -709,11 +673,11 @@ export function GetStarted() {
                     {isSubmitting ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Submitting...
+                        {copy.navigation.submitting}
                       </>
                     ) : (
                       <>
-                        Submit
+                        {copy.navigation.submit}
                         <Check className="w-4 h-4 ml-2" />
                       </>
                     )}
@@ -744,7 +708,7 @@ export function GetStarted() {
               {slides.map((SlideComponent, index) => (
                 <CarouselItem key={index}>
                   <div className="h-[520px] flex items-center justify-center">
-                    <SlideComponent />
+                    <SlideComponent language={language} />
                   </div>
                 </CarouselItem>
               ))}

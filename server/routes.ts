@@ -138,6 +138,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   </url>
   <url>
     <loc>${SITE_URL}/get-started</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="${SITE_URL}/get-started" />
+    <xhtml:link rel="alternate" hreflang="es" href="${SITE_URL}/get-started?lang=es" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="${SITE_URL}/get-started" />
+  </url>
+  <url>
+    <loc>${SITE_URL}/get-started?lang=es</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="${SITE_URL}/get-started" />
+    <xhtml:link rel="alternate" hreflang="es" href="${SITE_URL}/get-started?lang=es" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="${SITE_URL}/get-started" />
   </url>
 </urlset>`;
 

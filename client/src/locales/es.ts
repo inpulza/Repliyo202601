@@ -11,7 +11,7 @@ export const es = {
     titlePart2: 'segundos.',
     subtitle: 'Vende más con IA.',
     description: 'Unifica todos tus DMs y comentarios de Instagram, TikTok y Facebook en un inbox inteligente que responde automáticamente.',
-    cta: 'Empezar gratis',
+    cta: 'Solicitar acceso',
   },
   marquee: {
     items: ['DMs', 'Comentarios', 'Respuestas IA', 'Recordatorios', 'CRM', 'Analytics', 'Multi-plataforma'],
@@ -177,8 +177,8 @@ export const es = {
   cta: {
     titleLine1: '¿LISTO PARA',
     titleLine2: 'ESCALAR?',
-    description: 'Automatiza respuestas. Deleita clientes. Sin tarjeta de crédito.',
-    button: 'Empezar',
+    description: 'Cuéntanos sobre tu equipo. Revisaremos tu solicitud y te contactaremos en 24-48 horas.',
+    button: 'Solicitar acceso',
   },
   footer: {
     categories: {

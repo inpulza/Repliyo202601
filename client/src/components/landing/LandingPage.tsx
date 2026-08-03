@@ -1804,7 +1804,8 @@ function Header({ revealDeferredContent }: { revealDeferredContent: () => void }
 function HeroSection() {
   const containerRef = useRef<HTMLElement>(null);
   const prefersReducedMotion = useReducedMotion();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const getStartedHref = language === 'es' ? '/get-started?lang=es' : '/get-started';
   const { scrollYProgress } = useSafeScroll({ target: containerRef, offset: ['start start', 'end start'] });
   
   const textY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [0, 100]);
@@ -2005,7 +2006,7 @@ function HeroSection() {
             transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             className="flex items-center justify-center"
           >
-            <GlowButton href="/get-started">
+            <GlowButton href={getStartedHref}>
               {t.hero.cta}
             </GlowButton>
           </motion.div>
@@ -4186,7 +4187,8 @@ function TestimonialSection() {
 function CTASection() {
   const ref = useRef<HTMLElement>(null);
   const prefersReducedMotion = useReducedMotion();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const getStartedHref = language === 'es' ? '/get-started?lang=es' : '/get-started';
   const { scrollYProgress } = useSafeScroll({ target: ref, offset: ['start end', 'end start'] });
   const bgY = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [100, -50]);
 
@@ -4217,7 +4219,7 @@ function CTASection() {
 
         <div className="lg:col-span-5 p-12 md:p-20 lg:p-24 flex items-center justify-center border-t lg:border-t-0 lg:border-l border-white/5">
           <motion.a
-            href="/get-started"
+            href={getStartedHref}
             initial={{ opacity: 0, scale: 0.8 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}

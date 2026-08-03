@@ -5,7 +5,7 @@ import path from "node:path";
 import zlib from "node:zlib";
 
 import express from "express";
-import { LANDING_METADATA } from "@shared/landingMetadata";
+import { GET_STARTED_METADATA, LANDING_METADATA } from "@shared/landingMetadata";
 
 import {
   API_CACHE_CONTROL,
@@ -141,6 +141,8 @@ async function main() {
       root,
       spanishRoot,
       index,
+      getStarted,
+      spanishGetStarted,
       spaRoute,
       api,
       missingApi,
@@ -153,6 +155,8 @@ async function main() {
         request(port, "/"),
         request(port, "/?lang=es"),
         request(port, "/index.html"),
+        request(port, "/get-started"),
+        request(port, "/get-started?lang=es"),
         request(port, "/nonexistent-spa-route"),
         request(port, "/api/static-delivery-probe"),
         request(port, "/api/nonexistent-route"),
@@ -215,7 +219,14 @@ async function main() {
     assert.match(missingAsset.headers["content-type"] ?? "", /^text\/plain/);
     assert.equal(decodeBody(missingAsset).toString("utf8"), "Not Found");
 
-    for (const htmlResponse of [root, spanishRoot, index, spaRoute]) {
+    for (const htmlResponse of [
+      root,
+      spanishRoot,
+      index,
+      getStarted,
+      spanishGetStarted,
+      spaRoute,
+    ]) {
       assert.equal(htmlResponse.statusCode, 200);
       assert.equal(htmlResponse.headers["cache-control"], "no-cache");
       assert.match(htmlResponse.headers.vary ?? "", /Accept-Encoding/i);
@@ -248,6 +259,34 @@ async function main() {
       /<meta property="og:locale" content="es_ES" \/>/,
     );
     assert.equal(spanishRoot.headers["content-language"], "es");
+
+    const englishGetStartedHtml = decodeBody(getStarted).toString("utf8");
+    assert.match(englishGetStartedHtml, /<html lang="en">/);
+    assert.ok(englishGetStartedHtml.includes(GET_STARTED_METADATA.en.title));
+    assert.ok(englishGetStartedHtml.includes(GET_STARTED_METADATA.en.description));
+    assert.match(
+      englishGetStartedHtml,
+      /<link rel="canonical" href="https:\/\/repliyo\.com\/get-started" \/>/,
+    );
+    assert.match(
+      englishGetStartedHtml,
+      /<link rel="alternate" hreflang="es" href="https:\/\/repliyo\.com\/get-started\?lang=es" \/>/,
+    );
+    assert.equal(getStarted.headers["content-language"], "en");
+
+    const spanishGetStartedHtml = decodeBody(spanishGetStarted).toString("utf8");
+    assert.match(spanishGetStartedHtml, /<html lang="es">/);
+    assert.ok(spanishGetStartedHtml.includes(GET_STARTED_METADATA.es.title));
+    assert.ok(spanishGetStartedHtml.includes(GET_STARTED_METADATA.es.description));
+    assert.match(
+      spanishGetStartedHtml,
+      /<link rel="canonical" href="https:\/\/repliyo\.com\/get-started\?lang=es" \/>/,
+    );
+    assert.match(
+      spanishGetStartedHtml,
+      /<meta property="og:locale" content="es_ES" \/>/,
+    );
+    assert.equal(spanishGetStarted.headers["content-language"], "es");
 
     const [revalidatedIndex, revalidatedSpaRoute] = await Promise.all([
       request(port, "/index.html", { "If-None-Match": index.headers.etag }),

@@ -1,5 +1,15 @@
 import React from 'react';
 import { CheckCircle2, User } from 'lucide-react';
+import type { Language } from '@/context/LanguageContext';
+import { AUTH_CAROUSEL_COPY } from '@/locales/authCarousel';
+
+type CarouselSlideProps = {
+  language?: Language;
+};
+
+function getCarouselCopy(language: Language = 'en') {
+  return AUTH_CAROUSEL_COPY[language];
+}
 
 export function FloatingIcon({ delay, children, position }: { delay: number; children: React.ReactNode; position: string }) {
   return (
@@ -77,7 +87,9 @@ export function FacebookIconWhite() {
   );
 }
 
-export function Slide1_JoinRepliyo() {
+export function Slide1_JoinRepliyo({ language }: CarouselSlideProps) {
+  const copy = getCarouselCopy(language);
+
   return (
     <div className="flex flex-col items-center justify-center h-full px-8">
       <div className="relative mb-8">
@@ -104,16 +116,18 @@ export function Slide1_JoinRepliyo() {
       </div>
       
       <h3 className="text-2xl font-bold text-white text-center mb-3">
-        Join Repliyo
+        {copy.joinTitle}
       </h3>
       <p className="text-indigo-100 text-center text-sm max-w-xs">
-        Manage all your social media conversations in one place
+        {copy.joinDescription}
       </p>
     </div>
   );
 }
 
-export function Slide2_ConnectApps() {
+export function Slide2_ConnectApps({ language }: CarouselSlideProps) {
+  const copy = getCarouselCopy(language);
+
   return (
     <div className="flex flex-col items-center justify-center h-full px-8">
       <div className="relative mb-8">
@@ -122,7 +136,7 @@ export function Slide2_ConnectApps() {
             <div className="w-3 h-3 rounded-full bg-red-400" />
             <div className="w-3 h-3 rounded-full bg-yellow-400" />
             <div className="w-3 h-3 rounded-full bg-green-400" />
-            <span className="ml-3 text-sm text-gray-500 font-medium">Unified Inbox</span>
+            <span className="ml-3 text-sm text-gray-500 font-medium">{copy.inboxLabel}</span>
           </div>
           <div className="p-4 space-y-3">
             <div className="flex items-center gap-3">
@@ -173,16 +187,18 @@ export function Slide2_ConnectApps() {
       </div>
       
       <h3 className="text-2xl font-bold text-white text-center mb-3">
-        Connect all your networks
+        {copy.connectTitle}
       </h3>
       <p className="text-indigo-100 text-center text-sm max-w-xs">
-        Instagram, Facebook, YouTube, TikTok and more in one place
+        {copy.connectDescription}
       </p>
     </div>
   );
 }
 
-export function Slide3_AutomateResponses() {
+export function Slide3_AutomateResponses({ language }: CarouselSlideProps) {
+  const copy = getCarouselCopy(language);
+
   return (
     <div className="flex flex-col items-center justify-center h-full px-8">
       <div className="relative mb-8">
@@ -216,7 +232,7 @@ export function Slide3_AutomateResponses() {
                     <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
                     </svg>
-                    <span className="text-xs text-white font-medium">AI Response</span>
+                    <span className="text-xs text-white font-medium">{copy.aiLabel}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="w-1.5 h-1.5 rounded-full bg-green-300 animate-pulse" />
@@ -255,16 +271,18 @@ export function Slide3_AutomateResponses() {
       </div>
       
       <h3 className="text-2xl font-bold text-white text-center mb-3">
-        Automate your responses
+        {copy.automateTitle}
       </h3>
       <p className="text-indigo-100 text-center text-sm max-w-xs">
-        Smart AI that responds for you while you rest
+        {copy.automateDescription}
       </p>
     </div>
   );
 }
 
-export function Slide4_IntegratedCRM() {
+export function Slide4_IntegratedCRM({ language }: CarouselSlideProps) {
+  const copy = getCarouselCopy(language);
+
   return (
     <div className="flex flex-col items-center justify-center h-full px-8">
       <div className="relative mb-8">
@@ -276,7 +294,7 @@ export function Slide4_IntegratedCRM() {
               <div className="w-7 h-7 rounded-full bg-green-400 border-2 border-white" />
               <div className="w-7 h-7 rounded-full bg-amber-400 border-2 border-white" />
             </div>
-            <span className="text-white text-sm font-medium ml-2">+127 contacts</span>
+            <span className="text-white text-sm font-medium ml-2">+127 {copy.contacts}</span>
           </div>
           <div className="p-4 space-y-2.5">
             <div className="flex items-center gap-3 p-2.5 bg-indigo-50 rounded-lg">
@@ -285,7 +303,7 @@ export function Slide4_IntegratedCRM() {
               </div>
               <div className="flex-1">
                 <div className="text-sm font-medium text-gray-800">María Castro</div>
-                <div className="text-xs text-gray-500">Interested in Premium</div>
+                <div className="text-xs text-gray-500">{copy.interested}</div>
               </div>
               <div className="flex items-center gap-1.5">
                 <InstagramIcon />
@@ -298,7 +316,7 @@ export function Slide4_IntegratedCRM() {
               </div>
               <div className="flex-1">
                 <div className="text-sm font-medium text-gray-800">Juan López</div>
-                <div className="text-xs text-gray-500">New message</div>
+                <div className="text-xs text-gray-500">{copy.newMessage}</div>
               </div>
               <div className="flex items-center gap-1.5">
                 <FacebookIcon />
@@ -342,47 +360,46 @@ export function Slide4_IntegratedCRM() {
       </div>
       
       <h3 className="text-2xl font-bold text-white text-center mb-3">
-        Integrated CRM
+        {copy.crmTitle}
       </h3>
       <p className="text-indigo-100 text-center text-sm max-w-xs">
-        Manage your contacts and conversations in one place
+        {copy.crmDescription}
       </p>
     </div>
   );
 }
 
-export function Slide5_Features() {
+export function Slide5_Features({ language }: CarouselSlideProps) {
+  const copy = getCarouselCopy(language);
+
   return (
     <div className="flex flex-col items-center justify-center h-full px-8">
       <div className="space-y-4 mb-8">
-        {[
-          { icon: '🤖', text: 'Automatic AI responses' },
-          { icon: '📊', text: 'Real-time analytics and metrics' },
-          { icon: '🎯', text: 'Integrated CRM for your team' },
-          { icon: '⚡', text: 'Smart notifications' },
-        ].map((feature, i) => (
+        {['🤖', '📊', '🎯', '⚡'].map((icon, i) => (
           <div 
             key={i} 
             className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-xl px-6 py-4 animate-float"
             style={{ animationDelay: `${i * 0.2}s` }}
           >
-            <span className="text-2xl">{feature.icon}</span>
-            <span className="text-white font-medium">{feature.text}</span>
+            <span className="text-2xl">{icon}</span>
+            <span className="text-white font-medium">{copy.features[i]}</span>
           </div>
         ))}
       </div>
       
       <h3 className="text-2xl font-bold text-white text-center mb-3">
-        Everything you need
+        {copy.featuresTitle}
       </h3>
       <p className="text-indigo-100 text-center text-sm max-w-xs">
-        Powerful tools to scale your customer support
+        {copy.featuresDescription}
       </p>
     </div>
   );
 }
 
-export function Slide6_GetStarted() {
+export function Slide6_GetStarted({ language }: CarouselSlideProps) {
+  const copy = getCarouselCopy(language);
+
   return (
     <div className="flex flex-col items-center justify-center h-full px-8">
       <div className="relative mb-8">
@@ -391,7 +408,7 @@ export function Slide6_GetStarted() {
             <div className="w-3 h-3 rounded-full bg-red-400" />
             <div className="w-3 h-3 rounded-full bg-yellow-400" />
             <div className="w-3 h-3 rounded-full bg-green-400" />
-            <span className="ml-3 text-sm text-gray-500 font-medium">Dashboard</span>
+            <span className="ml-3 text-sm text-gray-500 font-medium">{copy.dashboard}</span>
           </div>
           <div className="p-4 space-y-4">
             <div className="flex items-center justify-between">
@@ -405,14 +422,14 @@ export function Slide6_GetStarted() {
                 </div>
               </div>
               <div className="px-3 py-1 bg-green-100 rounded-full">
-                <span className="text-xs text-green-700 font-medium">Active</span>
+                <span className="text-xs text-green-700 font-medium">{copy.active}</span>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2">
               {[1, 2, 3].map(i => (
                 <div key={i} className="bg-gray-50 rounded-lg p-3 text-center">
                   <div className="text-lg font-bold text-gray-800">{i * 12}</div>
-                  <div className="text-xs text-gray-500">Messages</div>
+                  <div className="text-xs text-gray-500">{copy.messages}</div>
                 </div>
               ))}
             </div>
@@ -421,10 +438,10 @@ export function Slide6_GetStarted() {
       </div>
       
       <h3 className="text-2xl font-bold text-white text-center mb-3">
-        Get started in minutes
+        {copy.guidedTitle}
       </h3>
       <p className="text-indigo-100 text-center text-sm max-w-xs">
-        Set up your account and connect your social networks quickly
+        {copy.guidedDescription}
       </p>
     </div>
   );
