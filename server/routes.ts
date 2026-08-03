@@ -114,6 +114,7 @@ const filterByBrand = (brandIdParamName?: string) => {
 import sentimentAlertsRouter from './routes/sentimentAlerts.routes';
 import { sendPrivateReply, sendInstagramPrivateReply, interpolateTemplate, checkPagePermissions } from "./services/metaService";
 import { enrichPostContext, enrichPostContextForTemplate } from "./services/llm/prompt-composer";
+import { getAccessibleBrandResource } from "./security/brandAccess";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use(sentimentAlertsRouter);
@@ -4876,7 +4877,10 @@ Sitemap: ${SITE_URL}/sitemap.xml
         return res.status(400).json({ error: "messageId and text are required" });
       }
 
-      const message = await storage.getMessage(messageId);
+      const message = getAccessibleBrandResource(
+        req.user as AuthenticatedUser,
+        await storage.getMessage(messageId),
+      );
       console.log(`[PrivateReply] Message found: ${!!message}, platform: ${message?.platform}, type: ${message?.type}`, "express");
       if (!message) return res.status(404).json({ error: "Message not found" });
       const platform = message.platform?.toLowerCase();
@@ -4889,7 +4893,6 @@ Sitemap: ${SITE_URL}/sitemap.xml
         return res.status(400).json({ error: `Private replies only work for comments (this is ${message.type})` });
       }
 
-      const user = req.user as AuthenticatedUser;
       const brand = await storage.getBrand(message.brandId);
       console.log(`[PrivateReply] Brand found: ${brand?.name}, brandId: ${message.brandId}`, "express");
       if (!brand) return res.status(404).json({ error: "Brand not found" });
@@ -5043,7 +5046,10 @@ Sitemap: ${SITE_URL}/sitemap.xml
       const { messageId } = req.query as { messageId: string };
       if (!messageId) return res.status(400).json({ error: "messageId required" });
 
-      const message = await storage.getMessage(messageId);
+      const message = getAccessibleBrandResource(
+        req.user as AuthenticatedUser,
+        await storage.getMessage(messageId),
+      );
       if (!message) return res.status(404).json({ error: "Message not found" });
 
       const agent = await storage.getAiAgentByBrand(message.brandId);
@@ -5076,7 +5082,10 @@ Sitemap: ${SITE_URL}/sitemap.xml
       const { conversationId } = req.query as { conversationId: string };
       if (!conversationId) return res.json({ sentCommentIds: [] });
 
-      const conv = await storage.getConversation(conversationId);
+      const conv = getAccessibleBrandResource(
+        req.user as AuthenticatedUser,
+        await storage.getConversation(conversationId),
+      );
       if (!conv) return res.json({ sentCommentIds: [] });
 
       const convMessages = await storage.getMessagesByConversation(conversationId);
