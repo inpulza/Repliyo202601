@@ -22,7 +22,7 @@ import {
   type BrandLifecycleSettings, type InsertBrandLifecycleSettings, type UpdateBrandLifecycleSettings,
   type ConversationStatus, type ClosedBy,
   type ReminderRules, type InsertReminderRules, type UpdateReminderRules,
-  type ReminderEvent, type InsertReminderEvent, type ReminderStatus,
+  type ReminderEvent, type InsertReminderEvent, type ReminderStatus, type ReminderEventStatus,
   type ConversationTimeline, type TimelineEvent,
   leads, type Lead, type InsertLead,
   metaPageConnections, type MetaPageConnection, type InsertMetaPageConnection, type UpdateMetaPageConnection,
@@ -333,9 +333,10 @@ export interface IStorage {
   getReminderEventsByConversation(conversationId: string): Promise<ReminderEvent[]>;
   getReminderEventsByContact(contactId: string): Promise<ReminderEvent[]>;
   getReminderEventsByBrand(brandId: string, options?: { status?: string; limit?: number }): Promise<ReminderEvent[]>;
-  updateReminderEventStatus(id: string, status: string, sentAt?: Date, errorMessage?: string): Promise<ReminderEvent | undefined>;
+  updateReminderEventStatus(id: string, status: ReminderEventStatus, sentAt?: Date, errorMessage?: string, expectedCurrentStatus?: ReminderEventStatus): Promise<ReminderEvent | undefined>;
   updateReminderEventContent(id: string, content: string): Promise<ReminderEvent | undefined>;
-  getScheduledRemindersReady(brandId: string): Promise<ReminderEvent[]>;
+  claimScheduledReminders(brandId: string, limit?: number): Promise<ReminderEvent[]>;
+  failAbandonedReminderClaims(brandId: string, claimedBefore: Date, reason: string): Promise<number>;
   countRemindersSentToday(brandId: string): Promise<number>;
   countRemindersScheduledAndSentToday(brandId: string): Promise<number>;
   checkConversationEligibleForReminder(conversationId: string, maxReminders: number): Promise<{
@@ -3715,6 +3716,7 @@ export class DatabaseStorage implements IStorage {
     contentSource: string | null;
     contextSnapshot: unknown;
     scheduledAt: Date | null;
+    processingStartedAt: Date | null;
     sentAt: Date | null;
     errorMessage: string | null;
     createdAt: Date;
@@ -3739,6 +3741,7 @@ export class DatabaseStorage implements IStorage {
         contentSource: reminderEvents.contentSource,
         contextSnapshot: reminderEvents.contextSnapshot,
         scheduledAt: reminderEvents.scheduledAt,
+        processingStartedAt: reminderEvents.processingStartedAt,
         sentAt: reminderEvents.sentAt,
         errorMessage: reminderEvents.errorMessage,
         createdAt: reminderEvents.createdAt,
@@ -3756,7 +3759,13 @@ export class DatabaseStorage implements IStorage {
     return results;
   }
 
-  async updateReminderEventStatus(id: string, status: string, sentAt?: Date, errorMessage?: string): Promise<ReminderEvent | undefined> {
+  async updateReminderEventStatus(
+    id: string,
+    status: ReminderEventStatus,
+    sentAt?: Date,
+    errorMessage?: string,
+    expectedCurrentStatus?: ReminderEventStatus,
+  ): Promise<ReminderEvent | undefined> {
     const updateData: Record<string, any> = { status };
     if (sentAt) updateData.sentAt = sentAt;
     if (errorMessage) updateData.errorMessage = errorMessage;
@@ -3764,7 +3773,14 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(reminderEvents)
       .set(updateData)
-      .where(eq(reminderEvents.id, id))
+      .where(
+        expectedCurrentStatus
+          ? and(
+              eq(reminderEvents.id, id),
+              eq(reminderEvents.status, expectedCurrentStatus),
+            )
+          : eq(reminderEvents.id, id),
+      )
       .returning();
     return updated || undefined;
   }
@@ -3778,17 +3794,77 @@ export class DatabaseStorage implements IStorage {
     return updated || undefined;
   }
 
-  async getScheduledRemindersReady(brandId: string): Promise<ReminderEvent[]> {
-    const now = new Date();
-    return await db
-      .select()
-      .from(reminderEvents)
-      .where(and(
-        eq(reminderEvents.brandId, brandId),
-        eq(reminderEvents.status, 'scheduled'),
-        lte(reminderEvents.scheduledAt, now)
-      ))
-      .orderBy(reminderEvents.scheduledAt);
+  async claimScheduledReminders(brandId: string, limit: number = 50): Promise<ReminderEvent[]> {
+    const claimedAt = new Date();
+    const batchSize = Math.max(1, Math.min(limit, 100));
+
+    return await db.transaction(async (tx) => {
+      const ready = await tx
+        .select({ id: reminderEvents.id })
+        .from(reminderEvents)
+        .where(and(
+          eq(reminderEvents.brandId, brandId),
+          eq(reminderEvents.status, 'scheduled'),
+          lte(reminderEvents.scheduledAt, claimedAt),
+        ))
+        .orderBy(reminderEvents.scheduledAt)
+        .limit(batchSize)
+        .for('update', { skipLocked: true });
+
+      if (ready.length === 0) return [];
+
+      const claimedIds = ready.map((event) => event.id);
+      return await tx
+        .update(reminderEvents)
+        .set({
+          status: 'processing',
+          processingStartedAt: claimedAt,
+          errorMessage: null,
+        })
+        .where(and(
+          inArray(reminderEvents.id, claimedIds),
+          eq(reminderEvents.status, 'scheduled'),
+        ))
+        .returning();
+    });
+  }
+
+  async failAbandonedReminderClaims(
+    brandId: string,
+    claimedBefore: Date,
+    reason: string,
+  ): Promise<number> {
+    return await db.transaction(async (tx) => {
+      const abandoned = await tx
+        .update(reminderEvents)
+        .set({
+          status: 'failed',
+          errorMessage: reason,
+        })
+        .where(and(
+          eq(reminderEvents.brandId, brandId),
+          eq(reminderEvents.status, 'processing'),
+          isNotNull(reminderEvents.processingStartedAt),
+          lte(reminderEvents.processingStartedAt, claimedBefore),
+        ))
+        .returning({ conversationId: reminderEvents.conversationId });
+
+      const conversationIds = Array.from(new Set(abandoned.map((event) => event.conversationId)));
+      if (conversationIds.length > 0) {
+        await tx
+          .update(conversations)
+          .set({
+            reminderStatus: 'none',
+            lastReminderAt: new Date(),
+          })
+          .where(and(
+            inArray(conversations.id, conversationIds),
+            eq(conversations.reminderStatus, 'scheduled'),
+          ));
+      }
+
+      return abandoned.length;
+    });
   }
 
   async countRemindersSentToday(brandId: string): Promise<number> {
@@ -3827,7 +3903,7 @@ export class DatabaseStorage implements IStorage {
       .from(reminderEvents)
       .where(and(
         eq(reminderEvents.brandId, brandId),
-        eq(reminderEvents.status, 'scheduled'),
+        inArray(reminderEvents.status, ['scheduled', 'processing']),
         gte(reminderEvents.scheduledAt, startOfDay),
         sql`${reminderEvents.scheduledAt} < ${endOfDay}`
       ));
@@ -4148,7 +4224,7 @@ export class DatabaseStorage implements IStorage {
     });
     
     const totalSent = countsByStatus['sent'] || 0;
-    const totalScheduled = countsByStatus['scheduled'] || 0;
+    const totalScheduled = (countsByStatus['scheduled'] || 0) + (countsByStatus['processing'] || 0);
     const totalFailed = countsByStatus['failed'] || 0;
     const totalCancelled = countsByStatus['cancelled'] || 0;
     

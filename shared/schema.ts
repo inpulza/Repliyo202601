@@ -996,7 +996,7 @@ export const reminderEvents = pgTable("reminder_events", {
   
   // Información del reminder
   reminderNumber: integer("reminder_number").notNull(), // 1, 2, etc.
-  status: text("status").notNull().default('scheduled'), // 'scheduled' | 'sent' | 'failed' | 'cancelled'
+  status: text("status").notNull().default('scheduled'), // 'scheduled' | 'processing' | 'sent' | 'failed' | 'cancelled'
   
   // Contenido
   content: text("content"), // Mensaje enviado
@@ -1007,6 +1007,7 @@ export const reminderEvents = pgTable("reminder_events", {
   
   // Timestamps
   scheduledAt: timestamp("scheduled_at").notNull(),
+  processingStartedAt: timestamp("processing_started_at"),
   sentAt: timestamp("sent_at"),
   
   // Error info si falló
@@ -1027,6 +1028,9 @@ export const reminderEvents = pgTable("reminder_events", {
   uniqueScheduledReminder: uniqueIndex("reminder_events_unique_scheduled_idx")
     .on(table.conversationId, table.reminderNumber)
     .where(sql`status = 'scheduled'`),
+  uniqueActiveReminder: uniqueIndex("reminder_events_unique_active_idx")
+    .on(table.conversationId, table.reminderNumber)
+    .where(sql`status IN ('scheduled', 'processing')`),
 }));
 
 // Relations para Smart Follow-up
@@ -1080,7 +1084,7 @@ export type ReminderEvent = typeof reminderEvents.$inferSelect;
 
 // Types para reminder status
 export type ReminderStatus = 'none' | 'scheduled' | 'sent' | 'max_reached' | 'opted_out';
-export type ReminderEventStatus = 'scheduled' | 'sent' | 'failed' | 'cancelled';
+export type ReminderEventStatus = 'scheduled' | 'processing' | 'sent' | 'failed' | 'cancelled';
 
 // ============================================
 // TIMELINE DE INTERACCIONES (CUSTOMER JOURNEY)

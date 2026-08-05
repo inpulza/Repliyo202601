@@ -82,6 +82,8 @@ const getStatusBadge = (status: string) => {
       return <Badge variant="default" className="bg-green-600"><CheckCircle className="h-3 w-3 mr-1" />Enviado</Badge>;
     case 'scheduled':
       return <Badge variant="secondary"><Clock3 className="h-3 w-3 mr-1" />Programado</Badge>;
+    case 'processing':
+      return <Badge variant="secondary" className="bg-blue-100 text-blue-700"><Loader2 className="h-3 w-3 mr-1 animate-spin motion-reduce:animate-none" />Procesando</Badge>;
     case 'failed':
       return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Fallido</Badge>;
     case 'cancelled':
@@ -667,7 +669,12 @@ export const ReminderSettingsForm = forwardRef<ReminderSettingsFormHandle, Remin
                           </div>
                           <div className="flex items-center gap-2 ml-2">
                             <div className="text-right text-xs text-muted-foreground whitespace-nowrap">
-                              {event.sentAt ? (
+                              {event.status === 'processing' && event.processingStartedAt ? (
+                                <div>
+                                  <p className="font-medium text-blue-600">Procesando</p>
+                                  <p>{format(new Date(event.processingStartedAt), 'dd MMM HH:mm', { locale: es })}</p>
+                                </div>
+                              ) : event.sentAt ? (
                                 <div>
                                   <p className="font-medium text-green-600">Enviado</p>
                                   <p>{format(new Date(event.sentAt), 'dd MMM HH:mm', { locale: es })}</p>
