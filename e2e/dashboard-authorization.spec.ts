@@ -30,7 +30,7 @@ test.afterAll(async () => {
 test.beforeEach(() => authorizationServer.reset());
 
 test("a suspended existing session is visibly returned to login", async ({ page }) => {
-  const browserState = await installDashboardApi(page, "suspended-a");
+  const browserState = await installDashboardApi(page, "suspended-a", [403]);
 
   await page.goto("/app/profile", { waitUntil: "domcontentloaded" });
 
@@ -45,7 +45,7 @@ test("a suspended existing session is visibly returned to login", async ({ page 
 });
 
 test("a revoked realtime session returns the open dashboard to login", async ({ page, isMobile }) => {
-  const browserState = await installDashboardApi(page, "user-a");
+  const browserState = await installDashboardApi(page, "user-a", [403]);
 
   await page.goto("/app/inbox", { waitUntil: "domcontentloaded" });
   await expect(page).toHaveURL(/\/app\/inbox$/);
@@ -95,7 +95,7 @@ test("an expired realtime session cannot trap the dashboard in a reload loop", a
 });
 
 test("a terminal 403 closes a dashboard screen that has no WebSocket", async ({ page, isMobile }) => {
-  const browserState = await installDashboardApi(page, "user-a");
+  const browserState = await installDashboardApi(page, "user-a", [403]);
 
   await page.goto("/app/profile", { waitUntil: "domcontentloaded" });
   await expect(page).toHaveURL(/\/app\/profile$/);
@@ -122,7 +122,7 @@ test("a terminal 403 closes a dashboard screen that has no WebSocket", async ({ 
 });
 
 test("an incorrect current password stays on profile with a useful error", async ({ page, isMobile }) => {
-  const browserState = await installDashboardApi(page, "user-a");
+  const browserState = await installDashboardApi(page, "user-a", [400]);
 
   await page.goto("/app/profile", { waitUntil: "domcontentloaded" });
   await expect(page).toHaveURL(/\/app\/profile$/);
@@ -186,16 +186,21 @@ async function submitPasswordChange(
   await page.getByTestId("button-save-password").click();
 }
 
-async function installDashboardApi(page: Page, userId: string) {
+async function installDashboardApi(
+  page: Page,
+  userId: string,
+  expectedConsoleResourceStatuses: readonly number[] = [],
+) {
   const pageErrors: string[] = [];
   const knownBaselineErrors: string[] = [];
   const failedResponses: string[] = [];
+  const expectedResourceErrors = new Set(expectedConsoleResourceStatuses.map(String));
 
   page.on("console", (message) => {
     if (message.type() !== "error") return;
     if (
       message.text().includes("Failed to load resource") &&
-      (message.text().includes("400") || message.text().includes("403"))
+      [...expectedResourceErrors].some((status) => message.text().includes(status))
     ) {
       return;
     }
