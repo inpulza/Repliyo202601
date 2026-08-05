@@ -7,17 +7,9 @@ import { syncService } from "./services/syncService";
 import { lifecycleScheduler } from "./services/lifecycleScheduler";
 import { sessionMiddleware } from "./sessionStore";
 import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
+import { log } from "./logger";
 
-export function log(message: string, source = "express") {
-  const formattedTime = new Date().toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
-
-  console.log(`${formattedTime} [${source}] ${message}`);
-}
+export { log } from "./logger";
 
 export const app = express();
 

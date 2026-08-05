@@ -1,6 +1,7 @@
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
 import { Pool } from '@neondatabase/serverless';
+import { isProduction, isReplit, sessionSecret } from './sessionConfig';
 
 const PgStore = connectPgSimple(session);
 
@@ -14,20 +15,11 @@ export const sessionStore = new PgStore({
   createTableIfMissing: true
 });
 
-// Detect if running in Replit (production-like environment with HTTPS)
-const isReplit = !!process.env.REPL_ID || !!process.env.REPLIT_DEPLOYMENT;
-const isProduction = process.env.NODE_ENV === "production" || isReplit;
-
-const sessionSecret = process.env.SESSION_SECRET;
-if (isProduction && !sessionSecret) {
-  throw new Error('[Session] FATAL: SESSION_SECRET environment variable is required in production! Set it in your secrets before deploying.');
-}
-
 console.log(`[Session] Config: isReplit=${isReplit}, isProduction=${isProduction}, NODE_ENV=${process.env.NODE_ENV}`);
 
 export const sessionMiddleware = session({
   store: sessionStore,
-  secret: sessionSecret || "dev-secret-for-local-only",
+  secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
   name: 'connect.sid',
