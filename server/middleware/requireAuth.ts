@@ -27,13 +27,19 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
 
     userId ||= req.session?.userId;
     if (!userId) {
-      return res.status(401).json({ error: "Not authenticated" });
+      return res.status(401).json({
+        error: "Not authenticated",
+        code: "NOT_AUTHENTICATED",
+      });
     }
 
     const record = await storage.getSessionAccessByUserId(userId);
     if (!record) {
       revokeSession(req);
-      return res.status(401).json({ error: "User not found" });
+      return res.status(401).json({
+        error: "User not found",
+        code: "NOT_AUTHENTICATED",
+      });
     }
 
     const decision = evaluateSessionAccess(record);

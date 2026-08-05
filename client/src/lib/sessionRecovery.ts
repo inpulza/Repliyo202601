@@ -1,6 +1,7 @@
 export const AUTHORIZATION_RELOAD_GUARD_KEY = "repliyo_authorization_reload_attempted";
 
 const TERMINAL_SESSION_CODES = new Set([
+  "NOT_AUTHENTICATED",
   "ACCOUNT_INACTIVE",
   "ACCOUNT_SUSPENDED",
   "BRAND_UNAVAILABLE",
@@ -9,8 +10,7 @@ const TERMINAL_SESSION_CODES = new Set([
 export type WebSocketAuthorizationRecovery = "reload" | "login";
 
 export async function isTerminalSessionResponse(response: Response): Promise<boolean> {
-  if (response.status === 401) return true;
-  if (response.status !== 403) return false;
+  if (response.status !== 401 && response.status !== 403) return false;
 
   try {
     const payload = await response.clone().json() as { code?: unknown };

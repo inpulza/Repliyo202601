@@ -8,8 +8,14 @@ import {
 } from "../../client/src/lib/sessionRecovery";
 
 describe("terminal dashboard session responses", () => {
-  it("ends a missing session on 401", async () => {
-    assert.equal(await isTerminalSessionResponse(new Response(null, { status: 401 })), true);
+  it("ends an explicitly unauthenticated session on 401", async () => {
+    const response = Response.json({ code: "NOT_AUTHENTICATED" }, { status: 401 });
+    assert.equal(await isTerminalSessionResponse(response), true);
+    assert.deepEqual(
+      await response.json(),
+      { code: "NOT_AUTHENTICATED" },
+      "inspection must not consume the response body",
+    );
   });
 
   for (const code of ["ACCOUNT_INACTIVE", "ACCOUNT_SUSPENDED", "BRAND_UNAVAILABLE"]) {
@@ -19,6 +25,14 @@ describe("terminal dashboard session responses", () => {
       assert.deepEqual(await response.json(), { code }, "inspection must not consume the response body");
     });
   }
+
+  it("preserves the session for non-terminal 401 responses", async () => {
+    assert.equal(
+      await isTerminalSessionResponse(Response.json({ code: "INVALID_CURRENT_PASSWORD" }, { status: 401 })),
+      false,
+    );
+    assert.equal(await isTerminalSessionResponse(new Response(null, { status: 401 })), false);
+  });
 
   it("preserves the session for ordinary permission failures and malformed bodies", async () => {
     assert.equal(

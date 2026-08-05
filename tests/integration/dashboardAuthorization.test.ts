@@ -39,6 +39,34 @@ describe("active dashboard sessions", () => {
     assert.equal((await response.json()).id, "user-a");
     assert.equal(server.state.sessionRevocations, 0);
   });
+
+  it("labels a missing stored user as an unauthenticated session", async () => {
+    const response = await request("/api/auth/me", "missing-user");
+
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), {
+      error: "User not found",
+      code: "NOT_AUTHENTICATED",
+    });
+    assert.equal(server.state.sessionRevocations, 1);
+  });
+
+  it("keeps the session active when the current password is incorrect", async () => {
+    const response = await request("/api/auth/change-password", "user-a", {
+      method: "POST",
+      body: {
+        currentPassword: "wrong-password",
+        newPassword: "new-password",
+      },
+    });
+
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), {
+      error: "La contraseña actual es incorrecta",
+      code: "INVALID_CURRENT_PASSWORD",
+    });
+    assert.equal(server.state.sessionRevocations, 0);
+  });
 });
 
 describe("brand-scoped notification mutations", () => {

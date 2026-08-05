@@ -105,19 +105,7 @@ test("a terminal 403 closes a dashboard screen that has no WebSocket", async ({ 
 
   authorizationServer.setUserStatus("user-a", "suspended");
 
-  if (isMobile) {
-    await page.getByTestId("mobile-row-password").click();
-    await page.locator("#mobileCurrentPassword").fill("current-password");
-    await page.locator("#mobileNewPassword").fill("new-password");
-    await page.locator("#mobileConfirmPassword").fill("new-password");
-    await page.getByRole("button", { name: /Actualizar/ }).click();
-  } else {
-    await page.getByTestId("tab-change-password").click();
-    await page.getByTestId("input-current-password").fill("current-password");
-    await page.getByTestId("input-new-password").fill("new-password");
-    await page.getByTestId("input-confirm-password").fill("new-password");
-    await page.getByTestId("button-save-password").click();
-  }
+  await submitPasswordChange(page, isMobile, "current-password");
 
   await expect(page).toHaveURL(/\/login$/);
   await expect(page.getByTestId("input-email")).toBeVisible();
@@ -131,6 +119,26 @@ test("a terminal 403 closes a dashboard screen that has no WebSocket", async ({ 
     "only the terminal mutation and follow-up auth check may fail",
   ).toBe(true);
   expect(authorizationServer.state.sessionRevocations).toBeGreaterThan(0);
+});
+
+test("an incorrect current password stays on profile with a useful error", async ({ page, isMobile }) => {
+  const browserState = await installDashboardApi(page, "user-a");
+
+  await page.goto("/app/profile", { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(/\/app\/profile$/);
+  await expect(
+    isMobile ? page.getByTestId("mobile-user-name") : page.getByTestId("text-user-name"),
+  ).toBeVisible();
+
+  await submitPasswordChange(page, isMobile, "wrong-password");
+
+  await expect(page).toHaveURL(/\/app\/profile$/);
+  await expect(page.getByText("La contraseña actual es incorrecta", { exact: true })).toBeVisible();
+  expect(browserState.pageErrors, "unexpected browser errors").toEqual([]);
+  expect(browserState.failedResponses).toEqual([
+    "POST /api/auth/change-password 400",
+  ]);
+  expect(authorizationServer.state.sessionRevocations).toBe(0);
 });
 
 test("an own-brand notification is marked read through the dashboard", async ({
@@ -157,6 +165,27 @@ test("an own-brand notification is marked read through the dashboard", async ({
   expect(browserState.failedResponses, "unexpected HTTP errors").toEqual([]);
 });
 
+async function submitPasswordChange(
+  page: Page,
+  isMobile: boolean,
+  currentPassword: string,
+): Promise<void> {
+  if (isMobile) {
+    await page.getByTestId("mobile-row-password").click();
+    await page.locator("#mobileCurrentPassword").fill(currentPassword);
+    await page.locator("#mobileNewPassword").fill("new-password");
+    await page.locator("#mobileConfirmPassword").fill("new-password");
+    await page.getByRole("button", { name: /Actualizar/ }).click();
+    return;
+  }
+
+  await page.getByTestId("tab-change-password").click();
+  await page.getByTestId("input-current-password").fill(currentPassword);
+  await page.getByTestId("input-new-password").fill("new-password");
+  await page.getByTestId("input-confirm-password").fill("new-password");
+  await page.getByTestId("button-save-password").click();
+}
+
 async function installDashboardApi(page: Page, userId: string) {
   const pageErrors: string[] = [];
   const knownBaselineErrors: string[] = [];
@@ -166,7 +195,7 @@ async function installDashboardApi(page: Page, userId: string) {
     if (message.type() !== "error") return;
     if (
       message.text().includes("Failed to load resource") &&
-      message.text().includes("403")
+      (message.text().includes("400") || message.text().includes("403"))
     ) {
       return;
     }

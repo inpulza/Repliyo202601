@@ -497,7 +497,10 @@ Sitemap: ${SITE_URL}/sitemap.xml
 
       const isValid = await verifyPassword(currentPassword, user.password);
       if (!isValid) {
-        return res.status(401).json({ error: "La contraseña actual es incorrecta" });
+        return res.status(400).json({
+          error: "La contraseña actual es incorrecta",
+          code: "INVALID_CURRENT_PASSWORD",
+        });
       }
 
       const hashedNewPassword = await hashPassword(newPassword);
