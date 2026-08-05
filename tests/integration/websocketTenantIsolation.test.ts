@@ -130,11 +130,21 @@ describe("WebSocket tenant isolation", () => {
     assert.equal(await waitForCloseCode(missing), 4001);
   });
 
-  it("treats a session-store failure as retryable instead of unauthenticated", async () => {
+  it("logs a session-store failure safely and keeps it retryable", async () => {
+    const logs: Array<{ message: string; source?: string }> = [];
+    const storeError = Object.assign(
+      new Error(
+        "Neon connection reset password=hunter2 token=provider-token "
+          + "sessionId=session-super-secret payload='provider-body' "
+          + "postgresql://db-user:db-password@db.example.test/repliyo",
+      ),
+      { code: "ECONNRESET" },
+    );
     const unavailableServer = await startWebSocketTestServer({
       getSessionUserId: async () => {
-        throw new Error("simulated session store outage");
+        throw storeError;
       },
+      logger: (message, source) => logs.push({ message, source }),
     });
 
     try {
@@ -142,6 +152,54 @@ describe("WebSocket tenant isolation", () => {
         headers: { Cookie: signedSessionCookie("session-a") },
       });
       assert.equal(await waitForCloseCode(socket), WEBSOCKET_TRANSIENT_FAILURE_CLOSE_CODE);
+
+      const diagnostic = findAuthenticationFailureLog(logs);
+      assert.equal(diagnostic.source, "ws");
+      assert.equal(diagnostic.context.event, "websocket_authentication_failed");
+      assert.equal(diagnostic.context.stage, "session_store_lookup");
+      assert.equal(diagnostic.context.outcome, "retryable_close");
+      assert.equal(diagnostic.context.closeCode, WEBSOCKET_TRANSIENT_FAILURE_CLOSE_CODE);
+      assert.equal(diagnostic.context.error.name, "Error");
+      assert.equal(diagnostic.context.error.code, "ECONNRESET");
+      assert.match(diagnostic.context.error.message, /Neon connection reset/);
+      assert.match(diagnostic.context.error.message, /\[redacted\]/);
+      assert.match(diagnostic.context.error.message, /\[redacted-url\]/);
+
+      const serializedLog = JSON.stringify(diagnostic.context);
+      for (const sensitiveValue of [
+        "hunter2",
+        "provider-token",
+        "session-super-secret",
+        "provider-body",
+        "db-user",
+        "db-password",
+      ]) {
+        assert.doesNotMatch(serializedLog, new RegExp(sensitiveValue));
+      }
+    } finally {
+      await unavailableServer.close();
+    }
+  });
+
+  it("identifies authorization lookup failures without changing retry behavior", async () => {
+    const logs: Array<{ message: string; source?: string }> = [];
+    const unavailableServer = await startWebSocketTestServer({
+      getSessionAccessByUserId: async () => {
+        throw new TypeError("Cannot read properties of undefined");
+      },
+      logger: (message, source) => logs.push({ message, source }),
+    });
+
+    try {
+      const socket = new WebSocket(unavailableServer.wsUrl, {
+        headers: { Cookie: signedSessionCookie("session-a") },
+      });
+      assert.equal(await waitForCloseCode(socket), WEBSOCKET_TRANSIENT_FAILURE_CLOSE_CODE);
+
+      const diagnostic = findAuthenticationFailureLog(logs);
+      assert.equal(diagnostic.context.stage, "authorization_lookup");
+      assert.equal(diagnostic.context.error.name, "TypeError");
+      assert.equal(diagnostic.context.error.message, "Cannot read properties of undefined");
     } finally {
       await unavailableServer.close();
     }
@@ -274,4 +332,25 @@ function waitForCloseCode(socket: WebSocket): Promise<number> {
     });
     socket.once("error", () => {});
   });
+}
+
+function findAuthenticationFailureLog(
+  logs: Array<{ message: string; source?: string }>,
+): {
+  source?: string;
+  context: {
+    event: string;
+    stage: string;
+    outcome: string;
+    closeCode: number;
+    error: { name: string; code?: string; message: string };
+  };
+} {
+  const entry = logs.find(({ message }) => message.includes('"event":"websocket_authentication_failed"'));
+  assert.ok(entry, `Expected a structured authentication failure log. Received: ${JSON.stringify(logs)}`);
+
+  return {
+    source: entry.source,
+    context: JSON.parse(entry.message),
+  };
 }

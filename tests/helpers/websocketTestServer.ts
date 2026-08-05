@@ -3,7 +3,10 @@ import type { AddressInfo } from "node:net";
 
 import signature from "cookie-signature";
 
-import { WebSocketService } from "../../server/services/websocketService";
+import {
+  WebSocketService,
+  type WebSocketServiceOptions,
+} from "../../server/services/websocketService";
 import type { SessionAccessRecord } from "../../server/security/sessionAccess";
 
 export const TEST_SESSION_SECRET = "websocket-tenant-test-secret";
@@ -33,6 +36,8 @@ export interface WebSocketTestServer {
 
 export interface WebSocketTestServerOptions {
   getSessionUserId?: (sessionId: string) => Promise<string | null>;
+  getSessionAccessByUserId?: WebSocketServiceOptions["getSessionAccessByUserId"];
+  logger?: WebSocketServiceOptions["logger"];
 }
 
 export function signedSessionValue(
@@ -56,8 +61,9 @@ export async function startWebSocketTestServer(
   const service = new WebSocketService({
     sessionSecret: TEST_SESSION_SECRET,
     getSessionUserId: options.getSessionUserId || (async (sessionId) => sessions[sessionId] || null),
-    getSessionAccessByUserId: async (userId) => accessRecords[userId] || null,
-    logger: () => {},
+    getSessionAccessByUserId: options.getSessionAccessByUserId
+      || (async (userId) => accessRecords[userId] || null),
+    logger: options.logger || (() => {}),
   });
   service.initialize(httpServer);
 
