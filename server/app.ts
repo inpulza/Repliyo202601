@@ -8,6 +8,7 @@ import { lifecycleScheduler } from "./services/lifecycleScheduler";
 import { sessionMiddleware } from "./sessionStore";
 import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 import { log } from "./logger";
+import { workerConfig } from "./workerConfig";
 
 export { log } from "./logger";
 
@@ -127,12 +128,20 @@ export default async function runApp(
       log(`[Backfill] Error: ${err.message}`, "sync");
     }
     
-    syncService.start().catch(err => {
-      log(`[SyncService] Failed to start: ${err.message}`, "sync");
-    });
-    
-    lifecycleScheduler.start().catch(err => {
-      log(`[LifecycleScheduler] Failed to start: ${err.message}`, "sync");
-    });
+    if (workerConfig.syncEnabled) {
+      syncService.start().catch(err => {
+        log(`[SyncService] Failed to start: ${err.message}`, "sync");
+      });
+    } else {
+      log("[SyncService] Disabled by worker configuration", "sync");
+    }
+
+    if (workerConfig.lifecycleEnabled) {
+      lifecycleScheduler.start().catch(err => {
+        log(`[LifecycleScheduler] Failed to start: ${err.message}`, "sync");
+      });
+    } else {
+      log("[LifecycleScheduler] Disabled by worker configuration", "sync");
+    }
   });
 }

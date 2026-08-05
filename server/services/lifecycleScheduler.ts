@@ -1,7 +1,7 @@
 import { storage } from "../storage";
 import { conversationLifecycleService } from "./conversationLifecycleService";
 import { reminderService } from "./reminderService";
-import { log } from "../app";
+import { log } from "../logger";
 
 class LifecycleScheduler {
   private isRunning = false;
@@ -9,6 +9,7 @@ class LifecycleScheduler {
   private readonly SCHEDULER_INTERVAL_MS = 15 * 60 * 1000; // Run every 15 minutes
   private readonly REMINDER_CHECK_INTERVAL_MS = 5 * 60 * 1000; // Check reminders every 5 minutes
   private reminderInterval: NodeJS.Timeout | null = null;
+  private isReminderCycleRunning = false;
 
   async start(): Promise<void> {
     if (this.isRunning) {
@@ -101,6 +102,12 @@ class LifecycleScheduler {
   }
 
   private async runReminderTasks(): Promise<void> {
+    if (this.isReminderCycleRunning) {
+      log("[LifecycleScheduler] Reminder cycle already running, skipping overlap", "sync");
+      return;
+    }
+
+    this.isReminderCycleRunning = true;
     log("[LifecycleScheduler] Running reminder tasks...", "sync");
 
     try {
@@ -136,6 +143,8 @@ class LifecycleScheduler {
       }
     } catch (error: any) {
       log(`[LifecycleScheduler] Reminder fatal error: ${error.message}`, "sync");
+    } finally {
+      this.isReminderCycleRunning = false;
     }
   }
 

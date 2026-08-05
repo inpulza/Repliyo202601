@@ -2,6 +2,7 @@ import { storage } from "../storage";
 import { createLLMProvider } from "./llm/factory";
 import { composeReminderPrompt, filterHistoryByAuthor } from "./llm/prompt-composer";
 import { MetricoolService } from "./metricool";
+import { ReminderDispatchService } from "./reminderDispatchService";
 import { 
   type Conversation, 
   type ReminderRules,
@@ -85,6 +86,21 @@ export class ReminderService implements IReminderService {
     openaiApiKey: process.env.OPENAI_API_KEY,
     geminiApiKey: process.env.GEMINI_API_KEY,
   };
+  private readonly dispatcher: ReminderDispatchService;
+
+  constructor() {
+    this.dispatcher = new ReminderDispatchService({
+      store: storage,
+      deliver: (reminder) => this.sendReminder(reminder),
+      onDeliveryException: async (reminder, error) => {
+        await this.handleReminderFailure(
+          reminder.id,
+          reminder.conversationId,
+          String(error),
+        );
+      },
+    });
+  }
 
   async scheduleRemindersForBrand(brandId: string): Promise<{ scheduled: number; errors: string[] }> {
     const result = { scheduled: 0, errors: [] as string[] };
@@ -669,37 +685,7 @@ export class ReminderService implements IReminderService {
   }
 
   async sendScheduledReminders(brandId: string): Promise<{ sent: number; errors: string[] }> {
-    const result = { sent: 0, errors: [] as string[] };
-
-    try {
-      const readyReminders = await storage.getScheduledRemindersReady(brandId);
-      console.log(`[ReminderService] Found ${readyReminders.length} reminders ready to send for brand ${brandId}`);
-
-      for (const reminder of readyReminders) {
-        try {
-          const sendResult = await this.sendReminder(reminder);
-          if (sendResult.success) {
-            result.sent++;
-          } else if (sendResult.error) {
-            result.errors.push(`Reminder ${reminder.id}: ${sendResult.error}`);
-          }
-        } catch (error) {
-          const errMsg = `Failed to send reminder ${reminder.id}: ${error}`;
-          console.error(`[ReminderService] ${errMsg}`);
-          result.errors.push(errMsg);
-          
-          await this.handleReminderFailure(
-            reminder.id,
-            reminder.conversationId,
-            String(error)
-          );
-        }
-      }
-    } catch (error) {
-      result.errors.push(`Error fetching scheduled reminders: ${error}`);
-    }
-
-    return result;
+    return this.dispatcher.dispatchBrand(brandId);
   }
 
   private async handleReminderFailure(

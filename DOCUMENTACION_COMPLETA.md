@@ -6211,8 +6211,9 @@ reminderEvents = pgTable('reminder_events', {
   brandId: uuid().notNull().references(() => brands.id),
   conversationId: uuid().notNull().references(() => conversations.id),
   contactId: uuid().references(() => crmContacts.id),
-  status: text().default('scheduled'), // scheduled, sent, cancelled, failed
+  status: text().default('scheduled'), // scheduled, processing, sent, cancelled, failed
   scheduledAt: timestamp().notNull(),
+  processingStartedAt: timestamp(),
   sentAt: timestamp(),
   content: text().notNull(),
   contentSource: text().default('ai'), // ai, template
@@ -6226,6 +6227,10 @@ reminderEvents = pgTable('reminder_events', {
 CREATE UNIQUE INDEX idx_reminder_events_unique_scheduled 
 ON reminder_events (conversation_id, reminder_number) 
 WHERE status = 'scheduled';
+
+CREATE UNIQUE INDEX reminder_events_unique_active_idx
+ON reminder_events (conversation_id, reminder_number)
+WHERE status IN ('scheduled', 'processing');
 ```
 
 #### Campos Agregados a conversations
@@ -6236,7 +6241,7 @@ reminderCount: integer().default(0),
 lastReminderAt: timestamp(),
 ```
 
-### 12.3 Storage Layer (14 Métodos CRUD)
+### 12.3 Storage Layer (15 Métodos CRUD)
 
 | Método | Descripción |
 |--------|-------------|
@@ -6247,9 +6252,10 @@ lastReminderAt: timestamp(),
 | `getReminderEventById` | Obtiene evento por ID |
 | `getReminderEventsByConversation` | Obtiene eventos por conversación |
 | `updateReminderEventStatus` | Actualiza estado del evento |
-| `getScheduledRemindersReady` | Obtiene reminders listos para enviar |
+| `claimScheduledReminders` | Reclama reminders atómicamente antes de enviar |
+| `failAbandonedReminderClaims` | Falla claims abandonados sin reintento automático |
 | `countRemindersSentToday` | Cuenta reminders enviados hoy |
-| `countRemindersScheduledAndSentToday` | Cuenta scheduled + sent (para daily cap) |
+| `countRemindersScheduledAndSentToday` | Cuenta scheduled + processing + sent (para daily cap) |
 | `checkConversationEligibleForReminder` | **Pre-check antes de AI generation** |
 | `scheduleReminderAtomic` | **Scheduling transaccional atómico** |
 | `updateConversationReminderStatus` | Actualiza estado de reminder en conversación |
@@ -6267,7 +6273,7 @@ async scheduleRemindersForBrand(brandId: string): Promise<{
   const rules = await storage.getReminderRulesByBrand(brandId);
   if (!rules?.enabled) return { scheduled: 0, errors: [] };
   
-  // 2. Verificar daily cap (scheduled + sent)
+  // 2. Verificar daily cap (scheduled + processing + sent)
   const dailyCount = await storage.countRemindersScheduledAndSentToday(brandId);
   const remainingQuota = rules.dailyCap - dailyCount;
   if (remainingQuota <= 0) return { scheduled: 0, errors: ['Daily cap reached'] };
@@ -6476,8 +6482,9 @@ export const insertReminderEventSchema = createInsertSchema(reminderEvents).omit
   brandId: uuid (FK brands),
   conversationId: uuid (FK conversations),
   contactId: uuid (FK crm_contacts, nullable),
-  status: 'scheduled' | 'sent' | 'cancelled' | 'failed',
+  status: 'scheduled' | 'processing' | 'sent' | 'cancelled' | 'failed',
   scheduledAt: timestamp,
+  processingStartedAt: timestamp (null),
   sentAt: timestamp (null),
   content: text,
   contentSource: 'ai' | 'template',
@@ -6493,9 +6500,13 @@ export const insertReminderEventSchema = createInsertSchema(reminderEvents).omit
 CREATE UNIQUE INDEX idx_reminder_events_unique_scheduled 
 ON reminder_events (conversation_id, reminder_number) 
 WHERE status = 'scheduled';
+
+CREATE UNIQUE INDEX reminder_events_unique_active_idx
+ON reminder_events (conversation_id, reminder_number)
+WHERE status IN ('scheduled', 'processing');
 ```
 
-#### 1.5 Storage Methods (14 Métodos CRUD)
+#### 1.5 Storage Methods (15 Métodos CRUD)
 
 | # | Método | Tipo | Descripción |
 |---|--------|------|-------------|
@@ -6506,13 +6517,14 @@ WHERE status = 'scheduled';
 | 5 | `getReminderEventById(id)` | READ | Obtiene evento por ID |
 | 6 | `getReminderEventsByConversation(convId)` | READ | Lista eventos por conversación |
 | 7 | `updateReminderEventStatus(id, status, sentAt, error)` | UPDATE | Actualiza estado del evento |
-| 8 | `getScheduledRemindersReady(brandId)` | READ | Obtiene reminders listos para enviar |
-| 9 | `countRemindersSentToday(brandId)` | READ | Cuenta reminders enviados hoy |
-| 10 | `countRemindersScheduledAndSentToday(brandId)` | READ | Cuenta scheduled + sent (daily cap) |
-| 11 | `checkConversationEligibleForReminder(convId, max)` | READ | Pre-check antes de AI |
-| 12 | `scheduleReminderAtomic(convId, event, status, max)` | CREATE | Scheduling transaccional |
-| 13 | `updateConversationReminderStatus(convId, status)` | UPDATE | Actualiza estado en conversación |
-| 14 | `getConversationsEligibleForReminder(brandId, delay, max, types)` | READ | Query de elegibilidad |
+| 8 | `claimScheduledReminders(brandId, limit)` | UPDATE | Claim atómico antes del proveedor |
+| 9 | `failAbandonedReminderClaims(brandId, before, reason)` | UPDATE | Falla claims ambiguos sin reintento |
+| 10 | `countRemindersSentToday(brandId)` | READ | Cuenta reminders enviados hoy |
+| 11 | `countRemindersScheduledAndSentToday(brandId)` | READ | Cuenta scheduled + processing + sent (daily cap) |
+| 12 | `checkConversationEligibleForReminder(convId, max)` | READ | Pre-check antes de AI |
+| 13 | `scheduleReminderAtomic(convId, event, status, max)` | CREATE | Scheduling transaccional |
+| 14 | `updateConversationReminderStatus(convId, status)` | UPDATE | Actualiza estado en conversación |
+| 15 | `getConversationsEligibleForReminder(brandId, delay, max, types)` | READ | Query de elegibilidad |
 
 ---
 
@@ -7128,8 +7140,11 @@ ORDER BY mt.last_inbound_at DESC;
    
 5. ¿Hay eventos stuck en 'scheduled'?
    └── SELECT * FROM reminder_events WHERE brand_id = 'XXX' AND status = 'scheduled' AND scheduled_at < NOW()
+
+6. ¿Hay claims de envío abandonados?
+   └── SELECT * FROM reminder_events WHERE brand_id = 'XXX' AND status = 'processing' AND processing_started_at < NOW() - INTERVAL '15 minutes'
    
-6. ¿Qué dice el log?
+7. ¿Qué dice el log?
    └── grep "ReminderService" /tmp/logs/Start_application_*.log | tail -50
 ```
 
@@ -7144,13 +7159,15 @@ curl -X POST "http://localhost:5000/api/brands/BRAND_ID/reminders/run-manual" \
 
 Esto ejecutará el ciclo completo: buscar elegibles → generar contenido → programar → enviar.
 
-##### Sistema de 5 Capas de Defensa Contra Duplicados
+##### Sistema de 7 Capas de Defensa Contra Duplicados
 
 1. **Pre-check en storage** - `checkConversationEligibleForReminder()` verifica estado actual
 2. **Unique partial index** - `idx_reminder_events_unique_scheduled` previene duplicados en DB
 3. **Atomic transaction** - `scheduleReminderAtomic()` usa transacción para consistencia
 4. **Estado terminal check** - No procesa conversaciones en estados terminales
 5. **Conversation status update** - Actualiza `reminder_status` inmediatamente después de crear evento
+6. **Atomic delivery claim** - `FOR UPDATE SKIP LOCKED` cambia `scheduled` a `processing` antes de Metricool
+7. **Fail-closed recovery** - Un claim ambiguo expira a `failed` y nunca vuelve automáticamente a `scheduled`
 
 ---
 
