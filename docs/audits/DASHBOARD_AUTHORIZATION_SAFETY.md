@@ -25,8 +25,8 @@ Notification read updates and conversation assignments no longer trust a resourc
 - WebSocket authentication applies the same active-user and active-brand decision used by HTTP.
 - Suspending, reassigning, demoting, or deleting a user closes that user's established sockets with close code `4003`.
 - Archiving a brand closes established non-admin sockets for that brand.
-- The browser treats `4003` as terminal, does not enter a reconnect loop, and reloads authorization. Revoked sessions reach login; active users whose brand or role changed resume with fresh permissions.
-- Reconnecting with a stale suspended or archived session is rejected with close code `4001`.
+- The browser treats both `4001` (authentication required) and `4003` (access changed or revoked) as terminal, does not enter a reconnect loop, and reloads authorization. Revoked sessions reach login; active users whose brand or role changed resume with fresh permissions.
+- Reconnecting with a stale suspended or archived session is rejected with close code `4003`, including when access changed while the socket was already offline.
 
 ## Verification boundary
 

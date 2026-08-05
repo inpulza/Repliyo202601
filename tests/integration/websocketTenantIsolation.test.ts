@@ -132,8 +132,8 @@ describe("WebSocket tenant isolation", () => {
     const suspendedClose = waitForCloseCode(suspended);
     const archivedClose = waitForCloseCode(archived);
 
-    assert.equal(await suspendedClose, 4001);
-    assert.equal(await archivedClose, 4001);
+    assert.equal(await suspendedClose, 4003);
+    assert.equal(await archivedClose, 4003);
   });
 
   it("disconnects an established socket when user or brand access is revoked", async () => {

@@ -1,5 +1,8 @@
 import { WebSocketServer, WebSocket } from 'ws';
-import { WEBSOCKET_ACCESS_REVOKED_CLOSE_CODE } from '@shared/websocketAccess';
+import {
+  WEBSOCKET_ACCESS_REVOKED_CLOSE_CODE,
+  WEBSOCKET_AUTH_REQUIRED_CLOSE_CODE,
+} from '@shared/websocketAccess';
 import { Server, IncomingMessage } from 'http';
 import cookie from 'cookie';
 import signature from 'cookie-signature';
@@ -23,6 +26,19 @@ interface ConnectedClient extends ConnectedClientAccess {
   ws: WebSocket;
   userId: string;
 }
+
+type WebSocketAuthenticationResult =
+  | {
+      allowed: true;
+      userId: string;
+      role: string;
+      brandId: string | null;
+    }
+  | {
+      allowed: false;
+      closeCode: number;
+      reason: string;
+    };
 
 export interface WebSocketServiceOptions {
   sessionSecret?: string;
@@ -65,13 +81,15 @@ export class WebSocketService {
 
     this.wss.on('connection', async (ws: WebSocket, req: IncomingMessage) => {
       try {
-        const sessionData = await this.authenticateConnection(req);
-        
-        if (!sessionData) {
-          this.logger('[WebSocket] Connection rejected - not authenticated', 'ws');
-          ws.close(4001, 'Not authenticated');
+        const authentication = await this.authenticateConnection(req);
+
+        if (!authentication.allowed) {
+          this.logger(`[WebSocket] Connection rejected - ${authentication.reason}`, 'ws');
+          ws.close(authentication.closeCode, authentication.reason);
           return;
         }
+
+        const sessionData = authentication;
 
         this.logger(`[WebSocket] Client connected - user: ${sessionData.userId}`, 'ws');
         
@@ -115,53 +133,65 @@ export class WebSocketService {
     this.logger('[WebSocket] Service initialized on /ws (authenticated)', 'ws');
   }
 
-  private async authenticateConnection(req: IncomingMessage): Promise<{ userId: string; role: string; brandId: string | null } | null> {
-    try {
-      const cookies = cookie.parse(req.headers.cookie || '');
-      const sessionCookie = cookies['connect.sid'];
-      
-      if (!sessionCookie) {
-        return null;
-      }
+  private async authenticateConnection(req: IncomingMessage): Promise<WebSocketAuthenticationResult> {
+    const cookies = cookie.parse(req.headers.cookie || '');
+    const sessionCookie = cookies['connect.sid'];
 
-      if (!sessionCookie.startsWith('s:')) {
-        this.logger('[WebSocket] Unsigned session cookie rejected', 'ws');
-        return null;
-      }
-
-      const sessionId = signature.unsign(sessionCookie.slice(2), this.sessionSecret);
-      if (!sessionId) {
-        this.logger('[WebSocket] Invalid session signature', 'ws');
-        return null;
-      }
-
-      const userId = await this.findSessionUserId(sessionId);
-      if (!userId) {
-        return null;
-      }
-
-      const accessRecord = await this.findSessionAccess(userId);
-      if (!accessRecord) {
-        return null;
-      }
-
-      const decision = evaluateSessionAccess(accessRecord);
-      if (!decision.allowed) {
-        this.logger(`[WebSocket] Connection rejected - ${decision.code}`, 'ws');
-        return null;
-      }
-
-      const { user } = accessRecord;
-
-      return {
-        userId: user.id,
-        role: user.role,
-        brandId: user.brandId
-      };
-    } catch (error) {
-      this.logger(`[WebSocket] Auth error: ${error}`, 'ws');
-      return null;
+    if (!sessionCookie) {
+      return this.authenticationRequired();
     }
+
+    if (!sessionCookie.startsWith('s:')) {
+      this.logger('[WebSocket] Unsigned session cookie rejected', 'ws');
+      return this.authenticationRequired();
+    }
+
+    const sessionId = signature.unsign(sessionCookie.slice(2), this.sessionSecret);
+    if (!sessionId) {
+      this.logger('[WebSocket] Invalid session signature', 'ws');
+      return this.authenticationRequired();
+    }
+
+    const userId = await this.findSessionUserId(sessionId);
+    if (!userId) {
+      return this.authenticationRequired();
+    }
+
+    const accessRecord = await this.findSessionAccess(userId);
+    if (!accessRecord) {
+      return this.accessRevoked();
+    }
+
+    const decision = evaluateSessionAccess(accessRecord);
+    if (!decision.allowed) {
+      this.logger(`[WebSocket] Connection rejected - ${decision.code}`, 'ws');
+      return this.accessRevoked();
+    }
+
+    const { user } = accessRecord;
+
+    return {
+      allowed: true,
+      userId: user.id,
+      role: user.role,
+      brandId: user.brandId,
+    };
+  }
+
+  private authenticationRequired(): WebSocketAuthenticationResult {
+    return {
+      allowed: false,
+      closeCode: WEBSOCKET_AUTH_REQUIRED_CLOSE_CODE,
+      reason: 'Not authenticated',
+    };
+  }
+
+  private accessRevoked(): WebSocketAuthenticationResult {
+    return {
+      allowed: false,
+      closeCode: WEBSOCKET_ACCESS_REVOKED_CLOSE_CODE,
+      reason: 'Access revoked',
+    };
   }
 
   private async getSessionUserIdFromStore(sessionId: string): Promise<string | null> {

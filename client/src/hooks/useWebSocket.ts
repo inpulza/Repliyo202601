@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import {
+  isWebSocketAuthorizationCloseCode,
   shouldReconnectWebSocket,
-  WEBSOCKET_ACCESS_REVOKED_CLOSE_CODE,
 } from '@shared/websocketAccess';
 
 interface NotificationPayload {
@@ -143,7 +143,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         setIsConnected(false);
         wsRef.current = null;
 
-        if (event.code === WEBSOCKET_ACCESS_REVOKED_CLOSE_CODE) {
+        if (isWebSocketAuthorizationCloseCode(event.code)) {
           if (reconnectTimeoutRef.current) {
             clearTimeout(reconnectTimeoutRef.current);
             reconnectTimeoutRef.current = null;

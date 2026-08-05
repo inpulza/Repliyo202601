@@ -5,6 +5,7 @@ import { canReceiveBrandEvent } from "../../server/services/websocketService";
 import {
   shouldReconnectWebSocket,
   WEBSOCKET_ACCESS_REVOKED_CLOSE_CODE,
+  WEBSOCKET_AUTH_REQUIRED_CLOSE_CODE,
 } from "../../shared/websocketAccess";
 
 describe("WebSocket brand event access", () => {
@@ -59,6 +60,7 @@ describe("WebSocket reconnect policy", () => {
 
   it("does not reconnect after a normal close or revoked access", () => {
     assert.equal(shouldReconnectWebSocket(1000), false);
+    assert.equal(shouldReconnectWebSocket(WEBSOCKET_AUTH_REQUIRED_CLOSE_CODE), false);
     assert.equal(shouldReconnectWebSocket(WEBSOCKET_ACCESS_REVOKED_CLOSE_CODE), false);
   });
 });
