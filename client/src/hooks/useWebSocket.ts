@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import {
-  isWebSocketAuthorizationCloseCode,
   shouldReconnectWebSocket,
+  WEBSOCKET_ACCESS_REVOKED_CLOSE_CODE,
+  WEBSOCKET_AUTH_REQUIRED_CLOSE_CODE,
 } from '@shared/websocketAccess';
+import {
+  AUTHORIZATION_RELOAD_GUARD_KEY,
+  getWebSocketAuthorizationRecovery,
+} from '@/lib/sessionRecovery';
 
 interface NotificationPayload {
   type: 'new_message' | 'sync_complete' | 'agent_reply' | 'agent_cooldown' | 'crisis_alert' | 'subscribed' | 'connected' | 'error';
@@ -127,7 +132,13 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
               }
               break;
             case 'subscribed':
+              break;
             case 'connected':
+              try {
+                window.sessionStorage.removeItem(AUTHORIZATION_RELOAD_GUARD_KEY);
+              } catch {
+                // Storage can be unavailable in hardened browser modes.
+              }
               break;
             case 'error':
               console.error('[WebSocket] Server error:', payload.message);
@@ -143,12 +154,38 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         setIsConnected(false);
         wsRef.current = null;
 
-        if (isWebSocketAuthorizationCloseCode(event.code)) {
+        if (event.code === WEBSOCKET_ACCESS_REVOKED_CLOSE_CODE) {
           if (reconnectTimeoutRef.current) {
             clearTimeout(reconnectTimeoutRef.current);
             reconnectTimeoutRef.current = null;
           }
-          window.location.reload();
+          window.location.replace('/login');
+          return;
+        }
+
+        if (event.code === WEBSOCKET_AUTH_REQUIRED_CLOSE_CODE) {
+          if (reconnectTimeoutRef.current) {
+            clearTimeout(reconnectTimeoutRef.current);
+            reconnectTimeoutRef.current = null;
+          }
+
+          let reloadAlreadyAttempted = true;
+          try {
+            reloadAlreadyAttempted = window.sessionStorage.getItem(AUTHORIZATION_RELOAD_GUARD_KEY) === 'true';
+          } catch {
+            // If the guard cannot be persisted, prefer login over a reload loop.
+          }
+
+          if (getWebSocketAuthorizationRecovery(reloadAlreadyAttempted) === 'reload') {
+            try {
+              window.sessionStorage.setItem(AUTHORIZATION_RELOAD_GUARD_KEY, 'true');
+              window.location.reload();
+            } catch {
+              window.location.replace('/login');
+            }
+          } else {
+            window.location.replace('/login');
+          }
           return;
         }
 

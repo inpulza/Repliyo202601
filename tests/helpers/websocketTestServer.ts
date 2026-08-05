@@ -31,6 +31,10 @@ export interface WebSocketTestServer {
   close(): Promise<void>;
 }
 
+export interface WebSocketTestServerOptions {
+  getSessionUserId?: (sessionId: string) => Promise<string | null>;
+}
+
 export function signedSessionValue(
   sessionId: string,
   secret = TEST_SESSION_SECRET,
@@ -45,11 +49,13 @@ export function signedSessionCookie(
   return `connect.sid=${signedSessionValue(sessionId, secret)}`;
 }
 
-export async function startWebSocketTestServer(): Promise<WebSocketTestServer> {
+export async function startWebSocketTestServer(
+  options: WebSocketTestServerOptions = {},
+): Promise<WebSocketTestServer> {
   const httpServer = createServer();
   const service = new WebSocketService({
     sessionSecret: TEST_SESSION_SECRET,
-    getSessionUserId: async (sessionId) => sessions[sessionId] || null,
+    getSessionUserId: options.getSessionUserId || (async (sessionId) => sessions[sessionId] || null),
     getSessionAccessByUserId: async (userId) => accessRecords[userId] || null,
     logger: () => {},
   });

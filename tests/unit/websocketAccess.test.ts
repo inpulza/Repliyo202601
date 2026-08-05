@@ -6,6 +6,7 @@ import {
   shouldReconnectWebSocket,
   WEBSOCKET_ACCESS_REVOKED_CLOSE_CODE,
   WEBSOCKET_AUTH_REQUIRED_CLOSE_CODE,
+  WEBSOCKET_TRANSIENT_FAILURE_CLOSE_CODE,
 } from "../../shared/websocketAccess";
 
 describe("WebSocket brand event access", () => {
@@ -56,6 +57,7 @@ describe("WebSocket brand event access", () => {
 describe("WebSocket reconnect policy", () => {
   it("reconnects after a transient transport close", () => {
     assert.equal(shouldReconnectWebSocket(1006), true);
+    assert.equal(shouldReconnectWebSocket(WEBSOCKET_TRANSIENT_FAILURE_CLOSE_CODE), true);
   });
 
   it("does not reconnect after a normal close or revoked access", () => {

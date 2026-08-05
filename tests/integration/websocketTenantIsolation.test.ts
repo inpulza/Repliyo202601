@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
 
 import { WebSocket, type RawData } from "ws";
+import { WEBSOCKET_TRANSIENT_FAILURE_CLOSE_CODE } from "../../shared/websocketAccess";
 
 import {
   signedSessionCookie,
@@ -119,6 +120,31 @@ describe("WebSocket tenant isolation", () => {
 
     assert.equal(await unsignedClose, 4001);
     assert.equal(await invalidClose, 4001);
+  });
+
+  it("still treats a valid cookie without a stored session as unauthenticated", async () => {
+    const missing = new WebSocket(server.wsUrl, {
+      headers: { Cookie: signedSessionCookie("session-missing") },
+    });
+
+    assert.equal(await waitForCloseCode(missing), 4001);
+  });
+
+  it("treats a session-store failure as retryable instead of unauthenticated", async () => {
+    const unavailableServer = await startWebSocketTestServer({
+      getSessionUserId: async () => {
+        throw new Error("simulated session store outage");
+      },
+    });
+
+    try {
+      const socket = new WebSocket(unavailableServer.wsUrl, {
+        headers: { Cookie: signedSessionCookie("session-a") },
+      });
+      assert.equal(await waitForCloseCode(socket), WEBSOCKET_TRANSIENT_FAILURE_CLOSE_CODE);
+    } finally {
+      await unavailableServer.close();
+    }
   });
 
   it("rejects suspended users and clients of archived brands", async () => {

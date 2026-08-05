@@ -1,5 +1,6 @@
 export const WEBSOCKET_AUTH_REQUIRED_CLOSE_CODE = 4001;
 export const WEBSOCKET_ACCESS_REVOKED_CLOSE_CODE = 4003;
+export const WEBSOCKET_TRANSIENT_FAILURE_CLOSE_CODE = 1013;
 
 export function isWebSocketAuthorizationCloseCode(closeCode: number): boolean {
   return closeCode === WEBSOCKET_AUTH_REQUIRED_CLOSE_CODE
