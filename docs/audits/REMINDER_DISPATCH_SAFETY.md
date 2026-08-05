@@ -36,9 +36,17 @@ For Replit, use this order:
 
 1. Stop the application workflow.
 2. Pull the merged GitHub `main`.
-3. Run `npx drizzle-kit migrate` with the existing Replit database environment.
-4. Restart the workflow.
-5. Confirm startup logs and run one no-send reminder status check before any manual reminder action.
+3. Apply only the scoped migration SQL with the existing Replit database environment:
+
+   ```sh
+   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/0009_reminder_claims.sql
+   ```
+
+4. Verify that `reminder_events.processing_started_at` and `reminder_events_unique_active_idx` exist.
+5. Restart the workflow.
+6. Confirm startup logs and run one no-send reminder status check before any manual reminder action.
+
+Do not run `npx drizzle-kit migrate` against the current Replit database until its existing schema has been baselined in Drizzle's migration history. The database does not currently have the `__drizzle_migrations` control table, so `migrate` can attempt to replay migrations from `0000` against tables that already exist. Do not substitute a global `db:push` during this deployment either; applying `0009_reminder_claims.sql` directly keeps the production change limited to the nullable column and partial unique index required by this release. The SQL is idempotent through `IF NOT EXISTS`.
 
 Do not start the new server code before the migration is applied because reminder queries select `processing_started_at`.
 
