@@ -139,7 +139,11 @@ async function installDashboardApi(page: Page, userId: string) {
         queueMicrotask(() => this.onopen?.(new Event("open")));
       }
 
-      addEventListener() {}
+      addEventListener(type: string) {
+        throw new Error(
+          `TestWebSocket.addEventListener("${type}") is not implemented; use an on* property or extend the mock.`,
+        );
+      }
       close(code = 1000, reason = "") {
         this.emitClose(code, reason);
       }

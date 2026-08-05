@@ -4344,10 +4344,10 @@ Sitemap: ${SITE_URL}/sitemap.xml
         message: userId ? `Conversación asignada al usuario ${userId}` : "Conversación desasignada"
       });
     } catch (error: any) {
-      console.error('[Lifecycle] Assign error:', error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid assignment data" });
       }
+      console.error('[Lifecycle] Assign error:', error);
       res.status(500).json({ error: "Failed to assign conversation", details: error.message });
     }
   });

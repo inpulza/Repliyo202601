@@ -112,6 +112,17 @@ describe("brand-scoped conversation assignments", () => {
     assert.equal(server.state.assignmentWrites, 0);
   });
 
+  it("rejects a malformed assignment payload", async () => {
+    const response = await request("/api/conversations/conversation-a/assign", "user-a", {
+      method: "POST",
+      body: { userId: "agent-a", unexpected: true },
+    });
+
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), { error: "Invalid assignment data" });
+    assert.equal(server.state.assignmentWrites, 0);
+  });
+
   it("hides a foreign conversation before assignment", async () => {
     const response = await request("/api/conversations/conversation-b/assign", "user-a", {
       method: "POST",

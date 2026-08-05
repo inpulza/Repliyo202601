@@ -68,5 +68,11 @@ describe("brand access", () => {
       canAssignUserToBrand({ brandId: "brand-a", status: "suspended" }, "brand-a"),
       false,
     );
+    assert.equal(canAssignUserToBrand(null, "brand-a"), false);
+    assert.equal(canAssignUserToBrand(undefined, "brand-a"), false);
+    assert.equal(
+      canAssignUserToBrand({ brandId: null, status: "active" }, "brand-a"),
+      false,
+    );
   });
 });

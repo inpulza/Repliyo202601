@@ -38,6 +38,10 @@ const accessRecords: Record<string, SessionAccessRecord> = {
   "archived-user": { user: archivedUser, brandStatus: "archived" },
 };
 
+const initialUserStatuses = new Map(
+  Object.entries(accessRecords).map(([id, record]) => [id, record.user.status]),
+);
+
 const lookupUsers: Record<string, User> = {
   ...Object.fromEntries(
     Object.entries(accessRecords).map(([id, record]) => [id, record.user]),
@@ -163,7 +167,9 @@ export async function startDashboardAuthorizationTestServer(): Promise<Dashboard
       state.assignmentWrites = 0;
       state.notificationWrites = 0;
       state.sessionRevocations = 0;
-      activeUserA.status = "active";
+      for (const [id, status] of initialUserStatuses) {
+        accessRecords[id].user.status = status;
+      }
       for (const item of notifications) item.isRead = false;
       for (const item of conversations.values()) {
         item.assignedToUserId = null;

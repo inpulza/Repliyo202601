@@ -32,6 +32,26 @@ describe("active session access", () => {
     if (!decision.allowed) assert.equal(decision.code, "BRAND_UNAVAILABLE");
   });
 
+  it("revokes a pending account", () => {
+    const decision = evaluateSessionAccess({
+      user: user({ status: "pending" }),
+      brandStatus: "active",
+    });
+
+    assert.equal(decision.allowed, false);
+    if (!decision.allowed) assert.equal(decision.code, "ACCOUNT_INACTIVE");
+  });
+
+  it("allows an active non-admin while it awaits a brand assignment", () => {
+    assert.deepEqual(
+      evaluateSessionAccess({
+        user: user({ brandId: null }),
+        brandStatus: null,
+      }),
+      { allowed: true },
+    );
+  });
+
   it("preserves administrator access independently of brand status", () => {
     assert.deepEqual(
       evaluateSessionAccess({
