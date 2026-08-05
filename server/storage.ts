@@ -30,6 +30,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, isNull, isNotNull, gte, lte, sql, inArray, notInArray } from "drizzle-orm";
+import type { SessionAccessRecord } from "./security/sessionAccess";
 
 export type UpsertedMessage = Message & { upsertCreated?: boolean };
 
@@ -86,6 +87,7 @@ export interface IStorage {
   
   getUsers(): Promise<User[]>;
   getUser(id: string): Promise<User | undefined>;
+  getSessionAccessByUserId(id: string): Promise<SessionAccessRecord | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<InsertUser>): Promise<User | undefined>;
@@ -215,7 +217,7 @@ export interface IStorage {
   getNotifications(brandId: string, limit?: number): Promise<Notification[]>;
   getUnreadNotificationCount(brandId: string): Promise<number>;
   createOrUpdateNotification(notification: InsertNotification): Promise<Notification>;
-  markNotificationAsRead(id: string): Promise<Notification | undefined>;
+  markNotificationAsRead(id: string, brandId: string): Promise<Notification | undefined>;
   markAllNotificationsAsRead(brandId: string): Promise<number>;
   cleanupOldNotifications(): Promise<number>;
   
@@ -298,7 +300,7 @@ export interface IStorage {
     closedByUserId?: string
   ): Promise<Conversation | undefined>;
   updateConversationAiActive(conversationId: string, aiActive: boolean): Promise<Conversation | undefined>;
-  updateConversationAssignment(conversationId: string, userId: string | null): Promise<Conversation | undefined>;
+  updateConversationAssignment(conversationId: string, brandId: string, userId: string | null): Promise<Conversation | undefined>;
   setFirstResponseAt(conversationId: string): Promise<Conversation | undefined>;
   updateLastCustomerMessageAt(conversationId: string): Promise<Conversation | undefined>;
   incrementReopenCount(conversationId: string): Promise<Conversation | undefined>;
@@ -486,6 +488,19 @@ export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;
+  }
+
+  async getSessionAccessByUserId(id: string): Promise<SessionAccessRecord | undefined> {
+    const [record] = await db
+      .select({
+        user: users,
+        brandStatus: brands.status,
+      })
+      .from(users)
+      .leftJoin(brands, eq(users.brandId, brands.id))
+      .where(eq(users.id, id));
+
+    return record || undefined;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
@@ -2311,11 +2326,16 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async markNotificationAsRead(id: string): Promise<Notification | undefined> {
+  async markNotificationAsRead(id: string, brandId: string): Promise<Notification | undefined> {
     const [updated] = await db
       .update(notifications)
       .set({ isRead: true, updatedAt: new Date() })
-      .where(eq(notifications.id, id))
+      .where(
+        and(
+          eq(notifications.id, id),
+          eq(notifications.brandId, brandId),
+        ),
+      )
       .returning();
     return updated || undefined;
   }
@@ -3485,7 +3505,16 @@ export class DatabaseStorage implements IStorage {
     return updated || undefined;
   }
 
-  async updateConversationAssignment(conversationId: string, userId: string | null): Promise<Conversation | undefined> {
+  async updateConversationAssignment(conversationId: string, brandId: string, userId: string | null): Promise<Conversation | undefined> {
+    const assigneeIsEligible = userId === null
+      ? sql`true`
+      : sql`exists (
+          select 1
+          from ${users}
+          where ${users.id} = ${userId}
+            and ${users.brandId} = ${brandId}
+            and ${users.status} = 'active'
+        )`;
     const [updated] = await db
       .update(conversations)
       .set({
@@ -3493,7 +3522,13 @@ export class DatabaseStorage implements IStorage {
         assignedAt: userId ? new Date() : null,
         aiActive: !userId, // Disable AI when assigning to human
       })
-      .where(eq(conversations.id, conversationId))
+      .where(
+        and(
+          eq(conversations.id, conversationId),
+          eq(conversations.brandId, brandId),
+          assigneeIsEligible,
+        ),
+      )
       .returning();
     return updated || undefined;
   }

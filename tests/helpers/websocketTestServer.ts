@@ -4,6 +4,7 @@ import type { AddressInfo } from "node:net";
 import signature from "cookie-signature";
 
 import { WebSocketService } from "../../server/services/websocketService";
+import type { SessionAccessRecord } from "../../server/security/sessionAccess";
 
 export const TEST_SESSION_SECRET = "websocket-tenant-test-secret";
 
@@ -11,13 +12,17 @@ const sessions: Record<string, string> = {
   "session-a": "user-a",
   "session-b": "user-b",
   "session-admin": "user-admin",
+  "session-suspended": "user-suspended",
+  "session-archived": "user-archived",
 };
 
-const users = {
-  "user-a": { id: "user-a", role: "client", brandId: "brand-a" },
-  "user-b": { id: "user-b", role: "client", brandId: "brand-b" },
-  "user-admin": { id: "user-admin", role: "admin", brandId: null },
-} as const;
+const accessRecords: Record<string, SessionAccessRecord> = {
+  "user-a": sessionAccessRecord("user-a", "client", "brand-a", "active", "active"),
+  "user-b": sessionAccessRecord("user-b", "client", "brand-b", "active", "active"),
+  "user-admin": sessionAccessRecord("user-admin", "admin", null, "active", null),
+  "user-suspended": sessionAccessRecord("user-suspended", "client", "brand-a", "suspended", "active"),
+  "user-archived": sessionAccessRecord("user-archived", "client", "brand-archived", "active", "archived"),
+};
 
 export interface WebSocketTestServer {
   httpUrl: string;
@@ -45,7 +50,7 @@ export async function startWebSocketTestServer(): Promise<WebSocketTestServer> {
   const service = new WebSocketService({
     sessionSecret: TEST_SESSION_SECRET,
     getSessionUserId: async (sessionId) => sessions[sessionId] || null,
-    getUser: async (userId) => users[userId as keyof typeof users] || null,
+    getSessionAccessByUserId: async (userId) => accessRecords[userId] || null,
     logger: () => {},
   });
   service.initialize(httpServer);
@@ -62,6 +67,32 @@ export async function startWebSocketTestServer(): Promise<WebSocketTestServer> {
       await service.shutdown();
       await close(httpServer);
     },
+  };
+}
+
+function sessionAccessRecord(
+  id: string,
+  role: string,
+  brandId: string | null,
+  status: string,
+  brandStatus: string | null,
+): SessionAccessRecord {
+  return {
+    user: {
+      id,
+      email: `${id}@example.test`,
+      password: null,
+      name: id,
+      role,
+      brandId,
+      replitId: null,
+      profileImageUrl: null,
+      authProvider: "local",
+      status,
+      emailVerifiedAt: new Date("2026-08-05T00:00:00.000Z"),
+      createdAt: new Date("2026-08-05T00:00:00.000Z"),
+    },
+    brandStatus,
   };
 }
 

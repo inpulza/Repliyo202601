@@ -15,8 +15,8 @@ export interface IConversationLifecycleService {
   
   reopenConversation(conversationId: string, reason?: string): Promise<Conversation | undefined>;
   
-  assignToUser(conversationId: string, userId: string): Promise<Conversation | undefined>;
-  unassign(conversationId: string): Promise<Conversation | undefined>;
+  assignToUser(conversationId: string, brandId: string, userId: string): Promise<Conversation | undefined>;
+  unassign(conversationId: string, brandId: string): Promise<Conversation | undefined>;
   
   recordFirstResponse(conversationId: string): Promise<Conversation | undefined>;
   recordCustomerMessage(conversationId: string): Promise<Conversation | undefined>;
@@ -169,16 +169,14 @@ export class ConversationLifecycleService implements IConversationLifecycleServi
     return updated;
   }
 
-  async assignToUser(conversationId: string, userId: string): Promise<Conversation | undefined> {
+  async assignToUser(conversationId: string, brandId: string, userId: string): Promise<Conversation | undefined> {
     const conversation = await storage.getConversation(conversationId);
-    if (!conversation) return undefined;
+    if (!conversation || conversation.brandId !== brandId) return undefined;
     
-    await storage.updateConversationAssignment(conversationId, userId);
-    
-    await storage.updateConversationAiActive(conversationId, false);
+    const updated = await storage.updateConversationAssignment(conversationId, brandId, userId);
+    if (!updated) return undefined;
+
     console.log(`[Lifecycle] AI disabled for conversation ${conversationId} - assigned to human agent ${userId}`);
-    
-    const updated = await storage.getConversation(conversationId);
     
     if (updated) {
       await this.logStatusChange(
@@ -194,16 +192,14 @@ export class ConversationLifecycleService implements IConversationLifecycleServi
     return updated;
   }
 
-  async unassign(conversationId: string): Promise<Conversation | undefined> {
+  async unassign(conversationId: string, brandId: string): Promise<Conversation | undefined> {
     const conversation = await storage.getConversation(conversationId);
-    if (!conversation) return undefined;
+    if (!conversation || conversation.brandId !== brandId) return undefined;
     
-    await storage.updateConversationAssignment(conversationId, null);
-    
-    await storage.updateConversationAiActive(conversationId, true);
+    const updated = await storage.updateConversationAssignment(conversationId, brandId, null);
+    if (!updated) return undefined;
+
     console.log(`[Lifecycle] AI re-enabled for conversation ${conversationId} - unassigned from human agent`);
-    
-    const updated = await storage.getConversation(conversationId);
     
     if (updated) {
       await this.logStatusChange(

@@ -9,7 +9,8 @@ import { syncService } from "./services/syncService";
 import { websocketService } from "./services/websocketService";
 import { triggerSummaryUpdateAsync, checkAndUpdateSummary } from "./services/summaryService";
 import { authRateLimiter, syncRateLimiter, aiRateLimiter, sendMessageRateLimiter } from "./middleware/rateLimiter";
-import { authStorage } from "./replit_integrations/auth";
+import { requireAuth } from "./middleware/requireAuth";
+import { canAssignUserToBrand, getAccessibleBrandResource } from "./security/brandAccess";
 import { z } from "zod";
 import crypto from "crypto";
 import { sendVerificationEmail, sendWelcomeEmail, sendLeadNotification, sendLeadConfirmation } from "./services/emailService";
@@ -23,39 +24,6 @@ declare global {
     }
   }
 }
-
-// Hybrid authentication middleware: supports both OAuth (Passport) and Legacy (session.userId)
-const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
-  let user = null;
-  
-  // 1. Check OAuth authentication (Passport/Replit Auth)
-  // Passport stores user with claims in req.user after OIDC callback
-  if (req.isAuthenticated && req.isAuthenticated() && (req.user as any)?.claims?.sub) {
-    const replitId = (req.user as any).claims.sub;
-    user = await authStorage.getUserByReplitId(replitId);
-    if (!user) {
-      // User was authenticated via OAuth but not found in DB - upsert them
-      user = await authStorage.upsertUserFromOAuth((req.user as any).claims);
-    }
-  }
-  
-  // 2. Check Legacy authentication (session.userId)
-  if (!user && req.session.userId) {
-    user = await storage.getUser(req.session.userId);
-    if (!user) {
-      req.session.destroy(() => {});
-      return res.status(401).json({ error: "User not found" });
-    }
-  }
-  
-  // 3. No valid authentication found
-  if (!user) {
-    return res.status(401).json({ error: "Not authenticated" });
-  }
-
-  req.user = sanitizeUser(user);
-  next();
-};
 
 // Normalize provider names to match frontend types
 function normalizePlatform(provider: string): string {
@@ -114,7 +82,6 @@ const filterByBrand = (brandIdParamName?: string) => {
 import sentimentAlertsRouter from './routes/sentimentAlerts.routes';
 import { sendPrivateReply, sendInstagramPrivateReply, interpolateTemplate, checkPagePermissions } from "./services/metaService";
 import { enrichPostContext, enrichPostContextForTemplate } from "./services/llm/prompt-composer";
-import { getAccessibleBrandResource } from "./security/brandAccess";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use(sentimentAlertsRouter);
@@ -886,6 +853,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
       }
 
       const archived = await storage.archiveBrand(req.params.id);
+      websocketService.disconnectBrand(req.params.id);
       res.json({ 
         message: "Brand archived successfully",
         brand: sanitizeBrand(archived!)
@@ -1089,6 +1057,14 @@ Sitemap: ${SITE_URL}/sitemap.xml
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
+
+      if (
+        (updates.status !== undefined && updates.status !== 'active') ||
+        updates.brandId !== undefined ||
+        updates.role !== undefined
+      ) {
+        websocketService.disconnectUser(req.params.id);
+      }
       res.json(sanitizeUser(user));
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1140,6 +1116,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
       }
 
       await storage.deleteUser(req.params.id);
+      websocketService.disconnectUser(req.params.id);
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete user" });
@@ -3114,7 +3091,17 @@ Sitemap: ${SITE_URL}/sitemap.xml
   app.patch("/api/notifications/:id/read", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
-      const notification = await storage.markNotificationAsRead(id);
+      const brandId = req.body.brandId || req.user?.brandId;
+
+      if (!brandId) {
+        return res.status(400).json({ error: "Brand ID required" });
+      }
+
+      if (req.user?.role !== 'admin' && req.user?.brandId !== brandId) {
+        return res.status(404).json({ error: "Notification not found" });
+      }
+
+      const notification = await storage.markNotificationAsRead(id, brandId);
       
       if (!notification) {
         return res.status(404).json({ error: "Notification not found" });
@@ -4321,21 +4308,35 @@ Sitemap: ${SITE_URL}/sitemap.xml
   app.post("/api/conversations/:id/assign", requireAuth, async (req, res) => {
     try {
       const conversationId = req.params.id;
-      const { userId } = req.body;
+      const { userId = null } = z.object({
+        userId: z.string().min(1).nullable().optional(),
+      }).strict().parse(req.body);
       
-      const conversation = await storage.getConversation(conversationId);
+      const conversation = getAccessibleBrandResource(
+        req.user,
+        await storage.getConversation(conversationId),
+      );
       if (!conversation) {
         return res.status(404).json({ error: "Conversation not found" });
       }
 
-      if (req.user?.role !== 'admin' && req.user?.brandId !== conversation.brandId) {
-        return res.status(403).json({ error: "Access denied" });
+      if (userId) {
+        const assignee = await storage.getUser(userId);
+        if (!canAssignUserToBrand(assignee, conversation.brandId)) {
+          return res.status(404).json({ error: "Assignee not found" });
+        }
       }
 
       const { conversationLifecycleService } = await import("./services/conversationLifecycleService");
       const updated = userId 
-        ? await conversationLifecycleService.assignToUser(conversationId, userId)
-        : await conversationLifecycleService.unassign(conversationId);
+        ? await conversationLifecycleService.assignToUser(conversationId, conversation.brandId, userId)
+        : await conversationLifecycleService.unassign(conversationId, conversation.brandId);
+
+      if (!updated) {
+        return res.status(404).json({
+          error: userId ? "Assignee not found" : "Conversation not found",
+        });
+      }
 
       res.json({
         success: !!updated,
@@ -4344,6 +4345,9 @@ Sitemap: ${SITE_URL}/sitemap.xml
       });
     } catch (error: any) {
       console.error('[Lifecycle] Assign error:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid assignment data" });
+      }
       res.status(500).json({ error: "Failed to assign conversation", details: error.message });
     }
   });

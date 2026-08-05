@@ -120,6 +120,35 @@ describe("WebSocket tenant isolation", () => {
     assert.equal(await unsignedClose, 4001);
     assert.equal(await invalidClose, 4001);
   });
+
+  it("rejects suspended users and clients of archived brands", async () => {
+    const suspended = new WebSocket(server.wsUrl, {
+      headers: { Cookie: signedSessionCookie("session-suspended") },
+    });
+    const archived = new WebSocket(server.wsUrl, {
+      headers: { Cookie: signedSessionCookie("session-archived") },
+    });
+
+    const suspendedClose = waitForCloseCode(suspended);
+    const archivedClose = waitForCloseCode(archived);
+
+    assert.equal(await suspendedClose, 4001);
+    assert.equal(await archivedClose, 4001);
+  });
+
+  it("disconnects an established socket when user or brand access is revoked", async () => {
+    const clientA = await connect("session-a");
+    const clientB = await connect("session-b");
+    const clientAClose = waitForCloseCode(clientA.socket);
+    const clientBClose = waitForCloseCode(clientB.socket);
+
+    assert.equal(server.service.disconnectUser("user-a"), 1);
+    assert.equal(await clientAClose, 4003);
+
+    assert.equal(server.service.disconnectBrand("brand-b"), 1);
+    assert.equal(await clientBClose, 4003);
+    assert.equal(server.service.getConnectedClientsCount(), 0);
+  });
 });
 
 async function connect(sessionId: string): Promise<SocketProbe> {

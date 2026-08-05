@@ -2,8 +2,8 @@ import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { SentimentAlertRepository } from '../repositories/SentimentAlertRepository';
-import { storage } from '../storage';
 import type { AuthenticatedUser } from '../auth';
+import { requireAuth } from '../middleware/requireAuth';
 
 const validSeverities = ['P1', 'P2', 'P3', 'P4'] as const;
 const validStatuses = ['new', 'acknowledged', 'in_progress', 'resolved', 'dismissed'] as const;
@@ -25,28 +25,6 @@ const updateStatusBodySchema = z.object({
 });
 
 const router = Router();
-
-const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
-  let user = null;
-
-  if (req.isAuthenticated && req.isAuthenticated() && req.user) {
-    user = req.user as AuthenticatedUser;
-  }
-
-  if (!user && (req.session as any)?.userId) {
-    const sessionUser = await storage.getUser((req.session as any).userId);
-    if (sessionUser) {
-      user = sessionUser as AuthenticatedUser;
-    }
-  }
-
-  if (!user) {
-    return res.status(401).json({ error: "Not authenticated" });
-  }
-
-  (req as any).user = user;
-  next();
-};
 
 const validateBrandAccess = async (req: Request, res: Response, next: NextFunction) => {
   const user = (req as any).user as AuthenticatedUser;

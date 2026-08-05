@@ -1,9 +1,11 @@
 import { WebSocketServer, WebSocket } from 'ws';
+import { WEBSOCKET_ACCESS_REVOKED_CLOSE_CODE } from '@shared/websocketAccess';
 import { Server, IncomingMessage } from 'http';
 import cookie from 'cookie';
 import signature from 'cookie-signature';
 import { log } from '../logger';
 import { sessionSecret } from '../sessionConfig';
+import { evaluateSessionAccess, type SessionAccessRecord } from '../security/sessionAccess';
 
 interface NotificationPayload {
   type: 'new_message' | 'sync_complete' | 'agent_reply' | 'agent_cooldown' | 'crisis_alert';
@@ -22,16 +24,10 @@ interface ConnectedClient extends ConnectedClientAccess {
   userId: string;
 }
 
-interface WebSocketUser {
-  id: string;
-  role: string;
-  brandId: string | null;
-}
-
 export interface WebSocketServiceOptions {
   sessionSecret?: string;
   getSessionUserId?: (sessionId: string) => Promise<string | null>;
-  getUser?: (userId: string) => Promise<WebSocketUser | null | undefined>;
+  getSessionAccessByUserId?: (userId: string) => Promise<SessionAccessRecord | null | undefined>;
   logger?: typeof log;
 }
 
@@ -51,15 +47,15 @@ export class WebSocketService {
   private clients: Map<WebSocket, ConnectedClient> = new Map();
   private readonly sessionSecret: string;
   private readonly findSessionUserId: (sessionId: string) => Promise<string | null>;
-  private readonly findUser: (userId: string) => Promise<WebSocketUser | null | undefined>;
+  private readonly findSessionAccess: (userId: string) => Promise<SessionAccessRecord | null | undefined>;
   private readonly logger: typeof log;
 
   constructor(options: WebSocketServiceOptions = {}) {
     this.sessionSecret = options.sessionSecret || sessionSecret;
     this.findSessionUserId = options.getSessionUserId || ((sessionId) => this.getSessionUserIdFromStore(sessionId));
-    this.findUser = options.getUser || (async (userId) => {
+    this.findSessionAccess = options.getSessionAccessByUserId || (async (userId) => {
       const { storage } = await import('../storage');
-      return storage.getUser(userId);
+      return storage.getSessionAccessByUserId(userId);
     });
     this.logger = options.logger || log;
   }
@@ -144,10 +140,18 @@ export class WebSocketService {
         return null;
       }
 
-      const user = await this.findUser(userId);
-      if (!user) {
+      const accessRecord = await this.findSessionAccess(userId);
+      if (!accessRecord) {
         return null;
       }
+
+      const decision = evaluateSessionAccess(accessRecord);
+      if (!decision.allowed) {
+        this.logger(`[WebSocket] Connection rejected - ${decision.code}`, 'ws');
+        return null;
+      }
+
+      const { user } = accessRecord;
 
       return {
         userId: user.id,
@@ -297,6 +301,37 @@ export class WebSocketService {
       if (client.brandId === brandId) count++;
     });
     return count;
+  }
+
+  disconnectUser(userId: string): number {
+    return this.disconnectClients(
+      (client) => client.userId === userId,
+      'User access revoked',
+    );
+  }
+
+  disconnectBrand(brandId: string): number {
+    return this.disconnectClients(
+      (client) => client.userRole !== 'admin' && client.userBrandId === brandId,
+      'Brand access revoked',
+    );
+  }
+
+  private disconnectClients(
+    matches: (client: ConnectedClient) => boolean,
+    reason: string,
+  ): number {
+    let disconnected = 0;
+
+    this.clients.forEach((client, socket) => {
+      if (!matches(client)) return;
+
+      this.clients.delete(socket);
+      socket.close(WEBSOCKET_ACCESS_REVOKED_CLOSE_CODE, reason);
+      disconnected += 1;
+    });
+
+    return disconnected;
   }
 
   async shutdown(gracePeriodMs = 1_000): Promise<void> {

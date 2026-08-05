@@ -36,6 +36,7 @@ before(async () => {
 
   const originalMethods = {
     getUser: applicationStorage.getUser,
+    getSessionAccessByUserId: applicationStorage.getSessionAccessByUserId,
     getMessage: applicationStorage.getMessage,
     getConversation: applicationStorage.getConversation,
     getBrand: applicationStorage.getBrand,
@@ -56,6 +57,10 @@ before(async () => {
     status: "active",
     emailVerifiedAt: new Date("2026-08-03T00:00:00.000Z"),
     createdAt: new Date("2026-08-03T00:00:00.000Z"),
+  });
+  applicationStorage.getSessionAccessByUserId = async () => ({
+    user: (await applicationStorage.getUser("user-a"))!,
+    brandStatus: "active",
   });
   applicationStorage.getMessage = async () => ({
     id: "message-b",
@@ -80,6 +85,7 @@ before(async () => {
 
   restoreApplicationStorage = () => {
     applicationStorage.getUser = originalMethods.getUser;
+    applicationStorage.getSessionAccessByUserId = originalMethods.getSessionAccessByUserId;
     applicationStorage.getMessage = originalMethods.getMessage;
     applicationStorage.getConversation = originalMethods.getConversation;
     applicationStorage.getBrand = originalMethods.getBrand;
