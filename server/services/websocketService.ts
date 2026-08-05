@@ -41,6 +41,21 @@ type WebSocketAuthenticationResult =
       reason: string;
     };
 
+type WebSocketAuthenticationStage =
+  | 'connection_authentication'
+  | 'session_store_lookup'
+  | 'authorization_lookup';
+
+class WebSocketAuthenticationFailure extends Error {
+  constructor(
+    readonly stage: WebSocketAuthenticationStage,
+    cause: unknown,
+  ) {
+    super('WebSocket authentication failed', { cause });
+    this.name = 'WebSocketAuthenticationFailure';
+  }
+}
+
 export interface WebSocketServiceOptions {
   sessionSecret?: string;
   getSessionUserId?: (sessionId: string) => Promise<string | null>;
@@ -126,7 +141,7 @@ export class WebSocketService {
           this.clients.delete(ws);
         });
       } catch (error) {
-        this.logger('[WebSocket] Connection authentication temporarily unavailable', 'ws');
+        this.logger(JSON.stringify(webSocketAuthenticationFailureContext(error)), 'ws');
         ws.close(WEBSOCKET_TRANSIENT_FAILURE_CLOSE_CODE, 'Try again later');
       }
     });
@@ -153,12 +168,24 @@ export class WebSocketService {
       return this.authenticationRequired();
     }
 
-    const userId = await this.findSessionUserId(sessionId);
+    let userId: string | null;
+    try {
+      userId = await this.findSessionUserId(sessionId);
+    } catch (error) {
+      throw new WebSocketAuthenticationFailure('session_store_lookup', error);
+    }
+
     if (!userId) {
       return this.authenticationRequired();
     }
 
-    const accessRecord = await this.findSessionAccess(userId);
+    let accessRecord: SessionAccessRecord | null | undefined;
+    try {
+      accessRecord = await this.findSessionAccess(userId);
+    } catch (error) {
+      throw new WebSocketAuthenticationFailure('authorization_lookup', error);
+    }
+
     if (!accessRecord) {
       return this.accessRevoked();
     }
@@ -388,6 +415,73 @@ export class WebSocketService {
     this.clients.clear();
     this.wss = null;
   }
+}
+
+function webSocketAuthenticationFailureContext(error: unknown) {
+  const stage = error instanceof WebSocketAuthenticationFailure
+    ? error.stage
+    : 'connection_authentication';
+  const rootError = getRootError(error);
+  const code = getSafeErrorCode(rootError);
+
+  return {
+    event: 'websocket_authentication_failed',
+    stage,
+    outcome: 'retryable_close',
+    closeCode: WEBSOCKET_TRANSIENT_FAILURE_CLOSE_CODE,
+    error: {
+      name: getSafeErrorName(rootError),
+      ...(code ? { code } : {}),
+      message: getSafeErrorMessage(rootError),
+    },
+  };
+}
+
+function getRootError(error: unknown): unknown {
+  let current = error;
+
+  for (let depth = 0; depth < 4; depth += 1) {
+    if (!(current instanceof Error) || !(current.cause instanceof Error)) break;
+    current = current.cause;
+  }
+
+  return current;
+}
+
+function getSafeErrorName(error: unknown): string {
+  if (!(error instanceof Error)) return 'UnknownError';
+
+  const safeName = error.name.replace(/[^a-zA-Z0-9_.-]/g, '').slice(0, 64);
+  return safeName || 'Error';
+}
+
+function getSafeErrorCode(error: unknown): string | undefined {
+  if (!(error instanceof Error) || !('code' in error)) return undefined;
+
+  const code = (error as Error & { code?: unknown }).code;
+  if (typeof code !== 'string' && typeof code !== 'number') return undefined;
+
+  const safeCode = String(code).replace(/[^a-zA-Z0-9_.-]/g, '').slice(0, 64);
+  return safeCode || undefined;
+}
+
+function getSafeErrorMessage(error: unknown): string {
+  if (!(error instanceof Error)) return 'Non-Error thrown';
+
+  return redactSensitiveErrorText(error.message).slice(0, 240) || 'No error message';
+}
+
+function redactSensitiveErrorText(message: string): string {
+  return message
+    .replace(/\b(?:cookie|authorization)\s*[:=]\s*[^\r\n]*/gi, '[redacted-header]')
+    .replace(/\bBearer\s+\S+/gi, 'Bearer [redacted]')
+    .replace(/\b(?:postgres(?:ql)?|https?):\/\/\S+/gi, '[redacted-url]')
+    .replace(
+      /\b(cookie|connect\.sid|session(?:[_-]?id)?|token|password|secret|authorization|api[_-]?key|request[_-]?body|body|payload)\b\s*[:=]\s*(?:"[^"]*"|'[^']*'|[^\s,;]+)/gi,
+      '$1=[redacted]',
+    )
+    .replace(/\beyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\b/g, '[redacted-token]')
+    .replace(/\b[a-zA-Z0-9_-]{24,}\b/g, '[redacted-value]');
 }
 
 export const websocketService = new WebSocketService();
