@@ -27,6 +27,22 @@ describe("reminder dispatch idempotency", () => {
     assert.equal(harness.deliveryCount, 1);
   });
 
+  it("persists a non-exception delivery failure immediately", async () => {
+    const harness = createReminderDispatchHarness(
+      [createReminderEvent()],
+      { deliveryResult: { success: false, error: "Invalid reminder data" } },
+    );
+
+    const result = await harness.dispatchOnce();
+
+    assert.deepEqual(result, {
+      sent: 0,
+      errors: ["Reminder reminder-a: Invalid reminder data"],
+    });
+    assert.equal(harness.events[0].status, "failed");
+    assert.equal(harness.events[0].errorMessage, "Invalid reminder data");
+  });
+
   it("fails an abandoned claim without retrying an ambiguous delivery", async () => {
     const harness = createReminderDispatchHarness([
       createReminderEvent({

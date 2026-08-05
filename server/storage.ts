@@ -22,7 +22,7 @@ import {
   type BrandLifecycleSettings, type InsertBrandLifecycleSettings, type UpdateBrandLifecycleSettings,
   type ConversationStatus, type ClosedBy,
   type ReminderRules, type InsertReminderRules, type UpdateReminderRules,
-  type ReminderEvent, type InsertReminderEvent, type ReminderStatus,
+  type ReminderEvent, type InsertReminderEvent, type ReminderStatus, type ReminderEventStatus,
   type ConversationTimeline, type TimelineEvent,
   leads, type Lead, type InsertLead,
   metaPageConnections, type MetaPageConnection, type InsertMetaPageConnection, type UpdateMetaPageConnection,
@@ -333,7 +333,7 @@ export interface IStorage {
   getReminderEventsByConversation(conversationId: string): Promise<ReminderEvent[]>;
   getReminderEventsByContact(contactId: string): Promise<ReminderEvent[]>;
   getReminderEventsByBrand(brandId: string, options?: { status?: string; limit?: number }): Promise<ReminderEvent[]>;
-  updateReminderEventStatus(id: string, status: string, sentAt?: Date, errorMessage?: string): Promise<ReminderEvent | undefined>;
+  updateReminderEventStatus(id: string, status: ReminderEventStatus, sentAt?: Date, errorMessage?: string, expectedCurrentStatus?: ReminderEventStatus): Promise<ReminderEvent | undefined>;
   updateReminderEventContent(id: string, content: string): Promise<ReminderEvent | undefined>;
   claimScheduledReminders(brandId: string, limit?: number): Promise<ReminderEvent[]>;
   failAbandonedReminderClaims(brandId: string, claimedBefore: Date, reason: string): Promise<number>;
@@ -3759,7 +3759,13 @@ export class DatabaseStorage implements IStorage {
     return results;
   }
 
-  async updateReminderEventStatus(id: string, status: string, sentAt?: Date, errorMessage?: string): Promise<ReminderEvent | undefined> {
+  async updateReminderEventStatus(
+    id: string,
+    status: ReminderEventStatus,
+    sentAt?: Date,
+    errorMessage?: string,
+    expectedCurrentStatus?: ReminderEventStatus,
+  ): Promise<ReminderEvent | undefined> {
     const updateData: Record<string, any> = { status };
     if (sentAt) updateData.sentAt = sentAt;
     if (errorMessage) updateData.errorMessage = errorMessage;
@@ -3767,7 +3773,14 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(reminderEvents)
       .set(updateData)
-      .where(eq(reminderEvents.id, id))
+      .where(
+        expectedCurrentStatus
+          ? and(
+              eq(reminderEvents.id, id),
+              eq(reminderEvents.status, expectedCurrentStatus),
+            )
+          : eq(reminderEvents.id, id),
+      )
       .returning();
     return updated || undefined;
   }

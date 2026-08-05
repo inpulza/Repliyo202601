@@ -9,6 +9,7 @@ import {
   type ReminderEvent,
   type CrmContact,
   type ReminderStatus,
+  type ReminderEventStatus,
   type Message
 } from "@shared/schema";
 
@@ -92,11 +93,14 @@ export class ReminderService implements IReminderService {
     this.dispatcher = new ReminderDispatchService({
       store: storage,
       deliver: (reminder) => this.sendReminder(reminder),
-      onDeliveryException: async (reminder, error) => {
+      onDeliveryFailure: async (reminder, error) => {
         await this.handleReminderFailure(
           reminder.id,
           reminder.conversationId,
           String(error),
+          'failed',
+          false,
+          'processing',
         );
       },
     });
@@ -693,9 +697,18 @@ export class ReminderService implements IReminderService {
     conversationId: string | null,
     error: string,
     status: 'failed' | 'cancelled' = 'failed',
-    preserveConversationStatus: boolean = false
+    preserveConversationStatus: boolean = false,
+    expectedCurrentStatus?: ReminderEventStatus,
   ): Promise<void> {
-    await storage.updateReminderEventStatus(reminderId, status, undefined, error);
+    const updated = await storage.updateReminderEventStatus(
+      reminderId,
+      status,
+      undefined,
+      error,
+      expectedCurrentStatus,
+    );
+
+    if (expectedCurrentStatus && !updated) return;
     
     if (conversationId && !preserveConversationStatus) {
       try {

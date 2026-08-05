@@ -6251,7 +6251,7 @@ lastReminderAt: timestamp(),
 | `createReminderEvent` | Crea evento de reminder |
 | `getReminderEventById` | Obtiene evento por ID |
 | `getReminderEventsByConversation` | Obtiene eventos por conversación |
-| `updateReminderEventStatus` | Actualiza estado del evento |
+| `updateReminderEventStatus` | Actualiza estado y permite exigir el estado actual |
 | `claimScheduledReminders` | Reclama reminders atómicamente antes de enviar |
 | `failAbandonedReminderClaims` | Falla claims abandonados sin reintento automático |
 | `countRemindersSentToday` | Cuenta reminders enviados hoy |
@@ -6516,7 +6516,7 @@ WHERE status IN ('scheduled', 'processing');
 | 4 | `createReminderEvent(data)` | CREATE | Crea evento de reminder |
 | 5 | `getReminderEventById(id)` | READ | Obtiene evento por ID |
 | 6 | `getReminderEventsByConversation(convId)` | READ | Lista eventos por conversación |
-| 7 | `updateReminderEventStatus(id, status, sentAt, error)` | UPDATE | Actualiza estado del evento |
+| 7 | `updateReminderEventStatus(id, status, sentAt, error, expectedStatus?)` | UPDATE | Actualiza estado de forma opcionalmente condicional |
 | 8 | `claimScheduledReminders(brandId, limit)` | UPDATE | Claim atómico antes del proveedor |
 | 9 | `failAbandonedReminderClaims(brandId, before, reason)` | UPDATE | Falla claims ambiguos sin reintento |
 | 10 | `countRemindersSentToday(brandId)` | READ | Cuenta reminders enviados hoy |

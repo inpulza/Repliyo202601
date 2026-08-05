@@ -23,7 +23,7 @@ export interface ReminderDispatchLogger {
 export interface ReminderDispatchServiceOptions {
   store: ReminderDispatchStore;
   deliver: (reminder: ReminderEvent) => Promise<ReminderDeliveryResult>;
-  onDeliveryException: (reminder: ReminderEvent, error: unknown) => Promise<void>;
+  onDeliveryFailure: (reminder: ReminderEvent, error: unknown) => Promise<void>;
   logger?: ReminderDispatchLogger;
   now?: () => Date;
   claimBatchSize?: number;
@@ -33,7 +33,7 @@ export interface ReminderDispatchServiceOptions {
 export class ReminderDispatchService {
   private readonly store: ReminderDispatchStore;
   private readonly deliver: (reminder: ReminderEvent) => Promise<ReminderDeliveryResult>;
-  private readonly onDeliveryException: (reminder: ReminderEvent, error: unknown) => Promise<void>;
+  private readonly onDeliveryFailure: (reminder: ReminderEvent, error: unknown) => Promise<void>;
   private readonly logger: ReminderDispatchLogger;
   private readonly now: () => Date;
   private readonly claimBatchSize: number;
@@ -42,7 +42,7 @@ export class ReminderDispatchService {
   constructor(options: ReminderDispatchServiceOptions) {
     this.store = options.store;
     this.deliver = options.deliver;
-    this.onDeliveryException = options.onDeliveryException;
+    this.onDeliveryFailure = options.onDeliveryFailure;
     this.logger = options.logger ?? console;
     this.now = options.now ?? (() => new Date());
     this.claimBatchSize = Math.max(1, options.claimBatchSize ?? DEFAULT_CLAIM_BATCH_SIZE);
@@ -69,17 +69,22 @@ export class ReminderDispatchService {
       this.logger.log(`[ReminderDispatch] Claimed ${reminders.length} reminder(s) for brand ${brandId}`);
 
       for (const reminder of reminders) {
+        let delivery: ReminderDeliveryResult;
         try {
-          const delivery = await this.deliver(reminder);
-          if (delivery.success) {
-            result.sent++;
-          } else if (delivery.error) {
-            result.errors.push(`Reminder ${reminder.id}: ${delivery.error}`);
-          }
+          delivery = await this.deliver(reminder);
         } catch (error) {
           const errorMessage = String(error);
           result.errors.push(`Reminder ${reminder.id}: ${errorMessage}`);
-          await this.onDeliveryException(reminder, error);
+          await this.onDeliveryFailure(reminder, error);
+          continue;
+        }
+
+        if (delivery.success) {
+          result.sent++;
+        } else {
+          const error = delivery.error ?? "Delivery failed without details";
+          result.errors.push(`Reminder ${reminder.id}: ${error}`);
+          await this.onDeliveryFailure(reminder, error);
         }
       }
     } catch (error) {

@@ -12,6 +12,7 @@ This reduces duplicate-message risk. It does not claim mathematical exactly-once
 - `processing` means one worker owns the delivery attempt.
 - `sent`, `failed`, and `cancelled` remain terminal event states.
 - Claims older than 15 minutes become `failed` with an explicit ambiguous-outcome reason. They are not returned to `scheduled`.
+- A normal non-success result becomes `failed` immediately if the event is still `processing`; an existing terminal state such as `cancelled` is never overwritten.
 - The conversation is unlocked after abandoned-claim recovery so later follow-up policy can proceed normally.
 
 The claim uses one database transaction with `FOR UPDATE SKIP LOCKED`, followed by the `scheduled` to `processing` update before the provider boundary.

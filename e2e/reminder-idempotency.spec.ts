@@ -8,6 +8,8 @@ import {
 const browserErrors = new WeakMap<Page, string[]>();
 let testServer: ReminderDispatchTestServer;
 
+test.use({ timezoneId: "UTC" });
+
 test.beforeAll(async () => {
   testServer = await startReminderDispatchTestServer();
 });

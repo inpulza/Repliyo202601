@@ -28,8 +28,13 @@ export interface ReminderDispatchTestServer {
   close(): Promise<void>;
 }
 
+interface ReminderDispatchHarnessOptions {
+  deliveryResult?: ReminderDeliveryResult;
+}
+
 export function createReminderDispatchHarness(
   events: ReminderEvent[] = [createReminderEvent()],
+  options: ReminderDispatchHarnessOptions = {},
 ): ReminderDispatchHarness {
   const state = {
     events: events.map((event) => ({ ...event })),
@@ -79,6 +84,10 @@ export function createReminderDispatchHarness(
     state.deliveryCount += 1;
     await new Promise<void>((resolve) => setImmediate(resolve));
 
+    if (options.deliveryResult && !options.deliveryResult.success) {
+      return options.deliveryResult;
+    }
+
     const event = state.events.find((candidate) => candidate.id === claimed.id);
     if (!event || event.status !== "processing") {
       throw new Error("The claimed reminder is no longer deliverable");
@@ -94,9 +103,9 @@ export function createReminderDispatchHarness(
     new ReminderDispatchService({
       store,
       deliver,
-      onDeliveryException: async (reminder, error) => {
+      onDeliveryFailure: async (reminder, error) => {
         const event = state.events.find((candidate) => candidate.id === reminder.id);
-        if (event) {
+        if (event?.status === "processing") {
           event.status = "failed";
           event.errorMessage = String(error);
         }
