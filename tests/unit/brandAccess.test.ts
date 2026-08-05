@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  canAssignUserToBrand,
   canAccessBrand,
   getAccessibleBrandResource,
 } from "../../server/security/brandAccess";
@@ -51,6 +52,27 @@ describe("brand access", () => {
         foreignMessage,
       ),
       foreignMessage,
+    );
+  });
+
+  it("only assigns active users from the conversation brand", () => {
+    assert.equal(
+      canAssignUserToBrand({ brandId: "brand-a", status: "active" }, "brand-a"),
+      true,
+    );
+    assert.equal(
+      canAssignUserToBrand({ brandId: "brand-b", status: "active" }, "brand-a"),
+      false,
+    );
+    assert.equal(
+      canAssignUserToBrand({ brandId: "brand-a", status: "suspended" }, "brand-a"),
+      false,
+    );
+    assert.equal(canAssignUserToBrand(null, "brand-a"), false);
+    assert.equal(canAssignUserToBrand(undefined, "brand-a"), false);
+    assert.equal(
+      canAssignUserToBrand({ brandId: null, status: "active" }, "brand-a"),
+      false,
     );
   });
 });

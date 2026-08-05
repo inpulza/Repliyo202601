@@ -528,10 +528,13 @@ Cuando llega un DM nuevo, el sistema arma el siguiente prompt:
 
 3. ✅ **Middleware de Seguridad:**
    - `requireAuth`: Protege todas las rutas que requieren autenticación
+   - `requireAuth` relee usuario y estado de su marca en una sola consulta por petición; una cuenta suspendida, pendiente o ligada a una marca archivada pierde acceso aunque conserve una cookie de sesión
    - `filterByBrand()`: Filtra automáticamente por brandId para usuarios client
    - Validación explícita de acceso a brands por ID
    - Admins tienen acceso total a todos los datos
    - Clients solo ven datos de su brand
+   - WebSocket rechaza sesiones inactivas al conectar y desconecta sockets existentes al suspender, reasignar o eliminar usuarios y al archivar marcas
+   - Las escrituras de lectura de notificaciones exigen `brandId` en la condición SQL; las asignaciones de conversaciones exigen que conversación y usuario activo pertenezcan a la misma marca
 
 **Pruebas de Seguridad Completadas:**
 - ✅ Usuarios de diferentes marcas no pueden ver datos de otras

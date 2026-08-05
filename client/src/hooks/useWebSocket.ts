@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import {
+  isWebSocketAuthorizationCloseCode,
+  shouldReconnectWebSocket,
+} from '@shared/websocketAccess';
 
 interface NotificationPayload {
   type: 'new_message' | 'sync_complete' | 'agent_reply' | 'agent_cooldown' | 'crisis_alert' | 'subscribed' | 'connected' | 'error';
@@ -138,8 +142,17 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         console.log('[useWebSocket] Connection closed | code:', event.code, '| reason:', event.reason, '| wasClean:', event.wasClean);
         setIsConnected(false);
         wsRef.current = null;
-        
-        if (event.code !== 1000) {
+
+        if (isWebSocketAuthorizationCloseCode(event.code)) {
+          if (reconnectTimeoutRef.current) {
+            clearTimeout(reconnectTimeoutRef.current);
+            reconnectTimeoutRef.current = null;
+          }
+          window.location.reload();
+          return;
+        }
+
+        if (shouldReconnectWebSocket(event.code)) {
           console.log('[useWebSocket] Scheduling reconnect in 5 seconds...');
           reconnectTimeoutRef.current = setTimeout(() => {
             connect();

@@ -7,6 +7,11 @@ export interface BrandScopedResource {
   brandId: string;
 }
 
+export interface BrandAssignableUser {
+  brandId: string | null;
+  status: string;
+}
+
 export function canAccessBrand(
   user: BrandAccessPrincipal | null | undefined,
   resourceBrandId: string,
@@ -26,4 +31,13 @@ export function getAccessibleBrandResource<T extends BrandScopedResource>(
   }
 
   return resource;
+}
+
+export function canAssignUserToBrand(
+  user: BrandAssignableUser | null | undefined,
+  resourceBrandId: string,
+): boolean {
+  return Boolean(
+    user && user.status === "active" && user.brandId === resourceBrandId,
+  );
 }

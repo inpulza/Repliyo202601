@@ -143,7 +143,12 @@ export function NotificationCenter({ isCollapsed = false }: NotificationCenterPr
 
   const markAsReadMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/notifications/${id}/read`, { method: 'PATCH' });
+      if (!activeClient?.id) throw new Error('Brand ID required');
+      const res = await fetch(`/api/notifications/${id}/read`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brandId: activeClient.id }),
+      });
       if (!res.ok) throw new Error('Failed to mark as read');
       return res.json();
     },
