@@ -1,4 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useCallback, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import {
+  isDashboardPath,
+  isTerminalSessionResponse,
+} from '@/lib/sessionRecovery';
 
 interface User {
   id: string;
@@ -23,6 +27,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const redirectStartedRef = useRef(false);
+
+  const endDashboardSession = useCallback(() => {
+    setUser(null);
+    if (redirectStartedRef.current) return;
+
+    redirectStartedRef.current = true;
+    window.location.replace('/login');
+  }, []);
 
   const checkAuth = async () => {
     try {
@@ -68,15 +81,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       ...options,
       credentials: 'include',
     });
-    
-    if (res.status === 401) {
-      setUser(null);
-      window.location.href = '/login';
+
+    if (await isTerminalSessionResponse(res)) {
+      endDashboardSession();
       throw new Error('Session expired');
     }
-    
+
     return res;
   };
+
+  useEffect(() => {
+    const originalFetch = window.fetch;
+    const sessionAwareFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const response = await originalFetch(input, init);
+
+      if (
+        isDashboardPath(window.location.pathname)
+        && await isTerminalSessionResponse(response)
+      ) {
+        endDashboardSession();
+      }
+
+      return response;
+    }) as typeof window.fetch;
+
+    window.fetch = sessionAwareFetch;
+    return () => {
+      if (window.fetch === sessionAwareFetch) {
+        window.fetch = originalFetch;
+      }
+    };
+  }, [endDashboardSession]);
 
   useEffect(() => {
     checkAuth();

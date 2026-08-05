@@ -7,6 +7,8 @@ import type { User } from "@shared/schema";
 import type { IStorage } from "../../server/storage";
 import type { SessionAccessRecord } from "../../server/security/sessionAccess";
 
+const TEST_PASSWORD_HASH = "$2b$10$okyFpyU/IKNoo1nv/YDFA.LQBPQxL2Den36jnRQtnZs1WwcJK6MmK";
+
 export interface DashboardAuthorizationState {
   assignmentWrites: number;
   notificationWrites: number;
@@ -201,7 +203,7 @@ function user(
   return {
     id,
     email: `${id}@example.test`,
-    password: null,
+    password: TEST_PASSWORD_HASH,
     name: id,
     role,
     brandId,

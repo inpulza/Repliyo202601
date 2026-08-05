@@ -4,7 +4,10 @@ import {
   startDashboardAuthorizationTestServer,
   type DashboardAuthorizationTestServer,
 } from "../tests/helpers/dashboardAuthorizationTestServer";
-import { WEBSOCKET_ACCESS_REVOKED_CLOSE_CODE } from "../shared/websocketAccess";
+import {
+  WEBSOCKET_ACCESS_REVOKED_CLOSE_CODE,
+  WEBSOCKET_AUTH_REQUIRED_CLOSE_CODE,
+} from "../shared/websocketAccess";
 
 declare global {
   interface Window {
@@ -27,7 +30,7 @@ test.afterAll(async () => {
 test.beforeEach(() => authorizationServer.reset());
 
 test("a suspended existing session is visibly returned to login", async ({ page }) => {
-  const browserState = await installDashboardApi(page, "suspended-a");
+  const browserState = await installDashboardApi(page, "suspended-a", [403]);
 
   await page.goto("/app/profile", { waitUntil: "domcontentloaded" });
 
@@ -35,13 +38,14 @@ test("a suspended existing session is visibly returned to login", async ({ page 
   await expect(page.getByTestId("input-email")).toBeVisible();
   expect(authorizationServer.state.sessionRevocations).toBeGreaterThan(0);
   expect(browserState.pageErrors, "unexpected browser errors").toEqual([]);
-  expect(browserState.failedResponses, "expected revoked auth response").toEqual([
+  expect(browserState.failedResponses, "expected revoked auth response").not.toHaveLength(0);
+  expect(new Set(browserState.failedResponses)).toEqual(new Set([
     "GET /api/auth/me 403",
-  ]);
+  ]));
 });
 
 test("a revoked realtime session returns the open dashboard to login", async ({ page, isMobile }) => {
-  const browserState = await installDashboardApi(page, "user-a");
+  const browserState = await installDashboardApi(page, "user-a", [403]);
 
   await page.goto("/app/inbox", { waitUntil: "domcontentloaded" });
   await expect(page).toHaveURL(/\/app\/inbox$/);
@@ -58,10 +62,83 @@ test("a revoked realtime session returns the open dashboard to login", async ({ 
   expect(browserState.knownBaselineErrors, "tracked mobile CRM accessibility baseline").toEqual(
     isMobile ? ["mobile CRM dialog is missing DialogTitle"] : [],
   );
-  expect(browserState.failedResponses, "expected revoked auth response").toEqual([
-    "GET /api/auth/me 403",
+  await expect.poll(() => authorizationServer.state.sessionRevocations).toBeGreaterThan(0);
+  expect(
+    browserState.failedResponses.every((failure) => failure === "GET /api/auth/me 403"),
+    "only the expected revoked auth check may fail during navigation",
+  ).toBe(true);
+});
+
+test("an expired realtime session cannot trap the dashboard in a reload loop", async ({ page }) => {
+  const browserState = await installDashboardApi(page, "user-a");
+
+  await page.goto("/app/inbox", { waitUntil: "domcontentloaded" });
+  await expect.poll(() => page.evaluate(() => window.__repliyoTestSockets?.length ?? 0)).toBe(1);
+
+  await Promise.all([
+    page.waitForEvent("load"),
+    page.evaluate((closeCode) => {
+      window.__repliyoTestSockets?.at(-1)?.emitClose(closeCode, "Not authenticated");
+    }, WEBSOCKET_AUTH_REQUIRED_CLOSE_CODE),
   ]);
+
+  await expect(page).toHaveURL(/\/app\/inbox$/);
+  await expect.poll(() => page.evaluate(() => window.__repliyoTestSockets?.length ?? 0)).toBe(1);
+  await page.evaluate((closeCode) => {
+    window.__repliyoTestSockets?.at(-1)?.emitClose(closeCode, "Not authenticated");
+  }, WEBSOCKET_AUTH_REQUIRED_CLOSE_CODE);
+
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByTestId("input-email")).toBeVisible();
+  expect(browserState.pageErrors, "unexpected browser errors").toEqual([]);
+  expect(browserState.failedResponses, "unexpected HTTP errors").toEqual([]);
+});
+
+test("a terminal 403 closes a dashboard screen that has no WebSocket", async ({ page, isMobile }) => {
+  const browserState = await installDashboardApi(page, "user-a", [403]);
+
+  await page.goto("/app/profile", { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(/\/app\/profile$/);
+  await expect(
+    isMobile ? page.getByTestId("mobile-user-name") : page.getByTestId("text-user-name"),
+  ).toBeVisible();
+
+  authorizationServer.setUserStatus("user-a", "suspended");
+
+  await submitPasswordChange(page, isMobile, "current-password");
+
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByTestId("input-email")).toBeVisible();
+  expect(browserState.pageErrors, "unexpected browser errors").toEqual([]);
+  expect(browserState.failedResponses).toContain("POST /api/auth/change-password 403");
+  expect(
+    browserState.failedResponses.every((failure) => (
+      failure === "POST /api/auth/change-password 403"
+      || failure === "GET /api/auth/me 403"
+    )),
+    "only the terminal mutation and follow-up auth check may fail",
+  ).toBe(true);
   expect(authorizationServer.state.sessionRevocations).toBeGreaterThan(0);
+});
+
+test("an incorrect current password stays on profile with a useful error", async ({ page, isMobile }) => {
+  const browserState = await installDashboardApi(page, "user-a", [400]);
+
+  await page.goto("/app/profile", { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(/\/app\/profile$/);
+  await expect(
+    isMobile ? page.getByTestId("mobile-user-name") : page.getByTestId("text-user-name"),
+  ).toBeVisible();
+
+  await submitPasswordChange(page, isMobile, "wrong-password");
+
+  await expect(page).toHaveURL(/\/app\/profile$/);
+  await expect(page.getByText("La contraseña actual es incorrecta", { exact: true })).toBeVisible();
+  expect(browserState.pageErrors, "unexpected browser errors").toEqual([]);
+  expect(browserState.failedResponses).toEqual([
+    "POST /api/auth/change-password 400",
+  ]);
+  expect(authorizationServer.state.sessionRevocations).toBe(0);
 });
 
 test("an own-brand notification is marked read through the dashboard", async ({
@@ -88,16 +165,42 @@ test("an own-brand notification is marked read through the dashboard", async ({
   expect(browserState.failedResponses, "unexpected HTTP errors").toEqual([]);
 });
 
-async function installDashboardApi(page: Page, userId: string) {
+async function submitPasswordChange(
+  page: Page,
+  isMobile: boolean,
+  currentPassword: string,
+): Promise<void> {
+  if (isMobile) {
+    await page.getByTestId("mobile-row-password").click();
+    await page.locator("#mobileCurrentPassword").fill(currentPassword);
+    await page.locator("#mobileNewPassword").fill("new-password");
+    await page.locator("#mobileConfirmPassword").fill("new-password");
+    await page.getByRole("button", { name: /Actualizar/ }).click();
+    return;
+  }
+
+  await page.getByTestId("tab-change-password").click();
+  await page.getByTestId("input-current-password").fill(currentPassword);
+  await page.getByTestId("input-new-password").fill("new-password");
+  await page.getByTestId("input-confirm-password").fill("new-password");
+  await page.getByTestId("button-save-password").click();
+}
+
+async function installDashboardApi(
+  page: Page,
+  userId: string,
+  expectedConsoleResourceStatuses: readonly number[] = [],
+) {
   const pageErrors: string[] = [];
   const knownBaselineErrors: string[] = [];
   const failedResponses: string[] = [];
+  const expectedResourceErrors = new Set(expectedConsoleResourceStatuses.map(String));
 
   page.on("console", (message) => {
     if (message.type() !== "error") return;
     if (
       message.text().includes("Failed to load resource") &&
-      message.text().includes("403")
+      [...expectedResourceErrors].some((status) => message.text().includes(status))
     ) {
       return;
     }
@@ -173,7 +276,11 @@ async function installDashboardApi(page: Page, userId: string) {
     const url = new URL(request.url());
     const path = url.pathname;
 
-    if (path === "/api/auth/me" || path.startsWith("/api/notifications")) {
+    if (
+      path === "/api/auth/me"
+      || path === "/api/auth/change-password"
+      || path.startsWith("/api/notifications")
+    ) {
       const response = await fetch(`${authorizationServer.baseUrl}${path}${url.search}`, {
         method: request.method(),
         headers: {

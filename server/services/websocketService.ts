@@ -2,6 +2,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import {
   WEBSOCKET_ACCESS_REVOKED_CLOSE_CODE,
   WEBSOCKET_AUTH_REQUIRED_CLOSE_CODE,
+  WEBSOCKET_TRANSIENT_FAILURE_CLOSE_CODE,
 } from '@shared/websocketAccess';
 import { Server, IncomingMessage } from 'http';
 import cookie from 'cookie';
@@ -125,8 +126,8 @@ export class WebSocketService {
           this.clients.delete(ws);
         });
       } catch (error) {
-        this.logger(`[WebSocket] Connection error: ${error}`, 'ws');
-        ws.close(4000, 'Connection error');
+        this.logger('[WebSocket] Connection authentication temporarily unavailable', 'ws');
+        ws.close(WEBSOCKET_TRANSIENT_FAILURE_CLOSE_CODE, 'Try again later');
       }
     });
 
@@ -195,24 +196,21 @@ export class WebSocketService {
   }
 
   private async getSessionUserIdFromStore(sessionId: string): Promise<string | null> {
-    try {
-      const { sessionStore } = await import('../sessionStore');
-      return new Promise((resolve) => {
-        if (sessionStore && sessionStore.get) {
-          sessionStore.get(sessionId, (err: any, session: any) => {
-            if (err || !session) {
-              resolve(null);
-            } else {
-              resolve(session.userId || null);
-            }
-          });
-        } else {
-          resolve(null);
-        }
-      });
-    } catch (error) {
-      return null;
+    const { sessionStore } = await import('../sessionStore');
+    if (!sessionStore?.get) {
+      throw new Error('Session store unavailable');
     }
+
+    return new Promise((resolve, reject) => {
+      sessionStore.get(sessionId, (error: unknown, session?: { userId?: string } | null) => {
+        if (error) {
+          reject(new Error('Session store lookup failed', { cause: error }));
+          return;
+        }
+
+        resolve(session?.userId || null);
+      });
+    });
   }
 
   private handleMessage(ws: WebSocket, data: any): void {
