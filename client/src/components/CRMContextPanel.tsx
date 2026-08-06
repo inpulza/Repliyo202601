@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useReminderOptOut } from '@/hooks/useReminderRules';
+import { apiFetch } from '@/lib/authenticatedApiClient';
 import { 
   Mail, 
   Phone, 
@@ -178,7 +179,7 @@ function CRMPanelContent({
     }
     
     setIsLoadingTimeline(true);
-    fetch(`/api/crm/contacts/${crmContact.id}/timeline?limit=10`)
+    apiFetch(`/api/crm/contacts/${crmContact.id}/timeline?limit=10`)
       .then(res => {
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);

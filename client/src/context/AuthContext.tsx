@@ -1,8 +1,9 @@
 import React, { createContext, useCallback, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import { isTerminalSessionResponse } from '@/lib/sessionRecovery';
 import {
-  isDashboardPath,
-  isTerminalSessionResponse,
-} from '@/lib/sessionRecovery';
+  apiFetch,
+  registerDashboardSessionEndHandler,
+} from '@/lib/authenticatedApiClient';
 
 interface User {
   id: string;
@@ -77,7 +78,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const fetchWithAuth = async (url: string, options?: RequestInit): Promise<Response> => {
-    const res = await fetch(url, {
+    const res = await apiFetch(url, {
       ...options,
       credentials: 'include',
     });
@@ -91,26 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    const originalFetch = window.fetch;
-    const sessionAwareFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-      const response = await originalFetch(input, init);
-
-      if (
-        isDashboardPath(window.location.pathname)
-        && await isTerminalSessionResponse(response)
-      ) {
-        endDashboardSession();
-      }
-
-      return response;
-    }) as typeof window.fetch;
-
-    window.fetch = sessionAwareFetch;
-    return () => {
-      if (window.fetch === sessionAwareFetch) {
-        window.fetch = originalFetch;
-      }
-    };
+    return registerDashboardSessionEndHandler(endDashboardSession);
   }, [endDashboardSession]);
 
   useEffect(() => {

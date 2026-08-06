@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNexus } from '@/context/NexusContext';
 import { useQuery } from '@tanstack/react-query';
+import { apiFetch } from '@/lib/authenticatedApiClient';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { 
     BarChart3, 
@@ -118,7 +119,7 @@ export function Overview() {
     queryKey: ['/api/inbox-stats', activeClient?.id, days],
     queryFn: async () => {
       if (!activeClient?.id) return null;
-      const res = await fetch(`/api/inbox-stats/${activeClient.id}?days=${days}`, {
+      const res = await apiFetch(`/api/inbox-stats/${activeClient.id}?days=${days}`, {
         credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to fetch stats');

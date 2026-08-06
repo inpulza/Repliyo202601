@@ -11,6 +11,7 @@ import {
 
 declare global {
   interface Window {
+    __repliyoOriginalFetch?: typeof window.fetch;
     __repliyoTestSockets?: Array<{
       emitClose: (code: number, reason?: string) => void;
     }>;
@@ -98,6 +99,9 @@ test("a terminal 403 closes a dashboard screen that has no WebSocket", async ({ 
   const browserState = await installDashboardApi(page, "user-a", [403]);
 
   await page.goto("/app/profile", { waitUntil: "domcontentloaded" });
+  await expect.poll(() => page.evaluate(
+    () => window.fetch === window.__repliyoOriginalFetch,
+  )).toBe(true);
   await expect(page).toHaveURL(/\/app\/profile$/);
   await expect(
     isMobile ? page.getByTestId("mobile-user-name") : page.getByTestId("text-user-name"),
@@ -125,6 +129,9 @@ test("an incorrect current password stays on profile with a useful error", async
   const browserState = await installDashboardApi(page, "user-a", [400]);
 
   await page.goto("/app/profile", { waitUntil: "domcontentloaded" });
+  await expect.poll(() => page.evaluate(
+    () => window.fetch === window.__repliyoOriginalFetch,
+  )).toBe(true);
   await expect(page).toHaveURL(/\/app\/profile$/);
   await expect(
     isMobile ? page.getByTestId("mobile-user-name") : page.getByTestId("text-user-name"),
@@ -219,6 +226,7 @@ async function installDashboardApi(
 
   await page.addInitScript(() => {
     localStorage.setItem("repliyo_active_brand_id", "brand-a");
+    window.__repliyoOriginalFetch = window.fetch;
     window.__repliyoTestSockets = [];
 
     class TestWebSocket {

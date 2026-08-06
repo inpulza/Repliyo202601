@@ -1,5 +1,6 @@
 import type { Client, Message, Brand, Conversation, SocialPost, SocialAccount, AiAgent, AiAgentAuditLog, PlaygroundTemplate, ReminderRules, ReminderEvent } from '@shared/schema';
 import type { Platform, MessageType, Urgency, Intent, Sentiment, MessageStatus, CRMContact } from '@/lib/types';
+import { apiFetch } from '@/lib/authenticatedApiClient';
 
 export type { SocialAccount };
 
@@ -66,19 +67,19 @@ function adaptMessage(dbMsg: Message): Message & {
 export const api = {
   clients: {
     getAll: async (): Promise<Client[]> => {
-      const res = await fetch(`${API_BASE}/brands`);
+      const res = await apiFetch(`${API_BASE}/brands`);
       if (!res.ok) throw new Error('Failed to fetch clients');
       return res.json();
     },
     
     getById: async (id: string): Promise<Client> => {
-      const res = await fetch(`${API_BASE}/brands/${id}`);
+      const res = await apiFetch(`${API_BASE}/brands/${id}`);
       if (!res.ok) throw new Error('Failed to fetch client');
       return res.json();
     },
     
     create: async (data: Omit<Client, 'id' | 'createdAt'>): Promise<Client> => {
-      const res = await fetch(`${API_BASE}/brands`, {
+      const res = await apiFetch(`${API_BASE}/brands`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -90,7 +91,7 @@ export const api = {
 
   metricool: {
     getBrands: async (): Promise<MetricoolBrand[]> => {
-      const res = await fetch(`${API_BASE}/metricool/brands`);
+      const res = await apiFetch(`${API_BASE}/metricool/brands`);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || 'Failed to fetch Metricool brands');
@@ -99,7 +100,7 @@ export const api = {
     },
 
     importBrand: async (brand: ImportBrandPayload): Promise<ImportBrandResponse> => {
-      const res = await fetch(`${API_BASE}/brands/import`, {
+      const res = await apiFetch(`${API_BASE}/brands/import`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(brand),
@@ -112,7 +113,7 @@ export const api = {
     },
 
     syncBrand: async (brandId: string): Promise<{ success: boolean; stats: any }> => {
-      const res = await fetch(`${API_BASE}/sync-brand/${brandId}`, {
+      const res = await apiFetch(`${API_BASE}/sync-brand/${brandId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -124,7 +125,7 @@ export const api = {
     },
 
     getSyncStatus: async (brandId: string): Promise<{ syncPaused: boolean }> => {
-      const res = await fetch(`${API_BASE}/brands/${brandId}/sync-status`);
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/sync-status`);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || 'Failed to get sync status');
@@ -133,7 +134,7 @@ export const api = {
     },
 
     updateSyncStatus: async (brandId: string, syncPaused: boolean): Promise<{ message: string; syncPaused: boolean }> => {
-      const res = await fetch(`${API_BASE}/brands/${brandId}/sync-status`, {
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/sync-status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ syncPaused }),
@@ -148,7 +149,7 @@ export const api = {
 
   socialAccounts: {
     getByBrand: async (brandId: string): Promise<SocialAccount[]> => {
-      const res = await fetch(`${API_BASE}/brands/${brandId}/social-accounts`);
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/social-accounts`);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || 'Failed to fetch social accounts');
@@ -157,7 +158,7 @@ export const api = {
     },
 
     updateStatus: async (brandId: string, provider: string, isActive: boolean): Promise<SocialAccount> => {
-      const res = await fetch(`${API_BASE}/brands/${brandId}/social-accounts/${provider}`, {
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/social-accounts/${provider}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive }),
@@ -170,7 +171,7 @@ export const api = {
     },
 
     refresh: async (brandId: string): Promise<{ message: string; detected: number; accounts: SocialAccount[] }> => {
-      const res = await fetch(`${API_BASE}/brands/${brandId}/social-accounts/refresh`, {
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/social-accounts/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -187,21 +188,21 @@ export const api = {
       const url = clientId 
         ? `${API_BASE}/messages?clientId=${clientId}`
         : `${API_BASE}/messages`;
-      const res = await fetch(url);
+      const res = await apiFetch(url);
       if (!res.ok) throw new Error('Failed to fetch messages');
       const messages: Message[] = await res.json();
       return messages.map(adaptMessage);
     },
     
     getById: async (id: string) => {
-      const res = await fetch(`${API_BASE}/messages/${id}`);
+      const res = await apiFetch(`${API_BASE}/messages/${id}`);
       if (!res.ok) throw new Error('Failed to fetch message');
       const message: Message = await res.json();
       return adaptMessage(message);
     },
     
     create: async (data: Omit<Message, 'id' | 'createdAt'>) => {
-      const res = await fetch(`${API_BASE}/messages`, {
+      const res = await apiFetch(`${API_BASE}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -212,7 +213,7 @@ export const api = {
     },
     
     update: async (id: string, data: Partial<Message>) => {
-      const res = await fetch(`${API_BASE}/messages/${id}`, {
+      const res = await apiFetch(`${API_BASE}/messages/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -223,7 +224,7 @@ export const api = {
     },
     
     delete: async (id: string): Promise<void> => {
-      const res = await fetch(`${API_BASE}/messages/${id}`, {
+      const res = await apiFetch(`${API_BASE}/messages/${id}`, {
         method: 'DELETE',
       });
       if (!res.ok) throw new Error('Failed to delete message');
@@ -238,26 +239,26 @@ export const api = {
       if (type) params.append('type', type);
       
       const url = `${API_BASE}/conversations${params.toString() ? `?${params.toString()}` : ''}`;
-      const res = await fetch(url);
+      const res = await apiFetch(url);
       if (!res.ok) throw new Error('Failed to fetch conversations');
       return res.json();
     },
 
     getById: async (id: string): Promise<Conversation & { socialPost: SocialPost | null }> => {
-      const res = await fetch(`${API_BASE}/conversations/${id}`);
+      const res = await apiFetch(`${API_BASE}/conversations/${id}`);
       if (!res.ok) throw new Error('Failed to fetch conversation');
       return res.json();
     },
 
     getMessages: async (conversationId: string): Promise<Message[]> => {
-      const res = await fetch(`${API_BASE}/conversations/${conversationId}/messages`);
+      const res = await apiFetch(`${API_BASE}/conversations/${conversationId}/messages`);
       if (!res.ok) throw new Error('Failed to fetch conversation messages');
       const messages: Message[] = await res.json();
       return messages.map(adaptMessage);
     },
 
     markAsRead: async (conversationId: string): Promise<Conversation> => {
-      const res = await fetch(`${API_BASE}/conversations/${conversationId}/mark-read`, {
+      const res = await apiFetch(`${API_BASE}/conversations/${conversationId}/mark-read`, {
         method: 'POST',
       });
       if (!res.ok) throw new Error('Failed to mark conversation as read');
@@ -265,7 +266,7 @@ export const api = {
     },
 
     update: async (id: string, data: Partial<Conversation>): Promise<Conversation> => {
-      const res = await fetch(`${API_BASE}/conversations/${id}`, {
+      const res = await apiFetch(`${API_BASE}/conversations/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -275,7 +276,7 @@ export const api = {
     },
 
     getTimeline: async (conversationId: string): Promise<{ success: boolean; timeline: import('@shared/schema').ConversationTimeline }> => {
-      const res = await fetch(`${API_BASE}/conversations/${conversationId}/timeline`);
+      const res = await apiFetch(`${API_BASE}/conversations/${conversationId}/timeline`);
       if (!res.ok) throw new Error('Failed to fetch timeline');
       return res.json();
     },
@@ -283,7 +284,7 @@ export const api = {
 
   aiAgent: {
     get: async (brandId: string): Promise<AiAgent | null> => {
-      const res = await fetch(`${API_BASE}/ai-agent/${brandId}`);
+      const res = await apiFetch(`${API_BASE}/ai-agent/${brandId}`);
       if (res.status === 404) return null;
       if (!res.ok) {
         const error = await res.json();
@@ -293,7 +294,7 @@ export const api = {
     },
 
     save: async (brandId: string, data: Partial<AiAgent>): Promise<AiAgent> => {
-      const res = await fetch(`${API_BASE}/ai-agent/${brandId}`, {
+      const res = await apiFetch(`${API_BASE}/ai-agent/${brandId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -315,7 +316,7 @@ export const api = {
       model: string;
       provider: string;
     }> => {
-      const res = await fetch(`${API_BASE}/ai-agent/${brandId}/generate-reply`, {
+      const res = await apiFetch(`${API_BASE}/ai-agent/${brandId}/generate-reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messageId, conversationId }),
@@ -329,7 +330,7 @@ export const api = {
 
     getAuditLog: async (brandId: string, limit?: number): Promise<AiAgentAuditLog[]> => {
       const params = limit ? `?limit=${limit}` : '';
-      const res = await fetch(`${API_BASE}/ai-agent/${brandId}/audit-log${params}`);
+      const res = await apiFetch(`${API_BASE}/ai-agent/${brandId}/audit-log${params}`);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || 'Failed to fetch audit log');
@@ -348,7 +349,7 @@ export const api = {
       provider: string;
       error?: string;
     }> => {
-      const res = await fetch(`${API_BASE}/ai-agent/${brandId}/test-generate`, {
+      const res = await apiFetch(`${API_BASE}/ai-agent/${brandId}/test-generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ testMessage, platform }),
@@ -368,7 +369,7 @@ export const api = {
       provider?: string;
       model?: string;
     }> => {
-      const res = await fetch(`${API_BASE}/ai-agent/${brandId}/generate-draft/${messageId}`, {
+      const res = await apiFetch(`${API_BASE}/ai-agent/${brandId}/generate-draft/${messageId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -387,7 +388,7 @@ export const api = {
       requiresConfirmation?: boolean;
       message?: string;
     }> => {
-      const res = await fetch(`${API_BASE}/ai-agent/${brandId}/regenerate-draft/${messageId}`, {
+      const res = await apiFetch(`${API_BASE}/ai-agent/${brandId}/regenerate-draft/${messageId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ confirmOverwrite }),
@@ -410,7 +411,7 @@ export const api = {
       errorCount: number;
       results: Array<{ messageId: string; success: boolean; error?: string }>;
     }> => {
-      const res = await fetch(`${API_BASE}/ai-agent/${brandId}/bulk-generate-drafts`, {
+      const res = await apiFetch(`${API_BASE}/ai-agent/${brandId}/bulk-generate-drafts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messageIds, limit }),
@@ -423,7 +424,7 @@ export const api = {
     },
 
     updateDraft: async (brandId: string, messageId: string, draft: string): Promise<{ success: boolean; messageId: string; draft: string }> => {
-      const res = await fetch(`${API_BASE}/ai-agent/${brandId}/update-draft/${messageId}`, {
+      const res = await apiFetch(`${API_BASE}/ai-agent/${brandId}/update-draft/${messageId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ draft }),
@@ -436,7 +437,7 @@ export const api = {
     },
 
     discardDraft: async (brandId: string, messageId: string): Promise<{ success: boolean; messageId: string }> => {
-      const res = await fetch(`${API_BASE}/ai-agent/${brandId}/discard-draft/${messageId}`, {
+      const res = await apiFetch(`${API_BASE}/ai-agent/${brandId}/discard-draft/${messageId}`, {
         method: 'DELETE',
       });
       if (!res.ok) {
@@ -447,7 +448,7 @@ export const api = {
     },
 
     sendDraft: async (brandId: string, messageId: string): Promise<{ success: boolean; messageId: string; externalMessageId?: string }> => {
-      const res = await fetch(`${API_BASE}/ai-agent/${brandId}/send-draft/${messageId}`, {
+      const res = await apiFetch(`${API_BASE}/ai-agent/${brandId}/send-draft/${messageId}`, {
         method: 'POST',
       });
       if (!res.ok) {
@@ -462,7 +463,7 @@ export const api = {
       conversationsWithPendingDrafts: number;
       conversationIds: string[];
     }> => {
-      const res = await fetch(`${API_BASE}/ai-agent/${brandId}/drafts-count`);
+      const res = await apiFetch(`${API_BASE}/ai-agent/${brandId}/drafts-count`);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || 'Failed to get drafts count');
@@ -474,7 +475,7 @@ export const api = {
   templates: {
     getAll: async (brandId: string, category?: string): Promise<PlaygroundTemplate[]> => {
       const params = category && category !== 'all' ? `?category=${category}` : '';
-      const res = await fetch(`${API_BASE}/brands/${brandId}/templates${params}`);
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/templates${params}`);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || 'Failed to fetch templates');
@@ -483,7 +484,7 @@ export const api = {
     },
 
     create: async (brandId: string, data: { category: string; title: string; content: string }): Promise<PlaygroundTemplate> => {
-      const res = await fetch(`${API_BASE}/brands/${brandId}/templates`, {
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/templates`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -496,7 +497,7 @@ export const api = {
     },
 
     update: async (brandId: string, id: string, data: Partial<{ category: string; title: string; content: string }>): Promise<PlaygroundTemplate> => {
-      const res = await fetch(`${API_BASE}/brands/${brandId}/templates/${id}`, {
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/templates/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -509,7 +510,7 @@ export const api = {
     },
 
     delete: async (brandId: string, id: string): Promise<void> => {
-      const res = await fetch(`${API_BASE}/brands/${brandId}/templates/${id}`, {
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/templates/${id}`, {
         method: 'DELETE',
       });
       if (!res.ok) {
@@ -519,7 +520,7 @@ export const api = {
     },
 
     incrementUsage: async (brandId: string, id: string): Promise<PlaygroundTemplate> => {
-      const res = await fetch(`${API_BASE}/brands/${brandId}/templates/${id}/use`, {
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/templates/${id}/use`, {
         method: 'POST',
       });
       if (!res.ok) {
@@ -532,7 +533,7 @@ export const api = {
 
   crm: {
     getContactByChannel: async (brandId: string, platform: string, externalId: string): Promise<{ contact: any; channels: any[] } | null> => {
-      const res = await fetch(`${API_BASE}/crm/contacts/by-channel?brandId=${brandId}&platform=${platform}&externalId=${encodeURIComponent(externalId)}`);
+      const res = await apiFetch(`${API_BASE}/crm/contacts/by-channel?brandId=${brandId}&platform=${platform}&externalId=${encodeURIComponent(externalId)}`);
       if (res.status === 404) return null;
       if (!res.ok) {
         const error = await res.json();
@@ -553,7 +554,7 @@ export const api = {
       username?: string;
       avatarUrl?: string;
     }): Promise<{ contact: any }> => {
-      const res = await fetch(`${API_BASE}/crm/contacts`, {
+      const res = await apiFetch(`${API_BASE}/crm/contacts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -566,7 +567,7 @@ export const api = {
     },
 
     getContactTimeline: async (contactId: string, limit = 100): Promise<{ messages: any[]; mostRecentConversationId: string | null }> => {
-      const res = await fetch(`${API_BASE}/crm/contacts/${contactId}/timeline?limit=${limit}`);
+      const res = await apiFetch(`${API_BASE}/crm/contacts/${contactId}/timeline?limit=${limit}`);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || 'Failed to fetch timeline');
@@ -575,7 +576,7 @@ export const api = {
     },
 
     getContactJourney: async (contactId: string): Promise<{ success: boolean; timeline: import('@shared/schema').ConversationTimeline }> => {
-      const res = await fetch(`${API_BASE}/crm/contacts/${contactId}/journey`);
+      const res = await apiFetch(`${API_BASE}/crm/contacts/${contactId}/journey`);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || 'Failed to fetch journey');
@@ -586,7 +587,7 @@ export const api = {
 
   lifecycle: {
     updateStatus: async (conversationId: string, status: string, userId?: string): Promise<Conversation> => {
-      const res = await fetch(`${API_BASE}/conversations/${conversationId}/status`, {
+      const res = await apiFetch(`${API_BASE}/conversations/${conversationId}/status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status, userId }),
@@ -599,7 +600,7 @@ export const api = {
     },
 
     generateSummary: async (conversationId: string): Promise<{ success: boolean; summary: { summary: string; sentiment: string; intent: string; resolution: string } | null; message: string }> => {
-      const res = await fetch(`${API_BASE}/conversations/${conversationId}/generate-summary`, {
+      const res = await apiFetch(`${API_BASE}/conversations/${conversationId}/generate-summary`, {
         method: 'POST',
       });
       if (!res.ok) {
@@ -610,7 +611,7 @@ export const api = {
     },
 
     updateSummary: async (conversationId: string, summary: { summary: string; sentiment: string; intent: string; resolution: string }): Promise<Conversation> => {
-      const res = await fetch(`${API_BASE}/conversations/${conversationId}/summary`, {
+      const res = await apiFetch(`${API_BASE}/conversations/${conversationId}/summary`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(summary),
@@ -623,7 +624,7 @@ export const api = {
     },
 
     assign: async (conversationId: string, userId: string): Promise<Conversation> => {
-      const res = await fetch(`${API_BASE}/conversations/${conversationId}/assign`, {
+      const res = await apiFetch(`${API_BASE}/conversations/${conversationId}/assign`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId }),
@@ -636,7 +637,7 @@ export const api = {
     },
 
     unassign: async (conversationId: string): Promise<Conversation> => {
-      const res = await fetch(`${API_BASE}/conversations/${conversationId}/unassign`, {
+      const res = await apiFetch(`${API_BASE}/conversations/${conversationId}/unassign`, {
         method: 'POST',
       });
       if (!res.ok) {
@@ -647,7 +648,7 @@ export const api = {
     },
 
     getAnalytics: async (brandId: string, days = 30): Promise<any> => {
-      const res = await fetch(`${API_BASE}/brands/${brandId}/lifecycle/analytics?days=${days}`);
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/lifecycle/analytics?days=${days}`);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || 'Failed to fetch analytics');
@@ -656,7 +657,7 @@ export const api = {
     },
 
     getSettings: async (brandId: string): Promise<{ solvedToClosedHours: number; autoGenerateSummary: boolean; csatSurveyEnabled: boolean }> => {
-      const res = await fetch(`${API_BASE}/brands/${brandId}/lifecycle-settings`);
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/lifecycle-settings`);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || 'Failed to fetch lifecycle settings');
@@ -665,7 +666,7 @@ export const api = {
     },
 
     updateSettings: async (brandId: string, settings: { solvedToClosedHours?: number; autoGenerateSummary?: boolean; csatSurveyEnabled?: boolean }): Promise<{ solvedToClosedHours: number; autoGenerateSummary: boolean; csatSurveyEnabled: boolean }> => {
-      const res = await fetch(`${API_BASE}/brands/${brandId}/lifecycle-settings`, {
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/lifecycle-settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings),
@@ -680,7 +681,7 @@ export const api = {
 
   reminders: {
     getRules: async (brandId: string): Promise<ReminderRules | null> => {
-      const res = await fetch(`${API_BASE}/brands/${brandId}/reminder-rules`);
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/reminder-rules`);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || 'Failed to fetch reminder rules');
@@ -690,7 +691,7 @@ export const api = {
     },
 
     updateRules: async (brandId: string, rules: Partial<ReminderRules>): Promise<ReminderRules> => {
-      const res = await fetch(`${API_BASE}/brands/${brandId}/reminder-rules`, {
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/reminder-rules`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(rules),
@@ -704,7 +705,7 @@ export const api = {
     },
 
     runManual: async (brandId: string): Promise<{ scheduled: number; sent: number; errors: string[] }> => {
-      const res = await fetch(`${API_BASE}/brands/${brandId}/reminders/run`, {
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/reminders/run`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -717,7 +718,7 @@ export const api = {
     },
 
     getEventsByConversation: async (conversationId: string): Promise<ReminderEvent[]> => {
-      const res = await fetch(`${API_BASE}/conversations/${conversationId}/reminder-events`);
+      const res = await apiFetch(`${API_BASE}/conversations/${conversationId}/reminder-events`);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || 'Failed to fetch reminder events');
@@ -737,7 +738,7 @@ export const api = {
       if (options?.limit) params.append('limit', options.limit.toString());
       if (options?.includeConversation) params.append('includeConversation', 'true');
       const url = `${API_BASE}/brands/${brandId}/reminder-events${params.toString() ? '?' + params.toString() : ''}`;
-      const res = await fetch(url);
+      const res = await apiFetch(url);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || 'Failed to fetch reminder events');
@@ -747,7 +748,7 @@ export const api = {
     },
 
     optOutConversation: async (conversationId: string): Promise<{ success: boolean }> => {
-      const res = await fetch(`${API_BASE}/conversations/${conversationId}/reminder-opt-out`, {
+      const res = await apiFetch(`${API_BASE}/conversations/${conversationId}/reminder-opt-out`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -771,7 +772,7 @@ export const api = {
       dailyCapUsage: number;
       dailyCapLimit: number;
     }> => {
-      const res = await fetch(`${API_BASE}/brands/${brandId}/reminders/analytics/summary?timeRange=${timeRange}`);
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/reminders/analytics/summary?timeRange=${timeRange}`);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || 'Failed to fetch reminder stats');
@@ -786,7 +787,7 @@ export const api = {
       conversions: number;
       failed: number;
     }>> => {
-      const res = await fetch(`${API_BASE}/brands/${brandId}/reminders/analytics/timeline?timeRange=${timeRange}`);
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/reminders/analytics/timeline?timeRange=${timeRange}`);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || 'Failed to fetch reminder timeline');
@@ -799,7 +800,7 @@ export const api = {
       reason: string;
       count: number;
     }>> => {
-      const res = await fetch(`${API_BASE}/brands/${brandId}/reminders/analytics/failures?timeRange=${timeRange}&limit=${limit}`);
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/reminders/analytics/failures?timeRange=${timeRange}&limit=${limit}`);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || 'Failed to fetch failure reasons');
@@ -821,7 +822,7 @@ export const api = {
       if (options?.status?.length) params.set('status', options.status.join(','));
       if (options?.limit) params.set('limit', String(options.limit));
       if (options?.offset) params.set('offset', String(options.offset));
-      const res = await fetch(`${API_BASE}/brands/${brandId}/sentiment-alerts?${params}`);
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/sentiment-alerts?${params}`);
       if (!res.ok) throw new Error('Failed to fetch sentiment alerts');
       return res.json();
     },
@@ -832,27 +833,27 @@ export const api = {
       bySeverity: Record<string, number>;
       byCategory: Record<string, number>;
     }> => {
-      const res = await fetch(`${API_BASE}/brands/${brandId}/sentiment-alerts/stats`);
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/sentiment-alerts/stats`);
       if (!res.ok) throw new Error('Failed to fetch alert stats');
       return res.json();
     },
 
     getActiveCount: async (brandId: string): Promise<number> => {
-      const res = await fetch(`${API_BASE}/brands/${brandId}/sentiment-alerts/count`);
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/sentiment-alerts/count`);
       if (!res.ok) throw new Error('Failed to fetch active count');
       const data = await res.json();
       return data.count;
     },
 
     getByConversation: async (brandId: string): Promise<Record<string, { severity: string; sentiment: string; category: string; status: string }>> => {
-      const res = await fetch(`${API_BASE}/brands/${brandId}/sentiment-alerts/by-conversation`);
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/sentiment-alerts/by-conversation`);
       if (!res.ok) throw new Error('Failed to fetch alerts by conversation');
       const data = await res.json();
       return data.conversations;
     },
 
     updateStatus: async (brandId: string, alertId: string, status: string, notes?: string): Promise<any> => {
-      const res = await fetch(`${API_BASE}/brands/${brandId}/sentiment-alerts/${alertId}/status`, {
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/sentiment-alerts/${alertId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status, notes }),
@@ -862,7 +863,7 @@ export const api = {
     },
 
     getById: async (brandId: string, alertId: string): Promise<any> => {
-      const res = await fetch(`${API_BASE}/brands/${brandId}/sentiment-alerts/${alertId}`);
+      const res = await apiFetch(`${API_BASE}/brands/${brandId}/sentiment-alerts/${alertId}`);
       if (!res.ok) throw new Error('Failed to fetch alert');
       return res.json();
     },
@@ -870,7 +871,7 @@ export const api = {
 
   inbox: {
     sendPrivateReply: async (messageId: string, text: string): Promise<{ success: boolean; messageId?: string }> => {
-      const res = await fetch(`${API_BASE}/inbox/private-reply`, {
+      const res = await apiFetch(`${API_BASE}/inbox/private-reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -886,7 +887,7 @@ export const api = {
     },
 
     getPrivateReplyTemplate: async (brandId: string, messageId: string): Promise<{ text: string }> => {
-      const res = await fetch(`${API_BASE}/inbox/private-reply/template?brandId=${brandId}&messageId=${messageId}`, {
+      const res = await apiFetch(`${API_BASE}/inbox/private-reply/template?brandId=${brandId}&messageId=${messageId}`, {
         credentials: 'include',
       });
       if (!res.ok) throw new Error('Failed to get template');
@@ -894,7 +895,7 @@ export const api = {
     },
 
     getPrivateReplyStatus: async (conversationId: string): Promise<{ sentCommentIds: string[] }> => {
-      const res = await fetch(`${API_BASE}/inbox/private-reply/status?conversationId=${conversationId}`, {
+      const res = await apiFetch(`${API_BASE}/inbox/private-reply/status?conversationId=${conversationId}`, {
         credentials: 'include',
       });
       if (!res.ok) return { sentCommentIds: [] };

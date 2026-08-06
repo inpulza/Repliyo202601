@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { apiFetch } from '@/lib/authenticatedApiClient';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -114,8 +115,8 @@ export function UserManagement() {
     setIsLoading(true);
     try {
       const [usersRes, brandsRes] = await Promise.all([
-        fetch('/api/users', { credentials: 'include' }),
-        fetch('/api/brands', { credentials: 'include' }),
+        apiFetch('/api/users', { credentials: 'include' }),
+        apiFetch('/api/brands', { credentials: 'include' }),
       ]);
       if (usersRes.ok) setUsers(await usersRes.json());
       if (brandsRes.ok) setBrands((await brandsRes.json()).filter((b: Brand) => b.status !== 'archived'));
@@ -194,7 +195,7 @@ export function UserManagement() {
     }
     setIsSaving(true);
     try {
-      const res = await fetch('/api/users', {
+      const res = await apiFetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -225,7 +226,7 @@ export function UserManagement() {
     if (!selectedUser) return;
     setIsSaving(true);
     try {
-      const res = await fetch(`/api/users/${selectedUser.id}`, {
+      const res = await apiFetch(`/api/users/${selectedUser.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -259,7 +260,7 @@ export function UserManagement() {
     }
     setIsSaving(true);
     try {
-      const res = await fetch(`/api/users/${selectedUser.id}/reset-password`, {
+      const res = await apiFetch(`/api/users/${selectedUser.id}/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -282,7 +283,7 @@ export function UserManagement() {
     if (!selectedUser) return;
     setIsSaving(true);
     try {
-      const res = await fetch(`/api/users/${selectedUser.id}`, {
+      const res = await apiFetch(`/api/users/${selectedUser.id}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -303,7 +304,7 @@ export function UserManagement() {
   const toggleStatus = async (u: ManagedUser) => {
     const newStatus = u.status === 'active' ? 'suspended' : 'active';
     try {
-      const res = await fetch(`/api/users/${u.id}`, {
+      const res = await apiFetch(`/api/users/${u.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

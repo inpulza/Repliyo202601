@@ -1,6 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNexus } from '@/context/NexusContext';
+import { apiFetch } from '@/lib/authenticatedApiClient';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { 
   BarChart3, 
@@ -79,7 +80,7 @@ export function AiMetrics() {
     queryKey: ['ai-metrics', activeClient?.id, days],
     queryFn: async () => {
       if (!activeClient?.id) return null;
-      const response = await fetch(`/api/ai-agent/${activeClient.id}/metrics?days=${days}`, {
+      const response = await apiFetch(`/api/ai-agent/${activeClient.id}/metrics?days=${days}`, {
         credentials: 'include'
       });
       if (!response.ok) {
