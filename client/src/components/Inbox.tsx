@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { CRMContextPanel } from './CRMContextPanel';
 import { ConversationCard } from './ConversationCard';
 import { api } from '@/lib/api';
+import { apiFetch } from '@/lib/authenticatedApiClient';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -1151,7 +1152,7 @@ export function Inbox() {
     
     setIsSendingReply(true);
     try {
-      const response = await fetch('/api/inbox/reply', {
+      const response = await apiFetch('/api/inbox/reply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNexus } from '@/context/NexusContext';
+import { apiFetch } from '@/lib/authenticatedApiClient';
 import { 
   Bell, Check, CheckCheck, MessageSquare, AlertCircle, Bot, Settings, 
   ExternalLink, Loader2, FileEdit, Filter, X
@@ -133,7 +134,7 @@ export function NotificationCenter({ isCollapsed = false }: NotificationCenterPr
     queryKey: ['notifications', activeClient?.id],
     queryFn: async () => {
       if (!activeClient?.id) return { notifications: [], unreadCount: 0 };
-      const res = await fetch(`/api/notifications?brandId=${activeClient.id}&limit=50`);
+      const res = await apiFetch(`/api/notifications?brandId=${activeClient.id}&limit=50`);
       if (!res.ok) throw new Error('Failed to fetch notifications');
       return res.json();
     },
@@ -144,7 +145,7 @@ export function NotificationCenter({ isCollapsed = false }: NotificationCenterPr
   const markAsReadMutation = useMutation({
     mutationFn: async (id: string) => {
       if (!activeClient?.id) throw new Error('Brand ID required');
-      const res = await fetch(`/api/notifications/${id}/read`, {
+      const res = await apiFetch(`/api/notifications/${id}/read`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ brandId: activeClient.id }),
@@ -160,7 +161,7 @@ export function NotificationCenter({ isCollapsed = false }: NotificationCenterPr
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
       if (!activeClient?.id) return;
-      const res = await fetch('/api/notifications/read-all', {
+      const res = await apiFetch('/api/notifications/read-all', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ brandId: activeClient.id }),

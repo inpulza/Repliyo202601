@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNexus } from '@/context/NexusContext';
+import { apiFetch } from '@/lib/authenticatedApiClient';
 import { 
   Search, 
   Plus, 
@@ -193,7 +194,7 @@ function PublicLinkManager({ brandId }: { brandId: string }) {
   const { data: tokenData, isLoading } = useQuery({
     queryKey: ['public-access-token', brandId],
     queryFn: async () => {
-      const res = await fetch(`/api/public-access-tokens/${brandId}`);
+      const res = await apiFetch(`/api/public-access-tokens/${brandId}`);
       if (!res.ok) throw new Error('Failed to fetch token');
       return res.json();
     },
@@ -202,7 +203,7 @@ function PublicLinkManager({ brandId }: { brandId: string }) {
 
   const generateMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch('/api/public-access-tokens', {
+      const res = await apiFetch('/api/public-access-tokens', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ brandId }),
@@ -219,7 +220,7 @@ function PublicLinkManager({ brandId }: { brandId: string }) {
 
   const revokeMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/public-access-tokens/${id}`, { method: 'DELETE' });
+      const res = await apiFetch(`/api/public-access-tokens/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to revoke');
       return res.json();
     },
@@ -366,7 +367,7 @@ export function CRM() {
   const { data: contactsData, isLoading: contactsLoading } = useQuery({
     queryKey: ['/api/crm/contacts', activeClientId, filterStatus, filterLifecycle, filterPlatform, filterHasPhone, filterDateType, filterDateFrom, filterDateTo],
     queryFn: async () => {
-      const res = await fetch(`/api/crm/contacts?${buildFilterParams()}`);
+      const res = await apiFetch(`/api/crm/contacts?${buildFilterParams()}`);
       if (!res.ok) throw new Error('Failed to fetch contacts');
       return res.json();
     },
@@ -376,7 +377,7 @@ export function CRM() {
   const { data: limboData, isLoading: limboLoading } = useQuery({
     queryKey: ['/api/crm/limbo', activeClientId],
     queryFn: async () => {
-      const res = await fetch(`/api/crm/limbo?brandId=${activeClientId}`);
+      const res = await apiFetch(`/api/crm/limbo?brandId=${activeClientId}`);
       if (!res.ok) throw new Error('Failed to fetch limbo');
       return res.json();
     },
@@ -386,7 +387,7 @@ export function CRM() {
   const { data: duplicatesData, isLoading: duplicatesLoading } = useQuery({
     queryKey: ['/api/crm/duplicates', activeClientId],
     queryFn: async () => {
-      const res = await fetch(`/api/crm/duplicates?brandId=${activeClientId}`);
+      const res = await apiFetch(`/api/crm/duplicates?brandId=${activeClientId}`);
       if (!res.ok) throw new Error('Failed to fetch duplicates');
       return res.json();
     },
@@ -396,7 +397,7 @@ export function CRM() {
   const { data: contactDetail } = useQuery({
     queryKey: ['/api/crm/contacts', selectedContact?.id],
     queryFn: async () => {
-      const res = await fetch(`/api/crm/contacts/${selectedContact?.id}`);
+      const res = await apiFetch(`/api/crm/contacts/${selectedContact?.id}`);
       if (!res.ok) throw new Error('Failed to fetch contact');
       return res.json();
     },
@@ -406,7 +407,7 @@ export function CRM() {
   const { data: timelineData, isLoading: timelineLoading } = useQuery({
     queryKey: ['/api/crm/contacts', selectedContact?.id, 'timeline'],
     queryFn: async () => {
-      const res = await fetch(`/api/crm/contacts/${selectedContact?.id}/timeline?limit=100`);
+      const res = await apiFetch(`/api/crm/contacts/${selectedContact?.id}/timeline?limit=100`);
       if (!res.ok) throw new Error('Failed to fetch timeline');
       return res.json();
     },
@@ -415,7 +416,7 @@ export function CRM() {
 
   const createContactMutation = useMutation({
     mutationFn: async (data: typeof newContact) => {
-      const res = await fetch('/api/crm/contacts', {
+      const res = await apiFetch('/api/crm/contacts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...data, brandId: activeClientId }),
@@ -436,7 +437,7 @@ export function CRM() {
 
   const promoteMutation = useMutation({
     mutationFn: async (limboId: string) => {
-      const res = await fetch(`/api/crm/limbo/${limboId}/promote`, {
+      const res = await apiFetch(`/api/crm/limbo/${limboId}/promote`, {
         method: 'POST',
       });
       if (!res.ok) throw new Error('Failed to promote');
@@ -454,7 +455,7 @@ export function CRM() {
 
   const mergeMutation = useMutation({
     mutationFn: async ({ primaryId, secondaryId }: { primaryId: string; secondaryId: string }) => {
-      const res = await fetch('/api/crm/merge', {
+      const res = await apiFetch('/api/crm/merge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ primaryId, secondaryId }),
@@ -491,7 +492,7 @@ export function CRM() {
 
   const undoMergeMutation = useMutation({
     mutationFn: async (archivedContactId: string) => {
-      const res = await fetch('/api/crm/undo-merge', {
+      const res = await apiFetch('/api/crm/undo-merge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ archivedContactId }),
@@ -516,7 +517,7 @@ export function CRM() {
   const deleteContactMutation = useMutation({
     mutationFn: async ({ id, permanent }: { id: string; permanent?: boolean }) => {
       const url = permanent ? `/api/crm/contacts/${id}?permanent=true` : `/api/crm/contacts/${id}`;
-      const res = await fetch(url, { method: 'DELETE' });
+      const res = await apiFetch(url, { method: 'DELETE' });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || 'Failed to delete');

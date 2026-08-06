@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNexus } from '@/context/NexusContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { apiFetch } from '@/lib/authenticatedApiClient';
 import type { AiAgent, AiAgentAuditLog, SocialAccount, PlaygroundTemplate } from '@shared/schema';
 import { DYNAMIC_VARIABLES, PRIVATE_REPLY_VARIABLES } from '@shared/dynamicVariables';
 import { Button } from "@/components/ui/button";
@@ -64,7 +65,7 @@ function useAIModels(provider: string) {
     setIsLoading(true);
     try {
       const url = `/api/ai-models/${currentProvider}${forceRefresh ? '?refresh=true' : ''}`;
-      const res = await fetch(url, { credentials: 'include', signal: controller.signal });
+      const res = await apiFetch(url, { credentials: 'include', signal: controller.signal });
       if (!res.ok) throw new Error('Failed to fetch models');
       const data = await res.json();
       if (!controller.signal.aborted) {
@@ -212,7 +213,7 @@ function PrivateRepliesTab({
   const { data: pagesData, isLoading: isLoadingPages } = useQuery({
     queryKey: ['metaPages', brandId],
     queryFn: async () => {
-      const res = await fetch(`/api/brands/${brandId}/meta-pages`, { credentials: 'include' });
+      const res = await apiFetch(`/api/brands/${brandId}/meta-pages`, { credentials: 'include' });
       const d = await res.json();
       return d.pages as MetaPage[];
     },
@@ -224,7 +225,7 @@ function PrivateRepliesTab({
   const { data: envTokensData } = useQuery({
     queryKey: ['metaPagesEnvTokens', brandId],
     queryFn: async () => {
-      const res = await fetch(`/api/brands/${brandId}/meta-pages/available-from-env`, { credentials: 'include' });
+      const res = await apiFetch(`/api/brands/${brandId}/meta-pages/available-from-env`, { credentials: 'include' });
       const d = await res.json();
       return d.available as { varName: string; tokenPreview: string }[];
     },
@@ -235,7 +236,7 @@ function PrivateRepliesTab({
   const handleAutoConnect = async (varName: string) => {
     setIsAutoConnecting(varName);
     try {
-      const res = await fetch(`/api/brands/${brandId}/meta-pages/auto-connect`, {
+      const res = await apiFetch(`/api/brands/${brandId}/meta-pages/auto-connect`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -246,7 +247,7 @@ function PrivateRepliesTab({
       if (data.requiresSelection) {
         // Multiple pages found — for now connect all of them
         for (const p of data.pages) {
-          await fetch(`/api/brands/${brandId}/meta-pages`, {
+          await apiFetch(`/api/brands/${brandId}/meta-pages`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
@@ -283,7 +284,7 @@ function PrivateRepliesTab({
   const handleCheckPermissions = async (pageId: string) => {
     setCheckingPerms(pageId);
     try {
-      const res = await fetch(`/api/brands/${brandId}/meta-pages/${pageId}/check-permissions`, { credentials: 'include' });
+      const res = await apiFetch(`/api/brands/${brandId}/meta-pages/${pageId}/check-permissions`, { credentials: 'include' });
       const data = await res.json();
       setPagePermissions(prev => ({ ...prev, [pageId]: data }));
     } catch (e: any) {
@@ -313,7 +314,7 @@ function PrivateRepliesTab({
 
   const handleTogglePage = async (page: MetaPage) => {
     try {
-      await fetch(`/api/brands/${brandId}/meta-pages/${page.id}`, {
+      await apiFetch(`/api/brands/${brandId}/meta-pages/${page.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -328,7 +329,7 @@ function PrivateRepliesTab({
   const handleDeletePage = async (id: string) => {
     if (!confirm('¿Eliminar esta conexión de Facebook?')) return;
     try {
-      await fetch(`/api/brands/${brandId}/meta-pages/${id}`, {
+      await apiFetch(`/api/brands/${brandId}/meta-pages/${id}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -346,7 +347,7 @@ function PrivateRepliesTab({
     }
     setIsSavingPage(true);
     try {
-      const res = await fetch(`/api/brands/${brandId}/meta-pages`, {
+      const res = await apiFetch(`/api/brands/${brandId}/meta-pages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
