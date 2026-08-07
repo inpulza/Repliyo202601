@@ -40,6 +40,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const checkAuth = async () => {
     try {
+      // Intentionally keep the bootstrap check on native fetch. It owns the
+      // initial auth state, and the /app route guard redirects after setUser(null).
+      // apiFetch is reserved for private dashboard requests after bootstrap.
       const res = await fetch('/api/auth/me', {
         credentials: 'include',
       });
