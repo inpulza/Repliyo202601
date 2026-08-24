@@ -6,6 +6,7 @@ import express from "express";
 import type { User } from "@shared/schema";
 import type { IStorage } from "../../server/storage";
 import type { SessionAccessRecord } from "../../server/security/sessionAccess";
+import type { InboxMetricsRange } from "../../shared/inboxMetrics";
 
 const TEST_PASSWORD_HASH = "$2b$10$okyFpyU/IKNoo1nv/YDFA.LQBPQxL2Den36jnRQtnZs1WwcJK6MmK";
 
@@ -13,6 +14,8 @@ export interface DashboardAuthorizationState {
   assignmentWrites: number;
   notificationWrites: number;
   sessionRevocations: number;
+  inboxStatsReads: number;
+  lastInboxRange: InboxMetricsRange | null;
 }
 
 export interface DashboardAuthorizationTestServer {
@@ -64,6 +67,8 @@ export async function startDashboardAuthorizationTestServer(): Promise<Dashboard
     assignmentWrites: 0,
     notificationWrites: 0,
     sessionRevocations: 0,
+    inboxStatsReads: 0,
+    lastInboxRange: null,
   };
 
   const notifications = [
@@ -78,6 +83,8 @@ export async function startDashboardAuthorizationTestServer(): Promise<Dashboard
   const originalMethods = {
     createConversationStatusHistory: storage.createConversationStatusHistory,
     getConversation: storage.getConversation,
+    getBrand: storage.getBrand,
+    getInboxStats: storage.getInboxStats,
     getNotifications: storage.getNotifications,
     getSessionAccessByUserId: storage.getSessionAccessByUserId,
     getUnreadNotificationCount: storage.getUnreadNotificationCount,
@@ -116,6 +123,50 @@ export async function startDashboardAuthorizationTestServer(): Promise<Dashboard
   };
   storage.getConversation = async (id) =>
     conversations.get(id) as Awaited<ReturnType<IStorage["getConversation"]>>;
+  storage.getBrand = async (id) => {
+    if (id !== 'brand-a' && id !== 'brand-b') return undefined;
+    return {
+      id,
+      name: id === 'brand-a' ? 'Brand A' : 'Brand B',
+      industry: 'Test',
+      avatar: null,
+      status: 'active',
+      syncPaused: false,
+      metricoolToken: 'test-token',
+      metricoolUserId: 'test-user',
+      metricoolBlogId: 'test-blog',
+      agentName: null,
+      tone: null,
+      businessContext: null,
+      createdAt: new Date('2026-08-01T00:00:00.000Z'),
+    };
+  };
+  storage.getInboxStats = async (_brandId, range) => {
+    state.inboxStatsReads += 1;
+    state.lastInboxRange = range;
+    return {
+      totalMessages: 3,
+      inboundMessages: 2,
+      outboundMessages: 1,
+      totalConversations: 1,
+      openConversations: 1,
+      closedConversations: 0,
+      uniqueContacts: 1,
+      avgResponseTimeMs: 120000,
+      responseSamples: 1,
+      byPlatform: {
+        instagram: {
+          inbound: 2,
+          outbound: 1,
+          avgResponseTimeMs: 120000,
+          responseSamples: 1,
+        },
+      },
+      bySentiment: {},
+      dailyStats: [],
+      recentActivity: [],
+    };
+  };
   storage.updateConversationAssignment = async (id, brandId, userId) => {
     const item = conversations.get(id);
     if (!item || item.brandId !== brandId) return undefined;
@@ -169,6 +220,8 @@ export async function startDashboardAuthorizationTestServer(): Promise<Dashboard
       state.assignmentWrites = 0;
       state.notificationWrites = 0;
       state.sessionRevocations = 0;
+      state.inboxStatsReads = 0;
+      state.lastInboxRange = null;
       for (const [id, status] of initialUserStatuses) {
         accessRecords[id].user.status = status;
       }
@@ -182,6 +235,8 @@ export async function startDashboardAuthorizationTestServer(): Promise<Dashboard
     async close() {
       storage.createConversationStatusHistory = originalMethods.createConversationStatusHistory;
       storage.getConversation = originalMethods.getConversation;
+      storage.getBrand = originalMethods.getBrand;
+      storage.getInboxStats = originalMethods.getInboxStats;
       storage.getNotifications = originalMethods.getNotifications;
       storage.getSessionAccessByUserId = originalMethods.getSessionAccessByUserId;
       storage.getUnreadNotificationCount = originalMethods.getUnreadNotificationCount;

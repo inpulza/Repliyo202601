@@ -14,6 +14,7 @@ import { canAssignUserToBrand, getAccessibleBrandResource } from "./security/bra
 import { z } from "zod";
 import crypto from "crypto";
 import { sendVerificationEmail, sendWelcomeEmail, sendLeadNotification, sendLeadConfirmation } from "./services/emailService";
+import { parseInboxStatsRange } from "./inboxStatsRange";
 
 // Extend Express Request to include our user type (compatible with Passport)
 declare global {
@@ -2031,15 +2032,27 @@ Sitemap: ${SITE_URL}/sitemap.xml
   app.get("/api/inbox-stats/:brandId", requireAuth, filterByBrand("brandId"), async (req, res) => {
     try {
       const { brandId } = req.params;
-      const days = parseInt(req.query.days as string) || 7;
+      let range;
+      try {
+        range = parseInboxStatsRange(req.query as Record<string, unknown>);
+      } catch {
+        return res.status(400).json({ error: "Invalid inbox metrics date range" });
+      }
       
       const brand = await storage.getBrand(brandId);
       if (!brand) {
         return res.status(404).json({ error: "Brand not found" });
       }
       
-      const stats = await storage.getInboxStats(brandId, days);
-      res.json(stats);
+      const stats = await storage.getInboxStats(brandId, range);
+      res.json({
+        ...stats,
+        period: {
+          label: range.label,
+          from: range.fromDate,
+          to: range.toDate,
+        },
+      });
     } catch (error: any) {
       console.error('Error fetching inbox stats:', error);
       res.status(500).json({ error: "Failed to fetch inbox stats" });
