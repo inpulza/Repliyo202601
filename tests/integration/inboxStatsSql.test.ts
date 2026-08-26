@@ -18,14 +18,14 @@ describeWithPostgres('production inbox metrics SQL', () => {
   before(async () => {
     await client.connect();
     await client.query(`
-      CREATE TABLE conversations (
+      CREATE TEMP TABLE conversations (
         id text PRIMARY KEY,
         brand_id text NOT NULL,
         type text NOT NULL,
         status text NOT NULL,
         customer_id text NOT NULL
       );
-      CREATE TABLE messages (
+      CREATE TEMP TABLE messages (
         id text PRIMARY KEY,
         brand_id text NOT NULL,
         conversation_id text,
@@ -82,7 +82,9 @@ describeWithPostgres('production inbox metrics SQL', () => {
         ('comments', 'brand-a', 'comment', 'open', 'post-thread'),
         ('tiktok-comments', 'brand-a', 'comment', 'open', 'tiktok-post-thread'),
         ('dm-answered', 'brand-a', 'dm', 'open', 'customer-a'),
-        ('dm-unanswered', 'brand-a', 'dm', 'open', 'customer-b');
+        ('dm-unanswered', 'brand-a', 'dm', 'open', 'customer-b'),
+        ('dm-tied', 'brand-a', 'dm', 'open', 'customer-c'),
+        ('dm-cross-boundary', 'brand-a', 'dm', 'open', 'customer-d');
 
       INSERT INTO messages (
         id, brand_id, conversation_id, platform, direction, timestamp, metricool_id,
@@ -99,7 +101,13 @@ describeWithPostgres('production inbox metrics SQL', () => {
         ('dm-in-1', 'brand-a', 'dm-answered', 'instagram', 'inbound', '2026-08-20 13:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 'customer-a', 'hello'),
         ('dm-in-2', 'brand-a', 'dm-answered', 'instagram', 'inbound', '2026-08-20 13:01:00', NULL, NULL, NULL, NULL, NULL, NULL, 'customer-a', 'again'),
         ('dm-out', 'brand-a', 'dm-answered', 'instagram', 'outbound', '2026-08-20 13:10:00', NULL, NULL, NULL, 'manual', NULL, NULL, 'brand', 'reply'),
-        ('dm-in-3', 'brand-a', 'dm-unanswered', 'instagram', 'inbound', '2026-08-20 14:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 'customer-b', 'pending');
+        ('dm-in-3', 'brand-a', 'dm-unanswered', 'instagram', 'inbound', '2026-08-20 14:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 'customer-b', 'pending'),
+        ('z-dm-tied-in', 'brand-a', 'dm-tied', 'instagram', 'inbound', '2026-08-20 16:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 'customer-c', 'same provider timestamp'),
+        ('a-dm-tied-out', 'brand-a', 'dm-tied', 'instagram', 'outbound', '2026-08-20 16:00:00', NULL, NULL, NULL, 'manual', NULL, NULL, 'brand', 'zero-latency reply'),
+        ('dm-cross-old-in', 'brand-a', 'dm-cross-boundary', 'instagram', 'inbound', '2026-08-17 20:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 'customer-d', 'old burst'),
+        ('dm-cross-old-out', 'brand-a', 'dm-cross-boundary', 'instagram', 'outbound', '2026-08-17 20:05:00', NULL, NULL, NULL, 'manual', NULL, NULL, 'brand', 'old reply'),
+        ('dm-cross-pending', 'brand-a', 'dm-cross-boundary', 'instagram', 'inbound', '2026-08-17 21:55:00', NULL, NULL, NULL, NULL, NULL, NULL, 'customer-d', 'before range'),
+        ('dm-cross-response', 'brand-a', 'dm-cross-boundary', 'instagram', 'outbound', '2026-08-17 22:05:00', NULL, NULL, NULL, 'manual', NULL, NULL, 'brand', 'inside range');
     `);
 
     const range = parseInboxStatsRange({ days: '7' }, now);
@@ -112,7 +120,7 @@ describeWithPostgres('production inbox metrics SQL', () => {
 
     assert.deepEqual(
       { eligible: overall.eligible_cycles, answered: overall.answered_cycles, samples: overall.samples },
-      { eligible: 6, answered: 4, samples: 3 },
+      { eligible: 7, answered: 5, samples: 5 },
     );
     assert.deepEqual(
       { eligible: facebook.eligible_cycles, answered: facebook.answered_cycles, samples: facebook.samples },
@@ -120,13 +128,13 @@ describeWithPostgres('production inbox metrics SQL', () => {
     );
     assert.deepEqual(
       { eligible: instagram.eligible_cycles, answered: instagram.answered_cycles, samples: instagram.samples },
-      { eligible: 2, answered: 1, samples: 1 },
+      { eligible: 3, answered: 2, samples: 3 },
     );
     assert.deepEqual(
       { eligible: tiktok.eligible_cycles, answered: tiktok.answered_cycles, samples: tiktok.samples },
       { eligible: 1, answered: 1, samples: 0 },
     );
     assert.equal(overall.ai_samples, 1);
-    assert.equal(overall.human_samples, 2);
+    assert.equal(overall.human_samples, 4);
   });
 });

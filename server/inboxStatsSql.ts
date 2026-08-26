@@ -59,9 +59,88 @@ export function buildInboxVolumeQuery(brandId: string, range: InboxMetricsRange)
 export function buildInboxResponseQuery(brandId: string, range: InboxMetricsRange): SQL {
   const responseLowerBound = range.from ? sql`AND response_at >= ${range.from}` : sql``;
   const eligibleLowerBound = range.from ? sql`AND inbound_at >= ${range.from}` : sql``;
+  const dmSourceCtes = range.from ? sql`
+    dm_conversations AS (
+      SELECT c.id
+      FROM conversations c
+      WHERE c.brand_id = ${brandId}
+        AND c.type IN ('dm', 'conversation')
+    ),
+    dm_seed_inbounds AS (
+      SELECT seed.*
+      FROM dm_conversations conversation
+      LEFT JOIN LATERAL (
+        SELECT outbound.timestamp
+        FROM messages outbound
+        WHERE outbound.brand_id = ${brandId}
+          AND outbound.conversation_id = conversation.id
+          AND outbound.direction = 'outbound'
+          AND outbound.timestamp < ${range.from}
+        ORDER BY outbound.timestamp DESC, outbound.id DESC
+        LIMIT 1
+      ) last_outbound ON true
+      JOIN LATERAL (
+        SELECT
+          inbound.id,
+          inbound.conversation_id,
+          inbound.platform,
+          inbound.direction,
+          inbound.timestamp,
+          inbound.parent_message_id,
+          inbound.internal_origin,
+          inbound.source
+        FROM messages inbound
+        WHERE inbound.brand_id = ${brandId}
+          AND inbound.conversation_id = conversation.id
+          AND inbound.direction = 'inbound'
+          AND inbound.timestamp < ${range.from}
+          AND (last_outbound.timestamp IS NULL OR inbound.timestamp > last_outbound.timestamp)
+        ORDER BY inbound.timestamp, inbound.id
+        LIMIT 1
+      ) seed ON true
+    ),
+    dm_source AS (
+      SELECT
+        m.id,
+        m.conversation_id,
+        m.platform,
+        m.direction,
+        m.timestamp,
+        m.parent_message_id,
+        m.internal_origin,
+        m.source
+      FROM messages m
+      JOIN dm_conversations conversation ON conversation.id = m.conversation_id
+      WHERE m.brand_id = ${brandId}
+        AND m.timestamp >= ${range.from}
+        AND m.timestamp < ${range.toExclusive}
+        AND m.direction IN ('inbound', 'outbound')
+      UNION ALL
+      SELECT * FROM dm_seed_inbounds
+    ),
+  ` : sql`
+    dm_source AS (
+      SELECT
+        m.id,
+        m.conversation_id,
+        m.platform,
+        m.direction,
+        m.timestamp,
+        m.parent_message_id,
+        m.internal_origin,
+        m.source
+      FROM messages m
+      JOIN conversations c ON c.id = m.conversation_id
+      WHERE m.brand_id = ${brandId}
+        AND m.timestamp < ${range.toExclusive}
+        AND m.direction IN ('inbound', 'outbound')
+        AND c.type IN ('dm', 'conversation')
+    ),
+  `;
 
   return sql`
-    WITH dm_timeline AS (
+    WITH ${dmSourceCtes}
+    dm_timeline AS (
       SELECT
         m.id,
         m.conversation_id,
@@ -73,15 +152,10 @@ export function buildInboxResponseQuery(brandId: string, range: InboxMetricsRang
         m.source,
         COUNT(*) FILTER (WHERE m.direction = 'outbound') OVER (
           PARTITION BY m.conversation_id
-          ORDER BY m.timestamp, m.id
+          ORDER BY m.timestamp, CASE WHEN m.direction = 'inbound' THEN 0 ELSE 1 END, m.id
           ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
         ) AS prior_outbounds
-      FROM messages m
-      JOIN conversations c ON c.id = m.conversation_id
-      WHERE m.brand_id = ${brandId}
-        AND m.timestamp < ${range.toExclusive}
-        AND m.direction IN ('inbound', 'outbound')
-        AND c.type IN ('dm', 'conversation')
+      FROM dm_source m
     ),
     dm_bursts AS (
       SELECT

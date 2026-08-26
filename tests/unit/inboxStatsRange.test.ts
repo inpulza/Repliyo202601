@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 import { PgDialect } from 'drizzle-orm/pg-core';
 
 import { parseInboxStatsRange } from '../../server/inboxStatsRange';
-import { buildInboxVolumeQuery } from '../../server/inboxStatsSql';
+import { buildInboxResponseQuery, buildInboxVolumeQuery } from '../../server/inboxStatsSql';
 
 const now = new Date('2026-08-24T15:30:00.000Z');
 
@@ -63,5 +63,20 @@ describe('inbox metrics date ranges', () => {
       assert.match(bounds, /SELECT\s+COALESCE/i);
       assert.match(bounds, /MIN\(local_timestamp\)/i);
     }
+  });
+
+  it('bounds preset DM timelines with one pending seed and orders tied events causally', () => {
+    const dialect = new PgDialect();
+    const bounded = dialect.sqlToQuery(
+      buildInboxResponseQuery('brand-a', parseInboxStatsRange({ days: '7' }, now)),
+    ).sql;
+    const fullHistory = dialect.sqlToQuery(
+      buildInboxResponseQuery('brand-a', parseInboxStatsRange({ range: 'all' }, now)),
+    ).sql;
+
+    assert.match(bounded, /dm_seed_inbounds\s+AS/i);
+    assert.match(bounded, /m\.timestamp\s+>=/i);
+    assert.match(bounded, /CASE WHEN m\.direction = 'inbound' THEN 0 ELSE 1 END/i);
+    assert.doesNotMatch(fullHistory, /dm_seed_inbounds\s+AS/i);
   });
 });
