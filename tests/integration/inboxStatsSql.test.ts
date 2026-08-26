@@ -80,6 +80,7 @@ describeWithPostgres('production inbox metrics SQL', () => {
     await client.query(`
       INSERT INTO conversations (id, brand_id, type, status, customer_id) VALUES
         ('comments', 'brand-a', 'comment', 'open', 'post-thread'),
+        ('tiktok-comments', 'brand-a', 'comment', 'open', 'tiktok-post-thread'),
         ('dm-answered', 'brand-a', 'dm', 'open', 'customer-a'),
         ('dm-unanswered', 'brand-a', 'dm', 'open', 'customer-b');
 
@@ -93,6 +94,8 @@ describeWithPostgres('production inbox metrics SQL', () => {
         ('reply-2', 'brand-a', 'comments', 'facebook', 'outbound', '2026-08-20 11:02:00', 'reply-2-external', 'comment-2', 'ai', 'repliyo_auto', NULL, NULL, 'brand', 'reply'),
         ('comment-3', 'brand-a', 'comments', 'facebook', 'inbound', '2026-08-20 12:00:00', 'root-3', NULL, NULL, NULL, NULL, 'negative', 'customer-3', 'three'),
         ('flattened-reply', 'brand-a', 'comments', 'facebook', 'outbound', '2026-08-20 12:02:00', 'flattened-external', 'comment-3', NULL, 'metricool_sync', '{"parentId":"nested-comment"}', NULL, 'brand', 'not a root reply'),
+        ('tiktok-comment', 'brand-a', 'tiktok-comments', 'tiktok', 'inbound', '2026-08-20 15:00:00', '7659989993066138911_7660185205123367702', NULL, NULL, 'metricool_sync', NULL, NULL, 'tiktok-customer', 'clock-skewed parent'),
+        ('tiktok-reply', 'brand-a', 'tiktok-comments', 'tiktok', 'outbound', '2026-08-20 13:30:00', 'tiktok-reply-external', 'tiktok-comment', NULL, 'metricool_sync', '{"parentId":"7660185205123367702"}', NULL, 'brand', 'linked reply with inverted provider clock'),
         ('dm-in-1', 'brand-a', 'dm-answered', 'instagram', 'inbound', '2026-08-20 13:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 'customer-a', 'hello'),
         ('dm-in-2', 'brand-a', 'dm-answered', 'instagram', 'inbound', '2026-08-20 13:01:00', NULL, NULL, NULL, NULL, NULL, NULL, 'customer-a', 'again'),
         ('dm-out', 'brand-a', 'dm-answered', 'instagram', 'outbound', '2026-08-20 13:10:00', NULL, NULL, NULL, 'manual', NULL, NULL, 'brand', 'reply'),
@@ -105,10 +108,11 @@ describeWithPostgres('production inbox metrics SQL', () => {
     const overall = result.rows.find(row => row.platform === null);
     const facebook = result.rows.find(row => row.platform === 'facebook');
     const instagram = result.rows.find(row => row.platform === 'instagram');
+    const tiktok = result.rows.find(row => row.platform === 'tiktok');
 
     assert.deepEqual(
       { eligible: overall.eligible_cycles, answered: overall.answered_cycles, samples: overall.samples },
-      { eligible: 5, answered: 3, samples: 3 },
+      { eligible: 6, answered: 4, samples: 3 },
     );
     assert.deepEqual(
       { eligible: facebook.eligible_cycles, answered: facebook.answered_cycles, samples: facebook.samples },
@@ -117,6 +121,10 @@ describeWithPostgres('production inbox metrics SQL', () => {
     assert.deepEqual(
       { eligible: instagram.eligible_cycles, answered: instagram.answered_cycles, samples: instagram.samples },
       { eligible: 2, answered: 1, samples: 1 },
+    );
+    assert.deepEqual(
+      { eligible: tiktok.eligible_cycles, answered: tiktok.answered_cycles, samples: tiktok.samples },
+      { eligible: 1, answered: 1, samples: 0 },
     );
     assert.equal(overall.ai_samples, 1);
     assert.equal(overall.human_samples, 2);

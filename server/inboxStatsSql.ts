@@ -127,8 +127,8 @@ export function buildInboxResponseQuery(brandId: string, range: InboxMetricsRang
         AND parent.timestamp < ${range.toExclusive}
         AND parent_conversation.type NOT IN ('dm', 'conversation')
     ),
-    first_comment_replies AS (
-      SELECT DISTINCT ON (parent.id)
+    comment_reply_candidates AS (
+      SELECT
         parent.id AS inbound_id,
         reply.id AS outbound_id,
         LOWER(COALESCE(NULLIF(TRIM(parent.platform), ''), 'unknown')) AS platform,
@@ -143,7 +143,6 @@ export function buildInboxResponseQuery(brandId: string, range: InboxMetricsRang
         AND reply.direction = 'outbound'
         AND parent.direction = 'inbound'
         AND parent_conversation.type NOT IN ('dm', 'conversation')
-        AND reply.timestamp >= parent.timestamp
         AND reply.timestamp < ${range.toExclusive}
         AND (
           reply.source IS DISTINCT FROM 'metricool_sync'
@@ -157,17 +156,31 @@ export function buildInboxResponseQuery(brandId: string, range: InboxMetricsRang
             reply.raw_data ->> 'parent_id',
             reply.raw_data #>> '{parent,id}'
           ) = parent.metricool_id
+          OR (
+            LOWER(COALESCE(NULLIF(TRIM(parent.platform), ''), 'unknown')) = 'tiktok'
+            AND parent.metricool_id ~ '^[^_]+_[^_]+$'
+            AND split_part(parent.metricool_id, '_', 2) = COALESCE(
+              reply.raw_data ->> 'parentId',
+              reply.raw_data ->> 'parent_id',
+              reply.raw_data #>> '{parent,id}'
+            )
+          )
         )
-      ORDER BY parent.id, reply.timestamp, reply.id
     ),
     response_pairs AS (
       SELECT * FROM dm_pairs
       UNION ALL
-      SELECT * FROM first_comment_replies
+      SELECT * FROM comment_reply_candidates
+    ),
+    valid_response_pairs AS (
+      SELECT DISTINCT ON (inbound_id) *
+      FROM response_pairs
+      WHERE response_at >= inbound_at
+      ORDER BY inbound_id, response_at, outbound_id
     ),
     period_pairs AS (
       SELECT *, EXTRACT(EPOCH FROM (response_at - inbound_at)) * 1000 AS response_ms
-      FROM response_pairs
+      FROM valid_response_pairs
       WHERE response_at < ${range.toExclusive}
         ${responseLowerBound}
     ),
@@ -200,8 +213,8 @@ export function buildInboxResponseQuery(brandId: string, range: InboxMetricsRang
     coverage_stats AS (
       SELECT
         eligible.platform,
-        COUNT(*)::int AS eligible_cycles,
-        COUNT(pairs.outbound_id)::int AS answered_cycles
+        COUNT(DISTINCT eligible.inbound_id)::int AS eligible_cycles,
+        COUNT(DISTINCT pairs.inbound_id)::int AS answered_cycles
       FROM period_eligible eligible
       LEFT JOIN response_pairs pairs ON pairs.inbound_id = eligible.inbound_id
       GROUP BY GROUPING SETS ((eligible.platform), ())

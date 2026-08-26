@@ -18,6 +18,7 @@ import { sentimentAnalysisService } from "./SentimentAnalysisService";
 import { log } from "../app";
 import { sendPrivateReply, interpolateTemplate } from "./metaService";
 import { enrichPostContext, enrichPostContextForTemplate } from "./llm/prompt-composer";
+import { resolveMetricoolParentMessageId } from "../metricoolParentResolver";
 
 const DEFAULT_ZERNIO_OBSERVER_BLOG_ID = "4074962";
 
@@ -816,12 +817,14 @@ class SyncService {
             const replyExistsGlobally = await storage.messageExistsGlobally(reply.id);
             const isNewReply = !replyExistsGlobally;
             
-            const externalParentId = typeof reply.parentId === 'string' ? reply.parentId : null;
-            let replyParentMessageId: string | null = savedComment.id;
-            if (externalParentId && externalParentId !== comment.id && externalParentId !== savedComment.metricoolId) {
-              const exactParent = await storage.getMessageByMetricoolId(externalParentId, brandId);
-              replyParentMessageId = exactParent?.id ?? null;
-            }
+            const replyParentMessageId = await resolveMetricoolParentMessageId({
+              platform,
+              rawParentId: reply.parentId,
+              postExternalId,
+              rootMetricoolIds: [comment.id, savedComment.metricoolId],
+              rootMessageId: savedComment.id,
+              findByMetricoolId: candidateId => storage.getMessageByMetricoolId(candidateId, brandId),
+            });
 
             const savedReply = await storage.upsertMessage({
               brandId,
