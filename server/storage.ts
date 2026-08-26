@@ -30,6 +30,12 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, isNull, isNotNull, gte, lt, lte, sql, inArray, notInArray } from "drizzle-orm";
+import {
+  reconciliationTimestamp,
+  reconciliationWindow,
+  type ReconciliationCandidate,
+} from "./reconciliationWindow";
+import { verboseSyncLogsEnabled } from "./syncLogging";
 import type { SessionAccessRecord } from "./security/sessionAccess";
 import { buildInboxResponseQuery, buildInboxVolumeQuery } from "./inboxStatsSql";
 import {
@@ -1072,7 +1078,9 @@ export class DatabaseStorage implements IStorage {
     
     if (existing) {
       if (existing.brandId !== insertMessage.brandId) {
-        console.log(`[Storage] SKIPPING duplicate metricoolId ${insertMessage.metricoolId}: message already exists in brand ${existing.brandId} as ${existing.id}`);
+        if (verboseSyncLogsEnabled()) {
+          console.log(`[Storage] SKIPPING duplicate metricoolId ${insertMessage.metricoolId}: message already exists in brand ${existing.brandId} as ${existing.id}`);
+        }
         return markMessageUpsertResult(existing, false);
       }
 
@@ -1087,7 +1095,9 @@ export class DatabaseStorage implements IStorage {
       // Only protect if message is from Repliyo OR has internalOrigin set
       // Do NOT protect metricool_sync messages that were incorrectly marked as outbound
       if (isReplyoSource || hasInternalOrigin) {
-        console.log(`[Storage] Protecting Repliyo message ${existing.id} - preserving source, direction, and internalOrigin (${existing.internalOrigin})`);
+        if (verboseSyncLogsEnabled()) {
+          console.log(`[Storage] Protecting Repliyo message ${existing.id} - preserving source, direction, and internalOrigin (${existing.internalOrigin})`);
+        }
         // Only update rawData and avatar but keep direction, source, author, parentMessageId, and internalOrigin
         const updated = await this.updateMessage(existing.id, {
           rawData: insertMessage.rawData,
@@ -1135,7 +1145,9 @@ export class DatabaseStorage implements IStorage {
       // This prevents duplicates when Metricool syncs the same DM to multiple brands
       const existingGlobal = await this.findExistingReplyoMessageGlobal(insertMessage);
       if (existingGlobal) {
-        console.log(`[Storage] SKIPPING duplicate: message already exists in brand ${existingGlobal.brandId} as ${existingGlobal.id} (source: ${existingGlobal.source})`);
+        if (verboseSyncLogsEnabled()) {
+          console.log(`[Storage] SKIPPING duplicate: message already exists in brand ${existingGlobal.brandId} as ${existingGlobal.id} (source: ${existingGlobal.source})`);
+        }
         // Return the existing message without creating a new one
         // We don't update the existing one because it belongs to a different brand
         return markMessageUpsertResult(existingGlobal, false);
@@ -1218,21 +1230,48 @@ export class DatabaseStorage implements IStorage {
 
   // Helper method to find a pending outbound message that matches an incoming synced message (BRAND-WIDE)
   // This searches across ALL conversations in the brand because Metricool may assign different conversation IDs
-  private async findPendingOutboundMatchBrandWide(syncedMessage: InsertMessage): Promise<Message | undefined> {
+  private async findPendingOutboundMatchBrandWide(syncedMessage: InsertMessage): Promise<ReconciliationCandidate | undefined> {
     if (!syncedMessage.content || !syncedMessage.brandId) {
       return undefined;
     }
 
+    // A timestamp we cannot parse is not eligible for reconciliation: every
+    // timeDiff check below would have been false against NaN, so it never
+    // matched before this change and must not start matching now.
+    const syncedTime = reconciliationTimestamp(syncedMessage.timestamp);
+    if (syncedTime === null) {
+      return undefined;
+    }
+
+    const candidateWindow = reconciliationWindow(syncedTime);
+
     // Find outbound messages without metricoolId across the ENTIRE brand
     // Filter by source='repliyo', 'repliyo_auto', or 'reminder_service' to only match messages sent from our app
-    const pendingMessages = await db
-      .select()
+    //
+    // Bounded by the reconciliation window and projected to the columns the
+    // matching below reads. Unbounded, this returned every pending message the
+    // brand ever accumulated (2,212 rows for the largest brand on production)
+    // once per synced message, raw_data included. Nothing is lost: every accept
+    // branch below already requires timeDiff < TIME_TOLERANCE_MS, and the
+    // widest tolerance in play is the window itself.
+    const pendingMessages: ReconciliationCandidate[] = await db
+      .select({
+        id: messages.id,
+        conversationId: messages.conversationId,
+        content: messages.content,
+        timestamp: messages.timestamp,
+        source: messages.source,
+        authorAvatar: messages.authorAvatar,
+        internalOrigin: messages.internalOrigin,
+      })
       .from(messages)
       .where(
         and(
           eq(messages.brandId, syncedMessage.brandId),
           eq(messages.direction, 'outbound'),
           isNull(messages.metricoolId),
+          gte(messages.timestamp, candidateWindow.from),
+          lte(messages.timestamp, candidateWindow.to),
           or(
             eq(messages.source, 'repliyo'),
             eq(messages.source, 'repliyo_auto'),
@@ -1275,7 +1314,6 @@ export class DatabaseStorage implements IStorage {
     };
 
     const syncedNormalized = normalizeContent(syncedMessage.content);
-    const syncedTime = syncedMessage.timestamp ? new Date(syncedMessage.timestamp).getTime() : Date.now();
 
     // Find a matching message by content similarity and timestamp proximity
     // Use tiered tolerance: short messages (< 20 chars) need closer timestamps to avoid false matches
@@ -1291,16 +1329,10 @@ export class DatabaseStorage implements IStorage {
       return diffA - diffB;
     });
     
-    let closestCandidate: { pending: Message; timeDiff: number; pendingNormalized: string } | null = null;
-
     for (const pending of sortedPending) {
       const pendingNormalized = normalizeContent(pending.content);
       const pendingTime = new Date(pending.timestamp).getTime();
       const timeDiff = Math.abs(syncedTime - pendingTime);
-      
-      if (!closestCandidate || timeDiff < closestCandidate.timeDiff) {
-        closestCandidate = { pending, timeDiff, pendingNormalized };
-      }
 
       // Content must be similar and within time tolerance
       if (pendingNormalized === syncedNormalized && timeDiff < TIME_TOLERANCE_MS) {
@@ -1350,14 +1382,20 @@ export class DatabaseStorage implements IStorage {
     }
 
     if (pendingMessages.length > 0) {
-      console.log(`[Storage] RECONCILIATION MISS: ${pendingMessages.length} pending candidate(s) but none matched.`);
-      console.log(`[Storage]   Synced content (normalized): "${syncedNormalized.substring(0, 80)}"`);
-      console.log(`[Storage]   Synced conversationId: ${syncedMessage.conversationId}, timestamp: ${syncedMessage.timestamp}`);
-      for (const pending of sortedPending.slice(0, 5)) {
-        const pNorm = normalizeContent(pending.content);
-        const pTimeDiff = Math.abs(new Date(pending.timestamp).getTime() - syncedTime);
-        const convMatch = pending.conversationId === syncedMessage.conversationId ? 'YES' : 'NO';
-        console.log(`[Storage]   Candidate ${pending.id}: "${pNorm.substring(0, 60)}" | timeDiff: ${Math.round(pTimeDiff/1000)}s | convMatch: ${convMatch} | source: ${pending.source}`);
+      // One line is the signal (reconciliation is falling behind for this
+      // brand); the candidate dump underneath is only useful when actively
+      // debugging a specific mismatch, and it used to cost five extra
+      // normalisations plus seven log lines on every synced message.
+      console.log(`[Storage] RECONCILIATION MISS: ${pendingMessages.length} pending candidate(s) within the reconciliation window but none matched.`);
+      if (verboseSyncLogsEnabled()) {
+        console.log(`[Storage]   Synced content (normalized): "${syncedNormalized.substring(0, 80)}"`);
+        console.log(`[Storage]   Synced conversationId: ${syncedMessage.conversationId}, timestamp: ${syncedMessage.timestamp}`);
+        for (const pending of sortedPending.slice(0, 5)) {
+          const pNorm = normalizeContent(pending.content);
+          const pTimeDiff = Math.abs(new Date(pending.timestamp).getTime() - syncedTime);
+          const convMatch = pending.conversationId === syncedMessage.conversationId ? 'YES' : 'NO';
+          console.log(`[Storage]   Candidate ${pending.id}: "${pNorm.substring(0, 60)}" | timeDiff: ${Math.round(pTimeDiff/1000)}s | convMatch: ${convMatch} | source: ${pending.source}`);
+        }
       }
     }
 
@@ -1371,15 +1409,37 @@ export class DatabaseStorage implements IStorage {
       return undefined;
     }
 
-    // Find ALL messages from Repliyo (any brand) that match this content
+    // Candidates are Repliyo-sent messages from ANY brand, bounded by the
+    // reconciliation window and projected to the three columns the loop below
+    // compares. Unbounded, this was the single most expensive query of a sync
+    // round: 26,197 rows and 35 MB per synced message on production, 16 MB of
+    // that raw_data the comparison never looks at. Every accept branch below
+    // requires timeDiff < TIME_TOLERANCE_MS, which is exactly the window, so no
+    // candidate that could have matched is excluded.
+    const syncedTime = reconciliationTimestamp(syncedMessage.timestamp);
+    if (syncedTime === null) {
+      // Unparseable timestamp: ineligible, exactly as before the window existed.
+      return undefined;
+    }
+
+    const candidateWindow = reconciliationWindow(syncedTime);
+
     const replyoMessages = await db
-      .select()
+      .select({
+        id: messages.id,
+        content: messages.content,
+        timestamp: messages.timestamp,
+      })
       .from(messages)
       .where(
-        or(
-          eq(messages.source, 'repliyo'),
-          eq(messages.source, 'repliyo_auto'),
-          eq(messages.source, 'reminder_service')
+        and(
+          gte(messages.timestamp, candidateWindow.from),
+          lte(messages.timestamp, candidateWindow.to),
+          or(
+            eq(messages.source, 'repliyo'),
+            eq(messages.source, 'repliyo_auto'),
+            eq(messages.source, 'reminder_service')
+          )
         )
       );
 
@@ -1403,16 +1463,20 @@ export class DatabaseStorage implements IStorage {
     };
 
     const syncedNormalized = normalizeContent(syncedMessage.content);
-    const syncedTime = syncedMessage.timestamp ? new Date(syncedMessage.timestamp).getTime() : Date.now();
     const TIME_TOLERANCE_MS = 2 * 60 * 60 * 1000; // 2 hours
 
+    // The winner is re-read in full: callers need the whole row (brandId,
+    // source, ...) but only one candidate out of the window ever wins, so the
+    // full row is fetched once instead of for every candidate. A row that
+    // disappears between the two reads yields undefined, and the caller then
+    // falls through to the idempotent insert, which is the safe outcome.
     for (const existing of replyoMessages) {
       const existingNormalized = normalizeContent(existing.content);
       const existingTime = new Date(existing.timestamp).getTime();
       const timeDiff = Math.abs(syncedTime - existingTime);
 
       if (existingNormalized === syncedNormalized && timeDiff < TIME_TOLERANCE_MS) {
-        return existing;
+        return this.getMessage(existing.id);
       }
       
       // Also check partial content match (for long messages truncated differently)
@@ -1420,7 +1484,7 @@ export class DatabaseStorage implements IStorage {
       const existingStart = existingNormalized.substring(0, 50);
       if (syncedStart === existingStart && timeDiff < TIME_TOLERANCE_MS) {
         console.log(`[Storage] Global match (prefix): found existing ${existing.id} with similar content start`);
-        return existing;
+        return this.getMessage(existing.id);
       }
       
       // FACEBOOK FIX: Check if synced message CONTAINS the existing message content
@@ -1430,7 +1494,7 @@ export class DatabaseStorage implements IStorage {
       
       if (existingFirst50.length >= 20 && syncedRaw.includes(existingFirst50) && timeDiff < TIME_TOLERANCE_MS) {
         console.log(`[Storage] Global match (Facebook-style contains): found existing ${existing.id}`);
-        return existing;
+        return this.getMessage(existing.id);
       }
     }
 

@@ -168,6 +168,18 @@ export const messages = pgTable("messages", {
   conversationIdx: index("messages_conversation_idx").on(table.conversationId),
   timestampIdx: index("messages_timestamp_idx").on(table.timestamp),
   brandTimestampIdx: index("messages_brand_timestamp_idx").on(table.brandId, table.timestamp),
+  // Partial indexes backing the reconciliation matchers in server/storage.ts,
+  // which run once per synced message. Bounding those queries to a 2h window is
+  // only cheap if an index covers the predicate; otherwise it stays a
+  // sequential scan of a 570 MB table. Created CONCURRENTLY by
+  // migrations/0010_reconciliation_indexes.sql and declared here so the schema
+  // stays the source of truth.
+  pendingOutboundReconIdx: index("messages_pending_outbound_recon_idx")
+    .on(table.brandId, table.timestamp)
+    .where(sql`${table.direction} = 'outbound' AND ${table.metricoolId} IS NULL AND ${table.source} IN ('repliyo', 'repliyo_auto', 'reminder_service')`),
+  repliyoSourceReconIdx: index("messages_repliyo_source_recon_idx")
+    .on(table.timestamp)
+    .where(sql`${table.source} IN ('repliyo', 'repliyo_auto', 'reminder_service')`),
 }));
 
 export const aiAgents = pgTable("ai_agents", {
