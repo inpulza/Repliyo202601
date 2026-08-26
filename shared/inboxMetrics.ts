@@ -53,6 +53,15 @@ export interface ResponseCycle {
   origin: ResponseOrigin;
 }
 
+export function countInclusiveCalendarDays(from: string, to: string): number {
+  const toUtcDay = (value: string): number => {
+    const [year, month, day] = value.split('-').map(Number);
+    return Date.UTC(year, month - 1, day);
+  };
+
+  return Math.floor((toUtcDay(to) - toUtcDay(from)) / 86_400_000) + 1;
+}
+
 function originOf(message: ResponseMetricMessage): ResponseOrigin {
   return message.internalOrigin === 'ai' || message.source === 'repliyo_auto' ? 'ai' : 'human';
 }

@@ -59,6 +59,16 @@ test('Overview shows real operational metrics and applies historical date filter
 
   await periodButton.click();
   await page.getByTestId(
+    isMobile ? 'menu-item-period-mobile-custom' : 'menu-item-period-custom',
+  ).click();
+  await page.getByTestId('input-period-from').fill('2025-03-30');
+  await page.getByTestId('input-period-to').fill('2026-03-31');
+  await expect(page.getByRole('alert')).toContainText('no puede superar 366 días');
+  await expect(page.getByTestId('button-apply-custom-period')).toBeDisabled();
+  await page.keyboard.press('Escape');
+
+  await periodButton.click();
+  await page.getByTestId(
     isMobile ? 'menu-item-period-mobile-all' : 'menu-item-period-all',
   ).click();
   await expect.poll(() => observedMetricsQueries.at(-1)).toContain('range=all');

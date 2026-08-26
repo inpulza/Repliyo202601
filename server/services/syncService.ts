@@ -816,6 +816,13 @@ class SyncService {
             const replyExistsGlobally = await storage.messageExistsGlobally(reply.id);
             const isNewReply = !replyExistsGlobally;
             
+            const externalParentId = typeof reply.parentId === 'string' ? reply.parentId : null;
+            let replyParentMessageId: string | null = savedComment.id;
+            if (externalParentId && externalParentId !== comment.id && externalParentId !== savedComment.metricoolId) {
+              const exactParent = await storage.getMessageByMetricoolId(externalParentId, brandId);
+              replyParentMessageId = exactParent?.id ?? null;
+            }
+
             const savedReply = await storage.upsertMessage({
               brandId,
               conversationId: conversationRecord.id,
@@ -832,7 +839,7 @@ class SyncService {
               sourceUrl: reply.properties?.permalink || comment.postUrl || null,
               rawData: reply,
               threadId: postExternalId,
-              parentMessageId: savedComment.id,
+              parentMessageId: replyParentMessageId,
               mediaUrl: replyMediaUrl,
               mediaType: replyMediaType,
               urgency: null,
@@ -1164,6 +1171,7 @@ class SyncService {
 
       // Build reply text
       let replyText: string;
+      let replyWasGeneratedByAi = false;
       if (agent.autoPrivateReplyUseAi) {
         // AI-generated private reply
         try {
@@ -1192,6 +1200,7 @@ class SyncService {
           const result = await llm.generateRawCompletion(systemPrompt, userPrompt, { maxTokens: 300, temperature: 0.7 });
           replyText = result.text?.trim() || '';
           if (!replyText) throw new Error("empty_response");
+          replyWasGeneratedByAi = true;
           log(`${logPrefix} AI-generated reply: "${replyText.substring(0, 80)}..."`, "sync");
         } catch (err: any) {
           log(`${logPrefix} AI generation failed (${err.message}) — falling back to template`, "sync");
@@ -1314,7 +1323,7 @@ class SyncService {
         status: 'sent',
         parentMessageId: comment.id,
         metricoolId: result.messageId || null,
-        source: 'repliyo',
+        source: replyWasGeneratedByAi ? 'repliyo_auto' : 'repliyo',
         internalOrigin: 'meta_private_reply',
       });
 

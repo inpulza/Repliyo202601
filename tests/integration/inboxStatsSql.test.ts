@@ -34,9 +34,11 @@ describeWithPostgres('production inbox metrics SQL', () => {
         platform text NOT NULL,
         direction text,
         timestamp timestamp NOT NULL,
+        metricool_id text,
         parent_message_id text,
         internal_origin text,
         source text,
+        raw_data jsonb,
         sentiment text,
         author text NOT NULL,
         content text NOT NULL
@@ -85,18 +87,19 @@ describeWithPostgres('production inbox metrics SQL', () => {
         ('dm-unanswered', 'brand-a', 'dm', 'open', 'customer-b');
 
       INSERT INTO messages (
-        id, brand_id, conversation_id, platform, direction, timestamp,
-        parent_message_id, internal_origin, source, sentiment, author, content
+        id, brand_id, conversation_id, platform, direction, timestamp, metricool_id,
+        parent_message_id, internal_origin, source, raw_data, sentiment, author, content
       ) VALUES
-        ('comment-1', 'brand-a', 'comments', 'facebook', 'inbound', '2026-08-20 10:00:00', NULL, NULL, NULL, 'positive', 'customer-1', 'one'),
-        ('reply-1', 'brand-a', 'comments', 'facebook', 'outbound', '2026-08-20 10:05:00', 'comment-1', NULL, 'manual', NULL, 'brand', 'reply'),
-        ('comment-2', 'brand-a', 'comments', 'facebook', 'inbound', '2026-08-20 11:00:00', NULL, NULL, NULL, 'neutral', 'customer-2', 'two'),
-        ('reply-2', 'brand-a', 'comments', 'facebook', 'outbound', '2026-08-20 11:02:00', 'comment-2', 'ai', 'repliyo_auto', NULL, 'brand', 'reply'),
-        ('comment-3', 'brand-a', 'comments', 'facebook', 'inbound', '2026-08-20 12:00:00', NULL, NULL, NULL, 'negative', 'customer-3', 'three'),
-        ('dm-in-1', 'brand-a', 'dm-answered', 'instagram', 'inbound', '2026-08-20 13:00:00', NULL, NULL, NULL, NULL, 'customer-a', 'hello'),
-        ('dm-in-2', 'brand-a', 'dm-answered', 'instagram', 'inbound', '2026-08-20 13:01:00', NULL, NULL, NULL, NULL, 'customer-a', 'again'),
-        ('dm-out', 'brand-a', 'dm-answered', 'instagram', 'outbound', '2026-08-20 13:10:00', NULL, NULL, 'manual', NULL, 'brand', 'reply'),
-        ('dm-in-3', 'brand-a', 'dm-unanswered', 'instagram', 'inbound', '2026-08-20 14:00:00', NULL, NULL, NULL, NULL, 'customer-b', 'pending');
+        ('comment-1', 'brand-a', 'comments', 'facebook', 'inbound', '2026-08-20 10:00:00', 'root-1', NULL, NULL, NULL, NULL, 'positive', 'customer-1', 'one'),
+        ('reply-1', 'brand-a', 'comments', 'facebook', 'outbound', '2026-08-20 10:05:00', 'reply-1-external', 'comment-1', NULL, 'manual', NULL, NULL, 'brand', 'reply'),
+        ('comment-2', 'brand-a', 'comments', 'facebook', 'inbound', '2026-08-20 11:00:00', 'root-2', NULL, NULL, NULL, NULL, 'neutral', 'customer-2', 'two'),
+        ('reply-2', 'brand-a', 'comments', 'facebook', 'outbound', '2026-08-20 11:02:00', 'reply-2-external', 'comment-2', 'ai', 'repliyo_auto', NULL, NULL, 'brand', 'reply'),
+        ('comment-3', 'brand-a', 'comments', 'facebook', 'inbound', '2026-08-20 12:00:00', 'root-3', NULL, NULL, NULL, NULL, 'negative', 'customer-3', 'three'),
+        ('flattened-reply', 'brand-a', 'comments', 'facebook', 'outbound', '2026-08-20 12:02:00', 'flattened-external', 'comment-3', NULL, 'metricool_sync', '{"parentId":"nested-comment"}', NULL, 'brand', 'not a root reply'),
+        ('dm-in-1', 'brand-a', 'dm-answered', 'instagram', 'inbound', '2026-08-20 13:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 'customer-a', 'hello'),
+        ('dm-in-2', 'brand-a', 'dm-answered', 'instagram', 'inbound', '2026-08-20 13:01:00', NULL, NULL, NULL, NULL, NULL, NULL, 'customer-a', 'again'),
+        ('dm-out', 'brand-a', 'dm-answered', 'instagram', 'outbound', '2026-08-20 13:10:00', NULL, NULL, NULL, 'manual', NULL, NULL, 'brand', 'reply'),
+        ('dm-in-3', 'brand-a', 'dm-unanswered', 'instagram', 'inbound', '2026-08-20 14:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 'customer-b', 'pending');
     `);
 
     const [{ storage }, { pool }] = await Promise.all([

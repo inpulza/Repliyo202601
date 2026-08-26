@@ -2135,6 +2135,19 @@ export class DatabaseStorage implements IStorage {
             AND parent_conversation.type NOT IN ('dm', 'conversation')
             AND reply.timestamp >= parent.timestamp
             AND reply.timestamp < ${range.toExclusive}
+            AND (
+              reply.source IS DISTINCT FROM 'metricool_sync'
+              OR COALESCE(
+                reply.raw_data ->> 'parentId',
+                reply.raw_data ->> 'parent_id',
+                reply.raw_data #>> '{parent,id}'
+              ) IS NULL
+              OR COALESCE(
+                reply.raw_data ->> 'parentId',
+                reply.raw_data ->> 'parent_id',
+                reply.raw_data #>> '{parent,id}'
+              ) = parent.metricool_id
+            )
           ORDER BY parent.id, reply.timestamp, reply.id
         ),
         response_pairs AS (

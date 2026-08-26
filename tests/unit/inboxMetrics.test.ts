@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
+  countInclusiveCalendarDays,
   matchResponseCycles,
   summarizeResponseCycles,
   type ResponseMetricMessage,
@@ -13,6 +14,11 @@ const range = {
 };
 
 describe('inbox response-time business rules', () => {
+  it('counts custom date ranges by calendar day across daylight-saving changes', () => {
+    assert.equal(countInclusiveCalendarDays('2025-03-30', '2026-03-31'), 367);
+    assert.equal(countInclusiveCalendarDays('2026-08-01', '2026-08-10'), 10);
+  });
+
   it('only matches a comment reply to its exact parent, including a cross-conversation private reply', () => {
     const cycles = matchResponseCycles([
       message('comment-a', '2026-08-01T10:00:00.000Z', 'inbound', { conversationId: 'post-thread', conversationType: 'comment' }),

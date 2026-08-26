@@ -38,6 +38,7 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { countInclusiveCalendarDays } from '@shared/inboxMetrics';
 import { 
   MobilePageHeader, 
   MobileStatCard, 
@@ -224,7 +225,7 @@ export function Overview() {
   };
 
   const customRangeDays = customFrom && customTo
-    ? Math.floor((new Date(`${customTo}T00:00:00`).getTime() - new Date(`${customFrom}T00:00:00`).getTime()) / 86400000) + 1
+    ? countInclusiveCalendarDays(customFrom, customTo)
     : 0;
   const customRangeTooLong = customRangeDays > 366;
 
