@@ -19,6 +19,7 @@ import { log } from "../app";
 import { sendPrivateReply, interpolateTemplate } from "./metaService";
 import { enrichPostContext, enrichPostContextForTemplate } from "./llm/prompt-composer";
 import { resolveMetricoolParentMessageId } from "../metricoolParentResolver";
+import { verboseSyncLogsEnabled } from "../syncLogging";
 
 const DEFAULT_ZERNIO_OBSERVER_BLOG_ID = "4074962";
 
@@ -314,8 +315,12 @@ class SyncService {
             conversationCustomerName = customerName;
             conversationCustomerAvatar = customerAvatar;
             
-            // DEBUG: Log conversation key details for troubleshooting
-            log(`[SyncService] DM Key Debug - brand: ${brandName}, threadId: ${conv.id}, customerId: ${customerId}, customerName: ${customerName}, fromBrand: ${isFromBrand}, participants: ${JSON.stringify(participants.map((p: any) => ({ id: p.id, name: p.name, self: p.self })))}`, "sync");
+            // DEBUG: Log conversation key details for troubleshooting.
+            // Off by default: this fired once per message and serialised the
+            // participant list even when nobody was reading the output.
+            if (verboseSyncLogsEnabled()) {
+              log(`[SyncService] DM Key Debug - brand: ${brandName}, threadId: ${conv.id}, customerId: ${customerId}, customerName: ${customerName}, fromBrand: ${isFromBrand}, participants: ${JSON.stringify(participants.map((p: any) => ({ id: p.id, name: p.name, self: p.self })))}`, "sync");
+            }
             
             // Warn if customerId matches brandAccountId (potential bug)
             if (customerId === brandAccountId) {
@@ -342,7 +347,9 @@ class SyncService {
               customerParticipant?.picture ||
               (!isFromBrand ? authorAvatar : null);
 
-            log(`[SyncService] WhatsApp DM Key Debug - brand: ${brandName}, threadId: ${conv.id}, customerId: ${customerId}, customerName: ${conversationCustomerName}, fromBrand: ${isFromBrand}`, "sync");
+            if (verboseSyncLogsEnabled()) {
+              log(`[SyncService] WhatsApp DM Key Debug - brand: ${brandName}, threadId: ${conv.id}, customerId: ${customerId}, customerName: ${conversationCustomerName}, fromBrand: ${isFromBrand}`, "sync");
+            }
           } else {
             author = msg.from?.name || msg.sender?.name || 'Unknown';
             authorAvatar = msg.from?.picture || msg.sender?.picture || null;
@@ -441,8 +448,10 @@ class SyncService {
             await storage.incrementConversationUnread(conversationRecord.id);
           }
           
-          // Log DM processing for debugging
-          log(`[SyncService] DM ${metricoolId} from ${author}: isNew=${isNewMessage}, isReallyNew=${isReallyNew}, isFromBrand=${isFromBrand}, direction=${direction}, incrementedUnread=${isReallyNew && isInbound && !isSuspiciousInbound}`, "sync");
+          // Log DM processing for debugging (one line per message, off by default)
+          if (verboseSyncLogsEnabled()) {
+            log(`[SyncService] DM ${metricoolId} from ${author}: isNew=${isNewMessage}, isReallyNew=${isReallyNew}, isFromBrand=${isFromBrand}, direction=${direction}, incrementedUnread=${isReallyNew && isInbound && !isSuspiciousInbound}`, "sync");
+          }
           
           // CRM Traffic Controller: Route DM to contact system
           if (isReallyNew && isInbound) {
@@ -702,7 +711,9 @@ class SyncService {
         // (upsertMessage may return an existing message from another brand if it's a global duplicate)
         const isReallyNew = this.isMessageNewForBrand(savedComment, isNewComment, brandId);
         
-        log(`[SyncService] Comment ${comment.id} from ${comment.author}: isNew=${isNewComment}, isReallyNew=${isReallyNew}, isFromBrand=${isCommentFromBrand}`, "sync");
+        if (verboseSyncLogsEnabled()) {
+          log(`[SyncService] Comment ${comment.id} from ${comment.author}: isNew=${isNewComment}, isReallyNew=${isReallyNew}, isFromBrand=${isCommentFromBrand}`, "sync");
+        }
         
         // CRM Traffic Controller: Route comment to limbo or existing contact
         if (isReallyNew && !isCommentFromBrand) {
