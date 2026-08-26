@@ -91,6 +91,7 @@ interface ResponseDistribution {
 interface ResponseTimeMetrics extends ResponseDistribution {
   ai: ResponseDistribution;
   human: ResponseDistribution;
+  coverage: { eligible: number; answered: number; rate: number | null };
 }
 
 const periodOptions = [
@@ -141,6 +142,10 @@ function getPlatformIcon(platform: string): string {
     email: '📧',
   };
   return icons[platform.toLowerCase()] || '💬';
+}
+
+function formatResponseRate(rate: number | null): string {
+  return rate === null ? '--' : `${rate.toLocaleString('es-ES', { maximumFractionDigits: 1 })}%`;
 }
 
 function formatPlatformName(platform: string): string {
@@ -322,7 +327,7 @@ export function Overview() {
             iconColor="text-amber-500"
             label="Resp. mediana"
             value={formatResponseTime(stats?.responseTime.medianMs ?? null)}
-            subtitle={`p90 ${formatResponseTime(stats?.responseTime.p90Ms ?? null)} · ${stats?.responseTime.samples ?? 0} ciclos`}
+            subtitle={`${formatResponseRate(stats?.responseTime.coverage.rate ?? null)} · ${stats?.responseTime.coverage.answered ?? 0}/${stats?.responseTime.coverage.eligible ?? 0} ciclos`}
             testId="mobile-stat-response-time"
           />
           <MobileStatCard
@@ -359,6 +364,9 @@ export function Overview() {
               <div className="text-right">
                 <p className="text-sm font-medium">{formatResponseTime(platformStats.responseTime.medianMs)}</p>
                 <p className="text-[10px] text-muted-foreground">mediana · {platformStats.responseTime.samples} ciclos</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {formatResponseRate(platformStats.responseTime.coverage.rate)} respondidos · {platformStats.responseTime.coverage.answered}/{platformStats.responseTime.coverage.eligible}
+                </p>
                 <p className="text-[10px] text-muted-foreground">
                   IA {formatResponseTime(platformStats.responseTime.ai.medianMs)} · Humano {formatResponseTime(platformStats.responseTime.human.medianMs)}
                 </p>
@@ -536,6 +544,9 @@ export function Overview() {
                     <p className="text-xs text-muted-foreground mt-1">
                         mediana · p90 {formatResponseTime(stats?.responseTime.p90Ms ?? null)} · {stats?.responseTime.samples || 0} ciclos
                     </p>
+                    <p className="text-[11px] text-muted-foreground mt-1" data-testid="text-response-coverage">
+                      {formatResponseRate(stats?.responseTime.coverage.rate ?? null)} respondidos · {stats?.responseTime.coverage.answered ?? 0}/{stats?.responseTime.coverage.eligible ?? 0} ciclos elegibles
+                    </p>
                     <p className="text-[11px] text-muted-foreground mt-1" data-testid="text-response-origin-split">
                       IA {formatResponseTime(stats?.responseTime.ai.medianMs ?? null)} ({stats?.responseTime.ai.samples ?? 0}) · Humano {formatResponseTime(stats?.responseTime.human.medianMs ?? null)} ({stats?.responseTime.human.samples ?? 0})
                     </p>
@@ -694,7 +705,7 @@ export function Overview() {
         <Card data-testid="card-platform-breakdown">
           <CardHeader>
             <CardTitle>Mensajes por red social</CardTitle>
-            <CardDescription>Mensajes y mediana de primera respuesta. Comentarios solo con relación exacta; DMs por ráfaga entrante.</CardDescription>
+            <CardDescription>Volumen, cobertura y mediana de primera respuesta. Comentarios exactos; DMs por ráfaga entrante.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -702,8 +713,9 @@ export function Overview() {
                 <thead>
                   <tr className="border-b text-left text-xs text-muted-foreground">
                     <th className="pb-3 font-medium">Red social</th>
-                    <th className="pb-3 text-right font-medium">Entrantes</th>
-                    <th className="pb-3 text-right font-medium">Respuestas</th>
+                    <th className="pb-3 text-right font-medium">Mensajes entrantes</th>
+                    <th className="pb-3 text-right font-medium">Mensajes salientes</th>
+                    <th className="pb-3 text-right font-medium">Tasa de respuesta</th>
                     <th className="pb-3 text-right font-medium">Mediana total</th>
                     <th className="pb-3 text-right font-medium">IA</th>
                     <th className="pb-3 text-right font-medium">Humano</th>
@@ -718,6 +730,12 @@ export function Overview() {
                       </td>
                       <td className="py-3 text-right tabular-nums">{platformStats.inbound.toLocaleString()}</td>
                       <td className="py-3 text-right tabular-nums">{platformStats.outbound.toLocaleString()}</td>
+                      <td className="py-3 text-right tabular-nums" data-testid={`platform-response-rate-${platform}`}>
+                        {formatResponseRate(platformStats.responseTime.coverage.rate)}
+                        <span className="ml-1 text-xs text-muted-foreground">
+                          ({platformStats.responseTime.coverage.answered}/{platformStats.responseTime.coverage.eligible})
+                        </span>
+                      </td>
                       <td className="py-3 text-right tabular-nums">
                         {formatResponseTime(platformStats.responseTime.medianMs)}
                         <span className="ml-1 text-xs text-muted-foreground">({platformStats.responseTime.samples})</span>
@@ -728,7 +746,7 @@ export function Overview() {
                   ))}
                   {Object.keys(stats?.byPlatform ?? {}).length === 0 && (
                     <tr>
-                      <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                      <td colSpan={7} className="py-8 text-center text-muted-foreground">
                         No hay mensajes en este período
                       </td>
                     </tr>

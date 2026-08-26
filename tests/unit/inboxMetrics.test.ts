@@ -47,12 +47,13 @@ describe('inbox response-time business rules', () => {
   it('reports honest median and p90 distributions split between AI and human replies', () => {
     const summary = summarizeResponseCycles([
       cycle(1, 'ai'), cycle(2, 'ai'), cycle(15, 'human'), cycle(115, 'human'),
-    ]);
+    ], 10);
 
     assert.equal(summary.medianMs, 8.5 * 60 * 1000);
     assert.equal(summary.p90Ms, 85 * 60 * 1000);
     assert.deepEqual(summary.ai, { medianMs: 1.5 * 60 * 1000, p90Ms: 1.9 * 60 * 1000, samples: 2 });
     assert.deepEqual(summary.human, { medianMs: 65 * 60 * 1000, p90Ms: 105 * 60 * 1000, samples: 2 });
+    assert.deepEqual(summary.coverage, { eligible: 10, answered: 4, rate: 40 });
   });
 
   it('does not invent a response time for unanswered messages', () => {
@@ -61,6 +62,7 @@ describe('inbox response-time business rules', () => {
       medianMs: null, p90Ms: null, samples: 0,
       ai: { medianMs: null, p90Ms: null, samples: 0 },
       human: { medianMs: null, p90Ms: null, samples: 0 },
+      coverage: { eligible: 0, answered: 0, rate: null },
     });
   });
 });

@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { PgDialect } from 'drizzle-orm/pg-core';
 
 import { parseInboxStatsRange } from '../../server/inboxStatsRange';
+import { buildInboxVolumeQuery } from '../../server/inboxStatsSql';
 
 const now = new Date('2026-08-24T15:30:00.000Z');
 
@@ -47,6 +49,19 @@ describe('inbox metrics date ranges', () => {
       { from: '2026-02-30', to: '2026-03-01' },
     ]) {
       assert.throws(() => parseInboxStatsRange(query, now));
+    }
+  });
+
+  it('keeps volume bounds aggregated for preset and full-history SQL', () => {
+    const dialect = new PgDialect();
+    for (const query of [{ days: '7' }, { range: 'all' }]) {
+      const range = parseInboxStatsRange(query, now);
+      const compiled = dialect.sqlToQuery(buildInboxVolumeQuery('brand-a', range)).sql;
+      const bounds = compiled.match(/bounds\s+AS\s*\(([\s\S]*?)\),\s*buckets\s+AS/i)?.[1];
+
+      assert.ok(bounds, 'the production volume query must contain a bounds CTE');
+      assert.match(bounds, /SELECT\s+COALESCE/i);
+      assert.match(bounds, /MIN\(local_timestamp\)/i);
     }
   });
 });

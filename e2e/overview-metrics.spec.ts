@@ -18,6 +18,13 @@ test('Overview shows real operational metrics and applies historical date filter
   ).toContainText('15m');
 
   if (isMobile) {
+    await expect(page.getByTestId('mobile-stat-response-time')).toContainText('71,1%');
+  } else {
+    await expect(page.getByTestId('text-response-coverage')).toContainText('71,1% respondidos');
+    await expect(page.getByTestId('text-response-coverage')).toContainText('651/916');
+  }
+
+  if (isMobile) {
     const instagram = page.getByTestId('mobile-platform-instagram');
     await expect(instagram).toContainText('12 recibidos · 8 enviados');
     await expect(instagram).toContainText('IA 8m');
@@ -28,6 +35,7 @@ test('Overview shows real operational metrics and applies historical date filter
     await expect(instagramRow).toContainText('12');
     await expect(instagramRow).toContainText('8');
     await expect(instagramRow).toContainText('15m');
+    await expect(page.getByTestId('platform-response-rate-instagram')).toContainText('90,7%');
     await expect(page.getByTestId('text-response-origin-split')).toContainText('IA 8m');
     await expect(page.getByTestId('text-response-origin-split')).toContainText('Humano 18m');
     await expect(page.getByTestId('period-context')).toContainText('Europe/Madrid');
@@ -173,6 +181,7 @@ function metricsFixture(url: URL) {
       samples: 4,
       ai: { medianMs: 480000, p90Ms: 600000, samples: 2 },
       human: { medianMs: 1080000, p90Ms: 1800000, samples: 2 },
+      coverage: { eligible: 916, answered: 651, rate: 71.1 },
     },
     byPlatform: {
       instagram: {
@@ -184,6 +193,7 @@ function metricsFixture(url: URL) {
           samples: 4,
           ai: { medianMs: 480000, p90Ms: 600000, samples: 2 },
           human: { medianMs: 1080000, p90Ms: 1800000, samples: 2 },
+          coverage: { eligible: 54, answered: 49, rate: 90.7 },
         },
       },
     },

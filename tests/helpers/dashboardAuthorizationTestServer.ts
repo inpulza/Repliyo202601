@@ -158,6 +158,7 @@ export async function startDashboardAuthorizationTestServer(): Promise<Dashboard
         samples: 1,
         ai: { medianMs: null, p90Ms: null, samples: 0 },
         human: { medianMs: 120000, p90Ms: 180000, samples: 1 },
+        coverage: { eligible: 2, answered: 1, rate: 50 },
       },
       byPlatform: {
         instagram: {
@@ -169,6 +170,7 @@ export async function startDashboardAuthorizationTestServer(): Promise<Dashboard
             samples: 1,
             ai: { medianMs: null, p90Ms: null, samples: 0 },
             human: { medianMs: 120000, p90Ms: 180000, samples: 1 },
+            coverage: { eligible: 2, answered: 1, rate: 50 },
           },
         },
       },

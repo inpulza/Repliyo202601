@@ -14,9 +14,16 @@ export interface ResponseDistribution {
   samples: number;
 }
 
+export interface ResponseCoverage {
+  eligible: number;
+  answered: number;
+  rate: number | null;
+}
+
 export interface ResponseTimeMetrics extends ResponseDistribution {
   ai: ResponseDistribution;
   human: ResponseDistribution;
+  coverage: ResponseCoverage;
 }
 
 export interface PlatformInboxMetrics {
@@ -64,7 +71,10 @@ function percentile(values: readonly number[], fraction: number): number | null 
   return Math.round(sorted[lower] + (sorted[upper] - sorted[lower]) * (position - lower));
 }
 
-export function summarizeResponseCycles(cycles: readonly ResponseCycle[]): ResponseTimeMetrics {
+export function summarizeResponseCycles(
+  cycles: readonly ResponseCycle[],
+  eligibleCycles: number = cycles.length,
+): ResponseTimeMetrics {
   const summarize = (selected: readonly ResponseCycle[]): ResponseDistribution => ({
     medianMs: percentile(selected.map(cycle => cycle.responseMs), 0.5),
     p90Ms: percentile(selected.map(cycle => cycle.responseMs), 0.9),
@@ -75,6 +85,11 @@ export function summarizeResponseCycles(cycles: readonly ResponseCycle[]): Respo
     ...summarize(cycles),
     ai: summarize(cycles.filter(cycle => cycle.origin === 'ai')),
     human: summarize(cycles.filter(cycle => cycle.origin === 'human')),
+    coverage: {
+      eligible: eligibleCycles,
+      answered: cycles.length,
+      rate: eligibleCycles === 0 ? null : Math.round((cycles.length / eligibleCycles) * 1000) / 10,
+    },
   };
 }
 

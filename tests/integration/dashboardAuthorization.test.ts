@@ -177,6 +177,7 @@ describe("brand-scoped inbox metrics", () => {
     assert.equal(body.period.timezone, "Europe/Madrid");
     assert.equal(body.period.granularity, "day");
     assert.equal(body.byPlatform.instagram.inbound, 2);
+    assert.equal(body.byPlatform.instagram.responseTime.coverage.rate, 50);
     assert.equal(server.state.inboxStatsReads, 1);
   });
 

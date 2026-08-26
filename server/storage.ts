@@ -31,6 +31,7 @@ import {
 import { db } from "./db";
 import { eq, desc, and, or, isNull, isNotNull, gte, lt, lte, sql, inArray, notInArray } from "drizzle-orm";
 import type { SessionAccessRecord } from "./security/sessionAccess";
+import { buildInboxVolumeQuery } from "./inboxStatsSql";
 import {
   type InboxMetricsRange,
   type PlatformInboxMetrics,
@@ -2032,12 +2033,7 @@ export class DatabaseStorage implements IStorage {
   }> {
     const lowerBound = range.from ? sql`AND m.timestamp >= ${range.from}` : sql``;
     const responseLowerBound = range.from ? sql`AND response_at >= ${range.from}` : sql``;
-    const seriesStart = range.from
-      ? sql`date_trunc(${range.granularity}, (${range.from}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE ${range.timezone}))`
-      : sql`date_trunc(${range.granularity}, MIN(local_timestamp))`;
-    const seriesStep = range.granularity === 'day'
-      ? sql`interval '1 day'`
-      : range.granularity === 'week' ? sql`interval '1 week'` : sql`interval '1 month'`;
+    const eligibleLowerBound = range.from ? sql`AND inbound_at >= ${range.from}` : sql``;
 
     const [messageResult, responseResult, conversationResult, volumeResult, activityResult] = await Promise.all([
       db.execute(sql`
@@ -2109,6 +2105,18 @@ export class DatabaseStorage implements IStorage {
               AND linked_conversation.type NOT IN ('dm', 'conversation')
           )
         ),
+        comment_inbounds AS (
+          SELECT
+            parent.id AS inbound_id,
+            LOWER(COALESCE(NULLIF(TRIM(parent.platform), ''), 'unknown')) AS platform,
+            parent.timestamp AS inbound_at
+          FROM messages parent
+          JOIN conversations parent_conversation ON parent_conversation.id = parent.conversation_id
+          WHERE parent.brand_id = ${brandId}
+            AND parent.direction = 'inbound'
+            AND parent.timestamp < ${range.toExclusive}
+            AND parent_conversation.type NOT IN ('dm', 'conversation')
+        ),
         first_comment_replies AS (
           SELECT DISTINCT ON (parent.id)
             parent.id AS inbound_id,
@@ -2139,20 +2147,58 @@ export class DatabaseStorage implements IStorage {
           FROM response_pairs
           WHERE response_at < ${range.toExclusive}
             ${responseLowerBound}
+        ),
+        eligible_cycles AS (
+          SELECT inbound_id, platform, inbound_at FROM dm_bursts
+          UNION ALL
+          SELECT inbound_id, platform, inbound_at FROM comment_inbounds
+        ),
+        period_eligible AS (
+          SELECT *
+          FROM eligible_cycles
+          WHERE inbound_at < ${range.toExclusive}
+            ${eligibleLowerBound}
+        ),
+        response_stats AS (
+          SELECT
+            platform,
+            ROUND((percentile_cont(0.5) WITHIN GROUP (ORDER BY response_ms))::numeric)::bigint AS median_ms,
+            ROUND((percentile_cont(0.9) WITHIN GROUP (ORDER BY response_ms))::numeric)::bigint AS p90_ms,
+            COUNT(*)::int AS samples,
+            ROUND((percentile_cont(0.5) WITHIN GROUP (ORDER BY response_ms) FILTER (WHERE origin = 'ai'))::numeric)::bigint AS ai_median_ms,
+            ROUND((percentile_cont(0.9) WITHIN GROUP (ORDER BY response_ms) FILTER (WHERE origin = 'ai'))::numeric)::bigint AS ai_p90_ms,
+            COUNT(*) FILTER (WHERE origin = 'ai')::int AS ai_samples,
+            ROUND((percentile_cont(0.5) WITHIN GROUP (ORDER BY response_ms) FILTER (WHERE origin = 'human'))::numeric)::bigint AS human_median_ms,
+            ROUND((percentile_cont(0.9) WITHIN GROUP (ORDER BY response_ms) FILTER (WHERE origin = 'human'))::numeric)::bigint AS human_p90_ms,
+            COUNT(*) FILTER (WHERE origin = 'human')::int AS human_samples
+          FROM period_pairs
+          GROUP BY GROUPING SETS ((platform), ())
+        ),
+        coverage_stats AS (
+          SELECT
+            eligible.platform,
+            COUNT(*)::int AS eligible_cycles,
+            COUNT(pairs.outbound_id)::int AS answered_cycles
+          FROM period_eligible eligible
+          LEFT JOIN response_pairs pairs ON pairs.inbound_id = eligible.inbound_id
+          GROUP BY GROUPING SETS ((eligible.platform), ())
         )
         SELECT
-          platform,
-          ROUND((percentile_cont(0.5) WITHIN GROUP (ORDER BY response_ms))::numeric)::bigint AS median_ms,
-          ROUND((percentile_cont(0.9) WITHIN GROUP (ORDER BY response_ms))::numeric)::bigint AS p90_ms,
-          COUNT(*)::int AS samples,
-          ROUND((percentile_cont(0.5) WITHIN GROUP (ORDER BY response_ms) FILTER (WHERE origin = 'ai'))::numeric)::bigint AS ai_median_ms,
-          ROUND((percentile_cont(0.9) WITHIN GROUP (ORDER BY response_ms) FILTER (WHERE origin = 'ai'))::numeric)::bigint AS ai_p90_ms,
-          COUNT(*) FILTER (WHERE origin = 'ai')::int AS ai_samples,
-          ROUND((percentile_cont(0.5) WITHIN GROUP (ORDER BY response_ms) FILTER (WHERE origin = 'human'))::numeric)::bigint AS human_median_ms,
-          ROUND((percentile_cont(0.9) WITHIN GROUP (ORDER BY response_ms) FILTER (WHERE origin = 'human'))::numeric)::bigint AS human_p90_ms,
-          COUNT(*) FILTER (WHERE origin = 'human')::int AS human_samples
-        FROM period_pairs
-        GROUP BY GROUPING SETS ((platform), ())
+          COALESCE(response.platform, coverage.platform) AS platform,
+          response.median_ms,
+          response.p90_ms,
+          COALESCE(response.samples, 0)::int AS samples,
+          response.ai_median_ms,
+          response.ai_p90_ms,
+          COALESCE(response.ai_samples, 0)::int AS ai_samples,
+          response.human_median_ms,
+          response.human_p90_ms,
+          COALESCE(response.human_samples, 0)::int AS human_samples,
+          COALESCE(coverage.eligible_cycles, 0)::int AS eligible_cycles,
+          COALESCE(coverage.answered_cycles, 0)::int AS answered_cycles
+        FROM response_stats response
+        FULL OUTER JOIN coverage_stats coverage
+          ON response.platform IS NOT DISTINCT FROM coverage.platform
       `),
       db.execute(sql`
         SELECT
@@ -2167,46 +2213,7 @@ export class DatabaseStorage implements IStorage {
           ${lowerBound}
           AND m.direction IN ('inbound', 'outbound')
       `),
-      db.execute(sql`
-        WITH metric_messages AS (
-          SELECT
-            (m.timestamp AT TIME ZONE 'UTC' AT TIME ZONE ${range.timezone}) AS local_timestamp,
-            m.direction
-          FROM messages m
-          WHERE m.brand_id = ${brandId}
-            AND m.timestamp < ${range.toExclusive}
-            ${lowerBound}
-            AND m.direction IN ('inbound', 'outbound')
-        ),
-        bounds AS (
-          SELECT ${seriesStart} AS first_bucket
-          FROM metric_messages
-        ),
-        buckets AS (
-          SELECT generate_series(
-            first_bucket,
-            date_trunc(${range.granularity}, (${range.toExclusive}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE ${range.timezone}) - interval '1 microsecond'),
-            ${seriesStep}
-          ) AS bucket
-          FROM bounds
-          WHERE first_bucket IS NOT NULL
-        ),
-        counts AS (
-          SELECT
-            date_trunc(${range.granularity}, local_timestamp) AS bucket,
-            COUNT(*) FILTER (WHERE direction = 'inbound')::int AS inbound,
-            COUNT(*) FILTER (WHERE direction = 'outbound')::int AS outbound
-          FROM metric_messages
-          GROUP BY 1
-        )
-        SELECT
-          TO_CHAR(b.bucket, 'YYYY-MM-DD') AS date,
-          COALESCE(c.inbound, 0)::int AS inbound,
-          COALESCE(c.outbound, 0)::int AS outbound
-        FROM buckets b
-        LEFT JOIN counts c USING (bucket)
-        ORDER BY b.bucket
-      `),
+      db.execute(buildInboxVolumeQuery(brandId, range)),
       db.execute(sql`
         SELECT m.id, m.direction, m.author, m.content, m.platform, m.timestamp
         FROM messages m
@@ -2221,17 +2228,30 @@ export class DatabaseStorage implements IStorage {
 
     const emptyDistribution = (): ResponseDistribution => ({ medianMs: null, p90Ms: null, samples: 0 });
     const emptyResponseTime = (): ResponseTimeMetrics => ({
-      ...emptyDistribution(), ai: emptyDistribution(), human: emptyDistribution(),
+      ...emptyDistribution(),
+      ai: emptyDistribution(),
+      human: emptyDistribution(),
+      coverage: { eligible: 0, answered: 0, rate: null },
     });
     const toNumber = (value: unknown): number => Number(value ?? 0);
     const nullableNumber = (value: unknown): number | null => value === null || value === undefined ? null : Number(value);
-    const responseFromRow = (row?: Record<string, unknown>): ResponseTimeMetrics => row ? ({
-      medianMs: nullableNumber(row.median_ms),
-      p90Ms: nullableNumber(row.p90_ms),
-      samples: toNumber(row.samples),
-      ai: { medianMs: nullableNumber(row.ai_median_ms), p90Ms: nullableNumber(row.ai_p90_ms), samples: toNumber(row.ai_samples) },
-      human: { medianMs: nullableNumber(row.human_median_ms), p90Ms: nullableNumber(row.human_p90_ms), samples: toNumber(row.human_samples) },
-    }) : emptyResponseTime();
+    const responseFromRow = (row?: Record<string, unknown>): ResponseTimeMetrics => {
+      if (!row) return emptyResponseTime();
+      const eligible = toNumber(row.eligible_cycles);
+      const answered = toNumber(row.answered_cycles);
+      return {
+        medianMs: nullableNumber(row.median_ms),
+        p90Ms: nullableNumber(row.p90_ms),
+        samples: toNumber(row.samples),
+        ai: { medianMs: nullableNumber(row.ai_median_ms), p90Ms: nullableNumber(row.ai_p90_ms), samples: toNumber(row.ai_samples) },
+        human: { medianMs: nullableNumber(row.human_median_ms), p90Ms: nullableNumber(row.human_p90_ms), samples: toNumber(row.human_samples) },
+        coverage: {
+          eligible,
+          answered,
+          rate: eligible === 0 ? null : Math.round((answered / eligible) * 1000) / 10,
+        },
+      };
+    };
 
     const byPlatform: Record<string, PlatformInboxMetrics> = {};
     const bySentiment: Record<string, number> = {};
