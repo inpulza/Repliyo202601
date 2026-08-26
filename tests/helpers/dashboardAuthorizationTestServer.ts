@@ -152,18 +152,28 @@ export async function startDashboardAuthorizationTestServer(): Promise<Dashboard
       openConversations: 1,
       closedConversations: 0,
       uniqueContacts: 1,
-      avgResponseTimeMs: 120000,
-      responseSamples: 1,
+      responseTime: {
+        medianMs: 120000,
+        p90Ms: 180000,
+        samples: 1,
+        ai: { medianMs: null, p90Ms: null, samples: 0 },
+        human: { medianMs: 120000, p90Ms: 180000, samples: 1 },
+      },
       byPlatform: {
         instagram: {
           inbound: 2,
           outbound: 1,
-          avgResponseTimeMs: 120000,
-          responseSamples: 1,
+          responseTime: {
+            medianMs: 120000,
+            p90Ms: 180000,
+            samples: 1,
+            ai: { medianMs: null, p90Ms: null, samples: 0 },
+            human: { medianMs: 120000, p90Ms: 180000, samples: 1 },
+          },
         },
       },
       bySentiment: {},
-      dailyStats: [],
+      volumeStats: [],
       recentActivity: [],
     };
   };

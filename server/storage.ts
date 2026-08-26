@@ -31,7 +31,12 @@ import {
 import { db } from "./db";
 import { eq, desc, and, or, isNull, isNotNull, gte, lt, lte, sql, inArray, notInArray } from "drizzle-orm";
 import type { SessionAccessRecord } from "./security/sessionAccess";
-import { calculateInboxMetrics, type InboxMetricsRange, type PlatformInboxMetrics } from "@shared/inboxMetrics";
+import {
+  type InboxMetricsRange,
+  type PlatformInboxMetrics,
+  type ResponseDistribution,
+  type ResponseTimeMetrics,
+} from "@shared/inboxMetrics";
 
 export type UpsertedMessage = Message & { upsertCreated?: boolean };
 
@@ -192,11 +197,10 @@ export interface IStorage {
     openConversations: number;
     closedConversations: number;
     uniqueContacts: number;
-    avgResponseTimeMs: number | null;
-    responseSamples: number;
+    responseTime: ResponseTimeMetrics;
     byPlatform: Record<string, PlatformInboxMetrics>;
     bySentiment: Record<string, number>;
-    dailyStats: Array<{ date: string; inbound: number; outbound: number }>;
+    volumeStats: Array<{ date: string; inbound: number; outbound: number }>;
     recentActivity: Array<{
       id: string;
       type: 'message' | 'reply';
@@ -2013,11 +2017,10 @@ export class DatabaseStorage implements IStorage {
     openConversations: number;
     closedConversations: number;
     uniqueContacts: number;
-    avgResponseTimeMs: number | null;
-    responseSamples: number;
+    responseTime: ResponseTimeMetrics;
     byPlatform: Record<string, PlatformInboxMetrics>;
     bySentiment: Record<string, number>;
-    dailyStats: Array<{ date: string; inbound: number; outbound: number }>;
+    volumeStats: Array<{ date: string; inbound: number; outbound: number }>;
     recentActivity: Array<{
       id: string;
       type: 'message' | 'reply';
@@ -2027,65 +2030,265 @@ export class DatabaseStorage implements IStorage {
       timestamp: Date;
     }>;
   }> {
-    const messageConditions = [
-      eq(messages.brandId, brandId),
-      lt(messages.timestamp, range.toExclusive),
-    ];
-    if (range.from) messageConditions.push(gte(messages.timestamp, range.from));
+    const lowerBound = range.from ? sql`AND m.timestamp >= ${range.from}` : sql``;
+    const responseLowerBound = range.from ? sql`AND response_at >= ${range.from}` : sql``;
+    const seriesStart = range.from
+      ? sql`date_trunc(${range.granularity}, (${range.from}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE ${range.timezone}))`
+      : sql`date_trunc(${range.granularity}, MIN(local_timestamp))`;
+    const seriesStep = range.granularity === 'day'
+      ? sql`interval '1 day'`
+      : range.granularity === 'week' ? sql`interval '1 week'` : sql`interval '1 month'`;
 
-    const allMessages = await db
-      .select({
-        id: messages.id,
-        conversationId: messages.conversationId,
-        platform: messages.platform,
-        direction: messages.direction,
-        timestamp: messages.timestamp,
-        sentiment: messages.sentiment,
-        author: messages.author,
-        content: messages.content,
-      })
-      .from(messages)
-      .where(and(...messageConditions))
-      .orderBy(desc(messages.timestamp));
+    const [messageResult, responseResult, conversationResult, volumeResult, activityResult] = await Promise.all([
+      db.execute(sql`
+        SELECT
+          LOWER(COALESCE(NULLIF(TRIM(m.platform), ''), 'unknown')) AS platform,
+          COUNT(*) FILTER (WHERE m.direction = 'inbound')::int AS inbound,
+          COUNT(*) FILTER (WHERE m.direction = 'outbound')::int AS outbound,
+          m.sentiment,
+          COUNT(*) FILTER (WHERE m.direction = 'inbound' AND m.sentiment IS NOT NULL)::int AS sentiment_count
+        FROM messages m
+        WHERE m.brand_id = ${brandId}
+          AND m.timestamp < ${range.toExclusive}
+          ${lowerBound}
+          AND m.direction IN ('inbound', 'outbound')
+        GROUP BY GROUPING SETS ((LOWER(COALESCE(NULLIF(TRIM(m.platform), ''), 'unknown'))), (m.sentiment))
+      `),
+      db.execute(sql`
+        WITH dm_timeline AS (
+          SELECT
+            m.id,
+            m.conversation_id,
+            m.platform,
+            m.direction,
+            m.timestamp,
+            m.parent_message_id,
+            m.internal_origin,
+            m.source,
+            COUNT(*) FILTER (WHERE m.direction = 'outbound') OVER (
+              PARTITION BY m.conversation_id
+              ORDER BY m.timestamp, m.id
+              ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+            ) AS prior_outbounds
+          FROM messages m
+          JOIN conversations c ON c.id = m.conversation_id
+          WHERE m.brand_id = ${brandId}
+            AND m.timestamp < ${range.toExclusive}
+            AND m.direction IN ('inbound', 'outbound')
+            AND c.type IN ('dm', 'conversation')
+        ),
+        dm_bursts AS (
+          SELECT
+            conversation_id,
+            prior_outbounds,
+            MIN(timestamp) AS inbound_at,
+            (ARRAY_AGG(id ORDER BY timestamp, id))[1] AS inbound_id,
+            LOWER((ARRAY_AGG(COALESCE(NULLIF(TRIM(platform), ''), 'unknown') ORDER BY timestamp, id))[1]) AS platform
+          FROM dm_timeline
+          WHERE direction = 'inbound'
+          GROUP BY conversation_id, prior_outbounds
+        ),
+        dm_pairs AS (
+          SELECT
+            b.inbound_id,
+            o.id AS outbound_id,
+            b.platform,
+            b.inbound_at,
+            o.timestamp AS response_at,
+            CASE WHEN o.internal_origin = 'ai' OR o.source = 'repliyo_auto' THEN 'ai' ELSE 'human' END AS origin
+          FROM dm_bursts b
+          JOIN dm_timeline o
+            ON o.conversation_id = b.conversation_id
+           AND o.prior_outbounds = b.prior_outbounds
+           AND o.direction = 'outbound'
+          WHERE NOT EXISTS (
+            SELECT 1
+            FROM messages linked_parent
+            JOIN conversations linked_conversation ON linked_conversation.id = linked_parent.conversation_id
+            WHERE linked_parent.id = o.parent_message_id
+              AND linked_conversation.type NOT IN ('dm', 'conversation')
+          )
+        ),
+        first_comment_replies AS (
+          SELECT DISTINCT ON (parent.id)
+            parent.id AS inbound_id,
+            reply.id AS outbound_id,
+            LOWER(COALESCE(NULLIF(TRIM(parent.platform), ''), 'unknown')) AS platform,
+            parent.timestamp AS inbound_at,
+            reply.timestamp AS response_at,
+            CASE WHEN reply.internal_origin = 'ai' OR reply.source = 'repliyo_auto' THEN 'ai' ELSE 'human' END AS origin
+          FROM messages reply
+          JOIN messages parent ON parent.id = reply.parent_message_id
+          JOIN conversations parent_conversation ON parent_conversation.id = parent.conversation_id
+          WHERE reply.brand_id = ${brandId}
+            AND parent.brand_id = ${brandId}
+            AND reply.direction = 'outbound'
+            AND parent.direction = 'inbound'
+            AND parent_conversation.type NOT IN ('dm', 'conversation')
+            AND reply.timestamp >= parent.timestamp
+            AND reply.timestamp < ${range.toExclusive}
+          ORDER BY parent.id, reply.timestamp, reply.id
+        ),
+        response_pairs AS (
+          SELECT * FROM dm_pairs
+          UNION ALL
+          SELECT * FROM first_comment_replies
+        ),
+        period_pairs AS (
+          SELECT *, EXTRACT(EPOCH FROM (response_at - inbound_at)) * 1000 AS response_ms
+          FROM response_pairs
+          WHERE response_at < ${range.toExclusive}
+            ${responseLowerBound}
+        )
+        SELECT
+          platform,
+          ROUND((percentile_cont(0.5) WITHIN GROUP (ORDER BY response_ms))::numeric)::bigint AS median_ms,
+          ROUND((percentile_cont(0.9) WITHIN GROUP (ORDER BY response_ms))::numeric)::bigint AS p90_ms,
+          COUNT(*)::int AS samples,
+          ROUND((percentile_cont(0.5) WITHIN GROUP (ORDER BY response_ms) FILTER (WHERE origin = 'ai'))::numeric)::bigint AS ai_median_ms,
+          ROUND((percentile_cont(0.9) WITHIN GROUP (ORDER BY response_ms) FILTER (WHERE origin = 'ai'))::numeric)::bigint AS ai_p90_ms,
+          COUNT(*) FILTER (WHERE origin = 'ai')::int AS ai_samples,
+          ROUND((percentile_cont(0.5) WITHIN GROUP (ORDER BY response_ms) FILTER (WHERE origin = 'human'))::numeric)::bigint AS human_median_ms,
+          ROUND((percentile_cont(0.9) WITHIN GROUP (ORDER BY response_ms) FILTER (WHERE origin = 'human'))::numeric)::bigint AS human_p90_ms,
+          COUNT(*) FILTER (WHERE origin = 'human')::int AS human_samples
+        FROM period_pairs
+        GROUP BY GROUPING SETS ((platform), ())
+      `),
+      db.execute(sql`
+        SELECT
+          COUNT(DISTINCT c.id)::int AS total_conversations,
+          COUNT(DISTINCT c.id) FILTER (WHERE c.status = 'open')::int AS open_conversations,
+          COUNT(DISTINCT c.id) FILTER (WHERE c.status = 'closed')::int AS closed_conversations,
+          COUNT(DISTINCT c.customer_id)::int AS unique_contacts
+        FROM messages m
+        JOIN conversations c ON c.id = m.conversation_id AND c.brand_id = ${brandId}
+        WHERE m.brand_id = ${brandId}
+          AND m.timestamp < ${range.toExclusive}
+          ${lowerBound}
+          AND m.direction IN ('inbound', 'outbound')
+      `),
+      db.execute(sql`
+        WITH metric_messages AS (
+          SELECT
+            (m.timestamp AT TIME ZONE 'UTC' AT TIME ZONE ${range.timezone}) AS local_timestamp,
+            m.direction
+          FROM messages m
+          WHERE m.brand_id = ${brandId}
+            AND m.timestamp < ${range.toExclusive}
+            ${lowerBound}
+            AND m.direction IN ('inbound', 'outbound')
+        ),
+        bounds AS (
+          SELECT ${seriesStart} AS first_bucket
+          FROM metric_messages
+        ),
+        buckets AS (
+          SELECT generate_series(
+            first_bucket,
+            date_trunc(${range.granularity}, (${range.toExclusive}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE ${range.timezone}) - interval '1 microsecond'),
+            ${seriesStep}
+          ) AS bucket
+          FROM bounds
+          WHERE first_bucket IS NOT NULL
+        ),
+        counts AS (
+          SELECT
+            date_trunc(${range.granularity}, local_timestamp) AS bucket,
+            COUNT(*) FILTER (WHERE direction = 'inbound')::int AS inbound,
+            COUNT(*) FILTER (WHERE direction = 'outbound')::int AS outbound
+          FROM metric_messages
+          GROUP BY 1
+        )
+        SELECT
+          TO_CHAR(b.bucket, 'YYYY-MM-DD') AS date,
+          COALESCE(c.inbound, 0)::int AS inbound,
+          COALESCE(c.outbound, 0)::int AS outbound
+        FROM buckets b
+        LEFT JOIN counts c USING (bucket)
+        ORDER BY b.bucket
+      `),
+      db.execute(sql`
+        SELECT m.id, m.direction, m.author, m.content, m.platform, m.timestamp
+        FROM messages m
+        WHERE m.brand_id = ${brandId}
+          AND m.timestamp < ${range.toExclusive}
+          ${lowerBound}
+          AND m.direction IN ('inbound', 'outbound')
+        ORDER BY m.timestamp DESC, m.id DESC
+        LIMIT 10
+      `),
+    ]);
 
-    const allConversations = await db
-      .select()
-      .from(conversations)
-      .where(eq(conversations.brandId, brandId));
+    const emptyDistribution = (): ResponseDistribution => ({ medianMs: null, p90Ms: null, samples: 0 });
+    const emptyResponseTime = (): ResponseTimeMetrics => ({
+      ...emptyDistribution(), ai: emptyDistribution(), human: emptyDistribution(),
+    });
+    const toNumber = (value: unknown): number => Number(value ?? 0);
+    const nullableNumber = (value: unknown): number | null => value === null || value === undefined ? null : Number(value);
+    const responseFromRow = (row?: Record<string, unknown>): ResponseTimeMetrics => row ? ({
+      medianMs: nullableNumber(row.median_ms),
+      p90Ms: nullableNumber(row.p90_ms),
+      samples: toNumber(row.samples),
+      ai: { medianMs: nullableNumber(row.ai_median_ms), p90Ms: nullableNumber(row.ai_p90_ms), samples: toNumber(row.ai_samples) },
+      human: { medianMs: nullableNumber(row.human_median_ms), p90Ms: nullableNumber(row.human_p90_ms), samples: toNumber(row.human_samples) },
+    }) : emptyResponseTime();
 
-    const activeConversationIds = new Set(
-      allMessages.map(message => message.conversationId).filter((id): id is string => Boolean(id)),
+    const byPlatform: Record<string, PlatformInboxMetrics> = {};
+    const bySentiment: Record<string, number> = {};
+    for (const rawRow of messageResult.rows as Record<string, unknown>[]) {
+      if (rawRow.platform) {
+        byPlatform[String(rawRow.platform)] = {
+          inbound: toNumber(rawRow.inbound),
+          outbound: toNumber(rawRow.outbound),
+          responseTime: emptyResponseTime(),
+        };
+      } else if (rawRow.sentiment) {
+        bySentiment[String(rawRow.sentiment)] = toNumber(rawRow.sentiment_count);
+      }
+    }
+
+    let responseTime = emptyResponseTime();
+    for (const rawRow of responseResult.rows as Record<string, unknown>[]) {
+      if (rawRow.platform) {
+        const platform = String(rawRow.platform);
+        byPlatform[platform] ??= { inbound: 0, outbound: 0, responseTime: emptyResponseTime() };
+        byPlatform[platform].responseTime = responseFromRow(rawRow);
+      } else {
+        responseTime = responseFromRow(rawRow);
+      }
+    }
+
+    const totals = Object.values(byPlatform).reduce(
+      (sum, item) => ({ inbound: sum.inbound + item.inbound, outbound: sum.outbound + item.outbound }),
+      { inbound: 0, outbound: 0 },
     );
-    const periodConversations = allConversations.filter(conversation => activeConversationIds.has(conversation.id));
-    const openConversations = periodConversations.filter(c => c.status === 'open').length;
-    const closedConversations = periodConversations.filter(c => c.status === 'closed').length;
-
-    const uniqueCustomerIds = new Set(periodConversations.map(c => c.customerId));
-
-    const calculated = calculateInboxMetrics(allMessages, range);
-
-    const recentActivity = allMessages.slice(0, 10).map(msg => ({
-      id: msg.id,
-      type: (msg.direction === 'outbound' ? 'reply' : 'message') as 'message' | 'reply',
-      author: msg.author,
-      content: msg.content.substring(0, 100) + (msg.content.length > 100 ? '...' : ''),
-      platform: msg.platform,
-      timestamp: msg.timestamp,
-    }));
+    const conversationRow = (conversationResult.rows[0] ?? {}) as Record<string, unknown>;
+    const recentActivity = (activityResult.rows as Record<string, unknown>[]).map(row => {
+      const content = String(row.content ?? '');
+      return {
+        id: String(row.id),
+        type: (row.direction === 'outbound' ? 'reply' : 'message') as 'message' | 'reply',
+        author: String(row.author),
+        content: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
+        platform: String(row.platform),
+        timestamp: new Date(String(row.timestamp)),
+      };
+    });
 
     return {
-      totalMessages: calculated.totalMessages,
-      inboundMessages: calculated.inboundMessages,
-      outboundMessages: calculated.outboundMessages,
-      totalConversations: periodConversations.length,
-      openConversations,
-      closedConversations,
-      uniqueContacts: uniqueCustomerIds.size,
-      avgResponseTimeMs: calculated.avgResponseTimeMs,
-      responseSamples: calculated.responseSamples,
-      byPlatform: calculated.byPlatform,
-      bySentiment: calculated.bySentiment,
-      dailyStats: calculated.dailyStats,
+      totalMessages: totals.inbound + totals.outbound,
+      inboundMessages: totals.inbound,
+      outboundMessages: totals.outbound,
+      totalConversations: toNumber(conversationRow.total_conversations),
+      openConversations: toNumber(conversationRow.open_conversations),
+      closedConversations: toNumber(conversationRow.closed_conversations),
+      uniqueContacts: toNumber(conversationRow.unique_contacts),
+      responseTime,
+      byPlatform,
+      bySentiment,
+      volumeStats: (volumeResult.rows as Record<string, unknown>[]).map(row => ({
+        date: String(row.date), inbound: toNumber(row.inbound), outbound: toNumber(row.outbound),
+      })),
       recentActivity,
     };
   }

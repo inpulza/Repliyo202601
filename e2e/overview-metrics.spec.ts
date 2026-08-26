@@ -15,16 +15,22 @@ test('Overview shows real operational metrics and applies historical date filter
 
   await expect(
     isMobile ? page.getByTestId('mobile-stat-response-time') : page.getByTestId('text-response-time'),
-  ).toContainText('5m');
+  ).toContainText('15m');
 
   if (isMobile) {
-    await expect(page.getByTestId('mobile-platform-instagram')).toContainText('12 recibidos · 8 enviados');
+    const instagram = page.getByTestId('mobile-platform-instagram');
+    await expect(instagram).toContainText('12 recibidos · 8 enviados');
+    await expect(instagram).toContainText('IA 8m');
+    await expect(instagram).toContainText('Humano 18m');
   } else {
     const instagramRow = page.getByTestId('platform-row-instagram');
     await expect(instagramRow).toContainText('Instagram');
     await expect(instagramRow).toContainText('12');
     await expect(instagramRow).toContainText('8');
-    await expect(instagramRow).toContainText('5m');
+    await expect(instagramRow).toContainText('15m');
+    await expect(page.getByTestId('text-response-origin-split')).toContainText('IA 8m');
+    await expect(page.getByTestId('text-response-origin-split')).toContainText('Humano 18m');
+    await expect(page.getByTestId('period-context')).toContainText('Europe/Madrid');
   }
 
   const periodButton = page.getByTestId(
@@ -161,18 +167,28 @@ function metricsFixture(url: URL) {
     openConversations: 2,
     closedConversations: 4,
     uniqueContacts: 5,
-    avgResponseTimeMs: 300000,
-    responseSamples: 4,
+    responseTime: {
+      medianMs: 900000,
+      p90Ms: 16860000,
+      samples: 4,
+      ai: { medianMs: 480000, p90Ms: 600000, samples: 2 },
+      human: { medianMs: 1080000, p90Ms: 1800000, samples: 2 },
+    },
     byPlatform: {
       instagram: {
         inbound: 12,
         outbound: 8,
-        avgResponseTimeMs: 300000,
-        responseSamples: 4,
+        responseTime: {
+          medianMs: 900000,
+          p90Ms: 16860000,
+          samples: 4,
+          ai: { medianMs: 480000, p90Ms: 600000, samples: 2 },
+          human: { medianMs: 1080000, p90Ms: 1800000, samples: 2 },
+        },
       },
     },
     bySentiment: { positive: 3, neutral: 1 },
-    dailyStats: [
+    volumeStats: [
       { date: '2026-08-09', inbound: 4, outbound: 2 },
       { date: '2026-08-10', inbound: 8, outbound: 6 },
     ],
@@ -181,6 +197,8 @@ function metricsFixture(url: URL) {
       label: isAll ? 'Histórico completo' : 'Período de prueba',
       from: isAll ? null : (from ?? '2026-08-04'),
       to: to ?? '2026-08-10',
+      timezone: 'Europe/Madrid',
+      granularity: isAll ? 'month' : 'day',
     },
   };
 }

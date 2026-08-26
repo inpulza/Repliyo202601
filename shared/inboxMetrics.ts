@@ -1,170 +1,149 @@
-export interface InboxMetricsMessage {
-  id: string;
-  conversationId: string | null;
-  platform: string;
-  direction: string | null;
-  timestamp: Date;
-}
+export type InboxMetricsGranularity = 'day' | 'week' | 'month';
+export type ResponseOrigin = 'ai' | 'human';
 
 export interface InboxMetricsRange {
   from: Date | null;
   toExclusive: Date;
+  timezone: 'Europe/Madrid';
+  granularity: InboxMetricsGranularity;
+}
+
+export interface ResponseDistribution {
+  medianMs: number | null;
+  p90Ms: number | null;
+  samples: number;
+}
+
+export interface ResponseTimeMetrics extends ResponseDistribution {
+  ai: ResponseDistribution;
+  human: ResponseDistribution;
 }
 
 export interface PlatformInboxMetrics {
   inbound: number;
   outbound: number;
-  avgResponseTimeMs: number | null;
-  responseSamples: number;
+  responseTime: ResponseTimeMetrics;
 }
 
-export interface CalculatedInboxMetrics {
-  totalMessages: number;
-  inboundMessages: number;
-  outboundMessages: number;
-  avgResponseTimeMs: number | null;
-  responseSamples: number;
-  byPlatform: Record<string, PlatformInboxMetrics>;
-  bySentiment: Record<string, number>;
-  dailyStats: Array<{ date: string; inbound: number; outbound: number }>;
+/** Reference model for tests. Production runs these rules in PostgreSQL. */
+export interface ResponseMetricMessage {
+  id: string;
+  conversationId: string | null;
+  conversationType: string;
+  platform: string;
+  direction: string | null;
+  timestamp: Date;
+  parentMessageId?: string | null;
+  internalOrigin?: string | null;
+  source?: string | null;
 }
 
-type MetricsMessage = InboxMetricsMessage & { sentiment?: string | null };
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-function utcDayKey(date: Date): string {
-  return date.toISOString().slice(0, 10);
+export interface ResponseCycle {
+  inboundMessageId: string;
+  outboundMessageId: string;
+  platform: string;
+  responseMs: number;
+  origin: ResponseOrigin;
 }
 
-function startOfUtcDay(date: Date): Date {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+function originOf(message: ResponseMetricMessage): ResponseOrigin {
+  return message.internalOrigin === 'ai' || message.source === 'repliyo_auto' ? 'ai' : 'human';
 }
 
-function average(values: number[]): number | null {
+function isDm(message: ResponseMetricMessage): boolean {
+  return message.conversationType === 'dm' || message.conversationType === 'conversation';
+}
+
+function percentile(values: readonly number[], fraction: number): number | null {
   if (values.length === 0) return null;
-  return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
+  const sorted = [...values].sort((left, right) => left - right);
+  const position = (sorted.length - 1) * fraction;
+  const lower = Math.floor(position);
+  const upper = Math.ceil(position);
+  if (lower === upper) return sorted[lower];
+  return Math.round(sorted[lower] + (sorted[upper] - sorted[lower]) * (position - lower));
+}
+
+export function summarizeResponseCycles(cycles: readonly ResponseCycle[]): ResponseTimeMetrics {
+  const summarize = (selected: readonly ResponseCycle[]): ResponseDistribution => ({
+    medianMs: percentile(selected.map(cycle => cycle.responseMs), 0.5),
+    p90Ms: percentile(selected.map(cycle => cycle.responseMs), 0.9),
+    samples: selected.length,
+  });
+
+  return {
+    ...summarize(cycles),
+    ai: summarize(cycles.filter(cycle => cycle.origin === 'ai')),
+    human: summarize(cycles.filter(cycle => cycle.origin === 'human')),
+  };
 }
 
 /**
- * A response cycle starts with the first inbound message after the previous
- * outbound message. Consecutive inbound messages are treated as one customer
- * burst, and only the first following outbound message closes the cycle.
+ * Comments only count when the outbound points to the exact inbound parent.
+ * DMs count the first outbound after each consecutive inbound burst. A cycle
+ * belongs to the response period, while its inbound may precede the boundary.
  */
-export function calculateInboxMetrics(
-  inputMessages: readonly MetricsMessage[],
-  range: InboxMetricsRange,
-): CalculatedInboxMetrics {
-  const messages = inputMessages
-    .filter((message) => (
-      message.timestamp < range.toExclusive
-      && (range.from === null || message.timestamp >= range.from)
-      && (message.direction === 'inbound' || message.direction === 'outbound')
-    ))
-    .sort((left, right) => left.timestamp.getTime() - right.timestamp.getTime());
+export function matchResponseCycles(
+  inputMessages: readonly ResponseMetricMessage[],
+  range: Pick<InboxMetricsRange, 'from' | 'toExclusive'>,
+): ResponseCycle[] {
+  const messages = [...inputMessages].sort((left, right) => (
+    left.timestamp.getTime() - right.timestamp.getTime() || left.id.localeCompare(right.id)
+  ));
+  const inboundComments = new Map(
+    messages
+      .filter(message => message.direction === 'inbound' && !isDm(message))
+      .map(message => [message.id, message]),
+  );
+  const cycles: ResponseCycle[] = [];
+  const answeredComments = new Set<string>();
 
-  const byPlatform: Record<string, PlatformInboxMetrics> = {};
-  const bySentiment: Record<string, number> = {};
-  const dailyMap = new Map<string, { inbound: number; outbound: number }>();
-
-  let inboundMessages = 0;
-  let outboundMessages = 0;
-
-  for (const message of messages) {
-    const platform = message.platform?.trim().toLowerCase() || 'unknown';
-    byPlatform[platform] ??= {
-      inbound: 0,
-      outbound: 0,
-      avgResponseTimeMs: null,
-      responseSamples: 0,
-    };
-
-    const date = utcDayKey(message.timestamp);
-    const daily = dailyMap.get(date) ?? { inbound: 0, outbound: 0 };
-
-    if (message.direction === 'inbound') {
-      inboundMessages += 1;
-      byPlatform[platform].inbound += 1;
-      daily.inbound += 1;
-      if (message.sentiment) {
-        bySentiment[message.sentiment] = (bySentiment[message.sentiment] ?? 0) + 1;
-      }
-    } else {
-      outboundMessages += 1;
-      byPlatform[platform].outbound += 1;
-      daily.outbound += 1;
-    }
-
-    dailyMap.set(date, daily);
+  for (const outbound of messages) {
+    if (outbound.direction !== 'outbound' || !outbound.parentMessageId) continue;
+    const inbound = inboundComments.get(outbound.parentMessageId);
+    if (!inbound || answeredComments.has(inbound.id) || outbound.timestamp < inbound.timestamp) continue;
+    answeredComments.add(inbound.id);
+    if (outbound.timestamp >= range.toExclusive || (range.from && outbound.timestamp < range.from)) continue;
+    cycles.push({
+      inboundMessageId: inbound.id,
+      outboundMessageId: outbound.id,
+      platform: inbound.platform.toLowerCase(),
+      responseMs: outbound.timestamp.getTime() - inbound.timestamp.getTime(),
+      origin: originOf(outbound),
+    });
   }
 
-  const responseTimes: number[] = [];
-  const responseTimesByPlatform = new Map<string, number[]>();
-  const messagesByConversation = new Map<string, MetricsMessage[]>();
-
+  const dmConversations = new Map<string, ResponseMetricMessage[]>();
   for (const message of messages) {
-    const conversationKey = message.conversationId ?? `message:${message.id}`;
-    const conversationMessages = messagesByConversation.get(conversationKey) ?? [];
-    conversationMessages.push(message);
-    messagesByConversation.set(conversationKey, conversationMessages);
+    if (!isDm(message) || !message.conversationId) continue;
+    const conversation = dmConversations.get(message.conversationId) ?? [];
+    conversation.push(message);
+    dmConversations.set(message.conversationId, conversation);
   }
 
-  for (const conversationMessages of Array.from(messagesByConversation.values())) {
-    let awaitingResponseSince: Date | null = null;
-    let awaitingResponsePlatform = 'unknown';
-
-    for (const message of conversationMessages) {
+  for (const conversation of Array.from(dmConversations.values())) {
+    let pendingInbound: ResponseMetricMessage | null = null;
+    for (const message of conversation) {
       if (message.direction === 'inbound') {
-        if (awaitingResponseSince === null) {
-          awaitingResponseSince = message.timestamp;
-          awaitingResponsePlatform = message.platform?.trim().toLowerCase() || 'unknown';
+        pendingInbound ??= message;
+      } else if (message.direction === 'outbound' && pendingInbound) {
+        if (message.parentMessageId && inboundComments.has(message.parentMessageId)) {
+          pendingInbound = null;
+          continue;
         }
-        continue;
+        if (message.timestamp < range.toExclusive && (!range.from || message.timestamp >= range.from)) {
+          cycles.push({
+            inboundMessageId: pendingInbound.id,
+            outboundMessageId: message.id,
+            platform: pendingInbound.platform.toLowerCase(),
+            responseMs: message.timestamp.getTime() - pendingInbound.timestamp.getTime(),
+            origin: originOf(message),
+          });
+        }
+        pendingInbound = null;
       }
-
-      if (awaitingResponseSince === null) continue;
-
-      const responseTime = message.timestamp.getTime() - awaitingResponseSince.getTime();
-      if (responseTime >= 0) {
-        responseTimes.push(responseTime);
-        const platformTimes = responseTimesByPlatform.get(awaitingResponsePlatform) ?? [];
-        platformTimes.push(responseTime);
-        responseTimesByPlatform.set(awaitingResponsePlatform, platformTimes);
-      }
-
-      awaitingResponseSince = null;
     }
   }
 
-  for (const [platform, platformMetrics] of Object.entries(byPlatform)) {
-    const platformTimes = responseTimesByPlatform.get(platform) ?? [];
-    platformMetrics.avgResponseTimeMs = average(platformTimes);
-    platformMetrics.responseSamples = platformTimes.length;
-  }
-
-  const firstDay = range.from
-    ?? (messages.length > 0 ? startOfUtcDay(messages[0].timestamp) : null);
-  const dailyStats: Array<{ date: string; inbound: number; outbound: number }> = [];
-
-  if (firstDay) {
-    for (
-      let cursor = firstDay.getTime();
-      cursor < range.toExclusive.getTime();
-      cursor += DAY_MS
-    ) {
-      const date = utcDayKey(new Date(cursor));
-      dailyStats.push({ date, ...(dailyMap.get(date) ?? { inbound: 0, outbound: 0 }) });
-    }
-  }
-
-  return {
-    totalMessages: inboundMessages + outboundMessages,
-    inboundMessages,
-    outboundMessages,
-    avgResponseTimeMs: average(responseTimes),
-    responseSamples: responseTimes.length,
-    byPlatform,
-    bySentiment,
-    dailyStats,
-  };
+  return cycles;
 }

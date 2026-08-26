@@ -11,16 +11,29 @@ describe('inbox metrics date ranges', () => {
 
     assert.equal(range.fromDate, '2026-08-18');
     assert.equal(range.toDate, '2026-08-24');
-    assert.equal(range.toExclusive.toISOString(), '2026-08-25T00:00:00.000Z');
+    assert.equal(range.from?.toISOString(), '2026-08-17T22:00:00.000Z');
+    assert.equal(range.toExclusive.toISOString(), '2026-08-24T22:00:00.000Z');
+    assert.equal(range.timezone, 'Europe/Madrid');
+    assert.equal(range.granularity, 'day');
   });
 
   it('accepts bounded presets, custom ranges and full history', () => {
     assert.equal(parseInboxStatsRange({ days: '90' }, now).fromDate, '2026-05-27');
     assert.equal(
       parseInboxStatsRange({ from: '2026-08-01', to: '2026-08-10' }, now).toExclusive.toISOString(),
-      '2026-08-11T00:00:00.000Z',
+      '2026-08-10T22:00:00.000Z',
     );
     assert.equal(parseInboxStatsRange({ range: 'all' }, now).from, null);
+    assert.equal(parseInboxStatsRange({ days: '365' }, now).granularity, 'week');
+    assert.equal(parseInboxStatsRange({ range: 'all' }, now).granularity, 'month');
+  });
+
+  it('uses Madrid calendar boundaries across daylight-saving changes and ignores unrelated query parameters', () => {
+    const summer = parseInboxStatsRange({ from: '2026-08-01', to: '2026-08-01', cacheBust: '1' }, now);
+    const winter = parseInboxStatsRange({ from: '2026-12-01', to: '2026-12-01' }, now);
+
+    assert.equal(summer.from?.toISOString(), '2026-07-31T22:00:00.000Z');
+    assert.equal(winter.from?.toISOString(), '2026-11-30T23:00:00.000Z');
   });
 
   it('rejects ambiguous, reversed, malformed or oversized ranges', () => {

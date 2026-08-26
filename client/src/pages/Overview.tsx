@@ -57,16 +57,14 @@ interface InboxStats {
   openConversations: number;
   closedConversations: number;
   uniqueContacts: number;
-  avgResponseTimeMs: number | null;
-  responseSamples: number;
+  responseTime: ResponseTimeMetrics;
   byPlatform: Record<string, {
     inbound: number;
     outbound: number;
-    avgResponseTimeMs: number | null;
-    responseSamples: number;
+    responseTime: ResponseTimeMetrics;
   }>;
   bySentiment: Record<string, number>;
-  dailyStats: Array<{ date: string; inbound: number; outbound: number }>;
+  volumeStats: Array<{ date: string; inbound: number; outbound: number }>;
   recentActivity: Array<{
     id: string;
     type: 'message' | 'reply';
@@ -75,7 +73,24 @@ interface InboxStats {
     platform: string;
     timestamp: string;
   }>;
-  period: { label: string; from: string | null; to: string };
+  period: {
+    label: string;
+    from: string | null;
+    to: string;
+    timezone: 'Europe/Madrid';
+    granularity: 'day' | 'week' | 'month';
+  };
+}
+
+interface ResponseDistribution {
+  medianMs: number | null;
+  p90Ms: number | null;
+  samples: number;
+}
+
+interface ResponseTimeMetrics extends ResponseDistribution {
+  ai: ResponseDistribution;
+  human: ResponseDistribution;
 }
 
 const periodOptions = [
@@ -182,10 +197,10 @@ export function Overview() {
 
   const sentimentScore = stats ? calculateSentimentScore(stats.bySentiment) : null;
   
-  const chartData = stats?.dailyStats.map(day => ({
+  const chartData = stats?.volumeStats.map(day => ({
     name: format(
       new Date(`${day.date}T12:00:00`),
-      stats.dailyStats.length > 365 ? 'MMM yy' : stats.dailyStats.length > 14 ? 'dd MMM' : 'EEE',
+      stats.period.granularity === 'month' ? 'MMM yy' : stats.period.granularity === 'week' ? 'dd MMM' : stats.volumeStats.length > 14 ? 'dd MMM' : 'EEE',
       { locale: es },
     ),
     fullDate: format(new Date(`${day.date}T12:00:00`), 'dd MMM yyyy', { locale: es }),
@@ -305,15 +320,15 @@ export function Overview() {
           <MobileStatCard
             icon={<Clock className="h-4 w-4" />}
             iconColor="text-amber-500"
-            label="Tiempo Resp."
-            value={formatResponseTime(stats?.avgResponseTimeMs ?? null)}
-            subtitle="promedio"
+            label="Resp. mediana"
+            value={formatResponseTime(stats?.responseTime.medianMs ?? null)}
+            subtitle={`p90 ${formatResponseTime(stats?.responseTime.p90Ms ?? null)} · ${stats?.responseTime.samples ?? 0} ciclos`}
             testId="mobile-stat-response-time"
           />
           <MobileStatCard
             icon={<Smile className="h-4 w-4" />}
             iconColor="text-emerald-500"
-            label="Sentimiento"
+            label="Sentimiento entrante"
             value={sentimentScore !== null ? `${sentimentScore}%` : '--'}
             subtitle={`${stats?.bySentiment?.['positive'] || 0} positivos`}
             testId="mobile-stat-sentiment"
@@ -321,9 +336,9 @@ export function Overview() {
           <MobileStatCard
             icon={<Users className="h-4 w-4" />}
             iconColor="text-blue-500"
-            label="Contactos"
+            label="Contactos con actividad"
             value={(stats?.uniqueContacts ?? 0).toLocaleString()}
-            subtitle={`${stats?.openConversations || 0} activas`}
+            subtitle={`${stats?.totalConversations || 0} conversaciones`}
             testId="mobile-stat-contacts"
           />
         </MobileStatGrid>
@@ -342,8 +357,11 @@ export function Overview() {
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-sm font-medium">{formatResponseTime(platformStats.avgResponseTimeMs)}</p>
-                <p className="text-[10px] text-muted-foreground">respuesta media</p>
+                <p className="text-sm font-medium">{formatResponseTime(platformStats.responseTime.medianMs)}</p>
+                <p className="text-[10px] text-muted-foreground">mediana · {platformStats.responseTime.samples} ciclos</p>
+                <p className="text-[10px] text-muted-foreground">
+                  IA {formatResponseTime(platformStats.responseTime.ai.medianMs)} · Humano {formatResponseTime(platformStats.responseTime.human.medianMs)}
+                </p>
               </div>
             </div>
           ))}
@@ -475,6 +493,9 @@ export function Overview() {
             </Button>
           </div>
         </div>
+        <p className="-mt-6 text-xs text-muted-foreground" data-testid="period-context">
+          {stats?.period.label} · zona horaria Europe/Madrid · gráfico por {stats?.period.granularity === 'month' ? 'mes' : stats?.period.granularity === 'week' ? 'semana' : 'día'}
+        </p>
 
         {/* Metrics Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -505,15 +526,18 @@ export function Overview() {
             {/* Response Time */}
             <Card data-testid="card-response-time">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Tiempo de Respuesta</CardTitle>
+                    <CardTitle className="text-sm font-medium">Primera respuesta</CardTitle>
                     <Clock className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold" data-testid="text-response-time">
-                      {formatResponseTime(stats?.avgResponseTimeMs ?? null)}
+                      {formatResponseTime(stats?.responseTime.medianMs ?? null)}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                        promedio de primera respuesta · {stats?.responseSamples || 0} conversaciones respondidas
+                        mediana · p90 {formatResponseTime(stats?.responseTime.p90Ms ?? null)} · {stats?.responseTime.samples || 0} ciclos
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-1" data-testid="text-response-origin-split">
+                      IA {formatResponseTime(stats?.responseTime.ai.medianMs ?? null)} ({stats?.responseTime.ai.samples ?? 0}) · Humano {formatResponseTime(stats?.responseTime.human.medianMs ?? null)} ({stats?.responseTime.human.samples ?? 0})
                     </p>
                 </CardContent>
             </Card>
@@ -521,7 +545,7 @@ export function Overview() {
             {/* Sentiment Score */}
             <Card data-testid="card-sentiment-score">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Sentimiento</CardTitle>
+                    <CardTitle className="text-sm font-medium">Sentimiento entrante</CardTitle>
                     <Smile className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -543,7 +567,7 @@ export function Overview() {
              {/* Active Contacts */}
              <Card data-testid="card-active-contacts">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Contactos Activos</CardTitle>
+                    <CardTitle className="text-sm font-medium">Contactos con actividad</CardTitle>
                     <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -551,7 +575,7 @@ export function Overview() {
                       {(stats?.uniqueContacts ?? 0).toLocaleString()}
                     </div>
                     <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                        <span>{stats?.openConversations || 0} conversaciones abiertas</span>
+                        <span>{stats?.totalConversations || 0} conversaciones en el período</span>
                     </p>
                 </CardContent>
             </Card>
@@ -670,7 +694,7 @@ export function Overview() {
         <Card data-testid="card-platform-breakdown">
           <CardHeader>
             <CardTitle>Mensajes por red social</CardTitle>
-            <CardDescription>Entrantes, respuestas y primera respuesta media en el período seleccionado</CardDescription>
+            <CardDescription>Mensajes y mediana de primera respuesta. Comentarios solo con relación exacta; DMs por ráfaga entrante.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -680,7 +704,9 @@ export function Overview() {
                     <th className="pb-3 font-medium">Red social</th>
                     <th className="pb-3 text-right font-medium">Entrantes</th>
                     <th className="pb-3 text-right font-medium">Respuestas</th>
-                    <th className="pb-3 text-right font-medium">Primera respuesta</th>
+                    <th className="pb-3 text-right font-medium">Mediana total</th>
+                    <th className="pb-3 text-right font-medium">IA</th>
+                    <th className="pb-3 text-right font-medium">Humano</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -693,14 +719,16 @@ export function Overview() {
                       <td className="py-3 text-right tabular-nums">{platformStats.inbound.toLocaleString()}</td>
                       <td className="py-3 text-right tabular-nums">{platformStats.outbound.toLocaleString()}</td>
                       <td className="py-3 text-right tabular-nums">
-                        {formatResponseTime(platformStats.avgResponseTimeMs)}
-                        <span className="ml-1 text-xs text-muted-foreground">({platformStats.responseSamples})</span>
+                        {formatResponseTime(platformStats.responseTime.medianMs)}
+                        <span className="ml-1 text-xs text-muted-foreground">({platformStats.responseTime.samples})</span>
                       </td>
+                      <td className="py-3 text-right tabular-nums">{formatResponseTime(platformStats.responseTime.ai.medianMs)}</td>
+                      <td className="py-3 text-right tabular-nums">{formatResponseTime(platformStats.responseTime.human.medianMs)}</td>
                     </tr>
                   ))}
                   {Object.keys(stats?.byPlatform ?? {}).length === 0 && (
                     <tr>
-                      <td colSpan={4} className="py-8 text-center text-muted-foreground">
+                      <td colSpan={6} className="py-8 text-center text-muted-foreground">
                         No hay mensajes en este período
                       </td>
                     </tr>

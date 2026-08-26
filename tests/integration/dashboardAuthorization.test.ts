@@ -174,6 +174,8 @@ describe("brand-scoped inbox metrics", () => {
     const body = await response.json();
     assert.equal(body.period.from, "2026-08-01");
     assert.equal(body.period.to, "2026-08-10");
+    assert.equal(body.period.timezone, "Europe/Madrid");
+    assert.equal(body.period.granularity, "day");
     assert.equal(body.byPlatform.instagram.inbound, 2);
     assert.equal(server.state.inboxStatsReads, 1);
   });

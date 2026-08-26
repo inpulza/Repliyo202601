@@ -1,75 +1,67 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { calculateInboxMetrics, type InboxMetricsMessage } from '../../shared/inboxMetrics';
+import {
+  matchResponseCycles,
+  summarizeResponseCycles,
+  type ResponseMetricMessage,
+} from '../../shared/inboxMetrics';
 
 const range = {
   from: new Date('2026-08-01T00:00:00.000Z'),
   toExclusive: new Date('2026-08-04T00:00:00.000Z'),
 };
 
-describe('inbox operational metrics', () => {
-  it('counts only explicit inbound and outbound messages in the selected period', () => {
-    const metrics = calculateInboxMetrics([
-      message('before', '2026-07-31T23:59:59.000Z', 'inbound'),
-      message('in', '2026-08-01T10:00:00.000Z', 'inbound', { sentiment: 'positive' }),
-      message('out', '2026-08-01T10:02:00.000Z', 'outbound'),
-      message('unknown', '2026-08-01T11:00:00.000Z', null),
-      message('after', '2026-08-04T00:00:00.000Z', 'outbound'),
+describe('inbox response-time business rules', () => {
+  it('only matches a comment reply to its exact parent, including a cross-conversation private reply', () => {
+    const cycles = matchResponseCycles([
+      message('comment-a', '2026-08-01T10:00:00.000Z', 'inbound', { conversationId: 'post-thread', conversationType: 'comment' }),
+      message('comment-b', '2026-08-01T10:01:00.000Z', 'inbound', { conversationId: 'post-thread', conversationType: 'comment' }),
+      message('unrelated-reply', '2026-08-01T10:02:00.000Z', 'outbound', { conversationId: 'post-thread', conversationType: 'comment' }),
+      message('private-reply', '2026-08-01T10:05:00.000Z', 'outbound', {
+        conversationId: 'new-dm-thread', conversationType: 'dm', parentMessageId: 'comment-a',
+      }),
     ], range);
 
-    assert.equal(metrics.totalMessages, 2);
-    assert.equal(metrics.inboundMessages, 1);
-    assert.equal(metrics.outboundMessages, 1);
-    assert.deepEqual(metrics.bySentiment, { positive: 1 });
-  });
-
-  it('measures the first outbound response to each inbound message burst', () => {
-    const metrics = calculateInboxMetrics([
-      message('in-1', '2026-08-01T10:00:00.000Z', 'inbound'),
-      message('in-2', '2026-08-01T10:01:00.000Z', 'inbound'),
-      message('out-1', '2026-08-01T10:05:00.000Z', 'outbound'),
-      message('out-2', '2026-08-01T10:06:00.000Z', 'outbound'),
-      message('in-3', '2026-08-01T11:00:00.000Z', 'inbound'),
-      message('out-3', '2026-08-01T11:01:00.000Z', 'outbound'),
-    ], range);
-
-    assert.equal(metrics.responseSamples, 2);
-    assert.equal(metrics.avgResponseTimeMs, 3 * 60 * 1000);
-    assert.equal(metrics.byPlatform.instagram.responseSamples, 2);
-  });
-
-  it('does not pretend an unanswered inbound message has a response time', () => {
-    const metrics = calculateInboxMetrics([
-      message('in-1', '2026-08-01T10:00:00.000Z', 'inbound'),
-    ], range);
-
-    assert.equal(metrics.avgResponseTimeMs, null);
-    assert.equal(metrics.responseSamples, 0);
-  });
-
-  it('keeps response cycles isolated by conversation and platform', () => {
-    const metrics = calculateInboxMetrics([
-      message('ig-in', '2026-08-01T10:00:00.000Z', 'inbound', { conversationId: 'ig' }),
-      message('fb-in', '2026-08-01T10:01:00.000Z', 'inbound', { conversationId: 'fb', platform: 'facebook' }),
-      message('fb-out', '2026-08-01T10:03:00.000Z', 'outbound', { conversationId: 'fb', platform: 'facebook' }),
-      message('ig-out', '2026-08-01T10:10:00.000Z', 'outbound', { conversationId: 'ig' }),
-    ], range);
-
-    assert.equal(metrics.byPlatform.facebook.avgResponseTimeMs, 2 * 60 * 1000);
-    assert.equal(metrics.byPlatform.instagram.avgResponseTimeMs, 10 * 60 * 1000);
-  });
-
-  it('fills inactive calendar days so the chart does not hide gaps', () => {
-    const metrics = calculateInboxMetrics([
-      message('in', '2026-08-02T10:00:00.000Z', 'inbound'),
-    ], range);
-
-    assert.deepEqual(metrics.dailyStats, [
-      { date: '2026-08-01', inbound: 0, outbound: 0 },
-      { date: '2026-08-02', inbound: 1, outbound: 0 },
-      { date: '2026-08-03', inbound: 0, outbound: 0 },
+    assert.deepEqual(cycles.map(cycle => [cycle.inboundMessageId, cycle.outboundMessageId, cycle.responseMs]), [
+      ['comment-a', 'private-reply', 5 * 60 * 1000],
     ]);
+  });
+
+  it('measures the first outbound after a DM inbound burst and preserves a burst crossing the range boundary', () => {
+    const cycles = matchResponseCycles([
+      message('in-before', '2026-07-31T23:55:00.000Z', 'inbound'),
+      message('in-after', '2026-08-01T00:01:00.000Z', 'inbound'),
+      message('out-first', '2026-08-01T00:05:00.000Z', 'outbound'),
+      message('out-extra', '2026-08-01T00:06:00.000Z', 'outbound'),
+      message('in-next', '2026-08-01T01:00:00.000Z', 'inbound'),
+      message('out-next', '2026-08-01T01:02:00.000Z', 'outbound'),
+    ], range);
+
+    assert.deepEqual(cycles.map(cycle => [cycle.outboundMessageId, cycle.responseMs]), [
+      ['out-first', 10 * 60 * 1000],
+      ['out-next', 2 * 60 * 1000],
+    ]);
+  });
+
+  it('reports honest median and p90 distributions split between AI and human replies', () => {
+    const summary = summarizeResponseCycles([
+      cycle(1, 'ai'), cycle(2, 'ai'), cycle(15, 'human'), cycle(115, 'human'),
+    ]);
+
+    assert.equal(summary.medianMs, 8.5 * 60 * 1000);
+    assert.equal(summary.p90Ms, 85 * 60 * 1000);
+    assert.deepEqual(summary.ai, { medianMs: 1.5 * 60 * 1000, p90Ms: 1.9 * 60 * 1000, samples: 2 });
+    assert.deepEqual(summary.human, { medianMs: 65 * 60 * 1000, p90Ms: 105 * 60 * 1000, samples: 2 });
+  });
+
+  it('does not invent a response time for unanswered messages', () => {
+    const cycles = matchResponseCycles([message('inbound', '2026-08-01T10:00:00.000Z', 'inbound')], range);
+    assert.deepEqual(summarizeResponseCycles(cycles), {
+      medianMs: null, p90Ms: null, samples: 0,
+      ai: { medianMs: null, p90Ms: null, samples: 0 },
+      human: { medianMs: null, p90Ms: null, samples: 0 },
+    });
   });
 });
 
@@ -77,14 +69,25 @@ function message(
   id: string,
   timestamp: string,
   direction: string | null,
-  overrides: Partial<InboxMetricsMessage & { sentiment: string | null }> = {},
-): InboxMetricsMessage & { sentiment?: string | null } {
+  overrides: Partial<ResponseMetricMessage> = {},
+): ResponseMetricMessage {
   return {
     id,
-    conversationId: 'conversation-a',
+    conversationId: 'dm-a',
+    conversationType: 'dm',
     platform: 'instagram',
     direction,
     timestamp: new Date(timestamp),
     ...overrides,
   };
+}
+
+function cycle(minutes: number, origin: 'ai' | 'human') {
+  return {
+    inboundMessageId: `in-${minutes}`,
+    outboundMessageId: `out-${minutes}`,
+    platform: 'instagram',
+    responseMs: minutes * 60 * 1000,
+    origin,
+  } as const;
 }

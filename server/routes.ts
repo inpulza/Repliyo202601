@@ -2051,6 +2051,8 @@ Sitemap: ${SITE_URL}/sitemap.xml
           label: range.label,
           from: range.fromDate,
           to: range.toDate,
+          timezone: range.timezone,
+          granularity: range.granularity,
         },
       });
     } catch (error: any) {
