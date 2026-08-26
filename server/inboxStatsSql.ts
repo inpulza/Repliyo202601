@@ -205,9 +205,14 @@ export function buildInboxResponseQuery(brandId: string, range: InboxMetricsRang
       FROM period_eligible eligible
       LEFT JOIN response_pairs pairs ON pairs.inbound_id = eligible.inbound_id
       GROUP BY GROUPING SETS ((eligible.platform), ())
+    ),
+    metric_keys AS (
+      SELECT platform FROM response_stats
+      UNION
+      SELECT platform FROM coverage_stats
     )
     SELECT
-      COALESCE(response.platform, coverage.platform) AS platform,
+      metric_keys.platform,
       response.median_ms,
       response.p90_ms,
       COALESCE(response.samples, 0)::int AS samples,
@@ -219,8 +224,10 @@ export function buildInboxResponseQuery(brandId: string, range: InboxMetricsRang
       COALESCE(response.human_samples, 0)::int AS human_samples,
       COALESCE(coverage.eligible_cycles, 0)::int AS eligible_cycles,
       COALESCE(coverage.answered_cycles, 0)::int AS answered_cycles
-    FROM response_stats response
-    FULL OUTER JOIN coverage_stats coverage
-      ON response.platform IS NOT DISTINCT FROM coverage.platform
+    FROM metric_keys
+    LEFT JOIN response_stats response
+      ON response.platform IS NOT DISTINCT FROM metric_keys.platform
+    LEFT JOIN coverage_stats coverage
+      ON coverage.platform IS NOT DISTINCT FROM metric_keys.platform
   `;
 }
