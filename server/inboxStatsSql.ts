@@ -81,7 +81,12 @@ export function buildInboxResponseQuery(brandId: string, range: InboxMetricsRang
           AND outbound.direction = 'outbound'
           AND outbound.timestamp < ${range.from}
           AND NOT EXISTS (
-            SELECT 1 FROM comment_linked_outbounds linked WHERE linked.id = outbound.id
+            SELECT 1
+            FROM messages linked_parent
+            JOIN conversations linked_conversation ON linked_conversation.id = linked_parent.conversation_id
+            WHERE linked_parent.id = outbound.parent_message_id
+              AND linked_parent.brand_id = ${brandId}
+              AND linked_conversation.type NOT IN ('dm', 'conversation')
           )
         ORDER BY outbound.timestamp DESC, outbound.id DESC
         LIMIT 1
@@ -123,7 +128,12 @@ export function buildInboxResponseQuery(brandId: string, range: InboxMetricsRang
         AND m.timestamp < ${range.toExclusive}
         AND m.direction IN ('inbound', 'outbound')
         AND NOT EXISTS (
-          SELECT 1 FROM comment_linked_outbounds linked WHERE linked.id = m.id
+          SELECT 1
+          FROM messages linked_parent
+          JOIN conversations linked_conversation ON linked_conversation.id = linked_parent.conversation_id
+          WHERE linked_parent.id = m.parent_message_id
+            AND linked_parent.brand_id = ${brandId}
+            AND linked_conversation.type NOT IN ('dm', 'conversation')
         )
       UNION ALL
       SELECT * FROM dm_seed_inbounds
@@ -146,24 +156,18 @@ export function buildInboxResponseQuery(brandId: string, range: InboxMetricsRang
         AND m.direction IN ('inbound', 'outbound')
         AND c.type IN ('dm', 'conversation')
         AND NOT EXISTS (
-          SELECT 1 FROM comment_linked_outbounds linked WHERE linked.id = m.id
+          SELECT 1
+          FROM messages linked_parent
+          JOIN conversations linked_conversation ON linked_conversation.id = linked_parent.conversation_id
+          WHERE linked_parent.id = m.parent_message_id
+            AND linked_parent.brand_id = ${brandId}
+            AND linked_conversation.type NOT IN ('dm', 'conversation')
         )
     ),
   `;
 
   return sql`
-    WITH comment_linked_outbounds AS (
-      SELECT reply.id
-      FROM messages reply
-      JOIN messages linked_parent ON linked_parent.id = reply.parent_message_id
-      JOIN conversations linked_conversation ON linked_conversation.id = linked_parent.conversation_id
-      WHERE reply.brand_id = ${brandId}
-        AND linked_parent.brand_id = ${brandId}
-        AND reply.direction = 'outbound'
-        AND reply.timestamp < ${range.toExclusive}
-        AND linked_conversation.type NOT IN ('dm', 'conversation')
-    ),
-    ${dmSourceCtes}
+    WITH ${dmSourceCtes}
     dm_timeline AS (
       SELECT
         m.id,

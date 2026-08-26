@@ -79,7 +79,8 @@ describe('inbox metrics date ranges', () => {
     assert.match(bounded, /CASE WHEN m\.direction = 'inbound' THEN 0 ELSE 1 END/i);
     assert.match(bounded, /AND parent\.timestamp\s+>=/i);
     assert.doesNotMatch(bounded, /OR reply\.timestamp\s+>=/i);
-    assert.match(bounded, /comment_linked_outbounds\s+AS/i);
+    assert.doesNotMatch(bounded, /comment_linked_outbounds\s+AS/i);
+    assert.match(bounded, /linked_parent\.id\s*=\s*(?:outbound|m)\.parent_message_id/i);
     assert.match(bounded, /'repliyo_auto', 'ai_agent'/i);
     assert.doesNotMatch(fullHistory, /dm_seed_inbounds\s+AS/i);
   });
