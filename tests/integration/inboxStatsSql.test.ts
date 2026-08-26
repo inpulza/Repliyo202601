@@ -94,11 +94,12 @@ describeWithPostgres('production inbox metrics SQL', () => {
         ('comment-1', 'brand-a', 'comments', 'facebook', 'inbound', '2026-08-20 10:00:00', 'root-1', NULL, NULL, NULL, NULL, 'positive', 'customer-1', 'one'),
         ('reply-1', 'brand-a', 'comments', 'facebook', 'outbound', '2026-08-20 10:05:00', 'reply-1-external', 'comment-1', NULL, 'manual', NULL, NULL, 'brand', 'reply'),
         ('comment-2', 'brand-a', 'comments', 'facebook', 'inbound', '2026-08-20 11:00:00', 'root-2', NULL, NULL, NULL, NULL, 'neutral', 'customer-2', 'two'),
-        ('reply-2', 'brand-a', 'comments', 'facebook', 'outbound', '2026-08-20 11:02:00', 'reply-2-external', 'comment-2', 'ai', 'repliyo_auto', NULL, NULL, 'brand', 'reply'),
+        ('reply-2', 'brand-a', 'comments', 'facebook', 'outbound', '2026-08-20 11:02:00', 'reply-2-external', 'comment-2', NULL, 'ai_agent', NULL, NULL, 'brand', 'legacy AI reply'),
         ('comment-3', 'brand-a', 'comments', 'facebook', 'inbound', '2026-08-20 12:00:00', 'root-3', NULL, NULL, NULL, NULL, 'negative', 'customer-3', 'three'),
         ('flattened-reply', 'brand-a', 'comments', 'facebook', 'outbound', '2026-08-20 12:02:00', 'flattened-external', 'comment-3', NULL, 'metricool_sync', '{"parentId":"nested-comment"}', NULL, 'brand', 'not a root reply'),
-        ('comment-cross-boundary', 'brand-a', 'comments', 'facebook', 'inbound', '2026-08-17 21:50:00', 'root-cross', NULL, NULL, NULL, NULL, NULL, 'customer-cross', 'before range'),
-        ('reply-cross-boundary', 'brand-a', 'comments', 'facebook', 'outbound', '2026-08-17 22:10:00', 'reply-cross', 'comment-cross-boundary', NULL, 'ai_agent', NULL, NULL, 'brand', 'legacy AI reply inside range'),
+        ('comment-cross-boundary', 'brand-a', 'comments', 'facebook', 'inbound', '2026-08-17 21:40:00', 'root-cross', NULL, NULL, NULL, NULL, NULL, 'customer-cross', 'before range'),
+        ('reply-cross-first', 'brand-a', 'comments', 'facebook', 'outbound', '2026-08-17 21:47:00', 'reply-cross-first', 'comment-cross-boundary', NULL, 'manual', NULL, NULL, 'brand', 'real first reply before range'),
+        ('reply-cross-late', 'brand-a', 'comments', 'facebook', 'outbound', '2026-08-17 22:10:00', 'reply-cross-late', 'comment-cross-boundary', NULL, 'manual', NULL, NULL, 'brand', 'later reply inside range'),
         ('tiktok-comment', 'brand-a', 'tiktok-comments', 'tiktok', 'inbound', '2026-08-20 15:00:00', '7659989993066138911_7660185205123367702', NULL, NULL, 'metricool_sync', NULL, NULL, 'tiktok-customer', 'clock-skewed parent'),
         ('tiktok-reply', 'brand-a', 'tiktok-comments', 'tiktok', 'outbound', '2026-08-20 13:30:00', 'tiktok-reply-external', 'tiktok-comment', NULL, 'metricool_sync', '{"parentId":"7660185205123367702"}', NULL, 'brand', 'linked reply with inverted provider clock'),
         ('dm-in-1', 'brand-a', 'dm-answered', 'instagram', 'inbound', '2026-08-20 13:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 'customer-a', 'hello'),
@@ -126,11 +127,11 @@ describeWithPostgres('production inbox metrics SQL', () => {
 
     assert.deepEqual(
       { eligible: overall.eligible_cycles, answered: overall.answered_cycles, samples: overall.samples },
-      { eligible: 8, answered: 6, samples: 7 },
+      { eligible: 8, answered: 6, samples: 6 },
     );
     assert.deepEqual(
       { eligible: facebook.eligible_cycles, answered: facebook.answered_cycles, samples: facebook.samples },
-      { eligible: 3, answered: 2, samples: 3 },
+      { eligible: 3, answered: 2, samples: 2 },
     );
     assert.deepEqual(
       { eligible: instagram.eligible_cycles, answered: instagram.answered_cycles, samples: instagram.samples },
@@ -140,7 +141,7 @@ describeWithPostgres('production inbox metrics SQL', () => {
       { eligible: tiktok.eligible_cycles, answered: tiktok.answered_cycles, samples: tiktok.samples },
       { eligible: 1, answered: 1, samples: 0 },
     );
-    assert.equal(overall.ai_samples, 2);
+    assert.equal(overall.ai_samples, 1);
     assert.equal(overall.human_samples, 5);
   });
 });

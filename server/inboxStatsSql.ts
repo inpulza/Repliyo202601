@@ -60,9 +60,9 @@ export function buildInboxResponseQuery(brandId: string, range: InboxMetricsRang
   const responseLowerBound = range.from ? sql`AND response_at >= ${range.from}` : sql``;
   const eligibleLowerBound = range.from ? sql`AND inbound_at >= ${range.from}` : sql``;
   const commentInboundLowerBound = range.from ? sql`AND parent.timestamp >= ${range.from}` : sql``;
-  const commentCandidateLowerBound = range.from
-    ? sql`AND (parent.timestamp >= ${range.from} OR reply.timestamp >= ${range.from})`
-    : sql``;
+  // Filter whole comment cohorts only. Filtering individual replies here can
+  // promote a later in-range reply into a false "first response".
+  const commentCandidateLowerBound = range.from ? sql`AND parent.timestamp >= ${range.from}` : sql``;
   const dmSourceCtes = range.from ? sql`
     dm_conversations AS (
       SELECT c.id
