@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { describe, it } from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import {
   isTransientSocketError,
@@ -97,10 +98,15 @@ describe('transient socket guard handlers', () => {
 });
 
 function runFixture(mode: string) {
-  return spawnSync('node_modules/.bin/tsx', ['tests/fixtures/transientGuardProcess.ts', mode], {
+  const tsxCli = fileURLToPath(import.meta.resolve('tsx/cli'));
+  const fixture = fileURLToPath(new URL('../fixtures/transientGuardProcess.ts', import.meta.url));
+  const result = spawnSync(process.execPath, [tsxCli, fixture, mode], {
     encoding: 'utf8',
     timeout: 30_000,
   });
+
+  assert.ifError(result.error);
+  return result;
 }
 
 describe('transient socket guard in a real process', () => {
