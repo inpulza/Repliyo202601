@@ -163,6 +163,38 @@ describe("brand-scoped conversation assignments", () => {
   });
 });
 
+describe("brand-scoped inbox metrics", () => {
+  it("returns a validated own-brand custom date range", async () => {
+    const response = await request(
+      "/api/inbox-stats/brand-a?from=2026-08-01&to=2026-08-10",
+      "user-a",
+    );
+
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.period.from, "2026-08-01");
+    assert.equal(body.period.to, "2026-08-10");
+    assert.equal(body.period.timezone, "Europe/Madrid");
+    assert.equal(body.period.granularity, "day");
+    assert.equal(body.byPlatform.instagram.inbound, 2);
+    assert.equal(body.byPlatform.instagram.responseTime.coverage.rate, 50);
+    assert.equal(server.state.inboxStatsReads, 1);
+  });
+
+  it("rejects foreign brands and invalid ranges before reading metrics", async () => {
+    for (const path of [
+      "/api/inbox-stats/brand-b?days=7",
+      "/api/inbox-stats/brand-a?days=999",
+      "/api/inbox-stats/brand-a?from=2026-08-10&to=2026-08-01",
+    ]) {
+      server.reset();
+      const response = await request(path, "user-a");
+      assert.ok(response.status === 400 || response.status === 403);
+      assert.equal(server.state.inboxStatsReads, 0);
+    }
+  });
+});
+
 function request(
   path: string,
   userId: string,

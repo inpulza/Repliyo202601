@@ -29,8 +29,15 @@ import {
   publicAccessTokens, type PublicAccessToken, type InsertPublicAccessToken
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, isNull, isNotNull, gte, lte, sql, inArray, notInArray } from "drizzle-orm";
+import { eq, desc, and, or, isNull, isNotNull, gte, lt, lte, sql, inArray, notInArray } from "drizzle-orm";
 import type { SessionAccessRecord } from "./security/sessionAccess";
+import { buildInboxResponseQuery, buildInboxVolumeQuery } from "./inboxStatsSql";
+import {
+  type InboxMetricsRange,
+  type PlatformInboxMetrics,
+  type ResponseDistribution,
+  type ResponseTimeMetrics,
+} from "@shared/inboxMetrics";
 
 export type UpsertedMessage = Message & { upsertCreated?: boolean };
 
@@ -183,7 +190,7 @@ export interface IStorage {
   upsertConversationUserSummary(summary: InsertConversationUserSummary): Promise<ConversationUserSummary>;
   updateConversationUserSummary(id: string, updates: UpdateConversationUserSummary): Promise<ConversationUserSummary | undefined>;
   
-  getInboxStats(brandId: string, days?: number): Promise<{
+  getInboxStats(brandId: string, range: InboxMetricsRange): Promise<{
     totalMessages: number;
     inboundMessages: number;
     outboundMessages: number;
@@ -191,10 +198,10 @@ export interface IStorage {
     openConversations: number;
     closedConversations: number;
     uniqueContacts: number;
-    avgResponseTimeMs: number | null;
-    byPlatform: Record<string, { inbound: number; outbound: number }>;
+    responseTime: ResponseTimeMetrics;
+    byPlatform: Record<string, PlatformInboxMetrics>;
     bySentiment: Record<string, number>;
-    dailyStats: Array<{ date: string; inbound: number; outbound: number }>;
+    volumeStats: Array<{ date: string; inbound: number; outbound: number }>;
     recentActivity: Array<{
       id: string;
       type: 'message' | 'reply';
@@ -2003,7 +2010,7 @@ export class DatabaseStorage implements IStorage {
     return summary || undefined;
   }
 
-  async getInboxStats(brandId: string, days: number = 7): Promise<{
+  async getInboxStats(brandId: string, range: InboxMetricsRange): Promise<{
     totalMessages: number;
     inboundMessages: number;
     outboundMessages: number;
@@ -2011,10 +2018,10 @@ export class DatabaseStorage implements IStorage {
     openConversations: number;
     closedConversations: number;
     uniqueContacts: number;
-    avgResponseTimeMs: number | null;
-    byPlatform: Record<string, { inbound: number; outbound: number }>;
+    responseTime: ResponseTimeMetrics;
+    byPlatform: Record<string, PlatformInboxMetrics>;
     bySentiment: Record<string, number>;
-    dailyStats: Array<{ date: string; inbound: number; outbound: number }>;
+    volumeStats: Array<{ date: string; inbound: number; outbound: number }>;
     recentActivity: Array<{
       id: string;
       type: 'message' | 'reply';
@@ -2024,89 +2031,132 @@ export class DatabaseStorage implements IStorage {
       timestamp: Date;
     }>;
   }> {
-    const since = new Date();
-    since.setDate(since.getDate() - days);
-    since.setHours(0, 0, 0, 0);
+    const lowerBound = range.from ? sql`AND m.timestamp >= ${range.from}` : sql``;
+    const [messageResult, responseResult, conversationResult, volumeResult, activityResult] = await Promise.all([
+      db.execute(sql`
+        SELECT
+          LOWER(COALESCE(NULLIF(TRIM(m.platform), ''), 'unknown')) AS platform,
+          COUNT(*) FILTER (WHERE m.direction = 'inbound')::int AS inbound,
+          COUNT(*) FILTER (WHERE m.direction = 'outbound')::int AS outbound,
+          m.sentiment,
+          COUNT(*) FILTER (WHERE m.direction = 'inbound' AND m.sentiment IS NOT NULL)::int AS sentiment_count
+        FROM messages m
+        WHERE m.brand_id = ${brandId}
+          AND m.timestamp < ${range.toExclusive}
+          ${lowerBound}
+          AND m.direction IN ('inbound', 'outbound')
+        GROUP BY GROUPING SETS ((LOWER(COALESCE(NULLIF(TRIM(m.platform), ''), 'unknown'))), (m.sentiment))
+      `),
+      db.execute(buildInboxResponseQuery(brandId, range)),
+      db.execute(sql`
+        SELECT
+          COUNT(DISTINCT c.id)::int AS total_conversations,
+          COUNT(DISTINCT c.id) FILTER (WHERE c.status = 'open')::int AS open_conversations,
+          COUNT(DISTINCT c.id) FILTER (WHERE c.status = 'closed')::int AS closed_conversations,
+          COUNT(DISTINCT c.customer_id)::int AS unique_contacts
+        FROM messages m
+        JOIN conversations c ON c.id = m.conversation_id AND c.brand_id = ${brandId}
+        WHERE m.brand_id = ${brandId}
+          AND m.timestamp < ${range.toExclusive}
+          ${lowerBound}
+          AND m.direction IN ('inbound', 'outbound')
+      `),
+      db.execute(buildInboxVolumeQuery(brandId, range)),
+      db.execute(sql`
+        SELECT m.id, m.direction, m.author, m.content, m.platform, m.timestamp
+        FROM messages m
+        WHERE m.brand_id = ${brandId}
+          AND m.timestamp < ${range.toExclusive}
+          ${lowerBound}
+          AND m.direction IN ('inbound', 'outbound')
+        ORDER BY m.timestamp DESC, m.id DESC
+        LIMIT 10
+      `),
+    ]);
 
-    const allMessages = await db
-      .select()
-      .from(messages)
-      .where(
-        and(
-          eq(messages.brandId, brandId),
-          gte(messages.timestamp, since)
-        )
-      )
-      .orderBy(desc(messages.timestamp));
+    const emptyDistribution = (): ResponseDistribution => ({ medianMs: null, p90Ms: null, samples: 0 });
+    const emptyResponseTime = (): ResponseTimeMetrics => ({
+      ...emptyDistribution(),
+      ai: emptyDistribution(),
+      human: emptyDistribution(),
+      coverage: { eligible: 0, answered: 0, rate: null },
+    });
+    const toNumber = (value: unknown): number => Number(value ?? 0);
+    const nullableNumber = (value: unknown): number | null => value === null || value === undefined ? null : Number(value);
+    const responseFromRow = (row?: Record<string, unknown>): ResponseTimeMetrics => {
+      if (!row) return emptyResponseTime();
+      const eligible = toNumber(row.eligible_cycles);
+      const answered = toNumber(row.answered_cycles);
+      return {
+        medianMs: nullableNumber(row.median_ms),
+        p90Ms: nullableNumber(row.p90_ms),
+        samples: toNumber(row.samples),
+        ai: { medianMs: nullableNumber(row.ai_median_ms), p90Ms: nullableNumber(row.ai_p90_ms), samples: toNumber(row.ai_samples) },
+        human: { medianMs: nullableNumber(row.human_median_ms), p90Ms: nullableNumber(row.human_p90_ms), samples: toNumber(row.human_samples) },
+        coverage: {
+          eligible,
+          answered,
+          rate: eligible === 0 ? null : Math.round((answered / eligible) * 1000) / 10,
+        },
+      };
+    };
 
-    const allConversations = await db
-      .select()
-      .from(conversations)
-      .where(eq(conversations.brandId, brandId));
-
-    const inboundMessages = allMessages.filter(m => m.direction === 'inbound');
-    const outboundMessages = allMessages.filter(m => m.direction === 'outbound');
-
-    const openConversations = allConversations.filter(c => c.status === 'open').length;
-    const closedConversations = allConversations.filter(c => c.status === 'closed').length;
-
-    const uniqueCustomerIds = new Set(allConversations.map(c => c.customerId));
-
-    const byPlatform: Record<string, { inbound: number; outbound: number }> = {};
+    const byPlatform: Record<string, PlatformInboxMetrics> = {};
     const bySentiment: Record<string, number> = {};
-    const dailyMap: Record<string, { inbound: number; outbound: number }> = {};
-
-    for (const msg of allMessages) {
-      const platform = msg.platform || 'unknown';
-      if (!byPlatform[platform]) {
-        byPlatform[platform] = { inbound: 0, outbound: 0 };
-      }
-      if (msg.direction === 'inbound') {
-        byPlatform[platform].inbound++;
-      } else {
-        byPlatform[platform].outbound++;
-      }
-
-      if (msg.sentiment) {
-        bySentiment[msg.sentiment] = (bySentiment[msg.sentiment] || 0) + 1;
-      }
-
-      const dateStr = msg.timestamp.toISOString().split('T')[0];
-      if (!dailyMap[dateStr]) {
-        dailyMap[dateStr] = { inbound: 0, outbound: 0 };
-      }
-      if (msg.direction === 'inbound') {
-        dailyMap[dateStr].inbound++;
-      } else {
-        dailyMap[dateStr].outbound++;
+    for (const rawRow of messageResult.rows as Record<string, unknown>[]) {
+      if (rawRow.platform) {
+        byPlatform[String(rawRow.platform)] = {
+          inbound: toNumber(rawRow.inbound),
+          outbound: toNumber(rawRow.outbound),
+          responseTime: emptyResponseTime(),
+        };
+      } else if (rawRow.sentiment) {
+        bySentiment[String(rawRow.sentiment)] = toNumber(rawRow.sentiment_count);
       }
     }
 
-    const dailyStats = Object.entries(dailyMap)
-      .map(([date, stats]) => ({ date, ...stats }))
-      .sort((a, b) => a.date.localeCompare(b.date));
+    let responseTime = emptyResponseTime();
+    for (const rawRow of responseResult.rows as Record<string, unknown>[]) {
+      if (rawRow.platform) {
+        const platform = String(rawRow.platform);
+        byPlatform[platform] ??= { inbound: 0, outbound: 0, responseTime: emptyResponseTime() };
+        byPlatform[platform].responseTime = responseFromRow(rawRow);
+      } else {
+        responseTime = responseFromRow(rawRow);
+      }
+    }
 
-    const recentActivity = allMessages.slice(0, 10).map(msg => ({
-      id: msg.id,
-      type: (msg.direction === 'outbound' ? 'reply' : 'message') as 'message' | 'reply',
-      author: msg.author,
-      content: msg.content.substring(0, 100) + (msg.content.length > 100 ? '...' : ''),
-      platform: msg.platform,
-      timestamp: msg.timestamp,
-    }));
+    const totals = Object.values(byPlatform).reduce(
+      (sum, item) => ({ inbound: sum.inbound + item.inbound, outbound: sum.outbound + item.outbound }),
+      { inbound: 0, outbound: 0 },
+    );
+    const conversationRow = (conversationResult.rows[0] ?? {}) as Record<string, unknown>;
+    const recentActivity = (activityResult.rows as Record<string, unknown>[]).map(row => {
+      const content = String(row.content ?? '');
+      return {
+        id: String(row.id),
+        type: (row.direction === 'outbound' ? 'reply' : 'message') as 'message' | 'reply',
+        author: String(row.author),
+        content: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
+        platform: String(row.platform),
+        timestamp: new Date(String(row.timestamp)),
+      };
+    });
 
     return {
-      totalMessages: allMessages.length,
-      inboundMessages: inboundMessages.length,
-      outboundMessages: outboundMessages.length,
-      totalConversations: allConversations.length,
-      openConversations,
-      closedConversations,
-      uniqueContacts: uniqueCustomerIds.size,
-      avgResponseTimeMs: null,
+      totalMessages: totals.inbound + totals.outbound,
+      inboundMessages: totals.inbound,
+      outboundMessages: totals.outbound,
+      totalConversations: toNumber(conversationRow.total_conversations),
+      openConversations: toNumber(conversationRow.open_conversations),
+      closedConversations: toNumber(conversationRow.closed_conversations),
+      uniqueContacts: toNumber(conversationRow.unique_contacts),
+      responseTime,
       byPlatform,
       bySentiment,
-      dailyStats,
+      volumeStats: (volumeResult.rows as Record<string, unknown>[]).map(row => ({
+        date: String(row.date), inbound: toNumber(row.inbound), outbound: toNumber(row.outbound),
+      })),
       recentActivity,
     };
   }

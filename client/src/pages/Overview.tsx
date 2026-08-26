@@ -32,10 +32,13 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { countInclusiveCalendarDays } from '@shared/inboxMetrics';
 import { 
   MobilePageHeader, 
   MobileStatCard, 
@@ -55,10 +58,14 @@ interface InboxStats {
   openConversations: number;
   closedConversations: number;
   uniqueContacts: number;
-  avgResponseTimeMs: number | null;
-  byPlatform: Record<string, { inbound: number; outbound: number }>;
+  responseTime: ResponseTimeMetrics;
+  byPlatform: Record<string, {
+    inbound: number;
+    outbound: number;
+    responseTime: ResponseTimeMetrics;
+  }>;
   bySentiment: Record<string, number>;
-  dailyStats: Array<{ date: string; inbound: number; outbound: number }>;
+  volumeStats: Array<{ date: string; inbound: number; outbound: number }>;
   recentActivity: Array<{
     id: string;
     type: 'message' | 'reply';
@@ -67,13 +74,40 @@ interface InboxStats {
     platform: string;
     timestamp: string;
   }>;
+  period: {
+    label: string;
+    from: string | null;
+    to: string;
+    timezone: 'Europe/Madrid';
+    granularity: 'day' | 'week' | 'month';
+  };
+}
+
+interface ResponseDistribution {
+  medianMs: number | null;
+  p90Ms: number | null;
+  samples: number;
+}
+
+interface ResponseTimeMetrics extends ResponseDistribution {
+  ai: ResponseDistribution;
+  human: ResponseDistribution;
+  coverage: { eligible: number; answered: number; rate: number | null };
 }
 
 const periodOptions = [
-  { label: 'Últimos 7 días', value: 7 },
-  { label: 'Últimos 14 días', value: 14 },
-  { label: 'Últimos 30 días', value: 30 },
+  { label: 'Últimos 7 días', value: '7' },
+  { label: 'Últimos 14 días', value: '14' },
+  { label: 'Últimos 30 días', value: '30' },
+  { label: 'Últimos 60 días', value: '60' },
+  { label: 'Últimos 90 días', value: '90' },
+  { label: 'Últimos 365 días', value: '365' },
+  { label: 'Histórico completo', value: 'all' },
 ];
+
+type MetricsPeriod =
+  | { mode: 'preset'; value: string }
+  | { mode: 'custom'; from: string; to: string };
 
 function formatResponseTime(ms: number | null): string {
   if (ms === null) return '--';
@@ -111,15 +145,41 @@ function getPlatformIcon(platform: string): string {
   return icons[platform.toLowerCase()] || '💬';
 }
 
+function formatResponseRate(rate: number | null): string {
+  return rate === null ? '--' : `${rate.toLocaleString('es-ES', { maximumFractionDigits: 1 })}%`;
+}
+
+function formatPlatformName(platform: string): string {
+  const names: Record<string, string> = {
+    instagram: 'Instagram',
+    facebook: 'Facebook',
+    twitter: 'X / Twitter',
+    whatsapp: 'WhatsApp',
+    linkedin: 'LinkedIn',
+    youtube: 'YouTube',
+    'google-business': 'Google Business',
+    email: 'Email',
+    unknown: 'Sin identificar',
+  };
+  return names[platform.toLowerCase()] || platform;
+}
+
 export function Overview() {
   const { activeClient, isLoadingClients } = useNexus();
-  const [days, setDays] = useState(7);
+  const [period, setPeriod] = useState<MetricsPeriod>({ mode: 'preset', value: '7' });
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
+  const [isCustomOpen, setIsCustomOpen] = useState(false);
+
+  const periodQuery = period.mode === 'custom'
+    ? `from=${period.from}&to=${period.to}`
+    : period.value === 'all' ? 'range=all' : `days=${period.value}`;
   
   const { data: stats, isLoading: isLoadingStats } = useQuery<InboxStats>({
-    queryKey: ['/api/inbox-stats', activeClient?.id, days],
+    queryKey: ['/api/inbox-stats', activeClient?.id, periodQuery],
     queryFn: async () => {
       if (!activeClient?.id) return null;
-      const res = await apiFetch(`/api/inbox-stats/${activeClient.id}?days=${days}`, {
+      const res = await apiFetch(`/api/inbox-stats/${activeClient.id}?${periodQuery}`, {
         credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to fetch stats');
@@ -143,20 +203,37 @@ export function Overview() {
 
   const sentimentScore = stats ? calculateSentimentScore(stats.bySentiment) : null;
   
-  const chartData = stats?.dailyStats.map(day => ({
-    name: format(new Date(day.date), 'EEE', { locale: es }),
-    fullDate: format(new Date(day.date), 'dd MMM', { locale: es }),
+  const chartData = stats?.volumeStats.map(day => ({
+    name: format(
+      new Date(`${day.date}T12:00:00`),
+      stats.period.granularity === 'month' ? 'MMM yy' : stats.period.granularity === 'week' ? 'dd MMM' : stats.volumeStats.length > 14 ? 'dd MMM' : 'EEE',
+      { locale: es },
+    ),
+    fullDate: format(new Date(`${day.date}T12:00:00`), 'dd MMM yyyy', { locale: es }),
     messages: day.inbound,
     response: day.outbound,
   })) || [];
 
-  const selectedPeriod = periodOptions.find(p => p.value === days);
+  const selectedPeriodLabel = period.mode === 'custom'
+    ? `${format(new Date(`${period.from}T12:00:00`), 'dd MMM', { locale: es })} – ${format(new Date(`${period.to}T12:00:00`), 'dd MMM', { locale: es })}`
+    : periodOptions.find(option => option.value === period.value)?.label;
+
+  const applyCustomRange = () => {
+    if (!customFrom || !customTo || customTo < customFrom || customRangeTooLong) return;
+    setPeriod({ mode: 'custom', from: customFrom, to: customTo });
+    setIsCustomOpen(false);
+  };
+
+  const customRangeDays = customFrom && customTo
+    ? countInclusiveCalendarDays(customFrom, customTo)
+    : 0;
+  const customRangeTooLong = customRangeDays > 366;
 
   const periodSelector = (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="gap-1 h-8 px-2 text-xs" data-testid="button-period-selector-mobile">
-          {selectedPeriod?.label?.replace('Últimos ', '')}
+          {selectedPeriodLabel?.replace('Últimos ', '')}
           <ChevronDown className="h-3 w-3" />
         </Button>
       </DropdownMenuTrigger>
@@ -164,19 +241,70 @@ export function Overview() {
         {periodOptions.map(option => (
           <DropdownMenuItem 
             key={option.value}
-            onClick={() => setDays(option.value)}
+            onClick={() => setPeriod({ mode: 'preset', value: option.value })}
             data-testid={`menu-item-period-mobile-${option.value}`}
           >
             {option.label}
           </DropdownMenuItem>
         ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => setIsCustomOpen(true)} data-testid="menu-item-period-mobile-custom">
+          Fechas personalizadas…
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+
+  const customDatePopover = (
+    <Dialog open={isCustomOpen} onOpenChange={setIsCustomOpen}>
+      <DialogContent className="sm:max-w-sm" data-testid="dialog-custom-period">
+        <DialogHeader>
+          <DialogTitle>Rango personalizado</DialogTitle>
+          <DialogDescription>Selecciona hasta 366 días por consulta.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <label className="block space-y-1 text-xs font-medium">
+            <span>Desde</span>
+            <input
+              type="date"
+              value={customFrom}
+              max={customTo || undefined}
+              onChange={(event) => setCustomFrom(event.target.value)}
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              data-testid="input-period-from"
+            />
+          </label>
+          <label className="block space-y-1 text-xs font-medium">
+            <span>Hasta</span>
+            <input
+              type="date"
+              value={customTo}
+              min={customFrom || undefined}
+              onChange={(event) => setCustomTo(event.target.value)}
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              data-testid="input-period-to"
+            />
+          </label>
+          {customRangeTooLong && (
+            <p className="text-xs text-red-600" role="alert">El rango no puede superar 366 días.</p>
+          )}
+          <Button
+            className="w-full"
+            onClick={applyCustomRange}
+            disabled={!customFrom || !customTo || customTo < customFrom || customRangeTooLong}
+            data-testid="button-apply-custom-period"
+          >
+            Aplicar rango
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 
   return (
     <div className="h-full flex flex-col bg-gray-50/50 overflow-y-auto">
       {/* Mobile View */}
+      {customDatePopover}
       <MobileContainer>
         <MobilePageHeader 
           title="Overview" 
@@ -198,15 +326,15 @@ export function Overview() {
           <MobileStatCard
             icon={<Clock className="h-4 w-4" />}
             iconColor="text-amber-500"
-            label="Tiempo Resp."
-            value={formatResponseTime(stats?.avgResponseTimeMs ?? null)}
-            subtitle="promedio"
+            label="Resp. mediana"
+            value={formatResponseTime(stats?.responseTime.medianMs ?? null)}
+            subtitle={`${formatResponseRate(stats?.responseTime.coverage.rate ?? null)} · ${stats?.responseTime.coverage.answered ?? 0}/${stats?.responseTime.coverage.eligible ?? 0} ciclos`}
             testId="mobile-stat-response-time"
           />
           <MobileStatCard
             icon={<Smile className="h-4 w-4" />}
             iconColor="text-emerald-500"
-            label="Sentimiento"
+            label="Sentimiento entrante"
             value={sentimentScore !== null ? `${sentimentScore}%` : '--'}
             subtitle={`${stats?.bySentiment?.['positive'] || 0} positivos`}
             testId="mobile-stat-sentiment"
@@ -214,13 +342,40 @@ export function Overview() {
           <MobileStatCard
             icon={<Users className="h-4 w-4" />}
             iconColor="text-blue-500"
-            label="Contactos"
+            label="Contactos con actividad"
             value={(stats?.uniqueContacts ?? 0).toLocaleString()}
-            subtitle={`${stats?.openConversations || 0} activas`}
+            subtitle={`${stats?.totalConversations || 0} conversaciones`}
             testId="mobile-stat-contacts"
           />
         </MobileStatGrid>
         
+        <MobileSpacer size="lg" />
+
+        <MobileSectionDivider title="Mensajes por red social" />
+        <div className="md:hidden bg-background divide-y divide-border">
+          {Object.entries(stats?.byPlatform ?? {}).map(([platform, platformStats]) => (
+            <div key={platform} className="flex items-center gap-3 px-4 py-3" data-testid={`mobile-platform-${platform}`}>
+              <span className="text-lg" aria-hidden="true">{getPlatformIcon(platform)}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">{formatPlatformName(platform)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {platformStats.inbound} recibidos · {platformStats.outbound} enviados
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-medium">{formatResponseTime(platformStats.responseTime.medianMs)}</p>
+                <p className="text-[10px] text-muted-foreground">mediana · {platformStats.responseTime.samples} ciclos</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {formatResponseRate(platformStats.responseTime.coverage.rate)} respondidos · {platformStats.responseTime.coverage.answered}/{platformStats.responseTime.coverage.eligible}
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  IA {formatResponseTime(platformStats.responseTime.ai.medianMs)} · Humano {formatResponseTime(platformStats.responseTime.human.medianMs)}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
         <MobileSpacer size="lg" />
         
         <div className="md:hidden px-4">
@@ -247,6 +402,7 @@ export function Overview() {
                       axisLine={false} 
                       tickLine={false} 
                       tick={{ fill: '#6b7280', fontSize: 10 }}
+                      minTickGap={28}
                     />
                     <YAxis 
                       axisLine={false} 
@@ -321,19 +477,23 @@ export function Overview() {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="gap-2" data-testid="button-period-selector">
                   <Calendar className="h-4 w-4" />
-                  {selectedPeriod?.label}
+                  {selectedPeriodLabel}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {periodOptions.map(option => (
                   <DropdownMenuItem 
                     key={option.value}
-                    onClick={() => setDays(option.value)}
+                    onClick={() => setPeriod({ mode: 'preset', value: option.value })}
                     data-testid={`menu-item-period-${option.value}`}
                   >
                     {option.label}
                   </DropdownMenuItem>
                 ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => setIsCustomOpen(true)} data-testid="menu-item-period-custom">
+                  Fechas personalizadas…
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white" data-testid="button-download-report">
@@ -342,6 +502,9 @@ export function Overview() {
             </Button>
           </div>
         </div>
+        <p className="-mt-6 text-xs text-muted-foreground" data-testid="period-context">
+          {stats?.period.label} · zona horaria Europe/Madrid · gráfico por {stats?.period.granularity === 'month' ? 'mes' : stats?.period.granularity === 'week' ? 'semana' : 'día'}
+        </p>
 
         {/* Metrics Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -372,15 +535,21 @@ export function Overview() {
             {/* Response Time */}
             <Card data-testid="card-response-time">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Tiempo de Respuesta</CardTitle>
+                    <CardTitle className="text-sm font-medium">Primera respuesta</CardTitle>
                     <Clock className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold" data-testid="text-response-time">
-                      {formatResponseTime(stats?.avgResponseTimeMs ?? null)}
+                      {formatResponseTime(stats?.responseTime.medianMs ?? null)}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                        promedio de respuesta
+                        mediana · p90 {formatResponseTime(stats?.responseTime.p90Ms ?? null)} · {stats?.responseTime.samples || 0} ciclos
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-1" data-testid="text-response-coverage">
+                      {formatResponseRate(stats?.responseTime.coverage.rate ?? null)} respondidos · {stats?.responseTime.coverage.answered ?? 0}/{stats?.responseTime.coverage.eligible ?? 0} ciclos elegibles
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-1" data-testid="text-response-origin-split">
+                      IA {formatResponseTime(stats?.responseTime.ai.medianMs ?? null)} ({stats?.responseTime.ai.samples ?? 0}) · Humano {formatResponseTime(stats?.responseTime.human.medianMs ?? null)} ({stats?.responseTime.human.samples ?? 0})
                     </p>
                 </CardContent>
             </Card>
@@ -388,7 +557,7 @@ export function Overview() {
             {/* Sentiment Score */}
             <Card data-testid="card-sentiment-score">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Sentimiento</CardTitle>
+                    <CardTitle className="text-sm font-medium">Sentimiento entrante</CardTitle>
                     <Smile className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -410,7 +579,7 @@ export function Overview() {
              {/* Active Contacts */}
              <Card data-testid="card-active-contacts">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Contactos Activos</CardTitle>
+                    <CardTitle className="text-sm font-medium">Contactos con actividad</CardTitle>
                     <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -418,7 +587,7 @@ export function Overview() {
                       {(stats?.uniqueContacts ?? 0).toLocaleString()}
                     </div>
                     <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                        <span>{stats?.openConversations || 0} conversaciones abiertas</span>
+                        <span>{stats?.totalConversations || 0} conversaciones en el período</span>
                     </p>
                 </CardContent>
             </Card>
@@ -453,6 +622,7 @@ export function Overview() {
                                       tickLine={false} 
                                       tick={{ fill: '#6b7280', fontSize: 12 }}
                                       dy={10}
+                                      minTickGap={32}
                                   />
                                   <YAxis 
                                       axisLine={false} 
@@ -532,6 +702,61 @@ export function Overview() {
                 </CardContent>
             </Card>
         </div>
+
+        <Card data-testid="card-platform-breakdown">
+          <CardHeader>
+            <CardTitle>Mensajes por red social</CardTitle>
+            <CardDescription>Volumen, cobertura y mediana de primera respuesta. Comentarios exactos; DMs por ráfaga entrante.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-xs text-muted-foreground">
+                    <th className="pb-3 font-medium">Red social</th>
+                    <th className="pb-3 text-right font-medium">Mensajes entrantes</th>
+                    <th className="pb-3 text-right font-medium">Mensajes salientes</th>
+                    <th className="pb-3 text-right font-medium">Tasa de respuesta</th>
+                    <th className="pb-3 text-right font-medium">Mediana total</th>
+                    <th className="pb-3 text-right font-medium">IA</th>
+                    <th className="pb-3 text-right font-medium">Humano</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(stats?.byPlatform ?? {}).map(([platform, platformStats]) => (
+                    <tr key={platform} className="border-b last:border-0" data-testid={`platform-row-${platform}`}>
+                      <td className="py-3 font-medium">
+                        <span className="mr-2" aria-hidden="true">{getPlatformIcon(platform)}</span>
+                        {formatPlatformName(platform)}
+                      </td>
+                      <td className="py-3 text-right tabular-nums">{platformStats.inbound.toLocaleString()}</td>
+                      <td className="py-3 text-right tabular-nums">{platformStats.outbound.toLocaleString()}</td>
+                      <td className="py-3 text-right tabular-nums" data-testid={`platform-response-rate-${platform}`}>
+                        {formatResponseRate(platformStats.responseTime.coverage.rate)}
+                        <span className="ml-1 text-xs text-muted-foreground">
+                          ({platformStats.responseTime.coverage.answered}/{platformStats.responseTime.coverage.eligible})
+                        </span>
+                      </td>
+                      <td className="py-3 text-right tabular-nums">
+                        {formatResponseTime(platformStats.responseTime.medianMs)}
+                        <span className="ml-1 text-xs text-muted-foreground">({platformStats.responseTime.samples})</span>
+                      </td>
+                      <td className="py-3 text-right tabular-nums">{formatResponseTime(platformStats.responseTime.ai.medianMs)}</td>
+                      <td className="py-3 text-right tabular-nums">{formatResponseTime(platformStats.responseTime.human.medianMs)}</td>
+                    </tr>
+                  ))}
+                  {Object.keys(stats?.byPlatform ?? {}).length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                        No hay mensajes en este período
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
