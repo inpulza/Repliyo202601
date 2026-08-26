@@ -55,3 +55,172 @@ export function buildInboxVolumeQuery(brandId: string, range: InboxMetricsRange)
     ORDER BY b.bucket
   `;
 }
+
+export function buildInboxResponseQuery(brandId: string, range: InboxMetricsRange): SQL {
+  const responseLowerBound = range.from ? sql`AND response_at >= ${range.from}` : sql``;
+  const eligibleLowerBound = range.from ? sql`AND inbound_at >= ${range.from}` : sql``;
+
+  return sql`
+    WITH dm_timeline AS (
+      SELECT
+        m.id,
+        m.conversation_id,
+        m.platform,
+        m.direction,
+        m.timestamp,
+        m.parent_message_id,
+        m.internal_origin,
+        m.source,
+        COUNT(*) FILTER (WHERE m.direction = 'outbound') OVER (
+          PARTITION BY m.conversation_id
+          ORDER BY m.timestamp, m.id
+          ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+        ) AS prior_outbounds
+      FROM messages m
+      JOIN conversations c ON c.id = m.conversation_id
+      WHERE m.brand_id = ${brandId}
+        AND m.timestamp < ${range.toExclusive}
+        AND m.direction IN ('inbound', 'outbound')
+        AND c.type IN ('dm', 'conversation')
+    ),
+    dm_bursts AS (
+      SELECT
+        conversation_id,
+        prior_outbounds,
+        MIN(timestamp) AS inbound_at,
+        (ARRAY_AGG(id ORDER BY timestamp, id))[1] AS inbound_id,
+        LOWER((ARRAY_AGG(COALESCE(NULLIF(TRIM(platform), ''), 'unknown') ORDER BY timestamp, id))[1]) AS platform
+      FROM dm_timeline
+      WHERE direction = 'inbound'
+      GROUP BY conversation_id, prior_outbounds
+    ),
+    dm_pairs AS (
+      SELECT
+        b.inbound_id,
+        o.id AS outbound_id,
+        b.platform,
+        b.inbound_at,
+        o.timestamp AS response_at,
+        CASE WHEN o.internal_origin = 'ai' OR o.source = 'repliyo_auto' THEN 'ai' ELSE 'human' END AS origin
+      FROM dm_bursts b
+      JOIN dm_timeline o
+        ON o.conversation_id = b.conversation_id
+       AND o.prior_outbounds = b.prior_outbounds
+       AND o.direction = 'outbound'
+      WHERE NOT EXISTS (
+        SELECT 1
+        FROM messages linked_parent
+        JOIN conversations linked_conversation ON linked_conversation.id = linked_parent.conversation_id
+        WHERE linked_parent.id = o.parent_message_id
+          AND linked_conversation.type NOT IN ('dm', 'conversation')
+      )
+    ),
+    comment_inbounds AS (
+      SELECT
+        parent.id AS inbound_id,
+        LOWER(COALESCE(NULLIF(TRIM(parent.platform), ''), 'unknown')) AS platform,
+        parent.timestamp AS inbound_at
+      FROM messages parent
+      JOIN conversations parent_conversation ON parent_conversation.id = parent.conversation_id
+      WHERE parent.brand_id = ${brandId}
+        AND parent.direction = 'inbound'
+        AND parent.timestamp < ${range.toExclusive}
+        AND parent_conversation.type NOT IN ('dm', 'conversation')
+    ),
+    first_comment_replies AS (
+      SELECT DISTINCT ON (parent.id)
+        parent.id AS inbound_id,
+        reply.id AS outbound_id,
+        LOWER(COALESCE(NULLIF(TRIM(parent.platform), ''), 'unknown')) AS platform,
+        parent.timestamp AS inbound_at,
+        reply.timestamp AS response_at,
+        CASE WHEN reply.internal_origin = 'ai' OR reply.source = 'repliyo_auto' THEN 'ai' ELSE 'human' END AS origin
+      FROM messages reply
+      JOIN messages parent ON parent.id = reply.parent_message_id
+      JOIN conversations parent_conversation ON parent_conversation.id = parent.conversation_id
+      WHERE reply.brand_id = ${brandId}
+        AND parent.brand_id = ${brandId}
+        AND reply.direction = 'outbound'
+        AND parent.direction = 'inbound'
+        AND parent_conversation.type NOT IN ('dm', 'conversation')
+        AND reply.timestamp >= parent.timestamp
+        AND reply.timestamp < ${range.toExclusive}
+        AND (
+          reply.source IS DISTINCT FROM 'metricool_sync'
+          OR COALESCE(
+            reply.raw_data ->> 'parentId',
+            reply.raw_data ->> 'parent_id',
+            reply.raw_data #>> '{parent,id}'
+          ) IS NULL
+          OR COALESCE(
+            reply.raw_data ->> 'parentId',
+            reply.raw_data ->> 'parent_id',
+            reply.raw_data #>> '{parent,id}'
+          ) = parent.metricool_id
+        )
+      ORDER BY parent.id, reply.timestamp, reply.id
+    ),
+    response_pairs AS (
+      SELECT * FROM dm_pairs
+      UNION ALL
+      SELECT * FROM first_comment_replies
+    ),
+    period_pairs AS (
+      SELECT *, EXTRACT(EPOCH FROM (response_at - inbound_at)) * 1000 AS response_ms
+      FROM response_pairs
+      WHERE response_at < ${range.toExclusive}
+        ${responseLowerBound}
+    ),
+    eligible_cycles AS (
+      SELECT inbound_id, platform, inbound_at FROM dm_bursts
+      UNION ALL
+      SELECT inbound_id, platform, inbound_at FROM comment_inbounds
+    ),
+    period_eligible AS (
+      SELECT *
+      FROM eligible_cycles
+      WHERE inbound_at < ${range.toExclusive}
+        ${eligibleLowerBound}
+    ),
+    response_stats AS (
+      SELECT
+        platform,
+        ROUND((percentile_cont(0.5) WITHIN GROUP (ORDER BY response_ms))::numeric)::bigint AS median_ms,
+        ROUND((percentile_cont(0.9) WITHIN GROUP (ORDER BY response_ms))::numeric)::bigint AS p90_ms,
+        COUNT(*)::int AS samples,
+        ROUND((percentile_cont(0.5) WITHIN GROUP (ORDER BY response_ms) FILTER (WHERE origin = 'ai'))::numeric)::bigint AS ai_median_ms,
+        ROUND((percentile_cont(0.9) WITHIN GROUP (ORDER BY response_ms) FILTER (WHERE origin = 'ai'))::numeric)::bigint AS ai_p90_ms,
+        COUNT(*) FILTER (WHERE origin = 'ai')::int AS ai_samples,
+        ROUND((percentile_cont(0.5) WITHIN GROUP (ORDER BY response_ms) FILTER (WHERE origin = 'human'))::numeric)::bigint AS human_median_ms,
+        ROUND((percentile_cont(0.9) WITHIN GROUP (ORDER BY response_ms) FILTER (WHERE origin = 'human'))::numeric)::bigint AS human_p90_ms,
+        COUNT(*) FILTER (WHERE origin = 'human')::int AS human_samples
+      FROM period_pairs
+      GROUP BY GROUPING SETS ((platform), ())
+    ),
+    coverage_stats AS (
+      SELECT
+        eligible.platform,
+        COUNT(*)::int AS eligible_cycles,
+        COUNT(pairs.outbound_id)::int AS answered_cycles
+      FROM period_eligible eligible
+      LEFT JOIN response_pairs pairs ON pairs.inbound_id = eligible.inbound_id
+      GROUP BY GROUPING SETS ((eligible.platform), ())
+    )
+    SELECT
+      COALESCE(response.platform, coverage.platform) AS platform,
+      response.median_ms,
+      response.p90_ms,
+      COALESCE(response.samples, 0)::int AS samples,
+      response.ai_median_ms,
+      response.ai_p90_ms,
+      COALESCE(response.ai_samples, 0)::int AS ai_samples,
+      response.human_median_ms,
+      response.human_p90_ms,
+      COALESCE(response.human_samples, 0)::int AS human_samples,
+      COALESCE(coverage.eligible_cycles, 0)::int AS eligible_cycles,
+      COALESCE(coverage.answered_cycles, 0)::int AS answered_cycles
+    FROM response_stats response
+    FULL OUTER JOIN coverage_stats coverage
+      ON response.platform IS NOT DISTINCT FROM coverage.platform
+  `;
+}

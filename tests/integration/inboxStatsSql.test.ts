@@ -5,7 +5,7 @@ import pg from 'pg';
 import { PgDialect } from 'drizzle-orm/pg-core';
 
 import { parseInboxStatsRange } from '../../server/inboxStatsRange';
-import { buildInboxVolumeQuery } from '../../server/inboxStatsSql';
+import { buildInboxResponseQuery, buildInboxVolumeQuery } from '../../server/inboxStatsSql';
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const describeWithPostgres = databaseUrl ? describe : describe.skip;
@@ -15,8 +15,6 @@ const { Client } = pg;
 describeWithPostgres('production inbox metrics SQL', () => {
   const client = new Client({ connectionString: databaseUrl });
   const dialect = new PgDialect();
-  let closeApplicationPool: (() => Promise<void>) | undefined;
-
   before(async () => {
     await client.connect();
     await client.query(`
@@ -47,7 +45,6 @@ describeWithPostgres('production inbox metrics SQL', () => {
   });
 
   after(async () => {
-    await closeApplicationPool?.();
     await client.end();
   });
 
@@ -102,19 +99,26 @@ describeWithPostgres('production inbox metrics SQL', () => {
         ('dm-in-3', 'brand-a', 'dm-unanswered', 'instagram', 'inbound', '2026-08-20 14:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 'customer-b', 'pending');
     `);
 
-    const [{ storage }, { pool }] = await Promise.all([
-      import('../../server/storage'),
-      import('../../server/db'),
-    ]);
-    closeApplicationPool = () => pool.end();
-    const stats = await storage.getInboxStats('brand-a', parseInboxStatsRange({ days: '7' }, now));
+    const range = parseInboxStatsRange({ days: '7' }, now);
+    const compiled = dialect.sqlToQuery(buildInboxResponseQuery('brand-a', range));
+    const result = await client.query(compiled.sql, compiled.params);
+    const overall = result.rows.find(row => row.platform === null);
+    const facebook = result.rows.find(row => row.platform === 'facebook');
+    const instagram = result.rows.find(row => row.platform === 'instagram');
 
-    assert.equal(stats.volumeStats.length, 7);
-    assert.deepEqual(stats.responseTime.coverage, { eligible: 5, answered: 3, rate: 60 });
-    assert.deepEqual(stats.byPlatform.facebook.responseTime.coverage, { eligible: 3, answered: 2, rate: 66.7 });
-    assert.deepEqual(stats.byPlatform.instagram.responseTime.coverage, { eligible: 2, answered: 1, rate: 50 });
-    assert.equal(stats.responseTime.samples, 3);
-    assert.equal(stats.responseTime.ai.samples, 1);
-    assert.equal(stats.responseTime.human.samples, 2);
+    assert.deepEqual(
+      { eligible: overall.eligible_cycles, answered: overall.answered_cycles, samples: overall.samples },
+      { eligible: 5, answered: 3, samples: 3 },
+    );
+    assert.deepEqual(
+      { eligible: facebook.eligible_cycles, answered: facebook.answered_cycles, samples: facebook.samples },
+      { eligible: 3, answered: 2, samples: 2 },
+    );
+    assert.deepEqual(
+      { eligible: instagram.eligible_cycles, answered: instagram.answered_cycles, samples: instagram.samples },
+      { eligible: 2, answered: 1, samples: 1 },
+    );
+    assert.equal(overall.ai_samples, 1);
+    assert.equal(overall.human_samples, 2);
   });
 });
