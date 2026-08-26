@@ -59,6 +59,10 @@ export function buildInboxVolumeQuery(brandId: string, range: InboxMetricsRange)
 export function buildInboxResponseQuery(brandId: string, range: InboxMetricsRange): SQL {
   const responseLowerBound = range.from ? sql`AND response_at >= ${range.from}` : sql``;
   const eligibleLowerBound = range.from ? sql`AND inbound_at >= ${range.from}` : sql``;
+  const commentInboundLowerBound = range.from ? sql`AND parent.timestamp >= ${range.from}` : sql``;
+  const commentCandidateLowerBound = range.from
+    ? sql`AND (parent.timestamp >= ${range.from} OR reply.timestamp >= ${range.from})`
+    : sql``;
   const dmSourceCtes = range.from ? sql`
     dm_conversations AS (
       SELECT c.id
@@ -76,6 +80,9 @@ export function buildInboxResponseQuery(brandId: string, range: InboxMetricsRang
           AND outbound.conversation_id = conversation.id
           AND outbound.direction = 'outbound'
           AND outbound.timestamp < ${range.from}
+          AND NOT EXISTS (
+            SELECT 1 FROM comment_linked_outbounds linked WHERE linked.id = outbound.id
+          )
         ORDER BY outbound.timestamp DESC, outbound.id DESC
         LIMIT 1
       ) last_outbound ON true
@@ -115,6 +122,9 @@ export function buildInboxResponseQuery(brandId: string, range: InboxMetricsRang
         AND m.timestamp >= ${range.from}
         AND m.timestamp < ${range.toExclusive}
         AND m.direction IN ('inbound', 'outbound')
+        AND NOT EXISTS (
+          SELECT 1 FROM comment_linked_outbounds linked WHERE linked.id = m.id
+        )
       UNION ALL
       SELECT * FROM dm_seed_inbounds
     ),
@@ -135,11 +145,25 @@ export function buildInboxResponseQuery(brandId: string, range: InboxMetricsRang
         AND m.timestamp < ${range.toExclusive}
         AND m.direction IN ('inbound', 'outbound')
         AND c.type IN ('dm', 'conversation')
+        AND NOT EXISTS (
+          SELECT 1 FROM comment_linked_outbounds linked WHERE linked.id = m.id
+        )
     ),
   `;
 
   return sql`
-    WITH ${dmSourceCtes}
+    WITH comment_linked_outbounds AS (
+      SELECT reply.id
+      FROM messages reply
+      JOIN messages linked_parent ON linked_parent.id = reply.parent_message_id
+      JOIN conversations linked_conversation ON linked_conversation.id = linked_parent.conversation_id
+      WHERE reply.brand_id = ${brandId}
+        AND linked_parent.brand_id = ${brandId}
+        AND reply.direction = 'outbound'
+        AND reply.timestamp < ${range.toExclusive}
+        AND linked_conversation.type NOT IN ('dm', 'conversation')
+    ),
+    ${dmSourceCtes}
     dm_timeline AS (
       SELECT
         m.id,
@@ -175,19 +199,12 @@ export function buildInboxResponseQuery(brandId: string, range: InboxMetricsRang
         b.platform,
         b.inbound_at,
         o.timestamp AS response_at,
-        CASE WHEN o.internal_origin = 'ai' OR o.source = 'repliyo_auto' THEN 'ai' ELSE 'human' END AS origin
+        CASE WHEN o.internal_origin = 'ai' OR o.source IN ('repliyo_auto', 'ai_agent') THEN 'ai' ELSE 'human' END AS origin
       FROM dm_bursts b
       JOIN dm_timeline o
         ON o.conversation_id = b.conversation_id
        AND o.prior_outbounds = b.prior_outbounds
        AND o.direction = 'outbound'
-      WHERE NOT EXISTS (
-        SELECT 1
-        FROM messages linked_parent
-        JOIN conversations linked_conversation ON linked_conversation.id = linked_parent.conversation_id
-        WHERE linked_parent.id = o.parent_message_id
-          AND linked_conversation.type NOT IN ('dm', 'conversation')
-      )
     ),
     comment_inbounds AS (
       SELECT
@@ -200,6 +217,7 @@ export function buildInboxResponseQuery(brandId: string, range: InboxMetricsRang
         AND parent.direction = 'inbound'
         AND parent.timestamp < ${range.toExclusive}
         AND parent_conversation.type NOT IN ('dm', 'conversation')
+        ${commentInboundLowerBound}
     ),
     comment_reply_candidates AS (
       SELECT
@@ -208,7 +226,7 @@ export function buildInboxResponseQuery(brandId: string, range: InboxMetricsRang
         LOWER(COALESCE(NULLIF(TRIM(parent.platform), ''), 'unknown')) AS platform,
         parent.timestamp AS inbound_at,
         reply.timestamp AS response_at,
-        CASE WHEN reply.internal_origin = 'ai' OR reply.source = 'repliyo_auto' THEN 'ai' ELSE 'human' END AS origin
+        CASE WHEN reply.internal_origin = 'ai' OR reply.source IN ('repliyo_auto', 'ai_agent') THEN 'ai' ELSE 'human' END AS origin
       FROM messages reply
       JOIN messages parent ON parent.id = reply.parent_message_id
       JOIN conversations parent_conversation ON parent_conversation.id = parent.conversation_id
@@ -217,7 +235,9 @@ export function buildInboxResponseQuery(brandId: string, range: InboxMetricsRang
         AND reply.direction = 'outbound'
         AND parent.direction = 'inbound'
         AND parent_conversation.type NOT IN ('dm', 'conversation')
+        AND parent.timestamp < ${range.toExclusive}
         AND reply.timestamp < ${range.toExclusive}
+        ${commentCandidateLowerBound}
         AND (
           reply.source IS DISTINCT FROM 'metricool_sync'
           OR COALESCE(

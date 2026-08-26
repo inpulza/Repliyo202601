@@ -84,7 +84,8 @@ describeWithPostgres('production inbox metrics SQL', () => {
         ('dm-answered', 'brand-a', 'dm', 'open', 'customer-a'),
         ('dm-unanswered', 'brand-a', 'dm', 'open', 'customer-b'),
         ('dm-tied', 'brand-a', 'dm', 'open', 'customer-c'),
-        ('dm-cross-boundary', 'brand-a', 'dm', 'open', 'customer-d');
+        ('dm-cross-boundary', 'brand-a', 'dm', 'open', 'customer-d'),
+        ('dm-private-interruption', 'brand-a', 'dm', 'open', 'customer-e');
 
       INSERT INTO messages (
         id, brand_id, conversation_id, platform, direction, timestamp, metricool_id,
@@ -96,6 +97,8 @@ describeWithPostgres('production inbox metrics SQL', () => {
         ('reply-2', 'brand-a', 'comments', 'facebook', 'outbound', '2026-08-20 11:02:00', 'reply-2-external', 'comment-2', 'ai', 'repliyo_auto', NULL, NULL, 'brand', 'reply'),
         ('comment-3', 'brand-a', 'comments', 'facebook', 'inbound', '2026-08-20 12:00:00', 'root-3', NULL, NULL, NULL, NULL, 'negative', 'customer-3', 'three'),
         ('flattened-reply', 'brand-a', 'comments', 'facebook', 'outbound', '2026-08-20 12:02:00', 'flattened-external', 'comment-3', NULL, 'metricool_sync', '{"parentId":"nested-comment"}', NULL, 'brand', 'not a root reply'),
+        ('comment-cross-boundary', 'brand-a', 'comments', 'facebook', 'inbound', '2026-08-17 21:50:00', 'root-cross', NULL, NULL, NULL, NULL, NULL, 'customer-cross', 'before range'),
+        ('reply-cross-boundary', 'brand-a', 'comments', 'facebook', 'outbound', '2026-08-17 22:10:00', 'reply-cross', 'comment-cross-boundary', NULL, 'ai_agent', NULL, NULL, 'brand', 'legacy AI reply inside range'),
         ('tiktok-comment', 'brand-a', 'tiktok-comments', 'tiktok', 'inbound', '2026-08-20 15:00:00', '7659989993066138911_7660185205123367702', NULL, NULL, 'metricool_sync', NULL, NULL, 'tiktok-customer', 'clock-skewed parent'),
         ('tiktok-reply', 'brand-a', 'tiktok-comments', 'tiktok', 'outbound', '2026-08-20 13:30:00', 'tiktok-reply-external', 'tiktok-comment', NULL, 'metricool_sync', '{"parentId":"7660185205123367702"}', NULL, 'brand', 'linked reply with inverted provider clock'),
         ('dm-in-1', 'brand-a', 'dm-answered', 'instagram', 'inbound', '2026-08-20 13:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 'customer-a', 'hello'),
@@ -107,7 +110,10 @@ describeWithPostgres('production inbox metrics SQL', () => {
         ('dm-cross-old-in', 'brand-a', 'dm-cross-boundary', 'instagram', 'inbound', '2026-08-17 20:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 'customer-d', 'old burst'),
         ('dm-cross-old-out', 'brand-a', 'dm-cross-boundary', 'instagram', 'outbound', '2026-08-17 20:05:00', NULL, NULL, NULL, 'manual', NULL, NULL, 'brand', 'old reply'),
         ('dm-cross-pending', 'brand-a', 'dm-cross-boundary', 'instagram', 'inbound', '2026-08-17 21:55:00', NULL, NULL, NULL, NULL, NULL, NULL, 'customer-d', 'before range'),
-        ('dm-cross-response', 'brand-a', 'dm-cross-boundary', 'instagram', 'outbound', '2026-08-17 22:05:00', NULL, NULL, NULL, 'manual', NULL, NULL, 'brand', 'inside range');
+        ('dm-cross-response', 'brand-a', 'dm-cross-boundary', 'instagram', 'outbound', '2026-08-17 22:05:00', NULL, NULL, NULL, 'manual', NULL, NULL, 'brand', 'inside range'),
+        ('dm-private-in', 'brand-a', 'dm-private-interruption', 'instagram', 'inbound', '2026-08-20 17:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 'customer-e', 'pending DM'),
+        ('dm-comment-private-reply', 'brand-a', 'dm-private-interruption', 'instagram', 'outbound', '2026-08-20 17:05:00', NULL, 'comment-1', NULL, 'manual', NULL, NULL, 'brand', 'private reply to a comment'),
+        ('dm-private-real-out', 'brand-a', 'dm-private-interruption', 'instagram', 'outbound', '2026-08-20 17:10:00', NULL, NULL, NULL, 'manual', NULL, NULL, 'brand', 'real DM response');
     `);
 
     const range = parseInboxStatsRange({ days: '7' }, now);
@@ -120,21 +126,21 @@ describeWithPostgres('production inbox metrics SQL', () => {
 
     assert.deepEqual(
       { eligible: overall.eligible_cycles, answered: overall.answered_cycles, samples: overall.samples },
-      { eligible: 7, answered: 5, samples: 5 },
+      { eligible: 8, answered: 6, samples: 7 },
     );
     assert.deepEqual(
       { eligible: facebook.eligible_cycles, answered: facebook.answered_cycles, samples: facebook.samples },
-      { eligible: 3, answered: 2, samples: 2 },
+      { eligible: 3, answered: 2, samples: 3 },
     );
     assert.deepEqual(
       { eligible: instagram.eligible_cycles, answered: instagram.answered_cycles, samples: instagram.samples },
-      { eligible: 3, answered: 2, samples: 3 },
+      { eligible: 4, answered: 3, samples: 4 },
     );
     assert.deepEqual(
       { eligible: tiktok.eligible_cycles, answered: tiktok.answered_cycles, samples: tiktok.samples },
       { eligible: 1, answered: 1, samples: 0 },
     );
-    assert.equal(overall.ai_samples, 1);
-    assert.equal(overall.human_samples, 4);
+    assert.equal(overall.ai_samples, 2);
+    assert.equal(overall.human_samples, 5);
   });
 });
